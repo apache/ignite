@@ -30,12 +30,16 @@ import junit.framework.TestCase;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.findCycle;
 
 /**
  * DFS test for search cycle in wait-for-graph.
  */
+@RunWith(JUnit4.class)
 public class DepthFirstSearchTest extends TestCase {
     /** Tx 1. */
     private static final GridCacheVersion T1 = new GridCacheVersion(1, 0, 0);

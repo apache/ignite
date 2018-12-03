@@ -34,12 +34,16 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *  Tests transactions closes correctly while other caches start and stop.
  *  Tests possible {@link NullPointerException} in {@link TransactionProxyImpl#leave} due to race while
  *  {@link org.apache.ignite.internal.processors.cache.GridCacheTtlManager} initializes (IGNITE-7972).
  */
+@RunWith(JUnit4.class)
 public class TxOnCachesStartTest extends GridCommonAbstractTest {
     /** */
     private static int NUM_CACHES = 100;

@@ -38,6 +38,9 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -45,6 +48,7 @@ import org.mockito.stubbing.Answer;
 /**
  * Tests data consistency if transaction is failed due to heuristic exception on originating node.
  */
+@RunWith(JUnit4.class)
 public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest {
     /** */
     public static final int KEY = 0;

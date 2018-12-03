@@ -64,6 +64,9 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.lang.Thread.sleep;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -78,6 +81,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Tests an ability to eagerly rollback timed out transactions.
  */
+@RunWith(JUnit4.class)
 public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /** */
     private static final long DURATION = SF.apply(60 * 1000);

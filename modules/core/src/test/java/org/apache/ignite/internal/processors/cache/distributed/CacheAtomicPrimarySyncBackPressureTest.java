@@ -34,12 +34,16 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Checks that back-pressure control restricts uncontrolled growing
  * of backup message queue. This means, if queue too big - any reads
  * will be stopped until received acks from backup nodes.
  */
+@RunWith(JUnit4.class)
 public class CacheAtomicPrimarySyncBackPressureTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

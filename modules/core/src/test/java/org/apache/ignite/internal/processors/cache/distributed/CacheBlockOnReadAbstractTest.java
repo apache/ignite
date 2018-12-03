@@ -79,6 +79,9 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -88,6 +91,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTest {
     /** Default cache entries count. */
     private static final int DFLT_CACHE_ENTRIES_CNT = 2 * 1024;
