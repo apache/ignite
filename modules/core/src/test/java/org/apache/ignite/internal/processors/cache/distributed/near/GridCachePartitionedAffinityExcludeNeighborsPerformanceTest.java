@@ -32,6 +32,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
@@ -39,6 +42,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 /**
  * Partitioned affinity test.
  */
+@RunWith(JUnit4.class)
 public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRIDS = 3;

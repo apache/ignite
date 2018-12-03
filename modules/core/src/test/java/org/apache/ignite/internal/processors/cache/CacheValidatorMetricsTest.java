@@ -29,10 +29,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Cache validator metrics test.
  */
+@RunWith(JUnit4.class)
 public class CacheValidatorMetricsTest extends GridCommonAbstractTest implements Serializable {
     /** Cache name 1. */
     private static String CACHE_NAME_1 = "cache1";
