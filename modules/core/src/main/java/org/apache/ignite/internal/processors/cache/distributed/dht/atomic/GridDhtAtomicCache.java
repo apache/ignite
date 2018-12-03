@@ -73,6 +73,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartition
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtomicCache;
@@ -1784,6 +1785,28 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                                 if (validateCache) {
                                     GridDhtTopologyFuture topFut = top.topologyVersionFuture();
+
+                                    // Cache validation should use topology version from the update request
+                                    // in case of the topology version was locked on near node.
+                                    if (req.topologyLocked()) {
+                                        List<GridDhtPartitionsExchangeFuture> futs =
+                                            ctx.shared().exchange().exchangeFutures();
+
+                                        for (int i = futs.size() - 1; i >= 0; --i) {
+                                            GridDhtPartitionsExchangeFuture fut = futs.get(i);
+
+                                            if (fut.isDone() && fut.topologyVersion().equals(req.topologyVersion())) {
+                                                topFut = fut;
+
+                                                break;
+                                            }
+                                        }
+
+                                        assert req.topologyVersion().equals(topFut.topologyVersion()) :
+                                            "The requested topology version cannot be found [" +
+                                                "reqTopFut=" + req.topologyVersion()
+                                                + ", topFut=" + topFut;
+                                    }
 
                                     assert topFut.isDone() : topFut;
 
