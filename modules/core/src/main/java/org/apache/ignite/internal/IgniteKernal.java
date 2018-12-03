@@ -3010,7 +3010,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @Override public <K, V> IgniteBiTuple<IgniteCache<K, V>, Boolean> getOrCreateCache0(
         CacheConfiguration<K, V> cacheCfg, boolean sql) {
         A.notNull(cacheCfg, "cacheCfg");
-        CU.validateNewCacheName(cacheCfg.getName());
+        String cacheName = cacheCfg.getName();
+
+        CU.validateNewCacheName(cacheName);
 
         guard();
 
@@ -3019,18 +3021,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             Boolean res = false;
 
-            if (ctx.cache().cache(cacheCfg.getName()) == null) {
+            if (ctx.cache().cache(cacheName) == null) {
                 res =
                     sql ? ctx.cache().dynamicStartSqlCache(cacheCfg).get() :
                         ctx.cache().dynamicStartCache(cacheCfg,
-                            cacheCfg.getName(),
+                            cacheName,
                             null,
                             false,
                             true,
                             true).get();
             }
 
-            return new IgniteBiTuple<>((IgniteCache<K, V>)ctx.cache().publicJCache(cacheCfg.getName()), res);
+            return new IgniteBiTuple<>(ctx.cache().publicJCache(cacheName), res);
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
