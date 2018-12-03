@@ -784,14 +784,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Called when local client node has been disconnected from the cluster.
-        /// </summary>
-        public void OnClientDisconnected()
-        {
-            // TODO: See comments in structure tracker
-        }
-        
-        /// <summary>
         /// Called when local client node has been reconnected to the cluster.
         /// </summary>
         /// <param name="clusterRestarted">Cluster restarted flag.</param>
@@ -803,12 +795,12 @@ namespace Apache.Ignite.Core.Impl.Binary
             // Reset all binary structures. Metadata must be sent again.
             // _idToDesc enumerator is thread-safe (returns a snapshot).
             // If there are new descriptors added concurrently, they are fine (we are already connected).
-            // Race is possible when serialization is started before reconnect and finished after reconnect,
-            // meta won't be sent to cluster because it is assumed to be known, but operation will succeed.
-            // We don't support this use case. Users should handle reconnect events properly.
             
-            // TODO: Another fix is to re-send all cached meta? This will eliminate the race?
-            // TODO: Another fix - fail all pending FinishMarshal calls somehow?
+            // Race is possible when serialization is started before reconnect (or even before disconnect)
+            // and finished after reconnect, meta won't be sent to cluster because it is assumed to be known,
+            // but operation will succeed.
+            // We don't support this use case. Users should handle reconnect events properly when cluster is restarted.
+            // Supporting this very rare use case will complicate the code a lot with little benefit. 
             foreach (var desc in _idToDesc)
             {
                 desc.Value.ResetWriteStructure();

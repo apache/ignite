@@ -989,8 +989,6 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal void OnClientDisconnected()
         {
-            _marsh.OnClientDisconnected();
-            
             _clientReconnectTaskCompletionSource = new TaskCompletionSource<bool>();
 
             var handler = ClientDisconnected;
