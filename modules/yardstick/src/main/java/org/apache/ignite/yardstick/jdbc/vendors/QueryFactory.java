@@ -112,4 +112,17 @@ public class QueryFactory {
             "ON p.org_id = o.id " +
             "WHERE p.id BETWEEN ? AND ?;";
     }
+
+    /** Query that fetches all ids from Person table. Has no parameters. */
+    public String selectAllPersons() {
+        return "SELECT id FROM PUBLIC.PERSON;";
+    }
+
+    /** Query that fetches all records about all persons with info about theirs organizations. */
+    public String selectAllPersonsJoinOrg() {
+        return "SELECT p.id, p.org_id, p.first_name, p.last_name, p.salary, o.name " +
+            "FROM PUBLIC.PERSON p " +
+            "INNER JOIN PUBLIC.ORGANIZATION o " +
+            "ON p.org_id = o.id;";
+    }
 }
