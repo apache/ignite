@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.GridCachePreloadingEvictionsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearEvictionSelfTest;
@@ -61,41 +62,41 @@ public class IgniteCacheEvictionSelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Cache Eviction Test Suite");
 
-        suite.addTest(new TestSuite(FifoEvictionPolicySelfTest.class));
-        suite.addTest(new TestSuite(SortedEvictionPolicySelfTest.class));
-        suite.addTest(new TestSuite(LruEvictionPolicySelfTest.class));
-        suite.addTest(new TestSuite(FifoEvictionPolicyFactorySelfTest.class));
-        suite.addTest(new TestSuite(SortedEvictionPolicyFactorySelfTest.class));
-        suite.addTest(new TestSuite(LruEvictionPolicyFactorySelfTest.class));
-        suite.addTest(new TestSuite(LruNearEvictionPolicySelfTest.class));
-        suite.addTest(new TestSuite(LruNearOnlyNearEvictionPolicySelfTest.class));
-        suite.addTest(new TestSuite(GridCacheNearEvictionSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheAtomicNearEvictionSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheEvictionFilterSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheConcurrentEvictionsSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheConcurrentEvictionConsistencySelfTest.class));
-        suite.addTest(new TestSuite(GridCacheEvictionTouchSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheEvictionLockUnlockSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePreloadingEvictionsSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheEmptyEntriesPartitionedSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheEmptyEntriesLocalSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheEvictableEntryEqualsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(FifoEvictionPolicySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(SortedEvictionPolicySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(LruEvictionPolicySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(FifoEvictionPolicyFactorySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(SortedEvictionPolicyFactorySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(LruEvictionPolicyFactorySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(LruNearEvictionPolicySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(LruNearOnlyNearEvictionPolicySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheNearEvictionSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicNearEvictionSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheEvictionFilterSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheConcurrentEvictionsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheConcurrentEvictionConsistencySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheEvictionTouchSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheEvictionLockUnlockSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCachePreloadingEvictionsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheEmptyEntriesPartitionedSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheEmptyEntriesLocalSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheEvictableEntryEqualsSelfTest.class));
 
-        suite.addTest(new TestSuite(RandomLruPageEvictionMultinodeTest.class));
-        suite.addTest(new TestSuite(RandomLruNearEnabledPageEvictionMultinodeTest.class));
-        suite.addTest(new TestSuite(Random2LruPageEvictionMultinodeTest.class));
-        suite.addTest(new TestSuite(Random2LruNearEnabledPageEvictionMultinodeTest.class));
-        suite.addTest(new TestSuite(RandomLruPageEvictionWithRebalanceTest.class));
-        suite.addTest(new TestSuite(Random2LruPageEvictionWithRebalanceTest.class));
-        suite.addTest(new TestSuite(PageEvictionTouchOrderTest.class));
-        suite.addTest(new TestSuite(PageEvictionReadThroughTest.class));
-        suite.addTest(new TestSuite(PageEvictionDataStreamerTest.class));
+        suite.addTest(new JUnit4TestAdapter(RandomLruPageEvictionMultinodeTest.class));
+        suite.addTest(new JUnit4TestAdapter(RandomLruNearEnabledPageEvictionMultinodeTest.class));
+        suite.addTest(new JUnit4TestAdapter(Random2LruPageEvictionMultinodeTest.class));
+        suite.addTest(new JUnit4TestAdapter(Random2LruNearEnabledPageEvictionMultinodeTest.class));
+        suite.addTest(new JUnit4TestAdapter(RandomLruPageEvictionWithRebalanceTest.class));
+        suite.addTest(new JUnit4TestAdapter(Random2LruPageEvictionWithRebalanceTest.class));
+        suite.addTest(new JUnit4TestAdapter(PageEvictionTouchOrderTest.class));
+        suite.addTest(new JUnit4TestAdapter(PageEvictionReadThroughTest.class));
+        suite.addTest(new JUnit4TestAdapter(PageEvictionDataStreamerTest.class));
 
-        suite.addTest(new TestSuite(PageEvictionMetricTest.class));
+        suite.addTest(new JUnit4TestAdapter(PageEvictionMetricTest.class));
 
-        suite.addTest(new TestSuite(PageEvictionPagesRecyclingAndReusingTest.class));
+        suite.addTest(new JUnit4TestAdapter(PageEvictionPagesRecyclingAndReusingTest.class));
 
-        suite.addTest(new TestSuite(DhtAndNearEvictionTest.class));
+        suite.addTest(new JUnit4TestAdapter(DhtAndNearEvictionTest.class));
 
         return suite;
     }

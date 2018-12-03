@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorGridSplitCacheTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorNearPartitionedAtomicCacheGroupsTest;
@@ -43,21 +44,21 @@ public class IgniteTopologyValidatorTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Topology validator Test Suite");
 
-        suite.addTest(new TestSuite(IgniteTopologyValidatorNearPartitionedAtomicCacheTest.class));
-        suite.addTest(new TestSuite(IgniteTopologyValidatorNearPartitionedTxCacheTest.class));
-        suite.addTest(new TestSuite(IgniteTopologyValidatorPartitionedAtomicCacheTest.class));
-        suite.addTest(new TestSuite(IgniteTopologyValidatorPartitionedTxCacheTest.class));
-        suite.addTest(new TestSuite(IgniteTopologyValidatorReplicatedAtomicCacheTest.class));
-        suite.addTest(new TestSuite(IgniteTopologyValidatorReplicatedTxCacheTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorNearPartitionedAtomicCacheTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorNearPartitionedTxCacheTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorPartitionedAtomicCacheTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorPartitionedTxCacheTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorReplicatedAtomicCacheTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorReplicatedTxCacheTest.class));
 
-        suite.addTest(new TestSuite(IgniteTopologyValidatorNearPartitionedAtomicCacheGroupsTest.class));
-        suite.addTest(new TestSuite(IgniteTopologyValidatorNearPartitionedTxCacheGroupsTest.class));
-        suite.addTest(new TestSuite(IgniteTopologyValidatorPartitionedAtomicCacheGroupsTest.class));
-        suite.addTest(new TestSuite(IgniteTopologyValidatorPartitionedTxCacheGroupsTest.class));
-        suite.addTest(new TestSuite(IgniteTopologyValidatorReplicatedAtomicCacheGroupsTest.class));
-        suite.addTest(new TestSuite(IgniteTopologyValidatorReplicatedTxCacheGroupsTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorNearPartitionedAtomicCacheGroupsTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorNearPartitionedTxCacheGroupsTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorPartitionedAtomicCacheGroupsTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorPartitionedTxCacheGroupsTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorReplicatedAtomicCacheGroupsTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorReplicatedTxCacheGroupsTest.class));
 
-        suite.addTest(new TestSuite(IgniteTopologyValidatorGridSplitCacheTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorGridSplitCacheTest.class));
 
         return suite;
     }

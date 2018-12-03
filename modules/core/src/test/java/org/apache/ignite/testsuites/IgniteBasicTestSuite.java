@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import java.util.Set;
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
 import org.apache.ignite.failure.FailureHandlerTriggeredTest;
@@ -125,10 +126,10 @@ public class IgniteBasicTestSuite extends TestSuite {
 
         suite.addTest(IgnitePlatformsTestSuite.suite());
 
-        suite.addTest(new TestSuite(GridSelfTest.class));
-        suite.addTest(new TestSuite(ClusterGroupHostsSelfTest.class));
-        suite.addTest(new TestSuite(IgniteMessagingWithClientTest.class));
-        suite.addTest(new TestSuite(IgniteMessagingSendAsyncTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(ClusterGroupHostsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteMessagingWithClientTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteMessagingSendAsyncTest.class));
 
         GridTestUtils.addTestIfNeeded(suite, ClusterGroupSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridMessagingSelfTest.class, ignoredTests);

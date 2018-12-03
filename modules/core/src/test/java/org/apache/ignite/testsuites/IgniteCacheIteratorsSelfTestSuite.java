@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedIteratorsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedIteratorsSelfTest;
@@ -33,9 +34,9 @@ public class IgniteCacheIteratorsSelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache Iterators Test Suite");
 
-        suite.addTest(new TestSuite(GridCacheLocalIteratorsSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheReplicatedIteratorsSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedIteratorsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheLocalIteratorsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedIteratorsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedIteratorsSelfTest.class));
 
         return suite;
    }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.GridCacheTcpClientDiscoveryMultiThreadedTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesTcpClientDiscoveryAbstractTest;
@@ -32,15 +33,15 @@ public class IgniteCacheTcpClientDiscoveryTestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache + TcpClientDiscovery SPI test suite.");
 
-        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearPartitionedAtomic.class));
-        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearPartitionedTransactional.class));
-        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearReplicatedAtomic.class));
-        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearReplicatedTransactional.class));
-        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientPartitionedAtomic.class));
-        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientPartitionedTransactional.class));
-        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientReplicatedAtomic.class));
-        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientReplicatedTransactional.class));
-        suite.addTest(new TestSuite(GridCacheTcpClientDiscoveryMultiThreadedTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearPartitionedAtomic.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearPartitionedTransactional.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearReplicatedAtomic.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearReplicatedTransactional.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientPartitionedAtomic.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientPartitionedTransactional.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientReplicatedAtomic.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientReplicatedTransactional.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheTcpClientDiscoveryMultiThreadedTest.class));
 
         return suite;
     }
