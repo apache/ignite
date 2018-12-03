@@ -36,8 +36,8 @@ import org.yardstickframework.BenchmarkConfiguration;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * Base benchmark for sql select operation. Designed to compare Ignite and other DBMSes. Children specify what
- * exactly query gets executed and how parameters are filled.
+ * Base benchmark for sql select operation. Designed to compare Ignite and other DBMSes. Children specify what exactly
+ * query gets executed and how parameters are filled.
  */
 public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
     /** Factory that hides all sql queries. */
@@ -173,6 +173,47 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
         executeUpdate(conn0, queries.afterLoad());
 
         println(cfg, "Database have been populated.");
+
+        String explainSql = "EXPLAIN " + testedSqlQuery();
+
+        try (PreparedStatement expStat = conn0.prepareStatement(explainSql);) {
+            fillTestedQueryParams(expStat);
+
+            try(ResultSet explain = expStat.executeQuery()) {
+                println(cfg, "Explain query " + explainSql + " result:");
+
+                println(cfg, tableToString(explain));
+            }
+        }
+    }
+
+    /**
+     * Prints result set as formatted table.
+     *
+     * @param rs result set that represets table.
+     */
+    private static String tableToString(ResultSet rs) throws SQLException {
+        StringBuilder buf = new StringBuilder();
+
+        for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
+            String cell = String.format("%-20s", rs.getMetaData().getColumnName(i));
+
+            buf.append(cell).append("\t");
+        }
+
+        buf.append("\n");
+
+        while (rs.next()) {
+            for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
+                String cell = String.format("%-20s", rs.getString(i));
+
+                buf.append(cell).append("\t");
+            }
+
+            buf.append("\t");
+        }
+
+        return buf.toString();
     }
 
     /**
