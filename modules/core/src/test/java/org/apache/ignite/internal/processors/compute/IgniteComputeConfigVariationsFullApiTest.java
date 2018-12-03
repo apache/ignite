@@ -209,8 +209,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     @Test
     public void testExecuteTaskClassAsync() throws Exception {
         runTest(jobFactories, new ComputeTest() {
-            @Override @Test
-    public void test(Factory factory, Ignite ignite) throws Exception {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
                 // Begin with negative to check 'null' value in the test.
                 final int[] i = {-1};
 

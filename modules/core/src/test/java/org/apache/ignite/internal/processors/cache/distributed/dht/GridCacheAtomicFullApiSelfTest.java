@@ -79,8 +79,8 @@ public class GridCacheAtomicFullApiSelfTest extends GridCachePartitionedFullApiS
     /**
      * @throws Exception In case of error.
      */
-    @Override @Test
-    public void testGetAll() throws Exception {
+    @Test
+    @Override public void testGetAll() throws Exception {
         jcache().put("key1", 1);
         jcache().put("key2", 2);
 

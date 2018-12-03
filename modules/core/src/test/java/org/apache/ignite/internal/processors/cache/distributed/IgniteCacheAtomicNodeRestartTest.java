@@ -36,8 +36,8 @@ public class IgniteCacheAtomicNodeRestartTest extends GridCachePartitionedNodeRe
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testRestartWithPutFourNodesNoBackups() {
+    @Test
+    @Override public void testRestartWithPutFourNodesNoBackups() {
         fail("https://issues.apache.org/jira/browse/IGNITE-1587");
     }
 }

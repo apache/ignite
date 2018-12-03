@@ -179,8 +179,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testSize() throws Exception {
+    @Test
+    @Override public void testSize() throws Exception {
         IgniteCache<String, Integer> nearCache = jcache();
 
         int size = 10;
@@ -209,8 +209,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testLoadAll() throws Exception {
+    @Test
+    @Override public void testLoadAll() throws Exception {
         // Not needed for near-only cache.
     }
 
@@ -439,8 +439,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testClear() throws Exception {
+    @Test
+    @Override public void testClear() throws Exception {
         IgniteCache<String, Integer> nearCache = jcache();
         IgniteCache<String, Integer> primary = fullCache();
 
@@ -492,8 +492,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testLocalClearKeys() throws Exception {
+    @Test
+    @Override public void testLocalClearKeys() throws Exception {
         IgniteCache<String, Integer> nearCache = jcache();
         IgniteCache<String, Integer> primary = fullCache();
 
@@ -560,8 +560,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
     /** {@inheritDoc} */
     @SuppressWarnings("BusyWait")
-    @Override @Test
-    public void testLockUnlock() throws Exception {
+    @Test
+    @Override public void testLockUnlock() throws Exception {
         if (lockingEnabled()) {
             final CountDownLatch lockCnt = new CountDownLatch(1);
             final CountDownLatch unlockCnt = new CountDownLatch(1);

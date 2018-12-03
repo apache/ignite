@@ -47,8 +47,8 @@ public class IgniteCacheTxPeekModesTest extends IgniteCachePeekModesAbstractTest
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testLocalPeek() throws Exception {
+    @Test
+    @Override public void testLocalPeek() throws Exception {
         // TODO: uncomment and re-open ticket if fails.
 //        fail("https://issues.apache.org/jira/browse/IGNITE-1824");
 

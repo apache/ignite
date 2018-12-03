@@ -46,20 +46,20 @@ public class InterceptorCacheConfigVariationsFullApiTest extends IgniteCacheConf
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testTtlNoTx() throws Exception {
+    @Test
+    @Override public void testTtlNoTx() throws Exception {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testTtlNoTxOldEntry() throws Exception {
+    @Test
+    @Override public void testTtlNoTxOldEntry() throws Exception {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testTtlTx() throws Exception {
+    @Test
+    @Override public void testTtlTx() throws Exception {
         // No-op.
     }
 

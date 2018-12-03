@@ -86,8 +86,8 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testSendToManyNodes() throws Exception {
+    @Test
+    @Override public void testSendToManyNodes() throws Exception {
         super.testSendToManyNodes();
 
         // Test idle clients remove.

@@ -53,8 +53,8 @@ public class EncryptedCachePreconfiguredRestartTest extends EncryptedCacheRestar
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testCreateEncryptedCache() throws Exception {
+    @Test
+    @Override public void testCreateEncryptedCache() throws Exception {
         differentCachesOnNodes = false;
 
         super.testCreateEncryptedCache();

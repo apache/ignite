@@ -83,8 +83,8 @@ public abstract class IgniteTopologyValidatorCacheGroupsAbstractTest extends Ign
     /**
      * @throws Exception If failed.
      */
-    @Override @Test
-    public void testTopologyValidator() throws Exception {
+    @Test
+    @Override public void testTopologyValidator() throws Exception {
         putValid(DEFAULT_CACHE_NAME);
         remove(DEFAULT_CACHE_NAME);
 

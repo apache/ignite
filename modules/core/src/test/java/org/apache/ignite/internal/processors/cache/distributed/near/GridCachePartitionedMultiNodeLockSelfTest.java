@@ -51,32 +51,32 @@ public class GridCachePartitionedMultiNodeLockSelfTest extends GridCacheMultiNod
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testBasicLock() throws Exception {
+    @Test
+    @Override public void testBasicLock() throws Exception {
         super.testBasicLock();
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testLockMultithreaded() throws Exception {
+    @Test
+    @Override public void testLockMultithreaded() throws Exception {
         super.testLockMultithreaded();
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testLockReentry() throws IgniteCheckedException {
+    @Test
+    @Override public void testLockReentry() throws IgniteCheckedException {
         super.testLockReentry();
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testMultiNodeLock() throws Exception {
+    @Test
+    @Override public void testMultiNodeLock() throws Exception {
         super.testMultiNodeLock();
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testMultiNodeLockWithKeyLists() throws Exception {
+    @Test
+    @Override public void testMultiNodeLockWithKeyLists() throws Exception {
         super.testMultiNodeLockWithKeyLists();
     }
 }

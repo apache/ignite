@@ -201,8 +201,7 @@ public class IgniteServiceProxyTimeoutInitializedTest extends GridCommonAbstract
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override @Test
-    public void test() {
+        @Override public void test() {
             // No-op
         }
 

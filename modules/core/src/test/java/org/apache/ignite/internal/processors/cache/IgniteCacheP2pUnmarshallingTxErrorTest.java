@@ -81,8 +81,8 @@ public class IgniteCacheP2pUnmarshallingTxErrorTest extends IgniteCacheP2pUnmars
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testResponseMessageOnUnmarshallingFailed() {
+    @Test
+    @Override public void testResponseMessageOnUnmarshallingFailed() {
         //GridNearTxPrepareRequest unmarshalling failed test
         readCnt.set(2);
 

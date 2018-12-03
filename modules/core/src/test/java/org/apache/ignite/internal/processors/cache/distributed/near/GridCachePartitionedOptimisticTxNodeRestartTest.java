@@ -81,84 +81,84 @@ public class GridCachePartitionedOptimisticTxNodeRestartTest extends GridCacheAb
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testRestart() throws Exception {
+    @Test
+    @Override public void testRestart() throws Exception {
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testRestartWithPutTwoNodesNoBackups() throws Throwable {
+    @Test
+    @Override public void testRestartWithPutTwoNodesNoBackups() throws Throwable {
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testRestartWithPutTwoNodesOneBackup() throws Throwable {
+    @Test
+    @Override public void testRestartWithPutTwoNodesOneBackup() throws Throwable {
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testRestartWithPutFourNodesNoBackups() throws Throwable {
+    @Test
+    @Override public void testRestartWithPutFourNodesNoBackups() throws Throwable {
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testRestartWithPutFourNodesOneBackups() throws Throwable {
+    @Test
+    @Override public void testRestartWithPutFourNodesOneBackups() throws Throwable {
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testRestartWithPutSixNodesTwoBackups() throws Throwable {
+    @Test
+    @Override public void testRestartWithPutSixNodesTwoBackups() throws Throwable {
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testRestartWithPutEightNodesTwoBackups() throws Throwable {
+    @Test
+    @Override public void testRestartWithPutEightNodesTwoBackups() throws Throwable {
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testRestartWithPutTenNodesTwoBackups() throws Throwable {
+    @Test
+    @Override public void testRestartWithPutTenNodesTwoBackups() throws Throwable {
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testRestartWithTxEightNodesTwoBackups() throws Throwable {
+    @Test
+    @Override public void testRestartWithTxEightNodesTwoBackups() throws Throwable {
         super.testRestartWithTxEightNodesTwoBackups();
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testRestartWithTxFourNodesNoBackups() throws Throwable {
+    @Test
+    @Override public void testRestartWithTxFourNodesNoBackups() throws Throwable {
         super.testRestartWithTxFourNodesNoBackups();
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testRestartWithTxFourNodesOneBackups() throws Throwable {
+    @Test
+    @Override public void testRestartWithTxFourNodesOneBackups() throws Throwable {
         super.testRestartWithTxFourNodesOneBackups();
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testRestartWithTxSixNodesTwoBackups() throws Throwable {
+    @Test
+    @Override public void testRestartWithTxSixNodesTwoBackups() throws Throwable {
         super.testRestartWithTxSixNodesTwoBackups();
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testRestartWithTxTenNodesTwoBackups() throws Throwable {
+    @Test
+    @Override public void testRestartWithTxTenNodesTwoBackups() throws Throwable {
         super.testRestartWithTxTenNodesTwoBackups();
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testRestartWithTxTwoNodesNoBackups() throws Throwable {
+    @Test
+    @Override public void testRestartWithTxTwoNodesNoBackups() throws Throwable {
         super.testRestartWithTxTwoNodesNoBackups();
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testRestartWithTxTwoNodesOneBackup() throws Throwable {
+    @Test
+    @Override public void testRestartWithTxTwoNodesOneBackup() throws Throwable {
         super.testRestartWithTxTwoNodesOneBackup();
     }
 }

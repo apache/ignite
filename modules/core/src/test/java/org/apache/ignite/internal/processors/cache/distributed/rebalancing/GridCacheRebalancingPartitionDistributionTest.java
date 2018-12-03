@@ -119,8 +119,7 @@ public class GridCacheRebalancingPartitionDistributionTest extends GridRollingRe
         }
 
         /** {@inheritDoc} */
-        @Override @Test
-    public void test() throws AssertionError {
+        @Override public void test() throws AssertionError {
             super.test();
 
             Affinity<?> affinity = ignite().affinity(CACHE_NAME);

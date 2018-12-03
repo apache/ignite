@@ -36,8 +36,8 @@ public class GridCacheReplicatedLockSelfTest extends GridCacheLockAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testLockReentrancy() throws Throwable {
+    @Test
+    @Override public void testLockReentrancy() throws Throwable {
         fail("https://issues.apache.org/jira/browse/IGNITE-835");
     }
 }

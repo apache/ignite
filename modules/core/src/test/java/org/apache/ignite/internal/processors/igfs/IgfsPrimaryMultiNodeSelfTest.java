@@ -34,8 +34,8 @@ public class IgfsPrimaryMultiNodeSelfTest extends IgfsPrimarySelfTest {
     /**
      * @throws Exception If failed.
      */
-    @Override @Test
-    public void testCreateConsistencyMultithreaded() throws Exception {
+    @Test
+    @Override public void testCreateConsistencyMultithreaded() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-8823");
     }
 }

@@ -28,32 +28,32 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class IgniteCacheTransactionalStopBusySelfTest extends IgniteCacheAbstractStopBusySelfTest {
     /** {@inheritDoc} */
-    @Override @Test
-    public void testPut() throws Exception {
+    @Test
+    @Override public void testPut() throws Exception {
         bannedMsg.set(GridNearTxPrepareRequest.class);
 
         super.testPut();
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testPutBatch() throws Exception {
+    @Test
+    @Override public void testPutBatch() throws Exception {
         bannedMsg.set(GridNearTxPrepareRequest.class);
 
         super.testPut();
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testPutAsync() throws Exception {
+    @Test
+    @Override public void testPutAsync() throws Exception {
         bannedMsg.set(GridNearTxPrepareRequest.class);
 
         super.testPut();
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testRemove() throws Exception {
+    @Test
+    @Override public void testRemove() throws Exception {
         bannedMsg.set(GridNearTxPrepareRequest.class);
 
         super.testPut();
