@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -1822,7 +1821,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         }
     }
 
-    @Override public IgniteInternalFuture<T2<GridCacheVersion, UUID>> checkWaiting(GridCacheVersion ver, UUID nodeId) {
+    @Override public IgniteInternalFuture<T2<GridCacheVersion, UUID>> checkWaiting(MvccVersion ver, UUID nodeId) {
         LockWaitCheckFuture fut = new LockWaitCheckFuture(nodeId, ver, ctx.cache().context());
         fut.init();
         return fut;
@@ -1831,13 +1830,13 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     public class LockWaitCheckFuture extends GridCacheFutureAdapter<T2<GridCacheVersion, UUID>> {
         private final UUID nodeId;
         private final IgniteUuid futId = IgniteUuid.randomUuid();
-        private final GridCacheVersion txVersion;
+        private final MvccVersionImpl txVersion;
         private final GridCacheSharedContext<?, ?> cctx;
         private boolean trackable = true;
 
-        private LockWaitCheckFuture(UUID nodeId, GridCacheVersion txVersion, GridCacheSharedContext<?, ?> cctx) {
+        private LockWaitCheckFuture(UUID nodeId, MvccVersion txVersion, GridCacheSharedContext<?, ?> cctx) {
             this.nodeId = nodeId;
-            this.txVersion = txVersion;
+            this.txVersion = new MvccVersionImpl(txVersion.coordinatorVersion(), txVersion.counter(), txVersion.operationCounter());
             this.cctx = cctx;
         }
 
@@ -1969,38 +1968,24 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
     private void handleLockCheckRequest(UUID nodeId, LockWaitCheckRequest req) {
         // t0d0 ensure response is sent in all cases
-        Optional<IgniteInternalTx> optTx = ctx.cache().context().tm().activeTransactions().stream()
-            .filter(tx -> tx.nearXidVersion().equals(req.txVersion()) && tx.dht() && tx.local())
-            .findAny();
-        if (optTx.isPresent()) {
-            MvccSnapshot checkedSnapshot = optTx.get().mvccSnapshot();
-            waitMap.entrySet().stream()
-                .filter(e -> e.getValue().txVersion().stream().anyMatch(waitingVer -> DdCollaborator.belongToSameTx(waitingVer, checkedSnapshot)))
-                .map(e -> e.getKey())
-                .findAny()
-                .ifPresent(txKey -> {
-                    IgniteInternalTx blockerTx = ctx.cache().context().tm().activeTransactions().stream()
-                        .filter(tx -> tx.mvccSnapshot().coordinatorVersion() == txKey.major() && tx.mvccSnapshot().counter() == txKey.minor())
-                        .findAny()
-                        // t0d0 handle possible race here
-                        .get();
-                    try {
-                        sendMessage(nodeId, new LockWaitCheckResponse(
-                            req.futId(), blockerTx.nearXidVersion(), blockerTx.eventNodeId()));
-                    }
-                    catch (IgniteCheckedException e) {
-                        e.printStackTrace();
-                    }
-                });
-        }
-        else {
-            try {
-                sendMessage(nodeId, new LockWaitCheckResponse(req.futId(), null, null));
-            }
-            catch (IgniteCheckedException e) {
-                e.printStackTrace();
-            }
-        }
+        waitMap.entrySet().stream()
+            .filter(e -> e.getValue().txVersion().stream().anyMatch(waitingVer -> DdCollaborator.belongToSameTx(waitingVer, req.txVersion())))
+            .map(e -> e.getKey())
+            .findAny()
+            .ifPresent(txKey -> {
+                IgniteInternalTx blockerTx = ctx.cache().context().tm().activeTransactions().stream()
+                    .filter(tx -> tx.mvccSnapshot().coordinatorVersion() == txKey.major() && tx.mvccSnapshot().counter() == txKey.minor())
+                    .findAny()
+                    // t0d0 handle possible race here
+                    .get();
+                try {
+                    sendMessage(nodeId, new LockWaitCheckResponse(
+                        req.futId(), blockerTx.nearXidVersion(), blockerTx.eventNodeId()));
+                }
+                catch (IgniteCheckedException e) {
+                    e.printStackTrace();
+                }
+            });
     }
 
     /**

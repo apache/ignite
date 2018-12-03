@@ -2,7 +2,6 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccMessage;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -11,12 +10,12 @@ public class LockWaitCheckRequest implements MvccMessage {
     private static final long serialVersionUID = 0;
 
     private IgniteUuid futId;
-    private GridCacheVersion txVersion;
+    private MvccVersionImpl txVersion;
 
     public LockWaitCheckRequest() {
     }
 
-    public LockWaitCheckRequest(IgniteUuid futId, GridCacheVersion txVersion) {
+    public LockWaitCheckRequest(IgniteUuid futId, MvccVersionImpl txVersion) {
         this.futId = futId;
         this.txVersion = txVersion;
     }
@@ -25,7 +24,7 @@ public class LockWaitCheckRequest implements MvccMessage {
         return futId;
     }
 
-    public GridCacheVersion txVersion() {
+    public MvccVersionImpl txVersion() {
         return txVersion;
     }
 

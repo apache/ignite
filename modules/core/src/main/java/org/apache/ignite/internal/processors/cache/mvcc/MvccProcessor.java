@@ -242,5 +242,5 @@ public interface MvccProcessor extends GridProcessor {
      */
     void ensureStarted() throws IgniteCheckedException;
 
-    IgniteInternalFuture<T2<GridCacheVersion, UUID>> checkWaiting(GridCacheVersion ver, UUID nodeId);
+    IgniteInternalFuture<T2<GridCacheVersion, UUID>> checkWaiting(MvccVersion ver, UUID nodeId);
 }

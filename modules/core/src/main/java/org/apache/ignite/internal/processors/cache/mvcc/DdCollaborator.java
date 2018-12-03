@@ -53,7 +53,7 @@ public class DdCollaborator {
                     // t0d0 multiple blockers
                     // t0d0 check if holding some lock already
                     // t0d0 first find all peers then send messages
-                    collectBlockers(tx.nearXidVersion()).listen(fut -> {
+                    collectBlockers(tx).listen(fut -> {
                         try {
                             T2<GridCacheVersion, UUID> lockedKey = fut.get();
                             if (lockedKey == null)
@@ -69,13 +69,13 @@ public class DdCollaborator {
             });
     }
 
-    private IgniteInternalFuture<T2<GridCacheVersion, UUID>> collectBlockers(GridCacheVersion ver) {
+    private IgniteInternalFuture<T2<GridCacheVersion, UUID>> collectBlockers(GridNearTxLocal tx) {
         // t0d0 handle primaries local to near node
         // t0d0 different future types
         Optional<GridNearTxEnlistFuture> optFut = cctx.mvcc().activeFutures().stream()
             .filter(GridNearTxEnlistFuture.class::isInstance)
             .map(GridNearTxEnlistFuture.class::cast)
-            .filter(enlistFut -> enlistFut.tx.nearXidVersion().equals(ver))
+            .filter(enlistFut -> enlistFut.tx.nearXidVersion().equals(tx.nearXidVersion()))
             .findAny();
 
         // t0d0 handle multiple batches
@@ -85,7 +85,7 @@ public class DdCollaborator {
 
         if (optBatch.isPresent()) {
             UUID nodeId = optBatch.get().getKey();
-            return cctx.coordinators().checkWaiting(ver, nodeId);
+            return cctx.coordinators().checkWaiting(tx.mvccSnapshot(), nodeId);
         }
 
         return new GridFinishedFuture<>();
