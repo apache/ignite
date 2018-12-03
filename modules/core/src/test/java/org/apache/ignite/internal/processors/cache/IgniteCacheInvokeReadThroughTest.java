@@ -118,7 +118,7 @@ public class IgniteCacheInvokeReadThroughTest extends IgniteCacheInvokeReadThrou
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeReadThroughMvccTTx0() throws Exception {
+    public void testInvokeReadThroughMvccTx0() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-8582");
 
         invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL_SNAPSHOT, 0, false));
@@ -127,7 +127,7 @@ public class IgniteCacheInvokeReadThroughTest extends IgniteCacheInvokeReadThrou
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeReadThroughMvccTTx1() throws Exception {
+    public void testInvokeReadThroughMvccTx1() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-8582");
 
         invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL_SNAPSHOT, 1, false));
@@ -136,7 +136,7 @@ public class IgniteCacheInvokeReadThroughTest extends IgniteCacheInvokeReadThrou
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeReadThroughMvccTTx2() throws Exception {
+    public void testInvokeReadThroughMvccTx2() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-8582");
 
         invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL_SNAPSHOT, 2, false));
@@ -145,7 +145,7 @@ public class IgniteCacheInvokeReadThroughTest extends IgniteCacheInvokeReadThrou
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeReadThroughMvccTTxNearCache() throws Exception {
+    public void testInvokeReadThroughMvccTxNearCache() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-8582");
 
         invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL_SNAPSHOT, 1, true));

@@ -112,6 +112,7 @@ public class MvccFeatureChecker {
     }
 
     /**
+     * TODO proper exception handling after https://issues.apache.org/jira/browse/IGNITE-9470
      * Checks if given exception was caused by MVCC write conflict.
      *
      * @param e Exception.

@@ -118,6 +118,8 @@ public class IgniteCacheMvccTestSuite4 extends TestSuite {
         ignoredTests.add(IgniteDynamicCacheStartSelfTest.class);
         ignoredTests.add(IgniteDynamicClientCacheStartSelfTest.class);
         ignoredTests.add(IgniteDynamicCacheStartNoExchangeTimeoutTest.class);
+        ignoredTests.add(IgniteCacheSingleGetMessageTest.class);
+        ignoredTests.add(IgniteCacheReadFromBackupTest.class);
 
         // Optimistic tx tests.
         ignoredTests.add(CacheGetEntryOptimisticReadCommittedSelfTest.class);
@@ -127,8 +129,6 @@ public class IgniteCacheMvccTestSuite4 extends TestSuite {
         // Irrelevant Tx tests.
         ignoredTests.add(CacheGetEntryPessimisticReadCommittedSelfTest.class);
         ignoredTests.add(CacheGetEntryPessimisticSerializableSelfTest.class);
-        ignoredTests.add(IgniteCacheSingleGetMessageTest.class);
-        ignoredTests.add(IgniteCacheReadFromBackupTest.class);
 
         // Atomic cache tests.
         ignoredTests.add(GridCacheMultinodeUpdateAtomicSelfTest.class);

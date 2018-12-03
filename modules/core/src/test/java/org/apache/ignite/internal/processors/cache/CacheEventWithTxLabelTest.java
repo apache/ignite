@@ -53,7 +53,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
  * Test to check passing transaction's label for EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT,
  * EVT_CACHE_OBJECT_REMOVED events.
  */
-public class CashEventWithTxLabelTest extends GridCommonAbstractTest {
+public class CacheEventWithTxLabelTest extends GridCommonAbstractTest {
     /** Types event to be checked. */
     private static final int[] CACHE_EVENT_TYPES = {EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED};
 

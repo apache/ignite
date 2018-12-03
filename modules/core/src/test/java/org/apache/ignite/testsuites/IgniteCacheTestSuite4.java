@@ -47,7 +47,7 @@ import org.apache.ignite.internal.processors.cache.CacheStoreUsageMultinodeDynam
 import org.apache.ignite.internal.processors.cache.CacheStoreUsageMultinodeStaticStartAtomicTest;
 import org.apache.ignite.internal.processors.cache.CacheStoreUsageMultinodeStaticStartTxTest;
 import org.apache.ignite.internal.processors.cache.CacheTxNotAllowReadFromBackupTest;
-import org.apache.ignite.internal.processors.cache.CashEventWithTxLabelTest;
+import org.apache.ignite.internal.processors.cache.CacheEventWithTxLabelTest;
 import org.apache.ignite.internal.processors.cache.CrossCacheLockTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMarshallingNodeJoinSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateAtomicNearEnabledSelfTest;
@@ -351,7 +351,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
 
         addTestIfNeeded(suite, CacheResultIsNotNullOnPartitionLossTest.class, ignoredTests);
 
-        suite.addTestSuite(CashEventWithTxLabelTest.class);
+        addTestIfNeeded(suite, CacheEventWithTxLabelTest.class, ignoredTests);
 
         return suite;
     }
