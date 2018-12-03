@@ -18,10 +18,14 @@
 package org.apache.ignite.igfs;
 
 import org.apache.ignite.IgniteFileSystem;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests coordinator transfer from one node to other.
  */
+@RunWith(JUnit4.class)
 public class IgfsFragmentizerTopologySelfTest extends IgfsFragmentizerAbstractSelfTest {
     /**
      * @throws Exception If failed.
