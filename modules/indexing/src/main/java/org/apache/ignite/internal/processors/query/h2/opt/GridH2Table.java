@@ -89,7 +89,7 @@ public class GridH2Table extends TableBase {
     private final Map<String, GridH2IndexBase> tmpIdxs = new HashMap<>();
 
     /** */
-    private final ReadWriteLock lock;
+    private final ReentrantReadWriteLock lock;
 
     /** */
     private boolean destroyed;
@@ -572,12 +572,21 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-     *
+     * Mark or unmark index rebuild state.
      */
     public void markRebuildFromHashInProgress(boolean value) {
         assert !value || (idxs.size() >= 2 && index(1).getIndexType().isHash()) : "Table has no hash index.";
 
         rebuildFromHashInProgress = value;
+
+        lock.writeLock().lock();
+
+        try {
+            incrementModificationCounter();
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**
@@ -658,7 +667,7 @@ public class GridH2Table extends TableBase {
             if (cloneIdx != null)
                 database.addSchemaObject(ses, cloneIdx);
 
-            setModified();
+            incrementModificationCounter();
 
             return idx;
         }
@@ -962,7 +971,7 @@ public class GridH2Table extends TableBase {
 
             desc.refreshMetadataFromTypeDescriptor();
 
-            setModified();
+            incrementModificationCounter();
         }
         finally {
             unlock(true);
@@ -1025,7 +1034,7 @@ public class GridH2Table extends TableBase {
                     ((GridH2IndexBase)idx).refreshColumnIds();
             }
 
-            setModified();
+            incrementModificationCounter();
         }
         finally {
             unlock(true);
@@ -1051,6 +1060,15 @@ public class GridH2Table extends TableBase {
         }
 
         return columns;
+    }
+
+    /**
+     * Increment modification counter to force recompilation of existing prepared statements.
+     */
+    private void incrementModificationCounter() {
+        assert lock.isWriteLockedByCurrentThread();
+
+        setModified();
     }
 
     /**
