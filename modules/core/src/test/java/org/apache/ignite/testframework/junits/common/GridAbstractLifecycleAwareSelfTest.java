@@ -23,10 +23,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.resources.CacheNameResource;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Base class for tests against {@link LifecycleAware} support.
  */
+@RunWith(JUnit4.class)
 public abstract class GridAbstractLifecycleAwareSelfTest extends GridCommonAbstractTest {
     /** */
     protected Collection<TestLifecycleAware> lifecycleAwares = new ArrayList<>();

@@ -24,10 +24,14 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.configvariations.ConfigParameter;
 import org.apache.ignite.testframework.configvariations.Parameters;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test.
  */
+@RunWith(JUnit4.class)
 public class ParametersTest extends TestCase {
     /** */
     private static final String DEFAULT_CACHE_NAME = "default";

@@ -27,6 +27,9 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.UUID.randomUUID;
 import static org.apache.ignite.internal.util.GridMessageCollection.of;
@@ -34,6 +37,7 @@ import static org.apache.ignite.internal.util.GridMessageCollection.of;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridMessageCollectionTest extends TestCase {
     /** */
     private byte proto;

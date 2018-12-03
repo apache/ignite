@@ -28,6 +28,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -35,6 +38,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
  * Test.
  */
 @SuppressWarnings("ThrowableNotThrown")
+@RunWith(JUnit4.class)
 public class ListeningTestLoggerTest extends GridCommonAbstractTest {
     /** */
     private final ListeningTestLogger log = new ListeningTestLogger(false, super.log);

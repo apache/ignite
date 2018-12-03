@@ -21,10 +21,14 @@ import java.io.IOException;
 import java.util.List;
 import junit.framework.TestCase;
 import org.apache.ignite.internal.util.typedef.X;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridSuppressedExceptionSelfTest extends TestCase {
     /**
      * @throws Exception If failed.

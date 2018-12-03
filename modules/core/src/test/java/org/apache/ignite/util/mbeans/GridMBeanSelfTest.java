@@ -29,10 +29,14 @@ import org.apache.ignite.mxbean.MXBeanDescription;
 import org.apache.ignite.mxbean.MXBeanParametersDescriptions;
 import org.apache.ignite.mxbean.MXBeanParametersNames;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * MBean test.
  */
+@RunWith(JUnit4.class)
 public class GridMBeanSelfTest extends GridCommonAbstractTest {
     /**
      * Tests correct MBean interface.

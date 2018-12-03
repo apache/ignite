@@ -28,11 +28,15 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Grid utils tests.
  */
 @GridCommonTest(group = "Utils")
+@RunWith(JUnit4.class)
 public class GridPartitionMapSelfTest extends GridCommonAbstractTest {
     /** */
     @Test

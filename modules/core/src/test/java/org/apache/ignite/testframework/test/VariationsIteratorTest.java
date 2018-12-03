@@ -22,10 +22,14 @@ import java.util.HashSet;
 import java.util.Set;
 import junit.framework.TestCase;
 import org.apache.ignite.testframework.configvariations.VariationsIterator;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test start iterator.
  */
+@RunWith(JUnit4.class)
 public class VariationsIteratorTest extends TestCase {
     /**
      * @throws Exception If failed.

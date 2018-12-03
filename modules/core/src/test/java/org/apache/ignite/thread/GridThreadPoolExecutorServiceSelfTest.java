@@ -28,6 +28,9 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -35,6 +38,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Test for {@link IgniteThreadPoolExecutor}.
  */
 @GridCommonTest(group = "Utils")
+@RunWith(JUnit4.class)
 public class GridThreadPoolExecutorServiceSelfTest extends GridCommonAbstractTest {
     /** Thread count. */
     private static final int THREAD_CNT = 40;

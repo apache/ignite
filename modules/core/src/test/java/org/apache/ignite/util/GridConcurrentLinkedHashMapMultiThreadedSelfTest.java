@@ -34,6 +34,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIMIZED_RMV;
@@ -42,6 +45,7 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.SINGLE_Q;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.

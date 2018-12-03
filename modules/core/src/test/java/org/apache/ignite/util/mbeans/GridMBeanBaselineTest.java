@@ -28,10 +28,14 @@ import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridMBeanBaselineTest extends GridCommonAbstractTest {
     /** Client index. */
     private static final int CLIENT_IDX = 33;
