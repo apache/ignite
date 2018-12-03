@@ -2893,28 +2893,28 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             else {
                                 U.sleep(200);
 
-                                if (counter.getAndIncrement() == 5) {
-                                    TcpDiscoveryImpl impl1 = U.field(ignite().configuration().getDiscoverySpi(), "impl");
-                                    impl1.setDebugMode(true);
-                                    Object impl = U.field(log, "impl");
-                                    if(impl != null) {
-                                        Field debug = U.findField(impl.getClass(), "debug");
-                                        if (debug != null) {
-                                            log.info("TURN ON DEBUG");
-                                            try {
-                                                debug.setBoolean(impl, true);
-                                            }
-                                            catch (Exception e1) {
-                                                log.error("TURN ", e1);
-                                            }
-                                        }
-                                    }
-                                }
-
-                                UUID id = node.id();
-                                log.info("NODE SPI : " + getSpiContext().node(id));
-                                TcpDiscoverySpi spi = (TcpDiscoverySpi)ignite().configuration().getDiscoverySpi();
-                                log.info("DISCOVERY SPI : " + spi.getNode0(node.id()));
+//                                if (counter.getAndIncrement() == 5) {
+//                                    TcpDiscoveryImpl impl1 = U.field(ignite().configuration().getDiscoverySpi(), "impl");
+//                                    impl1.setDebugMode(true);
+//                                    Object impl = U.field(log, "impl");
+//                                    if(impl != null) {
+//                                        Field debug = U.findField(impl.getClass(), "debug");
+//                                        if (debug != null) {
+//                                            log.info("TURN ON DEBUG");
+//                                            try {
+//                                                debug.setBoolean(impl, true);
+//                                            }
+//                                            catch (Exception e1) {
+//                                                log.error("TURN ", e1);
+//                                            }
+//                                        }
+//                                    }
+//                                }
+//
+//                                UUID id = node.id();
+//                                log.info("NODE SPI : " + getSpiContext().node(id));
+//                                TcpDiscoverySpi spi = (TcpDiscoverySpi)ignite().configuration().getDiscoverySpi();
+//                                log.info("DISCOVERY SPI : " + spi.getNode0(node.id()));
 
                                 if (getSpiContext().node(node.id()) == null)
                                     throw new ClusterTopologyCheckedException("Failed to send message " +
@@ -2927,23 +2927,26 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     catch (Throwable e) {
                         fut.onDone(e);
 
-                        if (counter.getAndIncrement() == 5) {
-                        TcpDiscoveryImpl impl1 = U.field(ignite().configuration().getDiscoverySpi(), "impl");
-                        impl1.setDebugMode(true);
-                            Object impl = U.field(log, "impl");
-                            if(impl != null) {
-                                Field debug = U.findField(impl.getClass(), "debug");
-                                if (debug != null) {
-                                    log.info("TURN ON DEBUG");
-                                    try {
-                                        debug.setBoolean(impl, true);
-                                    }
-                                    catch (Exception e1) {
-                                        log.error("TURN ", e1);
-                                    }
-                                }
-                            }
-                        }
+                        ((TcpDiscoverySpi)ignite().configuration().getDiscoverySpi()).dumpDebugInfo();
+//                        if (counter.getAndIncrement() > 10) {
+
+//                            ((TcpDiscoverySpi)ignite().configuration().getDiscoverySpi()).dumpDebugInfo();
+//                        TcpDiscoveryImpl impl1 = U.field(ignite().configuration().getDiscoverySpi(), "impl");
+//                        impl1.setDebugMode(true);
+//                            Object impl = U.field(log, "impl");
+//                            if(impl != null) {
+//                                Field debug = U.findField(impl.getClass(), "debug");
+//                                if (debug != null) {
+//                                    log.info("TURN ON DEBUG");
+//                                    try {
+//                                        debug.setBoolean(impl, true);
+//                                    }
+//                                    catch (Exception e1) {
+//                                        log.error("TURN ", e1);
+//                                    }
+//                                }
+//                            }
+//                        }
 
                         UUID id = node.id();
                         log.info("NODE SPI : " + getSpiContext().node(id));

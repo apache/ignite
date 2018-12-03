@@ -2048,6 +2048,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 sockTimeout = DFLT_SOCK_TIMEOUT;
 
             impl = new ServerImpl(this);
+            impl.setDebugMode(true);
         }
 
         metricsUpdateFreq = ignite.configuration().getMetricsUpdateFrequency();

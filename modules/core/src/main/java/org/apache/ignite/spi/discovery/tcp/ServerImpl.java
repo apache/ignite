@@ -5666,10 +5666,12 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void sendMetricsUpdateMessage() {
             long elapsed = (lastTimeMetricsUpdateMsgSent + spi.metricsUpdateFreq) - U.currentTimeMillis();
 
-            log.info("sendMetricsUpdateMessage : " + elapsed + " : " + isLocalNodeCoordinator());
+//            debugLogQ.add("sendMetricsUpdateMessage : " + elapsed + " : " + isLocalNodeCoordinator());
 
             if (elapsed > 0 || !isLocalNodeCoordinator())
                 return;
+
+            debugLogQ.add("sendMetricsUpdateMessage : " + elapsed);
 
             TcpDiscoveryMetricsUpdateMessage msg = new TcpDiscoveryMetricsUpdateMessage(getConfiguredNodeId());
 
@@ -5692,10 +5694,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             long elapsed = (updateTime + metricsCheckFreq) - U.currentTimeMillis();
 
-            log.info("checkMetricsReceiving : " + elapsed);
+
 
             if (elapsed > 0)
                 return;
+
+            debugLogQ.add("checkMetricsReceiving : status ceck");
 
             msgWorker.addMessage(new TcpDiscoveryStatusCheckMessage(locNode, null));
 
@@ -5732,7 +5736,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (hasRemoteSrvNodes == null)
                 hasRemoteSrvNodes = ring.hasRemoteServerNodes();
 
-            log.info("CheckCOnnection : " + hasRemoteSrvNodes);
+            debugLogQ.add("CheckCOnnection : " + hasRemoteSrvNodes);
 
             if (hasRemoteSrvNodes) {
                 sendMessageAcrossRing(new TcpDiscoveryConnectionCheckMessage(locNode));
