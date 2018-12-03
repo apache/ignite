@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processor.security.client;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientAuthorizationException;
@@ -32,13 +35,13 @@ import org.apache.ignite.internal.processor.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processor.security.TestSecurityData;
 import org.apache.ignite.internal.processor.security.TestSecurityPluginConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.plugin.security.SecurityPermission;
 
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
+import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.hamcrest.core.StringContains.containsString;
@@ -54,6 +57,9 @@ public class ThinClientSecurityTest extends AbstractSecurityTest {
     /** Client that has system permissions. */
     private static final String CLIENT_SYS_PERM = "client_sys_perm";
 
+    /** Client that has system permissions. */
+    private static final String CLIENT_CACHE_TASK_OPER = "client_task_oper";
+
     /** Cache. */
     private static final String CACHE = "TEST_CACHE";
 
@@ -63,8 +69,13 @@ public class ThinClientSecurityTest extends AbstractSecurityTest {
     /** Cache to test system oper permissions. */
     private static final String SYS_OPER_CACHE = "SYS_OPER_TEST_CACHE";
 
-    /** Empty array of permissions. */
-    private static final SecurityPermission[] EMPTY_PERMS = new SecurityPermission[0];
+    /** Remove all task name. */
+    public static final String REMOVE_ALL_TASK =
+        "org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheAdapter$RemoveAllTask";
+
+    /** Clear task name. */
+    public static final String CLEAR_TASK =
+        "org.apache.ignite.internal.processors.cache.GridCacheAdapter$ClearTask";
 
     /**
      * @param clientData Array of client security data.
@@ -121,6 +132,14 @@ public class ThinClientSecurityTest extends AbstractSecurityTest {
                     builder()
                         .appendSystemPermissions(CACHE_CREATE, CACHE_DESTROY)
                         .build()
+                ),
+                new TestSecurityData(
+                    CLIENT_CACHE_TASK_OPER,
+                    builder()
+                        .appendCachePermissions(CACHE, CACHE_REMOVE)
+                        .appendTaskPermissions(REMOVE_ALL_TASK, TASK_EXECUTE)
+                        .appendTaskPermissions(CLEAR_TASK, TASK_EXECUTE)
+                        .build()
                 )
             )
         );
@@ -131,22 +150,69 @@ public class ThinClientSecurityTest extends AbstractSecurityTest {
     /**
      * @throws Exception If error occurs.
      */
-    public void testCacheOperations() throws Exception {
+    public void testCacheSinglePermOperations() throws Exception {
         executeOperation(c -> c.cache(CACHE).put("key", "value"));
         executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).put("key", "value"));
+
+        Map<String, String> map = new HashMap<>();
+
+        map.put("key", "value");
+        executeOperation(c -> c.cache(CACHE).putAll(map));
+        executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).putAll(map));
 
         executeOperation(c -> c.cache(CACHE).get("key"));
         executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).get("key"));
 
+        executeOperation(c -> c.cache(CACHE).getAll(Collections.singleton("key")));
+        executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).getAll(Collections.singleton("key")));
+
+        executeOperation(c -> c.cache(CACHE).containsKey("key"));
+        executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).containsKey("key"));
+
         executeOperation(c -> c.cache(CACHE).remove("key"));
         executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).remove("key"));
-
     }
 
     /**
      * @throws Exception If error occurs.
      */
-    /*public void testSysOperation() throws Exception {
+    public void testCacheMultiplePermOperations() throws Exception {
+        executeOperation(c -> c.cache(CACHE).replace("key", "value"));
+        executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).replace("key", "value"));
+
+        executeOperation(c -> c.cache(CACHE).putIfAbsent("key", "value"));
+        executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).putIfAbsent("key", "value"));
+
+        executeOperation(c -> c.cache(CACHE).getAndPut("key", "value"));
+        executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).getAndPut("key", "value"));
+
+        executeOperation(c -> c.cache(CACHE).getAndRemove("key"));
+        executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).getAndRemove("key"));
+
+        executeOperation(c -> c.cache(CACHE).getAndReplace("key", "value"));
+        executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).getAndReplace("key", "value"));
+    }
+
+    /**
+     * That test shows wrong case when client has permission for a remove operation but a removeAll operation is
+     * forbidden for it.
+     *
+     * @throws Exception If error occurs.
+     */
+    public void testCacheTaskPermOperations() throws Exception {
+        try (IgniteClient client = startClient(CLIENT_CACHE_TASK_OPER)) {
+            client.cache(CACHE).removeAll();
+            client.cache(CACHE).clear();
+        }
+
+        executeForbiddenOperation(c -> c.cache(CACHE).removeAll());
+        executeForbiddenOperation(c -> c.cache(CACHE).clear());
+    }
+
+    /**
+     * @throws Exception If error occurs.
+     */
+    public void testSysOperation() throws Exception {
         try (IgniteClient sysPrmClnt = startClient(CLIENT_SYS_PERM)) {
             assertThat(sysPrmClnt.createCache(SYS_OPER_CACHE), notNullValue());
 
@@ -164,7 +230,7 @@ public class ThinClientSecurityTest extends AbstractSecurityTest {
 
         executeForbiddenOperation(c -> c.createCache(SYS_OPER_CACHE));
         executeForbiddenOperation(c -> c.destroyCache(CACHE));
-    }*/
+    }
 
     /**
      * @param cons Consumer.

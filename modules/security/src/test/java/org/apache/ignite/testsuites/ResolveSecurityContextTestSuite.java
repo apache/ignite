@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processor.security.client.ThinClientSecurityTe
 import org.apache.ignite.internal.processor.security.compute.ComputeTaskSecurityTest;
 import org.apache.ignite.internal.processor.security.compute.DistributedClosureSecurityTest;
 import org.apache.ignite.internal.processor.security.compute.ExecuteServiceTaskSecurityTest;
+import org.apache.ignite.internal.processor.security.messaging.IgniteMessagingTest;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -56,6 +57,7 @@ public class ResolveSecurityContextTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgniteDataStreamerSecurityTest.class));
         suite.addTest(new TestSuite(LoadCacheSecurityTest.class));
         suite.addTest(new TestSuite(ThinClientSecurityTest.class));
+        suite.addTest(new TestSuite(IgniteMessagingTest.class));
 
         return suite;
     }

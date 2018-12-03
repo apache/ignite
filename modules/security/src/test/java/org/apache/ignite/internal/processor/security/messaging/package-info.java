@@ -15,30 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client.cache;
-
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
-import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-
 /**
- * Remove keys request.
+ * Contains security tests for Ignite Messaging.
  */
-public class ClientCacheRemoveKeysRequest extends ClientCacheKeysRequest {
-    /**
-     * Constructor.
-     *
-     * @param reader Reader.
-     */
-    public ClientCacheRemoveKeysRequest(BinaryRawReaderEx reader) {
-        super(reader);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public ClientResponse process(ClientConnectionContext ctx) {
-        cache(ctx).removeAll(keys());
-
-        return super.process(ctx);
-    }
-}
+package org.apache.ignite.internal.processor.security.messaging;

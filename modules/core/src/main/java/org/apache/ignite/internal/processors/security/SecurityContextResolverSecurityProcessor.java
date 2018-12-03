@@ -27,7 +27,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -90,12 +89,12 @@ public class SecurityContextResolverSecurityProcessor extends GridSecurityProces
     }
 
     /**
-     * Get current initiator node's id.
+     * Get current initiator data.
      *
      * @return Initiator node's id.
      */
-    private UUID currentRemoteInitiatorId() {
-        return GridIoManager.currentRemoteInitiator();
+    private RemoteInitiator currentRemoteInitiator() {
+        return CurrentRemoteInitiator.get();
     }
 
     /**
@@ -117,7 +116,7 @@ public class SecurityContextResolverSecurityProcessor extends GridSecurityProces
         else {
             /*If the SecurityContext was passed and there is a current remote initiator
             then we have got an invalid case.*/
-            assert currentRemoteInitiatorId() == null;
+            assert currentRemoteInitiator() == null;
         }
 
         assert res != null;
@@ -133,16 +132,22 @@ public class SecurityContextResolverSecurityProcessor extends GridSecurityProces
     private SecurityContext currentRemoteInitiatorContext() {
         SecurityContext secCtx = null;
 
-        final UUID nodeId = currentRemoteInitiatorId();
+        final RemoteInitiator cur = currentRemoteInitiator();
 
-        if (nodeId != null) {
-            secCtx = secCtxs.computeIfAbsent(nodeId,
-                new Function<UUID, SecurityContext>() {
-                    @Override public SecurityContext apply(UUID uuid) {
-                        return nodeSecurityContext(ctx.discovery().node(nodeId));
+        if (cur != null) {
+            if (cur.securityContext() != null)
+                secCtx = cur.securityContext();
+            else {
+                UUID nodeId = cur.nodeId();
 
-                    }
-                });
+                secCtx = secCtxs.computeIfAbsent(nodeId,
+                    new Function<UUID, SecurityContext>() {
+                        @Override public SecurityContext apply(UUID uuid) {
+                            return nodeSecurityContext(ctx.discovery().node(nodeId));
+
+                        }
+                    });
+            }
         }
 
         return secCtx;

@@ -70,7 +70,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccMessage;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
-import org.apache.ignite.internal.processors.security.CurrentRemoteInitiatorIdentifier;
+import org.apache.ignite.internal.processors.security.CurrentRemoteInitiator;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
@@ -140,9 +140,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** Current IO policy. */
     private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocal<>();
-
-    /** Current remote initiator node. */
-    private static final CurrentRemoteInitiatorIdentifier CUR_RMT_INITIATOR = new CurrentRemoteInitiatorIdentifier();
 
     /** Listeners by topic. */
     private final ConcurrentMap<Object, GridMessageListener> lsnrMap = new ConcurrentHashMap<>();
@@ -1568,7 +1565,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (change)
             CUR_PLC.set(plc);
 
-        CUR_RMT_INITIATOR.set(ctx, nodeId);
+        CurrentRemoteInitiator.set(ctx, nodeId);
 
         try {
             lsnr.onMessage(nodeId, msg, plc);
@@ -1577,22 +1574,15 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             if (change)
                 CUR_PLC.set(oldPlc);
 
-            CUR_RMT_INITIATOR.remove(ctx, nodeId);
+            CurrentRemoteInitiator.remove(ctx, nodeId);
         }
     }
 
     /**
      * @return Current IO policy
      */
-    @Nullable public static Byte currentPolicy() {
+    public static @Nullable Byte currentPolicy() {
         return CUR_PLC.get();
-    }
-
-    /**
-     * @return Current near node's id.
-     */
-    @Nullable public static UUID currentRemoteInitiator(){
-        return CUR_RMT_INITIATOR.get();
     }
 
     /**
@@ -1993,12 +1983,17 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
     }
 
+    public void addUserMessageListener(final @Nullable Object topic, final @Nullable IgniteBiPredicate<UUID, ?> p) {
+        addUserMessageListener(topic, p, null);
+    }
+
     /**
      * @param topic Topic to subscribe to.
      * @param p Message predicate.
      */
     @SuppressWarnings("unchecked")
-    public void addUserMessageListener(@Nullable final Object topic, @Nullable final IgniteBiPredicate<UUID, ?> p) {
+    public void addUserMessageListener(final @Nullable Object topic,
+        final @Nullable IgniteBiPredicate<UUID, ?> p, final @Nullable UUID nodeId) {
         if (p != null) {
             try {
                 if (p instanceof PlatformMessageFilter)
@@ -2007,7 +2002,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     ctx.resource().injectGeneric(p);
 
                 addMessageListener(TOPIC_COMM_USER,
-                    new GridUserMessageListener(topic, (IgniteBiPredicate<UUID, Object>)p));
+                    new GridUserMessageListener(topic, (IgniteBiPredicate<UUID, Object>)p, nodeId));
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -2446,6 +2441,21 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         /** User message topic. */
         private final Object topic;
 
+        private final UUID initNodeId;
+
+        /**
+         * @param topic User topic.
+         * @param predLsnr Predicate listener.
+         * @param initNodeId Node id that registered given listener.
+         * @throws IgniteCheckedException If failed to inject resources to predicates.
+         */
+        GridUserMessageListener(@Nullable Object topic, @Nullable IgniteBiPredicate<UUID, Object> predLsnr, @Nullable UUID initNodeId)
+            throws IgniteCheckedException {
+            this.topic = topic;
+            this.predLsnr = predLsnr;
+            this.initNodeId = initNodeId;
+        }
+
         /**
          * @param topic User topic.
          * @param predLsnr Predicate listener.
@@ -2453,8 +2463,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
          */
         GridUserMessageListener(@Nullable Object topic, @Nullable IgniteBiPredicate<UUID, Object> predLsnr)
             throws IgniteCheckedException {
-            this.topic = topic;
-            this.predLsnr = predLsnr;
+            this(topic, predLsnr, null);
         }
 
         /** {@inheritDoc} */
@@ -2551,8 +2560,15 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                 if (msgBody != null) {
                     if (predLsnr != null) {
-                        if (!predLsnr.apply(nodeId, msgBody))
-                            removeMessageListener(TOPIC_COMM_USER, this);
+                        CurrentRemoteInitiator.set(ctx, initNodeId);
+
+                        try {
+                            if (!predLsnr.apply(nodeId, msgBody))
+                                removeMessageListener(TOPIC_COMM_USER, this);
+                        }
+                        finally {
+                            CurrentRemoteInitiator.remove(ctx, initNodeId);
+                        }
                     }
                 }
             }

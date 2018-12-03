@@ -15,30 +15,45 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client.cache;
+package org.apache.ignite.internal.processors.security;
 
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
-import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import java.util.UUID;
 
 /**
- * Remove keys request.
+ * Remoute initiator data.
  */
-public class ClientCacheRemoveKeysRequest extends ClientCacheKeysRequest {
+public class RemoteInitiator {
+    /** Node id. */
+    private UUID nodeId;
+
+    /** Security context. */
+    private SecurityContext secCtx;
+
     /**
-     * Constructor.
-     *
-     * @param reader Reader.
+     * @param nodeId Node id.
      */
-    public ClientCacheRemoveKeysRequest(BinaryRawReaderEx reader) {
-        super(reader);
+    public RemoteInitiator(UUID nodeId) {
+        this.nodeId = nodeId;
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public ClientResponse process(ClientConnectionContext ctx) {
-        cache(ctx).removeAll(keys());
+    /**
+     * @param secCtx Security context.
+     */
+    public RemoteInitiator(SecurityContext secCtx) {
+        this.secCtx = secCtx;
+    }
 
-        return super.process(ctx);
+    /**
+     * @return Node id.
+     */
+    public UUID nodeId() {
+        return nodeId;
+    }
+
+    /**
+     * @return Security context.
+     */
+    public SecurityContext securityContext() {
+        return secCtx;
     }
 }

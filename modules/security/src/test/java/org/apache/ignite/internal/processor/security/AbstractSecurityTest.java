@@ -5,6 +5,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -15,6 +16,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class AbstractSecurityTest extends GridCommonAbstractTest {
     /** Test security processor. */
     public static final String TEST_SECURITY_PROCESSOR = "org.apache.ignite.internal.processor.security.TestSecurityProcessor";
+
+    /** Empty array of permissions. */
+    protected static final SecurityPermission[] EMPTY_PERMS = new SecurityPermission[0];
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {

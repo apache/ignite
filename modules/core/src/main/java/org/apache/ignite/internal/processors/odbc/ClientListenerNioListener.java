@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.processors.security.CurrentRemoteInitiator;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContextHolder;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -167,6 +168,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
             AuthorizationContext authCtx = connCtx.authorizationContext();
             SecurityContext oldSecCtx = SecurityContextHolder.push(connCtx.securityContext());
 
+            CurrentRemoteInitiator.set(connCtx.securityContext());
+
             if (authCtx != null)
                 AuthorizationContext.context(authCtx);
 
@@ -175,6 +178,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
             }
             finally {
                 SecurityContextHolder.pop(oldSecCtx);
+
+                CurrentRemoteInitiator.remove();
 
                 if (authCtx != null)
                     AuthorizationContext.clear();

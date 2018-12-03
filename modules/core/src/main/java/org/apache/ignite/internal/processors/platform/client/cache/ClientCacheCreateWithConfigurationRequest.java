@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
-import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
  * Cache create with configuration request.
@@ -50,8 +49,6 @@ public class ClientCacheCreateWithConfigurationRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.CACHE_CREATE);
-
         try {
             // Use security exception handler since the code authorizes "enable on-heap cache" permission
             runWithSecurityExceptionHandler(() -> ctx.kernalContext().grid().createCache(cacheCfg));

@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import java.util.Map;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-
-import java.util.Map;
-import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
  * GetAll request.
@@ -40,8 +38,6 @@ public class ClientCacheGetAllRequest extends ClientCacheKeysRequest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.CACHE_READ);
-
         Map val = cache(ctx).getAll(keys());
 
         return new ClientCacheGetAllResponse(requestId(), val);
