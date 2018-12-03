@@ -4353,6 +4353,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param cacheName Cache to check.
+     * @return Cache is under restarting.
+     */
+    public boolean isCacheRestarting(String cacheName) {
+        return cachesInfo.isRestarting(cacheName);
+    }
+
+    /**
      * @param node Joining node to validate.
      * @return Node validation result if there was an issue with the joining node, {@code null} otherwise.
      */

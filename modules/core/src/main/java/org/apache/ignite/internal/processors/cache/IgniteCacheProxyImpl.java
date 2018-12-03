@@ -214,9 +214,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * @return Context.
      */
     @Override public GridCacheContext<K, V> context() {
-        GridCacheContext<K, V> ctx = getContextSafe();
-
-        return ctx;
+        return getContextSafe();
     }
 
     /**
@@ -2208,13 +2206,22 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * Throws {@code IgniteCacheRestartingException} if proxy is restarting.
      */
     public void checkRestart() {
+       checkRestart(false);
+    }
+
+    /**
+     * Throws {@code IgniteCacheRestartingException} if proxy is restarting.
+     */
+    public void checkRestart(boolean noWait) {
         RestartFuture currentFut = restartFut.get();
 
         if (currentFut != null) {
             try {
-                currentFut.get(1, TimeUnit.SECONDS);
+                if (!noWait) {
+                    currentFut.get(1, TimeUnit.SECONDS);
 
-                return;
+                    return;
+                }
             }
             catch (IgniteCheckedException ignore) {
                 //do nothing

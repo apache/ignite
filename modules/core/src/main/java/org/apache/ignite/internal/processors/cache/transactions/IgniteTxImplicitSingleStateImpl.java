@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
@@ -148,7 +149,10 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
         cacheCtx.topology().readLock();
 
         if (cacheCtx.topology().stopping()) {
-            fut.onDone(new CacheStoppedException(cacheCtx.name()));
+            fut.onDone(
+                cctx.cache().isCacheRestarting(cacheCtx.name())?
+                    new IgniteCacheRestartingException(null, cacheCtx.name()):
+                    new CacheStoppedException(cacheCtx.name()));
 
             return null;
         }

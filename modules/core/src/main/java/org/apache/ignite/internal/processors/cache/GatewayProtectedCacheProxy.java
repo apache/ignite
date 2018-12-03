@@ -2250,8 +2250,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
      * @return Cache Gateway.
      */
     @Nullable private GridCacheGateway<K, V> gate() {
-        GridCacheContext<K, V> cacheContext = delegate instanceof IgniteCacheProxyImpl ?
-            ((IgniteCacheProxyImpl)delegate).context0() : delegate.context();
+        GridCacheContext<K, V> cacheContext = delegate.context();
 
         return cacheContext != null ? cacheContext.gate() : null;
     }
@@ -2315,9 +2314,9 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             boolean isCacheProxy = delegate instanceof IgniteCacheProxyImpl;
 
             if (isCacheProxy)
-                ((IgniteCacheProxyImpl)delegate).checkRestart();
+                ((IgniteCacheProxyImpl)delegate).checkRestart(true);
 
-            throw new RuntimeException(e); // If checkRestart already didn't.
+            throw e; // If checkRestart already didn't.
         }
     }
 

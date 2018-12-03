@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -288,7 +289,10 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         nonLocCtx.topology().readLock();
 
         if (nonLocCtx.topology().stopping()) {
-            fut.onDone(new CacheStoppedException(nonLocCtx.name()));
+            fut.onDone(
+                cctx.cache().isCacheRestarting(nonLocCtx.name())?
+                    new IgniteCacheRestartingException(null, nonLocCtx.name()):
+                    new CacheStoppedException(nonLocCtx.name()));
 
             return null;
         }
