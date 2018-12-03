@@ -129,6 +129,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             ctx.wal(),
             globalRemoveId(),
             grp.groupId(),
+            grp.sharedGroup(),
             PageIdAllocator.INDEX_PARTITION,
             PageIdAllocator.FLAG_IDX,
             reuseList,
@@ -147,7 +148,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             try {
                 final String name = "PendingEntries";
 
-                RootPage pendingRootPage = indexStorage.getOrAllocateForTree(name);
+                RootPage pendingRootPage = indexStorage.allocateIndex(name);
 
                 pendingEntries = new PendingEntriesTree(
                     grp,
@@ -713,19 +714,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
-    @Override public RootPage rootPageForIndex(int cacheId, String idxName) throws IgniteCheckedException {
-        if (grp.sharedGroup())
-            idxName = Integer.toString(cacheId) + "_" + idxName;
-
-        return indexStorage.getOrAllocateForTree(idxName);
+    @Override public RootPage rootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException {
+        return indexStorage.allocateCacheIndex(cacheId, idxName, segment);
     }
 
     /** {@inheritDoc} */
-    @Override public void dropRootPageForIndex(int cacheId, String idxName) throws IgniteCheckedException {
-        if (grp.sharedGroup())
-            idxName = Integer.toString(cacheId) + "_" + idxName;
-
-        indexStorage.dropRootPage(idxName);
+    @Override public void dropRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException {
+        indexStorage.dropCacheIndex(cacheId, idxName, segment);
     }
 
     /** {@inheritDoc} */
@@ -1583,6 +1578,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 CacheDataStore delegate0 = init0(true);
 
                 return delegate0 == null ? 0 : delegate0.fullSize();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isEmpty() {
+            try {
+                CacheDataStore delegate0 = init0(true);
+
+                return delegate0 == null || delegate0.isEmpty();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
