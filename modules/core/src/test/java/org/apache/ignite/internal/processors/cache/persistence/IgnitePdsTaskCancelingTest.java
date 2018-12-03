@@ -64,7 +64,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
     private static final AtomicBoolean failure = new AtomicBoolean(false);
 
     /** Number of executing tasks. */
-    private static final int NUM_TASKS = 8;
+    private static final int NUM_TASKS = 16;
 
     /** Page size. */
     private static final int PAGE_SIZE = 2048;
@@ -86,6 +86,9 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
         ));
 
         cfg.setDataStorageConfiguration(getDataStorageConfiguration());
+
+        // Set the thread pool size according to NUM_TASKS.
+        cfg.setPublicThreadPoolSize(16);
 
         return cfg;
     }
