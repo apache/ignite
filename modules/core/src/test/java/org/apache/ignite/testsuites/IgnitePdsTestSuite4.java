@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.distributed.CachePageWriteLoc
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRecoveryAfterFileCorruptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTaskCancelingTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCacheWalDisabledOnRebalancingTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageEvictionDuringPartitionClearTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPartitionPreloadTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsTransactionsHangTest;
@@ -52,6 +53,8 @@ public class IgnitePdsTestSuite4 extends TestSuite {
         suite.addTestSuite(ResetLostPartitionTest.class);
 
         suite.addTestSuite(CachePageWriteLockUnlockTest.class);
+
+        suite.addTestSuite(IgnitePdsCacheWalDisabledOnRebalancingTest.class);
 
         return suite;
     }
