@@ -21,10 +21,14 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheKeepBinaryIterationNearEnabledTest extends CacheKeepBinaryIterationTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration<Object, Object> cacheConfiguration(
@@ -40,14 +44,14 @@ public class CacheKeepBinaryIterationNearEnabledTest extends CacheKeepBinaryIter
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testMvccTxOnHeap() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+    @Test
+    @Override public void testMvccTxOnHeap() throws Exception {
+            fail("https://issues.apache.org/jira/browse/IGNITE-7187");
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testMvccTxOnHeapLocalEntries() throws Exception {
+    @Test
+    @Override public void testMvccTxOnHeapLocalEntries() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-7187");
     }
 }

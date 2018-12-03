@@ -27,6 +27,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -34,6 +37,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * Continuous queries tests for replicated cache.
  */
+@RunWith(JUnit4.class)
 public class GridCacheContinuousQueryReplicatedSelfTest extends GridCacheContinuousQueryAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {

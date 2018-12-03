@@ -52,10 +52,14 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Indexing Spi query only test
  */
+@RunWith(JUnit4.class)
 public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
     private IndexingSpi indexingSpi;
 

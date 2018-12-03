@@ -19,12 +19,16 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Continuous queries tests for partitioned cache.
  */
+@RunWith(JUnit4.class)
 public class GridCacheContinuousQueryPartitionedOnlySelfTest extends GridCacheContinuousQueryAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected NearCacheConfiguration nearConfiguration() {
@@ -42,8 +46,8 @@ public class GridCacheContinuousQueryPartitionedOnlySelfTest extends GridCacheCo
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testInternalKey() throws Exception {
+    @Test
+    @Override public void testInternalKey() throws Exception {
         // Disabled since data structures are not allowed in partitioned only mode.
     }
 }

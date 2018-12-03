@@ -29,6 +29,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import java.util.concurrent.TimeUnit;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CachePeekMode.OFFHEAP;
 import static org.apache.ignite.cache.CachePeekMode.ONHEAP;
@@ -36,6 +39,7 @@ import static org.apache.ignite.cache.CachePeekMode.ONHEAP;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class ScanQueryOffheapExpiryPolicySelfTest extends GridCommonAbstractTest {
 
     /** Nodes count. */
