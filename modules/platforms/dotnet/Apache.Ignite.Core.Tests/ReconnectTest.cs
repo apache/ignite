@@ -207,6 +207,7 @@ namespace Apache.Ignite.Core.Tests
 
             Ignition.Stop(server.Name, true);
             Ignition.Start(serverCfg);
+            evt.Wait();
 
             var cache1 = client.GetCache<int, int>(CacheName);
             cache1[2] = 2;
