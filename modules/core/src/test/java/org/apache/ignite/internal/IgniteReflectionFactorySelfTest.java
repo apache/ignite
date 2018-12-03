@@ -22,10 +22,14 @@ import java.util.HashMap;
 import java.util.Map;
 import junit.framework.TestCase;
 import org.apache.ignite.configuration.IgniteReflectionFactory;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link IgniteReflectionFactory} class.
  */
+@RunWith(JUnit4.class)
 public class IgniteReflectionFactorySelfTest extends TestCase {
     /**
      * @throws Exception If failed.

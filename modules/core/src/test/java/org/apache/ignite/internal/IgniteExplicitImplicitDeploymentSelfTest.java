@@ -46,11 +46,15 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTest {
     /** */
     public IgniteExplicitImplicitDeploymentSelfTest() {

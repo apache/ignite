@@ -29,12 +29,16 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Check logging local node metrics
  */
 @SuppressWarnings({"ProhibitedExceptionDeclared"})
 @GridCommonTest(group = "Kernal")
+@RunWith(JUnit4.class)
 public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
     /** Executor name for setExecutorConfiguration */
     private static final String CUSTOM_EXECUTOR_0 = "Custom executor 0";

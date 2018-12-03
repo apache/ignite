@@ -49,10 +49,14 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests client to be able restore connection to cluster if coordination is not available.
  */
+@RunWith(JUnit4.class)
 public class IgniteClientRejoinTest extends GridCommonAbstractTest {
     /** Block. */
     private volatile boolean block;

@@ -25,10 +25,14 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test to reproduce IGNITE-4060.
  */
+@RunWith(JUnit4.class)
 public class IgniteRoundRobinErrorAfterClientReconnectTest extends GridCommonAbstractTest {
     /** Server index. */
     private static final int SRV_IDX = 0;

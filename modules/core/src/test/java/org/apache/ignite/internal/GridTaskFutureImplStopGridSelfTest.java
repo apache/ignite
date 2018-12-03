@@ -38,11 +38,15 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for task future when grid stops.
  */
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int WAIT_TIME = 5000;

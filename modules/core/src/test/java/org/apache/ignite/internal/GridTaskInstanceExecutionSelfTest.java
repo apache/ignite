@@ -30,12 +30,16 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Task instance execution test.
  */
 @SuppressWarnings("PublicInnerClass")
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class GridTaskInstanceExecutionSelfTest extends GridCommonAbstractTest {
     /** */
     private static Object testState;

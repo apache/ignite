@@ -29,11 +29,15 @@ import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.messaging.MessagingListenActor;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link org.apache.ignite.IgniteCluster}.
  */
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class GridSelfTest extends ClusterGroupAbstractTest {
     /** Nodes count. */
     private static final int NODES_CNT = 4;

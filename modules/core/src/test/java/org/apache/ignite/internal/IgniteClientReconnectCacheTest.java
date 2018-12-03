@@ -74,6 +74,9 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -93,6 +96,7 @@ import static org.junit.Assert.assertNotEquals;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstractTest {
     /** */
     private static final int SRV_CNT = 3;

@@ -26,10 +26,14 @@ import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteClientReconnectComputeTest extends IgniteClientReconnectAbstractTest {
     /** {@inheritDoc} */
     @Override protected int serverCount() {

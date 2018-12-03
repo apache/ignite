@@ -24,10 +24,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.GridDebug;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests leaks on node restart with enabled persistence.
  */
+@RunWith(JUnit4.class)
 public class MemoryLeaksOnRestartNodeTest extends GridCommonAbstractTest {
     /** Heap dump file name. */
     private static final String HEAP_DUMP_FILE_NAME = "test.hprof";

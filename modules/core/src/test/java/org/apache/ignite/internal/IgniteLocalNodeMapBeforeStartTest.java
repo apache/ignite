@@ -26,6 +26,9 @@ import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_STOP;
@@ -35,6 +38,7 @@ import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_STOP;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteLocalNodeMapBeforeStartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.

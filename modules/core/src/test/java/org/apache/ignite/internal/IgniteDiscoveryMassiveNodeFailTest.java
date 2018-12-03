@@ -38,12 +38,16 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests checks case when one node is unable to connect to next in a ring,
  * but those nodes are not experiencing any connectivity troubles between
  * each other.
  */
+@RunWith(JUnit4.class)
 public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
     /** */
     private static final int FAILURE_DETECTION_TIMEOUT = 5_000;

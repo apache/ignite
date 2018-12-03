@@ -29,6 +29,9 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVTS_DISCOVERY;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -40,6 +43,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
  * events while stopping one them.
  */
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class GridSameVmStartupSelfTest extends GridCommonAbstractTest {
     /**
      *

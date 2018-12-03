@@ -33,6 +33,9 @@ import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
@@ -40,6 +43,7 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientReconnectAbstractTest {
     /** */
     private static volatile CountDownLatch latch;

@@ -23,10 +23,14 @@ import org.apache.ignite.GridTestIoUtils;
 import org.apache.ignite.IgniteExternalizableAbstractTest;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Grid topic externalization test.
  */
+@RunWith(JUnit4.class)
 public class GridTopicExternalizableSelfTest extends IgniteExternalizableAbstractTest {
     /** */
     private static final IgniteUuid A_GRID_UUID = IgniteUuid.randomUuid();

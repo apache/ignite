@@ -26,10 +26,14 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.messaging.MessagingListenActor;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link org.apache.ignite.messaging.MessagingListenActor}.
  */
+@RunWith(JUnit4.class)
 public class GridListenActorSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int MSG_QTY = 10;

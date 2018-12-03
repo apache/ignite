@@ -33,11 +33,15 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Task execution test.
  */
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
     /** Grid instance. */
     private Ignite ignite;

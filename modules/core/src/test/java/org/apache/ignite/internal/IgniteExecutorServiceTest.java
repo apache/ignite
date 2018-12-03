@@ -32,11 +32,15 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Grid distributed executor test.
  */
 @GridCommonTest(group = "Thread Tests")
+@RunWith(JUnit4.class)
 public class IgniteExecutorServiceTest extends GridCommonAbstractTest {
     /** */
     public IgniteExecutorServiceTest() {

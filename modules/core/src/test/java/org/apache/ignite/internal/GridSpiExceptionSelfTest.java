@@ -36,11 +36,15 @@ import org.apache.ignite.spi.eventstorage.EventStorageSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests exceptions that are thrown by event storage and deployment spi.
  */
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String TEST_MSG = "Test exception message";
