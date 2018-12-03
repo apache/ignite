@@ -798,6 +798,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             // Race is possible when serialization is started before reconnect and finished after reconnect,
             // meta won't be sent to cluster because it is assumed to be known, but operation will succeed.
             // We don't support this use case. Users should handle reconnect events properly.
+            
+            // TODO: Another fix is to re-send all cached meta? This will eliminate the race?
             foreach (var desc in _idToDesc)
             {
                 desc.Value.ResetWriteStructure();
