@@ -31,10 +31,14 @@ import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.request.GridRestLogRequest;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * REST log command handler tests.
  */
+@RunWith(JUnit4.class)
 public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
     /** */
     private String igniteHome = System.getProperty("user.dir");

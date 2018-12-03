@@ -39,10 +39,14 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.configvariations.Parameters;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Full API services test.
  */
+@RunWith(JUnit4.class)
 public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariationsAbstractTest {
     /** Test service name. */
     private static final String SERVICE_NAME = "testService";

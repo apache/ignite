@@ -30,10 +30,14 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests service reassignment.
  */
+@RunWith(JUnit4.class)
 public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstractSelfTest {
     /** */
     private static final String SERVICE_NAME = "testService";

@@ -28,8 +28,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /** */
+@RunWith(JUnit4.class)
 public class GridServiceDeploymentCompoundFutureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.

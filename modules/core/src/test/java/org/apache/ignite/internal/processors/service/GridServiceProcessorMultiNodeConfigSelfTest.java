@@ -27,10 +27,14 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Single node services test.
  */
+@RunWith(JUnit4.class)
 public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProcessorAbstractSelfTest {
     /** Cluster singleton name. */
     private static final String CLUSTER_SINGLE = "serviceConfigSingleton";

@@ -22,10 +22,14 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.processors.service.inner.MyService;
 import org.apache.ignite.internal.processors.service.inner.MyServiceFactory;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for package-private service implementation.
  */
+@RunWith(JUnit4.class)
 public class GridServicePackagePrivateSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.

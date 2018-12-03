@@ -47,10 +47,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import javax.cache.processor.EntryProcessorException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests command handler directly.
  */
+@RunWith(JUnit4.class)
 public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
     /**
      * Constructor.

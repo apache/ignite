@@ -33,10 +33,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests that not all nodes in cluster need user's service definition (only nodes according to filter).
  */
+@RunWith(JUnit4.class)
 public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends GridCommonAbstractTest {
     /** */
     private static final String NOOP_SERVICE_CLS_NAME = "org.apache.ignite.tests.p2p.NoopService";
