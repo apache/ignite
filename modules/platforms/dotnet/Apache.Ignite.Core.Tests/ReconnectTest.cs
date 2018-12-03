@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Lifecycle;
+    using Apache.Ignite.Core.Tests.Client.Cache;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
@@ -188,7 +189,7 @@ namespace Apache.Ignite.Core.Tests
             var evt = new ManualResetEventSlim(false);
             client.ClientReconnected += (sender, args) => evt.Set();
 
-            var cache = client.GetCache<int, int>(CacheName);
+            var cache = client.GetCache<int, Person>(CacheName);
 
             Task.Factory.StartNew(() =>
             {
@@ -196,7 +197,7 @@ namespace Apache.Ignite.Core.Tests
                 {
                     try
                     {
-                        cache[1] = 1;
+                        cache[1] = new Person(1);
                     }
                     catch (Exception)
                     {
@@ -209,9 +210,9 @@ namespace Apache.Ignite.Core.Tests
             Ignition.Start(serverCfg);
             evt.Wait();
 
-            var cache1 = client.GetCache<int, int>(CacheName);
-            cache1[2] = 2;
-            Assert.AreEqual(2, cache1[2]);
+            var cache1 = client.GetCache<int, Person>(CacheName);
+            cache1[2] = new Person(2);
+            Assert.AreEqual(2, cache1[2].Id);
         }
 
         /// <summary>
