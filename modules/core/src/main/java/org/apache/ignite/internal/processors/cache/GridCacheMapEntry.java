@@ -5585,8 +5585,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         cctx.cacheId(),
                         entry.key(),
                         val,
-                       res.resultType() == ResultType.PREV_NULL ? CREATE :
-                        (res.resultType() == ResultType.REMOVED_NOT_NULL) ? DELETE : UPDATE,
+                        res.resultType() == ResultType.PREV_NULL ? CREATE :
+                            (res.resultType() == ResultType.REMOVED_NOT_NULL) ? DELETE : UPDATE,
                         tx.nearXidVersion(),
                         newVer,
                         expireTime,
@@ -6382,6 +6382,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             long updateCntr0 = entry.nextPartitionCounter(topVer, primary, updateCntr);
 
+            entry.localPartition().updateCounter(updateCntr0);
+
             entry.logUpdate(op, updated, newVer, newExpireTime, updateCntr0);
 
             if (!entry.isNear()) {
@@ -6465,6 +6467,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 cctx.store().remove(null, entry.key);
 
             long updateCntr0 = entry.nextPartitionCounter(topVer, primary, updateCntr);
+
+            entry.localPartition().updateCounter(updateCntr0);
 
             entry.logUpdate(op, null, newVer, 0, updateCntr0);
 

@@ -111,9 +111,9 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
             }
 
             Iterator<UpstreamEntry<K, V>> iter;
-            if (upstreamTransformers.isEmpty()) {
+            if (upstreamTransformers.isEmpty())
                 iter = new IteratorWindow<>(firstKeysIter, k -> k, cnt);
-            }
+
             else {
                 iter = upstreamTransformers.transform(
                     Utils.asStream(new IteratorWindow<>(firstKeysIter, k -> k, cnt))).iterator();
@@ -125,9 +125,8 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
                 iter1 = upstreamTransformers.transform(
                     Utils.asStream(new IteratorWindow<>(secondKeysIter, k -> k, cnt))).iterator();
             }
-            else {
+            else
                 iter1 = new IteratorWindow<>(secondKeysIter, k -> k, cnt);
-            }
 
             D data = cnt > 0 ? partDataBuilder.build(
                 iter1,

@@ -970,6 +970,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
+     * Returns new update counter for primary node or passed counter for backup node.
+     *
      * @param cacheId ID of cache initiated counter update.
      * @param topVer Topology version for current operation.
      * @return Next update index.
@@ -983,25 +985,24 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             assert primaryCntr != 0;
 
             nextCntr = primaryCntr;
-
-            store.updateCounter(nextCntr);
         }
 
+        // TODO FIXME
         if (grp.sharedGroup())
             grp.onPartitionCounterUpdate(cacheId, id, nextCntr, topVer, primary);
 
         // This is first update in partition, we should log partition state information for further crash recovery.
-        if (nextCntr == 1) {
-            if (grp.persistenceEnabled() && grp.walEnabled())
-                try {
-                    ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, state(), 0));
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to log partition state snapshot to WAL.", e);
-
-                    ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-                }
-        }
+//        if (nextCntr == 1) {
+//            if (grp.persistenceEnabled() && grp.walEnabled())
+//                try {
+//                    ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, state(), 0));
+//                }
+//                catch (IgniteCheckedException e) {
+//                    U.error(log, "Failed to log partition state snapshot to WAL.", e);
+//
+//                    ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+//                }
+//        }
 
         return nextCntr;
     }

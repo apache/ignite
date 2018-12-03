@@ -463,7 +463,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * pair (init, delta) values, where init - initial update counter, and delta - updates count made
      * by current transaction for a given partition.
      */
-    private void calculatePartitionUpdateCounters() {
+    public void calculatePartitionUpdateCounters() {
         TxCounters counters = txCounters(false);
 
         if (counters != null && F.isEmpty(counters.updateCounters())) {
@@ -482,7 +482,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 PartitionUpdateCountersMessage msg = new PartitionUpdateCountersMessage(cacheId, partToCntrs.size());
                 GridCacheContext ctx0 = cctx.cacheContext(cacheId);
 
-                assert ctx0 != null && ctx0.mvccEnabled();
+                //assert ctx0 != null && ctx0.mvccEnabled();
 
                 GridDhtPartitionTopology top = ctx0.topology();
 
