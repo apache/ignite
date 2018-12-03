@@ -793,6 +793,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return;
             
             // TODO: Reset all binary structures. Metadata must be sent again.
+            foreach (var desc in _idToDesc)
+            {
+                
+            }
         }
 
         /// <summary>
