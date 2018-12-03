@@ -61,6 +61,9 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -68,6 +71,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 /**
  * Abstract test for originating node failure.
  */
+@RunWith(JUnit4.class)
 public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** */
     protected static final int GRID_CNT = 5;

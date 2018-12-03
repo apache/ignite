@@ -23,6 +23,9 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -32,6 +35,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
  *
  */
 @SuppressWarnings("RedundantMethodOverride")
+@RunWith(JUnit4.class)
 public class IgniteCacheNearReadCommittedTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {

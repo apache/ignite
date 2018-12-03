@@ -44,6 +44,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -58,6 +61,7 @@ import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest {
     /** Transaction timeout. */
     private static final long TX_TIMEOUT = 200;
