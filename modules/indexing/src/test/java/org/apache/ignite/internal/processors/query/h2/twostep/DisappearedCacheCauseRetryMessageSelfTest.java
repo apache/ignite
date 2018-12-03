@@ -43,17 +43,21 @@ import static org.apache.ignite.internal.processors.query.h2.twostep.JoinSqlTest
 public class DisappearedCacheCauseRetryMessageSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES_COUNT = 2;
+
     /** */
     private static final String ORG = "org";
+
     /** */
     private IgniteCache<String, JoinSqlTestHelper.Person> personCache;
+
     /** */
     private IgniteCache<String, JoinSqlTestHelper.Organization> orgCache;
 
     /** */
     public void testDisappearedCacheCauseRetryMessage() {
-
-        SqlQuery<String, JoinSqlTestHelper.Person> qry = new SqlQuery<String, JoinSqlTestHelper.Person>(JoinSqlTestHelper.Person.class, JoinSqlTestHelper.JOIN_SQL).setArgs("Organization #0");
+        SqlQuery<String, JoinSqlTestHelper.Person> qry =
+            new SqlQuery<String, JoinSqlTestHelper.Person>(JoinSqlTestHelper.Person.class, JoinSqlTestHelper.JOIN_SQL)
+                .setArgs("Organization #0");
 
         qry.setDistributedJoins(true);
 
@@ -93,11 +97,11 @@ public class DisappearedCacheCauseRetryMessageSelfTest extends GridCommonAbstrac
                         GridQueryCancelRequest req = (GridQueryCancelRequest) (gridMsg.message());
 
                         if (reqId == req.queryRequestId())
-                            orgCache = DisappearedCacheCauseRetryMessageSelfTest.this.ignite(0).getOrCreateCache(new CacheConfiguration<String, Organization>(ORG)
+                            orgCache = DisappearedCacheCauseRetryMessageSelfTest.this.ignite(0)
+                                .getOrCreateCache(new CacheConfiguration<String, Organization>(ORG)
                                 .setCacheMode(CacheMode.REPLICATED)
                                 .setIndexedTypes(String.class, JoinSqlTestHelper.Organization.class)
                             );
-
                     }
                 }
 

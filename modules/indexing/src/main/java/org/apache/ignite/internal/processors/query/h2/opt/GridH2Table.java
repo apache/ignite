@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.concurrent.locks.StampedLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.cache.query.QueryRetryException;
@@ -429,11 +428,9 @@ public class GridH2Table extends TableBase {
         try {
             ensureNotDestroyed();
 
-            sessions.keySet().forEach(Session::close);
+            destroyed = true;
 
             sessions.clear();
-
-            destroyed = true;
 
             for (int i = 1, len = idxs.size(); i < len; i++)
                 if (idxs.get(i) instanceof GridH2IndexBase)
