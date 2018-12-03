@@ -44,6 +44,7 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -170,9 +171,9 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
         @Override public Map<PartitionKeyV2, PartitionHashRecordV2> execute() throws IgniteException {
             Set<Integer> grpIds = new HashSet<>();
 
-            Set<String> missingCaches = new HashSet<>();
+            if (arg.getCaches() != null && !arg.getCaches().isEmpty()) {
+                Set<String> missingCaches = new HashSet<>();
 
-            if (arg.getCaches() != null) {
                 for (String cacheName : arg.getCaches()) {
                     DynamicCacheDescriptor desc = ignite.context().cache().cacheDescriptor(cacheName);
 
@@ -196,14 +197,8 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                     throw new IgniteException(strBuilder.toString());
                 }
             }
-            else {
-                Collection<CacheGroupContext> groups = ignite.context().cache().cacheGroups();
-
-                for (CacheGroupContext grp : groups) {
-                    if (!grp.systemCache() && !grp.isLocal())
-                        grpIds.add(grp.groupId());
-                }
-            }
+            else
+                grpIds = getCacheGroupIds();
 
             List<Future<Map<PartitionKeyV2, PartitionHashRecordV2>>> partHashCalcFutures = new ArrayList<>();
 
@@ -260,6 +255,45 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
         }
 
         /**
+         * Gets filtered group ids.
+         */
+        private Set<Integer> getCacheGroupIds() {
+            Collection<CacheGroupContext> groups = ignite.context().cache().cacheGroups();
+
+            Set<Integer> grpIds = new HashSet<>();
+
+            if (arg.excludeCaches() == null || arg.excludeCaches().isEmpty()) {
+                for (CacheGroupContext grp : groups) {
+                    if (!grp.systemCache() && !grp.isLocal())
+                        grpIds.add(grp.groupId());
+                }
+                return grpIds;
+            }
+
+            for (CacheGroupContext grp : groups) {
+                if (!grp.systemCache() && !grp.isLocal() && !isGrpExcluded(grp))
+                    grpIds.add(grp.groupId());
+            }
+
+            return grpIds;
+        }
+
+        /**
+         * @param grp Group.
+         */
+        private boolean isGrpExcluded(CacheGroupContext grp) {
+            if (arg.excludeCaches().contains(grp.name()))
+                return true;
+
+            for (GridCacheContext cacheCtx : grp.caches()) {
+                if (arg.excludeCaches().contains(cacheCtx.name()))
+                    return true;
+            }
+
+            return false;
+        }
+
+        /**
          * @param grpCtx Group context.
          * @param part Local partition.
          */
@@ -273,7 +307,6 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                 }
             });
         }
-
 
         /**
          * @param grpCtx Group context.

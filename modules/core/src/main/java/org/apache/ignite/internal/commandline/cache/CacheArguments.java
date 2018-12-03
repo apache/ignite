@@ -32,6 +32,9 @@ public class CacheArguments {
     /** Caches. */
     private Set<String> caches;
 
+    /** Exclude caches or groups. */
+    private Set<String> excludeCaches;
+
     /** Partition id. */
     private int partId;
 
@@ -121,6 +124,20 @@ public class CacheArguments {
      */
     public void caches(Set<String> caches) {
         this.caches = caches;
+    }
+
+    /**
+     * @return Exclude caches or groups.
+     */
+    public Set<String> excludeCaches() {
+        return excludeCaches;
+    }
+
+    /**
+     * @param excludeCaches Excluse caches or groups.
+     */
+    public void excludeCaches(Set<String> excludeCaches) {
+        this.excludeCaches = excludeCaches;
     }
 
     /**
