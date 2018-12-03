@@ -163,6 +163,12 @@ namespace Apache.Ignite.Core.Tests
             }
         }
 
+        [Test]
+        public void TestClusterRestart_ResetsCachedMetadataAndWriterStructures()
+        {
+            // TODO: Test writer structure reset. Use bg thread Put during entire Restart phase to detect the issue.
+        }
+
         /// <summary>
         /// Starts the server process.
         /// </summary>
