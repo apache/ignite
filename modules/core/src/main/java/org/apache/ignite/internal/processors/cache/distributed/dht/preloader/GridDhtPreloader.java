@@ -597,6 +597,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
             msgToProc.addAll(pausedDemanderQueue);
 
+            pausedDemanderQueue.clear();
+
             final GridDhtPreloader preloader = this;
 
             ctx.kernalContext().closure().runLocalSafe(() -> msgToProc.forEach(
