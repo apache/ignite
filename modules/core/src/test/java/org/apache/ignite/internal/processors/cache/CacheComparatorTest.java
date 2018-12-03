@@ -20,10 +20,14 @@ package org.apache.ignite.internal.processors.cache;
 import junit.framework.TestCase;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.QuerySchema;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for CacheComparators from ClusterCachesInfo
  */
+@RunWith(JUnit4.class)
 public class CacheComparatorTest extends TestCase {
     /**
      * Test if comparator not violates its general contract

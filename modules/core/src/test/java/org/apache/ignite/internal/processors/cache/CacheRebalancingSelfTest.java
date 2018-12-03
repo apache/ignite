@@ -37,10 +37,14 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for rebalancing.
  */
+@RunWith(JUnit4.class)
 public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
     /** Cache name with one backups */
     private static final String REBALANCE_TEST_CACHE_NAME = "rebalanceCache";
