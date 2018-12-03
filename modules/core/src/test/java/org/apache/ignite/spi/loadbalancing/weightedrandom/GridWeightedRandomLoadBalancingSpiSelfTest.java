@@ -27,11 +27,15 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Weighted random load balancing SPI.
  */
 @GridSpiTest(spi = WeightedRandomLoadBalancingSpi.class, group = "Load Balancing SPI")
+@RunWith(JUnit4.class)
 public class GridWeightedRandomLoadBalancingSpiSelfTest extends
     GridSpiAbstractTest<WeightedRandomLoadBalancingSpi> {
     /**

@@ -19,10 +19,14 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedLockSelfTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridCachePartitionedNearDisabledLockSelfTest extends GridCachePartitionedLockSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration() {
