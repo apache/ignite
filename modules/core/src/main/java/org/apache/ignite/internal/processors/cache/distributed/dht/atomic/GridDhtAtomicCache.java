@@ -1795,7 +1795,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                         for (int i = futs.size() - 1; i >= 0; --i) {
                                             GridDhtPartitionsExchangeFuture fut = futs.get(i);
 
-                                            if (fut.isDone() && fut.topologyVersion().equals(req.topologyVersion())) {
+                                            if (fut.isDone() && fut.exchangeDone() &&
+                                                fut.topologyVersion().equals(req.topologyVersion())) {
                                                 topFut = fut;
 
                                                 break;
@@ -1805,7 +1806,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                         assert req.topologyVersion().equals(topFut.topologyVersion()) :
                                             "The requested topology version cannot be found [" +
                                                 "reqTopFut=" + req.topologyVersion()
-                                                + ", topFut=" + topFut;
+                                                + ", topFut=" + topFut + ']';
                                     }
 
                                     assert topFut.isDone() : topFut;
