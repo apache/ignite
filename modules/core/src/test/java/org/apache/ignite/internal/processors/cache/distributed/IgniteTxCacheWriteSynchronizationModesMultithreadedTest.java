@@ -106,24 +106,26 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-9470");
+
         super.beforeTestsStarted();
 
-        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL,"true");
-
-        startGrids(SRVS);
+        startGridsMultiThreaded(SRVS);
 
         clientMode = true;
 
-        for (int i = 0; i < CLIENTS; i++) {
-            Ignite client = startGrid(SRVS + i);
+        startGridsMultiThreaded(SRVS, CLIENTS);
 
-            assertTrue(client.configuration().isClientMode());
-        }
+        for (int i = 0; i < CLIENTS; i++)
+            assertTrue(grid(SRVS + i).configuration().isClientMode());
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
+        stopAllGrids();
+
+        super.afterTestsStopped();
     }
 
     /**
@@ -196,6 +198,14 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
         boolean store,
         boolean nearCache,
         boolean restart) throws Exception {
+        if (MvccFeatureChecker.forcedMvcc()) {
+            if (store && !MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.CACHE_STORE))
+                return;
+
+            if (nearCache && !MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE))
+                return;
+        }
+
         final Ignite ignite = ignite(0);
 
         createCache(ignite, cacheConfiguration(DEFAULT_CACHE_NAME, syncMode, backups, store), nearCache);
