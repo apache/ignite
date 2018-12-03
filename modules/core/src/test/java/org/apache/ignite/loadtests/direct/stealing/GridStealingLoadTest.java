@@ -32,11 +32,15 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @GridCommonTest(group = "Load Test")
+@RunWith(JUnit4.class)
 public class GridStealingLoadTest extends GridCommonAbstractTest {
     /** */
     public GridStealingLoadTest() {

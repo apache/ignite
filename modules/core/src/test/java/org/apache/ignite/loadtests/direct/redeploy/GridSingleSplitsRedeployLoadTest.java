@@ -33,11 +33,15 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Single splits redeploy load test.
  */
 @GridCommonTest(group = "Load Test")
+@RunWith(JUnit4.class)
 public class GridSingleSplitsRedeployLoadTest extends GridCommonAbstractTest {
     /** Load test task type ID. */
     public static final String TASK_NAME = "org.apache.ignite.tests.p2p.SingleSplitTestTask";

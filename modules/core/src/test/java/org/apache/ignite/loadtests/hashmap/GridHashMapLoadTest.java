@@ -28,11 +28,15 @@ import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests hashmap load.
  */
 @SuppressWarnings("InfiniteLoopStatement")
+@RunWith(JUnit4.class)
 public class GridHashMapLoadTest extends GridCommonAbstractTest {
     /**
      *
