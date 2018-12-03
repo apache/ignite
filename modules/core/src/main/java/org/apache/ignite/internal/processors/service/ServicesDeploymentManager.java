@@ -321,7 +321,7 @@ public class ServicesDeploymentManager {
                             ServicesFullDeploymentsMessage msg0 = (ServicesFullDeploymentsMessage)msg;
 
                             if (log.isDebugEnabled()) {
-                                log.debug("Received services full map message : " +
+                                log.debug("Received services full deployments message : " +
                                     "[locId=" + ctx.localNodeId() + ", snd=" + snd + ", msg=" + msg0 + ']');
                             }
 
@@ -332,7 +332,7 @@ public class ServicesDeploymentManager {
                             ServicesDeploymentTask task = tasks.get(depId);
 
                             if (task != null) // May be null in case of double delivering
-                                task.onReceiveFullMapMessage(msg0);
+                                task.onReceiveFullDeploymentsMessage(msg0);
                         }
                         else if (msg instanceof CacheAffinityChangeMessage)
                             addTask(copyIfNeeded((DiscoveryCustomEvent)evt), discoCache.version(), null);
@@ -406,13 +406,13 @@ public class ServicesDeploymentManager {
                     ServicesSingleDeploymentsMessage msg0 = (ServicesSingleDeploymentsMessage)msg;
 
                     if (log.isDebugEnabled()) {
-                        log.debug("Received services single map message : " +
+                        log.debug("Received services single deployments message : " +
                             "[locId=" + ctx.localNodeId() + ", snd=" + nodeId + ", msg=" + msg0 + ']');
                     }
 
                     tasks.computeIfAbsent(msg0.deploymentId(),
                         t -> new ServicesDeploymentTask(ctx, msg0.deploymentId()))
-                        .onReceiveSingleMapMessage(nodeId, msg0);
+                        .onReceiveSingleDeploymentsMessage(nodeId, msg0);
                 }
             }
             finally {

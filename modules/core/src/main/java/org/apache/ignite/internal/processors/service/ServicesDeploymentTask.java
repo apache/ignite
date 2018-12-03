@@ -72,16 +72,16 @@ class ServicesDeploymentTask {
     /** Coordinator initialization actions mutex. */
     private final Object initCrdMux = new Object();
 
-    /** Remaining nodes to received services single map message. */
+    /** Remaining nodes to received services single deployments message. */
     @GridToStringInclude
     private final Set<UUID> remaining = new HashSet<>();
 
     /** Added in deployment queue flag. */
     private final AtomicBoolean addedInQueue = new AtomicBoolean(false);
 
-    /** Single service messages to process. */
+    /** Single deployments messages to process. */
     @GridToStringInclude
-    private final Map<UUID, ServicesSingleDeploymentsMessage> singleMapMsgs = new HashMap<>();
+    private final Map<UUID, ServicesSingleDeploymentsMessage> singleDepsMsgs = new HashMap<>();
 
     /** Expected services assignments. */
     @GridToStringExclude
@@ -320,7 +320,7 @@ class ServicesDeploymentTask {
             }
         });
 
-        createAndSendSingleMapMessage(depId, depErrors);
+        createAndSendSingleDeploymentsMessage(depId, depErrors);
     }
 
     /**
@@ -335,7 +335,7 @@ class ServicesDeploymentTask {
 
             try {
                 for (ClusterNode node : ctx.discovery().nodes(topVer)) {
-                    if (ctx.discovery().alive(node) && !singleMapMsgs.containsKey(node.id()))
+                    if (ctx.discovery().alive(node) && !singleDepsMsgs.containsKey(node.id()))
                         remaining.add(node.id());
                 }
             }
@@ -355,7 +355,7 @@ class ServicesDeploymentTask {
      * @param depId Deployment process id.
      * @param errors Deployment errors.
      */
-    private void createAndSendSingleMapMessage(ServicesDeploymentProcessId depId,
+    private void createAndSendSingleDeploymentsMessage(ServicesDeploymentProcessId depId,
         final Map<IgniteUuid, Collection<Throwable>> errors) {
         assert crdId != null : "Coordinator should be defined at this point, locId=" + ctx.localNodeId();
 
@@ -399,15 +399,15 @@ class ServicesDeploymentTask {
             ServicesSingleDeploymentsMessage msg = new ServicesSingleDeploymentsMessage(depId, results);
 
             if (ctx.localNodeId().equals(crdId))
-                onReceiveSingleMapMessage(ctx.localNodeId(), msg);
+                onReceiveSingleDeploymentsMessage(ctx.localNodeId(), msg);
             else
                 ctx.io().sendToGridTopic(crdId, TOPIC_SERVICES, msg, SERVICE_POOL);
 
             if (log.isDebugEnabled())
-                log.debug("Send services single map message, msg=" + msg);
+                log.debug("Send services single deployments message, msg=" + msg);
         }
         catch (IgniteCheckedException e) {
-            log.error("Failed to send services single map message to coordinator over communication spi.", e);
+            log.error("Failed to send services single deployments message to coordinator over communication spi.", e);
         }
     }
 
@@ -417,7 +417,7 @@ class ServicesDeploymentTask {
      * @param snd Sender node id.
      * @param msg Single services map message.
      */
-    protected void onReceiveSingleMapMessage(UUID snd, ServicesSingleDeploymentsMessage msg) {
+    protected void onReceiveSingleDeploymentsMessage(UUID snd, ServicesSingleDeploymentsMessage msg) {
         assert depId.equals(msg.deploymentId()) : "Wrong message's deployment process id, msg=" + msg;
 
         initCrdFut.listen((IgniteInClosure<IgniteInternalFuture<?>>)fut -> {
@@ -426,13 +426,13 @@ class ServicesDeploymentTask {
 
             synchronized (initCrdMux) {
                 if (remaining.remove(snd)) {
-                    singleMapMsgs.put(snd, msg);
+                    singleDepsMsgs.put(snd, msg);
 
                     if (remaining.isEmpty())
                         onAllReceived();
                 }
                 else if (log.isDebugEnabled())
-                    log.debug("Unexpected service single map received, msg=" + msg);
+                    log.debug("Unexpected service single deployments received, msg=" + msg);
             }
         });
     }
@@ -442,7 +442,7 @@ class ServicesDeploymentTask {
      *
      * @param msg Full services map message.
      */
-    protected void onReceiveFullMapMessage(ServicesFullDeploymentsMessage msg) {
+    protected void onReceiveFullDeploymentsMessage(ServicesFullDeploymentsMessage msg) {
         assert depId.equals(msg.deploymentId()) : "Wrong message's deployment process id, msg=" + msg;
 
         initTaskFut.listen((IgniteInClosure<IgniteInternalFuture<?>>)fut -> {
@@ -488,7 +488,7 @@ class ServicesDeploymentTask {
                     completeSuccess();
                 }
                 catch (Throwable t) {
-                    log.error("Failed to process services deployment full map, msg=" + msg, t);
+                    log.error("Failed to process services full deployments message, msg=" + msg, t);
 
                     completeError(t);
                 }
@@ -544,12 +544,12 @@ class ServicesDeploymentTask {
     }
 
     /**
-     * Creates services full map message and send it over discovery.
+     * Creates services full deployments message and send it over discovery.
      */
     private void onAllReceived() {
         assert !isCompleted();
 
-        Collection<ServiceFullDeploymentsResults> fullResults = buildFullDeploymentsResults(singleMapMsgs);
+        Collection<ServiceFullDeploymentsResults> fullResults = buildFullDeploymentsResults(singleDepsMsgs);
 
         try {
             ServicesFullDeploymentsMessage msg = new ServicesFullDeploymentsMessage(depId, fullResults);
@@ -557,7 +557,7 @@ class ServicesDeploymentTask {
             ctx.discovery().sendCustomEvent(msg);
         }
         catch (IgniteCheckedException e) {
-            log.error("Failed to send services full map message across the ring.", e);
+            log.error("Failed to send services full deployments message across the ring.", e);
         }
     }
 
@@ -608,16 +608,16 @@ class ServicesDeploymentTask {
     }
 
     /**
-     * Processes single map messages to build full deployment results.
+     * Processes single deployments messages to build full deployment results.
      *
-     * @param singleMaps Services single map messages.
+     * @param singleDepsMsgs Services single deployments messages.
      * @return Services full deployments results.
      */
     private Collection<ServiceFullDeploymentsResults> buildFullDeploymentsResults(
-        Map<UUID, ServicesSingleDeploymentsMessage> singleMaps) {
+        Map<UUID, ServicesSingleDeploymentsMessage> singleDepsMsgs) {
         final Map<IgniteUuid, Map<UUID, ServiceSingleDeploymentsResults>> singleResults = new HashMap<>();
 
-        singleMaps.forEach((nodeId, msg) -> msg.results().forEach((srvcId, res) -> {
+        singleDepsMsgs.forEach((nodeId, msg) -> msg.results().forEach((srvcId, res) -> {
             Map<UUID, ServiceSingleDeploymentsResults> depResults = singleResults
                 .computeIfAbsent(srvcId, r -> new HashMap<>());
 
@@ -698,7 +698,7 @@ class ServicesDeploymentTask {
                     if (crd.isLocal())
                         initCoordinator(evtTopVer);
 
-                    createAndSendSingleMapMessage(depId, depErrors);
+                    createAndSendSingleDeploymentsMessage(depId, depErrors);
                 }
                 else
                     onAllServersLeft();
@@ -708,7 +708,7 @@ class ServicesDeploymentTask {
                     boolean rmvd = remaining.remove(nodeId);
 
                     if (rmvd && remaining.isEmpty()) {
-                        singleMapMsgs.remove(nodeId);
+                        singleDepsMsgs.remove(nodeId);
 
                         onAllReceived();
                     }
@@ -790,7 +790,7 @@ class ServicesDeploymentTask {
      * Releases resources to reduce memory usages.
      */
     protected void clear() {
-        singleMapMsgs.clear();
+        singleDepsMsgs.clear();
         expDeps.clear();
         depErrors.clear();
         remaining.clear();
