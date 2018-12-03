@@ -55,6 +55,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
+import static org.apache.ignite.testframework.GridTestUtils.SF;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -295,7 +296,7 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
                 }
             }, 10, "tx-thread");
 
-            long stopTime = System.currentTimeMillis() + 3 * 60_000;
+            long stopTime = System.currentTimeMillis() + SF.applyLB(3 * 60_000, 20_000);
 
             long topVer = ignite0.cluster().topologyVersion();
 
