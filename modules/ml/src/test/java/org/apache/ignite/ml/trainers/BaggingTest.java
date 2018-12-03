@@ -126,24 +126,6 @@ public class BaggingTest extends TrainerTest {
     }
 
     /**
-     * Create cache mock.
-     *
-     * @return Cache mock.
-     */
-    private Map<Integer, Double[]> getCacheMock() {
-        Map<Integer, Double[]> cacheMock = new HashMap<>();
-
-        for (int i = 0; i < twoLinearlySeparableClasses.length; i++) {
-            double[] row = twoLinearlySeparableClasses[i];
-            Double[] convertedRow = new Double[row.length];
-            for (int j = 0; j < row.length; j++)
-                convertedRow[j] = row[j];
-            cacheMock.put(i, convertedRow);
-        }
-        return cacheMock;
-    }
-
-    /**
      * Get sum of two Long values each of which can be null.
      *
      * @param a First value.

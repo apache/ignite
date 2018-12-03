@@ -18,7 +18,9 @@
 package org.apache.ignite.ml.common;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -1158,4 +1160,22 @@ public class TrainerTest {
         {3, 9.959296741639132, -9.762961500922069},
         {3, 9.882357321966778, -9.069477551120192}
     };
+
+    /**
+     * Create cache mock.
+     *
+     * @return Cache mock.
+     */
+    protected Map<Integer, Double[]> getCacheMock() {
+        Map<Integer, Double[]> cacheMock = new HashMap<>();
+
+        for (int i = 0; i < twoLinearlySeparableClasses.length; i++) {
+            double[] row = twoLinearlySeparableClasses[i];
+            Double[] convertedRow = new Double[row.length];
+            for (int j = 0; j < row.length; j++)
+                convertedRow[j] = row[j];
+            cacheMock.put(i, convertedRow);
+        }
+        return cacheMock;
+    }
 }
