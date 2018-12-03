@@ -20,10 +20,14 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Checks behavior on exception while unmarshalling key.
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheP2pUnmarshallingNearErrorTest extends IgniteCacheP2pUnmarshallingErrorTest {
     /** {@inheritDoc} */
     @Override protected NearCacheConfiguration nearConfiguration() {

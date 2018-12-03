@@ -37,6 +37,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeaderKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -44,6 +47,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * Queue failover test.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest extends IgniteCollectionAbstractTest {
     /** */
     private static final String QUEUE_NAME = "FailoverQueueTest";

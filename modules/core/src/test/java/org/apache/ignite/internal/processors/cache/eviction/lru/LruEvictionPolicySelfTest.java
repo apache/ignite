@@ -21,10 +21,14 @@ import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.internal.processors.cache.CacheEvictableEntryImpl;
 import org.apache.ignite.internal.processors.cache.eviction.EvictionAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * LRU Eviction policy tests.
  */
+@RunWith(JUnit4.class)
 public class LruEvictionPolicySelfTest extends
     EvictionAbstractTest<LruEvictionPolicy<String, String>> {
     /**

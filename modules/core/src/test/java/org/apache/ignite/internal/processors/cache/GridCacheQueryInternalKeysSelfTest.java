@@ -31,6 +31,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -38,6 +41,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 /**
  * Cache query internal keys self test.
  */
+@RunWith(JUnit4.class)
 public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTest {
     /** Grid count. */
     private static final int GRID_CNT = 2;

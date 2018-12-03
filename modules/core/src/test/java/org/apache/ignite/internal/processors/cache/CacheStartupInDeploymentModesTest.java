@@ -25,10 +25,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test verifies that it's possible to start caches in Isolated and Private mode when BinaryMarshaller is used.
  */
+@RunWith(JUnit4.class)
 public class CacheStartupInDeploymentModesTest extends GridCommonAbstractTest {
     /** */
     private static final String REPLICATED_CACHE = "replicated";

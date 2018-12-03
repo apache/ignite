@@ -37,11 +37,15 @@ import org.apache.ignite.resources.TaskContinuousMapperResource;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test continuous mapper with siblings.
  */
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class GridContinuousJobSiblingsSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int JOB_COUNT = 10;

@@ -27,12 +27,16 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryObjectsAbstractSelfTest.IP_FINDER;
 
 /**
  * GridTcpDiscoveryVmIpFinder test.
  */
+@RunWith(JUnit4.class)
 public class TcpDiscoveryVmIpFinderSelfTest
     extends TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryVmIpFinder> {
     /**

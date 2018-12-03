@@ -39,10 +39,14 @@ import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.concurrent.Callable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for local Ignite instance processing during serialization/deserialization.
  */
+@RunWith(JUnit4.class)
 public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "cache_name";
