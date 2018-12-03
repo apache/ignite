@@ -20,10 +20,14 @@ package org.apache.ignite.startup.cmdline;
 import java.util.concurrent.Callable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * GridCommandLineTransformer test.
  */
+@RunWith(JUnit4.class)
 public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
