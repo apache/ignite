@@ -32,11 +32,15 @@ import org.apache.ignite.internal.util.GridConsistentHash;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Consistent hash test.
  */
 @GridCommonTest(group = "Lang")
+@RunWith(JUnit4.class)
 public class GridConsistentHashSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES = 20;

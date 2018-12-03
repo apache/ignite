@@ -21,11 +21,15 @@ import java.util.Set;
 import org.apache.ignite.internal.util.GridLeanIdentitySet;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link org.apache.ignite.internal.util.GridLeanMap}.
  */
 @GridCommonTest(group = "Lang")
+@RunWith(JUnit4.class)
 public class GridLeanIdentitySetSelfTest extends GridCommonAbstractTest {
     /**
      * JUnit.

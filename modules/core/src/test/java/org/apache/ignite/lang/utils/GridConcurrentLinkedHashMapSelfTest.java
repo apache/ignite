@@ -27,6 +27,9 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentLinkedHashMap;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIMIZED_RMV;
@@ -34,6 +37,7 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIM
 /**
  * This class tests basic contracts of {@code ConcurrentLinkedHashMap}.
  */
+@RunWith(JUnit4.class)
 public class GridConcurrentLinkedHashMapSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int KEYS_UPPER_BOUND = 1000;

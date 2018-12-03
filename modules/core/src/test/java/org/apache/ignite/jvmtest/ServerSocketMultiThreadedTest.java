@@ -29,6 +29,9 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Java server socket test.
@@ -37,6 +40,7 @@ import org.jetbrains.annotations.Nullable;
  * BindException or SocketException may be thrown. Purpose of this test is
  * to find some explanation to that.
  */
+@RunWith(JUnit4.class)
 public class ServerSocketMultiThreadedTest extends TestCase {
     /** */
     private static final int THREADS_CNT = 10;

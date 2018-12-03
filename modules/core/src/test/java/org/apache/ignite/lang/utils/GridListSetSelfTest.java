@@ -25,11 +25,15 @@ import org.apache.ignite.internal.util.GridListSet;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link GridListSet}.
  */
 @GridCommonTest(group = "Lang")
+@RunWith(JUnit4.class)
 public class GridListSetSelfTest extends GridCommonAbstractTest {
     /**
      *

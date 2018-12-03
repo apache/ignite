@@ -20,10 +20,14 @@ package org.apache.ignite.lang.utils;
 import java.util.Map;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Performance test for {@link GridLeanMap}.
  */
+@RunWith(JUnit4.class)
 public class GridLeanMapPerformanceTest extends GridCommonAbstractTest {
     /** */
     private static final int RUN_CNT = 5;

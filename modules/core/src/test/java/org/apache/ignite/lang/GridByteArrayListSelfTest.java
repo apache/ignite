@@ -25,11 +25,15 @@ import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @GridCommonTest(group = "Lang")
+@RunWith(JUnit4.class)
 public class GridByteArrayListSelfTest extends GridCommonAbstractTest {
     /**
      *

@@ -29,11 +29,15 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @SuppressWarnings("BusyWait")
+@RunWith(JUnit4.class)
 public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int TAG_0 = 1;

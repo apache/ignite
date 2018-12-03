@@ -23,10 +23,14 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.util.GridCircularBuffer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridCircularBufferSelfTest extends GridCommonAbstractTest {
     /**
      *
