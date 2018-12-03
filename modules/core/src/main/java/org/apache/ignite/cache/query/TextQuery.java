@@ -56,10 +56,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * cache.query(qry).getAll();
  * </pre>
  *
- * <h2 class="header">Local flag</h2>
- * If query Local flag is set to {@code True} via {@link Query#setLocal(boolean)} then results from local node only
- * will be returned.
- *
  * @see IgniteCache#query(Query)
  */
 public final class TextQuery<K, V> extends Query<Cache.Entry<K, V>> {
