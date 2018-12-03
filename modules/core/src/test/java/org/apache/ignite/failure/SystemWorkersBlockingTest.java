@@ -25,10 +25,14 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests the handling of long blocking operations in system-critical workers.
  */
+@RunWith(JUnit4.class)
 public class SystemWorkersBlockingTest extends GridCommonAbstractTest {
     /** Handler latch. */
     private static volatile CountDownLatch hndLatch;

@@ -28,10 +28,14 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * IgniteOutOfMemoryError failure handler test.
  */
+@RunWith(JUnit4.class)
 public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
     /** Offheap size for memory policy. */
     private static final int SIZE = 10 * 1024 * 1024;

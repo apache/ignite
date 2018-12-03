@@ -33,6 +33,9 @@ import org.apache.ignite.internal.worker.FailureHandlingMxBeanImpl;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.mxbean.FailureHandlingMxBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT;
@@ -40,6 +43,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_SYSTEM_WORKER_BLOC
 /**
  * Tests configuration parameters related to failure handling.
  */
+@RunWith(JUnit4.class)
 public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
     /** */
     private Long checkpointReadLockTimeout;
