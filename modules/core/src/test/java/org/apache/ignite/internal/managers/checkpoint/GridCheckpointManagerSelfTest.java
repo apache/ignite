@@ -18,11 +18,15 @@
 package org.apache.ignite.internal.managers.checkpoint;
 
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @GridCommonTest(group = "Checkpoint Manager")
+@RunWith(JUnit4.class)
 public class GridCheckpointManagerSelfTest extends GridCheckpointManagerAbstractSelfTest {
     /**
      * @throws Exception Thrown if any exception occurs.

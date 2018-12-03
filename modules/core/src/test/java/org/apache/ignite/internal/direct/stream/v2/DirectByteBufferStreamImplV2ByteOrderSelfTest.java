@@ -29,6 +29,9 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.GridTestIoUtils.getCharByByteLE;
 import static org.apache.ignite.GridTestIoUtils.getDoubleByByteLE;
@@ -41,6 +44,7 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * {@link DirectByteBufferStreamImplV2} byte order sanity tests.
  */
+@RunWith(JUnit4.class)
 public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     /** Array length. */
     private static final int ARR_LEN = 16;

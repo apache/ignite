@@ -28,6 +28,9 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -39,6 +42,7 @@ import static org.mockito.Mockito.when;
  *
  * Test modifies static final field, used only for development
  */
+@RunWith(JUnit4.class)
 public class GridManagerMxBeanIllegalArgumentHandleTest extends TestCase {
     /** Original value of {@link GridDiscoveryManager#mem} to be restored after test */
     private Object mxBeanToRestore;

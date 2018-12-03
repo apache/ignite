@@ -30,6 +30,9 @@ import org.apache.ignite.spi.discovery.tcp.TestReconnectProcessor;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
@@ -40,6 +43,7 @@ import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 /**
  * Tests for node attributes consistency checks.
  */
+@RunWith(JUnit4.class)
 public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String PREFER_IPV4 = "java.net.preferIPv4Stack";

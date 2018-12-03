@@ -27,6 +27,9 @@ import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
@@ -43,6 +46,7 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * Tests Command Handler parsing arguments.
  */
+@RunWith(JUnit4.class)
 public class CommandHandlerParsingTest extends TestCase {
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {

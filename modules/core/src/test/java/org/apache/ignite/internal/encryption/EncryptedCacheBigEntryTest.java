@@ -27,12 +27,16 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Tests to check encryption of entry bigger then page size.
  */
+@RunWith(JUnit4.class)
 public class EncryptedCacheBigEntryTest extends AbstractEncryptionTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {

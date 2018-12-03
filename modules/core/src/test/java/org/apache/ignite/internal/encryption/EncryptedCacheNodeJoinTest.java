@@ -23,11 +23,15 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  */
+@RunWith(JUnit4.class)
 public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
     /** */
     private static final String GRID_2 = "grid-2";

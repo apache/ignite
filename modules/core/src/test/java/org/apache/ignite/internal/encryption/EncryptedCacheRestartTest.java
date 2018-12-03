@@ -21,8 +21,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /** */
+@RunWith(JUnit4.class)
 public class EncryptedCacheRestartTest extends AbstractEncryptionTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
