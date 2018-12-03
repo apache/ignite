@@ -1,12 +1,10 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -70,21 +68,10 @@ public class DdCollaborator {
     }
 
     private IgniteInternalFuture<T2<GridCacheVersion, UUID>> collectBlockers(GridNearTxLocal tx) {
-        // t0d0 handle primaries local to near node
-        // t0d0 different future types
-        Optional<GridNearTxEnlistFuture> optFut = cctx.mvcc().activeFutures().stream()
-            .filter(GridNearTxEnlistFuture.class::isInstance)
-            .map(GridNearTxEnlistFuture.class::cast)
-            .filter(enlistFut -> enlistFut.tx.nearXidVersion().equals(tx.nearXidVersion()))
-            .findAny();
-
-        // t0d0 handle multiple batches
-        // t0d0 it might be better if pending batches are provided by tx
-        Optional<Map.Entry<UUID, GridNearTxEnlistFuture.Batch>> optBatch = optFut
-            .flatMap(fut -> fut.batches.entrySet().stream().findAny());
+        Optional<UUID> optBatch = tx.getPendingResponseNode();
 
         if (optBatch.isPresent()) {
-            UUID nodeId = optBatch.get().getKey();
+            UUID nodeId = optBatch.get();
             return cctx.coordinators().checkWaiting(tx.mvccSnapshot(), nodeId);
         }
 

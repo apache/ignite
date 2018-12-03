@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -4782,6 +4783,23 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (log.isDebugEnabled())
                 log.debug("Skip rollback tx on timeout: " + this);
         }
+    }
+
+    public Optional<UUID> getPendingResponseNode() {
+        // t0d0 handle primaries local to near node
+        // t0d0 different future types
+        Optional<GridNearTxEnlistFuture> optFut = cctx.mvcc().activeFutures().stream()
+            .filter(GridNearTxEnlistFuture.class::isInstance)
+            .map(GridNearTxEnlistFuture.class::cast)
+            .filter(enlistFut -> enlistFut.tx == this)
+            .findAny();
+
+        // t0d0 handle multiple batches
+        // t0d0 it might be better if pending batches are provided by tx
+        Optional<UUID> optBatch = optFut
+            .flatMap(fut -> fut.batches.keySet().stream().findAny());
+
+        return optBatch;
     }
 
     /**
