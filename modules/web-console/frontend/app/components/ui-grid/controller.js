@@ -18,6 +18,8 @@
 import debounce from 'lodash/debounce';
 import headerTemplate from 'app/primitives/ui-grid-header/index.tpl.pug';
 
+import ResizeObserver from 'resize-observer-polyfill';
+
 export default class IgniteUiGrid {
     /** @type {import('ui-grid').IGridOptions} */
     grid;
@@ -129,6 +131,9 @@ export default class IgniteUiGrid {
                 this.$timeout(() => {
                     if (this.selectedRowsId) this.applyIncomingSelectionRowsId(this.selectedRowsId);
                 });
+
+                this.resizeObserver = new ResizeObserver(() => api.core.handleWindowResize());
+                this.resizeObserver.observe(this.$element[0]);
             }
         };
 
@@ -151,6 +156,11 @@ export default class IgniteUiGrid {
 
         if (hasChanged('gridHeight') && this.grid)
             this.adjustHeight();
+    }
+
+    $onDestroy() {
+        if (this.resizeObserver)
+            this.resizeObserver.disconnect();
     }
 
     applyIncomingSelectionRows = (selected = []) => {

@@ -184,6 +184,8 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
      * @throws Exception If check fails.
      */
     private void checkPuts(int cnt, Ignite... ignites) throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+
         CountDownLatch latch = new CountDownLatch(ignites.length * cnt);
 
         CacheEventListener lsnr = new CacheEventListener(latch, EVT_CACHE_OBJECT_PUT);
