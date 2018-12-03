@@ -83,4 +83,12 @@ public class ModelDescriptor implements Serializable {
     public InfModelParser<byte[], byte[]> getParser() {
         return parser;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "ModelDescriptor{" +
+            "name='" + name + '\'' +
+            ", desc='" + desc + '\'' +
+            '}';
+    }
 }
