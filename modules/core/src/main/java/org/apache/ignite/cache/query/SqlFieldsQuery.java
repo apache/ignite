@@ -20,9 +20,6 @@ package org.apache.ignite.cache.query;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.affinity.AffinityKey;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -30,13 +27,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * <h1>SQL Fields query.</h1>
- *
- * This kind of query returns specific fields of data based on SQL {@code 'select'} clause,
- * as opposed to {@link SqlQuery}, which always returns the whole key and value objects back.
- * Note that selected fields must be annotated with {@link QuerySqlField} annotation.
- *
- * <h2 class="header">Collocated Flag</h2>
+ * SQL Fields query. This query can return specific fields of data based
+ * on SQL {@code 'select'} clause, as opposed to {@link SqlQuery}, which always returns
+ * the whole key and value objects back.
+ * <h1 class="header">Collocated Flag</h1>
  * Collocation flag is used for optimization purposes. Whenever Ignite executes
  * a distributed query, it sends sub-queries to individual cluster members.
  * If you know in advance that the elements of your query selection are collocated
@@ -48,122 +42,6 @@ import org.jetbrains.annotations.Nullable;
  * as affinity key. This allows Ignite to execute the {@code 'limit'} clause on
  * the remote nodes and bring back only the small data set specified within the 'limit' clause,
  * instead of the whole query result as would happen in a non-collocated execution.
- *
- * <h2 class="header">Local flag</h2>
- * When flag is set to {@code True} then results from local node only
- * will be returned.
- * See {@link #setLocal(boolean)}.
- *
- * <h2 class="header">Enforce join order flag</h2>
- * When flag is set to {@code True} then Ignite will not try to optimize query plan with rearranging joins and
- * all joins will be applied in order as query declares.
- * See {@link SqlFieldsQuery#setEnforceJoinOrder(boolean)}
- *
- * <h2 class="header">Cross-Cache Queries</h2>
- * You are allowed to query data from several caches. Cache that this query was created on is
- * treated as default schema in this case. Other caches can be referenced by their names.
- * <p>
- * Note that cache name is case sensitive and has to always be specified in double quotes.
- * Here is an example of cross cache query (note that 'replicated' and 'partitioned' are
- * cache names for replicated and partitioned caches accordingly):
- * <pre name="code" class="java">
- * Query&lt;List&lt;?&gt;&gt; storePurchases = new SqlFieldsQuery(
- *     "Select * from \"replicated\".Store, \"partitioned\".Purchase where Store.id=Purchase.storeId and Store.id=?");
- * </pre>
- *
- * Note: Joins will work correctly only if joined objects are stored in collocated mode or
- * at least one side of the join is stored in {@link org.apache.ignite.cache.CacheMode#REPLICATED} cache or
- * {@link #distributedJoins} is set to {@code True}.
- * See {@link AffinityKey} javadoc for more information about collocation.
- *
- * <h2 class="header">Query usage</h2>
- * As an example, suppose we have data model consisting of {@code 'Employee'} and {@code 'Organization'}
- * classes defined as follows:
- * <pre name="code" class="java">
- * public class Organization {
- *     // Indexed field.
- *     &#64;QuerySqlField(index = true)
- *     private long id;
- *
- *     // Indexed field.
- *     &#64;QuerySqlField(index = true)
- *     private String name;
- *     ...
- * }
- *
- * public class Person {
- *     // Indexed field.
- *     &#64;QuerySqlField(index = true)
- *     private long id;
- *
- *     // Indexed field (Organization ID, used as a foreign key).
- *     &#64;QuerySqlField(index = true)
- *     private long orgId;
- *
- *     // Without SQL field annotation, this field cannot be used in queries.
- *     private String name;
- *
- *     // Not indexed field.
- *     &#64;QuerySqlField
- *     private double salary;
- *
- *     ...
- * }
- * </pre>
- * Then you can create and execute queries that check various salary ranges like so:
- * <pre name="code" class="java">
- * Cache&lt;Long, Person&gt; cache = G.grid().cache();
- * ...
- * // Create query which selects salaries based on range for all employees
- * // that work for a certain company.
- * Query&lt;List&lt;?&gt;&gt; qry = new SqlFieldsQuery(
- *     "Select * from Person, Organization where Person.orgId = Organization.id " +
- *         "and Organization.name = ? and Person.salary &gt; ? and Person.salary &lt;= ?");
- *
- * // Query all nodes to find all cached Ignite employees
- * // with salaries less than 1000.
- * cache.query(qry.setArgs("Ignition", 0, 1000)).getAll();
- *
- * <h2 class="header">Custom functions in SQL queries.</h2>
- * It is possible to write custom Java methods and call then form SQL queries. These methods must be public static
- * and annotated with {@link QuerySqlFunction}. Classes containing these methods must be registered in
- * {@link org.apache.ignite.configuration.CacheConfiguration#setSqlFunctionClasses(Class[])}.
- *
- * <h2 class="header">Geo-Spatial Indexes and Queries</h2>
- * Ignite also support <b>Geo-Spatial Indexes</b>. Here is an example of geo-spatial index:
- * <pre name="code" class="java">
- * private class MapPoint implements Serializable {
- *     // Geospatial index.
- *     &#64;QuerySqlField(index = true)
- *     private org.locationtech.jts.geom.Point location;
- *
- *     // Not indexed field.
- *     &#64;QuerySqlField
- *     private String name;
- *
- *     public MapPoint(org.locationtech.jts.geom.Point location, String name) {
- *         this.location = location;
- *         this.name = name;
- *     }
- * }
- * </pre>
- * Example of spatial query on the geo-indexed field from above:
- * <pre name="code" class="java">
- * org.locationtech.jts.geom.GeometryFactory factory = new org.locationtech.jts.geom.GeometryFactory();
- *
- * org.locationtech.jts.geom.Polygon square = factory.createPolygon(new Coordinate[] {
- *     new org.locationtech.jts.geom.Coordinate(0, 0),
- *     new org.locationtech.jts.geom.Coordinate(0, 100),
- *     new org.locationtech.jts.geom.Coordinate(100, 100),
- *     new org.locationtech.jts.geom.Coordinate(100, 0),
- *     new org.locationtech.jts.geom.Coordinate(0, 0)
- * });
- *
- * Map.Entry<String, UserData> records = cache.query(
- *      new SqlQuery<>(MapPoint.class, "select * from MapPoint where location && ?")
- *          .setArgs(square)
- *      ).getAll();
- * </pre>
  *
  * @see IgniteCache#query(Query)
  */

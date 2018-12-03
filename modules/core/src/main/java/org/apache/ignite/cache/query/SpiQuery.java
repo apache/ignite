@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 
 /**
- * Query to be used by some 3-rd party {@link IndexingSpi} implementations.
+ * Query to be used by {@link IndexingSpi} implementations.
  *
  * @see IgniteCache#query(Query)
  */
