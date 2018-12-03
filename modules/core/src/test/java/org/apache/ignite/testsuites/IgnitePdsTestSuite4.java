@@ -38,35 +38,9 @@ public class IgnitePdsTestSuite4 extends TestSuite {
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite 4");
 
-        addRealPageStoreTestsNotForDirectIo(suite);
-
-        suite.addTestSuite(FileDownloaderTest.class);
-
+        for(int i = 0; i < 100; i++)
         suite.addTestSuite(IgnitePdsTaskCancelingTest.class);
 
-        suite.addTestSuite(IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse.class);
-
-        suite.addTestSuite(IgnitePdsPartitionPreloadTest.class);
-
-        suite.addTestSuite(ResetLostPartitionTest.class);
-
         return suite;
-    }
-
-    /**
-     * Fills {@code suite} with PDS test subset, which operates with real page store, but requires long time to execute.
-     *
-     * @param suite suite to add tests into.
-     */
-    private static void addRealPageStoreTestsNotForDirectIo(TestSuite suite) {
-        suite.addTestSuite(IgnitePdsTransactionsHangTest.class);
-
-        suite.addTestSuite(IgnitePdsPageEvictionDuringPartitionClearTest.class);
-
-        // Rebalancing test
-        suite.addTestSuite(IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes.class);
-
-        // Integrity test.
-        suite.addTestSuite(IgnitePdsRecoveryAfterFileCorruptionTest.class);
     }
 }
