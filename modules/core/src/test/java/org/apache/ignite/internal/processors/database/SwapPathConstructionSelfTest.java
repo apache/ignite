@@ -31,11 +31,15 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test verifies correct construction of swap file path {@link DataRegionConfiguration#setSwapPath(String)}
  * when absolute or relative paths are provided via configuration.
  */
+@RunWith(JUnit4.class)
 public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
     /** */
     private DataStorageConfiguration memCfg;

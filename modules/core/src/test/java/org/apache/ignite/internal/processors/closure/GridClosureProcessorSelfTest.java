@@ -48,11 +48,15 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link GridClosureProcessor}.
  */
 @GridCommonTest(group = "Closure Processor")
+@RunWith(JUnit4.class)
 public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     /** Number of grids started for tests. Should not be less than 2. */
     private static final int NODES_CNT = 2;

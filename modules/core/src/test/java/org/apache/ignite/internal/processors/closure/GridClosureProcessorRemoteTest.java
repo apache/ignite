@@ -31,11 +31,15 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests execution of anonymous closures on remote nodes.
  */
 @GridCommonTest(group = "Closure Processor")
+@RunWith(JUnit4.class)
 public class GridClosureProcessorRemoteTest extends GridCommonAbstractTest {
     /** Number of grids started for tests. Should not be less than 2. */
     public static final int NODES_CNT = 2;

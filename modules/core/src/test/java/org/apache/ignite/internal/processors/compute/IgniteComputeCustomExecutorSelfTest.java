@@ -36,12 +36,16 @@ import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests custom executor named pools.
  *
  * https://issues.apache.org/jira/browse/IGNITE-4699
  */
+@RunWith(JUnit4.class)
 public class IgniteComputeCustomExecutorSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 2;

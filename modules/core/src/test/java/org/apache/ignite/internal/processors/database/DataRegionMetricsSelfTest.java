@@ -23,12 +23,16 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.lang.Thread.sleep;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
     /** */
     private DataRegionMetricsImpl memMetrics;

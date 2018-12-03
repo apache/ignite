@@ -28,10 +28,14 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests DataStreamer reconnect behaviour when client nodes arrives at the same or different topVer than it left.
  */
+@RunWith(JUnit4.class)
 public class DataStreamerClientReconnectAfterClusterRestartTest extends GridCommonAbstractTest {
     /** */
     public static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);

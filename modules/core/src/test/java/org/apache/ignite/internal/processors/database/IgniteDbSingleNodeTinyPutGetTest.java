@@ -19,10 +19,14 @@ package org.apache.ignite.internal.processors.database;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteEx;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for
  */
+@RunWith(JUnit4.class)
 public class IgniteDbSingleNodeTinyPutGetTest extends IgniteDbSingleNodePutGetTest {
     /** {@inheritDoc} */
     @Override protected boolean isLargePage() {
