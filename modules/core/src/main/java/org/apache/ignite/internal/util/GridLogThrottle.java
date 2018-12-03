@@ -179,6 +179,15 @@ public class GridLogThrottle {
     }
 
     /**
+     * Clears key.
+     *
+     * @param key Key to clear from stored data.
+     */
+    public static void clearKey(String key) {
+        errors.remove(F.<Class<? extends Throwable>, String>t(null, key));
+    }
+
+    /**
      * Logs message if needed using desired level.
      *
      * @param log Logger.
