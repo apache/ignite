@@ -33,10 +33,14 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests off-heap map.
  */
+@RunWith(JUnit4.class)
 public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridCommonAbstractTest {
     /** Random. */
     private static final Random RAND = new Random();

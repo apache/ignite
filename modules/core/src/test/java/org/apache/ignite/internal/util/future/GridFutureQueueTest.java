@@ -91,8 +91,7 @@ public class GridFutureQueueTest {
          * @param writers Number of writers threads.
          * @throws Exception If failed.
          */
-        @Test
-    public void testQueue(long time, int writers) throws Exception {
+        public void testQueue(long time, int writers) throws Exception {
             System.out.println("Start test [writers=" + writers + ", time=" + time + "]");
 
             Thread rdr = new Thread() {

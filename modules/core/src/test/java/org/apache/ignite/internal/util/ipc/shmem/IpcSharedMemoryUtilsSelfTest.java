@@ -21,10 +21,14 @@ import java.io.File;
 import java.util.Collection;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IpcSharedMemoryUtilsSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

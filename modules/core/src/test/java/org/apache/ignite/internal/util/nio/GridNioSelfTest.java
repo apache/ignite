@@ -52,12 +52,16 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Tests for new NIO server.
  */
+@RunWith(JUnit4.class)
 public class GridNioSelfTest extends GridCommonAbstractTest {
     /** Message count in test without reconnect. */
     private static final int MSG_CNT = 2000;

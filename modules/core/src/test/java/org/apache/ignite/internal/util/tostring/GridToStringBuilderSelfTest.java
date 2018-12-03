@@ -37,6 +37,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_COLLECTION_LIMIT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_MAX_LENGTH;
@@ -46,6 +49,7 @@ import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.ident
  * Tests for {@link GridToStringBuilder}.
  */
 @GridCommonTest(group = "Utils")
+@RunWith(JUnit4.class)
 public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.

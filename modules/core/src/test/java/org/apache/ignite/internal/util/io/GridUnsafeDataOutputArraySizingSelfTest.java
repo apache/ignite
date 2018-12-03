@@ -20,12 +20,16 @@ package org.apache.ignite.internal.util.io;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHAL_BUFFERS_RECHECK;
 
 /**
  * Test for {@link GridUnsafeDataOutput}.
  */
+@RunWith(JUnit4.class)
 public class GridUnsafeDataOutputArraySizingSelfTest extends GridCommonAbstractTest {
     /** Small array. */
     private static final byte[] SMALL = new byte[32];

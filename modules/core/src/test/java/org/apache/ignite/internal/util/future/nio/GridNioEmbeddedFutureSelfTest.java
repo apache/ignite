@@ -20,12 +20,16 @@ package org.apache.ignite.internal.util.future.nio;
 import org.apache.ignite.internal.util.nio.GridNioEmbeddedFuture;
 import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Test for NIO embedded future.
  */
+@RunWith(JUnit4.class)
 public class GridNioEmbeddedFutureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.

@@ -20,6 +20,9 @@ package org.apache.ignite.internal.util.io;
 import java.io.ByteArrayInputStream;
 import java.util.Random;
 import junit.framework.TestCase;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.GridTestIoUtils.getCharByByteLE;
 import static org.apache.ignite.GridTestIoUtils.getDoubleByByteLE;
@@ -32,6 +35,7 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * Grid unsafe data input/output byte order sanity tests.
  */
+@RunWith(JUnit4.class)
 public class GridUnsafeDataInputOutputByteOrderSelfTest extends TestCase {
     /** Array length. */
     private static final int ARR_LEN = 16;

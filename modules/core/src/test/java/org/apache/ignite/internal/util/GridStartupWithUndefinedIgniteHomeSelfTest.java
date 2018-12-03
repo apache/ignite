@@ -30,6 +30,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
 import static org.apache.ignite.internal.util.IgniteUtils.nullifyHomeDirectory;
@@ -42,6 +45,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.nullifyHomeDirectory;
  * independent from {@link GridCommonAbstractTest} stuff.
  * 2. Do not replace native Java asserts with JUnit ones - test won't fall on TeamCity.
  */
+@RunWith(JUnit4.class)
 public class GridStartupWithUndefinedIgniteHomeSelfTest extends TestCase {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);

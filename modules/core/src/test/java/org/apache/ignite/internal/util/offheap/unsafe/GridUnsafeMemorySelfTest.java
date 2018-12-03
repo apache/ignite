@@ -23,10 +23,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests unsafe memory.
  */
+@RunWith(JUnit4.class)
 public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
     /** */
     @Test

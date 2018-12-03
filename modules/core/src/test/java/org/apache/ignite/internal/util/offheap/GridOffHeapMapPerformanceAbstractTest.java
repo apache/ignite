@@ -23,10 +23,14 @@ import java.util.Random;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests off-heap map.
  */
+@RunWith(JUnit4.class)
 public abstract class GridOffHeapMapPerformanceAbstractTest extends GridCommonAbstractTest {
     /** Random. */
     private static final Random RAND = new Random();

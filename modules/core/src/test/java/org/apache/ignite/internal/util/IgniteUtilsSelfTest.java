@@ -77,6 +77,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertArrayEquals;
@@ -85,6 +88,7 @@ import static org.junit.Assert.assertArrayEquals;
  * Grid utils tests.
  */
 @GridCommonTest(group = "Utils")
+@RunWith(JUnit4.class)
 public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /** */
     public static final int[] EMPTY = new int[0];

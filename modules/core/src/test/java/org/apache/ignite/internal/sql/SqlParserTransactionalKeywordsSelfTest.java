@@ -21,10 +21,14 @@ import org.apache.ignite.internal.sql.command.SqlBeginTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCommitTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for processing of keywords BEGIN, COMMIT, ROLLBACK, START.
  */
+@RunWith(JUnit4.class)
 public class SqlParserTransactionalKeywordsSelfTest extends SqlParserAbstractSelfTest {
     /**
      * Test parsing of different forms of BEGIN/START.

@@ -23,10 +23,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import junit.framework.TestCase;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link GridNioDelimitedBuffer}.
  */
+@RunWith(JUnit4.class)
 public class GridNioDelimitedBufferSelfTest extends TestCase {
     /** */
     private static final String ASCII = "ASCII";

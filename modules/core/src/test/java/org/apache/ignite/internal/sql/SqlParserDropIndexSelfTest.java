@@ -18,10 +18,14 @@
 package org.apache.ignite.internal.sql;
 
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for SQL parser: CREATE INDEX.
  */
+@RunWith(JUnit4.class)
 public class SqlParserDropIndexSelfTest extends SqlParserAbstractSelfTest {
     /**
      * Tests for DROP INDEX command.

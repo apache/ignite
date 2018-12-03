@@ -26,10 +26,14 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Testing logging via {@link IgniteUtils#warnDevOnly(IgniteLogger, Object)}.
  */
+@RunWith(JUnit4.class)
 public class IgniteDevOnlyLogTest extends GridCommonAbstractTest {
     /** */
     private List<String> additionalArgs;

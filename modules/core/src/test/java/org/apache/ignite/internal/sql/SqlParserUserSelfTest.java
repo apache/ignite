@@ -20,11 +20,15 @@ package org.apache.ignite.internal.sql;
 import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for SQL parser: CREATE INDEX.
  */
 @SuppressWarnings({"UnusedReturnValue"})
+@RunWith(JUnit4.class)
 public class SqlParserUserSelfTest extends SqlParserAbstractSelfTest {
     /**
      * Tests for CREATE USER command.

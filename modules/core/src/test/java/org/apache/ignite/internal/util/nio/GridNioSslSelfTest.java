@@ -24,10 +24,14 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for new NIO server with SSL enabled.
  */
+@RunWith(JUnit4.class)
 public class GridNioSslSelfTest extends GridNioSelfTest {
     /** Test SSL context. */
     private static SSLContext sslCtx;

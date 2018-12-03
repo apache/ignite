@@ -19,10 +19,14 @@ package org.apache.ignite.internal.sql;
 
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for SQL parser: SET STREAMING.
  */
+@RunWith(JUnit4.class)
 public class SqlParserSetStreamingSelfTest extends SqlParserAbstractSelfTest {
     /**
      *

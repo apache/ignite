@@ -25,10 +25,14 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.SensitiveInfoTestLoggerProxy;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for property {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE}.
  */
+@RunWith(JUnit4.class)
 public abstract class IncludeSensitiveAbstractTest extends GridCacheAbstractSelfTest {
     /** Number of test entries */
     private static final int ENTRY_CNT = 10;
