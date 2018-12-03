@@ -50,12 +50,16 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAhea
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
 
 /**
  * Tests node recovering after disk errors during interaction with persistent storage.
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     /** */
     private static final int PAGE_SIZE = DataStorageConfiguration.DFLT_PAGE_SIZE;

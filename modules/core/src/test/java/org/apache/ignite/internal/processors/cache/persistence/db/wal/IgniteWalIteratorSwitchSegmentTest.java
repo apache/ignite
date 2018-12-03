@@ -61,6 +61,9 @@ import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.METASTORE_DATA_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
@@ -70,6 +73,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /***
  * Test check correct switch segment if in the tail of segment have garbage.
  */
+@RunWith(JUnit4.class)
 public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
     /** Segment file size. */
     private static final int SEGMENT_SIZE = 1024 * 1024;

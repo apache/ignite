@@ -35,6 +35,9 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * We start writing to unstable cluster.
@@ -42,6 +45,7 @@ import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
  * There will be entries in WAL which belongs to evicted partitions.
  * We should ignore them (not throw exceptions). This point is tested.
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstractTest {
     /** Checkpoint frequency. */
     private static final long CHECKPOINT_FREQUENCY = 2_000_000;

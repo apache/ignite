@@ -36,6 +36,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID;
@@ -44,6 +47,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
 /**
  * Test for new and old style persistent storage folders generation
  */
+@RunWith(JUnit4.class)
 public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest {
     /** Cache name for test. */
     public static final String CACHE_NAME = "dummy";
