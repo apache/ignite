@@ -18,27 +18,27 @@
 package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
 import java.util.Arrays;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
-import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -48,8 +48,8 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
 
 /**
  *
@@ -109,7 +109,10 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
 
         cfg.setFailureHandler(new StopNodeFailureHandler());
 
-        cfg.setSystemThreadPoolSize(2);
+        cfg.setRebalanceThreadPoolSize(4);
+
+        cfg.setTransactionConfiguration(new TransactionConfiguration()
+            .setDefaultTxTimeout(1000));
 
         cfg.setDataStorageConfiguration(
                 new DataStorageConfiguration()
@@ -169,7 +172,11 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
 
         startGrid(1);
 
+        runLoad(ig0);
+
         consumer.accept(ig0);
+
+        U.sleep(1000);
 
         awaitPartitionMapExchange(true, true, null, true);
 
@@ -219,19 +226,24 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
     }
 
     /**
-     * @param caches Caches.
+     * @param ig Ig.
      */
-    private void validateData(String... caches) {
-        if (caches != null) {
-            for (String name: caches) {
-               for (Ignite ig: G.allGrids()) {
-                   IgniteCache<Object, Object> cache = ig.cache(name);
+    private void runLoad(Ignite ig) throws Exception{
+        GridTestUtils.runMultiThreaded(new Runnable() {
+            @Override public void run() {
+                String cacheName = F.rand(CACHE_1, CACHE_2, CACHE_3, CACHE_4);
 
-                   for (int i = 0; i < 3_000; i++)
-                       assertNotNull("Key k=" + i + " in cache=" + cache + " is absent", cache.get(i));
-               }
+                IgniteCache cache = ig.cache(cacheName);
+
+                for (int i = 0; i < 3_000; i++) {
+                    int idx = ThreadLocalRandom.current().nextInt(3_000);
+
+                    cache.put(idx, new byte[1024]);
+
+                    log.info("tx put" + idx);
+                }
             }
-        }
+        }, 4, "load-thread");
     }
 
     /**
@@ -248,21 +260,11 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
 
                 if (grpId == CU.cacheId(GROUP_1) || grpId == CU.cacheId(GROUP_2)) {
                     try {
-                        IgniteLogger log = U.field(this, "log");
-
-                        log.info("send msg " + msg);
-
                         U.sleep(50);
                     } catch (IgniteInterruptedCheckedException e) {
                         e.printStackTrace();
                     }
                 }
-            }
-
-            if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionDemandMessage) {
-                IgniteLogger log = U.field(this, "log");
-
-                log.info("send demand msg " + msg);
             }
 
             super.sendMessage(node, msg);
@@ -277,21 +279,11 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
 
                 if (grpId == CU.cacheId(GROUP_1) || grpId == CU.cacheId(GROUP_2)) {
                     try {
-                        IgniteLogger log = U.field(this, "log");
-
-                        log.info("send supply msg " + msg);
-
-                        U.sleep(100);
+                        U.sleep(50);
                     } catch (IgniteInterruptedCheckedException e) {
                         e.printStackTrace();
                     }
                 }
-            }
-
-            if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionDemandMessage) {
-                IgniteLogger log = U.field(this, "log");
-
-                log.info("send demand msg " + msg);
             }
 
             super.sendMessage(node, msg, ackC);
