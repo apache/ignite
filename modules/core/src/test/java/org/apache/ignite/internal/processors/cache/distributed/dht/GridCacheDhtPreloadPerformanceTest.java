@@ -33,10 +33,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.util.concurrent.Callable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test cases for partitioned cache {@link GridDhtPreloader preloader}.
  */
+@RunWith(JUnit4.class)
 public class GridCacheDhtPreloadPerformanceTest extends GridCommonAbstractTest {
     /** */
     private static final int THREAD_CNT = 30;

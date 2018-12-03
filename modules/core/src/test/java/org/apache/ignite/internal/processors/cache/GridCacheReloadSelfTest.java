@@ -32,12 +32,16 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Checks that CacheProjection.reload() operations are performed correctly.
  */
+@RunWith(JUnit4.class)
 public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
     /** Maximum allowed number of cache entries. */
     public static final int MAX_CACHE_ENTRIES = 500;

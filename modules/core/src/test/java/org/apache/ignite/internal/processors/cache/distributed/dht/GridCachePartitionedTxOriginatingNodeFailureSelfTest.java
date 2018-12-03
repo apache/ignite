@@ -27,10 +27,14 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxOriginatingNodeFailureAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests transaction consistency when originating node fails.
  */
+@RunWith(JUnit4.class)
 public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
     IgniteTxOriginatingNodeFailureAbstractSelfTest {
     /** */

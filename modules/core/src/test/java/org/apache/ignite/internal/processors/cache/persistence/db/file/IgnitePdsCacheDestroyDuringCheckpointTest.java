@@ -28,10 +28,14 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for cache creation/deletion with frequent checkpoints.
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsCacheDestroyDuringCheckpointTest extends GridCommonAbstractTest {
     /** */
     private static final String NAME_PREFIX = "CACHE-";

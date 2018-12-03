@@ -22,10 +22,14 @@ import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicEntryProcessorDeploymentSelfTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Cache EntryProcessor + Deployment.
  */
+@RunWith(JUnit4.class)
 public class GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest
     extends GridCacheAtomicEntryProcessorDeploymentSelfTest {
     /** {@inheritDoc} */

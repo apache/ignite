@@ -21,10 +21,14 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Local atomic cache metrics test with tck specific.
  */
+@RunWith(JUnit4.class)
 public class GridCacheAtomicLocalTckMetricsSelfTestImpl extends GridCacheAtomicLocalMetricsSelfTest {
     /**
      * @throws Exception If failed.

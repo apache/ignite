@@ -39,12 +39,16 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
 /**
  * Test for binary objects stored in cache.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheBinaryObjectsAbstractDataStreamerSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int THREAD_CNT = 64;
