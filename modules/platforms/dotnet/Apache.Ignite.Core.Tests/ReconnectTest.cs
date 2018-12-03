@@ -17,7 +17,9 @@
 
 namespace Apache.Ignite.Core.Tests
 {
+    using System;
     using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
@@ -167,6 +169,48 @@ namespace Apache.Ignite.Core.Tests
         public void TestClusterRestart_ResetsCachedMetadataAndWriterStructures()
         {
             // TODO: Test writer structure reset. Use bg thread Put during entire Restart phase to detect the issue.
+            var serverCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                CacheConfiguration = new[] {new CacheConfiguration(CacheName)}
+            };
+
+            var clientCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                IgniteInstanceName = "client",
+                ClientMode = true
+            };
+
+            var server = Ignition.Start(serverCfg);
+            var client = Ignition.Start(clientCfg);
+
+            Assert.AreEqual(2, client.GetCluster().GetNodes().Count);
+
+            var evt = new ManualResetEventSlim(false);
+            client.ClientReconnected += (sender, args) => evt.Set();
+
+            var cache = client.GetCache<int, int>(CacheName);
+
+            Task.Factory.StartNew(() =>
+            {
+                while (!evt.IsSet)
+                {
+                    try
+                    {
+                        cache[1] = 1;
+                    }
+                    catch (Exception)
+                    {
+                        // Ignore exceptions while disconnected, keep on trying to populate writer structure cache.
+                    }
+                }
+            });
+
+            Ignition.Stop(server.Name, true);
+            Ignition.Start(serverCfg);
+
+            var cache1 = client.GetCache<int, int>(CacheName);
+            cache1[2] = 2;
+            Assert.AreEqual(2, cache1[2]);
         }
 
         /// <summary>
