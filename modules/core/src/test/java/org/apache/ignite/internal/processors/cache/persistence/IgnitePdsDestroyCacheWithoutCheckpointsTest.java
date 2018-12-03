@@ -21,10 +21,14 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Check that cluster survives after destroy caches abruptly with disabled checkpoints.
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsDestroyCacheWithoutCheckpointsTest extends IgnitePdsDestroyCacheAbstractTest {
     /**
      * {@inheritDoc}

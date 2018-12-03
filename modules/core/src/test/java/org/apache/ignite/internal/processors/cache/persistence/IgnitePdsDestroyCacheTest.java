@@ -18,10 +18,14 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.Ignite;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test correct clean up cache configuration data after destroying cache.
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest {
     /**
      *  Test destroy non grouped caches.

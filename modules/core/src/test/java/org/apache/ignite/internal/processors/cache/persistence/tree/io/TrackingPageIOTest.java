@@ -31,10 +31,14 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.TrackingPageIsCorruptedException;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class TrackingPageIOTest extends TestCase {
     /** Page size. */
     public static final int PAGE_SIZE = 4096;

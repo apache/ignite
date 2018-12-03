@@ -53,6 +53,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.mockito.Mockito;
 
 import static org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl.CHECKPOINT_POOL_OVERFLOW_ERROR_MSG;
@@ -60,6 +63,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.pagemem.Pa
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class PageMemoryImplTest extends GridCommonAbstractTest {
     /** Mb. */
     private static final long MB = 1024 * 1024;

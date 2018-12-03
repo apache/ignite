@@ -23,6 +23,9 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -30,6 +33,7 @@ import static org.junit.Assert.assertThat;
 /**
  * Test for {@link SegmentAware}.
  */
+@RunWith(JUnit4.class)
 public class SegmentAwareTest extends TestCase {
 
     /**

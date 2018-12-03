@@ -23,10 +23,14 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsTxCacheRebalancingTest extends IgnitePdsCacheRebalancingAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String cacheName) {

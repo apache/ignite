@@ -37,6 +37,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.lang.String.valueOf;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
@@ -47,6 +50,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class LocalWacModeNoChangeDuringRebalanceOnNonNodeAssignTest extends GridCommonAbstractTest {
 
     /** */

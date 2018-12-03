@@ -27,12 +27,16 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
     /** */
     private static final String CUSTOM_NON_DEFAULT_MEM_PLC_NAME = "custom_mem_plc";

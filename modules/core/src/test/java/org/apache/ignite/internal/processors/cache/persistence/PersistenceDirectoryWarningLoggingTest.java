@@ -21,10 +21,14 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests that warning is logged when persistence store directory equals {@code System.getProperty("java.io.tmpdir")}.
  */
+@RunWith(JUnit4.class)
 public class PersistenceDirectoryWarningLoggingTest extends GridCommonAbstractTest {
     /** Warning message to test. */
     private static final String WARN_MSG_PREFIX = "Persistence store directory is in the temp " +
