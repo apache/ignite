@@ -1897,14 +1897,21 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         try {
             IgniteEx coord = startGrid(0);
 
+            UUID coordId = coord.localNode().id();
+
             IgniteEx ignite1 = startGrid(1);
 
             CountDownLatch failedLatch = new CountDownLatch(1);
 
             ignite1.events().localListen(evt -> {
-                failedLatch.countDown();
+                assertEquals(EVT_NODE_FAILED, evt.type());
 
-                return false;
+                UUID failedId = ((DiscoveryEvent)evt).eventNode().id();
+
+                if (coordId.equals(failedId))
+                    failedLatch.countDown();
+
+                return true;
             }, EVT_NODE_FAILED);
 
             ignite1.configuration().getDiscoverySpi().failNode(coord.localNode().id(), null);
