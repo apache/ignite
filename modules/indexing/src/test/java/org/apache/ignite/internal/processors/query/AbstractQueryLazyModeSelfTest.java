@@ -20,9 +20,7 @@ package org.apache.ignite.internal.processors.query;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -54,7 +52,7 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
     private static final int PAGE_SIZE_SMALL = 12;
 
     /** Test duration. */
-    private static final long TEST_DUR = 5_000L;
+    private static final long TEST_DUR = 50_000L;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -114,23 +112,15 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
 
         final int qryThreads = 10;
 
-        final CountDownLatch latch = new CountDownLatch(qryThreads);
-
-        final AtomicBoolean queryProcessed = new AtomicBoolean();
-
         // Do many concurrent queries.
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
-                latch.countDown();
-
                 while(!end.get()) {
                     try {
                         FieldsQueryCursor<List<?>> cursor = execute(srv, query(0)
                             .setPageSize(PAGE_SIZE_SMALL));
 
                         cursor.getAll();
-
-                        queryProcessed.set(true);
                     }
                     catch (Exception e) {
                         if(X.cause(e, QueryRetryException.class) == null) {
@@ -142,10 +132,6 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
                 }
             }
         }, qryThreads, "usr-qry");
-
-        latch.await();
-
-        assertTrue(GridTestUtils.waitForCondition(queryProcessed::get, 1000));
 
         U.sleep(TEST_DUR);
 
@@ -171,23 +157,22 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
 
         final int qryThreads = 10;
 
-        final CountDownLatch latch = new CountDownLatch(qryThreads);
-
-        final AtomicBoolean queryProcessed = new AtomicBoolean();
-
         // Do many concurrent queries.
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
-                latch.countDown();
-
                 while(!end.get()) {
                     try {
-                        FieldsQueryCursor<List<?>> cursor = execute(srv, query(0)
+                        FieldsQueryCursor<List<?>> cursor = execute(srv, new SqlFieldsQuery(
+                            "SELECT pers.id, pers.name " +
+                            "FROM (SELECT DISTINCT p.id, p.name " +
+                            "FROM \"pers\".PERSON as p) as pers " +
+                            "JOIN \"pers\".PERSON p on p.id = pers.id " +
+                            "JOIN (SELECT t.persId as persId, SUM(t.time) totalTime " +
+                            "FROM \"persTask\".PersonTask as t GROUP BY t.persId) as task ON task.persId = pers.id")
+                            .setLazy(lazy())
                             .setPageSize(PAGE_SIZE_SMALL));
 
                         cursor.getAll();
-
-                        queryProcessed.set(true);
                     }
                     catch (Exception e) {
                         if(X.cause(e, QueryRetryException.class) == null) {
@@ -200,9 +185,6 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
             }
         }, qryThreads, "usr-qry");
 
-        latch.await();
-
-        assertTrue(GridTestUtils.waitForCondition(queryProcessed::get, 1000));
 
         long tEnd = U.currentTimeMillis() + TEST_DUR;
 

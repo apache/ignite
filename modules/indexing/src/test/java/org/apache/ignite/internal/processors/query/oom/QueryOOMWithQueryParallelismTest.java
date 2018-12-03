@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.oom;
 
-import org.apache.ignite.internal.processors.query.oom.AbstractQueryOOMTest;
-
 /**
  * Tests for OOME on query.
  */
