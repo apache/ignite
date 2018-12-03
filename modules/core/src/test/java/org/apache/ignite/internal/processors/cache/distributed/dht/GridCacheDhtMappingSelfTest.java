@@ -29,6 +29,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -37,6 +40,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 /**
  * Tests dht mapping.
  */
+@RunWith(JUnit4.class)
 public class GridCacheDhtMappingSelfTest extends GridCommonAbstractTest {
     /** Number of key backups. */
     private static final int BACKUPS = 1;

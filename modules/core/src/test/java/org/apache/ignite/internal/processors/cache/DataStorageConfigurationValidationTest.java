@@ -21,10 +21,14 @@ import java.util.concurrent.Callable;
 import junit.framework.TestCase;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests assertions in DataStorageConfiguration.
  */
+@RunWith(JUnit4.class)
 public class DataStorageConfigurationValidationTest extends TestCase {
     /**
      * Tests {@link DataStorageConfiguration#walSegmentSize} property assertion.
