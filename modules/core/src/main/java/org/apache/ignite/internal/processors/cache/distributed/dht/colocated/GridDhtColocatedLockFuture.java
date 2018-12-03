@@ -776,7 +776,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
         if (topVer != null) {
             for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()) {
-                if (fut.exchangeDone() && fut.topologyVersion().equals(topVer)) {
+                if (fut.isDone() && fut.topologyVersion().equals(topVer)) {
                     Throwable err = fut.validateCache(cctx, recovery, read, null, keys);
 
                     if (err != null) {

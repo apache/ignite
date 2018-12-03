@@ -222,7 +222,7 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
 
         if (topVer != null) {
             for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()) {
-                if (fut.exchangeDone() && fut.topologyVersion().equals(topVer)) {
+                if (fut.isDone() && fut.topologyVersion().equals(topVer)) {
                     Throwable err = fut.validateCache(cctx, false, false, null, null);
 
                     if (err != null) {
