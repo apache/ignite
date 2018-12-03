@@ -18,6 +18,9 @@
 package org.apache.ignite.ml.math.structures;
 
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 
 public interface Monoid<Self extends Monoid<? super Self>> {
     public Self mappend(Self other);
@@ -26,5 +29,9 @@ public interface Monoid<Self extends Monoid<? super Self>> {
 
     public static <T> Monoid<MonoidWrapper<T>> asMonoid(T t, IgniteBinaryOperator<T> mappendFunc, T mempty) {
         return new MonoidWrapper<>(t, mappendFunc, mempty);
+    }
+
+    public static Monoid<MonoidWrapper<Vector>> vectorMonoid(Vector v) {
+        return asMonoid(v, VectorUtils::concat, new DenseVector(0));
     }
 }

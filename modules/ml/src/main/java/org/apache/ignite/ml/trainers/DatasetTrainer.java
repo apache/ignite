@@ -29,6 +29,7 @@ import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 
@@ -304,6 +305,35 @@ public abstract class DatasetTrainer<M extends Model, L> {
         this.environment = envBuilder.buildForTrainer();
 
         return this;
+    }
+
+    /**
+     * Creates {@link DatasetTrainer} with same training logic, but able to accept labels of given new type
+     * of labels.
+     *
+     * @param new2Old Converter of new labels to old labels.
+     * @param <L1> New labels type.
+     * @return {@link DatasetTrainer} with same training logic, but able to accept labels of given new type
+     * of labels.
+     */
+    public <L1> DatasetTrainer<M, L1> withConvertedLabels(IgniteFunction<L1, L> new2Old) {
+        DatasetTrainer<M, L> old = this;
+        return new DatasetTrainer<M, L1>() {
+            @Override
+            public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
+                IgniteBiFunction<K, V, L1> lbExtractor) {
+                return old.fit(datasetBuilder, featureExtractor, lbExtractor.andThen(new2Old));
+            }
+
+            @Override public boolean checkState(M mdl) {
+                return old.checkState(mdl);
+            }
+
+            @Override protected <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L1> lbExtractor) {
+                return old.update(mdl, datasetBuilder, featureExtractor, lbExtractor.andThen(new2Old));
+            }
+        };
     }
 
     /**

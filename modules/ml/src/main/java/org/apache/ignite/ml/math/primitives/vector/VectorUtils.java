@@ -62,6 +62,16 @@ public class VectorUtils {
     }
 
     /**
+     * Turn number to 1-sized array.
+     *
+     * @param val Value to wrap in array.
+     * @return Number wrapped in 1-sized array.
+     */
+    public static double[] num2Arr(double val) {
+        return new double[] {val};
+    }
+
+    /**
      * Turn number into Vector of given size with one-hot encoding.
      *
      * @param num Number to turn into vector.
@@ -226,6 +236,21 @@ public class VectorUtils {
         Vector res = v1;
         for (Vector v : vs)
             res = concat(res, v);
+        return res;
+    }
+
+    /**
+     * Concatenates given vectors.
+     *
+     * @param vs Other vectors.
+     * @return Concatenation result.
+     */
+    public static Vector concat(Vector... vs) {
+        Vector res = vs.length == 0 ? new DenseVector() : vs[0];
+        for (int i = 1; i < vs.length; i++) {
+            Vector v = vs[i];
+            res = concat(res, v);
+        }
         return res;
     }
 }

@@ -18,20 +18,19 @@
 package org.apache.ignite.ml.trainers.transformers;
 
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 
-public class VectorStackedTrainer<O, L, AM extends Model<Vector, O>> extends StackedDatasetTrainer<Vector, Vector, O, L, AM> {
-    public VectorStackedTrainer(DatasetTrainer<AM, L> aggregatingTrainer) {
-        super(aggregatingTrainer, VectorUtils::concat, IgniteFunction.identity());
+public class SimpleStackedModelTrainer<I, O, AM extends Model<I, O>, L> extends StackedDatasetTrainer<I, I, O, L, AM> {
+    public SimpleStackedModelTrainer(DatasetTrainer<AM, L> aggregatingTrainer,
+        IgniteBinaryOperator<I> aggregatingInputMerger,
+        IgniteFunction<I, I> submodelInput2AggregatingInputConverter) {
+        super(aggregatingTrainer, aggregatingInputMerger, submodelInput2AggregatingInputConverter);
     }
 
-    @Override public <O1> StackedDatasetTrainer<Vector, Vector, O, L, AM> withAddedTrainer(
-        DatasetTrainer<Model<Vector, O1>, L> trainer, IgniteFunction<Vector, Vector> vec2InputConverter,
-        IgniteFunction<O1, Vector> submodelOutput2AggregatingInputConverter,
-        IgniteFunction<O1, Vector> output2VecConverter) {
-        return super.withAddedTrainer(trainer, vec2InputConverter, submodelOutput2AggregatingInputConverter, output2VecConverter);
+    public SimpleStackedModelTrainer(DatasetTrainer<AM, L> aggregatingTrainer,
+        IgniteBinaryOperator<I> aggregatingInputMerger) {
+        super(aggregatingTrainer, aggregatingInputMerger, IgniteFunction.identity());
     }
 }

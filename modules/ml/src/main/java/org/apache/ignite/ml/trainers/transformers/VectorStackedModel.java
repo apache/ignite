@@ -28,7 +28,7 @@ public class VectorStackedModel<AM extends Model<Vector, Vector>> extends Stacke
         super(aggregatingMdl, VectorUtils::concat, subMdl, IgniteFunction.identity());
     }
 
-    @Override StackedModel<Vector, Vector, Vector, AM> withAddedSubmodel(Model<Vector, Vector> subModel) {
-        return super.withAddedSubmodel(subModel);
+    @Override StackedModel<Vector, Vector, Vector, AM> addSubmodel(Model<Vector, Vector> subModel) {
+        return super.addSubmodel(subModel);
     }
 }

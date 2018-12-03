@@ -17,27 +17,11 @@
 
 package org.apache.ignite.ml.math.structures;
 
-import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
-
-public class MonoidWrapper<T> implements Monoid<MonoidWrapper<T>> {
+public abstract class MonoidWrapper<T> implements Monoid<MonoidWrapper<T>> {
     private T val;
-    private final T mempty;
-    private final IgniteBinaryOperator<T> mappend;
 
-    MonoidWrapper(T val, IgniteBinaryOperator<T> mappend, T mempty) {
+    MonoidWrapper(T val) {
         this.val = val;
-        this.mempty = mempty;
-        this.mappend = mappend;
-    }
-
-    @Override public MonoidWrapper<T> mappend(MonoidWrapper<T> other) {
-        val = mappend.apply(val, other.val);
-
-        return this;
-    }
-
-    @Override public MonoidWrapper<T> mempty() {
-        return new MonoidWrapper<>(mempty, mappend, mempty);
     }
 
     public T val() {

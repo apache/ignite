@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.trainers.transformers;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
@@ -24,43 +25,34 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 public class StackedModel<IS, IA, O, M extends Model<IA, O>> implements Model<IS, O> {
     private Model<IS, IA> subModelsLayer;
-    private final M aggregatingModel;
+    private final M aggregatorModel;
     private List<Model<IS, ?>> submodels;
     private final IgniteBinaryOperator<IA> aggregatingInputMerger;
 
-    public StackedModel(M aggregatingMdl,
+    StackedModel(M aggregatorMdl,
         IgniteBinaryOperator<IA> aggregatingInputMerger,
-        Model<IS, IA> subMdl,
-        IgniteFunction<IS, IA> subModelInput2AggregatingInput) {
-        this.aggregatingModel = aggregatingMdl;
+        IgniteFunction<IS, IA> subMdlInput2AggregatingInput) {
+        this.aggregatorModel = aggregatorMdl;
         this.aggregatingInputMerger = aggregatingInputMerger;
-        this.subModelsLayer = subMdl;
+        this.subModelsLayer = subMdlInput2AggregatingInput != null ? subMdlInput2AggregatingInput::apply : null;
+        submodels = new ArrayList<>();
     }
-
-//    public StackedModel(IgniteFunction<IS, IA> subModelInput2AggregatingInput) {
-//
-//    }
-//
-//    public StackedModel(Model<IS, IA> subMdl) {
-//        subModelsLayer = subMdl;
-//    }
 
     List<Model<IS, ?>> submodels() {
         return submodels;
     }
 
     M aggregatingModel() {
-        return aggregatingModel;
+        return aggregatorModel;
     }
 
-    StackedModel<IS, IA, O, M> withAddedSubmodel(Model<IS, IA> subModel) {
+    void addSubmodel(Model<IS, IA> subModel) {
         submodels.add(subModel);
-        subModelsLayer = subModelsLayer.combine(subModelsLayer, aggregatingInputMerger);
-
-        return this;
+        subModelsLayer = subModelsLayer != null ? subModelsLayer.combine(subModelsLayer, aggregatingInputMerger)
+            : subModel;
     }
 
     @Override public O apply(IS is) {
-        return subModelsLayer.andThen(aggregatingModel).apply(is);
+        return subModelsLayer.andThen(aggregatorModel).apply(is);
     }
 }
