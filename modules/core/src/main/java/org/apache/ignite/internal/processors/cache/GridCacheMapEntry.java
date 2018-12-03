@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -231,8 +232,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     @GridToStringExclude
     private final Lock listenerLock;
 
-    /** */
-    private final boolean disableTriggeringCacheInterceptorOnConflict =
+    /** Public access needs for tests. */
+    public static volatile boolean disableTriggeringCacheInterceptorOnConflict =
         Boolean.parseBoolean(System.getProperty(IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT, "false"));
 
     /**
@@ -3307,10 +3308,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /**
      * Checks, that cache interceptor should be skipped.
      * <p>
-     * It is expects by default behavior that mentioned Interceptor methods will be called, but onGet(). This can even
-     * make DR-update flow broken in case of non-idempotent Interceptor and force users to call onGet manually as the
-     * only workaround. Also, user may want to skip Interceptor to avoid redundant entry transformation for DR updates
-     * and exchange with internal data b/w data centres which is a normal case.
+     * It is expects by default behavior that Interceptor methods ({@link CacheInterceptor#onBeforePut(Cache.Entry,
+     * Object)}, {@link CacheInterceptor#onAfterPut(Cache.Entry)}, {@link CacheInterceptor#onBeforeRemove(Cache.Entry)}
+     * and {@link CacheInterceptor#onAfterRemove(Cache.Entry)}) will be called, but {@link
+     * CacheInterceptor#onGet(Object, Object)}. This can even make DR-update flow broken in case of non-idempotent
+     * Interceptor and force users to call onGet manually as the only workaround. Also, user may want to skip
+     * Interceptor to avoid redundant entry transformation for DR updates and exchange with internal data b/w data
+     * centres which is a normal case.
      *
      * @param explicitVer - Explicit version (if any).
      * @return {@code true} if cache interceptor should be skipped and {@code false} otherwise.
