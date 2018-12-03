@@ -792,10 +792,11 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (!clusterRestarted)
                 return;
             
-            // TODO: Reset all binary structures. Metadata must be sent again.
+            // Reset all binary structures. Metadata must be sent again.
+            // TODO: Concurrency?
             foreach (var desc in _idToDesc)
             {
-                
+                desc.Value.ResetWriteStructure();
             }
         }
 
