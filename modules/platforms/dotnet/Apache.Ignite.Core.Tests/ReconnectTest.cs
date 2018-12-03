@@ -190,6 +190,7 @@ namespace Apache.Ignite.Core.Tests
             client.ClientReconnected += (sender, args) => evt.Set();
 
             var cache = client.GetCache<int, Person>(CacheName);
+            cache[1] = new Person(1);
 
             Task.Factory.StartNew(() =>
             {
@@ -207,12 +208,14 @@ namespace Apache.Ignite.Core.Tests
             });
 
             Ignition.Stop(server.Name, true);
-            Ignition.Start(serverCfg);
+            var server2 = Ignition.Start(serverCfg);
             evt.Wait();
 
-            var cache1 = client.GetCache<int, Person>(CacheName);
-            cache1[2] = new Person(2);
-            Assert.AreEqual(2, cache1[2].Id);
+            // Verify that we can deserialize on server (meta is resent properly).
+            cache[2] = new Person(2);
+            
+            var serverCache = server2.GetCache<int, Person>(CacheName);
+            Assert.AreEqual(2, serverCache[2].Id);
         }
 
         /// <summary>
