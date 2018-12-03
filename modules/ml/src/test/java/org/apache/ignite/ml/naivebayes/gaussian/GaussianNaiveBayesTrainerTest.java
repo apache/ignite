@@ -61,6 +61,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
         singleLabeldata2.put(1, new double[] {-5.0, -2.0, LABEL_2});
     }
 
+    /** Trainer. */
     private GaussianNaiveBayesTrainer trainer;
 
     /** Initialization {@code GaussianNaiveBayesTrainer}.*/

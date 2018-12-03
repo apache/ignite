@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -45,10 +46,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -74,6 +75,9 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
+    /** IP finder. */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
     /** Key 1. */
     private Integer key1;
 
@@ -82,9 +86,6 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
     /** Two keys in form of a set. */
     private Set<Integer> keys;
-
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Nodes. */
     private Ignite[] ignites;
@@ -96,7 +97,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     private IgniteCache<Integer, Integer>[] caches;
 
     /** Recorded events. */
-    private ConcurrentHashSet<CacheEvent> evts;
+    private GridConcurrentHashSet<CacheEvent> evts;
 
     /** Cache mode. */
     private CacheMode cacheMode;
@@ -174,7 +175,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
         this.txConcurrency = txConcurrency;
         this.txIsolation = txIsolation;
 
-        evts = new ConcurrentHashSet<>();
+        evts = new GridConcurrentHashSet<>();
 
         startGridsMultiThreaded(GRID_CNT, true);
 
@@ -328,6 +329,17 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test TRANSACTIONAL_SNAPSHOT LOCAL cache with PESSIMISTIC/REPEATABLE_READ transaction.
+     *
+     * @throws Exception If failed.
+     */
+    public void testMvccTxLocalPessimisticRepeatableRead() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+
+        checkMvccTx(LOCAL, PESSIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
      * Test TRANSACTIONAL PARTITIONED cache with OPTIMISTIC/REPEATABLE_READ transaction.
      *
      * @throws Exception If failed.
@@ -382,6 +394,18 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test TRANSACTIONAL_SNAPSHOT PARTITIONED cache with PESSIMISTIC/REPEATABLE_READ transaction.
+     *
+     * @throws Exception If failed.
+     */
+    public void testMvccTxPartitionedPessimisticRepeatableRead() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9321");
+
+        checkMvccTx(PARTITIONED, PESSIMISTIC, REPEATABLE_READ);
+    }
+
+
+    /**
      * Test TRANSACTIONAL REPLICATED cache with OPTIMISTIC/REPEATABLE_READ transaction.
      *
      * @throws Exception If failed.
@@ -433,6 +457,17 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      */
     public void testTxReplicatedPessimisticSerializable() throws Exception {
         checkTx(REPLICATED, PESSIMISTIC, SERIALIZABLE);
+    }
+
+    /**
+     * Test TRANSACTIONAL_SNAPSHOT REPLICATED cache with PESSIMISTIC/REPEATABLE_READ transaction.
+     *
+     * @throws Exception If failed.
+     */
+    public void testMvccTxReplicatedPessimisticRepeatableRead() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9321");
+
+        checkMvccTx(REPLICATED, PESSIMISTIC, REPEATABLE_READ);
     }
 
     /**
@@ -495,6 +530,21 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Check TRANSACTIONAL_SNAPSHOT cache.
+     *
+     * @param cacheMode Cache mode.
+     * @param txConcurrency TX concurrency.
+     * @param txIsolation TX isolation.
+     * @throws Exception If failed.
+     */
+    private void checkMvccTx(CacheMode cacheMode, TransactionConcurrency txConcurrency,
+        TransactionIsolation txIsolation) throws Exception {
+        initialize(cacheMode, TRANSACTIONAL_SNAPSHOT, txConcurrency, txIsolation);
+
+        checkTx0();
+    }
+
+    /**
      * Check TRANSACTIONAL cache.
      *
      * @param cacheMode Cache mode.
@@ -505,6 +555,14 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     private void checkTx(CacheMode cacheMode, TransactionConcurrency txConcurrency,
         TransactionIsolation txIsolation) throws Exception {
         initialize(cacheMode, TRANSACTIONAL, txConcurrency, txIsolation);
+
+        checkTx0();
+    }
+
+    /**
+     * Check TX cache.
+     */
+    private void checkTx0()  {
 
         System.out.println("BEFORE: " + evts.size());
 

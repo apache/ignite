@@ -15,31 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.inference.storage;
+package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import org.apache.ignite.ml.inference.ModelDescriptor;
+import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.util.AttributeNodeFilter;
+
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 
 /**
- * Model descriptor storage based on local hash map.
+ * Tests IgniteSet with node filter on {@code PARTITIONED} cache.
  */
-public class LocalModelDescriptorStorage implements ModelDescriptorStorage {
-    /** Hash map model storage. */
-    private final Map<String, ModelDescriptor> models = new ConcurrentHashMap<>();
-
+public class GridCachePartitionedSetWithNodeFilterSelfTest extends GridCachePartitionedSetSelfTest {
     /** {@inheritDoc} */
-    @Override public void put(String name, ModelDescriptor mdl) {
-        models.put(name, mdl);
-    }
+    @Override protected CollectionConfiguration collectionConfiguration() {
+        CollectionConfiguration cfg = super.collectionConfiguration();
 
-    /** {@inheritDoc} */
-    @Override public ModelDescriptor get(String name) {
-        return models.get(name);
-    }
+        cfg.setNodeFilter(new AttributeNodeFilter(ATTR_IGNITE_INSTANCE_NAME, getTestIgniteInstanceName(0)));
 
-    /** {@inheritDoc} */
-    @Override public void remove(String name) {
-        models.remove(name);
+        return cfg;
     }
 }

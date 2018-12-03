@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -122,6 +123,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
      * @param txSize Expected transaction size.
      * @param txNodes Transaction nodes mapping.
      * @param lb Transaction label.
+     * @param parentTx Transaction from which this transaction was copied by(if it was).
      */
     public GridDhtTxLocal(
         GridCacheSharedContext cctx,
@@ -146,7 +148,8 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         Map<UUID, Collection<UUID>> txNodes,
         UUID subjId,
         int taskNameHash,
-        @Nullable String lb
+        @Nullable String lb,
+        GridNearTxLocal parentTx
     ) {
         super(
             cctx,
@@ -179,6 +182,8 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         this.txNodes = txNodes;
 
         threadId = nearThreadId;
+
+        setParentTx(parentTx);
 
         assert !F.eq(xidVer, nearXidVer);
 

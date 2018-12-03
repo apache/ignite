@@ -29,6 +29,7 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -197,20 +198,20 @@ public interface GridQueryIndexing {
      *
      * @param cacheName Cache name.
      * @param schemaName Schema name.
-     * @param cctx Cache context.
+     * @param cacheInfo Cache context info.
      * @throws IgniteCheckedException If failed.
      */
-    public void registerCache(String cacheName, String schemaName, GridCacheContext<?,?> cctx)
+    public void registerCache(String cacheName, String schemaName, GridCacheContextInfo<?, ?> cacheInfo)
         throws IgniteCheckedException;
 
     /**
      * Unregisters cache.
      *
-     * @param cctx Cache context.
+     * @param cacheInfo Cache context info.
      * @param rmvIdx If {@code true}, will remove index.
      * @throws IgniteCheckedException If failed to drop cache schema.
      */
-    public void unregisterCache(GridCacheContext cctx, boolean rmvIdx) throws IgniteCheckedException;
+    public void unregisterCache(GridCacheContextInfo cacheInfo, boolean rmvIdx) throws IgniteCheckedException;
 
     /**
      *
@@ -237,12 +238,14 @@ public interface GridQueryIndexing {
     /**
      * Registers type if it was not known before or updates it otherwise.
      *
-     * @param cctx Cache context.
+     * @param cacheInfo Cache context info.
      * @param desc Type descriptor.
+     * @param isSql {@code true} in case table has been created from SQL.
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if type was registered, {@code false} if for some reason it was rejected.
      */
-    public boolean registerType(GridCacheContext cctx, GridQueryTypeDescriptor desc, boolean isSql) throws IgniteCheckedException;
+    public boolean registerType(GridCacheContextInfo cacheInfo, GridQueryTypeDescriptor desc,
+        boolean isSql) throws IgniteCheckedException;
 
     /**
      * Updates index. Note that key is unique for cache, so if cache contains multiple indexes
@@ -354,4 +357,22 @@ public interface GridQueryIndexing {
      * @return Row cache cleaner.
      */
     public GridQueryRowCacheCleaner rowCacheCleaner(int cacheGroupId);
+
+    /**
+     * Return context for registered cache info.
+     *
+     * @param cacheName Cache name.
+     * @return Cache context for registered cache or {@code null} in case the cache has not been registered.
+     */
+    @Nullable public GridCacheContextInfo registeredCacheInfo(String cacheName);
+
+    /**
+     * Initialize table's cache context created for not started cache.
+     *
+     * @param ctx Cache context.
+     * @throws IgniteCheckedException If failed.
+     *
+     * @return {@code true} If context has been initialized.
+     */
+    public boolean initCacheContext(GridCacheContext ctx) throws IgniteCheckedException;
 }

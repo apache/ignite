@@ -61,7 +61,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -229,7 +229,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                         ArrayList<Index> indexes = gridH2Tbl.getIndexes();
 
                         for (Index idx : indexes)
-                            if (idx instanceof H2TreeIndex)
+                            if (idx instanceof H2TreeIndexBase)
                                 idxArgs.add(new T2<>(ctx, idx));
                     }
                 }
@@ -517,7 +517,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                     ArrayList<Index> indexes = gridH2Tbl.getIndexes();
 
                     for (Index idx : indexes) {
-                        if (!(idx instanceof H2TreeIndex))
+                        if (!(idx instanceof H2TreeIndexBase))
                             continue;
 
                         try {

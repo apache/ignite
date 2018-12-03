@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.Collection;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.CacheNoAffinityExchangeTest;
 import org.apache.ignite.internal.processors.cache.PartitionedAtomicCacheGetsDistributionTest;
@@ -29,12 +30,10 @@ import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalPessim
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteExchangeLatchManagerCoordinatorFailTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheExchangeMergeTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheParallelStartTest;
-import org.apache.ignite.internal.processors.cache.distributed.CachePartitionStateTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheTryLockMultithreadedTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCache150ClientsTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheThreadLocalTxTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeMultiServerTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgnitePessimisticTxSuspendResumeTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxLabelTest;
@@ -51,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTime
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTopologyChangeTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxStateChangeEventTest;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Test suite.
@@ -58,66 +58,70 @@ import org.apache.ignite.internal.processors.cache.transactions.TxStateChangeEve
 public class IgniteCacheTestSuite6 extends TestSuite {
     /**
      * @return IgniteCache test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
+        return suite(null);
+    }
+
+    /**
+     * @param ignoredTests Ignored tests.
+     * @return IgniteCache test suite.
+     */
+    public static TestSuite suite(Collection<Class> ignoredTests) {
         TestSuite suite = new TestSuite("IgniteCache Test Suite part 6");
 
-        suite.addTestSuite(CachePartitionStateTest.class);
+        GridTestUtils.addTestIfNeeded(suite, GridCachePartitionEvictionDuringReadThroughSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteOptimisticTxSuspendResumeTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgnitePessimisticTxSuspendResumeTest.class, ignoredTests);
 
-        suite.addTestSuite(GridCachePartitionEvictionDuringReadThroughSelfTest.class);
-        suite.addTestSuite(IgniteOptimisticTxSuspendResumeTest.class);
-        suite.addTestSuite(IgniteOptimisticTxSuspendResumeMultiServerTest.class);
-        suite.addTestSuite(IgnitePessimisticTxSuspendResumeTest.class);
+        GridTestUtils.addTestIfNeeded(suite, CacheExchangeMergeTest.class, ignoredTests);
 
-        suite.addTestSuite(CacheExchangeMergeTest.class);
+        GridTestUtils.addTestIfNeeded(suite, TxRollbackOnTimeoutTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, TxRollbackOnTimeoutNoDeadlockDetectionTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, TxRollbackOnTimeoutNearCacheTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheThreadLocalTxTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, TxRollbackAsyncTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, TxRollbackAsyncNearCacheTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, TxRollbackOnTopologyChangeTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, TxRollbackOnTimeoutOnePhaseCommitTest.class, ignoredTests);
 
-        suite.addTestSuite(TxRollbackOnTimeoutTest.class);
-        suite.addTestSuite(TxRollbackOnTimeoutNoDeadlockDetectionTest.class);
-        suite.addTestSuite(TxRollbackOnTimeoutNearCacheTest.class);
-        suite.addTestSuite(IgniteCacheThreadLocalTxTest.class);
-        suite.addTestSuite(TxRollbackAsyncTest.class);
-        suite.addTestSuite(TxRollbackAsyncNearCacheTest.class);
-        suite.addTestSuite(TxRollbackOnTopologyChangeTest.class);
-        suite.addTestSuite(TxRollbackOnTimeoutOnePhaseCommitTest.class);
+        GridTestUtils.addTestIfNeeded(suite, TxOptimisticPrepareOnUnstableTopologyTest.class, ignoredTests);
 
-        suite.addTestSuite(TxOptimisticPrepareOnUnstableTopologyTest.class);
+        GridTestUtils.addTestIfNeeded(suite, TxLabelTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, TxRollbackOnIncorrectParamsTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, TxStateChangeEventTest.class, ignoredTests);
 
-        suite.addTestSuite(TxLabelTest.class);
-        suite.addTestSuite(TxRollbackOnIncorrectParamsTest.class);
-        suite.addTestSuite(TxStateChangeEventTest.class);
+        GridTestUtils.addTestIfNeeded(suite, TxMultiCacheAsyncOpsTest.class, ignoredTests);
 
-        suite.addTestSuite(TxMultiCacheAsyncOpsTest.class);
+        GridTestUtils.addTestIfNeeded(suite, TxOnCachesStartTest.class, ignoredTests);
 
-        suite.addTestSuite(TxOnCachesStartTest.class);
-
-        suite.addTestSuite(IgniteCache150ClientsTest.class);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCache150ClientsTest.class, ignoredTests);
 
 //        TODO enable this test after IGNITE-6753, now it takes too long
-//        suite.addTestSuite(IgniteOutOfMemoryPropagationTest.class);
+//        GridTestUtils.addTestIfNeeded(suite, IgniteOutOfMemoryPropagationTest.class, ignoredTests);
 
-        suite.addTestSuite(ReplicatedAtomicCacheGetsDistributionTest.class);
-        suite.addTestSuite(ReplicatedTransactionalOptimisticCacheGetsDistributionTest.class);
-        suite.addTestSuite(ReplicatedTransactionalPessimisticCacheGetsDistributionTest.class);
+        GridTestUtils.addTestIfNeeded(suite, ReplicatedAtomicCacheGetsDistributionTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, ReplicatedTransactionalOptimisticCacheGetsDistributionTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, ReplicatedTransactionalPessimisticCacheGetsDistributionTest.class, ignoredTests);
 
-        suite.addTestSuite(PartitionedAtomicCacheGetsDistributionTest.class);
-        suite.addTestSuite(PartitionedTransactionalOptimisticCacheGetsDistributionTest.class);
-        suite.addTestSuite(PartitionedTransactionalPessimisticCacheGetsDistributionTest.class);
+        GridTestUtils.addTestIfNeeded(suite, PartitionedAtomicCacheGetsDistributionTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, PartitionedTransactionalOptimisticCacheGetsDistributionTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, PartitionedTransactionalPessimisticCacheGetsDistributionTest.class, ignoredTests);
 
-        suite.addTestSuite(TxOptimisticOnPartitionExchangeTest.class);
+        GridTestUtils.addTestIfNeeded(suite, TxOptimisticOnPartitionExchangeTest.class, ignoredTests);
 
-        suite.addTestSuite(IgniteExchangeLatchManagerCoordinatorFailTest.class);
+        GridTestUtils.addTestIfNeeded(suite, IgniteExchangeLatchManagerCoordinatorFailTest.class, ignoredTests);
 
-        suite.addTestSuite(PartitionsExchangeCoordinatorFailoverTest.class);
-        suite.addTestSuite(CacheTryLockMultithreadedTest.class);
+        GridTestUtils.addTestIfNeeded(suite, PartitionsExchangeCoordinatorFailoverTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheTryLockMultithreadedTest.class, ignoredTests);
 
-        suite.addTestSuite(CacheParallelStartTest.class);
+        GridTestUtils.addTestIfNeeded(suite, CacheParallelStartTest.class, ignoredTests);
 
-        suite.addTestSuite(CacheNoAffinityExchangeTest.class);
+        GridTestUtils.addTestIfNeeded(suite, CacheNoAffinityExchangeTest.class, ignoredTests);
 
-        //suite.addTestSuite(CacheClientsConcurrentStartTest.class);
-        //suite.addTestSuite(GridCacheRebalancingOrderingTest.class);
-        //suite.addTestSuite(IgniteCacheClientMultiNodeUpdateTopologyLockTest.class);
+        //GridTestUtils.addTestIfNeeded(suite, CacheClientsConcurrentStartTest.class, ignoredTests);
+        //GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingOrderingTest.class, ignoredTests);
+        //GridTestUtils.addTestIfNeeded(suite, IgniteCacheClientMultiNodeUpdateTopologyLockTest.class, ignoredTests);
 
         return suite;
     }
