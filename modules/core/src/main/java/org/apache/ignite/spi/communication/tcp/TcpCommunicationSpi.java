@@ -150,6 +150,7 @@ import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage2;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryImpl;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
@@ -2892,11 +2893,21 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             else {
                                 U.sleep(200);
 
-                                if (counter.getAndIncrement() == 10) {
-                                    Field debug = U.findField(log.getClass(), "debug");
-                                    if (debug != null) {
-                                        log.info("TURN ON DEBUG");
-                                        debug.setBoolean(log, true);
+                                if (counter.getAndIncrement() == 5) {
+                                    TcpDiscoveryImpl impl1 = U.field(ignite().configuration().getDiscoverySpi(), "impl");
+                                    impl1.setDebugMode(true);
+                                    Object impl = U.field(log, "impl");
+                                    if(impl != null) {
+                                        Field debug = U.findField(impl.getClass(), "debug");
+                                        if (debug != null) {
+                                            log.info("TURN ON DEBUG");
+                                            try {
+                                                debug.setBoolean(impl, true);
+                                            }
+                                            catch (Exception e1) {
+                                                log.error("TURN ", e1);
+                                            }
+                                        }
                                     }
                                 }
 
@@ -2917,14 +2928,19 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         fut.onDone(e);
 
                         if (counter.getAndIncrement() == 5) {
-                            Field debug = U.findField(log.getClass(), "debug");
-                            if (debug != null) {
-                                log.info("TURN ON DEBUG");
-                                try {
-                                    debug.setBoolean(log, true);
-                                }
-                                catch (IllegalAccessException e1) {
-                                    log.error("TURN ", e1);
+                        TcpDiscoveryImpl impl1 = U.field(ignite().configuration().getDiscoverySpi(), "impl");
+                        impl1.setDebugMode(true);
+                            Object impl = U.field(log, "impl");
+                            if(impl != null) {
+                                Field debug = U.findField(impl.getClass(), "debug");
+                                if (debug != null) {
+                                    log.info("TURN ON DEBUG");
+                                    try {
+                                        debug.setBoolean(impl, true);
+                                    }
+                                    catch (Exception e1) {
+                                        log.error("TURN ", e1);
+                                    }
                                 }
                             }
                         }
@@ -2933,6 +2949,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         log.info("NODE SPI : " + getSpiContext().node(id));
                         TcpDiscoverySpi spi = (TcpDiscoverySpi)ignite().configuration().getDiscoverySpi();
                         log.info("DISCOVERY SPI : " + spi.getNode0(node.id()));
+                        log.info("REMOTES NODES SPI : " + spi.getRemoteNodes());
 
                         if (e instanceof Error)
                             throw (Error)e;

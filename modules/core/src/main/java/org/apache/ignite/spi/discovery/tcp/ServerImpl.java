@@ -5666,7 +5666,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void sendMetricsUpdateMessage() {
             long elapsed = (lastTimeMetricsUpdateMsgSent + spi.metricsUpdateFreq) - U.currentTimeMillis();
 
-//            log.info("sendMetricsUpdateMessage : " + elapsed + " : " + isLocalNodeCoordinator());
+            log.info("sendMetricsUpdateMessage : " + elapsed + " : " + isLocalNodeCoordinator());
 
             if (elapsed > 0 || !isLocalNodeCoordinator())
                 return;
@@ -5692,7 +5692,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             long elapsed = (updateTime + metricsCheckFreq) - U.currentTimeMillis();
 
-//            log.info("checkMetricsReceiving : " + elapsed);
+            log.info("checkMetricsReceiving : " + elapsed);
 
             if (elapsed > 0)
                 return;
@@ -5731,6 +5731,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (hasRemoteSrvNodes == null)
                 hasRemoteSrvNodes = ring.hasRemoteServerNodes();
+
+            log.info("CheckCOnnection : " + hasRemoteSrvNodes);
 
             if (hasRemoteSrvNodes) {
                 sendMessageAcrossRing(new TcpDiscoveryConnectionCheckMessage(locNode));

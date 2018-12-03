@@ -44,7 +44,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-abstract class TcpDiscoveryImpl {
+public abstract class TcpDiscoveryImpl {
     /** Response OK. */
     protected static final int RES_OK = 1;
 
@@ -114,6 +114,8 @@ abstract class TcpDiscoveryImpl {
      */
     public void setDebugMode(boolean debugMode) {
         this.debugMode = debugMode;
+        if(debugMode)
+        debugLogQ = new ConcurrentLinkedDeque<>();
     }
 
     /**
