@@ -26,10 +26,14 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Contains tests for compact offsets.
  */
+@RunWith(JUnit4.class)
 public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbstractTest {
     /** 2 pow 8. */
     private static int POW_8 = 1 << 8;

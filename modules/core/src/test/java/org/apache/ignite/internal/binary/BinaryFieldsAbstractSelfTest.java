@@ -33,10 +33,14 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.UUID;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Contains tests for binary object fields.
  */
+@RunWith(JUnit4.class)
 public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTest {
     /** Marshaller. */
     protected BinaryMarshaller dfltMarsh;

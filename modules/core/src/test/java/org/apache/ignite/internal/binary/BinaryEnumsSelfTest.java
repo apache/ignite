@@ -39,11 +39,15 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Contains tests for binary enums.
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static String CACHE_NAME = "cache";

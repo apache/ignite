@@ -24,6 +24,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
 import static org.apache.ignite.testframework.config.GridTestProperties.MARSH_CLASS_NAME;
@@ -31,6 +34,7 @@ import static org.apache.ignite.testframework.config.GridTestProperties.MARSH_CL
 /**
  * Tests testing framewrok, epecially BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER test property.
  */
+@RunWith(JUnit4.class)
 public class BinarySimpleNameTestPropertySelfTest extends GridCommonAbstractTest {
     /**
      * flag for facade disabled test. As we use binary marshaller by default al

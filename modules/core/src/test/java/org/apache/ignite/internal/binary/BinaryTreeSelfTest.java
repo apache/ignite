@@ -33,10 +33,14 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for TreeMap and TreeSet structures.
  */
+@RunWith(JUnit4.class)
 public class BinaryTreeSelfTest extends GridCommonAbstractTest {
     /** Data structure size. */
     private static final int SIZE = 100;

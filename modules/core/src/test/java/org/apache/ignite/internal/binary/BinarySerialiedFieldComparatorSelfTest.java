@@ -30,10 +30,14 @@ import java.util.Date;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for serialized field comparer.
  */
+@RunWith(JUnit4.class)
 public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTest {
     /** Type counter. */
     private static final AtomicInteger TYPE_CTR = new AtomicInteger();

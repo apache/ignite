@@ -37,10 +37,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Wildcards test.
  */
+@RunWith(JUnit4.class)
 public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
     /** */
     public static final String CLASS1_FULL_NAME = GridBinaryTestClass1.class.getName();

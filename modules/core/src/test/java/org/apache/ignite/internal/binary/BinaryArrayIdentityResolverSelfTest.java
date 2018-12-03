@@ -34,12 +34,16 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.junit.Assert.assertNotEquals;
 
 /**
  * Array identity resolver self test.
  */
+@RunWith(JUnit4.class)
 public class BinaryArrayIdentityResolverSelfTest extends GridCommonAbstractTest {
     /** Pointers to release. */
     private final Set<Long> ptrs = new GridConcurrentHashSet<>();

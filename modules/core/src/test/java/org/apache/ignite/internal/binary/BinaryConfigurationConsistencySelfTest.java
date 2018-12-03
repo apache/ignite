@@ -30,12 +30,16 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 
 /**
  * Tests a check of binary configuration consistency.
  */
+@RunWith(JUnit4.class)
 public class BinaryConfigurationConsistencySelfTest extends GridCommonAbstractTest {
     /** */
     private BinaryConfiguration binaryCfg;
