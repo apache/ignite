@@ -22,17 +22,17 @@ import java.sql.ResultSet;
 import java.util.Map;
 
 /**
- * Benchmark that performs selects with filter by primary key field.
+ * Benchmark that performs select with filter by 'salary' field.
  */
-public class SelectByPkBenchmark extends BaseSelectRangeBenchmark {
+public class SelectBySalaryBenchmark extends BaseSelectRangeBenchmark {
     /** {@inheritDoc} */
-    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+    @Override public boolean test(Map<Object, Object> map) throws Exception {
         PreparedStatement select0 = select.get();
 
-        fillRandomPersonIdRange(select0);
+        fillRandomSalaryRange(select0);
 
-        try (ResultSet res = select0.executeQuery()) {
-            readResults(res);
+        try (ResultSet rs = select0.executeQuery()) {
+            readResults(rs);
         }
 
         return true;
@@ -40,6 +40,6 @@ public class SelectByPkBenchmark extends BaseSelectRangeBenchmark {
 
     /** {@inheritDoc} */
     @Override protected String testedSqlQuery() {
-        return queries.selectPersonsByPK();
+        return queries.selectPersonsWithSalaryBetween();
     }
 }

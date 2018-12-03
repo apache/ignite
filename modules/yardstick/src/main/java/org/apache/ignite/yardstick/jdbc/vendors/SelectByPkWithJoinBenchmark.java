@@ -17,12 +17,29 @@
 
 package org.apache.ignite.yardstick.jdbc.vendors;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.Map;
+
 /**
- * Benchmark that performs join queries.
+ * Benchmark that performs selects with filter by primary key field with join on Organization table.
  */
-public class SelectWithJoinBenchmark extends BaseSelectRangeBenchmark {
+public class SelectByPkWithJoinBenchmark extends BaseSelectRangeBenchmark {
+    /** {@inheritDoc} */
+    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        PreparedStatement select0 = select.get();
+
+        fillRandomPersonIdRange(select0);
+
+        try (ResultSet res = select0.executeQuery()) {
+            readResults(res);
+        }
+
+        return true;
+    }
+
     /** {@inheritDoc} */
     @Override protected String testedSqlQuery() {
-        return queries.selectPersonsJoinOrgWithSalaries();
+        return queries.selectPersonsJoinOrgWherePersonPK();
     }
 }

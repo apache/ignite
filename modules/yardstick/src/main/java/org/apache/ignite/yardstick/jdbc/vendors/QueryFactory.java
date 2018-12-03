@@ -93,11 +93,23 @@ public class QueryFactory {
      * Query that fetches info about persons and theirs organizations for that persons who has salary in specified
      * range.
      */
-    public String selectPersonsJoinOrgWithSalaries() {
+    public String selectPersonsJoinOrgWhereSalary() {
         return "SELECT p.id, p.org_id, p.first_name, p.last_name, p.salary, o.name " +
             "FROM PUBLIC.PERSON p " +
             "INNER JOIN PUBLIC.ORGANIZATION o " +
             "ON p.org_id = o.id " +
             "WHERE salary BETWEEN ? AND ?;";
+    }
+
+    /**
+     * Query that fetches info about persons and theirs organization for that persons who has Person.id in specified
+     * range.
+     */
+    public String selectPersonsJoinOrgWherePersonPK() {
+        return "SELECT p.id, p.org_id, p.first_name, p.last_name, p.salary, o.name " +
+            "FROM PUBLIC.PERSON p " +
+            "INNER JOIN PUBLIC.ORGANIZATION o " +
+            "ON p.org_id = o.id " +
+            "WHERE p.id BETWEEN ? AND ?;";
     }
 }

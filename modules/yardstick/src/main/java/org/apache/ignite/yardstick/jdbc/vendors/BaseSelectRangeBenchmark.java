@@ -26,9 +26,9 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.yardstick.IgniteBenchmarkArguments;
 import org.apache.ignite.yardstick.jdbc.AbstractJdbcBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
 
@@ -71,7 +71,7 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
 
     /**
      * Children implement this method to specify what statement to prepare. During benchmark run, this prepared
-     * statement gets executed with random parameters: minimum and maximum values for salary field (in WHERE clause).
+     * statement gets executed with random parameters: minimum and maximum values for the field in WHERE clause.
      *
      * @return sql query with 2 parameters.
      */
@@ -112,7 +112,6 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
         println(cfg, "Populating Organization table.");
 
         try (PreparedStatement insOrg = conn0.prepareStatement(queries.insertIntoOrganization())) {
-
             long percent = 0;
 
             for (long orgId = 0; orgId < orgRng; orgId++) {
@@ -200,28 +199,57 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        PreparedStatement select0 = select.get();
+    /**
+     * Given query that has 2 parameters which should be values of salary, according to the data model. This method
+     * generates range with a random begin point and fixed width({@link IgniteBenchmarkArguments#sqlRange()}) and fills
+     * prepared statement, that represents such query, with values : range begin and range end.
+     *
+     * @param selectBySalary Prepared statement, representing select with filter by salary field.
+     */
+    protected void fillRandomSalaryRange(PreparedStatement selectBySalary) throws SQLException {
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        long minSalary = ThreadLocalRandom.current().nextLong(args.range() - args.sqlRange() + 1);
-        long maxSalary = minSalary + args.sqlRange() - 1;
+        long minId = rnd.nextLong(args.range() - args.sqlRange() + 1);
+        long maxId = minId + args.sqlRange() - 1;
 
-        select0.setLong(1, minSalary * 1000);
-        select0.setLong(2, maxSalary * 1000);
+        long minSalary = minId * 1000;
+        long maxSalary = maxId * 1000;
 
+        selectBySalary.setLong(1, minSalary);
+        selectBySalary.setLong(2, maxSalary);
+    }
+
+    /**
+     * Given query that has 2 parameters which should be values of Person.id, according to the data model. This method
+     * generates range with a random begin point and fixed width({@link IgniteBenchmarkArguments#sqlRange()}) and fills
+     * prepared statement, that represents such query, with values : range begin and range end.
+     *
+     * @param selectBySalary Prepared statement, representing select with filter by Person.id field.
+     */
+    protected void fillRandomPersonIdRange(PreparedStatement selectBySalary) throws SQLException {
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        long minId = rnd.nextLong(args.range() - args.sqlRange() + 1);
+        long maxId = minId + args.sqlRange() - 1;
+
+        selectBySalary.setLong(1, minId);
+        selectBySalary.setLong(2, maxId);
+    }
+
+    /**
+     * Reads all the specified result set. Checks that result size is as expected.
+     *
+     * @param qryRes result set of executed select.
+     */
+    protected void readResults(ResultSet qryRes) throws SQLException {
         long rsCnt = 0;
 
-        try (ResultSet res = select0.executeQuery()) {
-            while (res.next())
-                rsCnt++;
-        }
+        while (qryRes.next())
+            rsCnt++;
 
         if (rsCnt != args.sqlRange())
             throw new AssertionError("Server returned wrong number of lines: " +
                 "[expected=" + args.sqlRange() + ", actual=" + rsCnt + "].");
-
-        return true;
     }
 
     /** {@inheritDoc} */
