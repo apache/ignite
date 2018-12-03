@@ -61,6 +61,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
@@ -79,7 +80,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryPartitionInfo;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -120,7 +120,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngi
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2PlainRowFactory;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
@@ -171,6 +170,8 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.util.worker.GridWorkerFuture;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
@@ -891,15 +892,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             // Populate index with existing cache data.
             final GridH2RowDescriptor rowDesc = h2Tbl.rowDescriptor();
 
-            SchemaIndexCacheVisitorClosure clo = new SchemaIndexCacheVisitorClosure() {
-                @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
-                    GridH2Row h2Row = rowDesc.createRow(row);
-
-                    h2Idx.putx(h2Row);
-                }
-            };
-
-            cacheVisitor.visit(clo);
+            cacheVisitor.visit(new IndexBuildClosure(rowDesc, h2Idx));
 
             // At this point index is in consistent state, promote it through H2 SQL statement, so that cached
             // prepared statements are re-built.
@@ -3135,33 +3128,97 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return reusableConnection;
     }
 
-    /**
-     * Rebuild indexes from hash index.
-     *
-     * @param cacheName Cache name.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Override public void rebuildIndexesFromHash(String cacheName) throws IgniteCheckedException {
-        int cacheId = CU.cacheId(cacheName);
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
+        // No data in fresh in-memory cache.
+        if (!cctx.group().persistenceEnabled())
+            return null;
 
-        GridCacheContext cctx = ctx.cache().context().cacheContext(cacheId);
+        IgnitePageStoreManager pageStore = cctx.shared().pageStore();
 
-        final GridCacheQueryManager qryMgr = cctx.queries();
+        assert pageStore != null;
 
-        SchemaIndexCacheVisitor visitor = new SchemaIndexCacheVisitorImpl(cctx);
+        SchemaIndexCacheVisitorClosure clo;
 
-        visitor.visit(new RebuildIndexFromHashClosure(qryMgr, cctx.mvccEnabled()));
+        if (!pageStore.hasIndexStore(cctx.groupId())) {
+            // If there are no index store, rebuild all indexes.
+            clo = new IndexRebuildFullClosure(cctx.queries(), cctx.mvccEnabled());
+        }
+        else {
+            // Otherwise iterate over tables looking for missing indexes.
+            IndexRebuildPartialClosure clo0 = new IndexRebuildPartialClosure();
 
-        for (H2TableDescriptor tblDesc : tables(cacheName))
-            tblDesc.table().markRebuildFromHashInProgress(false);
+            for (H2TableDescriptor tblDesc : tables(cctx.name())) {
+                assert tblDesc.table() != null;
+
+                tblDesc.table().collectIndexesForPartialRebuild(clo0);
+            }
+
+            if (clo0.hasIndexes())
+                clo = clo0;
+            else
+                return null;
+        }
+
+        // Closure prepared, do rebuild.
+        final GridWorkerFuture<?> fut = new GridWorkerFuture<>();
+
+        markIndexRebuild(cctx.name(), true);
+
+        GridWorker worker = new GridWorker(ctx.igniteInstanceName(), "index-rebuild-worker-" + cctx.name(), log) {
+            @Override protected void body() {
+                try {
+                    rebuildIndexesFromHash0(cctx, clo);
+
+                    markIndexRebuild(cctx.name(), false);
+
+                    fut.onDone();
+                }
+                catch (Exception e) {
+                    fut.onDone(e);
+                }
+                catch (Throwable e) {
+                    U.error(log, "Failed to rebuild indexes for cache: " + cctx.name(), e);
+
+                    fut.onDone(e);
+
+                    throw e;
+                }
+            }
+        };
+
+        fut.setWorker(worker);
+
+        ctx.getExecutorService().execute(worker);
+
+        return fut;
     }
 
-    /** {@inheritDoc} */
-    @Override public void markForRebuildFromHash(String cacheName) {
+    /**
+     * Do index rebuild.
+     *
+     * @param cctx Cache context.
+     * @param clo Closure.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected void rebuildIndexesFromHash0(GridCacheContext cctx, SchemaIndexCacheVisitorClosure clo)
+        throws IgniteCheckedException {
+        SchemaIndexCacheVisitor visitor = new SchemaIndexCacheVisitorImpl(cctx);
+
+        visitor.visit(clo);
+    }
+
+    /**
+     * Mark tables for index rebuild, so that their indexes are not used.
+     *
+     * @param cacheName Cache name.
+     * @param val Value.
+     */
+    private void markIndexRebuild(String cacheName, boolean val) {
         for (H2TableDescriptor tblDesc : tables(cacheName)) {
             assert tblDesc.table() != null;
 
-            tblDesc.table().markRebuildFromHashInProgress(true);
+            tblDesc.table().markRebuildFromHashInProgress(val);
         }
     }
 
