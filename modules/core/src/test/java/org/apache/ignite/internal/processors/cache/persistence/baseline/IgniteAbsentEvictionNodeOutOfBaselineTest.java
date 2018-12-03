@@ -27,10 +27,14 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test absenting eviction for joined node if it is out of baseline.
  */
+@RunWith(JUnit4.class)
 public class IgniteAbsentEvictionNodeOutOfBaselineTest extends GridCommonAbstractTest {
     /** */
     private static final String TEST_CACHE_NAME = "test";

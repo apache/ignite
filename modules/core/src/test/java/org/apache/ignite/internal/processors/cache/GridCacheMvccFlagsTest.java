@@ -23,12 +23,16 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Tests flags correctness.
  */
+@RunWith(JUnit4.class)
 public class GridCacheMvccFlagsTest extends GridCommonAbstractTest {
     /** Grid. */
     private IgniteKernal grid;

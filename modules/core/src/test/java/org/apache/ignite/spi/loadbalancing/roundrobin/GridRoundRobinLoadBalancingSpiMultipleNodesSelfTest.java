@@ -29,6 +29,9 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridSpiTestContext;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
@@ -37,6 +40,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  * Tests round robin load balancing SPI.
  */
 @GridSpiTest(spi = RoundRobinLoadBalancingSpi.class, group = "Load Balancing SPI")
+@RunWith(JUnit4.class)
 public class GridRoundRobinLoadBalancingSpiMultipleNodesSelfTest
     extends GridSpiAbstractTest<RoundRobinLoadBalancingSpi> {
     /** {@inheritDoc} */

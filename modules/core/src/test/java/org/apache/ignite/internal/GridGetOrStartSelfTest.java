@@ -20,12 +20,16 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * The GirdGetOrStartSelfTest tests get or start semantics. See IGNITE-2941
  */
 
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class GridGetOrStartSelfTest extends GridCommonAbstractTest {
     /**
      * Default constructor.

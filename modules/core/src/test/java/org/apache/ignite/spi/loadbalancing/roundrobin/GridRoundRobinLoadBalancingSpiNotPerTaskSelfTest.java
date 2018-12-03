@@ -33,6 +33,9 @@ import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
@@ -42,6 +45,7 @@ import static org.apache.ignite.spi.loadbalancing.roundrobin.GridRoundRobinTestU
  * Tests round robin load balancing.
  */
 @GridSpiTest(spi = RoundRobinLoadBalancingSpi.class, group = "Load Balancing SPI")
+@RunWith(JUnit4.class)
 public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
     extends GridSpiAbstractTest<RoundRobinLoadBalancingSpi> {
     /**
