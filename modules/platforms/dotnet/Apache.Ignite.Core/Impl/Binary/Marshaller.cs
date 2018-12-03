@@ -784,6 +784,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Called when local client node has been disconnected from the cluster.
+        /// </summary>
+        public void OnClientDisconnected()
+        {
+            // TODO: See comments in structure tracker
+        }
+        
+        /// <summary>
         /// Called when local client node has been reconnected to the cluster.
         /// </summary>
         /// <param name="clusterRestarted">Cluster restarted flag.</param>
