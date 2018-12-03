@@ -43,14 +43,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void Test([Values(true, false)] bool emptyFilterObject)
         {
             var cache = _client.GetOrCreateCache<int, Item>("Test");
-            cache.Put(1, new Item { Id = 10, Title = "test" });
+            cache.Put(1, new Item { Id = 20, Title = "test" });
 
             Ignition.Stop(_server.Name, false);
             _server = StartGrid(0);
             WaitForReconnect(_client, 5000);
 
             cache = _client.GetOrCreateCache<int, Item>("Test");
-            cache.Put(1, new Item { Id = 10, Title = "test" });
+            cache.Put(1, new Item { Id = 30, Title = "test" });
 
             var filter = emptyFilterObject
                 ? (ICacheEntryFilter<int, Item>) new TestFilter()
