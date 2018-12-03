@@ -96,8 +96,6 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
 
     /** @throws Exception If failed. */
     public void testCreateEncryptedNotPersistedCacheFail() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8640");
-
         GridTestUtils.assertThrowsWithCause(() -> {
             CacheConfiguration<Long, String> ccfg = new CacheConfiguration<>(NO_PERSISTENCE_REGION);
 
