@@ -15,14 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.inference.storage;
+package org.apache.ignite.ml.inference.storage.descriptor;
 
+import java.util.Iterator;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.inference.ModelDescriptor;
 
 /**
  * Storage that allows to load, keep and get access to model descriptors (see {@link ModelDescriptor}).
  */
-public interface ModelDescriptorStorage {
+public interface ModelDescriptorStorage extends Iterable<IgniteBiTuple<String, ModelDescriptor>> {
     /**
      * Saves the specified model descriptor with the specified model identifier.
      *
@@ -45,4 +47,12 @@ public interface ModelDescriptorStorage {
      * @param mdlId Model identifier.
      */
     public void remove(String mdlId);
+
+    /**
+     * Returns iterator of model descriptors stored in this model descriptor storage. The objects produces by the
+     * iterator are pairs of model identifier and model descriptor.
+     *
+     * @return Iterator of pairs of model identifier and model descriptor.
+     */
+    public Iterator<IgniteBiTuple<String, ModelDescriptor>> iterator();
 }
