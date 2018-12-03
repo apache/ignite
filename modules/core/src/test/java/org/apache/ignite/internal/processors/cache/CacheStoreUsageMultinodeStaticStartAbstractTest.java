@@ -17,9 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class CacheStoreUsageMultinodeStaticStartAbstractTest extends CacheStoreUsageMultinodeAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {

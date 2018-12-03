@@ -28,12 +28,16 @@ import org.apache.ignite.internal.processors.cache.datastructures.IgniteAtomicsA
 import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicSequenceImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Cache partitioned multi-threaded tests.
  */
+@RunWith(JUnit4.class)
 public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteAtomicsAbstractTest {
     /** Number of threads for multithreaded test. */
     private static final int THREAD_NUM = 30;

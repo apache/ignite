@@ -23,6 +23,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheAbstractNodeRestartSelfTest;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -31,6 +34,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 /**
  * Test node restart.
  */
+@RunWith(JUnit4.class)
 public class GridCachePartitionedOptimisticTxNodeRestartTest extends GridCacheAbstractNodeRestartSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

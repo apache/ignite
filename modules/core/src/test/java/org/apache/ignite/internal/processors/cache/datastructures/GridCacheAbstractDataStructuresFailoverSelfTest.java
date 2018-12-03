@@ -69,6 +69,9 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -76,6 +79,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  * Failover tests for cache data structures.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends IgniteCollectionAbstractTest {
     /** */
     private static final long TEST_TIMEOUT = 3 * 60 * 1000;
