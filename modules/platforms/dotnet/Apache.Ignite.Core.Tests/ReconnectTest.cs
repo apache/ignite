@@ -66,9 +66,9 @@ namespace Apache.Ignite.Core.Tests
 
             client.ClientReconnected += (sender, args) => { eventArgs = args; };
 
-            var cache = client.GetCache<int, int>(CacheName);
+            var cache = client.GetCache<int, Person>(CacheName);
 
-            cache[1] = 1;
+            cache[1] = new Person(1);
 
             Ignition.Stop(server.Name, true);
 
@@ -94,14 +94,14 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(eventArgs.HasClusterRestarted);
 
             // Refresh the cache instance and check that it works.
-            var cache1 = client.GetCache<int, int>(CacheName);
+            var cache1 = client.GetCache<int, Person>(CacheName);
             Assert.AreEqual(0, cache1.GetSize());
 
-            cache1[1] = 2;
-            Assert.AreEqual(2, cache1[1]);
+            cache1[1] = new Person(2);
+            Assert.AreEqual(2, cache1[1].Id);
 
             // Check that old cache instance still works.
-            Assert.AreEqual(2, cache.Get(1));
+            Assert.AreEqual(2, cache.Get(1).Id);
         }
 
         /// <summary>
