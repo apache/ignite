@@ -49,6 +49,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionOptimisticException;
@@ -271,36 +272,38 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
                 }
             });
 
-            commitMultithreaded(new IgniteBiInClosure<Ignite, IgniteCache<Integer, Integer>>() {
-                @Override public void apply(Ignite ignite, IgniteCache<Integer, Integer> cache) {
-                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
+            if (!MvccFeatureChecker.forcedMvcc()) {
+                commitMultithreaded(new IgniteBiInClosure<Ignite, IgniteCache<Integer, Integer>>() {
+                    @Override public void apply(Ignite ignite, IgniteCache<Integer, Integer> cache) {
+                        ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                    Map<Integer, Integer> map = new LinkedHashMap<>();
+                        Map<Integer, Integer> map = new LinkedHashMap<>();
 
-                    for (int i = 0; i < 10; i++) {
-                        Integer key = rnd.nextInt(MULTITHREADED_TEST_KEYS);
+                        for (int i = 0; i < 10; i++) {
+                            Integer key = rnd.nextInt(MULTITHREADED_TEST_KEYS);
 
-                        map.put(key, rnd.nextInt());
+                            map.put(key, rnd.nextInt());
+                        }
+
+                        while (true) {
+                            try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
+                                for (Map.Entry<Integer, Integer> e : map.entrySet())
+                                    cache.put(e.getKey(), e.getValue());
+
+                                tx.commit();
+
+                                break;
+                            }
+                            catch (TransactionOptimisticException ignored) {
+                                // Retry.
+                            }
+                            catch (CacheException | IgniteException ignored) {
+                                break;
+                            }
+                        }
                     }
-
-                    while (true) {
-                        try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
-                            for (Map.Entry<Integer, Integer> e : map.entrySet())
-                                cache.put(e.getKey(), e.getValue());
-
-                            tx.commit();
-
-                            break;
-                        }
-                        catch (TransactionOptimisticException ignored) {
-                           // Retry.
-                        }
-                        catch (CacheException | IgniteException ignored) {
-                            break;
-                        }
-                    }
-                }
-            });
+                });
+            }
         }
         finally {
             stop.set(true);

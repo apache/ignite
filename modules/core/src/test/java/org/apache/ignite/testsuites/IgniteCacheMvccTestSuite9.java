@@ -21,6 +21,9 @@ import java.util.Collection;
 import java.util.HashSet;
 import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectionsSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheLoadRebalanceEvictionSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimarySyncBackPressureTest;
 
 /**
  * Test suite.
@@ -33,6 +36,13 @@ public class IgniteCacheMvccTestSuite9 extends TestSuite {
         System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
 
         Collection<Class> ignoredTests = new HashSet<>();
+
+        // Atomic caches.
+        ignoredTests.add(CacheAtomicPrimarySyncBackPressureTest.class);
+
+        // Other non-tx tests.
+        ignoredTests.add(IgniteCacheGetCustomCollectionsSelfTest.class);
+        ignoredTests.add(IgniteCacheLoadRebalanceEvictionSelfTest.class);
 
         TestSuite suite = new TestSuite("IgniteCache Mvcc Test Suite part 9");
 
