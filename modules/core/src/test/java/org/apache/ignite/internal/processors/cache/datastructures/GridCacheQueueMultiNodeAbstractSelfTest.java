@@ -39,10 +39,14 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Queue multi node tests.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteCollectionAbstractTest {
     /** */
     private static final int GRID_CNT = 4;

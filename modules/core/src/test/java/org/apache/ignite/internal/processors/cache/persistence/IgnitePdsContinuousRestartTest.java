@@ -43,10 +43,14 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Cause by https://issues.apache.org/jira/browse/IGNITE-7278
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 4;

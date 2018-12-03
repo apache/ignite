@@ -42,6 +42,9 @@ import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.spi.IgniteSpiCloseableIterator;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -62,6 +65,7 @@ import static org.apache.ignite.cache.CachePeekMode.PRIMARY;
  *     <li>{@link IgniteCache#localEntries(CachePeekMode...)}</li>
  * </ul>
  */
+@RunWith(JUnit4.class)
 public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstractTest {
     /** */
     private static final int HEAP_ENTRIES = 30;

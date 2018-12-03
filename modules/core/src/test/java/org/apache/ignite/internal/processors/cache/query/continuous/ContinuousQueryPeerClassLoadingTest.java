@@ -29,10 +29,14 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.custom.DummyEventFilterFactory;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Checks if filter factory correctly deployed on all nodes.
  */
+@RunWith(JUnit4.class)
 public class ContinuousQueryPeerClassLoadingTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE_NAME = "test-cache";

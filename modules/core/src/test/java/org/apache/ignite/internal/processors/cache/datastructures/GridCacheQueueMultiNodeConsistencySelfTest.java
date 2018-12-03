@@ -31,6 +31,9 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -40,6 +43,7 @@ import static org.apache.ignite.internal.processors.cache.datastructures.GridCac
 /**
  * Consistency test for cache queue in multi node environment.
  */
+@RunWith(JUnit4.class)
 public class GridCacheQueueMultiNodeConsistencySelfTest extends IgniteCollectionAbstractTest {
     /** */
     protected static final int GRID_CNT = 3;

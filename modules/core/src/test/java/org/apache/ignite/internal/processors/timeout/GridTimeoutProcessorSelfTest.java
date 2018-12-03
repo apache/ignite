@@ -27,12 +27,16 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Timeout processor tests.
  */
+@RunWith(JUnit4.class)
 public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
     /** Random number generator. */
     private static final Random RAND = new Random();

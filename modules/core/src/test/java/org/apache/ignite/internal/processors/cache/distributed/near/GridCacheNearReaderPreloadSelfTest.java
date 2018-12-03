@@ -32,6 +32,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -43,6 +46,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * read it on B. Finally the key is updated again and we ensure that it was updated on the near node B as well. I.e.
  * with this test we ensures that node B is considered as near reader for that key in case put occurred during preload.
  */
+@RunWith(JUnit4.class)
 public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
     /** Test iterations count. */
     private static final int REPEAT_CNT = 10;
