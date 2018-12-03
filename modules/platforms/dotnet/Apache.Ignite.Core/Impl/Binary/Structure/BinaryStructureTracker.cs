@@ -97,11 +97,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         {
             if (_curStructUpdates != null)
             {
-                // TODO: The problem with this is that we ASSUME that meta update in the cluster will succeed, which is not always the case.
-                // TODO: Test this with reconnect or any other kind of failure (like failure on put or something)!
-                
-                // TODO: Check if (marsh.IsConnected)? But will it eliminate the race?
-                // It is possible to have a very long serialization that spans entire disconnect/reconnect period!
+                // The following line assumes that cluster meta update will succeed (BinaryProcessor.PutBinaryTypes).
                 _desc.UpdateWriteStructure(_curStructPath, _curStructUpdates);
 
                 var marsh = writer.Marshaller;
