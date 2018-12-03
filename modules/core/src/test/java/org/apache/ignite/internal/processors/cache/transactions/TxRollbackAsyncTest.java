@@ -541,6 +541,9 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      * Rollback tx while near lock request is delayed.
      */
     public void testRollbackDelayNearLockRequest() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-9470");
+
         final Ignite client = startClient();
 
         final Ignite prim = primaryNode(0, CACHE_NAME);
@@ -569,10 +572,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
             fail();
         }
         catch (CacheException e) {
-            if (mvcc)
-                assertTrue(X.hasCause(e, IgniteFutureCancelledCheckedException.class));
-            else
-                assertTrue(X.getFullStackTrace(e),X.hasCause(e, TransactionRollbackException.class));
+            assertTrue(X.getFullStackTrace(e),X.hasCause(e, TransactionRollbackException.class));
         }
 
         rollbackFut.get();
