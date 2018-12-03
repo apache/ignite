@@ -4065,43 +4065,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return entrySet().iterator();
     }
 
-    /**
-     * @param opCtx Cache operation context.
-     * @return JCache Iterator.
-     */
-    private Iterator<Cache.Entry<K, V>> localIteratorHonorExpirePolicy(final CacheOperationContext opCtx) {
-        return F.iterator(iterator(),
-            new IgniteClosure<Cache.Entry<K, V>, Cache.Entry<K, V>>() {
-                private IgniteCacheExpiryPolicy expiryPlc =
-                    ctx.cache().expiryPolicy(opCtx != null ? opCtx.expiry() : null);
-
-                @Override public Cache.Entry<K, V> apply(Cache.Entry<K, V> lazyEntry) {
-                    CacheOperationContext prev = ctx.gate().enter(opCtx);
-                    try {
-                        V val = localPeek(lazyEntry.getKey(), CachePeekModes.ONHEAP_ONLY, expiryPlc);
-
-                        GridCacheVersion ver = null;
-
-                        try {
-                            ver = lazyEntry.unwrap(GridCacheVersion.class);
-                        }
-                        catch (IllegalArgumentException e) {
-                            log.error("Failed to unwrap entry version information", e);
-                        }
-
-                        return new CacheEntryImpl<>(lazyEntry.getKey(), val, ver);
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw CU.convertToCacheException(e);
-                    }
-                    finally {
-                        ctx.gate().leave(prev);
-                    }
-                }
-            }, false
-        );
-    }
-
     /** {@inheritDoc} */
     @Override public Iterator<Cache.Entry<K, V>> scanIterator(boolean keepBinary,
         @Nullable IgniteBiPredicate<Object, Object> p)
