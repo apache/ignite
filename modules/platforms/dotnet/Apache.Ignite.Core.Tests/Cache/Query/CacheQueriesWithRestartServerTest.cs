@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System.Linq;
+    using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Query;
@@ -46,7 +47,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Ignition.Stop(_server.Name, false);
             _server = StartGrid(0);
-            _client.GetCluster().ClientReconnectTask.Wait();
+            WaitForReconnect(_client, 5000);
 
             cache = _client.GetOrCreateCache<int, Item>("Test");
             cache.Put(1, new Item { Id = 10, Title = "test" });
@@ -67,7 +68,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Ignition.StopAll(true);
         }
 
-        private IIgnite StartGrid(int i, bool client = false)
+        private static IIgnite StartGrid(int i, bool client = false)
         {
             return Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
@@ -77,14 +78,23 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 },
 
                 ClientMode = client,
-
                 IgniteInstanceName = client ? "client-" + i : "grid-" + i
             });
         }
 
-        private IBinaryNameMapper GetNameMapper()
+        private static IBinaryNameMapper GetNameMapper()
         {
             return new BinaryBasicNameMapper {IsSimpleName = false};
+        }
+        
+        private static void WaitForReconnect(IIgnite ignite, int timeout)
+        {
+            var evt = new ManualResetEventSlim(false);
+
+            ignite.ClientReconnected += (sender, args) => evt.Set();
+
+            var restarted = evt.Wait(timeout);
+            Assert.IsTrue(restarted);
         }
 
         private class TestFilter : ICacheEntryFilter<int, Item>
