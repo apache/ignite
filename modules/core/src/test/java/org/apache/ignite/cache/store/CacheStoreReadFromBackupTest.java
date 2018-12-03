@@ -33,6 +33,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -44,6 +47,7 @@ import static org.apache.ignite.cache.CachePeekMode.PRIMARY;
  * Checks that once value is read from store, it will be loaded in
  * backups as well.
  */
+@RunWith(JUnit4.class)
 public class CacheStoreReadFromBackupTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE_NAME = "cache";

@@ -26,10 +26,14 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCacheAbstractSelfTest {
     /** Expected loadAll arguments, hardcoded on call site for convenience. */
     private static final Integer[] EXP_ARGS = {1, 2, 3};

@@ -19,10 +19,14 @@ package org.apache.ignite.cache.store.jdbc;
 
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link CacheJdbcPojoStore} with binary marshaller.
  */
+@RunWith(JUnit4.class)
 public class CacheJdbcPojoStoreBinaryMarshallerSelfTest extends CacheJdbcPojoStoreAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected Marshaller marshaller(){

@@ -44,12 +44,16 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
 import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * This class tests that calls of {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)}
  * and {@link CacheStoreSessionListener#onSessionEnd(CacheStoreSession, boolean)} are executed from
  * {@link GridCacheWriteBehindStore} only.
  */
+@RunWith(JUnit4.class)
 public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAbstractSelfTest {
     /** */
     protected static final int CNT = 100;
