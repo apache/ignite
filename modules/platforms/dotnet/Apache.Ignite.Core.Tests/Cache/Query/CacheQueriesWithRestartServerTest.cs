@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cursor = cache.Query(new ScanQuery<int, Item>(filter));
             var items = cursor.GetAll();
 
-            Assert.AreEqual(10, items.Single().Value.Id);
+            Assert.AreEqual(30, items.Single().Value.Id);
         }
 
         [TearDown]
