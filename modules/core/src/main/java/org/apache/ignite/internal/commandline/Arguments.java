@@ -80,6 +80,9 @@ public class Arguments {
     /** SSL Protocol. */
     private String sslProtocol;
 
+    /** SSL Cipher suites. */
+    private String sslCipherSuites;
+
     /** SSL Key Algorithm. */
     private String sslKeyAlgorithm;
 
@@ -117,6 +120,7 @@ public class Arguments {
      * @param pingInterval Ping interval. See {@link GridClientConfiguration#pingInterval}.
      * @param autoConfirmation Auto confirmation flag.
      * @param sslProtocol SSL Protocol.
+     * @param sslCipherSuites SSL cipher suites.
      * @param sslKeyAlgorithm SSL Key Algorithm.
      * @param sslKeyStorePath Keystore.
      * @param sslKeyStorePassword Keystore Password.
@@ -127,28 +131,40 @@ public class Arguments {
      */
     public Arguments(Command cmd, String host, String port, String user, String pwd, String baselineAct,
         String baselineArgs, VisorTxTaskArg txArg, CacheArguments cacheArgs, String walAct, String walArgs,
-        Long pingTimeout, Long pingInterval, boolean autoConfirmation, String sslProtocol, String sslKeyAlgorithm,
+        Long pingTimeout, Long pingInterval, boolean autoConfirmation,
+        String sslProtocol, String sslCipherSuites, String sslKeyAlgorithm,
         String sslKeyStorePath, char[] sslKeyStorePassword, String sslKeyStoreType,
-        String sslTrustStorePath, char[] sslTrustStorePassword, String sslTrustStoreType) {
+        String sslTrustStorePath, char[] sslTrustStorePassword, String sslTrustStoreType
+    ) {
         this.cmd = cmd;
         this.host = host;
         this.port = port;
         this.user = user;
         this.pwd = pwd;
+
         this.baselineAct = baselineAct;
         this.baselineArgs = baselineArgs;
+
         this.txArg = txArg;
         this.cacheArgs = cacheArgs;
+
         this.walAct = walAct;
         this.walArgs = walArgs;
+
         this.pingTimeout = pingTimeout;
         this.pingInterval = pingInterval;
+
         this.autoConfirmation = autoConfirmation;
+
+        this.sslEnable = sslEnable;
         this.sslProtocol = sslProtocol;
+        this.sslCipherSuites = sslCipherSuites;
+
         this.sslKeyAlgorithm = sslKeyAlgorithm;
         this.sslKeyStorePath = sslKeyStorePath;
         this.sslKeyStoreType = sslKeyStoreType;
         this.sslKeyStorePassword = sslKeyStorePassword;
+
         this.sslTrustStorePath = sslTrustStorePath;
         this.sslTrustStoreType = sslTrustStoreType;
         this.sslTrustStorePassword = sslTrustStorePassword;
@@ -271,10 +287,24 @@ public class Arguments {
     }
 
     /**
+     * @return {@code true} if SSL should be used.
+     */
+    public boolean isSslEnable() {
+        return sslEnable;
+    }
+
+    /**
      * @return SSL protocol
      */
     public String sslProtocol() {
         return sslProtocol;
+    }
+
+    /**
+     * @return SSL cipher suites.
+     */
+    public String getSslCipherSuites() {
+        return sslCipherSuites;
     }
 
     /**
