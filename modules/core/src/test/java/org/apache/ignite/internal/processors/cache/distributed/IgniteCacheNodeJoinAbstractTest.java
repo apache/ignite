@@ -28,12 +28,16 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class IgniteCacheNodeJoinAbstractTest extends IgniteCacheAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {

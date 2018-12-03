@@ -43,6 +43,9 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -51,6 +54,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Queue basic tests.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollectionAbstractTest {
     /** */
     private static final int QUEUE_CAPACITY = 3;

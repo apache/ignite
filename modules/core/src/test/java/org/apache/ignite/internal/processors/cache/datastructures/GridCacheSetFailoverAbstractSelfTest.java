@@ -36,12 +36,16 @@ import org.apache.ignite.internal.processors.datastructures.SetItemKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Set failover tests.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollectionAbstractTest {
     /** */
     private static final String SET_NAME = "testFailoverSet";

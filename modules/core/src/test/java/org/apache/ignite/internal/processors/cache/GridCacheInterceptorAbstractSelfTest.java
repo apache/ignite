@@ -46,6 +46,9 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -55,6 +58,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * Tests {@link CacheInterceptor}.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);

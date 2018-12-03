@@ -103,6 +103,9 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -128,6 +131,7 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTED;
  * Full API cache test.
  */
 @SuppressWarnings("TransientFieldInNonSerializableClass")
+@RunWith(JUnit4.class)
 public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstractSelfTest {
     /** Test timeout */
     private static final long TEST_TIMEOUT = 60 * 1000;

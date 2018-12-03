@@ -31,6 +31,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.Cache;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -39,6 +42,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
  *
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
