@@ -342,14 +342,17 @@ public class IgniteTxHandler {
     }
 
     /**
+     * @param originTx Transaction for copy.
      * @param req Request.
      * @return Prepare future.
      */
-    public IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTxLocal(final GridNearTxPrepareRequest req) {
+    public IgniteInternalFuture<GridNearTxPrepareResponse>  prepareNearTxLocal(
+        final GridNearTxLocal originTx,
+        final GridNearTxPrepareRequest req) {
         // Make sure not to provide Near entries to DHT cache.
         req.cloneEntries();
 
-        return prepareNearTx(ctx.localNode(), req);
+        return prepareNearTx(originTx, ctx.localNode(), req);
     }
 
     /**
@@ -358,6 +361,20 @@ public class IgniteTxHandler {
      * @return Prepare future or {@code null} if need retry operation.
      */
     @Nullable private IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTx(
+        final ClusterNode nearNode,
+        final GridNearTxPrepareRequest req
+    ) {
+        return prepareNearTx(null, nearNode, req);
+    }
+
+    /**
+     * @param originTx Transaction for copy.
+     * @param nearNode Node that initiated transaction.
+     * @param req Near prepare request.
+     * @return Prepare future or {@code null} if need retry operation.
+     */
+    @Nullable private IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTx(
+        final GridNearTxLocal originTx,
         final ClusterNode nearNode,
         final GridNearTxPrepareRequest req
     ) {
@@ -508,7 +525,8 @@ public class IgniteTxHandler {
                     req.txSize(),
                     req.transactionNodes(),
                     req.subjectId(),
-                    req.taskNameHash()
+                    req.taskNameHash(),
+                    originTx
                 );
 
                 tx = ctx.tm().onCreated(null, tx);
