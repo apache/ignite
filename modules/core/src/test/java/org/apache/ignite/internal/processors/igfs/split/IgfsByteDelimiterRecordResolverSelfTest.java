@@ -21,10 +21,14 @@ import org.apache.ignite.igfs.IgfsInputStream;
 import org.apache.ignite.igfs.mapreduce.IgfsFileRange;
 import org.apache.ignite.igfs.mapreduce.records.IgfsByteDelimiterRecordResolver;
 import org.apache.ignite.internal.util.typedef.F;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Byte delimiter split resolver self test.
  */
+@RunWith(JUnit4.class)
 public class IgfsByteDelimiterRecordResolverSelfTest extends IgfsAbstractRecordResolverSelfTest {
     /**
      * Test split resolution when there are no delimiters in the file.

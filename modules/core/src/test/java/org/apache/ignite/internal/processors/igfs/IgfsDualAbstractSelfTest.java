@@ -32,11 +32,15 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for IGFS working in mode when remote file system exists: DUAL_SYNC, DUAL_ASYNC.
  */
 @SuppressWarnings("ConstantConditions")
+@RunWith(JUnit4.class)
 public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
     /**
      * Constructor.

@@ -482,7 +482,6 @@ public class IgfsBenchmark {
      *
      * @param fs Filesystem.
      */
-    @Test
     public void testReadFile(IgniteFileSystem fs) {
         try {
             recursePath(path, 1, new ReadFileOperation(fs, size));
@@ -497,7 +496,6 @@ public class IgfsBenchmark {
      *
      * @param fs Filesystem.
      */
-    @Test
     public void testWriteFile(IgniteFileSystem fs) {
         try {
             recursePath(path, 1, new WriteFileOperation(fs, size));
@@ -512,7 +510,6 @@ public class IgfsBenchmark {
      *
      * @param fs Filesystem.
      */
-    @Test
     public void testDeleteFile(IgniteFileSystem fs) {
         try {
             recursePath(path, 1, new DeleteFileOperation(fs, 0));
@@ -527,7 +524,6 @@ public class IgfsBenchmark {
      *
      * @param fs Filesystem.
      */
-    @Test
     public void testInfoFile(IgniteFileSystem fs) {
         try {
             recursePath(path, 1, new InfoFileOperation(fs));
@@ -542,7 +538,6 @@ public class IgfsBenchmark {
      *
      * @param fs Filesystem.
      */
-    @Test
     public void testListPathFile(IgniteFileSystem fs) {
         try {
             recursePath(path, 1, new ListPathFileOperation(fs));

@@ -27,6 +27,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
 import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
 import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
@@ -35,6 +39,7 @@ import static org.apache.ignite.igfs.IgfsMode.PROXY;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgfsModeResolverSelfTest extends TestCase {
     /** */
     private IgfsModeResolver reslvr;

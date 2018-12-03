@@ -21,10 +21,14 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper} hash.
  */
+@RunWith(JUnit4.class)
 public class IgfsGroupDataBlockKeyMapperHashSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.

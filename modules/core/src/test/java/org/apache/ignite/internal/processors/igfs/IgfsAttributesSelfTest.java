@@ -27,6 +27,9 @@ import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.igfs.IgfsMode;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
 import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
@@ -35,6 +38,7 @@ import static org.apache.ignite.igfs.IgfsMode.PROXY;
 /**
  * {@link IgfsAttributes} test case.
  */
+@RunWith(JUnit4.class)
 public class IgfsAttributesSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.

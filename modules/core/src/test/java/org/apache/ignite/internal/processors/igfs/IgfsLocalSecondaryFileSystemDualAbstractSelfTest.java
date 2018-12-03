@@ -35,10 +35,14 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Abstract test for Hadoop 1.0 file system stack.
  */
+@RunWith(JUnit4.class)
 public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends IgfsDualAbstractSelfTest {
     /** */
     private static final String FS_WORK_DIR = U.getIgniteHome() + File.separatorChar + "work"

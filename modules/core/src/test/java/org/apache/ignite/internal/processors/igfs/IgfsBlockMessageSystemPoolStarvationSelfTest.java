@@ -41,6 +41,9 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -50,6 +53,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Test to check for system pool starvation due to {@link IgfsBlocksMessage}.
  */
+@RunWith(JUnit4.class)
 public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbstractTest {
     /** First node name. */
     private static final String NODE_1_NAME = "node1";

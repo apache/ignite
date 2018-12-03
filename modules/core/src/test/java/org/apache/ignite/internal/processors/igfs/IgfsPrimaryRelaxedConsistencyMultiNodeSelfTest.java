@@ -17,18 +17,22 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
 /**
  * Tests for PRIMARY mode and relaxed consistency model.
  */
+@RunWith(JUnit4.class)
 public class IgfsPrimaryRelaxedConsistencyMultiNodeSelfTest extends IgfsPrimaryRelaxedConsistencySelfTest {
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
         return 4;
     }
 
-    @Override
     @Test
-    public void testCreateConsistencyMultithreaded() throws Exception {
+    @Override public void testCreateConsistencyMultithreaded() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-8823");
 
         super.testCreateConsistencyMultithreaded();

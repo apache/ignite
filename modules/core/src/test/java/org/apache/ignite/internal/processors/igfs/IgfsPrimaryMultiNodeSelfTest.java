@@ -17,9 +17,14 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
 /**
  * Multinode test for PRIMARY mode.
  */
+@RunWith(JUnit4.class)
 public class IgfsPrimaryMultiNodeSelfTest extends IgfsPrimarySelfTest {
     /** {@inheritDoc} */
     @Override protected int nodeCount() {

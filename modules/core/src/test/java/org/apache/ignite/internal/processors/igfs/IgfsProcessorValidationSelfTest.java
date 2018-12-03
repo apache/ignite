@@ -36,6 +36,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
@@ -50,6 +53,7 @@ import static org.apache.ignite.igfs.IgfsMode.PROXY;
  * <p>
  * Tests starting with "testRemote" are checking {@link IgfsProcessor#checkIgfsOnRemoteNode(org.apache.ignite.cluster.ClusterNode)}.
  */
+@RunWith(JUnit4.class)
 public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);

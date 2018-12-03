@@ -45,6 +45,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Callable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -54,6 +57,7 @@ import static org.apache.ignite.testframework.GridTestUtils.sleepAndIncrement;
 /**
  * {@link IgfsDataManager} test case.
  */
+@RunWith(JUnit4.class)
 public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     /** Test IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);

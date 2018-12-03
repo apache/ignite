@@ -41,6 +41,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.configuration.FileSystemConfiguration.DFLT_MGMT_PORT;
@@ -48,6 +51,7 @@ import static org.apache.ignite.configuration.FileSystemConfiguration.DFLT_MGMT_
 /**
  * Base test class for {@link IgfsServer} checking IPC endpoint registrations.
  */
+@RunWith(JUnit4.class)
 public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest extends IgfsCommonAbstractTest {
     /** IP finder. */
     protected static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);

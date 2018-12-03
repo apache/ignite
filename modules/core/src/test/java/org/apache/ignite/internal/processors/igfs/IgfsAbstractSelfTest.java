@@ -59,6 +59,9 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 import static org.apache.ignite.igfs.IgfsMode.PROXY;
@@ -67,6 +70,7 @@ import static org.apache.ignite.igfs.IgfsMode.PROXY;
  * Test fo regular igfs operations.
  */
 @SuppressWarnings({"ConstantConditions"})
+@RunWith(JUnit4.class)
 public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
     /**
      * Constructor.

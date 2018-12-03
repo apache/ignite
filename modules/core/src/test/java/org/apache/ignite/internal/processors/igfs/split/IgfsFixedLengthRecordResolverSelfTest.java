@@ -21,10 +21,14 @@ import org.apache.ignite.igfs.IgfsInputStream;
 import org.apache.ignite.igfs.mapreduce.IgfsFileRange;
 import org.apache.ignite.igfs.mapreduce.records.IgfsFixedLengthRecordResolver;
 import org.apache.ignite.internal.util.typedef.F;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Fixed length split resolver self test.
  */
+@RunWith(JUnit4.class)
 public class IgfsFixedLengthRecordResolverSelfTest extends IgfsAbstractRecordResolverSelfTest {
     /**
      * Test split resolver.
