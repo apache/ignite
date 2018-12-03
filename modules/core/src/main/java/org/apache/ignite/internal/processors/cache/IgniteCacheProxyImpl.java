@@ -224,8 +224,12 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         while (true) {
             GridCacheContext<K, V> ctx = this.ctx;
 
-            if (ctx == null)
+            if (ctx == null) {
                 checkRestart();
+
+                if (Thread.currentThread().isInterrupted())
+                    throw new IgniteException(new InterruptedException());
+            }
             else
                 return ctx;
         }
@@ -238,8 +242,12 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         while (true) {
             IgniteInternalCache<K, V> delegate = this.delegate;
 
-            if (delegate == null)
+            if (delegate == null) {
                 checkRestart();
+
+                if (Thread.currentThread().isInterrupted())
+                    throw new IgniteException(new InterruptedException());
+            }
             else
                 return delegate;
         }
