@@ -111,25 +111,23 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
     }
 
     public void testMaxThread() throws Exception {
-        executeCOmmand("/bin/sh", "-c","cat /proc/sys/kernel/threads-max");
-        executeCOmmand("/bin/sh", "-c","cat /proc/sys/kernel/pid_max");
-        executeCOmmand("/bin/sh", "-c","cat /proc/sys/vm/max_map_count");
-        executeCOmmand("/bin/sh", "-c", "cat /etc/systemd/logind.conf | grep UserTasksMax");
-        executeCOmmand("/bin/sh", "-c","ulimit -a | grep processes");
+//        executeCOmmand("/bin/sh", "-c","cat /proc/sys/kernel/threads-max");
+//        executeCOmmand("/bin/sh", "-c","cat /proc/sys/kernel/pid_max");
+//        executeCOmmand("/bin/sh", "-c","cat /proc/sys/vm/max_map_count");
+//        executeCOmmand("/bin/sh", "-c", "cat /etc/systemd/logind.conf | grep UserTasksMax");
+//        executeCOmmand("/bin/sh", "-c","ulimit -a | grep processes");
 
-//        int i = 0;
-//        while (true) {
-//            new Thread(LockSupport::park).start();
-//
-//            if (++i % 1000 == 0) {
+        int i = 0;
+        while (true) {
+            new Thread(LockSupport::park).start();
+
+            if (++i % 1000 == 0) {
 //                doSleep(
-//
-//
 //                    1000
 //                );
-//                log.info("Created thread count = " + i);
-//            }
-//        }
+                log.info("Created thread count = " + i);
+            }
+        }
     }
 
     private void executeCOmmand(String... commnad) throws IOException, InterruptedException {
