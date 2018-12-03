@@ -47,6 +47,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -100,6 +101,13 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
      */
     public void testTxGet() throws Exception {
         getTest(TRANSACTIONAL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMvccTxGet() throws Exception {
+        getTest(TRANSACTIONAL_SNAPSHOT);
     }
 
     /**

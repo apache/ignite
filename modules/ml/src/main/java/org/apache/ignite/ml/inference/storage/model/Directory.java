@@ -15,31 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.inference.storage;
+package org.apache.ignite.ml.inference.storage.model;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import org.apache.ignite.ml.inference.ModelDescriptor;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
- * Model descriptor storage based on local hash map.
+ * Implementation of directory {@link ModelStorageProvider} works with.
  */
-public class LocalModelDescriptorStorage implements ModelDescriptorStorage {
-    /** Hash map model storage. */
-    private final Map<String, ModelDescriptor> models = new ConcurrentHashMap<>();
+class Directory implements FileOrDirectory {
+    /** */
+    private static final long serialVersionUID = -6441963559954107245L;
+
+    /** List of files in the directory. */
+    private final Set<String> files = new HashSet<>();
 
     /** {@inheritDoc} */
-    @Override public void put(String name, ModelDescriptor mdl) {
-        models.put(name, mdl);
+    @Override public boolean isFile() {
+        return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public ModelDescriptor get(String name) {
-        return models.get(name);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void remove(String name) {
-        models.remove(name);
+    /** */
+    Set<String> getFiles() {
+        return files;
     }
 }

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.database;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
@@ -35,7 +34,6 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
@@ -52,10 +50,7 @@ import org.h2.index.IndexType;
 import org.h2.index.SingleRowCursor;
 import org.h2.message.DbException;
 import org.h2.result.SearchRow;
-import org.h2.result.SortOrder;
-import org.h2.table.Column;
 import org.h2.table.IndexColumn;
-import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
@@ -63,7 +58,7 @@ import org.jetbrains.annotations.Nullable;
  * H2 Index over {@link BPlusTree}.
  */
 @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
-public class H2TreeIndex extends GridH2IndexBase {
+public class H2TreeIndex extends H2TreeIndexBase {
     /** Default value for {@code IGNITE_MAX_INDEX_PAYLOAD_SIZE} */
     public static final int IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT = 10;
 
@@ -145,66 +140,59 @@ public class H2TreeIndex extends GridH2IndexBase {
 
         IndexColumn[] cols;
 
-        if (cctx.affinityNode()) {
-            segments = new H2Tree[segmentsCnt];
+        assert cctx.affinityNode();
 
-            IgniteCacheDatabaseSharedManager db = cctx.shared().database();
+        segments = new H2Tree[segmentsCnt];
 
-            AtomicInteger maxCalculatedInlineSize = new AtomicInteger();
+        IgniteCacheDatabaseSharedManager db = cctx.shared().database();
 
-            for (int i = 0; i < segments.length; i++) {
-                db.checkpointReadLock();
+        AtomicInteger maxCalculatedInlineSize = new AtomicInteger();
 
-                try {
-                    RootPage page = getMetaPage(treeName, i);
+        for (int i = 0; i < segments.length; i++) {
+            db.checkpointReadLock();
 
-                    segments[i] = new H2Tree(
-                        treeName,
-                        idxName,
-                        tblName,
-                        tbl.cacheName(),
-                        cctx.offheap().reuseListForIndex(treeName),
-                        cctx.groupId(),
-                        cctx.dataRegion().pageMemory(),
-                        cctx.shared().wal(),
-                        cctx.offheap().globalRemoveId(),
-                        tbl.rowFactory(),
-                        page.pageId().pageId(),
-                        page.isAllocated(),
-                        unwrappedColsInfo,
-                        wrappedColsInfo,
-                        maxCalculatedInlineSize,
-                        pk,
-                        affinityKey,
-                        cctx.mvccEnabled(),
-                        rowCache,
-                        cctx.kernalContext().failure(),
-                        log) {
-                        @Override public int compareValues(Value v1, Value v2) {
-                            return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
-                        }
-                    };
-                }
-                finally {
-                    db.checkpointReadUnlock();
-                }
+            try {
+                RootPage page = getMetaPage(treeName, i);
+
+                segments[i] = new H2Tree(
+                    treeName,
+                    idxName,
+                    tblName,
+                    tbl.cacheName(),
+                    cctx.offheap().reuseListForIndex(treeName),
+                    cctx.groupId(),
+                    cctx.dataRegion().pageMemory(),
+                    cctx.shared().wal(),
+                    cctx.offheap().globalRemoveId(),
+                    tbl.rowFactory(),
+                    page.pageId().pageId(),
+                    page.isAllocated(),
+                    unwrappedColsInfo,
+                    wrappedColsInfo,
+                    maxCalculatedInlineSize,
+                    pk,
+                    affinityKey,
+                    cctx.mvccEnabled(),
+                    rowCache,
+                    cctx.kernalContext().failure(),
+                    log) {
+                    @Override public int compareValues(Value v1, Value v2) {
+                        return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
+                    }
+                };
             }
-
-            boolean useUnwrappedCols = segments[0].unwrappedPk();
-
-            IndexColumnsInfo colsInfo = useUnwrappedCols ? unwrappedColsInfo : wrappedColsInfo;
-
-            cols = colsInfo.cols();
-
-            inlineIdxs = colsInfo.inlineIdx();
+            finally {
+                db.checkpointReadUnlock();
+            }
         }
-        else {
-            // We need indexes on the client node, but index will not contain any data.
-            segments = null;
-            inlineIdxs = null;
 
-            cols = unwrappedColsInfo.cols();
-        }
+        boolean useUnwrappedCols = segments[0].unwrappedPk();
+
+        IndexColumnsInfo colsInfo = useUnwrappedCols ? unwrappedColsInfo : wrappedColsInfo;
+
+        cols = colsInfo.cols();
+
+        inlineIdxs = colsInfo.inlineIdx();
 
         IndexColumn.mapColumns(cols, tbl);
 
@@ -371,17 +359,6 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder, HashSet<Column> allColumnsSet) {
-        long rowCnt = getRowCountApproximation();
-
-        double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
-
-        int mul = getDistributedMultiplier(ses, filters, filter);
-
-        return mul * baseCost;
-    }
-
-    /** {@inheritDoc} */
     @Override public long getRowCount(Session ses) {
         try {
             int seg = threadLocalSegment();
@@ -395,16 +372,6 @@ public class H2TreeIndex extends GridH2IndexBase {
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getRowCountApproximation() {
-        return 10_000; // TODO
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean canGetFirstOrLast() {
-        return true;
     }
 
     /** {@inheritDoc} */

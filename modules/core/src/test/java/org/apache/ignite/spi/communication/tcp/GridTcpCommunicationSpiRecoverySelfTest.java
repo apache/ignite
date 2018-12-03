@@ -105,7 +105,6 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
     }
 
     /** */
-    @SuppressWarnings({"deprecation"})
     private class TestListener implements CommunicationListener<Message> {
         /** */
         private boolean block;
