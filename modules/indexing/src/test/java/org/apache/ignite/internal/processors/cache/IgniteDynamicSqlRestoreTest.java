@@ -452,10 +452,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             @Override public boolean apply() {
                 String plan = doExplainPlan(cache, sql);
 
-                if (plan.contains(idx))
-                    return true;
-
-                return false;
+                return plan.contains(idx);
             }
         }, 10_000);
     }
