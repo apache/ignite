@@ -345,6 +345,8 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
+        // TODO: We can call another callback here to notify .NET marshaller so it resets cache in time?
+
         // Save the flag value for callback of reconnectFut.
         this.clusterRestarted = clusterRestarted;
 
