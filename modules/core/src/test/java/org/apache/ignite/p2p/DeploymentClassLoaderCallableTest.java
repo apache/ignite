@@ -25,9 +25,13 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  */
+@RunWith(JUnit4.class)
 public class DeploymentClassLoaderCallableTest extends GridCommonAbstractTest {
     /** */
     private static final String RUN_CLS = "org.apache.ignite.tests.p2p.compute.ExternalCallable";

@@ -27,9 +27,13 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.stream.StreamTransformer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /** */
 @GridCommonTest(group = "P2P")
+@RunWith(JUnit4.class)
 public class P2PStreamingClassLoaderTest extends GridCommonAbstractTest {
     /** */
     private static final String ENTRY_PROCESSOR_CLASS_NAME = "org.apache.ignite.tests.p2p.NoopCacheEntryProcessor";

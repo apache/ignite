@@ -27,9 +27,13 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.util.Collection;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  */
+@RunWith(JUnit4.class)
 public class SharedDeploymentTest extends GridCommonAbstractTest {
     /** */
     private static final String RUN_CLS = "org.apache.ignite.tests.p2p.compute.ExternalCallable";

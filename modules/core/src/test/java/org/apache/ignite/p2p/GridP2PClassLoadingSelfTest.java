@@ -35,6 +35,9 @@ import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.lang.IgniteProductVersion.fromString;
 
@@ -42,6 +45,7 @@ import static org.apache.ignite.lang.IgniteProductVersion.fromString;
  * P2P test.
  */
 @GridCommonTest(group = "P2P")
+@RunWith(JUnit4.class)
 public class GridP2PClassLoadingSelfTest extends GridCommonAbstractTest {
     /** */
     private final ClassLoader tstClsLdr;

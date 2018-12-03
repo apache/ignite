@@ -37,6 +37,9 @@ import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.nio.file.Files.readAllBytes;
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
@@ -44,6 +47,7 @@ import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 /**
  * Test marshaller context.
  */
+@RunWith(JUnit4.class)
 public class MarshallerContextSelfTest extends GridCommonAbstractTest {
     /** */
     private GridTestKernalContext ctx;

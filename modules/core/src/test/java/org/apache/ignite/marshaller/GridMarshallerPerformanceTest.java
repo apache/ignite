@@ -45,10 +45,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Marshallers benchmark.
  */
+@RunWith(JUnit4.class)
 public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
     /** Number of iterations per test. */
     private static final int ITER_CNT = 1 * 1000 * 1000;

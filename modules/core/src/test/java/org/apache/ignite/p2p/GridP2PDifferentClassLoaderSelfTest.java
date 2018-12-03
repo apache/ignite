@@ -27,12 +27,16 @@ import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test P2P deployment tasks which loaded from different class loaders.
  */
 @SuppressWarnings({"ProhibitedExceptionDeclared", "ProhibitedExceptionThrown"})
 @GridCommonTest(group = "P2P")
+@RunWith(JUnit4.class)
 public class GridP2PDifferentClassLoaderSelfTest extends GridCommonAbstractTest {
     /**
      * Class Name of task 1.

@@ -18,6 +18,9 @@
 package org.apache.ignite.p2p;
 
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 
@@ -25,6 +28,7 @@ import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
  * Private deployment mode test.
  */
 @GridCommonTest(group = "P2P")
+@RunWith(JUnit4.class)
 public class GridMultinodeRedeployPrivateModeSelfTest extends GridAbstractMultinodeRedeployTest {
     /**
      * Test GridDeploymentMode.PRIVATE mode.

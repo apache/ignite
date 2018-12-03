@@ -33,10 +33,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Dedicated tests for {@link PlatformJavaObjectFactoryProxy}.
  */
+@RunWith(JUnit4.class)
 public class PlatformJavaObjectFactoryProxySelfTest extends GridCommonAbstractTest {
     /** Name of the class. */
     private static final String CLS_NAME = TestJavaObject.class.getName();

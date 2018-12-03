@@ -23,11 +23,15 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Java logger test.
  */
 @GridCommonTest(group = "Logger")
+@RunWith(JUnit4.class)
 public class JavaLoggerTest extends TestCase {
     /** */
     @SuppressWarnings({"FieldCanBeLocal"})
