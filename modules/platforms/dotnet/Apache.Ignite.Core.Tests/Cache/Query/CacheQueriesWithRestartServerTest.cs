@@ -17,7 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
-    using System.Collections.Generic;
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Query;
@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 Title = "test"
             });
 
-            StopGrid(_server);
+            Ignition.Stop(_server.Name, false);
 
             _server = StartGrid(0);
 
@@ -57,20 +57,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             cache = _client.GetOrCreateCache<int, Item>("Test");
 
-            cache.Put(1, new Item
-            {
-                Id = 11,
-                Title = "test"
-            });
-
             // This is the first time when we send this filter - why does BinaryStructureTracker consider it known?
+            // The error is not about filter, but about Item class. It is considered known, but the whole cluster has been restarted.
             var filter = emptyFilterObject
                 ? (ICacheEntryFilter<int, Item>) new TestFilter()
                 : new TestFilterWithField {TestValue = 9};
 
             var cursor = cache.Query(new ScanQuery<int, Item>(filter));
+            var items = cursor.GetAll();
 
-            Assert.DoesNotThrow(() => cursor.GetAll());
+            Assert.AreEqual(10, items.Single().Value.Id);
         }
 
         [TearDown]
@@ -94,13 +90,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             });
         }
 
-        private void StopGrid(IIgnite ignite)
-        {
-            Ignition.Stop(ignite.Name, false);
-        }
-
-
-        private void WaitForReconnect(IIgnite ignite, int timeout)
+        private static void WaitForReconnect(IIgnite ignite, int timeout)
         {
             bool reconnected = false;
 
@@ -113,50 +103,42 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             return new BinaryBasicNameMapper {IsSimpleName = false};
         }
-    }
 
-    public class TestFilter : ICacheEntryFilter<int, Item>
-    {
-        public bool Invoke(ICacheEntry<int, Item> entry)
+        private class TestFilter : ICacheEntryFilter<int, Item>
         {
-            return entry.Value.Id > 10;
-        }
-    }
-
-    public class TestFilterWithField : ICacheEntryFilter<int, Item>
-    {
-        public int TestValue { get; set; }
-
-        public bool Invoke(ICacheEntry<int, Item> entry)
-        {
-            return entry.Value.Id > TestValue;
-        }
-    }
-
-    public class Item : IBinarizable
-    {
-        public int Id { get; set; }
-
-        public string Title { get; set; }
-
-        private Dictionary<string, object> _data = new Dictionary<string, object>();
-
-        public Dictionary<string, object> Data
-        {
-            get { return _data; }
-            set { _data = value; }
+            public bool Invoke(ICacheEntry<int, Item> entry)
+            {
+                return entry.Value.Id > 10;
+            }
         }
 
-        public void WriteBinary(IBinaryWriter writer)
+        private class TestFilterWithField : ICacheEntryFilter<int, Item>
         {
-            writer.WriteInt("Id", Id);
-            writer.WriteString("Title", Title);
+            public int TestValue { get; set; }
+
+            public bool Invoke(ICacheEntry<int, Item> entry)
+            {
+                return entry.Value.Id > TestValue;
+            }
         }
 
-        public void ReadBinary(IBinaryReader reader)
+        private class Item : IBinarizable
         {
-            Id = reader.ReadInt("Id");
-            Title = reader.ReadString("Title");
+            public int Id { get; set; }
+
+            public string Title { get; set; }
+
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                writer.WriteInt("Id", Id);
+                writer.WriteString("Title", Title);
+            }
+
+            public void ReadBinary(IBinaryReader reader)
+            {
+                Id = reader.ReadInt("Id");
+                Title = reader.ReadString("Title");
+            }
         }
     }
 }
