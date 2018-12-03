@@ -32,12 +32,13 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
-import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.command.dml.Insert;
@@ -70,8 +71,8 @@ public class GridH2Table extends TableBase {
     /** Insert hack flag. */
     private static final ThreadLocal<Boolean> INSERT_HACK = new ThreadLocal<>();
 
-    /** Cache context. */
-    private final GridCacheContext cctx;
+    /** Cache context info. */
+    private final GridCacheContextInfo cacheInfo;
 
     /** */
     private final GridH2RowDescriptor desc;
@@ -131,16 +132,16 @@ public class GridH2Table extends TableBase {
      * @param desc Row descriptor.
      * @param rowFactory Row factory.
      * @param idxsFactory Indexes factory.
-     * @param cctx Cache context.
+     * @param cacheInfo Cache context info.
      */
     public GridH2Table(CreateTableData createTblData, GridH2RowDescriptor desc, H2RowFactory rowFactory,
-        GridH2SystemIndexFactory idxsFactory, GridCacheContext cctx) {
+        GridH2SystemIndexFactory idxsFactory, GridCacheContextInfo cacheInfo) {
         super(createTblData);
 
         assert idxsFactory != null;
 
         this.desc = desc;
-        this.cctx = cctx;
+        this.cacheInfo = cacheInfo;
 
         if (desc.context() != null && !desc.context().customAffinityMapper()) {
             boolean affinityColExists = true;
@@ -207,7 +208,7 @@ public class GridH2Table extends TableBase {
      * @return {@code true} If this is a partitioned table.
      */
     public boolean isPartitioned() {
-        return desc != null && desc.context().config().getCacheMode() == PARTITIONED;
+        return desc != null && desc.cacheInfo().config().getCacheMode() == PARTITIONED;
     }
 
     /**
@@ -233,21 +234,35 @@ public class GridH2Table extends TableBase {
      * @return Cache name.
      */
     public String cacheName() {
-        return cctx.name();
+        return cacheInfo.name();
     }
 
     /**
      * @return Cache ID.
      */
     public int cacheId() {
-        return cctx.cacheId();
+        return cacheInfo.cacheId();
+    }
+
+    /**
+     * @return Cache context info.
+     */
+    public GridCacheContextInfo cacheInfo() {
+        return cacheInfo;
+    }
+
+    /**
+     * @return {@code true} If Cache is lazy (not full inited).
+     */
+    public boolean isCacheLazy() {
+        return cacheInfo.gridCacheContext() == null;
     }
 
     /**
      * @return Cache context.
      */
-    public GridCacheContext cache() {
-        return cctx;
+    @Nullable public GridCacheContext cacheContext() {
+        return cacheInfo.gridCacheContext();
     }
 
     /** {@inheritDoc} */
@@ -892,7 +907,7 @@ public class GridH2Table extends TableBase {
      * @return Proxy index.
      */
     private Index createDuplicateIndexIfNeeded(Index target) {
-        if (!(target instanceof H2TreeIndex) && !(target instanceof SpatialIndex))
+        if (!(target instanceof H2TreeIndexBase) && !(target instanceof SpatialIndex))
             return null;
 
         IndexColumn[] cols = target.getIndexColumns();

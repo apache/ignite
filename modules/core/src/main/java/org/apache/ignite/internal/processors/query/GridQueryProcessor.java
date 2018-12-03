@@ -63,8 +63,8 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -673,23 +673,26 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Create type descriptors from schema and initialize indexing for given cache.<p>
      * Use with {@link #busyLock} where appropriate.
-     * @param cctx Cache context.
+     * @param cacheInfo Cache context info.
      * @param schema Initial schema.
      * @param isSql {@code true} in case create cache initialized from SQL.
      * @throws IgniteCheckedException If failed.
      */
-    public void onCacheStart0(GridCacheContext<?, ?> cctx, QuerySchema schema, boolean isSql)
+    public void onCacheStart0(GridCacheContextInfo<?, ?> cacheInfo, QuerySchema schema, boolean isSql)
         throws IgniteCheckedException {
 
-        cctx.shared().database().checkpointReadLock();
+        ctx.cache().context().database().checkpointReadLock();
 
         try {
+            if (cacheInfo.isClientCache() && cacheInfo.isCacheContextInited() && idx.initCacheContext(cacheInfo.gridCacheContext()))
+                return;
+
             synchronized (stateMux) {
-                boolean escape = cctx.config().isSqlEscapeAll();
+                boolean escape = cacheInfo.config().isSqlEscapeAll();
 
-                String cacheName = cctx.name();
+                String cacheName = cacheInfo.name();
 
-                String schemaName = QueryUtils.normalizeSchemaName(cacheName, cctx.config().getSqlSchema());
+                String schemaName = QueryUtils.normalizeSchemaName(cacheName, cacheInfo.config().getSqlSchema());
 
                 // Prepare candidates.
                 List<Class<?>> mustDeserializeClss = new ArrayList<>();
@@ -700,7 +703,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 if (!F.isEmpty(qryEntities)) {
                     for (QueryEntity qryEntity : qryEntities) {
-                        QueryTypeCandidate cand = QueryUtils.typeForQueryEntity(cacheName, schemaName, cctx, qryEntity,
+                        QueryTypeCandidate cand = QueryUtils.typeForQueryEntity(cacheName, schemaName, cacheInfo, qryEntity,
                             mustDeserializeClss, escape);
 
                         cands.add(cand);
@@ -735,7 +738,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 // Apply pending operation which could have been completed as no-op at this point.
                 // There could be only one in-flight operation for a cache.
                 for (SchemaOperation op : schemaOps.values()) {
-                    if (F.eq(op.proposeMessage().deploymentId(), cctx.dynamicDeploymentId())) {
+                    if (F.eq(op.proposeMessage().deploymentId(), cacheInfo.dynamicDeploymentId())) {
                         if (op.started()) {
                             SchemaOperationWorker worker = op.manager().worker();
 
@@ -799,7 +802,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
 
                 // Ready to register at this point.
-                registerCache0(cacheName, schemaName, cctx, cands, isSql);
+                registerCache0(cacheName, schemaName, cacheInfo, cands, isSql);
 
                 // Warn about possible implicit deserialization.
                 if (!mustDeserializeClss.isEmpty()) {
@@ -813,7 +816,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
         }
         finally {
-            cctx.shared().database().checkpointReadUnlock();
+            ctx.cache().context().database().checkpointReadUnlock();
         }
     }
 
@@ -848,12 +851,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * When called for the first time, we initialize topology thus understanding whether current node is coordinator
      * or not.
      *
-     * @param cctx Cache context.
+     * @param cacheInfo Cache context info.
      * @param schema Index states.
      * @param isSql {@code true} in case create cache initialized from SQL.
      * @throws IgniteCheckedException If failed.
      */
-    public void onCacheStart(GridCacheContext cctx, QuerySchema schema, boolean isSql) throws IgniteCheckedException {
+    public void onCacheStart(GridCacheContextInfo cacheInfo, QuerySchema schema,
+        boolean isSql) throws IgniteCheckedException {
         if (idx == null)
             return;
 
@@ -861,7 +865,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         try {
-            onCacheStart0(cctx, schema, isSql);
+            onCacheStart0(cacheInfo, schema, isSql);
         }
         finally {
             busyLock.leaveBusy();
@@ -869,10 +873,26 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param cctx Cache context.
+     * Destroy H2 structures for not started caches.
+     *
+     * @param cacheName Cache name.
+     */
+    public void onCacheStop(String cacheName) {
+        if (idx == null)
+            return;
+
+        GridCacheContextInfo cacheInfo = idx.registeredCacheInfo(cacheName);
+
+        if (cacheInfo != null)
+            onCacheStop(cacheInfo, true);
+    }
+
+
+    /**
+     * @param cacheInfo Cache context info.
      * @param removeIdx If {@code true}, will remove index.
      */
-    public void onCacheStop(GridCacheContext cctx, boolean removeIdx) {
+    public void onCacheStop(GridCacheContextInfo cacheInfo, boolean removeIdx) {
         if (idx == null)
             return;
 
@@ -880,7 +900,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         try {
-            onCacheStop0(cctx, removeIdx);
+            onCacheStop0(cacheInfo, removeIdx);
         }
         finally {
             busyLock.leaveBusy();
@@ -1416,9 +1436,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         String cacheName = op.cacheName();
 
-        GridCacheAdapter cache = ctx.cache().internalCache(cacheName);
+        GridCacheContextInfo cacheInfo = idx.registeredCacheInfo(cacheName);
 
-        if (cache == null || !F.eq(depId, cache.context().dynamicDeploymentId()))
+        if (cacheInfo == null || !F.eq(depId, cacheInfo.dynamicDeploymentId()))
             throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, cacheName);
 
         try {
@@ -1427,11 +1447,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 QueryIndexDescriptorImpl idxDesc = QueryUtils.createIndexDescriptor(type, op0.index());
 
-                GridCacheContext cctx = cache.context();
+                SchemaIndexCacheVisitor visitor;
 
-                SchemaIndexCacheFilter filter = new TableCacheFilter(cctx, op0.tableName());
+                if (cacheInfo.isCacheContextInited()) {
+                    GridCacheContext cctx = cacheInfo.gridCacheContext();
 
-                SchemaIndexCacheVisitor visitor = new SchemaIndexCacheVisitorImpl(cctx, filter, cancelTok, op0.parallel());
+                    SchemaIndexCacheFilter filter = new TableCacheFilter(cctx, op0.tableName());
+
+                    visitor = new SchemaIndexCacheVisitorImpl(cctx, filter, cancelTok, op0.parallel());
+                }
+                else
+                    //For not started caches we shouldn't add any data to index.
+                    visitor = clo -> {};
 
                 idx.dynamicIndexCreate(op0.schemaName(), op0.tableName(), idxDesc, op0.ifNotExists(), visitor);
             }
@@ -1582,7 +1609,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param cacheName Cache name.
      * @param schemaName Schema name.
-     * @param cctx Cache context.
+     * @param cacheInfo Cache context info.
      * @param cands Candidates.
      * @param isSql {@code true} in case create cache initialized from SQL.
      * @throws IgniteCheckedException If failed.
@@ -1590,13 +1617,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private void registerCache0(
         String cacheName,
         String schemaName,
-        GridCacheContext<?, ?> cctx,
+        GridCacheContextInfo<?, ?> cacheInfo,
         Collection<QueryTypeCandidate> cands,
         boolean isSql
     ) throws IgniteCheckedException {
         synchronized (stateMux) {
             if (idx != null)
-                idx.registerCache(cacheName, schemaName, cctx);
+                idx.registerCache(cacheName, schemaName, cacheInfo);
 
             try {
                 for (QueryTypeCandidate cand : cands) {
@@ -1627,13 +1654,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     }
 
                     if (idx != null)
-                        idx.registerType(cctx, desc, isSql);
+                        idx.registerType(cacheInfo, desc, isSql);
                 }
 
                 cacheNames.add(CU.mask(cacheName));
             }
             catch (IgniteCheckedException | RuntimeException e) {
-                onCacheStop0(cctx, true);
+                onCacheStop0(cacheInfo, true);
 
                 throw e;
             }
@@ -1644,14 +1671,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * Unregister cache.<p>
      * Use with {@link #busyLock} where appropriate.
      *
-     * @param cctx Cache context.
+     * @param cacheInfo Cache context info.
      * @param destroy Destroy flag.
      */
-    public void onCacheStop0(GridCacheContext cctx, boolean destroy) {
+    public void onCacheStop0(GridCacheContextInfo cacheInfo, boolean destroy) {
         if (idx == null)
             return;
 
-        String cacheName = cctx.name();
+        String cacheName = cacheInfo.name();
 
         synchronized (stateMux) {
             // Clear types.
@@ -1687,7 +1714,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             // Notify indexing.
             try {
-                idx.unregisterCache(cctx, destroy);
+                idx.unregisterCache(cacheInfo, destroy);
             }
             catch (Exception e) {
                 U.error(log, "Failed to clear indexing on cache unregister (will ignore): " + cacheName, e);

@@ -1728,7 +1728,11 @@ public class GridSqlQueryParser {
                 GridH2Table tbl = ((GridSqlTable)o).dataTable();
 
                 if (tbl != null) {
-                    GridCacheContext cctx = tbl.cache();
+                    //It's not affinity cache. Can't be local.
+                    if (tbl.cacheContext() == null)
+                        return false;
+
+                    GridCacheContext cctx = tbl.cacheContext();
 
                     if (cctx.mvccEnabled())
                         return false;
@@ -1759,8 +1763,8 @@ public class GridSqlQueryParser {
             if (o instanceof GridSqlTable) {
                 GridH2Table tbl = ((GridSqlTable)o).dataTable();
 
-                if (tbl != null && tbl.cache().isPartitioned())
-                    return tbl.cache();
+                if (tbl != null && tbl.cacheContext().isPartitioned())
+                    return tbl.cacheContext();
             }
         }
 

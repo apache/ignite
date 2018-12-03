@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.result.SortOrder;
@@ -312,5 +314,30 @@ public class H2Utils {
             if (!containsColumn(dest, col))
                 dest.add(col);
         }
+    }
+
+    /**
+     * Check that given table has not started cache and start it for such case.
+     *
+     * @param tbl Table to check on not started cache.
+     * @return {@code true} in case not started and has been started.
+     */
+    public static boolean checkAndStartNotStartedCache(GridH2Table tbl) {
+        if (tbl != null && tbl.isCacheLazy()) {
+            String cacheName = tbl.cacheInfo().config().getName();
+
+            GridKernalContext ctx = tbl.cacheInfo().context();
+
+            try {
+                Boolean res = ctx.cache().dynamicStartCache(null, cacheName, null, false, true, true).get();
+
+                return U.firstNotNull(res, Boolean.FALSE);
+            }
+            catch (IgniteCheckedException ex) {
+                throw U.convertException(ex);
+            }
+        }
+
+        return false;
     }
 }

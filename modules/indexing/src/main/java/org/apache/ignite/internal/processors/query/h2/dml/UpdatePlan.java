@@ -535,7 +535,7 @@ public final class UpdatePlan {
      * @return Cache context.
      */
     public GridCacheContext cacheContext() {
-        return tbl.cache();
+        return tbl.cacheContext();
     }
 
     /**

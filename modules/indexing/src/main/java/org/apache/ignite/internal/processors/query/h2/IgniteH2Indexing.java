@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -73,7 +74,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.query.h2.affinity.PartitionInfo;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
@@ -100,7 +100,9 @@ import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
+import org.apache.ignite.internal.processors.query.h2.affinity.PartitionInfo;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeClientIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
@@ -750,16 +752,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     GridH2IndexBase createSortedIndex(String name, GridH2Table tbl, boolean pk, boolean affinityKey,
         List<IndexColumn> unwrappedCols, List<IndexColumn> wrappedCols, int inlineSize) {
         try {
-            GridCacheContext cctx = tbl.cache();
+            GridCacheContextInfo cacheInfo = tbl.cacheInfo();
 
             if (log.isDebugEnabled())
-                log.debug("Creating cache index [cacheId=" + cctx.cacheId() + ", idxName=" + name + ']');
+                log.debug("Creating cache index [cacheId=" + cacheInfo.cacheId() + ", idxName=" + name + ']');
 
-            final int segments = tbl.rowDescriptor().context().config().getQueryParallelism();
+            if (cacheInfo.affinityNode()) {
+                final int segments = tbl.rowDescriptor().context().config().getQueryParallelism();
 
-            H2RowCache cache = rowCache.forGroup(cctx.groupId());
+                H2RowCache cache = rowCache.forGroup(cacheInfo.groupId());
 
-            return new H2TreeIndex(cctx, cache, tbl, name, pk, affinityKey, unwrappedCols, wrappedCols, inlineSize, segments);
+                return new H2TreeIndex(cacheInfo.gridCacheContext(), cache, tbl, name, pk, affinityKey, unwrappedCols, wrappedCols, inlineSize, segments);
+            }
+            else
+                return new H2TreeClientIndex(tbl, name, pk, unwrappedCols);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -1355,7 +1361,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (o instanceof GridSqlAlias)
                 o = GridSqlAlias.unwrap((GridSqlAst) o);
             if (o instanceof GridSqlTable && ((GridSqlTable) o).dataTable() != null) {
-                GridCacheContext cctx = ((GridSqlTable) o).dataTable().cache();
+                GridCacheContext cctx = ((GridSqlTable)o).dataTable().cacheContext();
 
                 if (mvccEnabled == null) {
                     mvccEnabled = cctx.mvccEnabled();
@@ -2316,31 +2322,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return H2 prepared statement.
      */
     private PreparedStatement prepareStatementAndCaches(Connection c, String sqlQry) {
-        boolean cachesCreated = false;
-
-        while (true) {
-            try {
-                return prepareStatement(c, sqlQry, true);
-            }
-            catch (SQLException e) {
-                if (!cachesCreated && (
-                        e.getErrorCode() == ErrorCode.SCHEMA_NOT_FOUND_1 ||
-                            e.getErrorCode() == ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1 ||
-                            e.getErrorCode() == ErrorCode.INDEX_NOT_FOUND_1)
-                        ) {
-                    try {
-                        ctx.cache().createMissingQueryCaches();
-                    }
-                    catch (IgniteCheckedException ignored) {
-                        throw new CacheException("Failed to create missing caches.", e);
-                    }
-
-                    cachesCreated = true;
-                }
-                else
-                    throw new IgniteSQLException("Failed to parse query. " + e.getMessage(),
-                        IgniteQueryErrorCode.PARSING, e);
-            }
+        try {
+            return prepareStatement(c, sqlQry, true);
+        }
+        catch (SQLException e) {
+            throw new IgniteSQLException("Failed to parse query. " + e.getMessage(),
+                IgniteQueryErrorCode.PARSING, e);
         }
     }
 
@@ -2426,19 +2413,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      *
      * This implementation doesn't support type reregistration.
      *
+     * @param cacheInfo Cache context info.
      * @param type Type description.
      * @param isSql {@code true} in case table has been created from SQL.
      * @throws IgniteCheckedException In case of error.
      */
-    @Override public boolean registerType(GridCacheContext cctx, GridQueryTypeDescriptor type, boolean isSql)
+    @Override public boolean registerType(GridCacheContextInfo cacheInfo, GridQueryTypeDescriptor type, boolean isSql)
         throws IgniteCheckedException {
         validateTypeDescriptor(type);
 
-        String schemaName = schema(cctx.name());
+        String schemaName = schema(cacheInfo.name());
 
         H2Schema schema = schemas.get(schemaName);
 
-        H2TableDescriptor tbl = new H2TableDescriptor(this, schema, type, cctx, isSql);
+        H2TableDescriptor tbl = new H2TableDescriptor(this, schema, type, cacheInfo, isSql);
 
         Connection conn = null;
 
@@ -2579,6 +2567,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         dataTables.remove(h2Tbl.identifier(), h2Tbl);
     }
 
+    /** {@inheritDoc} */
+    public GridCacheContextInfo registeredCacheInfo(String cacheName) {
+        for (GridH2Table value : dataTables.values()) {
+            if (value.cacheName().equals(cacheName))
+                return value.cacheInfo();
+        }
+
+        return null;
+    }
+
     /**
      * Find table for index.
      *
@@ -2658,7 +2656,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         List<H2TableDescriptor> tbls = new ArrayList<>();
 
         for (H2TableDescriptor tbl : s.tables()) {
-            if (F.eq(tbl.cache().name(), cacheName))
+            if (F.eq(tbl.cacheName(), cacheName))
                 tbls.add(tbl);
         }
 
@@ -3027,9 +3025,25 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void registerCache(String cacheName, String schemaName, GridCacheContext<?, ?> cctx)
+    @Override public boolean initCacheContext(GridCacheContext cacheCtx) {
+        GridCacheContextInfo cacheInfo = registeredCacheInfo(cacheCtx.name());
+
+        if (cacheInfo != null) {
+            assert !cacheInfo.isCacheContextInited() : cacheInfo.name();
+            assert cacheInfo.name().equals(cacheCtx.name()) : cacheInfo.name() + " != " + cacheCtx.name();
+
+            cacheInfo.initCacheContext(cacheCtx);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void registerCache(String cacheName, String schemaName, GridCacheContextInfo<?, ?> cacheInfo)
         throws IgniteCheckedException {
-        rowCache.onCacheRegistered(cctx);
+        rowCache.onCacheRegistered(cacheInfo);
 
         synchronized (schemaMux) {
             createSchemaIfNeeded(schemaName, false);
@@ -3037,14 +3051,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         cacheName2schema.put(cacheName, schemaName);
 
-        createSqlFunctions(schemaName, cctx.config().getSqlFunctionClasses());
+        createSqlFunctions(schemaName, cacheInfo.config().getSqlFunctionClasses());
     }
 
     /** {@inheritDoc} */
-    @Override public void unregisterCache(GridCacheContext cctx, boolean rmvIdx) {
-        rowCache.onCacheUnregistered(cctx);
+    @Override public void unregisterCache(GridCacheContextInfo cacheInfo, boolean rmvIdx) {
+        rowCache.onCacheUnregistered(cacheInfo);
 
-        String cacheName = cctx.name();
+        String cacheName = cacheInfo.name();
 
         String schemaName = schema(cacheName);
 
@@ -3061,7 +3075,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             Collection<H2TableDescriptor> rmvTbls = new HashSet<>();
 
             for (H2TableDescriptor tbl : schema.tables()) {
-                if (F.eq(tbl.cache().name(), cacheName)) {
+                if (F.eq(tbl.cacheName(), cacheName)) {
                     try {
                         tbl.table().setRemoveIndexOnDestroy(rmvIdx);
 
@@ -3278,6 +3292,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 GridH2Table tbl = dataTable(tblKey);
 
                 if (tbl != null) {
+                    H2Utils.checkAndStartNotStartedCache(tbl);
+
                     int cacheId = tbl.cacheId();
 
                     caches0.add(cacheId);
