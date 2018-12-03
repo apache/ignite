@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Cache.Query;
     using NUnit.Framework;
 
-    public class CacheQueriesRestartServerTest
+    public sealed class CacheQueriesRestartServerTest
     {
         private IIgnite _client;
 
@@ -42,23 +42,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void Test([Values(true, false)] bool emptyFilterObject)
         {
             var cache = _client.GetOrCreateCache<int, Item>("Test");
-
-            cache.Put(1, new Item
-            {
-                Id = 10,
-                Title = "test"
-            });
+            cache.Put(1, new Item { Id = 10, Title = "test" });
 
             Ignition.Stop(_server.Name, false);
-
             _server = StartGrid(0);
-
-            WaitForReconnect(_client, 5000);
+            _client.GetCluster().ClientReconnectTask.Wait();
 
             cache = _client.GetOrCreateCache<int, Item>("Test");
+            cache.Put(1, new Item { Id = 10, Title = "test" });
 
-            // This is the first time when we send this filter - why does BinaryStructureTracker consider it known?
-            // The error is not about filter, but about Item class. It is considered known, but the whole cluster has been restarted.
             var filter = emptyFilterObject
                 ? (ICacheEntryFilter<int, Item>) new TestFilter()
                 : new TestFilterWithField {TestValue = 9};
@@ -90,16 +82,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             });
         }
 
-        private static void WaitForReconnect(IIgnite ignite, int timeout)
-        {
-            bool reconnected = false;
-
-            ignite.ClientReconnected += (sender, args) => { reconnected = true; };
-
-            TestUtils.WaitForCondition(() => reconnected, timeout);
-        }
-
-        protected virtual IBinaryNameMapper GetNameMapper()
+        private IBinaryNameMapper GetNameMapper()
         {
             return new BinaryBasicNameMapper {IsSimpleName = false};
         }
