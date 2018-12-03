@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.file.AbstractFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -63,6 +64,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstractTest {
     /** */
     private static boolean disableWalDuringRebalancing = true;
+
+    /** */
+    private static boolean enablePendingTxTracker = false;
 
     /** */
     private static int dfltCacheBackupCnt = 0;
@@ -152,6 +156,9 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING,
             Boolean.toString(disableWalDuringRebalancing));
 
+        System.setProperty(IgniteSystemProperties.IGNITE_PENDING_TX_TRACKER_ENABLED,
+            Boolean.toString(enablePendingTxTracker));
+
         return cfg;
     }
 
@@ -189,6 +196,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         cleanPersistenceDir();
 
         disableWalDuringRebalancing = true;
+        enablePendingTxTracker = false;
         dfltCacheBackupCnt = 0;
     }
 
@@ -203,6 +211,97 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testWalDisabledDuringRebalancing() throws Exception {
+        doTestSimple();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testWalNotDisabledIfParameterSetToFalse() throws Exception {
+        disableWalDuringRebalancing = false;
+
+        doTestSimple();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestSimple() throws Exception {
+        Ignite ignite = startGrids(3);
+
+        ignite.cluster().active(true);
+
+        IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        int keysCnt = getKeysCount();
+
+        for (int k = 0; k < keysCnt; k++)
+            cache.put(k, k);
+
+        IgniteEx newIgnite = startGrid(3);
+
+        final CheckpointHistory cpHist =
+            ((GridCacheDatabaseSharedManager)newIgnite.context().cache().context().database()).checkpointHistory();
+
+        waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return !cpHist.checkpoints().isEmpty();
+            }
+        }, 10_000);
+
+        U.sleep(10); // To ensure timestamp granularity.
+
+        long newIgniteStartedTimestamp = System.currentTimeMillis();
+
+        newIgnite.cluster().setBaselineTopology(4);
+
+        awaitExchange(newIgnite);
+
+        CacheGroupContext grpCtx = newIgnite.cachex(DEFAULT_CACHE_NAME).context().group();
+
+        assertEquals(!disableWalDuringRebalancing, grpCtx.walEnabled());
+
+        U.sleep(10); // To ensure timestamp granularity.
+
+        long rebalanceStartedTimestamp = System.currentTimeMillis();
+
+        for (Ignite g : G.allGrids())
+            g.cache(DEFAULT_CACHE_NAME).rebalance();
+
+        awaitPartitionMapExchange();
+
+        assertTrue(grpCtx.walEnabled());
+
+        U.sleep(10); // To ensure timestamp granularity.
+
+        long rebalanceFinishedTimestamp = System.currentTimeMillis();
+
+        for (Integer k = 0; k < keysCnt; k++)
+            assertEquals("k=" + k, k, cache.get(k));
+
+        int checkpointsBeforeNodeStarted = 0;
+        int checkpointsBeforeRebalance = 0;
+        int checkpointsAfterRebalance = 0;
+
+        for (Long timestamp : cpHist.checkpoints()) {
+            if (timestamp < newIgniteStartedTimestamp)
+                checkpointsBeforeNodeStarted++;
+            else if (timestamp >= newIgniteStartedTimestamp && timestamp < rebalanceStartedTimestamp)
+                checkpointsBeforeRebalance++;
+            else if (timestamp >= rebalanceStartedTimestamp && timestamp <= rebalanceFinishedTimestamp)
+                checkpointsAfterRebalance++;
+        }
+
+        assertEquals(1, checkpointsBeforeNodeStarted); // checkpoint on start
+        assertEquals(0, checkpointsBeforeRebalance);
+        assertEquals(disableWalDuringRebalancing ? 1 : 0, checkpointsAfterRebalance); // checkpoint if WAL was re-activated
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testWalDisabledDuringRebalancingWithPendingTxTracker() throws Exception {
+        enablePendingTxTracker = true;
         dfltCacheBackupCnt = 2;
 
         Ignite ignite = startGrids(3);
@@ -255,92 +354,19 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testWalNotDisabledIfParameterSetToFalse() throws Exception {
-        disableWalDuringRebalancing = false;
-
+    public void testLocalAndGlobalWalStateInterdependence() throws Exception {
         Ignite ignite = startGrids(3);
 
         ignite.cluster().active(true);
 
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-        int keysCnt = getKeysCount();
-
-        for (int k = 0; k < keysCnt; k++)
+        for (int k = 0; k < getKeysCount(); k++)
             cache.put(k, k);
 
         IgniteEx newIgnite = startGrid(3);
 
-        final CheckpointHistory cpHist =
-            ((GridCacheDatabaseSharedManager)newIgnite.context().cache().context().database()).checkpointHistory();
-
-        assertNotNull(cpHist);
-
-        waitForCondition(() -> !cpHist.checkpoints().isEmpty(), 10_000);
-
-        U.sleep(10); // To ensure timestamp granularity.
-
-        long newIgniteStartedTs = System.currentTimeMillis();
-
-        newIgnite.cluster().setBaselineTopology(4);
-
-        awaitExchange(newIgnite);
-
-        CacheGroupContext grpCtx = newIgnite.cachex(DEFAULT_CACHE_NAME).context().group();
-
-        assertTrue(grpCtx.walEnabled()); // Regardless of disableWalDuringRebalancing: BLT has been changed.
-
-        U.sleep(10); // To ensure timestamp granularity.
-
-        long rebalanceStartedTs = System.currentTimeMillis();
-
-        for (Ignite g : G.allGrids())
-            g.cache(DEFAULT_CACHE_NAME).rebalance();
-
-        awaitPartitionMapExchange();
-
-        assertTrue(grpCtx.walEnabled());
-
-        U.sleep(10); // To ensure timestamp granularity.
-
-        for (Integer k = 0; k < keysCnt; k++)
-            assertEquals("k=" + k, k, cache.get(k));
-
-        int checkpointsBeforeNodeStarted = 0;
-        int checkpointsBeforeRebalance = 0;
-
-        for (Long timestamp : cpHist.checkpoints()) {
-            if (timestamp < newIgniteStartedTs)
-                checkpointsBeforeNodeStarted++;
-            else if (timestamp < rebalanceStartedTs)
-                checkpointsBeforeRebalance++;
-        }
-
-        assertEquals(1, checkpointsBeforeNodeStarted); // checkpoint on start
-        assertEquals(0, checkpointsBeforeRebalance);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testLocalAndGlobalWalStateInterdependence() throws Exception {
-        dfltCacheBackupCnt = 2;
-
-        Ignite ignite = startGrids(4);
-
-        ignite.cluster().active(true);
-
-        ignite.cluster().setBaselineTopology(4);
-
-        IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
-
-        stopGrid(3);
-
-        awaitExchange((IgniteEx)ignite);
-
-        doLoad(cache, 4, 10_000);
-
-        IgniteEx newIgnite = startGrid(3);
+        newIgnite.cluster().setBaselineTopology(ignite.cluster().nodes());
 
         awaitExchange(newIgnite);
 
@@ -435,32 +461,27 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     private void doTestParallelExchange(AtomicReference<CountDownLatch> latchRef) throws Exception {
-        dfltCacheBackupCnt = 2;
-
-        Ignite ignite = startGrids(4);
+        Ignite ignite = startGrids(3);
 
         ignite.cluster().active(true);
 
-        ignite.cluster().setBaselineTopology(ignite.cluster().nodes());
-
-        stopGrid(3);
-
-        awaitExchange((IgniteEx)ignite);
-
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-        doLoad(cache, 4, 10_000);
+        for (int k = 0; k < getKeysCount(); k++)
+            cache.put(k, k);
 
         IgniteEx newIgnite = startGrid(3);
 
-        // Await fully exchange complete.
-        awaitExchange(newIgnite);
+        CacheGroupContext grpCtx = newIgnite.cachex(DEFAULT_CACHE_NAME).context().group();
 
         CountDownLatch latch = new CountDownLatch(1);
 
         latchRef.set(latch);
 
-        CacheGroupContext grpCtx = newIgnite.cachex(DEFAULT_CACHE_NAME).context().group();
+        ignite.cluster().setBaselineTopology(ignite.cluster().nodes());
+
+        // Await fully exchange complete.
+        awaitExchange(newIgnite);
 
         for (Ignite g : G.allGrids())
             g.cache(DEFAULT_CACHE_NAME).rebalance();
@@ -488,8 +509,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testDataClearedAfterRestartWithDisabledWal() throws Exception {
-        dfltCacheBackupCnt = 2;
-
         Ignite ignite = startGrid(0);
 
         ignite.cluster().active(true);
@@ -505,14 +524,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         newIgnite.cluster().setBaselineTopology(2);
 
-        stopGrid(1);
-
-        awaitExchange((IgniteEx)ignite);
-
-        doLoad(cache, 4, 10_000);
-
-        newIgnite = startGrid(1);
-
+        // Await fully exchange complete.
         awaitExchange(newIgnite);
 
         CacheGroupContext grpCtx = newIgnite.cachex(DEFAULT_CACHE_NAME).context().group();
