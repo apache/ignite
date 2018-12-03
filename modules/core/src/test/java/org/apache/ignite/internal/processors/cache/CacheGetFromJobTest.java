@@ -26,10 +26,14 @@ import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Job tries to get cache during topology change.
  */
+@RunWith(JUnit4.class)
 public class CacheGetFromJobTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {

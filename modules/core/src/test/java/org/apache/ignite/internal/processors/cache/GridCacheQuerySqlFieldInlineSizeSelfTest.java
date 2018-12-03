@@ -26,11 +26,15 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests cache configuration with inlineSize property of the QuerySqlField annotation.
  */
 @SuppressWarnings({"unchecked", "unused"})
+@RunWith(JUnit4.class)
 public class GridCacheQuerySqlFieldInlineSizeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
