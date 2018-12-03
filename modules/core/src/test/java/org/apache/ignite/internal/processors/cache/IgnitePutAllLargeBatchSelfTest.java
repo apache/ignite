@@ -34,6 +34,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -42,6 +45,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 /**
  * Tests putAll method with large number of keys.
  */
+@RunWith(JUnit4.class)
 public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 4;

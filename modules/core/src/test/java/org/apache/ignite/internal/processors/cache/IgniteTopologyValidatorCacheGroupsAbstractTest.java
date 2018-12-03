@@ -23,10 +23,14 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.util.typedef.F;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class IgniteTopologyValidatorCacheGroupsAbstractTest extends IgniteTopologyValidatorAbstractCacheTest {
     /** group name 1. */
     protected static final String GROUP_1 = "group1";

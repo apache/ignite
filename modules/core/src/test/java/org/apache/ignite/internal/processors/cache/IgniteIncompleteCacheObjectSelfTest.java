@@ -26,10 +26,14 @@ import org.junit.Assert;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Simple test for arbitrary CacheObject reading/writing.
  */
+@RunWith(JUnit4.class)
 public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest {
     /**
      * Test case when requested data cut on cache object header.

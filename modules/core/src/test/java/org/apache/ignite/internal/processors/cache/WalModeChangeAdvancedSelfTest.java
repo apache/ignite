@@ -30,6 +30,9 @@ import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -38,6 +41,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Concurrent and advanced tests for WAL state change.
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSelfTest {
     /**
      * Constructor.

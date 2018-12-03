@@ -36,6 +36,9 @@ import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstrac
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest.DataMode.PLANE_OBJECT;
@@ -45,6 +48,7 @@ import static org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstr
  *
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsAbstractTest {
     /** */
     protected static volatile boolean interceptorBinaryObjExp = true;

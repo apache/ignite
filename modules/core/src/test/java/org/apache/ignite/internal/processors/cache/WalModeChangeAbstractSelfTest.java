@@ -27,6 +27,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -38,6 +41,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  * Test dynamic WAL mode change.
  */
 
+@RunWith(JUnit4.class)
 public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonAbstractSelfTest {
     /** Whether coordinator node should be filtered out. */
     private final boolean filterOnCrd;

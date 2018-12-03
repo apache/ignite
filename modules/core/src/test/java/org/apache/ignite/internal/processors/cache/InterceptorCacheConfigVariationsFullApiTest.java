@@ -23,11 +23,15 @@ import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Full API cache test.
  */
 @SuppressWarnings({"unchecked"})
+@RunWith(JUnit4.class)
 public class InterceptorCacheConfigVariationsFullApiTest extends IgniteCacheConfigVariationsFullApiTest {
     /** */
     private static volatile boolean validate = true;

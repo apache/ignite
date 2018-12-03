@@ -40,6 +40,9 @@ import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -53,6 +56,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * and {@link org.apache.ignite.internal.processors.marshaller.MappingProposedMessage} is sent
  * with not-null <b>conflictingClsName</b> field.
  */
+@RunWith(JUnit4.class)
 public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstractTest {
     /** */
     private volatile boolean bbClsRejected;
