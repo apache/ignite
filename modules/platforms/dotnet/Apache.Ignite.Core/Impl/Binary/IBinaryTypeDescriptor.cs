@@ -95,11 +95,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         void UpdateWriteStructure(int pathIdx, IList<BinaryStructureUpdate> updates);
 
         /// <summary>
-        /// Resets write type structure (clears cached writer paths).
-        /// </summary>
-        void ResetWriteStructure();
-
-        /// <summary>
         /// Update read type structure.
         /// </summary>
         /// <param name="pathIdx">Path index.</param>

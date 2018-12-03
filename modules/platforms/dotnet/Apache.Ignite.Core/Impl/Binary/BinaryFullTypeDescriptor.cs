@@ -245,7 +245,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
         }
 
-        /** <inheritDoc /> */
+        /// <summary>
+        /// Resets writer structure.
+        /// </summary>
         public void ResetWriteStructure()
         {
             lock (this)

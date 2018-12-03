@@ -143,15 +143,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritDoc /> */
-        public void ResetWriteStructure()
-        {
-            lock (this)
-            {
-                _writerTypeStruct = BinaryStructure.CreateEmpty();
-            }
-        }
-
-        /** <inheritDoc /> */
         public void UpdateReadStructure(int pathIdx, IList<BinaryStructureUpdate> updates)
         {
             lock (this)
