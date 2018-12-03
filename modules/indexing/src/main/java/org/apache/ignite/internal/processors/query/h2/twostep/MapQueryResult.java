@@ -293,13 +293,6 @@ class MapQueryResult {
     }
 
     /**
-     *
-     */
-    void releaseSession() {
-        ses.release();
-    }
-
-    /**
      * @param conn Detached connection.
      */
     void detachedConnection(ObjectPoolReusable<H2ConnectionWrapper> conn) {

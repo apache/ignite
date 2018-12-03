@@ -189,13 +189,6 @@ class MapQueryResults {
     }
 
     /**
-     * @return Query lazy mode.
-     */
-    public boolean lazy() {
-        return lazy;
-    }
-
-    /**
      * @return Query request ID.
      */
     long queryRequestId() {

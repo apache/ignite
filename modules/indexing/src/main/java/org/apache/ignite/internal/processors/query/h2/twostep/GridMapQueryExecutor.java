@@ -1270,14 +1270,8 @@ public class GridMapQueryExecutor {
         }
         else {
             // Detach connection if the result set greater than one page.
-            if (qr.lazy()) {
-                if (!res.isConnectionDetached())
-                    res.detachedConnection(h2.connections().detachConnection());
-            }
-            else
-                // Release session because all result set is already copied to RAM.
-                // We don't need in check table version on fetch next page.
-                res.releaseSession();
+            if (!res.isConnectionDetached())
+                res.detachedConnection(h2.connections().detachConnection());
         }
 
         boolean loc = node.isLocal();

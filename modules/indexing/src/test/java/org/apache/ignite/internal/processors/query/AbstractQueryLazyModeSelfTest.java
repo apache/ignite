@@ -43,7 +43,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTest {
     /** Keys count. */
-    private static final int KEY_CNT = 200;
+    private static final int KEY_CNT = 500;
 
     /** Base query argument. */
     private static final int BASE_QRY_ARG = 50;
