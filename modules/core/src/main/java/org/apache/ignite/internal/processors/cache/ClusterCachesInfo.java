@@ -78,6 +78,9 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
  * Logic related to cache discovery data processing.
  */
 class ClusterCachesInfo {
+    /** Representation of null for restarting caches map */
+    private static final IgniteUuid NULL_OBJECT = new IgniteUuid();
+
     /** Version since which merge of config is supports. */
     private static final IgniteProductVersion V_MERGE_CONFIG_SINCE = IgniteProductVersion.fromString("2.5.0");
 
@@ -554,7 +557,8 @@ class ClusterCachesInfo {
             boolean proceedFuther = true;
 
             if (restartingCaches.containsKey(cacheName) &&
-                (req.restartId() == null || !req.restartId().equals(restartingCaches.get(cacheName)))) {
+                ((req.restartId() == null && restartingCaches.get(cacheName) != NULL_OBJECT)
+                    || (req.restartId() != null &&!req.restartId().equals(restartingCaches.get(cacheName))))) {
 
                 if (req.failIfExists()) {
                     ctx.cache().completeCacheStartFuture(req, false,
@@ -643,7 +647,7 @@ class ClusterCachesInfo {
         if (req.restart()) {
             IgniteUuid restartId = req.restartId();
 
-            restartingCaches.put(cacheName, restartId);
+            restartingCaches.put(cacheName, restartId == null ? NULL_OBJECT : restartId);
         }
 
         assert old != null && old == desc : "Dynamic cache map was concurrently modified [req=" + req + ']';

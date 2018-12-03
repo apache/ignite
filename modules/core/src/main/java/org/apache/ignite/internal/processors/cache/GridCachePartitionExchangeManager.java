@@ -1892,8 +1892,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         dumpPendingObjects(exchTopVer, diagCtx);
 
-        for (CacheGroupContext grp : cctx.cache().cacheGroups())
-            grp.preloader().dumpDebugInfo();
+        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+            GridCachePreloader preloader = grp.preloader();
+
+            if (preloader != null)
+                preloader.dumpDebugInfo();
+        }
 
         cctx.affinity().dumpDebugInfo();
 
