@@ -1,27 +1,27 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.nio.ByteBuffer;
-import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 public class LockWaitCheckRequest implements MvccMessage {
     private static final long serialVersionUID = 0;
 
-    private UUID futId;
+    private IgniteUuid futId;
     private GridCacheVersion txVersion;
 
     public LockWaitCheckRequest() {
     }
 
-    public LockWaitCheckRequest(UUID id, GridCacheVersion txVersion) {
-        futId = id;
+    public LockWaitCheckRequest(IgniteUuid futId, GridCacheVersion txVersion) {
+        this.futId = futId;
         this.txVersion = txVersion;
     }
 
-    public UUID futId() {
+    public IgniteUuid futId() {
         return futId;
     }
 
@@ -41,7 +41,7 @@ public class LockWaitCheckRequest implements MvccMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeUuid("futId", futId))
+                if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
@@ -65,7 +65,7 @@ public class LockWaitCheckRequest implements MvccMessage {
 
         switch (reader.state()) {
             case 0:
-                futId = reader.readUuid("futId");
+                futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;

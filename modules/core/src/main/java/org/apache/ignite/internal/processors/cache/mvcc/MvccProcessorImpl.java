@@ -61,6 +61,8 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -105,6 +107,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.thread.IgniteThread;
@@ -1819,39 +1822,67 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         }
     }
 
-    // t0d0 use pending futures in a common and RELIABLE (e.g. handling destination node left) way
-    private final ConcurrentHashMap<UUID, LockWaitCheckFuture> lockChecks = new ConcurrentHashMap<>();
-
     @Override public IgniteInternalFuture<T2<GridCacheVersion, UUID>> checkWaiting(GridCacheVersion ver, UUID nodeId) {
-        LockWaitCheckFuture fut = new LockWaitCheckFuture(nodeId, ver);
+        LockWaitCheckFuture fut = new LockWaitCheckFuture(nodeId, ver, ctx.cache().context());
         fut.init();
         return fut;
     }
 
-    public class LockWaitCheckFuture extends GridFutureAdapter<T2<GridCacheVersion, UUID>> {
+    public class LockWaitCheckFuture extends GridCacheFutureAdapter<T2<GridCacheVersion, UUID>> {
         private final UUID nodeId;
-        private final UUID futId = UUID.randomUUID();
+        private final IgniteUuid futId = IgniteUuid.randomUuid();
         private final GridCacheVersion txVersion;
+        private final GridCacheSharedContext<?, ?> cctx;
+        private boolean trackable = true;
 
-        private LockWaitCheckFuture(UUID nodeId, GridCacheVersion txVersion) {
+        private LockWaitCheckFuture(UUID nodeId, GridCacheVersion txVersion, GridCacheSharedContext<?, ?> cctx) {
             this.nodeId = nodeId;
             this.txVersion = txVersion;
+            this.cctx = cctx;
         }
 
         public void init() {
             try {
-                lockChecks.put(futId, this);
+                cctx.mvcc().addFuture(this, futId);
                 sendMessage(nodeId, new LockWaitCheckRequest(futId, txVersion));
             }
             catch (IgniteCheckedException e) {
-                lockChecks.remove(futId);
+                onDone(e);
+
                 e.printStackTrace();
             }
         }
 
+        @Override public boolean onDone(@Nullable T2<GridCacheVersion, UUID> res, @Nullable Throwable err) {
+            if (super.onDone(res, err)) {
+                cctx.mvcc().removeFuture(futId);
+
+                return true;
+            }
+
+            return false;
+        }
+
         public void onResponse(LockWaitCheckResponse res) {
-            lockChecks.remove(futId);
             onDone(new T2<>(res.blockerTxVersion(), res.blockerNodeId()));
+        }
+
+        @Override public IgniteUuid futureId() {
+            return futId;
+        }
+
+        @Override public boolean onNodeLeft(UUID nodeId) {
+            onDone(new ClusterTopologyCheckedException("Node left grid (will ignore)."));
+
+            return true;
+        }
+
+        @Override public boolean trackable() {
+            return trackable;
+        }
+
+        @Override public void markNotTrackable() {
+            trackable = false;
         }
     }
 
@@ -1873,7 +1904,14 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
             if (msg instanceof LockWaitCheckResponse) {
                 LockWaitCheckResponse checkRes = (LockWaitCheckResponse)msg;
-                lockChecks.get(checkRes.futId()).onResponse(checkRes);
+
+                LockWaitCheckFuture fut = (LockWaitCheckFuture)ctx.cache().context().mvcc().future(checkRes.futId());
+                if (fut == null) {
+                    // t0d0 warning
+                }
+                else
+                    fut.onResponse(checkRes);
+
                 return;
             }
 
