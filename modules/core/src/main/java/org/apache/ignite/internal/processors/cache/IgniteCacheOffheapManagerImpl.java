@@ -837,14 +837,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public RootPage rootPageForIndex(int cacheId, String idxName) throws IgniteCheckedException {
+    @Override public RootPage rootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException {
         long pageId = allocateForTree();
 
         return new RootPage(new FullPageId(pageId, grp.groupId()), true);
     }
 
     /** {@inheritDoc} */
-    @Override public void dropRootPageForIndex(int cacheId, String idxName) throws IgniteCheckedException {
+    @Override public void dropRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -1242,6 +1242,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public int fullSize() {
             return (int)storageSize.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isEmpty() {
+            return storageSize.get() == 0;
         }
 
         /** {@inheritDoc} */

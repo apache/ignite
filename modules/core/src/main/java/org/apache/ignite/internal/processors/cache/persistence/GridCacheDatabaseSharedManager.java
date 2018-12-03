@@ -131,6 +131,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -1223,16 +1224,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void rebuildIndexesIfNeeded(GridDhtPartitionsExchangeFuture fut) {
-        if (cctx.kernalContext().query().moduleEnabled()) {
+        GridQueryProcessor qryProc = cctx.kernalContext().query();
+
+        if (qryProc.moduleEnabled()) {
             for (final GridCacheContext cacheCtx : (Collection<GridCacheContext>)cctx.cacheContexts()) {
                 if (cacheCtx.startTopologyVersion().equals(fut.initialVersion())) {
                     final int cacheId = cacheCtx.cacheId();
                     final GridFutureAdapter<Void> usrFut = idxRebuildFuts.get(cacheId);
 
-                    if (!cctx.pageStore().hasIndexStore(cacheCtx.groupId()) && cacheCtx.affinityNode()
-                        && cacheCtx.group().persistenceEnabled()) {
-                        IgniteInternalFuture<?> rebuildFut = cctx.kernalContext().query()
-                            .rebuildIndexesFromHash(Collections.singletonList(cacheCtx.cacheId()));
+                    IgniteInternalFuture<?> rebuildFut = qryProc.rebuildIndexesFromHash(cacheCtx);
+
+                    if (rebuildFut != null) {
+                        log().info("Started indexes rebuilding for cache [name=" + cacheCtx.name()
+                            + ", grpName=" + cacheCtx.group().name() + ']');
 
                         assert usrFut != null : "Missing user future for cache: " + cacheCtx.name();
 
