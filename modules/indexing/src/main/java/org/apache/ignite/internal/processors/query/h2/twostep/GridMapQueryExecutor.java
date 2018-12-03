@@ -628,60 +628,35 @@ public class GridMapQueryExecutor {
 
             final int segment = i;
 
-            if (lazy) {
-                onQueryRequest0(node,
-                    req.requestId(),
-                    segment,
-                    req.schemaName(),
-                    req.queries(),
-                    cacheIds,
-                    req.topologyVersion(),
-                    partsMap,
-                    parts,
-                    req.pageSize(),
-                    joinMode,
-                    enforceJoinOrder,
-                    false, // Replicated is always false here (see condition above).
-                    req.timeout(),
-                    params,
-                    true,
-                    req.mvccSnapshot(),
-                    tx,
-                    txReq,
-                    lockFut,
-                    runCntr);
-            }
-            else {
-                ctx.closure().callLocal(
-                    new Callable<Void>() {
-                        @Override public Void call() {
-                            onQueryRequest0(node,
-                                req.requestId(),
-                                segment,
-                                req.schemaName(),
-                                req.queries(),
-                                cacheIds,
-                                req.topologyVersion(),
-                                partsMap,
-                                parts,
-                                req.pageSize(),
-                                joinMode,
-                                enforceJoinOrder,
-                                false,
-                                req.timeout(),
-                                params,
-                                false,
-                                req.mvccSnapshot(),
-                                tx,
-                                txReq,
-                                lockFut,
-                                runCntr);
+            ctx.closure().callLocal(
+                new Callable<Void>() {
+                    @Override public Void call() {
+                        onQueryRequest0(node,
+                            req.requestId(),
+                            segment,
+                            req.schemaName(),
+                            req.queries(),
+                            cacheIds,
+                            req.topologyVersion(),
+                            partsMap,
+                            parts,
+                            req.pageSize(),
+                            joinMode,
+                            enforceJoinOrder,
+                            false,
+                            req.timeout(),
+                            params,
+                            lazy,
+                            req.mvccSnapshot(),
+                            tx,
+                            txReq,
+                            lockFut,
+                            runCntr);
 
-                            return null;
-                        }
+                        return null;
                     }
-                    , QUERY_POOL);
-            }
+                }
+                , QUERY_POOL);
         }
 
         onQueryRequest0(node,
@@ -912,11 +887,8 @@ public class GridMapQueryExecutor {
                         }
                     }
 
-                    GridQueryNextPageResponse msg = null;
-
-                    msg = prepareNextPage(nodeRess, node, qryResults, qryIdx, segmentId, pageSize, removeMapping);
-
-                    final GridQueryNextPageResponse msg0 = msg;
+                    final GridQueryNextPageResponse msg = prepareNextPage(nodeRess, node, qryResults, qryIdx,
+                        segmentId, pageSize, removeMapping);
 
                     // Send the first page.
                     if (lockFut == null)
@@ -927,9 +899,9 @@ public class GridMapQueryExecutor {
                                 @Override public void apply(IgniteInternalFuture<Void> future) {
                                     try {
                                         if (node.isLocal())
-                                            h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg0);
+                                            h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
                                         else
-                                            ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, msg0, QUERY_POOL);
+                                            ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
                                     }
                                     catch (Exception e) {
                                         U.error(log, e);
