@@ -1219,23 +1219,17 @@ public class DmlStatementsProcessor {
         GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
         if (tbl == null) {
-            idx.kernalContext().cache().createMissingQueryCaches();
-
-            tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
-        }
-
-        if (tbl == null) {
             throw new IgniteSQLException("Table does not exist: " + cmd.tableName(),
                 IgniteQueryErrorCode.TABLE_NOT_FOUND);
         }
+
+        H2Utils.checkAndStartNotStartedCache(tbl);
 
         UpdatePlan plan = UpdatePlanBuilder.planForBulkLoad(cmd, tbl);
 
         IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter = new BulkLoadDataConverter(plan);
 
-        GridCacheContext cache = tbl.cache();
-
-        IgniteDataStreamer<Object, Object> streamer = cache.grid().dataStreamer(cache.name());
+        IgniteDataStreamer<Object, Object> streamer = idx.kernalContext().grid().dataStreamer(tbl.cacheName());
 
         BulkLoadCacheWriter outputWriter = new BulkLoadStreamerWriter(streamer);
 
