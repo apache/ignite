@@ -22,7 +22,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiFunction;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -37,6 +40,8 @@ public class TxCounters {
 
     /** Final update counters for cache partitions in the end of transaction */
     private Collection<PartitionUpdateCountersMessage> updCntrs;
+
+    private Map<T2<Integer, Integer>, Long> genCntrsMap;
 
     /**
      * Accumulates size change for cache partition.
@@ -65,6 +70,18 @@ public class TxCounters {
      */
     public void updateCounters(Collection<PartitionUpdateCountersMessage> updCntrs) {
         this.updCntrs = updCntrs;
+
+        genCntrsMap = U.newHashMap(updCntrs.size());
+
+        // TODO FIXME heavy memory usage ?
+        for (PartitionUpdateCountersMessage msg : updCntrs) {
+            for (int i = 0; i < msg.size(); i++) {
+                int partId = msg.partition(i);
+                long start = msg.initialCounter(i);
+
+                genCntrsMap.put(new T2<>(msg.cacheId(), partId), start);
+            }
+        }
     }
 
     /**
@@ -126,5 +143,13 @@ public class TxCounters {
         }
 
         return acc;
+    }
+
+    /**
+     * @param cacheId Cache id.
+     * @param partId Partition id.
+     */
+    public long generateNextCounter(int cacheId, int partId) {
+        return genCntrsMap.compute(new T2<>(cacheId, partId), (key, val) -> val + 1);
     }
 }

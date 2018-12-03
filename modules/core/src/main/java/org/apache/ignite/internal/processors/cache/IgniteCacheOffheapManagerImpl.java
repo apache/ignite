@@ -1586,7 +1586,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public long getAndIncrementUpdateCounter(long delta) {
-            return pCntr.getAndAdd(delta);
+            return pCntr.reserve(delta);
         }
 
         /** {@inheritDoc} */
@@ -1606,6 +1606,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public void updateCounter(long start, long delta) {
             pCntr.update(start, delta);
+        }
+
+        @Override public void releaseCounter(long start, long delta) {
+            pCntr.release(start, delta);
         }
 
         /** {@inheritDoc} */

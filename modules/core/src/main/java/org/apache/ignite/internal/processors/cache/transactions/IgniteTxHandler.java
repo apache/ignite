@@ -1424,8 +1424,9 @@ public class IgniteTxHandler {
                 // Complete remote candidates.
                 tx.doneRemote(req.baseVersion(), null, null, null);
 
-                tx.setPartitionUpdateCounters(
-                    req.partUpdateCounters() != null ? req.partUpdateCounters().array() : null);
+                // TODO FIXME looks no longer needed.
+//                tx.setPartitionUpdateCounters(
+//                    req.partUpdateCounters() != null ? req.partUpdateCounters().array() : null);
 
                 tx.commitRemoteTx();
             }
@@ -2190,7 +2191,7 @@ public class IgniteTxHandler {
      * @param req Request.
      */
     private void processPartitionCountersRequest(UUID nodeId, PartitionCountersNeighborcastRequest req) {
-        applyPartitionsUpdatesCounters(req.updateCounters());
+        applyPartitionsUpdatesCounters(req.updateCounters(), false);
 
         try {
             ctx.io().send(nodeId, new PartitionCountersNeighborcastResponse(req.futId()), SYSTEM_POOL);
@@ -2225,15 +2226,14 @@ public class IgniteTxHandler {
      * Applies partition counter updates for mvcc transactions.
      *
      * @param counters Counter values to be updated.
+     * @param primary {@code True} for primary update mode.
      */
-    public void applyPartitionsUpdatesCounters(Iterable<PartitionUpdateCountersMessage> counters) {
+    public void applyPartitionsUpdatesCounters(Iterable<PartitionUpdateCountersMessage> counters, boolean primary) {
         if (counters == null)
             return;
 
         for (PartitionUpdateCountersMessage counter : counters) {
             GridCacheContext ctx0 = ctx.cacheContext(counter.cacheId());
-
-            assert ctx0.mvccEnabled();
 
             GridDhtPartitionTopology top = ctx0.topology();
 
@@ -2247,8 +2247,12 @@ public class IgniteTxHandler {
 
                     if (part != null && part.reserve()) {
                         try {
-                            if (part.state() != GridDhtPartitionState.RENTING)
-                                part.updateCounter(counter.initialCounter(i), counter.updatesCount(i));
+                            if (part.state() != GridDhtPartitionState.RENTING) {
+                                if (primary)
+                                    part.releaseCounter(counter.initialCounter(i), counter.updatesCount(i));
+                                else
+                                    part.updateCounter(counter.initialCounter(i), counter.updatesCount(i));
+                            }
                             else
                                 invalid = true;
                         }

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.NavigableSet;
+import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
@@ -36,13 +38,16 @@ public class PartitionUpdateCounter {
     /** Counter. */
     private final AtomicLong cntr = new AtomicLong();
 
+    /** Reservation counter. */
+    private final AtomicLong reserveCntr = new AtomicLong();
+
     /** Initial counter. */
     private long initCntr;
 
     /**
      * @param log Logger.
      */
-    PartitionUpdateCounter(IgniteLogger log) {
+    public PartitionUpdateCounter(IgniteLogger log) {
         this.log = log;
     }
 
@@ -65,6 +70,10 @@ public class PartitionUpdateCounter {
      */
     public long get() {
         return cntr.get();
+    }
+
+    public long reserved() {
+        return reserveCntr.get();
     }
 
     /**
@@ -130,7 +139,7 @@ public class PartitionUpdateCounter {
 
             Item peek = peek();
 
-            if (peek == null || peek.start != next)
+            if (peek == null || peek.start != next || peek.open)
                 return;
 
             Item item = poll();
@@ -201,6 +210,8 @@ public class PartitionUpdateCounter {
             item = poll();
         }
 
+        reserveCntr.set(cntr.get());
+
         return gaps;
     }
 
@@ -210,6 +221,53 @@ public class PartitionUpdateCounter {
 
     public long updateCounterGap() {
         return 0;
+    }
+
+    public synchronized long reserve(long delta) {
+        long start = reserveCntr.getAndAdd(delta);
+
+        offer(new Item(start, delta, true));
+
+        return start;
+    }
+
+    public synchronized void release(long start, long delta) {
+        NavigableSet<Item> items = queue.tailSet(new Item(start, delta), true);
+
+        Item first = items.first();
+
+        assert first != null && first.delta == delta && first.open: "Interval is not reserved [start=" + start + ", delta=" + delta + "]";
+
+        first.open = false;
+
+        long cur = cntr.get(), next;
+
+        if (start != cur)
+            return;
+
+        items.pollFirst(); // Skip first.
+
+        while (true) {
+            boolean res = cntr.compareAndSet(cur, next = start + delta);
+
+            assert res;
+
+            if (items.isEmpty())
+                break;
+
+            Item peek = items.first();
+
+            if (peek.start != next || peek.open)
+                return;
+
+            Item item = items.pollFirst();
+
+            assert peek == item;
+
+            start = item.start;
+            delta = item.delta;
+            cur = next;
+        }
     }
 
     /**
@@ -222,6 +280,9 @@ public class PartitionUpdateCounter {
         /** */
         private final long delta;
 
+        /** */
+        boolean open;
+
         /**
          * @param start Start value.
          * @param delta Delta value.
@@ -231,9 +292,33 @@ public class PartitionUpdateCounter {
             this.delta = delta;
         }
 
+        /**
+         * @param start Start.
+         * @param delta Delta.
+         * @param open Open.
+         */
+        private Item(long start, long delta, boolean open) {
+            this.start = start;
+            this.delta = delta;
+            this.open = open;
+        }
+
         /** {@inheritDoc} */
         @Override public int compareTo(@NotNull Item o) {
             return Long.compare(this.start, o.start);
         }
+
+        @Override public String toString() {
+            return "Item [" +
+                "start=" + start +
+                ", open=" + open +
+                ", delta=" + delta +
+                ']';
+        }
+    }
+
+    /** {@inheritDoc} */
+    public String toString() {
+        return "Counter [cntr=" + cntr.get() + ", holes=" + queue + ", reserveCntr=" + reserveCntr.get() + ']';
     }
 }

@@ -917,10 +917,17 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                 GridDhtLocalPartition part = top.localPartition(p, AffinityTopologyVersion.NONE, false);
 
+
+
                 sb.append("local part=");
 
-                if (part != null)
-                    sb.append(p).append(" state=").append(part.state());
+                if (part != null) {
+                    sb.append(p).append(" counters=")
+                        .append(part == null ? "NA" : part.dataStore().partUpdateCounter())
+                        .append(" fullSize=")
+                        .append(part == null ? "NA" : part.fullSize())
+                        .append(p).append(" state=").append(part.state());
+                }
                 else
                     sb.append(p).append(" is null");
 
@@ -934,10 +941,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                             .append(nodeId)
                             .append(" part=")
                             .append(p)
-                            .append(" initUpdCntr=")
-                            .append(part == null ? "NA" : part.initialUpdateCounter())
-                            .append(" updCntr=")
-                            .append(part == null ? "NA" : part.updateCounter())
+                            .append(" counters=")
+                            .append(part == null ? "NA" : part.dataStore().partUpdateCounter())
                             .append(" fullSize=")
                             .append(part == null ? "NA" : part.fullSize())
                             .append(" state=")
@@ -1150,6 +1155,36 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             set.add(entry);
 
         return set;
+    }
+
+    /**
+     * @param cache Cache.
+     * @param part Partition.
+     * @param cnt Count.
+     * @return List of keys for partition.
+     */
+    protected List<Integer> partitionKeys(IgniteCache<?, ?> cache, int part, int cnt) {
+        IgniteCacheProxyImpl proxy = cache.unwrap(IgniteCacheProxyImpl.class);
+
+        GridCacheContext<?, ?> cctx = proxy.context();
+
+        AffinityTopologyVersion topVer = cctx.topology().readyTopologyVersion();
+
+        int k = 0, total = 0;
+
+        List<Integer> keys = new ArrayList<>(cnt);
+
+        while(total < cnt) {
+            if (cctx.affinity().partition(k) == part) {
+                keys.add(k);
+
+                total++;
+            }
+
+            k++;
+        }
+
+        return keys;
     }
 
     /**

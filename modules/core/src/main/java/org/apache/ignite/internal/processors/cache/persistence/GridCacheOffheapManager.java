@@ -1845,7 +1845,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public long getAndIncrementUpdateCounter(long delta) {
             try {
-                CacheDataStore delegate0 = init0(true);
+                CacheDataStore delegate0 = init0(false);
 
                 return delegate0 == null ? 0 : delegate0.getAndIncrementUpdateCounter(delta);
             }
@@ -1879,6 +1879,19 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                 if (delegate0 != null)
                     delegate0.updateCounter(start, delta);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void releaseCounter(long start, long delta) {
+            try {
+                CacheDataStore delegate0 = init0(true);
+
+                if (delegate0 != null)
+                    delegate0.releaseCounter(start, delta);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

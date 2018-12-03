@@ -441,19 +441,27 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
         try {
             Ignite crd = startGridsMultiThreaded(2);
 
-            int key = 0;
-
-            Ignite prim = primaryNode(key, DEFAULT_CACHE_NAME);
+            List<Integer> keys = partitionKeys(crd.cache(DEFAULT_CACHE_NAME), 0, 5);
 
             IgniteEx client = startGrid("client");
 
             assertNotNull(client.cache(DEFAULT_CACHE_NAME));
 
             try(Transaction tx = client.transactions().txStart()) {
-                client.cache(DEFAULT_CACHE_NAME).put(key, 0);
+                for (Integer key : keys)
+                    client.cache(DEFAULT_CACHE_NAME).put(key, 0);
 
                 tx.commit();
             }
+
+            printPartitionState(DEFAULT_CACHE_NAME, 0);
+
+//            prim.close();
+//
+//            awaitPartitionMapExchange();
+//
+//            // TODO FIXME reserveCntr is wrong !!!
+//            printPartitionState(DEFAULT_CACHE_NAME, 0);
         }
         finally {
             stopAllGrids();

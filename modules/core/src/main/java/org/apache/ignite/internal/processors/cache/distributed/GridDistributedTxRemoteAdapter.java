@@ -654,7 +654,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 CU.subjectId(this, cctx),
                                                 resolveTaskName(),
                                                 dhtVer,
-                                                txEntry.updateCounter(),
+                                                null,
                                                 mvccSnapshot());
 
                                             txEntry.updateCounter(updRes.updateCounter());
@@ -692,7 +692,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                             CU.subjectId(this, cctx),
                                             resolveTaskName(),
                                             dhtVer,
-                                            txEntry.updateCounter(),
+                                            null,
                                             mvccSnapshot());
 
                                         txEntry.updateCounter(updRes.updateCounter());
@@ -773,7 +773,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                         // Apply update counters.
                         if (txCntrs != null)
-                            cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCntrs.updateCounters());
+                            cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCntrs.updateCounters(), false);
 
                         cctx.mvccCaching().onTxFinished(this, true);
 
@@ -932,7 +932,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                 TxCounters counters = txCounters(false);
 
                 if (counters != null)
-                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(counters.updateCounters());
+                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(counters.updateCounters(), false);
 
                 state(ROLLED_BACK);
 

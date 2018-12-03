@@ -443,7 +443,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         try {
             cctx.tm().prepareTx(this, entries);
 
-            calculatePartitionUpdateCounters();
+            if (txState().mvccEnabled())
+                calculatePartitionUpdateCounters();
         }
         catch (IgniteCheckedException e) {
             throw e;
@@ -590,6 +591,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 cctx.tm().txContext(this);
 
                 AffinityTopologyVersion topVer = topologyVersion();
+
+                TxCounters txCounters = txCounters(false);
 
                 /*
                  * Commit to cache. Note that for 'near' transaction we loop through all the entries.
@@ -816,12 +819,15 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         null,
                                         mvccSnapshot());
 
-                                    if (updRes.success()) {
+                                    if (txState.mvccEnabled())
                                         txEntry.updateCounter(updRes.updateCounter());
+                                    else {
+                                        Map<Integer, AtomicLong> map =
+                                            txCounters.accumulatedUpdateCounters().get(txEntry.cacheId());
 
-                                        GridLongList waitTxs = updRes.mvccWaitTransactions();
+                                        AtomicLong partCtr = map.get(txEntry.cached().partition());
 
-                                        updateWaitTxs(waitTxs);
+                                        txEntry.updateCounter(partCtr.getAndDecrement());
                                     }
 
                                     if (updRes.loggedPointer() != null)
@@ -921,8 +927,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             txEntry.cached(entryEx(cacheCtx, txEntry.txKey(), topologyVersion()));
                         }
                     }
-
                 }
+
+                if (!txState.mvccEnabled() && !near())
+                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters(), true);
 
                 // Apply cache sizes only for primary nodes. Update counters were applied on prepare state.
                 applyTxSizes();
@@ -1112,6 +1120,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
 
         if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
+            if (!txState.mvccEnabled())
+                cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters(false).updateCounters(), true);
+
             cctx.tm().rollbackTx(this, clearThreadMap, forceSkipCompletedVers);
 
             cctx.mvccCaching().onTxFinished(this, false);

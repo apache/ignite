@@ -50,9 +50,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridLongList;
@@ -1008,6 +1011,22 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
+     * TODO FIXME could tx be really null ?
+     *
+     * @param cacheId Cache id.
+     * @param tx Tx.
+     * @param primaryCntr Primary counter.
+     */
+    public long nextUpdateCounter(int cacheId, IgniteInternalTx tx, @Nullable Long primaryCntr) {
+        if (primaryCntr != null)
+            return primaryCntr;
+
+        TxCounters txCounters = tx.txCounters(false);
+
+        return txCounters.generateNextCounter(cacheId, id());
+    }
+
+    /**
      * @return Current update counter.
      */
     public long updateCounter() {
@@ -1053,6 +1072,14 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     public void updateCounter(long start, long delta) {
          store.updateCounter(start, delta);
+    }
+
+    /**
+     * @param start Start.
+     * @param delta Delta.
+     */
+    public void releaseCounter(long start, long delta) {
+        store.releaseCounter(start, delta);
     }
 
     /**

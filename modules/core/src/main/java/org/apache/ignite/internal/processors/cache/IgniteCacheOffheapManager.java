@@ -713,6 +713,12 @@ public interface IgniteCacheOffheapManager {
         void updateCounter(long start, long delta);
 
         /**
+         * @param start Start.
+         * @param delta Delta.
+         */
+        void releaseCounter(long start, long delta);
+
+        /**
          * @return Next update counter.
          */
         public long nextUpdateCounter();
