@@ -1002,6 +1002,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="clusterRestarted">Cluster restarted flag.</param>
         internal void OnClientReconnected(bool clusterRestarted)
         {
+            // TODO: When cluster is restarted, reset Marshaller (clear or remove all Structure Trackers).
             _clientReconnectTaskCompletionSource.TrySetResult(clusterRestarted);
 
             var handler = ClientReconnected;
