@@ -800,6 +800,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             // We don't support this use case. Users should handle reconnect events properly.
             
             // TODO: Another fix is to re-send all cached meta? This will eliminate the race?
+            // TODO: Another fix - fail all pending FinishMarshal calls somehow?
             foreach (var desc in _idToDesc)
             {
                 desc.Value.ResetWriteStructure();
