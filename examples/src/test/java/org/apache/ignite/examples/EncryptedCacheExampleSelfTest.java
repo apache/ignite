@@ -19,10 +19,12 @@ package org.apache.ignite.examples;
 
 import org.apache.ignite.examples.encryption.EncryptedCacheExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Test;
 
 /**
  */
 public class EncryptedCacheExampleSelfTest extends GridAbstractExamplesTest {
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         cleanPersistenceDir();
     }
@@ -30,6 +32,7 @@ public class EncryptedCacheExampleSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBinaryPutGetExample() throws Exception {
         EncryptedCacheExample.main(new String[] {});
     }

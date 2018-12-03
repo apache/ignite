@@ -47,7 +47,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -79,6 +79,9 @@ public class QueryUtils {
 
     /** Schema for system view. */
     public static final String SCHEMA_SYS = "IGNITE";
+
+    /** Schema for system view. */
+    public static final String SCHEMA_INFORMATION = "INFORMATION_SCHEMA";
 
     /** Field name for key. */
     public static final String KEY_FIELD_NAME = "_KEY";
@@ -394,17 +397,19 @@ public class QueryUtils {
      *
      * @param cacheName Cache name.
      * @param schemaName Schema name.
-     * @param cctx Cache context.
+     * @param cacheInfo Cache context info.
      * @param qryEntity Query entity.
      * @param mustDeserializeClss Classes which must be deserialized.
      * @param escape Escape flag.
      * @return Type candidate.
      * @throws IgniteCheckedException If failed.
      */
-    public static QueryTypeCandidate typeForQueryEntity(String cacheName, String schemaName, GridCacheContext cctx,
-        QueryEntity qryEntity, List<Class<?>> mustDeserializeClss, boolean escape) throws IgniteCheckedException {
-        GridKernalContext ctx = cctx.kernalContext();
-        CacheConfiguration<?,?> ccfg = cctx.config();
+    public static QueryTypeCandidate typeForQueryEntity(String cacheName, String schemaName,
+        GridCacheContextInfo cacheInfo,
+        QueryEntity qryEntity, List<Class<?>> mustDeserializeClss, boolean escape)
+        throws IgniteCheckedException {
+        GridKernalContext ctx = cacheInfo.context();
+        CacheConfiguration<?, ?> ccfg = cacheInfo.config();
 
         boolean binaryEnabled = ctx.cacheObjects().isBinaryEnabled(ccfg);
 
@@ -491,7 +496,7 @@ public class QueryUtils {
             // Need to setup affinity key for distributed joins.
             String keyType = qryEntity.getKeyType();
 
-            if (!cctx.customAffinityMapper() && keyType != null) {
+            if (!cacheInfo.customAffinityMapper() && keyType != null) {
                 if (coCtx != null) {
                     CacheDefaultBinaryAffinityKeyMapper mapper =
                         (CacheDefaultBinaryAffinityKeyMapper)coCtx.defaultAffMapper();
@@ -513,7 +518,7 @@ public class QueryUtils {
         else {
             processClassMeta(qryEntity, desc, coCtx);
 
-            AffinityKeyMapper keyMapper = cctx.config().getAffinityMapper();
+            AffinityKeyMapper keyMapper = cacheInfo.config().getAffinityMapper();
 
             if (keyMapper instanceof GridCacheDefaultAffinityKeyMapper) {
                 String affField =
@@ -616,14 +621,14 @@ public class QueryUtils {
 
     /**
      * Add validate property to QueryTypeDescriptor.
-     * 
+     *
      * @param ctx Kernel context.
      * @param qryEntity Query entity.
      * @param d Descriptor.
      * @param name Field name.
      * @throws IgniteCheckedException
      */
-    private static void addKeyValueValidationProperty(GridKernalContext ctx, QueryEntity qryEntity, QueryTypeDescriptorImpl d, 
+    private static void addKeyValueValidationProperty(GridKernalContext ctx, QueryEntity qryEntity, QueryTypeDescriptorImpl d,
         String name, boolean isKey) throws IgniteCheckedException {
 
         Map<String, Object> dfltVals = qryEntity.getDefaultFieldValues();
@@ -635,12 +640,12 @@ public class QueryUtils {
         Object dfltVal = dfltVals.get(name);
 
         QueryBinaryProperty prop = buildBinaryProperty(
-            ctx, 
+            ctx,
             name,
             U.classForName(typeName, Object.class, true),
-            d.aliases(), 
-            isKey, 
-            true, 
+            d.aliases(),
+            isKey,
+            true,
             dfltVal,
             precision == null ? -1 : precision.getOrDefault(name, -1),
             scale == null ? -1 : scale.getOrDefault(name, -1));

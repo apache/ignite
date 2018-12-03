@@ -969,12 +969,14 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                 res0 = info.value();
                         }
 
-                        res = new GridNearSingleGetResponse(ctx.cacheId(),
+                        res = new GridNearSingleGetResponse(
+                            ctx.cacheId(),
                             req.futureId(),
                             null,
                             res0,
                             false,
-                            req.addDeploymentInfo());
+                            req.addDeploymentInfo()
+                        );
 
                         if (info != null && req.skipValues())
                             res.setContainsValue();
@@ -982,15 +984,14 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     else {
                         AffinityTopologyVersion topVer = ctx.shared().exchange().lastTopologyFuture().initialVersion();
 
-                        assert topVer.compareTo(req.topologyVersion()) > 0 : "Wrong ready topology version for " +
-                            "invalid partitions response [topVer=" + topVer + ", req=" + req + ']';
-
-                        res = new GridNearSingleGetResponse(ctx.cacheId(),
+                        res = new GridNearSingleGetResponse(
+                            ctx.cacheId(),
                             req.futureId(),
                             topVer,
                             null,
                             true,
-                            req.addDeploymentInfo());
+                            req.addDeploymentInfo()
+                        );
                     }
                 }
                 catch (NodeStoppingException ignored) {
@@ -1075,8 +1076,11 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     res.error(e);
                 }
 
-                if (!F.isEmpty(fut.invalidPartitions()))
-                    res.invalidPartitions(fut.invalidPartitions(), ctx.shared().exchange().lastTopologyFuture().initialVersion());
+                if (!F.isEmpty(fut.invalidPartitions())){
+                    AffinityTopologyVersion topVer = ctx.shared().exchange().lastTopologyFuture().initialVersion();
+
+                    res.invalidPartitions(fut.invalidPartitions(), topVer);
+                }
 
                 try {
                     ctx.io().send(nodeId, res, ctx.ioPolicy());
@@ -1270,8 +1274,14 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param curVer Current topology version.
      * @return {@code True} if cache affinity changed and operation should be remapped.
      */
-    protected final boolean needRemap(AffinityTopologyVersion expVer, AffinityTopologyVersion curVer) {
-        if (expVer.equals(curVer))
+    protected final boolean needRemap(AffinityTopologyVersion expVer, AffinityTopologyVersion curVer,
+        Collection<KeyCacheObject> keys) {
+        if (curVer.equals(expVer))
+            return false;
+
+        AffinityTopologyVersion lastAffChangedTopVer = ctx.shared().exchange().lastAffinityChangedTopologyVersion(expVer);
+
+        if (curVer.compareTo(lastAffChangedTopVer) >= 0 && curVer.compareTo(expVer) <= 0)
             return false;
 
         // TODO IGNITE-7164 check mvcc crd for mvcc enabled txs.

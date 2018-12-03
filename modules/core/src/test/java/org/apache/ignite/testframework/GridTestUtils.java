@@ -2024,7 +2024,7 @@ public final class GridTestUtils {
 
         /** */
         public static int apply(int val) {
-            return (int) (TEST_SCALE_FACTOR_VALUE * val);
+            return (int) Math.round(TEST_SCALE_FACTOR_VALUE * val);
         }
 
         /** */
@@ -2034,12 +2034,12 @@ public final class GridTestUtils {
 
         /** Apply scale factor with lower bound */
         public static int applyLB(int val, int lowerBound) {
-            return Math.max((int) (TEST_SCALE_FACTOR_VALUE * val), lowerBound);
+            return Math.max(apply(val), lowerBound);
         }
 
         /** Apply scale factor with upper bound */
         public static int applyUB(int val, int upperBound) {
-            return Math.min((int) (TEST_SCALE_FACTOR_VALUE * val), upperBound);
+            return Math.min(apply(val), upperBound);
         }
     }
 

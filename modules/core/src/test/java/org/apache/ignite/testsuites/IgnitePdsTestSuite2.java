@@ -19,10 +19,12 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteDataStorageMetricsSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheStartStopWithFreqCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCorruptedStoreTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsExchangeDuringCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsPageSizesTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsPartitionFilesDestroyTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsPartitionsStateRecoveryTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistentStoreDataStructuresTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteRebalanceScheduleResendPartitionsTest;
 import org.apache.ignite.internal.processors.cache.persistence.LocalWacModeNoChangeDuringRebalanceOnNonNodeAssignTest;
@@ -116,6 +118,8 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgniteWalFlushFsyncWithDedicatedWorkerSelfTest.class);
 
         suite.addTestSuite(IgniteWalFlushFsyncWithMmapBufferSelfTest.class);
+
+        suite.addTestSuite(IgnitePdsCacheStartStopWithFreqCheckpointTest.class);
     }
 
     /**
@@ -194,5 +198,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(WalRolloverTypesTest.class);
 
         suite.addTestSuite(FsyncWalRolloverDoesNotBlockTest.class);
+
+        suite.addTestSuite(IgnitePdsPartitionsStateRecoveryTest.class);
     }
 }

@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -71,8 +72,8 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
     /** */
     private final H2Schema schema;
 
-    /** Cache context. */
-    private final GridCacheContext cctx;
+    /** Cache context info. */
+    private final GridCacheContextInfo cacheInfo;
 
     /** */
     private GridH2Table tbl;
@@ -92,15 +93,15 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
      * @param idx Indexing.
      * @param schema Schema.
      * @param type Type descriptor.
-     * @param cctx Cache context.
+     * @param cacheInfo Cache context info.
      * @param isSql {@code true} in case table has been created from SQL.
      */
     public H2TableDescriptor(IgniteH2Indexing idx, H2Schema schema, GridQueryTypeDescriptor type,
-        GridCacheContext cctx, boolean isSql) {
+        GridCacheContextInfo cacheInfo, boolean isSql) {
         this.idx = idx;
         this.type = type;
         this.schema = schema;
-        this.cctx = cctx;
+        this.cacheInfo = cacheInfo;
         this.isSql = isSql;
 
         fullTblName = H2Utils.withQuotes(schema.schemaName()) + "." + H2Utils.withQuotes(type.tableName());
@@ -156,10 +157,24 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
     }
 
     /**
+     * @return Cache name.
+     */
+    public String cacheName(){
+        return cacheInfo.name();
+    }
+
+    /**
+     * @return Cache context info.
+     */
+    public GridCacheContextInfo cacheInfo() {
+        return cacheInfo;
+    }
+
+    /**
      * @return Cache context.
      */
     public GridCacheContext cache() {
-        return cctx;
+        return cacheInfo.gridCacheContext();
     }
 
     /**
@@ -188,8 +203,8 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
      * @return H2 row factory.
      */
     H2RowFactory rowFactory(GridH2RowDescriptor rowDesc) {
-        if (cctx.affinityNode())
-            return new H2RowFactory(rowDesc, cctx);
+        if (cacheInfo.affinityNode())
+            return new H2RowFactory(rowDesc, cacheInfo.gridCacheContext());
 
         return null;
     }
@@ -204,7 +219,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
         if (affCol != null && H2Utils.equals(affCol, keyCol))
             affCol = null;
 
-        List<IndexColumn> unwrappedKeyCols = extractKeyColumns(tbl, keyCol, affCol);
+        List<IndexColumn> unwrappedKeyAndAffinityCols = extractKeyColumns(tbl, keyCol, affCol);
 
         List<IndexColumn> wrappedKeyCols = H2Utils.treeIndexColumns(tbl.rowDescriptor(),
             new ArrayList<>(2), keyCol, affCol);
@@ -224,7 +239,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
             tbl,
             true,
             false,
-            unwrappedKeyCols,
+            unwrappedKeyAndAffinityCols,
             wrappedKeyCols,
             -1
         );
@@ -271,14 +286,24 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
             // Add explicit affinity key index if nothing alike was found.
             if (!affIdxFound) {
-                List<IndexColumn> columns = H2Utils.treeIndexColumns(tbl.rowDescriptor(), new ArrayList<>(2), affCol, keyCol);
+                List<IndexColumn> unwrappedKeyCols = extractKeyColumns(tbl, keyCol, null);
+
+                ArrayList<IndexColumn> colsWithUnwrappedKey = new ArrayList<>(unwrappedKeyCols.size());
+
+                colsWithUnwrappedKey.add(affCol);
+
+                //We need to reorder PK columns to have affinity key as first column, that's why we can't use simple PK columns
+                H2Utils.addUniqueColumns(colsWithUnwrappedKey, unwrappedKeyCols);
+
+                List<IndexColumn> cols = H2Utils.treeIndexColumns(tbl.rowDescriptor(), new ArrayList<>(2), affCol, keyCol);
+
                 idxs.add(idx.createSortedIndex(
                     AFFINITY_KEY_IDX_NAME,
                     tbl,
                     false,
                     true,
-                    columns,
-                    columns,
+                    colsWithUnwrappedKey,
+                    cols,
                     -1)
                 );
             }
@@ -378,6 +403,12 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
         GridH2RowDescriptor desc = tbl.rowDescriptor();
 
         if (idxDesc.type() == QueryIndexType.SORTED) {
+            List<IndexColumn> unwrappedKeyCols = extractKeyColumns(tbl, keyCol, affCol);
+
+            List<IndexColumn> colsWithUnwrappedKey = new ArrayList<>(cols);
+
+            H2Utils.addUniqueColumns(colsWithUnwrappedKey, unwrappedKeyCols);
+
             cols = H2Utils.treeIndexColumns(desc, cols, keyCol, affCol);
 
             return idx.createSortedIndex(
@@ -385,7 +416,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
                 tbl,
                 false,
                 false,
-                cols,
+                colsWithUnwrappedKey,
                 cols,
                 idxDesc.inlineSize()
             );
@@ -405,10 +436,10 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
      * @return Index.
      */
     private Index createHashIndex(GridH2Table tbl, String idxName, List<IndexColumn> cols) {
-        if (cctx.affinityNode()) {
+        if (cacheInfo.affinityNode()) {
             assert pkHashIdx == null : pkHashIdx;
 
-            pkHashIdx = new H2PkHashIndex(cctx, tbl, idxName, cols);
+            pkHashIdx = new H2PkHashIndex(cacheInfo.gridCacheContext(), tbl, idxName, cols);
 
             return pkHashIdx;
         }
