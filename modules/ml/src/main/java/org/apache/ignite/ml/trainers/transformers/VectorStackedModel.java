@@ -18,17 +18,19 @@
 package org.apache.ignite.ml.trainers.transformers;
 
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.trainers.DatasetTrainer;
 
-public class VectorStackedModel<AM extends Model<Vector, Vector>> extends StackedModel<Vector, Vector, Vector, AM> {
-    public VectorStackedModel(AM aggregatingMdl,
-        Model<Vector, Vector> subMdl) {
-        super(aggregatingMdl, VectorUtils::concat, subMdl, IgniteFunction.identity());
+public class VectorStackedModel<O, AM extends Model<Vector, O>, L> extends SimpleStackedModelTrainer<Vector, O, AM, L> {
+    public VectorStackedModel(DatasetTrainer<AM, L> aggregatingTrainer,
+        IgniteBinaryOperator<Vector> aggregatingInputMerger) {
+        super(aggregatingTrainer, aggregatingInputMerger);
     }
 
-    @Override StackedModel<Vector, Vector, Vector, AM> addSubmodel(Model<Vector, Vector> subModel) {
-        return super.addSubmodel(subModel);
+    public VectorStackedModel(DatasetTrainer<AM, L> aggregatingTrainer) {
+        super(aggregatingTrainer, VectorUtils::concat);
     }
 }
