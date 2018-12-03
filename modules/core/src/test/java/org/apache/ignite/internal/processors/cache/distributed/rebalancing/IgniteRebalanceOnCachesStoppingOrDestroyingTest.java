@@ -226,7 +226,7 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
     }
 
     /**
-     * @param ig Ig.
+     * @param ig Ignite instance.
      */
     private void runLoad(Ignite ig) throws Exception{
         GridTestUtils.runMultiThreaded(new Runnable() {
