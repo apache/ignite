@@ -5461,7 +5461,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
             else {
                 if (msg.verified()) {
-                    if(msg.topologyVersion() != ring.topologyVersion()) {
+                    if (msg.topologyVersion() != ring.topologyVersion()) {
                         log.warning("Discarding custom event message [msg=" + msg + ", ring=" + ring + "] (topology version mismatch)");
 
                         return;
@@ -5470,7 +5470,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     assert msg.topologyVersion() == ring.topologyVersion() :
                         "msg: " + msg + ", topVer=" + ring.topologyVersion();
 
-                    if(pendingMsgs.procCustomMsgs.add(msg.id()))
+                    if (pendingMsgs.procCustomMsgs.add(msg.id()))
                         notifyDiscoveryListener(msg, waitForNotification);
                     else
                         log.warning("Discarding duplicated custom event message [msg=" + msg + "]");
@@ -5592,12 +5592,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                     throw new IgniteException("Failed to unmarshal discovery custom message: " + msg, t);
                 }
 
-                IgniteFuture<?> fut = lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
+                IgniteFuture<?> fut = lsnr.onDiscovery(
+                    DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
                     msg.topologyVersion(),
                     node,
                     snapshot,
                     hist,
-                    msgObj);
+                    msgObj
+                );
 
                 if (waitForNotification || msgObj.isMutable())
                     fut.get();
@@ -5613,7 +5615,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
             else if (log.isInfoEnabled())
                 log.info("Skip notifyDiscoveryListener spiState = " + state0
-                    + ", waitForNotification = " +waitForNotification
+                    + ", waitForNotification = " + waitForNotification
                     + ", listener = " + lsnr
                     + ", creatorNode = " + node
                     + ", for message = " + msg
