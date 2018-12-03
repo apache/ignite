@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -27,8 +26,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -2885,7 +2882,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!exchActions.cacheStopRequests().isEmpty()) {
             try {
                 sharedCtx.database().waitForCheckpoint("caches stop");
-            } catch (IgniteCheckedException e) {
+            }
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to wait for checkpoint finish during cache stop.", e);
             }
         }
@@ -2896,6 +2894,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 .collect(Collectors.toList());
 
         Map<Integer, List<ExchangeActions.CacheActionData>> cachesToStop = exchActions.cacheStopRequests().stream()
+                .filter(action -> cacheGrps.containsKey(action.descriptor().groupId()))
                 .collect(Collectors.groupingBy(action -> action.descriptor().groupId()));
 
         try {

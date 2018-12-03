@@ -132,6 +132,9 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
         performTest(ig -> {
             ig.cluster().active(false);
 
+            // Add to escape possible long waiting in awaitPartitionMapExchange due to {@link CacheAffinityChangeMessage}.
+            ig.cluster().active(true);
+
             return null;
         });
     }
@@ -239,8 +242,6 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
                     int idx = ThreadLocalRandom.current().nextInt(3_000);
 
                     cache.put(idx, new byte[1024]);
-
-                    log.info("tx put" + idx);
                 }
             }
         }, 4, "load-thread");
