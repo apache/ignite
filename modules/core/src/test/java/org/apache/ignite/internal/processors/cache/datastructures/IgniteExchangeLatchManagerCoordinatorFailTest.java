@@ -31,10 +31,14 @@ import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link ExchangeLatchManager} functionality when latch coordinator is failed.
  */
+@RunWith(JUnit4.class)
 public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbstractTest {
     /** */
     private static final String LATCH_NAME = "test";

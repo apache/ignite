@@ -45,6 +45,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
@@ -124,7 +125,8 @@ public abstract class GridCacheBinaryObjectsAbstractMultiThreadedSelfTest extend
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("BusyWait") @Test
+    @SuppressWarnings("BusyWait")
+    @Test
     public void testGetPut() throws Exception {
         final AtomicBoolean flag = new AtomicBoolean();
 

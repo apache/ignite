@@ -24,6 +24,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteSemaphoreAbstractSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -31,6 +34,7 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteLocalSemaphoreSelfTest extends IgniteSemaphoreAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode atomicsCacheMode() {
@@ -43,8 +47,8 @@ public class IgniteLocalSemaphoreSelfTest extends IgniteSemaphoreAbstractSelfTes
     }
 
     /** {@inheritDoc} */
-    @Override @Test
-    public void testSemaphore() throws Exception {
+    @Test
+    @Override public void testSemaphore() throws Exception {
         // Test main functionality.
         IgniteSemaphore semaphore = grid(0).semaphore("semaphore", -2, false, true);
 

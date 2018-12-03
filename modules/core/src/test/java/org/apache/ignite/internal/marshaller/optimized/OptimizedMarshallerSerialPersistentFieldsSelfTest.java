@@ -25,10 +25,14 @@ import java.io.Serializable;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.marshaller.GridMarshallerAbstractTest;
 import org.apache.ignite.marshaller.Marshaller;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test that Optimized Marshaller works with classes with serialPersistentFields.
  */
+@RunWith(JUnit4.class)
 public class OptimizedMarshallerSerialPersistentFieldsSelfTest  extends GridMarshallerAbstractTest {
     /** {@inheritDoc} */
     @Override protected Marshaller marshaller() {

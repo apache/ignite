@@ -68,12 +68,16 @@ import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Test for optimized object streams.
  */
+@RunWith(JUnit4.class)
 public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /** */
     private static final MarshallerContext CTX = new MarshallerContextTestImpl();

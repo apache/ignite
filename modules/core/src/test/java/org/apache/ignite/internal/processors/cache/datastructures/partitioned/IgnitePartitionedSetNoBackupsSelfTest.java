@@ -26,10 +26,14 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgnitePartitionedSetNoBackupsSelfTest extends GridCachePartitionedSetSelfTest {
     /** {@inheritDoc} */
     @Override protected CollectionConfiguration collectionConfiguration() {

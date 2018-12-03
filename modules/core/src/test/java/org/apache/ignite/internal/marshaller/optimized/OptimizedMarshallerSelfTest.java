@@ -29,11 +29,15 @@ import org.apache.ignite.marshaller.GridMarshallerAbstractTest;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Optimized marshaller self test.
  */
 @GridCommonTest(group = "Marshaller")
+@RunWith(JUnit4.class)
 public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
     /** {@inheritDoc} */
     @Override protected Marshaller marshaller() {
