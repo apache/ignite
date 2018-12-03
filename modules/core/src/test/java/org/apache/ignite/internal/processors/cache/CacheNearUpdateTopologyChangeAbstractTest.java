@@ -27,6 +27,9 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CachePeekMode.ONHEAP;
@@ -34,6 +37,7 @@ import static org.apache.ignite.cache.CachePeekMode.ONHEAP;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class CacheNearUpdateTopologyChangeAbstractTest extends IgniteCacheAbstractTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {

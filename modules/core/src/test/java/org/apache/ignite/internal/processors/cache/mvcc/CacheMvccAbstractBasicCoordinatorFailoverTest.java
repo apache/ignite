@@ -59,6 +59,9 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -67,6 +70,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Base class for Mvcc coordinator failover test.
  */
+@RunWith(JUnit4.class)
 public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends CacheMvccAbstractTest {
     /**
      * @param concurrency Transaction concurrency.

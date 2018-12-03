@@ -26,6 +26,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -34,6 +37,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Multinode update test.
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** */
     protected static volatile boolean failed;

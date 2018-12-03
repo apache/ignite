@@ -37,10 +37,14 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends IgniteCacheAbstractTest {
     /** */
     private static final String CACHE_NAME1 = "cache1";

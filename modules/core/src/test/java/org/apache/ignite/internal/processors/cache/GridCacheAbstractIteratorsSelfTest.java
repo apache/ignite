@@ -23,10 +23,14 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for cache iterators.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstractSelfTest {
     /** Key prefix. */
     protected static final String KEY_PREFIX = "testKey";
