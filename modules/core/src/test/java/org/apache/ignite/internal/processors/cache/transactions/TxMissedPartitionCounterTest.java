@@ -441,14 +441,23 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
         try {
             Ignite crd = startGridsMultiThreaded(2);
 
-            List<Integer> keys = partitionKeys(crd.cache(DEFAULT_CACHE_NAME), 0, 5);
+            List<Integer> keys = partitionKeys(crd.cache(DEFAULT_CACHE_NAME), 0, 10);
 
             IgniteEx client = startGrid("client");
 
             assertNotNull(client.cache(DEFAULT_CACHE_NAME));
 
             try(Transaction tx = client.transactions().txStart()) {
-                for (Integer key : keys)
+                for (Integer key : keys.subList(0, 7))
+                    client.cache(DEFAULT_CACHE_NAME).put(key, 0);
+
+                tx.commit();
+            }
+
+            printPartitionState(DEFAULT_CACHE_NAME, 0);
+
+            try(Transaction tx = client.transactions().txStart()) {
+                for (Integer key : keys.subList(7, 10))
                     client.cache(DEFAULT_CACHE_NAME).put(key, 0);
 
                 tx.commit();
