@@ -22,8 +22,10 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 
-/** */
-class RebuildIndexFromHashClosure implements SchemaIndexCacheVisitorClosure {
+/**
+ * Closure to rebuild all indexes.
+ */
+public class IndexRebuildFullClosure implements SchemaIndexCacheVisitorClosure {
     /** */
     private final GridCacheQueryManager qryMgr;
 
@@ -34,7 +36,7 @@ class RebuildIndexFromHashClosure implements SchemaIndexCacheVisitorClosure {
      * @param qryMgr Query manager.
      * @param mvccEnabled MVCC status flag.
      */
-    RebuildIndexFromHashClosure(GridCacheQueryManager qryMgr, boolean mvccEnabled) {
+    public IndexRebuildFullClosure(GridCacheQueryManager qryMgr, boolean mvccEnabled) {
         this.qryMgr = qryMgr;
         this.mvccEnabled = mvccEnabled;
     }
