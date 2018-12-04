@@ -166,10 +166,12 @@ namespace Apache.Ignite.Core.Tests
             }
         }
 
+        /// <summary>
+        /// Tests writer structure cleanup after client reconnect with full cluster restart.
+        /// </summary>
         [Test]
         public void TestClusterRestart_ResetsCachedMetadataAndWriterStructures()
         {
-            // TODO: Test writer structure reset. Use bg thread Put during entire Restart phase to detect the issue.
             var serverCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 CacheConfiguration = new[] {new CacheConfiguration(CacheName)}
