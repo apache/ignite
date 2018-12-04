@@ -177,35 +177,7 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
         checkTablesLockQueryAndDDLMultithreaded(cli);
     }
 
-
     /**
-     * Test DDL operation on table with high load queries.
-     *
-     * @throws Exception If failed.
-     */
-    public void testQ() throws Exception {
-        Ignite srv0 = startGrid(0);
-        Ignite cli;
-
-        try {
-            Ignition.setClientMode(true);
-
-            cli = startGrid(3);
-        }
-        finally {
-            Ignition.setClientMode(false);
-        }
-
-        populateBaseQueryData(srv0, 1);
-
-        awaitPartitionMapExchange(true, true, null);
-
-        execute(cli, new SqlFieldsQuery("CREATE INDEX \"pers\".PERSON_NAME ON \"pers\".Person (name asc)")).getAll();
-    }
-
-    /**
-     * Test DDL operation on table with high load queries.
-     *
      * @throws Exception If failed.
      */
     private void checkTablesLockQueryAndDDLMultithreaded(final Ignite node) throws Exception {

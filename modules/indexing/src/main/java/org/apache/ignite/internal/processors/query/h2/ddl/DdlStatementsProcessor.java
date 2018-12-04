@@ -277,6 +277,8 @@ public class DdlStatementsProcessor {
 
                 assert tbl.rowDescriptor() != null;
 
+                H2Utils.checkAndStartNotStartedCache(tbl);
+
                 isDdlSupported(tbl);
 
                 QueryIndex newIdx = new QueryIndex();
