@@ -24,14 +24,22 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Cache.Query;
     using NUnit.Framework;
 
+    /// <summary>
+    /// Tests queries behavior with client reconnect and server restart.
+    /// </summary>
     public sealed class CacheQueriesRestartServerTest
     {
+        /** */
         private IIgnite _client;
 
+        /** */
         private IIgnite _server;
 
-        [SetUp]
-        public void BeforeTest()
+        /// <summary>
+        /// Sets up the fixture.
+        /// </summary>
+        [TestFixtureSetUp]
+        public void FixtureSetUp()
         {
             _server = StartGrid(0);
             _client = StartGrid(0, true);
@@ -39,8 +47,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             TestUtils.WaitForCondition(() => _server.GetCluster().GetNodes().Count == 2, 1000);
         }
 
+        /// <summary>
+        /// Tears down the fixture.
+        /// </summary>
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            Ignition.StopAll(true);
+        }
+
+        /// <summary>
+        /// Tests that Scan query works after client reconnect with full cluster restart.
+        /// </summary>
         [Test]
-        public void Test([Values(true, false)] bool emptyFilterObject)
+        public void Test_ScanQueryAfterClientReconnect_ReturnsResults([Values(true, false)] bool emptyFilterObject)
         {
             var cache = _client.GetOrCreateCache<int, Item>("Test");
             cache.Put(1, new Item { Id = 20, Title = "test" });
@@ -62,31 +82,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(30, items.Single().Value.Id);
         }
 
-        [TearDown]
-        public void AfterTest()
-        {
-            Ignition.StopAll(true);
-        }
-
+        /// <summary>
+        /// Starts the grid.
+        /// </summary>
         private static IIgnite StartGrid(int i, bool client = false)
         {
             return Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                BinaryConfiguration = new BinaryConfiguration
-                {
-                    NameMapper = GetNameMapper()
-                },
-
                 ClientMode = client,
                 IgniteInstanceName = client ? "client-" + i : "grid-" + i
             });
         }
 
-        private static IBinaryNameMapper GetNameMapper()
-        {
-            return new BinaryBasicNameMapper {IsSimpleName = false};
-        }
-        
+        /// <summary>
+        /// Waits for reconnect.
+        /// </summary>
         private static void WaitForReconnect(IIgnite ignite, int timeout)
         {
             var evt = new ManualResetEventSlim(false);
@@ -97,18 +107,27 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.IsTrue(restarted);
         }
 
+        /// <summary>
+        /// Test filter.
+        /// </summary>
         private class TestFilter : ICacheEntryFilter<int, Item>
         {
+            /** */
             public bool Invoke(ICacheEntry<int, Item> entry)
             {
                 return entry.Value.Id > 10;
             }
         }
 
+        /// <summary>
+        /// Test filter with field.
+        /// </summary>
         private class TestFilterWithField : ICacheEntryFilter<int, Item>
         {
+            /** */
             public int TestValue { get; set; }
 
+            /** */
             public bool Invoke(ICacheEntry<int, Item> entry)
             {
                 return entry.Value.Id > TestValue;
@@ -117,16 +136,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
         private class Item : IBinarizable
         {
+            /** */
             public int Id { get; set; }
 
+            /** */
             public string Title { get; set; }
 
+            /** */
             public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteInt("Id", Id);
                 writer.WriteString("Title", Title);
             }
 
+            /** */
             public void ReadBinary(IBinaryReader reader)
             {
                 Id = reader.ReadInt("Id");
