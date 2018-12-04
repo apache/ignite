@@ -122,7 +122,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** Matcher for searching of *.tmp files. */
     public static final PathMatcher TMP_FILE_MATCHER =
-        FileSystems.getDefault().getPathMatcher("glob:**.tmp");
+        FileSystems.getDefault().getPathMatcher("glob:**" + TMP_SUFFIX);
 
     /** Marshaller. */
     private static final Marshaller marshaller = new JdkMarshaller();
