@@ -52,7 +52,7 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
     private static final int PAGE_SIZE_SMALL = 12;
 
     /** Test duration. */
-    private static final long TEST_DUR = 50_000L;
+    private static final long TEST_DUR = 10_000L;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -177,19 +177,38 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
         checkTablesLockQueryAndDDLMultithreaded(cli);
     }
 
+
+    /**
+     * Test DDL operation on table with high load queries.
+     *
+     * @throws Exception If failed.
+     */
+    public void testQ() throws Exception {
+        Ignite srv0 = startGrid(0);
+        Ignite cli;
+
+        try {
+            Ignition.setClientMode(true);
+
+            cli = startGrid(3);
+        }
+        finally {
+            Ignition.setClientMode(false);
+        }
+
+        populateBaseQueryData(srv0, 1);
+
+        awaitPartitionMapExchange(true, true, null);
+
+        execute(cli, new SqlFieldsQuery("CREATE INDEX \"pers\".PERSON_NAME ON \"pers\".Person (name asc)")).getAll();
+    }
+
     /**
      * Test DDL operation on table with high load queries.
      *
      * @throws Exception If failed.
      */
     private void checkTablesLockQueryAndDDLMultithreaded(final Ignite node) throws Exception {
-        final Ignite srv = startGrid(0);
-
-        startGrid(1);
-        startGrid(2);
-
-        populateBaseQueryData(srv, 4);
-
         final AtomicBoolean end = new AtomicBoolean(false);
 
         final int qryThreads = 2;
