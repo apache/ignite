@@ -30,15 +30,18 @@ import java.util.Map;
 import java.util.TreeMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -68,6 +71,10 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
     @IgniteInstanceResource
     private Ignite ignite;
 
+    /** Injected logger. */
+    @LoggerResource
+    private IgniteLogger log;
+
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid, VisorIdleVerifyTaskArg arg) throws IgniteException {
@@ -83,6 +90,9 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new TreeMap<>(buildPartitionKeyComparator());
 
         for (ComputeJobResult res : results) {
+            if (res.getException() != null)
+                continue;
+
             Map<PartitionKeyV2, PartitionHashRecordV2> nodeHashes = res.getData();
 
             for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> e : nodeHashes.entrySet()) {
@@ -109,6 +119,21 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
         }
 
         return writeHashes(partitions, delegate.reduce(results), skippedRecords);
+    }
+
+    @Override
+    public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteException {
+        ComputeJobResultPolicy superRes = super.result(res, rcvd);
+
+        // Deny failover.
+        if (superRes == ComputeJobResultPolicy.FAILOVER) {
+            superRes = ComputeJobResultPolicy.WAIT;
+
+            log.warning("VerifyBackupPartitionsJobV2 failed on node " +
+                "[consistentId=" + res.getNode().consistentId() + "]", res.getException());
+        }
+
+        return superRes;
     }
 
     /**
@@ -140,6 +165,8 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
 
     /**
      * @param partitions Dump result.
+     * @param conflictRes Conflict results.
+     * @param skippedRecords Number of empty partitions.
      * @return Path where results are written.
      * @throws IgniteException If failed to write the file.
      */

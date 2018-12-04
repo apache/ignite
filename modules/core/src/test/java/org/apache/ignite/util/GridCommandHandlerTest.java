@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -56,6 +57,9 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.GridJobExecuteResponse;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -1115,6 +1119,59 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
             assertTrue(dumpWithConflicts.contains("found 2 conflict partitions: [counterConflicts=1, hashConflicts=1]"));
+        }
+        else
+            fail("Should be found dump with conflicts");
+    }
+
+    /**
+     * Tests that idle verify print partitions info.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCacheIdleVerifyDumpOnUnstableTopology() throws Exception {
+        IgniteEx ignite = (IgniteEx)startGrids(3);
+
+        IgniteEx unstable = startGrid("unstable");
+
+        ignite.cluster().active(true);
+
+        int parts = 32;
+
+        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
+            .setAffinity(new RendezvousAffinityFunction(false, parts))
+            .setBackups(1)
+            .setName(DEFAULT_CACHE_NAME));
+
+        for (int i = 0; i < 100; i++)
+            cache.put(i, i);
+
+        TestRecordingCommunicationSpi.spi(unstable).blockMessages(GridJobExecuteResponse.class,
+            getTestIgniteInstanceName(0));
+
+        injectTestSystemOut();
+
+        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
+            assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump"));
+        });
+
+        TestRecordingCommunicationSpi.spi(unstable).waitForBlocked(1);
+
+        UUID unstableNodeId = unstable.cluster().localNode().id();
+
+        unstable.close();
+
+        fut.get();
+
+        Matcher fileNameMatcher = dumpFileNameMatcher();
+
+        if (fileNameMatcher.find()) {
+            String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+
+            assertTrue(dumpWithConflicts.contains("Idle verify failed on nodes:\n" +
+                "Node ID = " + unstableNodeId + "\n" +
+                "Exception message:\n" +
+                "Node has left grid: " + unstableNodeId));
         }
         else
             fail("Should be found dump with conflicts");
