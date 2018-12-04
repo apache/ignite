@@ -3543,7 +3543,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private Checkpoint markCheckpointBegin() throws IgniteCheckedException {
             CheckpointMetricsTracker metrics = new CheckpointMetricsTracker();
 
-            CheckpointRecord cpRec = new CheckpointRecord(null);
+            CheckpointRecord cpRec = new CheckpointRecord();
 
             WALPointer cpPtr = null;
 
@@ -3757,6 +3757,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
         }
 
+        /**
+         * @param cpRec Checkpoint record.
+         * @throws IgniteCheckedException If some operation failed.
+         */
         private void addPartitionState(CheckpointRecord cpRec) throws IgniteCheckedException {
             GridCompoundFuture grpHandleFut = asyncRunner == null ? null : new GridCompoundFuture();
 
