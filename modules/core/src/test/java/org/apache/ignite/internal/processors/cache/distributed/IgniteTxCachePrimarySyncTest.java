@@ -136,6 +136,9 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSingleKeyCommitFromPrimary() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10518");
+
         singleKeyCommitFromPrimary(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, true, false));
 
         singleKeyCommitFromPrimary(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 2, false, false));
@@ -397,6 +400,9 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSingleKeyCommit() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10518");
+
         singleKeyCommit(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, true, false));
 
         singleKeyCommit(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 2, false, false));
