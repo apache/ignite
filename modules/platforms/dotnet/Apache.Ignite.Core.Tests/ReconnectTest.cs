@@ -230,7 +230,6 @@ namespace Apache.Ignite.Core.Tests
                 "-J-DIGNITE_QUIET=false");
         }
 
-
         /// <summary>
         /// Test set up.
         /// </summary>
