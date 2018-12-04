@@ -248,8 +248,8 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
                 }
 
                 /** {@inheritDoc} */
-                @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
-                    return delegate.map(maxWalSegmentSize);
+                @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
+                    return delegate.map(sizeBytes);
                 }
             };
         }

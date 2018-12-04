@@ -460,7 +460,7 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
     }
 
     /** {@inheritDoc} */
-    @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
+    @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
         throw new UnsupportedOperationException("AsynchronousFileChannel doesn't support mmap.");
     }
 
