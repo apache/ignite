@@ -5449,8 +5449,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * Set Temporary storage
      */
-    public void setTmpStorage(
-        MetaStorage.TmpStorage tmpStorage) {
+    public void setTmpStorage(MetaStorage.TmpStorage tmpStorage) {
         this.tmpStorage = tmpStorage;
     }
 

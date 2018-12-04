@@ -63,7 +63,7 @@ public class MetastorageDataRow implements MetastorageSearchRow, Storable {
     /** {@inheritDoc} */
     @Override
     public int partition() {
-        return MetaStorage.TEST_MIGRATION_FLAG ? PageIdAllocator.OLD_METASTORE_PARTITION: PageIdAllocator.METASTORE_PARTITION;
+        return MetaStorage.PRESERVE_LEGACY_METASTORAGE_PARTITION_ID ? PageIdAllocator.OLD_METASTORE_PARTITION: PageIdAllocator.METASTORE_PARTITION;
     }
 
     /** {@inheritDoc} */

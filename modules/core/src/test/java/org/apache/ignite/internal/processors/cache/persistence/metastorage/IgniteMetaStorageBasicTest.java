@@ -167,14 +167,14 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Testing data migration between metastorage partitions
      */
     public void testMetaStorageMigration() throws Exception {
         final Map<String, byte[]> testData = new HashMap<>(5_000);
 
         generateTestData(5_000).forEach(t -> testData.put(t.get1(), t.get2()));
 
-        MetaStorage.TEST_MIGRATION_FLAG = true;
+        MetaStorage.PRESERVE_LEGACY_METASTORAGE_PARTITION_ID = true;
 
         try {
             IgniteEx ig = startGrid(0);
@@ -199,7 +199,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
 
             stopGrid(0);
 
-            MetaStorage.TEST_MIGRATION_FLAG = false;
+            MetaStorage.PRESERVE_LEGACY_METASTORAGE_PARTITION_ID = false;
 
             ig = startGrid(0);
 
@@ -234,12 +234,12 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            MetaStorage.TEST_MIGRATION_FLAG = false;
+            MetaStorage.PRESERVE_LEGACY_METASTORAGE_PARTITION_ID = false;
         }
     }
 
     /**
-     *
+     * Testing temporary storage
      */
     public void testMetaStoreMigrationTmpStorage() throws Exception {
         List<IgniteBiTuple<String, byte[]>> data = generateTestData(2_000).collect(Collectors.toList());
@@ -262,7 +262,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Test data generation
      */
     private static Stream<IgniteBiTuple<String, byte[]>> generateTestData(int size) {
         final AtomicInteger idx = new AtomicInteger();

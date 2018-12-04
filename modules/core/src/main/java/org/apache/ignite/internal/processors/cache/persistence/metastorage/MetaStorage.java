@@ -93,11 +93,18 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     /** */
     public static final int METASTORAGE_CACHE_ID = CU.cacheId(METASTORAGE_CACHE_NAME);
 
-    /** Test migration flag (for TEST ONLY!!!!!). */
-    public static boolean TEST_MIGRATION_FLAG = false;
+    /** This flag is used ONLY FOR TESTING the migration of a metastorage from Part 0 to Part 1. */
+    public static boolean PRESERVE_LEGACY_METASTORAGE_PARTITION_ID = false;
 
     /** Marker for removed entry. */
     private static final byte[] TOMBSTONE = new byte[0];
+
+    /** Temporary metastorage memory size. */
+    private static final int TEMPORARY_METASTORAGE_IN_MEMORY_SIZE = 128 * 1024 * 1024;
+
+    /** Temporary metastorage buffer size (file). */
+    private static final int TEMPORARY_METASTORAGE_BUFFER_SIZE = 1024 * 1024;
+
 
     /** */
     private final IgniteWriteAheadLogManager wal;
@@ -167,11 +174,11 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     public void init(IgniteCacheDatabaseSharedManager db) throws IgniteCheckedException {
         initInternal(db);
 
-        if (!TEST_MIGRATION_FLAG) {
+        if (!PRESERVE_LEGACY_METASTORAGE_PARTITION_ID) {
             GridCacheProcessor gcProcessor = cctx.kernalContext().cache();
 
             if (partId == OLD_METASTORE_PARTITION)
-                gcProcessor.setTmpStorage(putDataInTmpStorage());
+                gcProcessor.setTmpStorage(copyDataToTmpStorage());
             else if (gcProcessor.getTmpStorage() != null) {
                 restoreDataFromTmpStorage(gcProcessor.getTmpStorage());
 
@@ -190,10 +197,12 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     }
 
     /**
+     * Copying all data from the 'meta' to temporary storage.
      *
+     * @return Target temporary storage
      */
-    private TmpStorage putDataInTmpStorage() throws IgniteCheckedException {
-        TmpStorage tmpStorage = new TmpStorage(128 * 1024 * 1204, log);
+    private TmpStorage copyDataToTmpStorage() throws IgniteCheckedException {
+        TmpStorage tmpStorage = new TmpStorage(TEMPORARY_METASTORAGE_IN_MEMORY_SIZE, log);
 
         GridCursor<MetastorageDataRow> cur = tree.find(null, null);
 
@@ -207,7 +216,9 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     }
 
     /**
-     * @param tmpStorage Tmp storage.
+     * Data recovery from temporary storage
+     *
+     * @param tmpStorage temporary storage.
      */
     private void restoreDataFromTmpStorage(TmpStorage tmpStorage) throws IgniteCheckedException {
         for (Iterator<IgniteBiTuple<String, byte[]>> it = tmpStorage.stream().iterator(); it.hasNext(); ) {
@@ -228,7 +239,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
      * @param db Database.
      */
     private void initInternal(IgniteCacheDatabaseSharedManager db) throws IgniteCheckedException {
-        if (TEST_MIGRATION_FLAG)
+        if (PRESERVE_LEGACY_METASTORAGE_PARTITION_ID)
             getOrAllocateMetas(partId = PageIdAllocator.OLD_METASTORE_PARTITION);
         else if (!readOnly || getOrAllocateMetas(partId = PageIdAllocator.OLD_METASTORE_PARTITION))
             getOrAllocateMetas(partId = PageIdAllocator.METASTORE_PARTITION);
@@ -421,7 +432,12 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
                 + U.hexLong(reuseListRoot) + ", METASTORAGE_CACHE_ID=" + METASTORAGE_CACHE_ID);
     }
 
-    /** */
+    /**
+     * Initializing the selected partition for use as MetaStorage
+     *
+     * @param partId Partition id.
+     * @return true if the partion is empty
+     */
     private boolean getOrAllocateMetas(int partId) throws IgniteCheckedException {
         empty = false;
 
@@ -781,11 +797,11 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     }
 
     /**
-     * Temporary storage (memory)
+     * Temporary storage (file)
      */
     private static class FileTmpStorage implements TmpStorageInternal {
         /** Cache. */
-        final ByteBuffer cache = ByteBuffer.allocateDirect(1024 * 1024);
+        final ByteBuffer cache = ByteBuffer.allocateDirect(TEMPORARY_METASTORAGE_BUFFER_SIZE);
 
         /** File. */
         RandomAccessFile file;
