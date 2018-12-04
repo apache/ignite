@@ -3573,14 +3573,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             try {
                 metrics.onMarkStart();
 
-                synchronized (this){
+                synchronized (this) {
                     curr = resetCheckpointProgress(scheduledCp);
                 }
 
-                if (curr.nextSnapshot) {
-                    PartitionAllocationMap partitionStateMap = partitionAllocationMap(curr);
+                PartitionAllocationMap parts = new PartitionAllocationMap();
 
-                    snapFut = snapshotMgr.onMarkCheckPointBegin(curr.snapshotOperation, partitionStateMap);
+                notifyLisnteners(curr, parts);
+
+                if (curr.nextSnapshot) {
+                    snapFut = snapshotMgr.onMarkCheckPointBegin(curr.snapshotOperation, parts);
                 }
 
                 addPartitionState(cpRec);
@@ -3697,9 +3699,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @return
          * @throws IgniteCheckedException
          */
-        private PartitionAllocationMap partitionAllocationMap(CheckpointProgress curr) throws IgniteCheckedException {
-            final PartitionAllocationMap map = new PartitionAllocationMap();
-
+        private void notifyLisnteners(
+            CheckpointProgress curr,
+            PartitionAllocationMap map
+        ) throws IgniteCheckedException {
             GridCompoundFuture asyncLsnrFut = asyncRunner == null ? null : new GridCompoundFuture();
 
             DbCheckpointListener.Context ctx0 = new DbCheckpointListener.Context() {
@@ -3743,8 +3746,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 asyncLsnrFut.get();
             }
-
-            return map;
         }
 
         private void addPartitionState(CheckpointRecord cpRec) throws IgniteCheckedException {
