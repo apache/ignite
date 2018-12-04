@@ -205,8 +205,7 @@ export default class ConfigEffects {
 
         this.addCacheToEditEffect$ = this.ConfigureState.actions$.pipe(
             ofType('ADD_CACHE_TO_EDIT'),
-            switchMap(() => this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCacheToEdit('new'))),
-            take(1),
+            switchMap(() => this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCacheToEdit('new'), take(1))),
             map((cache) => ({type: 'UPSERT_CLUSTER_ITEM', itemType: 'caches', item: cache}))
         );
 
