@@ -81,8 +81,7 @@ public class BaggedLogisticRegressionSGDTrainerExample {
                 0.6,
                 4,
                 3,
-                new OnMajorityPredictionsAggregator(),
-                123L);
+                new OnMajorityPredictionsAggregator());
 
             System.out.println(">>> Perform evaluation of the model.");
 
