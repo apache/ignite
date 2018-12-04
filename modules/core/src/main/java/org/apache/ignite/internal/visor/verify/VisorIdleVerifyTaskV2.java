@@ -73,11 +73,7 @@ public class VisorIdleVerifyTaskV2 extends VisorOneNodeTask<VisorIdleVerifyTaskA
                 if (!fut.isDone()) {
                     jobCtx.holdcc();
 
-                    fut.listen(new IgniteInClosure<IgniteFuture<IdleVerifyResultV2>>() {
-                        @Override public void apply(IgniteFuture<IdleVerifyResultV2> f) {
-                            jobCtx.callcc();
-                        }
-                    });
+                    fut.listen((IgniteInClosure<IgniteFuture<IdleVerifyResultV2>>)f -> jobCtx.callcc());
 
                     return null;
                 }

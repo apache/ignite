@@ -25,7 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.GridIterator;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -75,7 +76,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(
+    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid, VisorIdleVerifyTaskArg arg) throws IgniteException {
         Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
 
@@ -86,17 +87,26 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IdleVerifyResultV2 reduce(List<ComputeJobResult> results)
-        throws IgniteException {
+    @Override public @Nullable IdleVerifyResultV2 reduce(List<ComputeJobResult> results) throws IgniteException {
+        Map<UUID, Exception> exceptions = new HashMap<>(results.size());
+
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
 
         for (ComputeJobResult res : results) {
-            Map<PartitionKeyV2, PartitionHashRecordV2> nodeHashes = res.getData();
+            if(res.getException() != null)
+                exceptions.put(res.getNode().id(), res.getException());
+            else {
+                if(!F.isEmpty(exceptions))
+                    continue;
 
-            for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> e : nodeHashes.entrySet()) {
-                List<PartitionHashRecordV2> records = clusterHashes.computeIfAbsent(e.getKey(), k -> new ArrayList<>());
+                Map<PartitionKeyV2, PartitionHashRecordV2> nodeHashes = res.getData();
 
-                records.add(e.getValue());
+                for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> e : nodeHashes.entrySet()) {
+                    List<PartitionHashRecordV2> records =
+                        clusterHashes.computeIfAbsent(e.getKey(), k -> new ArrayList<>());
+
+                    records.add(e.getValue());
+                }
             }
         }
 
@@ -106,36 +116,38 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingParts = new HashMap<>();
 
-        for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> e : clusterHashes.entrySet()) {
-            Integer partHash = null;
-            Long updateCntr = null;
+        if(F.isEmpty(exceptions)) {
+            for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> e : clusterHashes.entrySet()) {
+                Integer partHash = null;
+                Long updateCntr = null;
 
-            for (PartitionHashRecordV2 record : e.getValue()) {
-                if (record.size() == PartitionHashRecordV2.MOVING_PARTITION_SIZE) {
-                    List<PartitionHashRecordV2> records = movingParts.computeIfAbsent(
-                        e.getKey(), k -> new ArrayList<>());
+                for (PartitionHashRecordV2 record : e.getValue()) {
+                    if (record.size() == PartitionHashRecordV2.MOVING_PARTITION_SIZE) {
+                        List<PartitionHashRecordV2> records = movingParts.computeIfAbsent(
+                            e.getKey(), k -> new ArrayList<>());
 
-                    records.add(record);
+                        records.add(record);
 
-                    continue;
-                }
+                        continue;
+                    }
 
-                if (partHash == null) {
-                    partHash = record.partitionHash();
+                    if (partHash == null) {
+                        partHash = record.partitionHash();
 
-                    updateCntr = record.updateCounter();
-                }
-                else {
-                    if (record.updateCounter() != updateCntr)
-                        updateCntrConflicts.putIfAbsent(e.getKey(), e.getValue());
+                        updateCntr = record.updateCounter();
+                    }
+                    else {
+                        if (record.updateCounter() != updateCntr)
+                            updateCntrConflicts.putIfAbsent(e.getKey(), e.getValue());
 
-                    if (record.partitionHash() != partHash)
-                        hashConflicts.putIfAbsent(e.getKey(), e.getValue());
+                        if (record.partitionHash() != partHash)
+                            hashConflicts.putIfAbsent(e.getKey(), e.getValue());
+                    }
                 }
             }
         }
 
-        return new IdleVerifyResultV2(updateCntrConflicts, hashConflicts, movingParts);
+        return new IdleVerifyResultV2(updateCntrConflicts, hashConflicts, movingParts, exceptions);
     }
 
     /**
@@ -267,11 +279,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             final CacheGroupContext grpCtx,
             final GridDhtLocalPartition part
         ) {
-            return ForkJoinPool.commonPool().submit(new Callable<Map<PartitionKeyV2, PartitionHashRecordV2>>() {
-                @Override public Map<PartitionKeyV2, PartitionHashRecordV2> call() throws Exception {
-                    return calculatePartitionHash(grpCtx, part);
-                }
-            });
+            return ForkJoinPool.commonPool().submit(() -> calculatePartitionHash(grpCtx, part));
         }
 
 
