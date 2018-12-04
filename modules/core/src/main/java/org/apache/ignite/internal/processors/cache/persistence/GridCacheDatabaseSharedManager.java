@@ -3140,6 +3140,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             GridFutureAdapter<Object> ret;
 
             synchronized (this) {
+                if (!curCpProgress.cpFinishFut.isDone())
+                    curCpProgress.canceled = true;
+
                 scheduledCp.nextCpTs = U.currentTimeMillis();
 
                 scheduledCp.reason = "snapshot";
@@ -3163,30 +3166,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             Checkpoint chp = null;
 
             try {
-                try {
-                    chp = markCheckpointBegin();
-                }
-                catch (IgniteCheckedException e) {
-                    if (curCpProgress != null)
-                        curCpProgress.cpFinishFut.onDone(e);
-
-                    // In case of checkpoint initialization error node should be invalidated and stopped.
-                    cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-
-                    throw new IgniteException(e); // Re-throw as unchecked exception to force stopping checkpoint thread.
-                }
+                chp = markCheckpointBegin();
 
                 updateHeartbeat();
-
-                currCheckpointPagesCnt = chp.pages;
 
                 writtenPagesCntr = new AtomicInteger();
                 syncedPagesCntr = new AtomicInteger();
                 evictedPagesCntr = new AtomicInteger();
 
                 boolean success = false;
-
-                int destroyedPartitionsCnt;
 
                 try {
                     // Wrtie dirty pages to pageStore and fsync pageStores.
@@ -3216,7 +3204,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     snapshotMgr.afterCheckpointPageWritten();
 
-                    destroyedPartitionsCnt = destroyEvictedPartitions();
+                    destroyEvictedPartitions(chp);
 
                     // Must mark successful checkpoint only if there are no exceptions or interrupts.
                     success = true;
@@ -3228,7 +3216,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 chp.metrics.onEnd();
 
-                if (chp.hasPages() || destroyedPartitionsCnt > 0) {
+                updateMetricsOnCheckpointFinish(chp);
+
+                if (chp.hasPages() || chp.hasDestroyedPartitions()) {
                     if (log.isInfoEnabled()) {
                         String walSegsCoveredMsg = prepareWalSegsCoveredMsg(chp.walSegsCoveredRange);
 
@@ -3246,13 +3236,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             chp.metrics.totalDuration()));
                     }
                 }
-
-                updateMetricsOnCheckpointFinish(chp);
             }
             catch (IgniteCheckedException e) {
                 if (chp != null)
                     chp.progress.cpFinishFut.onDone(e);
 
+                // In case of checkpoint initialization error node should be invalidated and stopped.
                 cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
             }
         }
@@ -3417,11 +3406,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          *
          * @return The number of destroyed partition files.
          */
-        private int destroyEvictedPartitions() throws IgniteCheckedException {
-            PartitionDestroyQueue destroyQueue = curCpProgress.destroyQueue;
+        private void destroyEvictedPartitions(Checkpoint chp) throws IgniteCheckedException {
+            PartitionDestroyQueue destroyQueue = chp.progress.destroyQueue;
 
             if (destroyQueue.pendingReqs.isEmpty())
-                return 0;
+                return;
 
             List<PartitionDestroyRequest> reqs = null;
 
@@ -3480,7 +3469,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             destroyQueue.pendingReqs.clear();
 
-            return reqs != null ? reqs.size() : 0;
+            chp.destroyedPartsCnt = reqs.size();
         }
 
         /**
@@ -4181,13 +4170,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private final int pages;
 
         /** */
+        private int destroyedPartsCnt;
+
+        /** */
         private final CheckpointMetricsTracker metrics;
 
         /**
          * @param cpEntry Checkpoint entry.
          * @param cpPages Pages to write to the page store.
          * @param progress Checkpoint progress status.
-         * @param metrics
+         * @param metrics Checkpoint metrics.
          */
         private Checkpoint(
             @Nullable CheckpointEntry cpEntry,
@@ -4208,6 +4200,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         public boolean hasPages() {
             return pages != 0;
+        }
+
+        /**
+         *
+         */
+        public boolean hasDestroyedPartitions() {
+            return destroyedPartsCnt > 0;
         }
 
         /**
