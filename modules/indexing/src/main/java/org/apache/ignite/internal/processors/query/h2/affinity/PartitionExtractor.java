@@ -37,6 +37,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
@@ -52,24 +53,29 @@ public class PartitionExtractor {
      * @return Derived partitions for all queries, or {@code null}.
      */
     public static PartitionInfo[] mergePartitionsFromMultipleQueries(List<GridCacheSqlQuery> queries) {
-        PartitionInfo[] result = null;
+        PartitionInfo[] res = null;
+
+        HashSet<PartitionInfo> res0 = new HashSet<>();
 
         for (GridCacheSqlQuery qry : queries) {
-            PartitionInfo[] partInfo = (PartitionInfo[])qry.derivedPartitions();
+            PartitionInfo[] qryPartInfo = (PartitionInfo[])qry.derivedPartitions();
 
-            if (partInfo == null) {
-                result = null;
+            if (qryPartInfo == null)
+                return null;
 
-                break;
-            }
-
-            if (result == null)
-                result = partInfo;
-            else
-                result = mergePartitionInfo(result, partInfo);
+            Collections.addAll(res0, qryPartInfo);
         }
 
-        return result;
+        if (!res0.isEmpty()) {
+            res = new PartitionInfo[res0.size()];
+
+            int idx = 0;
+
+            for (PartitionInfo part : res0)
+                res[idx++] = part;
+        }
+
+        return res;
     }
 
     /**
@@ -296,7 +302,7 @@ public class PartitionExtractor {
 
     /**
      * Extracts the partition if possible
-     * @param leftCol Column on the lsft side.
+     * @param leftCol Column on the left side.
      * @param rightConst Constant on the right side.
      * @param rightParam Parameter on the right side.
      * @param ctx Kernal Context.
