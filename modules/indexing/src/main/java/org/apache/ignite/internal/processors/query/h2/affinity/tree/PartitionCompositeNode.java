@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity.tree;
 
+import org.apache.ignite.IgniteCheckedException;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -49,7 +51,7 @@ public class PartitionCompositeNode implements PartitionNode {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Integer> apply(Object... args) {
+    @Override public Collection<Integer> apply(Object... args) throws IgniteCheckedException {
         Collection<Integer> leftParts = left.apply(args);
         Collection<Integer> rightParts = right.apply(args);
 
