@@ -23,13 +23,13 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
-public class StackedModel<IS, IA, O, M extends Model<IA, O>> implements Model<IS, O> {
+public class StackedModel<IS, IA, O> implements Model<IS, O> {
     private Model<IS, IA> subModelsLayer;
-    private final M aggregatorModel;
+    private final Model<IA, O> aggregatorModel;
     private List<Model<IS, ?>> submodels;
     private final IgniteBinaryOperator<IA> aggregatingInputMerger;
 
-    StackedModel(M aggregatorMdl,
+    StackedModel(Model<IA, O> aggregatorMdl,
         IgniteBinaryOperator<IA> aggregatingInputMerger,
         IgniteFunction<IS, IA> subMdlInput2AggregatingInput) {
         this.aggregatorModel = aggregatorMdl;
@@ -42,7 +42,7 @@ public class StackedModel<IS, IA, O, M extends Model<IA, O>> implements Model<IS
         return submodels;
     }
 
-    M aggregatingModel() {
+    Model<IA, O> aggregatingModel() {
         return aggregatorModel;
     }
 

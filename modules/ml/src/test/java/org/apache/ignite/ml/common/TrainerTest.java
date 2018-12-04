@@ -1164,13 +1164,14 @@ public class TrainerTest {
     /**
      * Create cache mock.
      *
+     * @param vals Values for cache mock.
      * @return Cache mock.
      */
-    protected Map<Integer, Double[]> getCacheMock() {
+    protected Map<Integer, Double[]> getCacheMock(double[][] vals) {
         Map<Integer, Double[]> cacheMock = new HashMap<>();
 
-        for (int i = 0; i < twoLinearlySeparableClasses.length; i++) {
-            double[] row = twoLinearlySeparableClasses[i];
+        for (int i = 0; i < vals.length; i++) {
+            double[] row = vals[i];
             Double[] convertedRow = new Double[row.length];
             for (int j = 0; j < row.length; j++)
                 convertedRow[j] = row[j];

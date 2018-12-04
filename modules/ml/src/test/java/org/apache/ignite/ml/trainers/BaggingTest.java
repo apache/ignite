@@ -66,7 +66,7 @@ public class BaggingTest extends TrainerTest {
      */
     @Test
     public void testNaiveBaggingLogRegression() {
-        Map<Integer, Double[]> cacheMock = getCacheMock();
+        Map<Integer, Double[]> cacheMock = getCacheMock(twoLinearlySeparableClasses);
 
         DatasetTrainer<LogisticRegressionModel, Double> trainer =
             (LogisticRegressionSGDTrainer<?>)new LogisticRegressionSGDTrainer<>()
@@ -105,7 +105,7 @@ public class BaggingTest extends TrainerTest {
      * @param counter Function specifying which data we should count.
      */
     protected void count(IgniteTriFunction<Long, CountData, LearningEnvironment, Long> counter) {
-        Map<Integer, Double[]> cacheMock = getCacheMock();
+        Map<Integer, Double[]> cacheMock = getCacheMock(twoLinearlySeparableClasses);
 
         CountTrainer countTrainer = new CountTrainer(counter);
 

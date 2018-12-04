@@ -18,16 +18,33 @@
 package org.apache.ignite.ml.trainers;
 
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.trainers.transformers.StackedDatasetTrainer;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 /**
  * Tests stacked trainers.
  */
 public class StackingTest extends TrainerTest {
-    @Test
-    public void simpleTest() {
-        new StackedDatasetTrainer<>();
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
+//    @Test
+//    public void testSimpleStack() {
+//        StackedDatasetTrainer<Vector, Vector, Double, Double> trainer =
+//            new StackedDatasetTrainer<>();
+//        trainer
+//            .withAggregatorTrainer()
+//            .withAddedTrainer();
+//    }
+
+    @Test
+    public void testINoWaysOfPropagation() {
+        StackedDatasetTrainer<Object, Object, Object, Object> trainer =
+            new StackedDatasetTrainer<>();
+        thrown.expect(IllegalStateException.class);
+        trainer.fit(null, null, null);
     }
 }
