@@ -256,6 +256,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     private final ConcurrentMap<InetSocketAddress, GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>>> pingMap =
         new ConcurrentHashMap<>();
 
+    /** Last listener future. */
+    private IgniteFuture<?> lastCustomEvtLsnrFut;
+
     /**
      * @param adapter Adapter.
      */
@@ -2137,6 +2140,20 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
         finally {
             SecurityUtils.restoreDefaultSerializeVersion();
+        }
+    }
+
+    /**
+     * Wait for all the listeners from previous discovery message to be completed.
+     */
+    private void waitForLastCustomEventListenerFuture() {
+        if (lastCustomEvtLsnrFut != null) {
+            try {
+                lastCustomEvtLsnrFut.get();
+            }
+            finally {
+                lastCustomEvtLsnrFut = null;
+            }
         }
     }
 
@@ -4103,6 +4120,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void processNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
             assert msg != null;
 
+            waitForLastCustomEventListenerFuture();
+
             TcpDiscoveryNode node = msg.node();
 
             assert node != null;
@@ -5548,6 +5567,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (waitForNotification || msgObj.isMutable())
                     fut.get();
+                else
+                    lastCustomEvtLsnrFut = fut;
 
                 if (msgObj.isMutable()) {
                     try {

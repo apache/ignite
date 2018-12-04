@@ -1202,13 +1202,13 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         client = false;
 
-        IgniteInternalFuture startFut1 = GridTestUtils.runAsync((Callable) () -> {
+        IgniteInternalFuture<?> startFut1 = GridTestUtils.runAsync(() -> {
             startGrid(4);
 
             return null;
         }, "start-node1");
 
-        IgniteInternalFuture startFut2 = GridTestUtils.runAsync((Callable) () -> {
+        IgniteInternalFuture<?> startFut2 = GridTestUtils.runAsync(() -> {
             startGrid(5);
 
             return null;
