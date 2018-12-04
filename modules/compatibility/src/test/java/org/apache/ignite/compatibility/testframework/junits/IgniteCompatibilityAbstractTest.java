@@ -169,7 +169,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
                 final Collection<Dependency> dependencies = getDependencies(ver);
 
-                Set<String> excluded = getExcluded(dependencies);
+                Set<String> excluded = getExcluded(ver, dependencies);
 
                 StringBuilder pathBuilder = new StringBuilder();
 
@@ -247,10 +247,15 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
     }
 
     /**
+     * These dependencies will not be translated from current code dependencies into separate node's classpath.
+     *
+     * Include here all dependencies which will be set up manually, leave all version independent dependencies.
+     *
+     * @param ver Ignite version.
      * @param dependencies Dependencies to filter.
      * @return Set of paths to exclude.
      */
-    @NotNull protected Set<String> getExcluded(Collection<Dependency> dependencies) {
+    protected Set<String> getExcluded(String ver, Collection<Dependency> dependencies) {
         Set<String> excluded = new HashSet<>();
 
         for (Dependency dependency : dependencies) {
