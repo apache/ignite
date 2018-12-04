@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.affinity.tree;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -31,11 +32,13 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlParameter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
+import org.apache.ignite.internal.util.typedef.F;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
@@ -54,6 +57,53 @@ public class PartitionTreeExtractor {
      */
     public PartitionTreeExtractor(IgniteH2Indexing idx) {
         this.idx = idx;
+    }
+
+    /**
+     * Merge partition info from multiple queries.
+     *
+     * @param qrys Queries.
+     * @return Partition result or {@code null} if nothing is resolved.
+     */
+    public PartitionResult merge(List<GridCacheSqlQuery> qrys) {
+        // Check if merge is possible.
+        PartitionTableDescriptor desc = null;
+
+        for (GridCacheSqlQuery qry : qrys) {
+            PartitionResult qryRes = (PartitionResult)qry.derivedPartitions2();
+
+            if (qryRes == null)
+                // Failed to get results for one query -> broadcast.
+                return null;
+
+            if (desc == null)
+                desc = qryRes.descriptor();
+            else if (!F.eq(desc, qryRes.descriptor()))
+                // Queries refer to different tables, cannot merge -> broadcast.
+                return null;
+        }
+
+        // Merge.
+        PartitionNode tree = null;
+
+        for (GridCacheSqlQuery qry : qrys) {
+            PartitionResult qryRes = (PartitionResult)qry.derivedPartitions2();
+
+            if (tree == null)
+                tree = qryRes.tree();
+            else
+                tree = new PartitionCompositeNode(tree, qryRes.tree(), PartitionCompositeNodeOperator.OR);
+        }
+
+        // Optimize.
+        assert tree != null;
+
+        tree = tree.optimize();
+
+        if (tree instanceof PartitionAllNode)
+            return null;
+
+        return new PartitionResult(desc, tree);
     }
 
     /**

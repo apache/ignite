@@ -272,6 +272,7 @@ public class GridSqlQuerySplitter {
 
         // all map queries must have non-empty derivedPartitions to use this feature.
         twoStepQry.derivedPartitions(PartitionExtractor.mergePartitionsFromMultipleQueries(twoStepQry.mapQueries()));
+        twoStepQry.derivedPartitions2(splitter.extractor.merge(twoStepQry.mapQueries()));
 
         twoStepQry.forUpdate(forUpdate);
 

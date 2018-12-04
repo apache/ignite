@@ -49,15 +49,15 @@ public class PartitionExtractor {
     /**
      * Ensures all given queries have non-empty derived partitions and merges them.
      *
-     * @param queries Collection of queries.
+     * @param qrys Collection of queries.
      * @return Derived partitions for all queries, or {@code null}.
      */
-    public static PartitionInfo[] mergePartitionsFromMultipleQueries(List<GridCacheSqlQuery> queries) {
+    public static PartitionInfo[] mergePartitionsFromMultipleQueries(List<GridCacheSqlQuery> qrys) {
         PartitionInfo[] res = null;
 
         HashSet<PartitionInfo> res0 = new HashSet<>();
 
-        for (GridCacheSqlQuery qry : queries) {
+        for (GridCacheSqlQuery qry : qrys) {
             PartitionInfo[] qryPartInfo = (PartitionInfo[])qry.derivedPartitions();
 
             if (qryPartInfo == null)

@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionInfo;
+import org.apache.ignite.internal.processors.query.h2.affinity.tree.PartitionResult;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -66,6 +67,9 @@ public class GridCacheTwoStepQuery {
 
     /** */
     private PartitionInfo[] derivedPartitions;
+
+    /** */
+    private PartitionResult derivedPartitions2;
 
     /** */
     private boolean mvccEnabled;
@@ -235,6 +239,20 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
+     * @return Query derived partitions info.
+     */
+    public PartitionResult derivedPartitions2() {
+        return this.derivedPartitions2;
+    }
+
+    /**
+     * @param derivedPartitions2 Query derived partitions info.
+     */
+    public void derivedPartitions2(PartitionResult derivedPartitions2) {
+        this.derivedPartitions2 = derivedPartitions2;
+    }
+
+    /**
      * @return Copy.
      */
     public GridCacheTwoStepQuery copy() {
@@ -248,6 +266,7 @@ public class GridCacheTwoStepQuery {
         cp.pageSize = pageSize;
         cp.distributedJoins = distributedJoins;
         cp.derivedPartitions = derivedPartitions;
+        cp.derivedPartitions2 = derivedPartitions2;
         cp.local = local;
         cp.mvccEnabled = mvccEnabled;
         cp.forUpdate = forUpdate;
