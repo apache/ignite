@@ -153,7 +153,8 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
             @Override protected String params(IgniteConfiguration cfg, boolean resetDiscovery) throws Exception {
                 return cfgCloPath + " " + igniteInstanceName + " "
                     + getId() + " "
-                    + (rmJvmInstance == null ? getId() : ((IgniteProcessProxy)rmJvmInstance).getId())
+                    + (rmJvmInstance == null ? getId() : ((IgniteProcessProxy)rmJvmInstance).getId()) + " "
+                    + ver
                     + (cloPath == null ? "" : " " + cloPath);
             }
 
