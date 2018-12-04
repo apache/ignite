@@ -1124,8 +1124,14 @@ public class GridH2Table extends TableBase {
      */
     public static void unlockTables(Session s) {
         for (Table t : s.getLocks()) {
-            if (t instanceof GridH2Table)
-                ((GridH2Table)t).unlock(false);
+            if (t instanceof GridH2Table) {
+                try {
+                    ((GridH2Table)t).unlock(false);
+                }
+                catch (IllegalMonitorStateException e) {
+                    // Swallow illegal unlock all to guarantee unlock all tables on thread interrupt etc.
+                }
+            }
         }
     }
 

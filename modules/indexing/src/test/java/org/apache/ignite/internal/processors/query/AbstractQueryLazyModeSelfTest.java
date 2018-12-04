@@ -108,14 +108,14 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
 
         populateBaseQueryData(srv, 4);
 
-        final AtomicBoolean end = new AtomicBoolean(false);
-
         final int qryThreads = 10;
+
+        final long tEnd = U.currentTimeMillis() + TEST_DUR;
 
         // Do many concurrent queries.
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
-                while(!end.get()) {
+                while(U.currentTimeMillis() < tEnd) {
                     try {
                         FieldsQueryCursor<List<?>> cursor = execute(srv, query(0)
                             .setPageSize(PAGE_SIZE_SMALL));
@@ -133,10 +133,7 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
             }
         }, qryThreads, "usr-qry");
 
-        U.sleep(TEST_DUR);
-
-        // Test is OK in case DDL operations is passed on hi load queries pressure.
-        end.set(true);
+        // Test is OK in case all queries are OK and grid not hang.
         fut.get();
     }
 
@@ -178,7 +175,7 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
                         if(X.cause(e, QueryRetryException.class) == null) {
                             log.error("Unexpected exception", e);
 
-                            fail("Unexpected exception");
+                            fail("Unexpected exception. " + e);
                         }
                     }
                 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.util.concurrent.locks.ReentrantLock;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.engine.Session;
 
@@ -50,11 +51,18 @@ public class IgniteH2Session {
      */
     public void lockTables() {
         // Prevent reentrant tables read-lock because H2 lock semantic: one table unlock must release all locks.
-        if (!lock.isHeldByCurrentThread()) {
-            lock.lock();
+        try {
+            if (!lock.isHeldByCurrentThread()) {
+                lock.lockInterruptibly();
 
-            if (ses != null)
-                GridH2Table.readLockTables(ses);
+                if (ses != null)
+                    GridH2Table.readLockTables(ses);
+            }
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new IgniteInterruptedException("Thread got interrupted while trying to acquire table lock.", e);
         }
     }
 
@@ -62,12 +70,11 @@ public class IgniteH2Session {
      *
      */
     public void unlockTables() {
-        if (lock.isHeldByCurrentThread()) {
-            if (ses != null)
-                GridH2Table.unlockTables(ses);
+        if (ses != null)
+            GridH2Table.unlockTables(ses);
 
+        if (lock.isHeldByCurrentThread())
             lock.unlock();
-        }
     }
 
     /**

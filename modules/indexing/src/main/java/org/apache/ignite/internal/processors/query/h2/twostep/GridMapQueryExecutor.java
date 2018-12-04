@@ -936,7 +936,7 @@ public class GridMapQueryExecutor {
                 JdbcSQLException sqlEx = X.cause(e, JdbcSQLException.class);
 
                 if (sqlEx != null && sqlEx.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
-                    sendError(node, reqId, new QueryCancelledException());
+                    sendQueryCancel(node, reqId);
                 else {
                     GridH2RetryException retryErr = X.cause(e, GridH2RetryException.class);
 
@@ -1100,6 +1100,14 @@ public class GridMapQueryExecutor {
     /**
      * @param node Node.
      * @param qryReqId Query request ID.
+     */
+    private void sendQueryCancel(ClusterNode node, long qryReqId) {
+        sendError(node, qryReqId, new QueryCancelledException());
+    }
+
+    /**
+     * @param node Node.
+     * @param qryReqId Query request ID.
      * @param err Error.
      */
     private void sendError(ClusterNode node, long qryReqId, Throwable err) {
@@ -1166,7 +1174,7 @@ public class GridMapQueryExecutor {
             return;
         }
         else if (nodeRess.cancelled(reqId)) {
-            sendError(node, reqId, new QueryCancelledException());
+            sendQueryCancel(node, reqId);
 
             return;
         }
@@ -1176,7 +1184,7 @@ public class GridMapQueryExecutor {
         if (qryResults == null)
             sendError(node, reqId, new CacheException("No query result found for request: " + req));
         else if (qryResults.cancelled())
-            sendError(node, reqId, new QueryCancelledException());
+            sendQueryCancel(node, reqId);
         else {
             try {
                 GridH2QueryContext qctxReduce = GridH2QueryContext.get();
@@ -1208,8 +1216,6 @@ public class GridMapQueryExecutor {
                     res.session().unlockTables();
                 }
             } catch (Exception e) {
-                qryResults.cancel();
-
                 QueryRetryException retryEx = X.cause(e, QueryRetryException.class);
 
                 if (retryEx != null)
@@ -1218,10 +1224,12 @@ public class GridMapQueryExecutor {
                     JdbcSQLException sqlEx = X.cause(e, JdbcSQLException.class);
 
                     if (sqlEx != null && sqlEx.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
-                        sendError(node, reqId, new QueryCancelledException());
+                        sendQueryCancel(node, reqId);
                     else
                         sendError(node, reqId, e);
                 }
+
+                qryResults.cancel();
             }
         }
     }
