@@ -44,11 +44,9 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
-import org.apache.ignite.ml.regressions.logistic.multiclass.LogRegressionMultiClassModel;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
-import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
-import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationModel;
+import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -99,36 +97,11 @@ public class LocalModelsTest {
     @Test
     public void importExportSVMBinaryClassificationModelTest() throws IOException {
         executeModelTest(mdlFilePath -> {
-            SVMLinearBinaryClassificationModel mdl = new SVMLinearBinaryClassificationModel(new DenseVector(new double[]{1, 2}), 3);
-            Exporter<SVMLinearBinaryClassificationModel, String> exporter = new FileExporter<>();
+            SVMLinearClassificationModel mdl = new SVMLinearClassificationModel(new DenseVector(new double[] {1, 2}), 3);
+            Exporter<SVMLinearClassificationModel, String> exporter = new FileExporter<>();
             mdl.saveModel(exporter, mdlFilePath);
 
-            SVMLinearBinaryClassificationModel load = exporter.load(mdlFilePath);
-
-            Assert.assertNotNull(load);
-            Assert.assertEquals("", mdl, load);
-
-            return null;
-        });
-    }
-
-    /** */
-    @Test
-    public void importExportSVMMultiClassClassificationModelTest() throws IOException {
-        executeModelTest(mdlFilePath -> {
-            SVMLinearBinaryClassificationModel binaryMdl1 = new SVMLinearBinaryClassificationModel(new DenseVector(new double[]{1, 2}), 3);
-            SVMLinearBinaryClassificationModel binaryMdl2 = new SVMLinearBinaryClassificationModel(new DenseVector(new double[]{2, 3}), 4);
-            SVMLinearBinaryClassificationModel binaryMdl3 = new SVMLinearBinaryClassificationModel(new DenseVector(new double[]{3, 4}), 5);
-
-            SVMLinearMultiClassClassificationModel mdl = new SVMLinearMultiClassClassificationModel();
-            mdl.add(1, binaryMdl1);
-            mdl.add(2, binaryMdl2);
-            mdl.add(3, binaryMdl3);
-
-            Exporter<SVMLinearMultiClassClassificationModel, String> exporter = new FileExporter<>();
-            mdl.saveModel(exporter, mdlFilePath);
-
-            SVMLinearMultiClassClassificationModel load = exporter.load(mdlFilePath);
+            SVMLinearClassificationModel load = exporter.load(mdlFilePath);
 
             Assert.assertNotNull(load);
             Assert.assertEquals("", mdl, load);
@@ -146,23 +119,6 @@ public class LocalModelsTest {
             mdl.saveModel(exporter, mdlFilePath);
 
             LogisticRegressionModel load = exporter.load(mdlFilePath);
-
-            Assert.assertNotNull(load);
-            Assert.assertEquals("", mdl, load);
-
-            return null;
-        });
-    }
-
-    /** */
-    @Test
-    public void importExportLogRegressionMultiClassModelTest() throws IOException {
-        executeModelTest(mdlFilePath -> {
-            LogRegressionMultiClassModel mdl = new LogRegressionMultiClassModel();
-            Exporter<LogRegressionMultiClassModel, String> exporter = new FileExporter<>();
-            mdl.saveModel(exporter, mdlFilePath);
-
-            LogRegressionMultiClassModel load = exporter.load(mdlFilePath);
 
             Assert.assertNotNull(load);
             Assert.assertEquals("", mdl, load);

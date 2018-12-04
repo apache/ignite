@@ -21,8 +21,6 @@ import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
-import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
-import org.apache.ignite.ml.regressions.logistic.multiclass.LogRegressionMultiClassModel;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
@@ -40,9 +38,9 @@ public class LinearRegressionModelTest {
         Vector weights = new DenseVector(new double[]{2.0, 3.0});
         LinearRegressionModel mdl = new LinearRegressionModel(weights, 1.0);
 
-        assertTrue(mdl.toString().length() > 0);
-        assertTrue(mdl.toString(true).length() > 0);
-        assertTrue(mdl.toString(false).length() > 0);
+        assertTrue(!mdl.toString().isEmpty());
+        assertTrue(!mdl.toString(true).isEmpty());
+        assertTrue(!mdl.toString(false).isEmpty());
 
         Vector observation = new DenseVector(new double[]{1.0, 1.0});
         TestUtils.assertEquals(1.0 + 2.0 * 1.0 + 3.0 * 1.0, mdl.apply(observation), PRECISION);
@@ -58,21 +56,6 @@ public class LinearRegressionModelTest {
 
         observation = new DenseVector(new double[]{1.0, -2.0});
         TestUtils.assertEquals(1.0 + 2.0 * 1.0 - 3.0 * 2.0, mdl.apply(observation), PRECISION);
-    }
-
-    /** */
-    @Test
-    public void testPredictWithMultiClasses() {
-        Vector weights1 = new DenseVector(new double[]{10.0, 0.0});
-        Vector weights2 = new DenseVector(new double[]{0.0, 10.0});
-        Vector weights3 = new DenseVector(new double[]{-1.0, -1.0});
-        LogRegressionMultiClassModel mdl = new LogRegressionMultiClassModel();
-        mdl.add(1, new LogisticRegressionModel(weights1, 0.0).withRawLabels(true));
-        mdl.add(2, new LogisticRegressionModel(weights2, 0.0).withRawLabels(true));
-        mdl.add(2, new LogisticRegressionModel(weights3, 0.0).withRawLabels(true));
-
-        Vector observation = new DenseVector(new double[]{1.0, 1.0});
-        TestUtils.assertEquals( 1.0, mdl.apply(observation), PRECISION);
     }
 
     /** */

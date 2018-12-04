@@ -27,7 +27,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 /**
  * Base class for SVM linear classification model.
  */
-public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>, Exportable<SVMLinearBinaryClassificationModel>, Serializable {
+public class SVMLinearClassificationModel implements Model<Vector, Double>, Exportable<SVMLinearClassificationModel>, Serializable {
     /** */
     private static final long serialVersionUID = -996984622291440226L;
 
@@ -44,7 +44,7 @@ public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>
     private double intercept;
 
     /** */
-    public SVMLinearBinaryClassificationModel(Vector weights, double intercept) {
+    public SVMLinearClassificationModel(Vector weights, double intercept) {
         this.weights = weights;
         this.intercept = intercept;
     }
@@ -55,7 +55,7 @@ public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>
      * @param isKeepingRawLabels The parameter value.
      * @return Model with new isKeepingRawLabels parameter value.
      */
-    public SVMLinearBinaryClassificationModel withRawLabels(boolean isKeepingRawLabels) {
+    public SVMLinearClassificationModel withRawLabels(boolean isKeepingRawLabels) {
         this.isKeepingRawLabels = isKeepingRawLabels;
         return this;
     }
@@ -66,7 +66,7 @@ public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>
      * @param threshold The parameter value.
      * @return Model with new threshold parameter value.
      */
-    public SVMLinearBinaryClassificationModel withThreshold(double threshold) {
+    public SVMLinearClassificationModel withThreshold(double threshold) {
         this.threshold = threshold;
         return this;
     }
@@ -77,7 +77,7 @@ public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>
      * @param weights The parameter value.
      * @return Model with new weights parameter value.
      */
-    public SVMLinearBinaryClassificationModel withWeights(Vector weights) {
+    public SVMLinearClassificationModel withWeights(Vector weights) {
         this.weights = weights;
         return this;
     }
@@ -88,7 +88,7 @@ public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>
      * @param intercept The parameter value.
      * @return Model with new intercept parameter value.
      */
-    public SVMLinearBinaryClassificationModel withIntercept(double intercept) {
+    public SVMLinearClassificationModel withIntercept(double intercept) {
         this.intercept = intercept;
         return this;
     }
@@ -139,7 +139,7 @@ public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>
     }
 
     /** {@inheritDoc} */
-    @Override public <P> void saveModel(Exporter<SVMLinearBinaryClassificationModel, P> exporter, P path) {
+    @Override public <P> void saveModel(Exporter<SVMLinearClassificationModel, P> exporter, P path) {
         exporter.save(this, path);
     }
 
@@ -150,7 +150,7 @@ public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>
         if (o == null || getClass() != o.getClass())
             return false;
 
-        SVMLinearBinaryClassificationModel mdl = (SVMLinearBinaryClassificationModel)o;
+        SVMLinearClassificationModel mdl = (SVMLinearClassificationModel)o;
 
         return Double.compare(mdl.intercept, intercept) == 0
             && Double.compare(mdl.threshold, threshold) == 0
