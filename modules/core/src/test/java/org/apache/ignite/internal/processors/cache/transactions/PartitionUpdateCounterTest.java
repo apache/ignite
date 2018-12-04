@@ -36,7 +36,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
 
     public void testRelease2() {
         for (int i = 0; i < 1000; i++)
-            doTestRelease(2, 6, 2, 10, 3, 1, 5, 4);
+            doTestRelease2(2, 6, 2, 10, 3, 1, 5, 4);
     }
 
     private void doTestRelease(long... reservations) {
@@ -83,6 +83,8 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
         for (Long cntr : res)
             pc.releaseOne(cntr);
 
-        System.out.println(pc);
+        assertEquals(pc.get(), pc.hwm());
+
+        assertEquals(Arrays.stream(reservations).sum(), pc.get());
     }
 }

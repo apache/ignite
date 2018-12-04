@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.Gaps;
 import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -55,12 +56,10 @@ public class PartitionUpdateCounter {
      * @param gaps Gaps.
      */
     public void init(long initUpdCntr, Gaps gaps) {
-        initCntr = initUpdCntr;
+        cntr.set(initUpdCntr);
 
-        long size = gaps.maxCounter() - initUpdCntr;
-
-        if (size > Integer.MAX_VALUE)
-            throw new IgniteException("Cannot recover partition"); // TODO FIXME better error.
+        for (T2<Long, Long> gap : gaps)
+            queue.add(new Item(gap.get1(), gap.get2()));
     }
 
     /**
@@ -163,8 +162,9 @@ public class PartitionUpdateCounter {
      * @param cntr Initial counter.
      */
     public void updateInitial(long cntr) {
-        // TODO check overflow ?
-        //recoverySet.set((int)(cntr - initCntr));
+        releaseOne(cntr);
+
+        initCntr = get();
     }
 
     /**
@@ -179,7 +179,6 @@ public class PartitionUpdateCounter {
      */
     private Item peek() {
         return queue.isEmpty() ? null : queue.first();
-
     }
 
     /**
@@ -227,25 +226,6 @@ public class PartitionUpdateCounter {
             Item last = queue.last();
 
             offer(new Item((start = last.start + last.delta), delta));
-        }
-
-        return start;
-    }
-
-    /**
-     * Primary mode.
-     * @param delta
-     * @return
-     */
-    public synchronized long reserveClosed(long delta) {
-        long start;
-
-        if (queue.isEmpty())
-            offer(new Item((start = 0), delta).close());
-        else {
-            Item last = queue.last();
-
-            offer(new Item((start = last.start + last.delta), delta).close());
         }
 
         return start;

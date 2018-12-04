@@ -18,17 +18,25 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.BitSet;
+import java.util.Iterator;
+import java.util.Spliterator;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
+import org.apache.ignite.internal.util.typedef.T2;
 
 /**
  */
-public class Gaps {
-    public long maxCounter() {
-        return 0;
+public class Gaps implements Iterable<T2<Long, Long>> {
+    @Override public Iterator<T2<Long, Long>> iterator() {
+        return null;
     }
 
-    public BitSet toBits(long cntr, BitSet set) {
+    @Override public void forEach(Consumer<? super T2<Long, Long>> action) {
+
+    }
+
+    @Override public Spliterator<T2<Long, Long>> spliterator() {
         return null;
     }
 }
