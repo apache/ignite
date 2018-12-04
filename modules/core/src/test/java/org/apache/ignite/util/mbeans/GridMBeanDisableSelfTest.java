@@ -27,6 +27,8 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -37,6 +39,7 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class GridMBeanDisableSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
+    @Before
     @Override public void setUp() throws Exception {
         IgniteUtils.IGNITE_MBEANS_DISABLED = true;
 
@@ -44,6 +47,7 @@ public class GridMBeanDisableSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @After
     @Override public void tearDown() throws Exception {
         IgniteUtils.IGNITE_MBEANS_DISABLED = false;
 

@@ -20,6 +20,8 @@ package org.apache.ignite.internal.util.io;
 import java.io.ByteArrayInputStream;
 import java.util.Random;
 import junit.framework.TestCase;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -53,13 +55,15 @@ public class GridUnsafeDataInputOutputByteOrderSelfTest extends TestCase {
     private GridUnsafeDataInput in;
 
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Before
+    @Override public void setUp() throws Exception {
         out = new GridUnsafeDataOutput(16 * 8+ LEN_BYTES);
         in = new GridUnsafeDataInput();
         in.inputStream(new ByteArrayInputStream(out.internalArray()));
     }
 
     /** {@inheritDoc} */
+    @After
     @Override public void tearDown() throws Exception {
         in.close();
         out.close();

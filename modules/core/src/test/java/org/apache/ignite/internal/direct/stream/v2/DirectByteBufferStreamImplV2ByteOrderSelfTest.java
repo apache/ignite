@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -65,6 +66,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     private byte[] outArr;
 
     /** {@inheritDoc} */
+    @Before
     @Override public void setUp() throws Exception {
         super.setUp();
 

@@ -28,6 +28,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.NotNull;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -54,6 +56,7 @@ public class GridManagerMxBeanIllegalArgumentHandleTest extends TestCase {
     private boolean correctSetupOfTestPerformed;
 
     /** {@inheritDoc} Changes field to always failing mock */
+    @Before
     @Override public void setUp() throws Exception {
         super.setUp();
         try {
@@ -99,6 +102,7 @@ public class GridManagerMxBeanIllegalArgumentHandleTest extends TestCase {
      *
      * @throws Exception if field set failed
      */
+    @After
     @Override public void tearDown() throws Exception {
         super.tearDown();
         if (correctSetupOfTestPerformed)
