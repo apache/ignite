@@ -164,7 +164,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
         for (int i = 0; i < ITRS; i++) {
             while (!Thread.currentThread().isInterrupted()) {
                 try (Transaction tx = grid.transactions().txStart(
-                        TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED)) {
+                        TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
                     cache.put(i, "testValue" + i);
 
                     tx.commit();
