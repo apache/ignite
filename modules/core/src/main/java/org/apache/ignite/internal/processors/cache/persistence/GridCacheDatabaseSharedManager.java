@@ -3204,6 +3204,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     snapshotMgr.afterCheckpointPageWritten();
 
+                    // Destoroy page store for evicted partitions.
                     destroyEvictedPartitions(chp);
 
                     // Must mark successful checkpoint only if there are no exceptions or interrupts.
@@ -3257,7 +3258,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 return true;
             }
 
-            return chp.progress.canceled;
+            if (chp.progress.canceled) {
+                chp.progress.mergeContext = new CheckpointMergeContext();
+
+                return true;
+            }
+            else
+                return false;
         }
 
         /**
@@ -3357,6 +3364,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     finally {
                         blockingSectionEnd();
                     }
+
+                    updStores.remove(pageStore);
 
                     syncedPagesCntr.addAndGet(pageCounter.intValue());
                 }
@@ -4317,12 +4326,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** */
         private volatile boolean canceled;
 
+        /** */
+        private CheckpointMergeContext mergeContext;
+
         /**
          * @param nextCpTs Next checkpoint timestamp.
          */
         private CheckpointProgress(long nextCpTs) {
             this.nextCpTs = nextCpTs;
         }
+    }
+
+    private class CheckpointMergeContext {
+
     }
 
     /**
