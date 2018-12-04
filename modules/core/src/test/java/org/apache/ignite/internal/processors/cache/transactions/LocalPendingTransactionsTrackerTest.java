@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
@@ -30,10 +29,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -128,11 +125,11 @@ public class LocalPendingTransactionsTrackerTest {
         tracker.writeLockState();
 
         try {
-            Map<GridCacheVersion, WALPointer> currentlyPreparedTxs = tracker.currentlyPreparedTxs();
+            Set<GridCacheVersion> currentlyPreparedTxs = tracker.currentlyPreparedTxs();
 
             assertEquals(2, currentlyPreparedTxs.size());
-            assertTrue(currentlyPreparedTxs.containsKey(nearXidVersion(1)));
-            assertTrue(currentlyPreparedTxs.containsKey(nearXidVersion(3)));
+            assertTrue(currentlyPreparedTxs.contains(nearXidVersion(1)));
+            assertTrue(currentlyPreparedTxs.contains(nearXidVersion(3)));
         }
         finally {
             tracker.writeUnlockState();
@@ -144,10 +141,10 @@ public class LocalPendingTransactionsTrackerTest {
         tracker.writeLockState();
 
         try {
-            Map<GridCacheVersion, WALPointer> currentlyPreparedTxs = tracker.currentlyPreparedTxs();
+            Set<GridCacheVersion> currentlyPreparedTxs = tracker.currentlyPreparedTxs();
 
             assertEquals(1, currentlyPreparedTxs.size());
-            assertTrue(currentlyPreparedTxs.containsKey(nearXidVersion(1)));
+            assertTrue(currentlyPreparedTxs.contains(nearXidVersion(1)));
         }
         finally {
             tracker.writeUnlockState();
@@ -185,10 +182,10 @@ public class LocalPendingTransactionsTrackerTest {
         tracker.writeLockState();
 
         try {
-            Map<GridCacheVersion, WALPointer> currentlyPreparedTxs = tracker.currentlyPreparedTxs();
+            Set<GridCacheVersion> currentlyPreparedTxs = tracker.currentlyPreparedTxs();
 
             assertEquals(1, currentlyPreparedTxs.size());
-            assertTrue(currentlyPreparedTxs.containsKey(nearXidVersion(2)));
+            assertTrue(currentlyPreparedTxs.contains(nearXidVersion(2)));
         }
         finally {
             tracker.writeUnlockState();
@@ -240,7 +237,7 @@ public class LocalPendingTransactionsTrackerTest {
         tracker.writeLockState();
 
         try {
-            Map<GridCacheVersion, WALPointer> currentlyPreparedTxs = tracker.currentlyPreparedTxs();
+            Set<GridCacheVersion> currentlyPreparedTxs = tracker.currentlyPreparedTxs();
 
             assertEquals(0, currentlyPreparedTxs.size());
         }
@@ -273,7 +270,7 @@ public class LocalPendingTransactionsTrackerTest {
 
         tracker.writeLockState();
 
-        IgniteInternalFuture<Map<GridCacheVersion, WALPointer>> fut;
+        IgniteInternalFuture<Set<GridCacheVersion>> fut;
         try {
             tracker.startTxFinishAwaiting(1_000, 10_000);
 
@@ -291,14 +288,14 @@ public class LocalPendingTransactionsTrackerTest {
 
         long curTs = U.currentTimeMillis();
 
-        Map<GridCacheVersion, WALPointer> pendingTxs = fut.get();
+        Set<GridCacheVersion> pendingTxs = fut.get();
 
         assertTrue("Waiting for awaitFinishOfPreparedTxs future too long", U.currentTimeMillis() - curTs < 1_000);
 
         assertEquals(3, pendingTxs.size());
-        assertTrue(pendingTxs.keySet().contains(nearXidVersion(1)));
-        assertTrue(pendingTxs.keySet().contains(nearXidVersion(3)));
-        assertTrue(pendingTxs.keySet().contains(nearXidVersion(5)));
+        assertTrue(pendingTxs.contains(nearXidVersion(1)));
+        assertTrue(pendingTxs.contains(nearXidVersion(3)));
+        assertTrue(pendingTxs.contains(nearXidVersion(5)));
 
         txCommit(1);
         txCommit(3);
@@ -336,7 +333,7 @@ public class LocalPendingTransactionsTrackerTest {
 
         long curTs, waitMs;
 
-        Map<GridCacheVersion, WALPointer> pendingTxs;
+        Set<GridCacheVersion> pendingTxs;
 
         final CountDownLatch latch1 = new CountDownLatch(1);
         final CountDownLatch latch2 = new CountDownLatch(1);
@@ -371,9 +368,9 @@ public class LocalPendingTransactionsTrackerTest {
         pendingTxs = awaitFinishOfPreparedTxs(100, 200);
 
         assertEquals(3, pendingTxs.size());
-        assertTrue(pendingTxs.keySet().contains(nearXidVersion(2)));
-        assertTrue(pendingTxs.keySet().contains(nearXidVersion(3)));
-        assertTrue(pendingTxs.keySet().contains(nearXidVersion(4)));
+        assertTrue(pendingTxs.contains(nearXidVersion(2)));
+        assertTrue(pendingTxs.contains(nearXidVersion(3)));
+        assertTrue(pendingTxs.contains(nearXidVersion(4)));
 
         latch2.countDown();
 
@@ -387,8 +384,8 @@ public class LocalPendingTransactionsTrackerTest {
         assertTrue("Waiting for awaitFinishOfPreparedTxs future too long: " + waitMs, waitMs < 200 + 500);
 
         assertEquals(2, pendingTxs.size());
-        assertTrue(pendingTxs.keySet().contains(nearXidVersion(3)));
-        assertTrue(pendingTxs.keySet().contains(nearXidVersion(4)));
+        assertTrue(pendingTxs.contains(nearXidVersion(3)));
+        assertTrue(pendingTxs.contains(nearXidVersion(4)));
 
         latch3.countDown();
 
@@ -402,7 +399,7 @@ public class LocalPendingTransactionsTrackerTest {
         assertTrue("Waiting for awaitFinishOfPreparedTxs future too long: " + waitMs, waitMs < 200 + 500);
 
         assertEquals(1, pendingTxs.size());
-        assertTrue(pendingTxs.keySet().contains(nearXidVersion(4)));
+        assertTrue(pendingTxs.contains(nearXidVersion(4)));
 
         latch4.countDown();
 
@@ -445,7 +442,7 @@ public class LocalPendingTransactionsTrackerTest {
 
         tracker.writeLockState();
 
-        Map<GridCacheVersion, WALPointer> committedTxs;
+        Set<GridCacheVersion> committedTxs;
         try {
             committedTxs = tracker.stopTrackingCommitted().committedTxs();
         }
@@ -454,8 +451,8 @@ public class LocalPendingTransactionsTrackerTest {
         }
 
         assertEquals(2, committedTxs.size());
-        assertTrue(committedTxs.containsKey(nearXidVersion(2)));
-        assertTrue(committedTxs.containsKey(nearXidVersion(3)));
+        assertTrue(committedTxs.contains(nearXidVersion(2)));
+        assertTrue(committedTxs.contains(nearXidVersion(3)));
     }
 
     /**
@@ -485,7 +482,7 @@ public class LocalPendingTransactionsTrackerTest {
 
         tracker.writeLockState();
 
-        Map<GridCacheVersion, WALPointer> committedTxs;
+        Set<GridCacheVersion> committedTxs;
         try {
             committedTxs = tracker.stopTrackingPrepared();
         }
@@ -494,8 +491,8 @@ public class LocalPendingTransactionsTrackerTest {
         }
 
         assertEquals(2, committedTxs.size());
-        assertTrue(committedTxs.containsKey(nearXidVersion(3)));
-        assertTrue(committedTxs.containsKey(nearXidVersion(4)));
+        assertTrue(committedTxs.contains(nearXidVersion(3)));
+        assertTrue(committedTxs.contains(nearXidVersion(4)));
     }
 
     /**
@@ -511,7 +508,7 @@ public class LocalPendingTransactionsTrackerTest {
 
         tracker.writeLockState(); // Cut 1.
 
-        IgniteInternalFuture<Map<GridCacheVersion, WALPointer>> awaitFutCut1;
+        IgniteInternalFuture<Set<GridCacheVersion>> awaitFutCut1;
         try {
             tracker.startTrackingCommitted();
 
@@ -525,10 +522,10 @@ public class LocalPendingTransactionsTrackerTest {
 
         txCommit(1);
 
-        Map<GridCacheVersion, WALPointer> failedToFinish = awaitFutCut1.get();
+        Set<GridCacheVersion> failedToFinish = awaitFutCut1.get();
 
         assertEquals(1, failedToFinish.size());
-        assertTrue(failedToFinish.keySet().contains(nearXidVersion(2)));
+        assertTrue(failedToFinish.contains(nearXidVersion(2)));
 
         txCommit(2);
 
@@ -541,8 +538,8 @@ public class LocalPendingTransactionsTrackerTest {
 
         tracker.writeLockState(); // Cut 2.
 
-        Map<GridCacheVersion, WALPointer> committedFrom1to2;
-        Map<GridCacheVersion, WALPointer> preparedOn2;
+        Set<GridCacheVersion> committedFrom1to2;
+        Set<GridCacheVersion> preparedOn2;
         try {
             committedFrom1to2 = tracker.stopTrackingCommitted().committedTxs();
 
@@ -555,13 +552,13 @@ public class LocalPendingTransactionsTrackerTest {
         }
 
         assertEquals(2, preparedOn2.size());
-        assertTrue(preparedOn2.keySet().contains(nearXidVersion(5)));
-        assertTrue(preparedOn2.keySet().contains(nearXidVersion(6)));
+        assertTrue(preparedOn2.contains(nearXidVersion(5)));
+        assertTrue(preparedOn2.contains(nearXidVersion(6)));
 
         assertEquals(3, committedFrom1to2.size());
-        assertTrue(committedFrom1to2.keySet().contains(nearXidVersion(1)));
-        assertTrue(committedFrom1to2.keySet().contains(nearXidVersion(2)));
-        assertTrue(committedFrom1to2.keySet().contains(nearXidVersion(4)));
+        assertTrue(committedFrom1to2.contains(nearXidVersion(1)));
+        assertTrue(committedFrom1to2.contains(nearXidVersion(2)));
+        assertTrue(committedFrom1to2.contains(nearXidVersion(4)));
 
         txPrepare(7);
         txPrepare(8);
@@ -570,7 +567,7 @@ public class LocalPendingTransactionsTrackerTest {
         txCommit(7);
 
         tracker.writeLockState(); // Cut 3.
-        Map<GridCacheVersion, WALPointer> preparedFrom2to3;
+        Set<GridCacheVersion> preparedFrom2to3;
         try {
             preparedFrom2to3 = tracker.stopTrackingPrepared();
         }
@@ -579,8 +576,8 @@ public class LocalPendingTransactionsTrackerTest {
         }
 
         assertEquals(2, preparedFrom2to3.size());
-        assertTrue(preparedFrom2to3.keySet().contains(nearXidVersion(7)));
-        assertTrue(preparedFrom2to3.keySet().contains(nearXidVersion(8)));
+        assertTrue(preparedFrom2to3.contains(nearXidVersion(7)));
+        assertTrue(preparedFrom2to3.contains(nearXidVersion(8)));
     }
 
     /**
@@ -784,7 +781,7 @@ public class LocalPendingTransactionsTrackerTest {
      * @param txId Test transaction ID.
      */
     private void txPrepare(int txId) {
-        tracker.onTxPrepared(nearXidVersion(txId), new FileWALPointer(0, txId * 10, 1));
+        tracker.onTxPrepared(nearXidVersion(txId));
     }
 
     /**
@@ -835,9 +832,11 @@ public class LocalPendingTransactionsTrackerTest {
      * @return Collection of local transactions in committing state.
      * @throws IgniteCheckedException If failed.
      */
-    private Map<GridCacheVersion, WALPointer> awaitFinishOfPreparedTxs(long preparedTxsTimeout,
-        long committingTxsTimeout) throws IgniteCheckedException {
-        IgniteInternalFuture<Map<GridCacheVersion, WALPointer>> fut;
+    private Set<GridCacheVersion> awaitFinishOfPreparedTxs(
+        long preparedTxsTimeout,
+        long committingTxsTimeout
+    ) throws IgniteCheckedException {
+        IgniteInternalFuture<Set<GridCacheVersion>> fut;
 
         tracker.writeLockState();
 
