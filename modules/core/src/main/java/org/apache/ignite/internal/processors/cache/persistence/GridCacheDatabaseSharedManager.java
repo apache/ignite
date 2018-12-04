@@ -3011,7 +3011,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @SuppressWarnings("NakedNotify")
     public class Checkpointer extends GridWorker {
         /** Temporary write buffer. */
-        private final ByteBuffer tmpWriteBuf;
+        private final ByteBuffer checkpointEntryWrtieBuffer;
 
         /** Next scheduled checkpoint progress. */
         private volatile CheckpointProgress scheduledCp;
@@ -3035,9 +3035,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             scheduledCp = new CheckpointProgress(U.currentTimeMillis() + checkpointFreq);
 
-            tmpWriteBuf = ByteBuffer.allocateDirect(pageSize());
+            checkpointEntryWrtieBuffer = ByteBuffer.allocateDirect(pageSize());
 
-            tmpWriteBuf.order(ByteOrder.nativeOrder());
+            checkpointEntryWrtieBuffer.order(ByteOrder.nativeOrder());
         }
 
         /** {@inheritDoc} */
@@ -3573,18 +3573,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             try {
                 metrics.onMarkStart();
 
-                synchronized (this) {
-                    curr = scheduledCp;
-
-                    curr.started = true;
-
-                    if (curr.reason == null)
-                        curr.reason = "timeout";
-
-                    // It is important that we assign a new progress object before checkpoint mark in page memory.
-                    scheduledCp = new CheckpointProgress(U.currentTimeMillis() + checkpointFreq);
-
-                    curCpProgress = curr;
+                synchronized (this){
+                    curr = resetCheckpointProgress(scheduledCp);
                 }
 
                 if (curr.nextSnapshot) {
@@ -3611,12 +3601,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 if (hasPages || hasPartitionsToDestroy) {
                     cp = prepareCheckpointEntry(
-                        tmpWriteBuf,
+                        checkpointEntryWrtieBuffer,
                         cpTs,
                         cpRec.checkpointId(),
                         cpPtr,
                         cpRec,
-                        CheckpointEntryType.START);
+                        CheckpointEntryType.START
+                    );
 
                     cpHistory.addCheckpoint(cp);
                 }
@@ -3650,7 +3641,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 metrics.onWalCpRecordFsyncEnd();
 
-                writeCheckpointEntry(tmpWriteBuf, cp, CheckpointEntryType.START);
+                writeCheckpointEntry(checkpointEntryWrtieBuffer, cp, CheckpointEntryType.START);
 
                 GridMultiCollectionWrapper<FullPageId> cpPages = splitAndSortCpPagesIfNeeded(cpPagesTuple);
 
@@ -3681,6 +3672,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 return new Checkpoint(null, new GridMultiCollectionWrapper<>(new Collection[0]), curr, metrics);
             }
+        }
+
+        @SuppressWarnings("UnnecessaryLocalVariable")
+        private CheckpointProgress resetCheckpointProgress(CheckpointProgress scheduled){
+            CheckpointProgress curr = scheduled;
+
+            curr.started = true;
+
+            if (curr.reason == null)
+                curr.reason = "timeout";
+
+            // It is important that we assign a new progress object before checkpoint mark in page memory.
+            scheduledCp = new CheckpointProgress(U.currentTimeMillis() + checkpointFreq);
+
+            curCpProgress = curr;
+
+            return curr;
         }
 
         /**
@@ -3854,14 +3862,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             if (chp.hasDelta()) {
                 CheckpointEntry cp = prepareCheckpointEntry(
-                    tmpWriteBuf,
+                    checkpointEntryWrtieBuffer,
                     chp.cpEntry.timestamp(),
                     chp.cpEntry.checkpointId(),
                     chp.cpEntry.checkpointMark(),
                     null,
                     CheckpointEntryType.END);
 
-                writeCheckpointEntry(tmpWriteBuf, cp, CheckpointEntryType.END);
+                writeCheckpointEntry(checkpointEntryWrtieBuffer, cp, CheckpointEntryType.END);
 
                 cctx.wal().notchLastCheckpointPtr(chp.cpEntry.checkpointMark());
             }
@@ -4244,10 +4252,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private volatile long nextCpTs;
 
         /** Checkpoint begin phase future. */
-        private GridFutureAdapter cpBeginFut = new GridFutureAdapter<>();
+        private final GridFutureAdapter cpBeginFut = new GridFutureAdapter<>();
 
         /** Checkpoint finish phase future. */
-        private GridFutureAdapter cpFinishFut = new GridFutureAdapter<Void>() {
+        private final GridFutureAdapter cpFinishFut = new GridFutureAdapter<Void>() {
             @Override protected boolean onDone(@Nullable Void res, @Nullable Throwable err, boolean cancel) {
                 if (err != null && !cpBeginFut.isDone())
                     cpBeginFut.onDone(err);
@@ -4272,7 +4280,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private String reason;
 
         /** */
-        private volatile boolean merge;
+        private volatile boolean canceled;
 
         /**
          * @param nextCpTs Next checkpoint timestamp.
@@ -4318,7 +4326,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     public static class FileLockHolder implements AutoCloseable {
         /** Lock file name. */
-        private static final String lockFileName = "lock";
+        private static final String LOCK_FILE_NAME = "lock";
 
         /** File. */
         private File file;
@@ -4340,7 +4348,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         public FileLockHolder(String path, @NotNull GridKernalContext ctx, IgniteLogger log) {
             try {
-                file = Paths.get(path, lockFileName).toFile();
+                file = Paths.get(path, LOCK_FILE_NAME).toFile();
 
                 lockFile = new RandomAccessFile(file, "rw");
 
