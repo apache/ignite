@@ -602,7 +602,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 byte state = in.readByte();
                 int allocatedIdxCandidate = in.readInt();
 
-                res = new MetaPageUpdatePartitionDataRecord(cacheId, pageId, updCntr, maxUpdCntr, updCntrGap, rmvId,
+                res = new MetaPageUpdatePartitionDataRecord(cacheId, pageId, updCntr, rmvId,
                     partSize, countersPageId, state, allocatedIdxCandidate);
 
                 break;

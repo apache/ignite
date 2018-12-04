@@ -59,6 +59,9 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
     /** */
     public static final int COUNT = 5000;
 
+    /** */
+    private int backups;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -85,7 +88,7 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
             CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setAtomicityMode(TRANSACTIONAL);
-            ccfg.setBackups(2);
+            ccfg.setBackups(backups);
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
             ccfg.setOnheapCacheEnabled(false);
             ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
@@ -439,6 +442,8 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
     public void testBasicCounterAssignmentOnPrimary() throws Exception {
         try {
+            backups = 0;
+
             Ignite crd = startGridsMultiThreaded(2);
 
             List<Integer> keys = partitionKeys(crd.cache(DEFAULT_CACHE_NAME), 0, 10);

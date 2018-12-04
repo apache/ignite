@@ -72,7 +72,6 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PagesAllocationRange;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionRecoverState;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionCountersIO;
@@ -257,8 +256,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             freeList.saveMetadata();
 
             long updCntr = store.updateCounter();
-            long maxUpdCntr = store.partUpdateCounter().maxUpdateCounter();
-            long updCntrGap = store.partUpdateCounter().updateCounterGap();
             long size = store.fullSize();
             long rmvId = globalRemoveId().get();
 
@@ -307,8 +304,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         PagePartitionMetaIO io = PageIO.getPageIO(partMetaPageAddr);
 
                         changed |= io.setUpdateCounter(partMetaPageAddr, updCntr);
-                        changed |= io.setMaxUpdateCounter(partMetaPageAddr, maxUpdCntr);
-                        changed |= io.setUpdateCounterGap(partMetaPageAddr, updCntrGap);
                         changed |= io.setGlobalRemoveId(partMetaPageAddr, rmvId);
                         changed |= io.setSize(partMetaPageAddr, size);
 
@@ -383,8 +378,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                 grpId,
                                 partMetaId,
                                 updCntr,
-                                maxUpdCntr,
-                                updCntrGap,
                                 rmvId,
                                 (int)size, // TODO: Partition size may be long
                                 cntrsPageId,
@@ -820,10 +813,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         assert store != null;
 
-        long oldCnt = store.initialUpdateCounter();
-
-        if (oldCnt < cntr)
-            store.updateInitialCounter(cntr);
+        store.updateInitialCounter(cntr);
     }
 
     /** {@inheritDoc} */
@@ -1589,11 +1579,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                 if (grp.sharedGroup())
                                     cacheSizes = readSharedGroupCacheSizes(pageMem, grpId, io.getCountersPageId(pageAddr));
 
-                                long lwm = io.getUpdateCounter(pageAddr);
-                                long hwm = io.getMaxUpdateCounter(pageAddr);
-                                long cnt = io.getUpdateCounterGap(pageAddr);
+                                Gaps gaps = new Gaps();
 
-                                delegate0.init(io.getSize(pageAddr), lwm, hwm, cnt, cacheSizes);
+                                delegate0.init(io.getSize(pageAddr), io.getUpdateCounter(pageAddr), cacheSizes, gaps);
 
                                 globalRemoveId().setIfGreater(io.getGlobalRemoveId(pageAddr));
                             }
@@ -1855,7 +1843,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public void init(long size, long lwm, long hwm, long cnt, @Nullable Map<Integer, Long> cacheSizes) {
+        @Override public void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, Gaps gaps) {
             throw new IllegalStateException("Should be never called.");
         }
 
@@ -2477,6 +2465,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             if (delegate0 != null)
                 delegate0.preload();
+        }
+
+        @Override public void finishRecovery() {
+            try {
+                CacheDataStore delegate0 = init0(true);
+
+                if (delegate0 != null)
+                    delegate0.finishRecovery();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
         }
     }
 

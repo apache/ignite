@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.BitSet;
 import java.util.NavigableSet;
-import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.cache.persistence.Gaps;
 import org.apache.ignite.internal.util.GridLongList;
 import org.jetbrains.annotations.NotNull;
 
@@ -33,15 +35,12 @@ public class PartitionUpdateCounter {
     private IgniteLogger log;
 
     /** Queue of counter update tasks*/
-    private final TreeSet<Item> queue = new TreeSet<>();
+    private TreeSet<Item> queue = new TreeSet<>();
 
-    /** Counter. */
+    /** Counter of finished updates in partition. */
     private final AtomicLong cntr = new AtomicLong();
 
-    /** Reservation counter. */
-    private final AtomicLong reserveCntr = new AtomicLong();
-
-    /** Initial counter. */
+    /** Initial counter points to last update which is written to persistent storage. */
     private long initCntr;
 
     /**
@@ -51,11 +50,17 @@ public class PartitionUpdateCounter {
         this.log = log;
     }
 
-    /** {@inheritDoc} */
-    public void init(long lwm, long hwm, long cnt) {
-        initCntr = lwm;
+    /**
+     * @param initUpdCntr Initial update counter.
+     * @param gaps Gaps.
+     */
+    public void init(long initUpdCntr, Gaps gaps) {
+        initCntr = initUpdCntr;
 
-        cntr.set(lwm);
+        long size = gaps.maxCounter() - initUpdCntr;
+
+        if (size > Integer.MAX_VALUE)
+            throw new IgniteException("Cannot recover partition"); // TODO FIXME better error.
     }
 
     /**
@@ -72,8 +77,8 @@ public class PartitionUpdateCounter {
         return cntr.get();
     }
 
-    public long reserved() {
-        return reserveCntr.get();
+    public synchronized long hwm() {
+        return queue.isEmpty() ? cntr.get() : queue.last().absolute();
     }
 
     /**
@@ -139,7 +144,7 @@ public class PartitionUpdateCounter {
 
             Item peek = peek();
 
-            if (peek == null || peek.start != next || peek.open)
+            if (peek == null || peek.start != next)
                 return;
 
             Item item = poll();
@@ -153,13 +158,13 @@ public class PartitionUpdateCounter {
     }
 
     /**
-     * @param cntr Sets initial counter.
+     * Updates initial counter on recovery.
+     *
+     * @param cntr Initial counter.
      */
     public void updateInitial(long cntr) {
-        if (get() < cntr)
-            update(cntr);
-
-        initCntr = cntr;
+        // TODO check overflow ?
+        //recoverySet.set((int)(cntr - initCntr));
     }
 
     /**
@@ -210,39 +215,61 @@ public class PartitionUpdateCounter {
             item = poll();
         }
 
-        reserveCntr.set(cntr.get());
-
         return gaps;
     }
 
-    public long maxUpdateCounter() {
-        return 0;
-    }
-
-    public long updateCounterGap() {
-        return 0;
-    }
-
     public synchronized long reserve(long delta) {
-        long start = reserveCntr.getAndAdd(delta);
+        long start;
 
-        offer(new Item(start, delta, true));
+        if (queue.isEmpty())
+            offer(new Item((start = 0), delta));
+        else {
+            Item last = queue.last();
+
+            offer(new Item((start = last.start + last.delta), delta));
+        }
 
         return start;
     }
 
+    /**
+     * Primary mode.
+     * @param delta
+     * @return
+     */
+    public synchronized long reserveClosed(long delta) {
+        long start;
+
+        if (queue.isEmpty())
+            offer(new Item((start = 0), delta).close());
+        else {
+            Item last = queue.last();
+
+            offer(new Item((start = last.start + last.delta), delta).close());
+        }
+
+        return start;
+    }
+
+    /**
+     * Release subsequent closed reservations and adjust lwm.
+     *
+     * @param start Start.
+     * @param delta Delta.
+     */
     public synchronized void release(long start, long delta) {
         NavigableSet<Item> items = queue.tailSet(new Item(start, delta), true);
 
         Item first = items.first();
 
-        assert first != null && first.delta == delta && first.open: "Interval is not reserved [start=" + start + ", delta=" + delta + "]";
+        assert first != null && first.delta == delta : "Wrong interval " + first;
 
-        first.open = false;
+        if (first.open())
+            first.close();
 
         long cur = cntr.get(), next;
 
-        if (start != cur)
+        if (start != cur) // If not first just mark as closed and return.
             return;
 
         items.pollFirst(); // Skip first.
@@ -257,7 +284,7 @@ public class PartitionUpdateCounter {
 
             Item peek = items.first();
 
-            if (peek.start != next || peek.open)
+            if (peek.start != next || peek.open())
                 return;
 
             Item item = items.pollFirst();
@@ -271,6 +298,24 @@ public class PartitionUpdateCounter {
     }
 
     /**
+     * Used on recovery.
+     * TODO FIXME make thread safe.
+     * @param c
+     */
+    public synchronized void releaseOne(long c) {
+        NavigableSet<Item> items = queue.headSet(new Item(c, 0), true);
+
+        assert !items.isEmpty();
+
+        Item last = items.last();
+
+        last.increment();
+
+        if (!last.open() && items.first() == last)
+            release(last.start, last.delta);
+    }
+
+    /**
      * Update counter task. Update from start value by delta value.
      */
     private static class Item implements Comparable<Item> {
@@ -278,10 +323,10 @@ public class PartitionUpdateCounter {
         private final long start;
 
         /** */
-        private final long delta;
+        private long delta;
 
         /** */
-        boolean open;
+        private int closed;
 
         /**
          * @param start Start value.
@@ -292,33 +337,41 @@ public class PartitionUpdateCounter {
             this.delta = delta;
         }
 
-        /**
-         * @param start Start.
-         * @param delta Delta.
-         * @param open Open.
-         */
-        private Item(long start, long delta, boolean open) {
-            this.start = start;
-            this.delta = delta;
-            this.open = open;
-        }
-
         /** {@inheritDoc} */
         @Override public int compareTo(@NotNull Item o) {
             return Long.compare(this.start, o.start);
         }
 
+        /** {@inheritDoc} */
         @Override public String toString() {
             return "Item [" +
                 "start=" + start +
-                ", open=" + open +
+                ", open=" + open() +
                 ", delta=" + delta +
                 ']';
+        }
+
+        public void increment() {
+            closed++;
+        }
+
+        public boolean open() {
+            return closed < delta;
+        }
+
+        public Item close() {
+            closed = (int)delta; // TODO FIXME why delta not integer?
+
+            return this;
+        }
+
+        public long absolute() {
+            return start + delta;
         }
     }
 
     /** {@inheritDoc} */
     public String toString() {
-        return "Counter [cntr=" + cntr.get() + ", holes=" + queue + ", reserveCntr=" + reserveCntr.get() + ']';
+        return "Counter [lwm=" + get() + ", holes=" + queue + ", hwm=" + hwm() + ']';
     }
 }

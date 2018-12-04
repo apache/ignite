@@ -29,10 +29,10 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
+import org.apache.ignite.internal.processors.cache.persistence.Gaps;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionRecoverState;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccUpdateResult;
@@ -653,12 +653,11 @@ public interface IgniteCacheOffheapManager {
 
         /**
          * @param size Size to init.
-         * @param lwm Update counter to init.
-         * @param hwm
-         * @param cnt
+         * @param updCntr Update counter.
          * @param cacheSizes Cache sizes if store belongs to group containing multiple caches.
+         * @param gaps Gaps.
          */
-        void init(long size, long lwm, long hwm, long cnt, @Nullable Map<Integer, Long> cacheSizes);
+        void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, Gaps gaps);
 
         /**
          * @param cacheId Cache ID.
@@ -1156,5 +1155,7 @@ public interface IgniteCacheOffheapManager {
          * @throws IgniteCheckedException If failed.
          */
         public void preload() throws IgniteCheckedException;
+
+        public void finishRecovery();
     }
 }

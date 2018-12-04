@@ -5500,6 +5500,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     "groupsProcessed=" + forGroups.size() +
                     ", partitionsProcessed=" + totalProcessed +
                     ", time=" + (U.currentTimeMillis() - startRestorePart) + "ms]");
+
+            for (CacheGroupContext ctx : cacheGroups()) {
+                for (GridDhtLocalPartition partition : ctx.topology().localPartitions()) {
+                    partition.finishRecovery();
+                }
+            }
         }
     }
 

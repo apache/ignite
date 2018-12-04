@@ -26,15 +26,20 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- *
+ * TODO FIXME add multithreaded test.
  */
 public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
-    public void testPrimaryMode() {
+    public void testRelease() {
         for (int i = 0; i < 1000; i++)
-            doTestPrimaryMode(2, 6, 2, 10, 3, 1, 5, 4);
+            doTestRelease(2, 6, 2, 10, 3, 1, 5, 4);
     }
 
-    private void doTestPrimaryMode(long... reservations) {
+    public void testRelease2() {
+        for (int i = 0; i < 1000; i++)
+            doTestRelease(2, 6, 2, 10, 3, 1, 5, 4);
+    }
+
+    private void doTestRelease(long... reservations) {
         PartitionUpdateCounter pc = new PartitionUpdateCounter(log);
 
         long[] ctrs = new long[reservations.length];
@@ -52,8 +57,32 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
         for (T2<Long, Long> objects : tmp)
             pc.release(objects.get1(), objects.get2());
 
-        assertEquals(pc.get(), pc.reserved());
+        assertEquals(pc.get(), pc.hwm());
 
         assertEquals(Arrays.stream(reservations).sum(), pc.get());
+    }
+
+    private void doTestRelease2(long... reservations) {
+        PartitionUpdateCounter pc = new PartitionUpdateCounter(log);
+
+        long[] ctrs = new long[reservations.length];
+
+        for (int i = 0; i < reservations.length; i++)
+            ctrs[i] = pc.reserve(reservations[i]);
+
+        long lwm = pc.get();
+        long hwm = pc.hwm();
+
+        List<Long> res = new ArrayList<Long>((int)(hwm - lwm));
+
+        for (long l = lwm; l < hwm; l++)
+            res.add(l);
+
+        Collections.shuffle(res);
+
+        for (Long cntr : res)
+            pc.releaseOne(cntr);
+
+        System.out.println(pc);
     }
 }

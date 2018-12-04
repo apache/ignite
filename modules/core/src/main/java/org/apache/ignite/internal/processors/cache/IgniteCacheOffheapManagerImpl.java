@@ -58,10 +58,10 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
+import org.apache.ignite.internal.processors.cache.persistence.Gaps;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionRecoverState;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
@@ -1608,6 +1608,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             pCntr.update(start, delta);
         }
 
+        /** {@inheritDoc} */
         @Override public void releaseCounter(long start, long delta) {
             pCntr.release(start, delta);
         }
@@ -3033,8 +3034,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void init(long size, long lwm, long hwm, long cnt, @Nullable Map<Integer, Long> cacheSizes) {
-            pCntr.init(lwm, hwm, cnt);
+        @Override public void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, Gaps gaps) {
+            pCntr.init(updCntr, gaps);
 
             storageSize.set(size);
 
@@ -3052,6 +3053,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public void preload() throws IgniteCheckedException {
             // No-op.
+        }
+
+        @Override public void finishRecovery() {
         }
 
         /**
