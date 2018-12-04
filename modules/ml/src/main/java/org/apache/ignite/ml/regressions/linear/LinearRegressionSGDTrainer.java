@@ -89,7 +89,7 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> LinearRegressionModel updateModel(LinearRegressionModel mdl,
+    @Override public <K, V> LinearRegressionModel updateModel(LinearRegressionModel mdl,
         DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 

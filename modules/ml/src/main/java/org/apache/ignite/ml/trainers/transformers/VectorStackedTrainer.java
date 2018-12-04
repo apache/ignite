@@ -23,15 +23,15 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 
-public class VectorStackedTrainer<O, L, AM extends Model<Vector, O>> extends StackedDatasetTrainer<Vector, Vector, O, L, AM> {
+public class VectorStackedTrainer<O, L, AM extends Model<Vector, O>> extends StackedDatasetTrainer<Vector, Vector, O, AM, L> {
     public VectorStackedTrainer(DatasetTrainer<AM, L> aggregatingTrainer) {
         super(aggregatingTrainer, VectorUtils::concat, IgniteFunction.identity());
     }
 
-    @Override public <O1> StackedDatasetTrainer<Vector, Vector, O, L, AM> withAddedTrainer(
-        DatasetTrainer<Model<Vector, O1>, L> trainer, IgniteFunction<Vector, Vector> vec2InputConverter,
-        IgniteFunction<O1, Vector> submodelOutput2AggregatingInputConverter,
-        IgniteFunction<O1, Vector> output2VecConverter) {
-        return super.withAddedTrainer(trainer, vec2InputConverter, submodelOutput2AggregatingInputConverter, output2VecConverter);
+    public <O1, M extends Model<Vector, O1>> StackedDatasetTrainer<Vector, Vector, O, AM, L> withAddedTrainer(
+        DatasetTrainer<M, L> trainer,
+        IgniteFunction<O1, Vector> output2VecConverter,
+        IgniteFunction<O1, Vector> submodelOutput2AggregatingInputConverter) {
+        return super.withAddedTrainer(trainer, IgniteFunction.identity(), output2VecConverter, submodelOutput2AggregatingInputConverter);
     }
 }

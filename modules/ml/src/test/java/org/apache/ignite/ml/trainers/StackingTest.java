@@ -17,12 +17,32 @@
 
 package org.apache.ignite.ml.trainers;
 
+import java.util.Arrays;
+import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.nn.Activators;
+import org.apache.ignite.ml.nn.MLPTrainer;
+import org.apache.ignite.ml.nn.UpdatesStrategy;
+import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
+import org.apache.ignite.ml.optimization.LossFunctions;
+import org.apache.ignite.ml.optimization.SmoothParametrized;
+import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
+import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
+import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
+import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.trainers.transformers.StackedDatasetTrainer;
+import org.apache.ignite.ml.trainers.transformers.StackedModel;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import static junit.framework.TestCase.assertEquals;
 
 /**
  * Tests stacked trainers.
@@ -31,20 +51,60 @@ public class StackingTest extends TrainerTest {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
-//    @Test
-//    public void testSimpleStack() {
-//        StackedDatasetTrainer<Vector, Vector, Double, Double> trainer =
-//            new StackedDatasetTrainer<>();
-//        trainer
-//            .withAggregatorTrainer()
-//            .withAddedTrainer();
-//    }
-
     @Test
-    public void testINoWaysOfPropagation() {
-        StackedDatasetTrainer<Object, Object, Object, Object> trainer =
+    public void testSimpleStack() {
+        StackedDatasetTrainer<Vector, Vector, Double, LinearRegressionModel, Double> trainer =
             new StackedDatasetTrainer<>();
-        thrown.expect(IllegalStateException.class);
-        trainer.fit(null, null, null);
+
+        UpdatesStrategy<SmoothParametrized, SimpleGDParameterUpdate> updatesStgy = new UpdatesStrategy<>(
+            new SimpleGDUpdateCalculator(0.2),
+            SimpleGDParameterUpdate::sumLocal,
+            SimpleGDParameterUpdate::avg
+        );
+
+        MLPArchitecture arch = new MLPArchitecture(2).
+            withAddedLayer(10, true, Activators.RELU).
+            withAddedLayer(1, false, Activators.SIGMOID);
+
+        MLPTrainer<SimpleGDParameterUpdate> trainer1 = new MLPTrainer<>(
+            arch,
+            LossFunctions.MSE,
+            updatesStgy,
+            3000,
+            10,
+            50,
+            123L
+        );
+
+        // Convert model trainer to produce Vector -> Vector model
+        DatasetTrainer<? extends Model<Vector, Vector>, Double> mlpTrainer = new TestUtils.CombinableDatasetTrainer<>(trainer1)
+            .beforeTrainedModel((Vector v) -> new DenseMatrix(v.asArray(), 1))
+            .afterTrainedModel((Matrix mtx) -> mtx.getRow(0))
+            .withConvertedLabels(VectorUtils::num2Arr)
+            .withEnvironmentBuilder(TestUtils.testEnvBuilder());
+
+        final double factor = 3;
+        StackedModel<Vector, Vector, Double, LinearRegressionModel> mdl = trainer
+            .withAggregatorTrainer(new LinearRegressionLSQRTrainer().withConvertedLabels(x -> x * factor))
+            .withAddedTrainer(mlpTrainer, IgniteFunction.identity(), IgniteFunction.identity(), IgniteFunction.identity())
+            .withAggregatorInputMerger(VectorUtils::concat)
+            .withOriginalFeaturesDropped()
+            .fit(getCacheMock(xor),
+                parts,
+                (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
+                (k, v) -> v[v.length - 1]);
+
+        assertEquals(0.0 * factor, mdl.apply(VectorUtils.of(0.0, 0.0)), 0.3);
+        assertEquals(1.0 * factor, mdl.apply(VectorUtils.of(0.0, 1.0)), 0.3);
+        assertEquals(1.0 * factor, mdl.apply(VectorUtils.of(1.0, 0.0)), 0.3);
+        assertEquals(0.0 * factor, mdl.apply(VectorUtils.of(1.0, 1.0)), 0.3);
     }
+
+//    @Test
+//    public void testINoWaysOfPropagation() {
+//        StackedDatasetTrainer<?, ?, ?, Model<?, ?>, ?> trainer =
+//            new StackedDatasetTrainer<>();
+//        thrown.expect(IllegalStateException.class);
+//        trainer.fit(null, null, null);
+//    }
 }

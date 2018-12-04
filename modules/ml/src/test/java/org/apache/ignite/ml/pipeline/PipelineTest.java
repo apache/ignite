@@ -51,7 +51,7 @@ public class PipelineTest extends TrainerTest {
             cacheMock.put(i, convertedRow);
         }
 
-        LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>()
+        LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
             .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
                 SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
             .withMaxIterations(100000)

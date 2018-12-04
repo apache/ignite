@@ -52,8 +52,8 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
  * @param <O> Type of aggregator output.
  * @param <L> Type of labels.
  */
-public class StackedDatasetTrainer<IS, IA, O, L>
-    extends DatasetTrainer<StackedModel<IS, IA, O>, L> {
+public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
+    extends DatasetTrainer<StackedModel<IS, IA, O, AM>, L> {
     /** Operator tht merges inputs for aggregating model. */
     private IgniteBinaryOperator<IA> aggregatingInputMerger;
 
@@ -61,22 +61,22 @@ public class StackedDatasetTrainer<IS, IA, O, L>
     private IgniteFunction<IS, IA> submodelInput2AggregatingInputConverter;
 
     /** Trainers of submodels with converters from and to {@link Vector}. */
-    private List<TrainerWithConverters<?>> submodelsTrainers;
+    private List<TrainerWithConverters<?, ?>> submodelsTrainers;
 
     /** Aggregating trainer. */
-    private DatasetTrainer<Model<IA, O>, L> aggregatorTrainer;
+    private DatasetTrainer<AM, L> aggregatorTrainer;
 
-    private StackedDatasetTrainer(DatasetTrainer<Model<IA, O>, L> aggregatorTrainer,
+    private StackedDatasetTrainer(DatasetTrainer<AM, L> aggregatorTrainer,
         IgniteBinaryOperator<IA> aggregatingInputMerger,
         IgniteFunction<IS, IA> submodelInput2AggregatingInputConverter,
-        List<TrainerWithConverters<?>> submodelsTrainers) {
+        List<TrainerWithConverters<?, ?>> submodelsTrainers) {
         this.aggregatorTrainer = aggregatorTrainer;
         this.aggregatingInputMerger = aggregatingInputMerger;
         this.submodelInput2AggregatingInputConverter = submodelInput2AggregatingInputConverter;
         this.submodelsTrainers = new ArrayList<>(submodelsTrainers);
     }
 
-    public StackedDatasetTrainer(DatasetTrainer<Model<IA, O>, L> aggregatorTrainer,
+    public StackedDatasetTrainer(DatasetTrainer<AM, L> aggregatorTrainer,
         IgniteBinaryOperator<IA> aggregatingInputMerger,
         IgniteFunction<IS, IA> submodelInput2AggregatingInputConverter) {
         this(aggregatorTrainer,
@@ -104,7 +104,7 @@ public class StackedDatasetTrainer<IS, IA, O, L>
      * @param submodelInput2AggregatingInputConverter Function used to propagate submodels input to aggregator.
      * @return This object.
      */
-    public StackedDatasetTrainer<IS, IA, O, L> keepingOriginalFeatures(
+    public StackedDatasetTrainer<IS, IA, O, AM, L> keepingOriginalFeatures(
         IgniteFunction<IS, IA> submodelInput2AggregatingInputConverter) {
         this.submodelInput2AggregatingInputConverter = submodelInput2AggregatingInputConverter;
 
@@ -116,7 +116,7 @@ public class StackedDatasetTrainer<IS, IA, O, L>
      *
      * @return This object.
      */
-    public StackedDatasetTrainer<IS, IA, O, L> droppingOriginalFeatures() {
+    public StackedDatasetTrainer<IS, IA, O, AM, L> withOriginalFeaturesDropped() {
         this.submodelInput2AggregatingInputConverter = null;
 
         return this;
@@ -128,7 +128,7 @@ public class StackedDatasetTrainer<IS, IA, O, L>
      * @param aggregatorTrainer Aggregator trainer.
      * @return This object.
      */
-    public StackedDatasetTrainer<IS, IA, O, L> withAggregatorTrainer(DatasetTrainer<Model<IA, O>, L> aggregatorTrainer) {
+    public StackedDatasetTrainer<IS, IA, O, AM, L> withAggregatorTrainer(DatasetTrainer<AM, L> aggregatorTrainer) {
         this.aggregatorTrainer = aggregatorTrainer;
 
         return this;
@@ -140,7 +140,7 @@ public class StackedDatasetTrainer<IS, IA, O, L>
      * @param merger Binary operator used to merge submodels outputs to one.
      * @return This object.
      */
-    public StackedDatasetTrainer<IS, IA, O, L> withAggregatorInputMerger(IgniteBinaryOperator<IA> merger) {
+    public StackedDatasetTrainer<IS, IA, O, AM, L> withAggregatorInputMerger(IgniteBinaryOperator<IA> merger) {
         this.aggregatingInputMerger = merger;
 
         return this;
@@ -159,7 +159,8 @@ public class StackedDatasetTrainer<IS, IA, O, L>
      * @param <O1> Type of output of submodel produced by trainer.
      * @return This object.
      */
-    public <O1> StackedDatasetTrainer<IS, IA, O, L> withAddedTrainer(DatasetTrainer<Model<IS, O1>, L> trainer,
+    public <O1, M extends Model<IS, O1>> StackedDatasetTrainer<IS, IA, O, AM, L> withAddedTrainer(
+        DatasetTrainer<? extends M, L> trainer,
         IgniteFunction<Vector, IS> vec2InputConverter,
         IgniteFunction<O1, Vector> output2VecConverter,
         IgniteFunction<O1, IA> submodelOutput2AggregatingInputConverter) {
@@ -172,7 +173,7 @@ public class StackedDatasetTrainer<IS, IA, O, L>
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> StackedModel<IS, IA, O> fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> StackedModel<IS, IA, O, AM> fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor) {
         return runOnSubmodels(
@@ -186,7 +187,7 @@ public class StackedDatasetTrainer<IS, IA, O, L>
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> StackedModel<IS, IA, O> updateModel(StackedModel<IS, IA, O> mdl,
+    @Override public <K, V> StackedModel<IS, IA, O, AM> updateModel(StackedModel<IS, IA, O, AM> mdl,
         DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor) {
@@ -208,7 +209,7 @@ public class StackedDatasetTrainer<IS, IA, O, L>
     }
 
     /** {@inheritDoc} */
-    @Override public boolean checkState(StackedModel<IS, IA, O> mdl) {
+    @Override public boolean checkState(StackedModel<IS, IA, O, AM> mdl) {
         boolean res = true;
         int i = 0;
         for (Model<IS, ?> submodel : mdl.submodels()) {
@@ -220,7 +221,7 @@ public class StackedDatasetTrainer<IS, IA, O, L>
     }
 
     /** {@inheritDoc} */
-    @Override public StackedDatasetTrainer<IS, IA, O, L> withEnvironmentBuilder(
+    @Override public StackedDatasetTrainer<IS, IA, O, AM, L> withEnvironmentBuilder(
         LearningEnvironmentBuilder envBuilder) {
         submodelsTrainers =
             submodelsTrainers.stream().map(x -> x.withEnvironmentBuilder(envBuilder)).collect(Collectors.toList());
@@ -229,9 +230,9 @@ public class StackedDatasetTrainer<IS, IA, O, L>
         return this;
     }
 
-    private <K, V> StackedModel<IS, IA, O> runOnSubmodels(
-        IgniteFunction<List<TrainerWithConverters<?>>, List<IgniteSupplier<ModelWithConverters>>> taskSupplier,
-        IgniteBiFunction<DatasetTrainer<Model<IA, O>, L>, IgniteBiFunction<K, V, Vector>, Model<IA, O>> aggregatorProcessor,
+    private <K, V> StackedModel<IS, IA, O, AM> runOnSubmodels(
+        IgniteFunction<List<TrainerWithConverters<?, ?>>, List<IgniteSupplier<ModelWithConverters>>> taskSupplier,
+        IgniteBiFunction<DatasetTrainer<AM, L>, IgniteBiFunction<K, V, Vector>, AM> aggregatorProcessor,
         IgniteBiFunction<K, V, Vector> featureExtractor) {
 
         // Make sure there is at least one way for submodel input to propagate to aggregator.
@@ -248,9 +249,9 @@ public class StackedDatasetTrainer<IS, IA, O, L>
         // Add new columns consisting in submodels output in features.
         IgniteBiFunction<K, V, Vector> augmentedExtractor = getFeatureExtractorForAggregator(featureExtractor, subMdls);
 
-        Model<IA, O> aggregator = aggregatorProcessor.apply(aggregatorTrainer, augmentedExtractor);
+        AM aggregator = aggregatorProcessor.apply(aggregatorTrainer, augmentedExtractor);
 
-        StackedModel<IS, IA, O> res = new StackedModel<>(
+        StackedModel<IS, IA, O, AM> res = new StackedModel<>(
             aggregator,
             aggregatingInputMerger,
             submodelInput2AggregatingInputConverter);
@@ -306,12 +307,12 @@ public class StackedDatasetTrainer<IS, IA, O, L>
         }
     }
 
-    private class TrainerWithConverters<O1>
-        extends SomethingWithConverters<O1, DatasetTrainer<Model<IS, O1>, L>> implements Serializable  {
+    private class TrainerWithConverters<O1, M extends Model<IS, O1>>
+        extends SomethingWithConverters<O1, DatasetTrainer<M, L>> implements Serializable  {
         /** */
         private static final long serialVersionUID = -5017645720067015574L;
 
-        public TrainerWithConverters(DatasetTrainer<Model<IS, O1>, L> trainer,
+        public TrainerWithConverters(DatasetTrainer<M, L> trainer,
             IgniteFunction<Vector, IS> inputConverter,
             IgniteFunction<O1, Vector> outputConverter,
             IgniteFunction<O1, IA> outputToAggregatingInputConverter) {
@@ -319,7 +320,7 @@ public class StackedDatasetTrainer<IS, IA, O, L>
         }
 
         boolean checkState(Model<IS, ?> mdl) {
-            return val.checkState((Model<IS, O1>)mdl);
+            return val.checkState((M)mdl);
         }
 
         <K, V> ModelWithConverters<O1> fit(DatasetBuilder<K, V> datasetBuilder,
@@ -336,13 +337,13 @@ public class StackedDatasetTrainer<IS, IA, O, L>
             DatasetBuilder<K, V> datasetBuilder,
             IgniteBiFunction<K, V, Vector> featureExtractor,
             IgniteBiFunction<K, V, L> lbExtractor) {
-            Model<IS, O1> updatedMdl = val.update((Model<IS, O1>)mdl, datasetBuilder, featureExtractor, lbExtractor);
+            Model<IS, O1> updatedMdl = val.update((M)mdl, datasetBuilder, featureExtractor, lbExtractor);
             return new ModelWithConverters<>(updatedMdl,
                 inputConverter,
                 outputConverter, outputToAggregatingInputConverter);
         }
 
-        TrainerWithConverters<O1> withEnvironmentBuilder(LearningEnvironmentBuilder environmentBuilder) {
+        TrainerWithConverters<O1, M> withEnvironmentBuilder(LearningEnvironmentBuilder environmentBuilder) {
             return new TrainerWithConverters<>(val.withEnvironmentBuilder(environmentBuilder),
                 inputConverter,
                 outputConverter,
@@ -362,7 +363,7 @@ public class StackedDatasetTrainer<IS, IA, O, L>
             super(mdl, inputConverter, outputConverter, outputToAggregatingInputConverter);
         }
 
-        void addToStackedModel(StackedModel<IS, IA, ?> stackedMdl) {
+        void addToStackedModel(StackedModel<IS, IA, ?, AM> stackedMdl) {
             stackedMdl.addSubmodel(i -> val.andThen(outputToAggregatingInputConverter).apply(i));
         }
 

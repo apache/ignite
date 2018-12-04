@@ -122,7 +122,7 @@ public abstract class DatasetTrainer<M extends Model, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated model.
      */
-    protected abstract <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
+    public abstract <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor);
 
     /**
@@ -329,7 +329,7 @@ public abstract class DatasetTrainer<M extends Model, L> {
                 return old.checkState(mdl);
             }
 
-            @Override protected <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
+            @Override public <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
                 IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L1> lbExtractor) {
                 return old.update(mdl, datasetBuilder, featureExtractor, lbExtractor.andThen(new2Old));
             }

@@ -47,4 +47,50 @@ public interface Model<T, V> extends IgniteFunction<T, V> {
     public default String toString(boolean pretty) {
         return getClass().getSimpleName();
     }
+
+    public static class ModelAfterMapping<I, I1, O, M extends Model<I, O>> implements Model<I1, O> {
+        private M mdl;
+        private IgniteFunction<I1, I> converter;
+
+        public ModelAfterMapping(M mdl, IgniteFunction<I1, I> converter) {
+            this.mdl = mdl;
+            this.converter = converter;
+        }
+
+        @Override public O apply(I1 i1) {
+            return mdl.apply(converter.apply(i1));
+        }
+
+        /**
+         * Gets model.
+         *
+         * @return Model.
+         */
+        public M model() {
+            return mdl;
+        }
+    }
+
+    public static class ModelBeforeMapping<I, O, O1, M extends Model<I, O>> implements Model<I, O1> {
+        private M mdl;
+        private IgniteFunction<O, O1> converter;
+
+        public ModelBeforeMapping(M mdl, IgniteFunction<O, O1> converter) {
+            this.mdl = mdl;
+            this.converter = converter;
+        }
+
+        @Override public O1 apply(I i1) {
+            return converter.apply(mdl.apply(i1));
+        }
+
+        /**
+         * Gets model.
+         *
+         * @return Model.
+         */
+        public M model() {
+            return mdl;
+        }
+    }
 }

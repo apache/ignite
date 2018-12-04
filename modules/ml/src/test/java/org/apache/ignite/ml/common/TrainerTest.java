@@ -1161,6 +1161,14 @@ public class TrainerTest {
         {3, 9.882357321966778, -9.069477551120192}
     };
 
+    /** xor truth table. */
+    protected static final double[][] xor = {
+        {0.0, 0.0, 0.0},
+        {0.0, 1.0, 1.0},
+        {1.0, 0.0, 1.0},
+        {1.0 ,1.0, 0.0}
+    };
+
     /**
      * Create cache mock.
      *

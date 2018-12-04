@@ -69,7 +69,7 @@ public class BaggingTest extends TrainerTest {
         Map<Integer, Double[]> cacheMock = getCacheMock(twoLinearlySeparableClasses);
 
         DatasetTrainer<LogisticRegressionModel, Double> trainer =
-            (LogisticRegressionSGDTrainer<?>)new LogisticRegressionSGDTrainer<>()
+            new LogisticRegressionSGDTrainer()
                 .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
                     SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
                 .withMaxIterations(30000)
@@ -182,7 +182,7 @@ public class BaggingTest extends TrainerTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected <K, V> Model<Vector, Double> updateModel(
+        @Override public <K, V> Model<Vector, Double> updateModel(
             Model<Vector, Double> mdl,
             DatasetBuilder<K, V> datasetBuilder,
             IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {

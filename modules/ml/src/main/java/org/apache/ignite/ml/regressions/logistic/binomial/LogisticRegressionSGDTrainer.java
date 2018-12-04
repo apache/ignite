@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.regressions.logistic.binomial;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
@@ -41,7 +40,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Trainer of the logistic regression model based on stochastic gradient descent algorithm.
  */
-public class LogisticRegressionSGDTrainer<P extends Serializable> extends SingleLabelDatasetTrainer<LogisticRegressionModel> {
+public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<LogisticRegressionModel> {
     /** Update strategy. */
     private UpdatesStrategy updatesStgy = new UpdatesStrategy<>(
         new SimpleGDUpdateCalculator(0.2),
@@ -69,7 +68,7 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> LogisticRegressionModel updateModel(LogisticRegressionModel mdl,
+    @Override public <K, V> LogisticRegressionModel updateModel(LogisticRegressionModel mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
@@ -150,7 +149,7 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
      * @param maxIterations The parameter value.
      * @return Model with new max number of iterations before convergence parameter value.
      */
-    public LogisticRegressionSGDTrainer<P> withMaxIterations(int maxIterations) {
+    public LogisticRegressionSGDTrainer withMaxIterations(int maxIterations) {
         this.maxIterations = maxIterations;
         return this;
     }
@@ -161,7 +160,7 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
      * @param batchSize The size of learning batch.
      * @return Trainer with new batch size parameter value.
      */
-    public LogisticRegressionSGDTrainer<P> withBatchSize(int batchSize) {
+    public LogisticRegressionSGDTrainer withBatchSize(int batchSize) {
         this.batchSize = batchSize;
         return this;
     }
@@ -172,7 +171,7 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
      * @param amountOfLocIterations The parameter value.
      * @return Trainer with new locIterations parameter value.
      */
-    public LogisticRegressionSGDTrainer<P> withLocIterations(int amountOfLocIterations) {
+    public LogisticRegressionSGDTrainer withLocIterations(int amountOfLocIterations) {
         this.locIterations = amountOfLocIterations;
         return this;
     }
@@ -183,7 +182,7 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
      * @param seed Seed for random generator.
      * @return Trainer with new seed parameter value.
      */
-    public LogisticRegressionSGDTrainer<P> withSeed(long seed) {
+    public LogisticRegressionSGDTrainer withSeed(long seed) {
         this.seed = seed;
         return this;
     }

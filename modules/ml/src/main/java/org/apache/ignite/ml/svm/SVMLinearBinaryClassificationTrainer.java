@@ -67,7 +67,7 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> SVMLinearBinaryClassificationModel updateModel(SVMLinearBinaryClassificationModel mdl,
+    @Override public <K, V> SVMLinearBinaryClassificationModel updateModel(SVMLinearBinaryClassificationModel mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 

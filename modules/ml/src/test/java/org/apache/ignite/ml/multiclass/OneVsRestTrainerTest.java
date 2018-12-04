@@ -47,7 +47,7 @@ public class OneVsRestTrainerTest extends TrainerTest {
         for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
             cacheMock.put(i, twoLinearlySeparableClasses[i]);
 
-        LogisticRegressionSGDTrainer<?> binaryTrainer = new LogisticRegressionSGDTrainer<>()
+        LogisticRegressionSGDTrainer binaryTrainer = new LogisticRegressionSGDTrainer()
             .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
                 SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
             .withMaxIterations(1000)
@@ -80,7 +80,7 @@ public class OneVsRestTrainerTest extends TrainerTest {
         for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
             cacheMock.put(i, twoLinearlySeparableClasses[i]);
 
-        LogisticRegressionSGDTrainer<?> binaryTrainer = new LogisticRegressionSGDTrainer<>()
+        LogisticRegressionSGDTrainer binaryTrainer = new LogisticRegressionSGDTrainer()
             .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
                 SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
             .withMaxIterations(1000)

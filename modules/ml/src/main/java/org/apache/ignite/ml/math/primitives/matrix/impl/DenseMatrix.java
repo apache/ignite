@@ -92,7 +92,7 @@ public class DenseMatrix extends AbstractMatrix implements OrderedMatrix {
      * Build new matrix from flat raw array.
      */
     public DenseMatrix(double[] mtx, int rows) {
-        this(mtx, StorageConstants.ROW_STORAGE_MODE, rows);
+        this(mtx, rows, StorageConstants.ROW_STORAGE_MODE);
     }
 
     /** */

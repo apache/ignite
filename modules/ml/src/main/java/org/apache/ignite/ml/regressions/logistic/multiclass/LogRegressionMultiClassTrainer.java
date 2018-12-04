@@ -94,8 +94,8 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
         LogRegressionMultiClassModel multiClsMdl = new LogRegressionMultiClassModel();
 
         classes.forEach(clsLb -> {
-            LogisticRegressionSGDTrainer<?> trainer =
-                new LogisticRegressionSGDTrainer<>()
+            LogisticRegressionSGDTrainer trainer =
+                new LogisticRegressionSGDTrainer()
                     .withBatchSize(batchSize)
                     .withLocIterations(amountOfLocIterations)
                     .withMaxIterations(amountOfIterations)

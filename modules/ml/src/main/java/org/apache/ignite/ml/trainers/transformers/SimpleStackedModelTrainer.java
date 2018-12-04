@@ -22,7 +22,7 @@ import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 
-public class SimpleStackedModelTrainer<I, O, AM extends Model<I, O>, L> extends StackedDatasetTrainer<I, I, O, L, AM> {
+public class SimpleStackedModelTrainer<I, O, AM extends Model<I, O>, L> extends StackedDatasetTrainer<I, I, O, AM, L> {
     public SimpleStackedModelTrainer(DatasetTrainer<AM, L> aggregatingTrainer,
         IgniteBinaryOperator<I> aggregatingInputMerger,
         IgniteFunction<I, I> submodelInput2AggregatingInputConverter) {

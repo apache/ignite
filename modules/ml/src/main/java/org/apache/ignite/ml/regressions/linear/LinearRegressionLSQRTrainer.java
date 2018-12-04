@@ -42,7 +42,7 @@ public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<Linea
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> LinearRegressionModel updateModel(LinearRegressionModel mdl,
+    @Override public <K, V> LinearRegressionModel updateModel(LinearRegressionModel mdl,
         DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 

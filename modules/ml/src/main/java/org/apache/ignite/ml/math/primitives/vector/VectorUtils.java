@@ -51,14 +51,24 @@ public class VectorUtils {
     }
 
     /**
+     * Wrap specified value into vector.
+     *
+     * @param val Value to wrap.
+     * @return Specified value wrapped into vector.
+     */
+    public static Vector num2Vec(double val) {
+        return fill(val, 1);
+    }
+
+    /**
      * Turn number into a local Vector of given size with one-hot encoding.
      *
      * @param num Number to turn into vector.
      * @param vecSize Vector size of output vector.
      * @return One-hot encoded number.
      */
-    public static Vector num2Vec(int num, int vecSize) {
-        return num2Vec(num, vecSize, false);
+    public static Vector oneHot(int num, int vecSize) {
+        return oneHot(num, vecSize, false);
     }
 
     /**
@@ -79,7 +89,7 @@ public class VectorUtils {
      * @param isDistributed Flag indicating if distributed vector should be created.
      * @return One-hot encoded number.
      */
-    public static Vector num2Vec(int num, int vecSize, boolean isDistributed) {
+    public static Vector oneHot(int num, int vecSize, boolean isDistributed) {
         Vector res = new DenseVector(vecSize);
         return res.setX(num, 1);
     }
