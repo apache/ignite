@@ -19,7 +19,13 @@ package org.apache.ignite.jdbc;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.Statement;
+import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.IgniteCache;
@@ -35,7 +41,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static java.sql.Types.*;
+import static java.sql.Types.INTEGER;
+import static java.sql.Types.VARCHAR;
+import static java.sql.Types.DECIMAL;
+import static java.sql.Types.OTHER;
 import static java.sql.Types.DATE;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
