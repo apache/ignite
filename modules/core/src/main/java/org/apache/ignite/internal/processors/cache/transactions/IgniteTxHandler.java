@@ -1179,9 +1179,6 @@ public class IgniteTxHandler {
             nearTx = !F.isEmpty(req.nearWrites()) ? startNearRemoteTx(ctx.deploy().globalLoader(), nodeId, req) : null;
             dhtTx = startRemoteTx(nodeId, req, res);
 
-            if (dhtTx != null && req.updateCounters() != null) // Remember update counters on prepare state.
-                dhtTx.txCounters(true).updateCounters(req.updateCounters());
-
             // Set evicted keys from near transaction.
             if (nearTx != null)
                 res.nearEvicted(nearTx.evicted());
@@ -1415,6 +1412,8 @@ public class IgniteTxHandler {
             else
                 ctx.tm().addRolledbackTx(tx, req.version());
 
+                applyPartitionsUpdatesCounters(req.updateCounters());
+
             if (log.isDebugEnabled())
                 log.debug("Received finish request for non-existing transaction (added to completed set) " +
                     "[senderNodeId=" + nodeId + ", res=" + req + ']');
@@ -1422,9 +1421,6 @@ public class IgniteTxHandler {
             return;
         }
         else {
-            if (req.updateCounters() != null)
-                tx.txCounters(true).updateCounters(req.updateCounters());
-
             if (log.isDebugEnabled())
                 log.debug("Received finish request for transaction [senderNodeId=" + nodeId + ", req=" + req +
                     ", tx=" + tx + ']');
@@ -1715,6 +1711,8 @@ public class IgniteTxHandler {
                     if (log.isDebugEnabled())
                         log.debug("Attempt to start a completed transaction (will ignore): " + tx);
 
+                    applyPartitionsUpdatesCounters(req.updateCounters());
+
                     return null;
                 }
 
@@ -1725,6 +1723,8 @@ public class IgniteTxHandler {
 
                     ctx.tm().uncommitTx(tx);
 
+                    applyPartitionsUpdatesCounters(req.updateCounters());
+
                     return null;
                 }
             }
@@ -1732,6 +1732,10 @@ public class IgniteTxHandler {
                 tx.writeVersion(req.writeVersion());
                 tx.transactionNodes(req.transactionNodes());
             }
+
+            if (req.updateCounters() != null)
+                //noinspection ConstantConditions
+                tx.txCounters(true).updateCounters(req.updateCounters());
 
             if (!tx.isSystemInvalidate()) {
                 int idx = 0;

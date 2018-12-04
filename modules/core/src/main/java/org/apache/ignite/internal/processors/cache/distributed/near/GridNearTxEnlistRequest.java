@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -650,6 +651,11 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 159;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return U.safeAbs(version().hashCode());
     }
 
     /** {@inheritDoc} */
