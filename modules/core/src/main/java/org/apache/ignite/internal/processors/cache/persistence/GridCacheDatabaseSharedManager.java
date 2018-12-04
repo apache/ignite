@@ -3296,9 +3296,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         updStores,
                         doneWriteFut,
                         totalPagesToWriteCnt,
-                        this::updateHeartbeat,
                         asyncRunner,
-                        () -> checkCancel(chp)
+                        () -> {
+                            updateHeartbeat();
+
+                            return checkCancel(chp);
+                        }
                     );
 
                     try {
@@ -3322,9 +3325,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     updStores,
                     doneWriteFut,
                     totalPagesToWriteCnt,
-                    this::updateHeartbeat,
                     null,
-                    () -> checkCancel(chp)
+                    () -> {
+                        updateHeartbeat();
+
+                        return checkCancel(chp);
+                    }
                 );
 
                 write.run();
@@ -4012,9 +4018,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** Total pages to write, counter may be greater than {@link #writePageIds} size */
         private final int totalPagesToWrite;
 
-        /** */
-        private final Runnable beforePageWrite;
-
         /** If any pages were skipped, new task with remaining pages will be submitted here. */
         private final ExecutorService retryWriteExecutor;
 
@@ -4029,7 +4032,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @param updStores
          * @param doneFut
          * @param totalPagesToWrite total pages to be written under this checkpoint
-         * @param beforePageWrite Action to be performed before every page write.
          * @param retryWriteExecutor Retry write executor.
          */
         private WriteCheckpointPages(
@@ -4038,7 +4040,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             Map<PageStore, LongAdder> updStores,
             CountDownFuture doneFut,
             int totalPagesToWrite,
-            Runnable beforePageWrite,
             ExecutorService retryWriteExecutor,
             Supplier<Boolean> checkCancel
         ) {
@@ -4047,7 +4048,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             this.updStores = updStores;
             this.doneFut = doneFut;
             this.totalPagesToWrite = totalPagesToWrite;
-            this.beforePageWrite = beforePageWrite;
             this.retryWriteExecutor = retryWriteExecutor;
             this.checkCancel = checkCancel;
         }
@@ -4076,7 +4076,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             updStores,
                             doneFut,
                             totalPagesToWrite,
-                            beforePageWrite,
                             retryWriteExecutor,
                             checkCancel
                         );
@@ -4104,8 +4103,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     break;
 
                 tmpWriteBuf.rewind();
-
-                beforePageWrite.run();
 
                 snapshotMgr.beforePageWrite(fullId);
 
