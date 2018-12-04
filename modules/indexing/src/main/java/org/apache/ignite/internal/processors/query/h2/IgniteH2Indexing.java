@@ -2332,6 +2332,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (cancel == null)
             cancel = new GridQueryCancel();
 
+        // TODO: We should do intersection here!
         int partitions[] = qry.getPartitions();
 
         if (partitions == null && twoStepQry.derivedPartitions2() != null) {
