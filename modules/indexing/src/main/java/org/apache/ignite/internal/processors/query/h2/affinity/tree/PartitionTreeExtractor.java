@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
@@ -120,7 +121,9 @@ public class PartitionTreeExtractor {
         GridSqlSelect select = (GridSqlSelect)qry;
 
         // Currently we can extract data only from a single table.
-        if (select.from() == null || select.from().size() != 1 || !(select.from() instanceof GridSqlTable))
+        GridSqlTable tbl = unwrapTable(select.from());
+
+        if (tbl == null)
             return null;
 
         // Do extract.
@@ -135,9 +138,25 @@ public class PartitionTreeExtractor {
             return null;
 
         // Return.
-        PartitionTableDescriptor desc = descriptor(((GridSqlTable)select.from()).dataTable());
+        PartitionTableDescriptor desc = descriptor(tbl.dataTable());
 
         return new PartitionResult(desc, tree);
+    }
+
+    /**
+     * Try unwrapping the table.
+     *
+     * @param from From.
+     * @return Table or {@code null} if not a table.
+     */
+   @Nullable private static GridSqlTable unwrapTable(GridSqlAst from) {
+        if (from instanceof GridSqlAlias)
+            from = ((GridSqlAlias)from).child();
+
+        if (from instanceof GridSqlTable)
+            return (GridSqlTable)from;
+
+        return null;
     }
 
     /**
