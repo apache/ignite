@@ -33,7 +33,7 @@ public class IgnitePdsNativeIoTestSuite2 extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite 2 (Native IO)");
 
-        IgnitePdsTestSuite2.addRealPageStoreTests(suite);
+        IgnitePdsTestSuite2.addRealPageStoreTests(suite, null);
 
         // Direct IO + Page compression.
         suite.addTestSuite(DiskPageCompressionIntegrationDirectIOTest.class);

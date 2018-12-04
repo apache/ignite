@@ -17,21 +17,23 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.Collection;
+import java.util.HashSet;
 import junit.framework.TestSuite;
 
-import static org.apache.ignite.testsuites.IgnitePdsCompressionTestSuite.enableCompressionByDefault;
-
 /**
+ *
  */
-public class IgnitePdsCompressionTestSuite2 {
+public class IgnitePdsMvccTestSuite2 extends TestSuite {
     /**
      * @return Suite.
      */
     public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite 2 (with page compression).");
+        TestSuite suite = new TestSuite("Ignite persistent Store Mvcc Test Suite 2");
 
-        enableCompressionByDefault();
-        IgnitePdsTestSuite2.addRealPageStoreTests(suite, null);
+        Collection<Class> ignoredTests = new HashSet<>();
+
+        suite.addTest(IgnitePdsTestSuite2.suite(ignoredTests));
 
         return suite;
     }
