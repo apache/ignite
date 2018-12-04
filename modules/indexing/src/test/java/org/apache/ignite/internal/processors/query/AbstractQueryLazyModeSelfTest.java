@@ -117,7 +117,14 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
             @Override public void run() {
                 while(U.currentTimeMillis() < tEnd) {
                     try {
-                        FieldsQueryCursor<List<?>> cursor = execute(srv, query(0)
+                        FieldsQueryCursor<List<?>> cursor = execute(srv, new SqlFieldsQuery(
+                            "SELECT pers.id, pers.name " +
+                                "FROM (SELECT DISTINCT p.id, p.name " +
+                                "FROM \"pers\".PERSON as p) as pers " +
+                                "JOIN \"pers\".PERSON p on p.id = pers.id " +
+                                "JOIN (SELECT t.persId as persId, SUM(t.time) totalTime " +
+                                "FROM \"persTask\".PersonTask as t GROUP BY t.persId) as task ON task.persId = pers.id")
+                            .setLazy(lazy())
                             .setPageSize(PAGE_SIZE_SMALL));
 
                         cursor.getAll();
@@ -152,7 +159,7 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
 
         final AtomicBoolean end = new AtomicBoolean(false);
 
-        final int qryThreads = 10;
+        final int qryThreads = 2;
 
         // Do many concurrent queries.
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {

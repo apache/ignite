@@ -250,6 +250,8 @@ public class GridMapQueryExecutor {
     private void onCancel(ClusterNode node, GridQueryCancelRequest msg) {
         long qryReqId = msg.queryRequestId();
 
+        log.info("+++ CANCEL " + qryReqId);
+
         MapNodeResults nodeRess = resultsForNode(node.id());
 
         boolean clear = GridH2QueryContext.clear(ctx.localNodeId(), node.id(), qryReqId, MAP);
@@ -796,6 +798,8 @@ public class GridMapQueryExecutor {
             for (GridCacheSqlQuery qry : qrys) {
                 Connection conn = h2.connections().connectionForThread(schemaName);
 
+                log.info("+++ MAP " + reqId + " " + conn);
+
                 H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder, lazy);
 
                 IgniteH2Session sesWrp = new IgniteH2Session(H2Utils.session(conn));
@@ -1218,13 +1222,17 @@ public class GridMapQueryExecutor {
             } catch (Exception e) {
                 QueryRetryException retryEx = X.cause(e, QueryRetryException.class);
 
-                if (retryEx != null)
+                if (retryEx != null) {
+                    log.info("+++ retry " + reqId);
                     sendError(node, reqId, retryEx);
+                }
                 else {
                     JdbcSQLException sqlEx = X.cause(e, JdbcSQLException.class);
 
-                    if (sqlEx != null && sqlEx.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
+                    if (sqlEx != null && sqlEx.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED) {
+                        log.info("+++ canceled " + reqId);
                         sendQueryCancel(node, reqId);
+                    }
                     else
                         sendError(node, reqId, e);
                 }
@@ -1278,8 +1286,10 @@ public class GridMapQueryExecutor {
         }
         else {
             // Detach connection if the result set greater than one page.
-            if (!res.isConnectionDetached())
+            if (!res.isConnectionDetached()) {
+                log.info("+++ M DETACH ");
                 res.detachedConnection(h2.connections().detachConnection());
+            }
         }
 
         boolean loc = node.isLocal();

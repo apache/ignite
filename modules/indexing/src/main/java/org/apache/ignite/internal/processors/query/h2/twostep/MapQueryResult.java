@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.lang.reflect.Field;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -34,8 +35,11 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Session;
 import org.apache.ignite.internal.processors.query.h2.ObjectPoolReusable;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.h2.api.ErrorCode;
 import org.h2.jdbc.JdbcResultSet;
+import org.h2.jdbc.JdbcSQLException;
 import org.h2.result.LazyResult;
 import org.h2.result.ResultInterface;
 import org.h2.value.Value;
@@ -189,70 +193,86 @@ class MapQueryResult {
      * @return {@code true} If there are no more rows available.
      */
     boolean fetchNextPage(List<Value[]> rows, int pageSize) {
-        if (closed)
-            return true;
-
-        boolean readEvt = cctx != null && cctx.name() != null && cctx.events().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
-
-        page++;
-
-        for (int i = 0; i < pageSize; i++) {
-            if (!res.next())
+        try {
+            if (closed)
                 return true;
 
-            Value[] row = res.currentRow();
+            boolean readEvt = cctx != null && cctx.name() != null && cctx.events().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
-            if (cpNeeded) {
-                boolean copied = false;
+            page++;
 
-                for (int j = 0; j < row.length; j++) {
-                    Value val = row[j];
+            for (int i = 0; i < pageSize; i++) {
+                if (!res.next())
+                    return true;
 
-                    if (val instanceof GridH2ValueCacheObject) {
-                        GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)val;
+                Value[] row = res.currentRow();
 
-                        row[j] = new GridH2ValueCacheObject(valCacheObj.getCacheObject(), h2.objectContext()) {
-                            @Override public Object getObject() {
-                                return getObject(true);
-                            }
-                        };
+                if (cpNeeded) {
+                    boolean copied = false;
 
-                        copied = true;
+                    for (int j = 0; j < row.length; j++) {
+                        Value val = row[j];
+
+                        if (val instanceof GridH2ValueCacheObject) {
+                            GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)val;
+
+                            row[j] = new GridH2ValueCacheObject(valCacheObj.getCacheObject(), h2.objectContext()) {
+                                @Override public Object getObject() {
+                                    return getObject(true);
+                                }
+                            };
+
+                            copied = true;
+                        }
                     }
+
+                    if (i == 0 && !copied)
+                        cpNeeded = false; // No copy on read caches, skip next checks.
                 }
 
-                if (i == 0 && !copied)
-                    cpNeeded = false; // No copy on read caches, skip next checks.
+                assert row != null;
+
+                if (readEvt) {
+                    GridKernalContext ctx = h2.kernalContext();
+
+                    ctx.event().record(new CacheQueryReadEvent<>(
+                        ctx.discovery().localNode(),
+                        "SQL fields query result set row read.",
+                        EVT_CACHE_QUERY_OBJECT_READ,
+                        CacheQueryType.SQL.name(),
+                        cctx.name(),
+                        null,
+                        qry.query(),
+                        null,
+                        null,
+                        params,
+                        qrySrcNodeId,
+                        null,
+                        null,
+                        null,
+                        null,
+                        row(row)));
+                }
+
+                rows.add(res.currentRow());
             }
 
-            assert row != null;
-
-            if (readEvt) {
-                GridKernalContext ctx = h2.kernalContext();
-
-                ctx.event().record(new CacheQueryReadEvent<>(
-                    ctx.discovery().localNode(),
-                    "SQL fields query result set row read.",
-                    EVT_CACHE_QUERY_OBJECT_READ,
-                    CacheQueryType.SQL.name(),
-                    cctx.name(),
-                    null,
-                    qry.query(),
-                    null,
-                    null,
-                    params,
-                    qrySrcNodeId,
-                    null,
-                    null,
-                    null,
-                    null,
-                    row(row)));
-            }
-
-            rows.add(res.currentRow());
+            return !res.hasNext();
         }
+        catch (Exception e) {
+            JdbcSQLException sqlEx = X.cause(e, JdbcSQLException.class);
 
-        return !res.hasNext();
+            if (sqlEx != null && sqlEx.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED) {
+                try {
+                    log.info("+++ canceled "  + System.identityHashCode(rs.getStatement()) + " " + rs.getStatement().getConnection());
+                }
+                catch (SQLException e1) {
+                    e1.printStackTrace();
+                }
+            }
+
+            throw e;
+        }
     }
 
     /**
