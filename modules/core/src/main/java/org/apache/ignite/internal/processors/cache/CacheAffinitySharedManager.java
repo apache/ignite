@@ -286,7 +286,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                         GridDhtPartitionState state = top.partitionState(waitNode, part);
 
-                        if (state != GridDhtPartitionState.OWNING) {
+                        if (state != GridDhtPartitionState.OWNING && state != GridDhtPartitionState.LOST) {
                             rebalanced = false;
 
                             break;
@@ -2136,8 +2136,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         grp.affinity(),
                         null,
                         grp.rebalanceEnabled(),
-                        affCache,
-                        grp.topology());
+                        affCache);
 
                     cctx.exchange().exchangerUpdateHeartbeat();
                 }
@@ -2161,8 +2160,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         cache.affinity(),
                         waitRebalanceInfo,
                         latePrimary,
-                        affCache,
-                        cache.topology(evts.discoveryCache()));
+                        affCache);
 
                     if (grpAdded) {
                         AffinityAssignment aff = cache.aff.cachedAffinity(cache.aff.lastVersion());
@@ -2229,8 +2227,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         GridAffinityAssignmentCache aff,
         WaitRebalanceInfo rebalanceInfo,
         boolean latePrimary,
-        Map<Object, List<List<ClusterNode>>> affCache,
-        GridDhtPartitionTopology top
+        Map<Object, List<List<ClusterNode>>> affCache
     ) {
         if (addedOnExchnage) {
             if (!aff.lastVersion().equals(evts.topologyVersion()))
@@ -2262,9 +2259,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 if (curPrimary != null && newPrimary != null && !curPrimary.equals(newPrimary)) {
                     assert cctx.discovery().node(evts.topologyVersion(), curPrimary.id()) != null : curPrimary;
 
-                    boolean lost = GridDhtPartitionState.LOST == top.partitionState(curPrimary.id(), p);
-
-                    List<ClusterNode> nodes0 = lost ? newNodes : latePrimaryAssignment(aff,
+                    List<ClusterNode> nodes0 = latePrimaryAssignment(aff,
                         p,
                         curPrimary,
                         newNodes,
