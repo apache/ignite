@@ -1189,7 +1189,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 // This exception will be handled by init() method.
                 throw e;
 
-            U.error(log, "Failed to initialize cache(s) (will try to rollback). " + exchId, e);
+            U.error(log, "Failed to initialize cache(s) (will try to rollback) [exchId=" + exchId +
+                ", caches=" + exchActions.cacheGroupsToStart() + ']', e);
 
             exchangeLocE = new IgniteCheckedException(
                 "Failed to initialize exchange locally [locNodeId=" + cctx.localNodeId() + "]", e);
@@ -2100,7 +2101,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     grp.topology().onExchangeDone(this, grp.affinity().readyAffinity(res), false);
             }
 
-            cctx.walState().changeLocalStatesOnExchangeDone(res);
+            if (changedAffinity())
+                cctx.walState().changeLocalStatesOnExchangeDone(res);
         }
 
         final Throwable err0 = err;

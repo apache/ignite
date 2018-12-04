@@ -21,6 +21,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.IgniteTxSingleThreadedAbstractTest;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
@@ -30,6 +31,13 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
  * Tests for local transactions.
  */
 public class GridCacheLocalTxSingleThreadedSelfTest extends IgniteTxSingleThreadedAbstractTest {
+    /** {@inheritDoc} */
+    @Override public void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
+        super.beforeTestsStarted();
+    }
+
     /** Cache debug flag. */
     private static final boolean CACHE_DEBUG = false;
 

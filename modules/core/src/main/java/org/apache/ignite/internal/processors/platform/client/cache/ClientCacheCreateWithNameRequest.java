@@ -47,7 +47,8 @@ public class ClientCacheCreateWithNameRequest extends ClientRequest {
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         try {
             ctx.kernalContext().grid().createCache(cacheName);
-        } catch (CacheExistsException e) {
+        }
+        catch (CacheExistsException e) {
             throw new IgniteClientException(ClientStatus.CACHE_EXISTS, e.getMessage());
         }
 

@@ -21,7 +21,6 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
  * Cache get request.

@@ -29,6 +29,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -106,6 +107,9 @@ public class IgniteCacheThreadLocalTxTest extends GridCommonAbstractTest {
 
         for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, isolation))
+                    continue;
+
                 for (boolean read : reads) {
                     for (boolean write : writes) {
                         for (int i = 0; i < endOps; i++)

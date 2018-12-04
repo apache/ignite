@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.platform.client;
 
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
-import org.apache.ignite.plugin.security.SecurityException;
 
 /**
  * Thin client request.
@@ -58,21 +57,5 @@ public class ClientRequest implements ClientListenerRequest {
      */
     public ClientResponse process(ClientConnectionContext ctx) {
         return new ClientResponse(reqId);
-    }
-
-    /**
-     * Run the code with converting {@link SecurityException} to {@link IgniteClientException}.
-     */
-    protected static void runWithSecurityExceptionHandler(Runnable runnable) {
-        try {
-            runnable.run();
-        }
-        catch (SecurityException ex) {
-            throw new IgniteClientException(
-                ClientStatus.SECURITY_VIOLATION,
-                "Client is not authorized to perform this operation",
-                ex
-            );
-        }
     }
 }
