@@ -3584,7 +3584,7 @@ public abstract class IgniteUtils {
             }
         }
 
-        if (path.endsWith("jar")) {
+        if (path.toFile().getName().endsWith("jar")) {
             try {
                 // Why do we do this?
                 new JarFile(path.toString(), false).close();
