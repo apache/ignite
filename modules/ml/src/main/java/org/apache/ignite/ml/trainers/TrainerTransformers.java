@@ -17,21 +17,15 @@
 
 package org.apache.ignite.ml.trainers;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
-import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.PartitionContextBuilder;
-import org.apache.ignite.ml.dataset.PartitionDataBuilder;
-import org.apache.ignite.ml.dataset.UpstreamTransformerChain;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.environment.parallelism.Promise;
@@ -49,7 +43,7 @@ import org.apache.ignite.ml.util.Utils;
  */
 public class TrainerTransformers {
     /**
-     * Add bagging logic to a given trainer.
+     * Add bagging logic to a given trainer. No features bootstrapping is done.
      *
      * @param ensembleSize Size of ensemble.
      * @param subsampleRatio Subsample ratio to whole dataset.
@@ -63,9 +57,8 @@ public class TrainerTransformers {
         int ensembleSize,
         double subsampleRatio,
         PredictionsAggregator aggregator) {
-        return makeBagged(trainer, ensembleSize, subsampleRatio, -1, -1, aggregator, new Random().nextLong());
+        return makeBagged(trainer, ensembleSize, subsampleRatio, -1, -1, aggregator);
     }
-
     /**
      * Add bagging logic to a given trainer.
      *
@@ -74,31 +67,23 @@ public class TrainerTransformers {
      * @param aggregator Aggregator.
      * @param featureVectorSize Feature vector dimensionality.
      * @param featuresSubspaceDim Feature subspace dimensionality.
-     * @param transformationSeed Transformations seed.
      * @param <M> Type of one model in ensemble.
      * @param <L> Type of labels.
      * @return Bagged trainer.
      */
-    // TODO: IGNITE-10296: Inject capabilities of seeding through learning environment (remove).
     public static <M extends Model<Vector, Double>, L> DatasetTrainer<ModelsComposition, L> makeBagged(
         DatasetTrainer<M, L> trainer,
         int ensembleSize,
         double subsampleRatio,
         int featureVectorSize,
         int featuresSubspaceDim,
-        PredictionsAggregator aggregator,
-        Long transformationSeed) {
+        PredictionsAggregator aggregator) {
         return new DatasetTrainer<ModelsComposition, L>() {
             /** {@inheritDoc} */
             @Override public <K, V> ModelsComposition fit(
                 DatasetBuilder<K, V> datasetBuilder,
                 IgniteBiFunction<K, V, Vector> featureExtractor,
                 IgniteBiFunction<K, V, L> lbExtractor) {
-                datasetBuilder.upstreamTransformersChain().setSeed(
-                    transformationSeed == null
-                        ? new Random().nextLong()
-                        : transformationSeed);
-
                 return runOnEnsemble(
                     (db, i, fe) -> (() -> trainer.fit(db, fe, lbExtractor)),
                     datasetBuilder,
@@ -172,20 +157,16 @@ public class TrainerTransformers {
         log.log(MLLogger.VerboseLevel.LOW, "Start learning.");
 
         List<int[]> mappings = null;
-        if (featuresVectorSize > 0) {
+        if (featuresVectorSize > 0 && featureSubspaceDim != featuresVectorSize) {
             mappings = IntStream.range(0, ensembleSize).mapToObj(
                 modelIdx -> getMapping(
                     featuresVectorSize,
                     featureSubspaceDim,
-                    datasetBuilder.upstreamTransformersChain().seed() + modelIdx))
+                    environment.randomNumbersGenerator().nextLong() + modelIdx))
                 .collect(Collectors.toList());
         }
 
         Long startTs = System.currentTimeMillis();
-
-        datasetBuilder
-            .upstreamTransformersChain()
-            .addUpstreamTransformer(new BaggingUpstreamTransformer<>(subsampleRatio));
 
         List<IgniteSupplier<M>> tasks = new ArrayList<>();
         List<IgniteBiFunction<K, V, Vector>> extractors = new ArrayList<>();
@@ -195,10 +176,8 @@ public class TrainerTransformers {
         }
 
         for (int i = 0; i < ensembleSize; i++) {
-            UpstreamTransformerChain<K, V> newChain = Utils.copy(datasetBuilder.upstreamTransformersChain());
-            DatasetBuilder<K, V> newBuilder = withNewChain(datasetBuilder, newChain);
-            int j = i;
-            newChain.modifySeed(s -> s * s + j);
+            DatasetBuilder<K, V> newBuilder =
+                datasetBuilder.withUpstreamTransformer(BaggingUpstreamTransformer.builder(subsampleRatio, i));
             tasks.add(
                 trainingTaskGenerator.apply(newBuilder, i, mappings != null ? extractors.get(i) : extractor));
         }
@@ -337,38 +316,5 @@ public class TrainerTransformers {
         public IgniteFunction<X, X> mapping() {
             return mapping;
         }
-    }
-
-    /**
-     * Creates new dataset builder which is delegate of a given dataset builder in everything except
-     * new transformations chain.
-     *
-     * @param builder Initial builder.
-     * @param chain New chain.
-     * @param <K> Type of keys.
-     * @param <V> Type of values.
-     * @return new dataset builder which is delegate of a given dataset builder in everything except
-     * new transformations chain.
-     */
-    private static <K, V> DatasetBuilder<K, V> withNewChain(
-        DatasetBuilder<K, V> builder,
-        UpstreamTransformerChain<K, V> chain) {
-        return new DatasetBuilder<K, V>() {
-            /** {@inheritDoc} */
-            @Override public <C extends Serializable, D extends AutoCloseable> Dataset<C, D> build(
-                PartitionContextBuilder<K, V, C> partCtxBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder) {
-                return builder.build(partCtxBuilder, partDataBuilder);
-            }
-
-            /** {@inheritDoc} */
-            @Override public UpstreamTransformerChain<K, V> upstreamTransformersChain() {
-                return chain;
-            }
-
-            /** {@inheritDoc} */
-            @Override public DatasetBuilder<K, V> withFilter(IgniteBiPredicate<K, V> filterToAdd) {
-                return builder.withFilter(filterToAdd);
-            }
-        };
     }
 }
