@@ -45,6 +45,7 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Assert;
 
 /**
@@ -456,6 +457,9 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
      * @throws Exception if failed.
      */
     public void testSizeClear() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-7952");
+
         final IgniteCache<Integer, DbValue> cache = cache(DEFAULT_CACHE_NAME);
 
         GridCacheAdapter<Integer, DbValue> internalCache = internalCache(cache);
