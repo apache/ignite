@@ -99,6 +99,7 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -173,6 +174,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 return RMV_PROCESSOR.process(e, args);
             }
         };
+
+    /** {@inheritDoc} */
+    @Override public void setUp() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-9543");
+
+        super.setUp();
+    }
 
     /** Dflt grid. */
     protected transient Ignite dfltIgnite;
