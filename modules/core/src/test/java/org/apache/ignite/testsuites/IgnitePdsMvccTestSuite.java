@@ -19,10 +19,22 @@ package org.apache.ignite.testsuites;
 
 import java.util.HashSet;
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheConfigurationFileConsistencyCheckTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.file.DefaultPageSizeBackwardsCompatibilityTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsPageReplacementTest;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.IgniteMetaStorageBasicTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreePageMemoryImplTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreeReuseListPageMemoryImplTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.FillFactorMetricTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.IndexStoragePageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplNoLoadTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryNoStoreLeakTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWriteThrottleSmokeTest;
+import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBufferTest;
+import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAwareTest;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  *
@@ -36,10 +48,24 @@ public class IgnitePdsMvccTestSuite extends TestSuite {
 
         HashSet<Class> ignoredTests = new HashSet<>();
 
+        // Non-relevant tests.
+        ignoredTests.add(IgnitePdsCacheConfigurationFileConsistencyCheckTest.class);
+        ignoredTests.add(DefaultPageSizeBackwardsCompatibilityTest.class);
+        ignoredTests.add(IgniteMetaStorageBasicTest.class);
+
+        ignoredTests.add(IgnitePdsPageReplacementTest.class);
+
         ignoredTests.add(PageMemoryImplNoLoadTest.class);
         ignoredTests.add(PageMemoryNoStoreLeakTest.class);
         ignoredTests.add(IndexStoragePageMemoryImplTest.class);
         ignoredTests.add(PageMemoryImplTest.class);
+        ignoredTests.add(BPlusTreePageMemoryImplTest.class);
+        ignoredTests.add(BPlusTreeReuseListPageMemoryImplTest.class);
+        ignoredTests.add(SegmentedRingByteBufferTest.class);
+        ignoredTests.add(PagesWriteThrottleSmokeTest.class);
+        ignoredTests.add(FillFactorMetricTest.class);
+        ignoredTests.add(IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest.class);
+        ignoredTests.add(SegmentAwareTest.class);
 
         suite.addTest(IgnitePdsTestSuite.suite(ignoredTests));
 
