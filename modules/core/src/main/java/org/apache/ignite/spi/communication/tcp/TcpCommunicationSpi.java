@@ -66,6 +66,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
@@ -414,7 +415,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             ", rmtAddr=" + ses.remoteAddress() + ']');
 
                     try {
-                        if (ctxInitLatch.getCount() == 0) {
+                        if (ctxInitLatch.getCount() == 0 || !isHandshakeWaitSupported(ses)) {
                             if (log.isDebugEnabled())
                                 log.debug("Sending local node ID to newly accepted session: " + ses);
 
@@ -4082,6 +4083,17 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         super.setName(name);
 
         return this;
+    }
+
+    /**
+     * Checks whether remote nodes support {@link HandshakeWaitMessage}.
+     *
+     * @return {@code True} if remote nodes support the handshake message.
+     */
+    private boolean isHandshakeWaitSupported(GridNioSession ses) {
+        Collection<ClusterNode> nodes = ignite().configuration().getDiscoverySpi().getRemoteNodes();
+
+        return IgniteFeatures.allNodesSupports(nodes, IgniteFeatures.TCP_COMMUNICATION_SPI_HANDSHAKE_WAIT_MESSAGE);
     }
 
     /** {@inheritDoc} */
