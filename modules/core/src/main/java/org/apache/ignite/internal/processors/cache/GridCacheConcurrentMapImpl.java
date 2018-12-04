@@ -55,6 +55,8 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
     @Nullable @Override public GridCacheMapEntry getEntry(GridCacheContext ctx, KeyCacheObject key) {
         CacheMapHolder hld = entriesMapIfExists(ctx.cacheIdBoxed());
 
+        key = (KeyCacheObject)ctx.kernalContext().cacheObjects().prepareForCache(key, ctx);
+
         return hld != null ? hld.map.get(key) : null;
     }
 
@@ -89,7 +91,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
 
         try {
             while (!done) {
-                GridCacheMapEntry entry = hld != null ? hld.map.get(key) : null;
+                GridCacheMapEntry entry = hld != null ? hld.map.get(ctx.kernalContext().cacheObjects().prepareForCache(key, ctx)) : null;
                 created = null;
                 doomed = null;
 

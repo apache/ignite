@@ -150,7 +150,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
             assert ctx != null : cacheId;
 
-            Throwable err = topFut.validateCache(ctx, recovery != null && recovery, read, null, e.getValue());
+            Throwable err = topFut.validateCache(ctx, recovery(), read, null, e.getValue());
 
             if (err != null) {
                 if (invalidCaches != null)
@@ -179,6 +179,11 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         }
 
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean recovery() {
+        return recovery != null && recovery;
     }
 
     /** {@inheritDoc} */
