@@ -100,48 +100,12 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
-    public void testTablesLockQueryMultithreaded() throws Exception {
+    public void testSingleNodeTablesLockQueryAndDDLMultithreaded() throws Exception {
         final Ignite srv = startGrid(0);
 
-        startGrid(1);
-        startGrid(2);
+        populateBaseQueryData(srv, 1);
 
-        populateBaseQueryData(srv, 4);
-
-        final int qryThreads = 10;
-
-        final long tEnd = U.currentTimeMillis() + TEST_DUR;
-
-        // Do many concurrent queries.
-        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
-            @Override public void run() {
-                while(U.currentTimeMillis() < tEnd) {
-                    try {
-                        FieldsQueryCursor<List<?>> cursor = execute(srv, new SqlFieldsQuery(
-                            "SELECT pers.id, pers.name " +
-                                "FROM (SELECT DISTINCT p.id, p.name " +
-                                "FROM \"pers\".PERSON as p) as pers " +
-                                "JOIN \"pers\".PERSON p on p.id = pers.id " +
-                                "JOIN (SELECT t.persId as persId, SUM(t.time) totalTime " +
-                                "FROM \"persTask\".PersonTask as t GROUP BY t.persId) as task ON task.persId = pers.id")
-                            .setLazy(lazy())
-                            .setPageSize(PAGE_SIZE_SMALL));
-
-                        cursor.getAll();
-                    }
-                    catch (Exception e) {
-                        if(X.cause(e, QueryRetryException.class) == null) {
-                            log.error("Unexpected exception", e);
-
-                            fail("Unexpected exception");
-                        }
-                    }
-                }
-            }
-        }, qryThreads, "usr-qry");
-
-        // Test is OK in case all queries are OK and grid not hang.
-        fut.get();
+        checkTablesLockQueryAndDDLMultithreaded(srv);
     }
 
     /**
@@ -149,7 +113,76 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
-    public void testTablesLockQueryAndDDLMultithreaded() throws Exception {
+    public void testSingleNodeWithParallelismTablesLockQueryAndDDLMultithreaded() throws Exception {
+        final Ignite srv = startGrid(0);
+
+        populateBaseQueryData(srv, 4);
+
+        checkTablesLockQueryAndDDLMultithreaded(srv);
+    }
+
+    /**
+     * Test DDL operation on table with high load queries.
+     *
+     * @throws Exception If failed.
+     */
+    public void testMultipleNodesWithTablesLockQueryAndDDLMultithreaded() throws Exception {
+        Ignite srv0 = startGrid(0);
+        Ignite srv1 = startGrid(1);
+        startGrid(2);
+
+        Ignite cli;
+
+        try {
+            Ignition.setClientMode(true);
+
+            cli = startGrid(3);
+        }
+        finally {
+            Ignition.setClientMode(false);
+        }
+
+        populateBaseQueryData(srv0, 1);
+
+        checkTablesLockQueryAndDDLMultithreaded(srv0);
+        checkTablesLockQueryAndDDLMultithreaded(srv1);
+        checkTablesLockQueryAndDDLMultithreaded(cli);
+    }
+
+    /**
+     * Test DDL operation on table with high load queries.
+     *
+     * @throws Exception If failed.
+     */
+    public void testMultipleNodesWithParallelismTablesLockQueryAndDDLMultithreaded() throws Exception {
+        Ignite srv0 = startGrid(0);
+        Ignite srv1 = startGrid(1);
+        startGrid(2);
+
+        Ignite cli;
+
+        try {
+            Ignition.setClientMode(true);
+
+            cli = startGrid(3);
+        }
+        finally {
+            Ignition.setClientMode(false);
+        }
+
+        populateBaseQueryData(srv0, 4);
+
+        checkTablesLockQueryAndDDLMultithreaded(srv0);
+        checkTablesLockQueryAndDDLMultithreaded(srv1);
+        checkTablesLockQueryAndDDLMultithreaded(cli);
+    }
+
+    /**
+     * Test DDL operation on table with high load queries.
+     *
+     * @throws Exception If failed.
+     */
+    private void checkTablesLockQueryAndDDLMultithreaded(final Ignite node) throws Exception {
         final Ignite srv = startGrid(0);
 
         startGrid(1);
@@ -166,7 +199,7 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
             @Override public void run() {
                 while(!end.get()) {
                     try {
-                        FieldsQueryCursor<List<?>> cursor = execute(srv, new SqlFieldsQuery(
+                        FieldsQueryCursor<List<?>> cursor = execute(node, new SqlFieldsQuery(
                             "SELECT pers.id, pers.name " +
                             "FROM (SELECT DISTINCT p.id, p.name " +
                             "FROM \"pers\".PERSON as p) as pers " +
@@ -193,8 +226,8 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
         long tEnd = U.currentTimeMillis() + TEST_DUR;
 
         while (U.currentTimeMillis() < tEnd) {
-            execute(srv, new SqlFieldsQuery("CREATE INDEX \"pers\".PERSON_NAME ON \"pers\".Person (name asc)")).getAll();
-            execute(srv, new SqlFieldsQuery("DROP INDEX \"pers\".PERSON_NAME")).getAll();
+            execute(node, new SqlFieldsQuery("CREATE INDEX \"pers\".PERSON_NAME ON \"pers\".Person (name asc)")).getAll();
+            execute(node, new SqlFieldsQuery("DROP INDEX \"pers\".PERSON_NAME")).getAll();
         }
 
         // Test is OK in case DDL operations is passed on hi load queries pressure.
