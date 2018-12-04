@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import java.util.HashSet;
+import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheConfigurationFileConsistencyCheckTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest;
@@ -34,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWriteThrottleSmokeTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBufferTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAwareTest;
-import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  *
@@ -46,7 +46,7 @@ public class IgnitePdsMvccTestSuite extends TestSuite {
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Persistent Store Mvcc Test Suite");
 
-        HashSet<Class> ignoredTests = new HashSet<>();
+        Set<Class> ignoredTests = new HashSet<>();
 
         // Non-relevant tests.
         ignoredTests.add(IgnitePdsCacheConfigurationFileConsistencyCheckTest.class);
