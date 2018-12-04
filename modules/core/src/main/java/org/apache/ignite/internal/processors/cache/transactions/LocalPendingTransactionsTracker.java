@@ -23,16 +23,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -54,20 +53,17 @@ public class LocalPendingTransactionsTracker {
     /** Tracker enabled. */
     private final boolean enabled = IgniteSystemProperties.getBoolean(IGNITE_PENDING_TX_TRACKER_ENABLED, false);
 
-    /** Currently pending transactions. */
-    private final ConcurrentHashMap<GridCacheVersion, WALPointer> currentlyPreparedTxs = new ConcurrentHashMap<>();
-
-    /** +1 for prepared, -1 for committed */
-    private final ConcurrentHashMap<GridCacheVersion, AtomicInteger> preparedCommittedTxsCounters = new ConcurrentHashMap<>();
+    /** Currently prepared transactions. Counters are incremented on prepare, decremented on commit/rollback. */
+    private final ConcurrentHashMap<GridCacheVersion, Integer> preparedCommittedTxsCounters = new ConcurrentHashMap<>();
 
     /**
      * Transactions that were transitioned to pending state since last {@link #startTrackingPrepared()} call.
      * Transaction remains in this map after commit/rollback.
      */
-    private volatile ConcurrentHashMap<GridCacheVersion, WALPointer> trackedPreparedTxs = new ConcurrentHashMap<>();
+    private volatile GridConcurrentHashSet<GridCacheVersion> trackedPreparedTxs = new GridConcurrentHashSet<>();
 
     /** Transactions that were transitioned to committed state since last {@link #startTrackingCommitted()} call. */
-    private volatile ConcurrentHashMap<GridCacheVersion, WALPointer> trackedCommittedTxs = new ConcurrentHashMap<>();
+    private volatile GridConcurrentHashSet<GridCacheVersion> trackedCommittedTxs = new GridConcurrentHashSet<>();
 
     /** Written keys to near xid version. */
     private volatile ConcurrentHashMap<KeyCacheObject, Set<GridCacheVersion>> writtenKeysToNearXidVer = new ConcurrentHashMap<>();
@@ -93,10 +89,10 @@ public class LocalPendingTransactionsTracker {
      */
     private class TxFinishAwaiting {
         /** Future. */
-        private final GridFutureAdapter<Map<GridCacheVersion, WALPointer>> fut;
+        private final GridFutureAdapter<Set<GridCacheVersion>> fut;
 
         /** Not committed in timeout txs. */
-        private final Map<GridCacheVersion, WALPointer> notCommittedInTimeoutTxs;
+        private final Set<GridCacheVersion> notCommittedInTimeoutTxs;
 
         /** Committing txs. */
         private final Set<GridCacheVersion> committingTxs;
@@ -121,7 +117,7 @@ public class LocalPendingTransactionsTracker {
 
             fut = new GridFutureAdapter<>();
 
-            notCommittedInTimeoutTxs = new ConcurrentHashMap<>(currentlyPreparedTxs);
+            notCommittedInTimeoutTxs = new GridConcurrentHashSet<>(preparedCommittedTxsCounters.keySet());
 
             committingTxs = U.newConcurrentHashSet(currentlyCommittingTxs);
 
@@ -200,8 +196,8 @@ public class LocalPendingTransactionsTracker {
                 txFinishAwaiting = null;
 
                 fut.onDone(notCommittedInTimeoutTxs.isEmpty() ?
-                    Collections.emptyMap() :
-                    U.sealMap(notCommittedInTimeoutTxs));
+                    Collections.emptySet() :
+                    U.sealSet(notCommittedInTimeoutTxs));
             }
         }
 
@@ -209,7 +205,7 @@ public class LocalPendingTransactionsTracker {
          * @return {@code true} if the set of committing transactions {@code committingTxs} is empty.
          */
         boolean allCommittingIsFinished() {
-            committingTxs.retainAll(notCommittedInTimeoutTxs.keySet());
+            committingTxs.retainAll(notCommittedInTimeoutTxs);
 
             return committingTxs.isEmpty();
         }
@@ -220,9 +216,9 @@ public class LocalPendingTransactionsTracker {
         void addGlobalCommittingTxs(Set<GridCacheVersion> globalCommittingTxs) {
             assert stateLock.writeLock().isHeldByCurrentThread();
 
-            notCommittedInTimeoutTxs.putAll(currentlyPreparedTxs);
+            notCommittedInTimeoutTxs.addAll(preparedCommittedTxsCounters.keySet());
 
-            Set<GridCacheVersion> pendingTxs = new HashSet<>(notCommittedInTimeoutTxs.keySet());
+            Set<GridCacheVersion> pendingTxs = new HashSet<>(notCommittedInTimeoutTxs);
 
             pendingTxs.retainAll(globalCommittingTxs);
 
@@ -251,10 +247,10 @@ public class LocalPendingTransactionsTracker {
      *
      * @return Collection of prepared transactions.
      */
-    public Map<GridCacheVersion, WALPointer> currentlyPreparedTxs() {
+    public Set<GridCacheVersion> currentlyPreparedTxs() {
         assert stateLock.writeLock().isHeldByCurrentThread();
 
-        return U.sealMap(currentlyPreparedTxs);
+        return U.sealSet(preparedCommittedTxsCounters.keySet());
     }
 
     /**
@@ -271,15 +267,15 @@ public class LocalPendingTransactionsTracker {
     /**
      * @return nearXidVer -> prepared WAL ptr
      */
-    public Map<GridCacheVersion, WALPointer> stopTrackingPrepared() {
+    public Set<GridCacheVersion> stopTrackingPrepared() {
         assert stateLock.writeLock().isHeldByCurrentThread();
         assert trackPrepared.get(): "Tracking prepared transactions is not initialized yet.";
 
         trackPrepared.set(false);
 
-        Map<GridCacheVersion, WALPointer> res = U.sealMap(trackedPreparedTxs);
+        Set<GridCacheVersion> res = U.sealSet(trackedPreparedTxs);
 
-        trackedPreparedTxs = new ConcurrentHashMap<>();
+        trackedPreparedTxs = new GridConcurrentHashSet<>();
 
         return res;
     }
@@ -303,11 +299,11 @@ public class LocalPendingTransactionsTracker {
 
         trackCommitted.set(false);
 
-        Map<GridCacheVersion, WALPointer> committedTxs = U.sealMap(trackedCommittedTxs);
+        Set<GridCacheVersion> committedTxs = U.sealSet(trackedCommittedTxs);
 
         Map<GridCacheVersion, Set<GridCacheVersion>> dependentTxs = U.sealMap(dependentTransactionsGraph);
 
-        trackedCommittedTxs = new ConcurrentHashMap<>();
+        trackedCommittedTxs = new GridConcurrentHashSet<>();
 
         writtenKeysToNearXidVer = new ConcurrentHashMap<>();
 
@@ -339,8 +335,9 @@ public class LocalPendingTransactionsTracker {
      * @param globalCommittingTxs Global committing transactions.
      * @return Future with collection of transactions that failed to finish within timeout.
      */
-    public IgniteInternalFuture<Map<GridCacheVersion, WALPointer>> awaitPendingTxsFinished(
-        Set<GridCacheVersion> globalCommittingTxs) {
+    public IgniteInternalFuture<Set<GridCacheVersion>> awaitPendingTxsFinished(
+        Set<GridCacheVersion> globalCommittingTxs
+    ) {
         assert stateLock.writeLock().isHeldByCurrentThread();
 
         TxFinishAwaiting awaiting = txFinishAwaiting;
@@ -370,23 +367,18 @@ public class LocalPendingTransactionsTracker {
 
     /**
      * @param nearXidVer Near xid version.
-     * @param preparedMarkerPtr Prepared marker ptr.
      */
-    public void onTxPrepared(GridCacheVersion nearXidVer, WALPointer preparedMarkerPtr) {
+    public void onTxPrepared(GridCacheVersion nearXidVer) {
         if (!enabled)
             return;
 
         stateLock.readLock().lock();
 
         try {
-            currentlyPreparedTxs.putIfAbsent(nearXidVer, preparedMarkerPtr);
-
-            AtomicInteger cntr = preparedCommittedTxsCounters.computeIfAbsent(nearXidVer, k -> new AtomicInteger(0));
-
-            cntr.incrementAndGet();
+            preparedCommittedTxsCounters.compute(nearXidVer, (key, value) -> value == null ? 1 : value + 1);
 
             if (trackPrepared.get())
-                trackedPreparedTxs.putIfAbsent(nearXidVer, preparedMarkerPtr);
+                trackedPreparedTxs.add(nearXidVer);
         }
         finally {
             stateLock.readLock().unlock();
@@ -403,26 +395,23 @@ public class LocalPendingTransactionsTracker {
         stateLock.readLock().lock();
 
         try {
-            AtomicInteger preparedCommittedCntr = preparedCommittedTxsCounters.get(nearXidVer);
+            Integer newCntr = preparedCommittedTxsCounters.compute(nearXidVer, (key, value) -> {
+                if (value == null || value <= 0) {
+                    throw new AssertionError("Committing transaction that was rolled back or concurrently committed " +
+                        "[nearXidVer=" + nearXidVer + ", currentCntr=" + value + ']');
+                }
 
-            if (preparedCommittedCntr == null)
-                return; // Tx was concurrently rolled back.
+                if (value == 1)
+                    return null;
 
-            int cnt = preparedCommittedCntr.decrementAndGet();
+                return value - 1;
+            });
 
-            assert cnt >= 0 : cnt;
-
-            if (cnt == 0) {
-                preparedCommittedTxsCounters.remove(nearXidVer);
-
+            if (newCntr == null) {
                 currentlyCommittingTxs.remove(nearXidVer);
 
-                WALPointer preparedPtr = currentlyPreparedTxs.remove(nearXidVer);
-
-                assert preparedPtr != null;
-
                 if (trackCommitted.get())
-                    trackedCommittedTxs.put(nearXidVer, preparedPtr);
+                    trackedCommittedTxs.add(nearXidVer);
 
                 checkTxFinishFutureDone(nearXidVer);
             }
@@ -442,13 +431,18 @@ public class LocalPendingTransactionsTracker {
         stateLock.readLock().lock();
 
         try {
-            currentlyPreparedTxs.remove(nearXidVer);
+            Integer newCntr = preparedCommittedTxsCounters.compute(nearXidVer, (key, value) -> {
+                if (value == null || value <= 1)
+                    return null;
 
-            currentlyCommittingTxs.remove(nearXidVer);
+                return value - 1;
+            });
 
-            preparedCommittedTxsCounters.remove(nearXidVer);
+            if (newCntr == null) {
+                currentlyCommittingTxs.remove(nearXidVer);
 
-            checkTxFinishFutureDone(nearXidVer);
+                checkTxFinishFutureDone(nearXidVer);
+            }
         }
         finally {
             stateLock.readLock().unlock();
@@ -466,7 +460,7 @@ public class LocalPendingTransactionsTracker {
         stateLock.readLock().lock();
 
         try {
-            if (!currentlyPreparedTxs.containsKey(nearXidVer))
+            if (!preparedCommittedTxsCounters.containsKey(nearXidVer))
                 throw new AssertionError("Tx should be in PREPARED state when logging data records: " + nearXidVer);
 
             currentlyCommittingTxs.add(nearXidVer);
@@ -510,7 +504,7 @@ public class LocalPendingTransactionsTracker {
         stateLock.readLock().lock();
 
         try {
-            if (!currentlyPreparedTxs.containsKey(nearXidVer))
+            if (!preparedCommittedTxsCounters.containsKey(nearXidVer))
                 throw new AssertionError("Tx should be in PREPARED state when logging data records: " + nearXidVer);
 
             currentlyCommittingTxs.add(nearXidVer);
@@ -550,11 +544,11 @@ public class LocalPendingTransactionsTracker {
 
             trackCommitted.set(false);
 
-            trackedCommittedTxs = new ConcurrentHashMap<>();
+            trackedCommittedTxs = new GridConcurrentHashSet<>();
 
             trackPrepared.set(false);
 
-            trackedPreparedTxs = new ConcurrentHashMap<>();
+            trackedPreparedTxs = new GridConcurrentHashSet<>();
 
             writtenKeysToNearXidVer = new ConcurrentHashMap<>();
 

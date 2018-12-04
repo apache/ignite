@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Map;
 import java.util.Set;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
@@ -26,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
  */
 public class TrackCommittedResult {
     /** Transactions committed during tracked period. */
-    private final Map<GridCacheVersion, WALPointer> committedTxs;
+    private final Set<GridCacheVersion> committedTxs;
 
     /** Graph of dependent (by keys) transactions. */
     private final Map<GridCacheVersion, Set<GridCacheVersion>> dependentTxsGraph;
@@ -36,7 +35,7 @@ public class TrackCommittedResult {
      * @param dependentTxsGraph Dependent txs graph.
      */
     public TrackCommittedResult(
-        Map<GridCacheVersion, WALPointer> committedTxs,
+        Set<GridCacheVersion> committedTxs,
         Map<GridCacheVersion, Set<GridCacheVersion>> dependentTxsGraph
     ) {
         this.committedTxs = committedTxs;
@@ -46,7 +45,7 @@ public class TrackCommittedResult {
     /**
      *
      */
-    public Map<GridCacheVersion, WALPointer> committedTxs() {
+    public Set<GridCacheVersion> committedTxs() {
         return committedTxs;
     }
 

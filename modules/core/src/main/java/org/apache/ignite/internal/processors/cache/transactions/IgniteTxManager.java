@@ -2501,7 +2501,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 TransactionState txState = tx.state();
 
                 if (txState == PREPARED)
-                    cctx.tm().pendingTxsTracker().onTxPrepared(tx.nearXidVersion(), ptr);
+                    cctx.tm().pendingTxsTracker().onTxPrepared(tx.nearXidVersion());
                 else if (txState == ROLLED_BACK)
                     cctx.tm().pendingTxsTracker().onTxRolledBack(tx.nearXidVersion());
                 else
