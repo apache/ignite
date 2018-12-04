@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-import {of} from 'rxjs/observable/of';
+import {of} from 'rxjs';
+import {switchMap, catchError} from 'rxjs/operators';
 import {Confirm} from 'app/services/Confirm.service';
 import {DiffPatcher} from 'jsondiffpatch';
 import {html} from 'jsondiffpatch/public/build/jsondiffpatch-formatters.js';
 import 'jsondiffpatch/public/formatters-styles/html.css';
-import {switchMap, catchError} from 'rxjs/operators';
 
 export class IgniteObjectDiffer {
     constructor() {

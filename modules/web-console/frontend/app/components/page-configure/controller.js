@@ -16,8 +16,7 @@
  */
 
 import get from 'lodash/get';
-import {Observable} from 'rxjs/Observable';
-import {combineLatest} from 'rxjs/observable/combineLatest';
+import {Observable, combineLatest} from 'rxjs';
 import {distinctUntilChanged, pluck, switchMap, map} from 'rxjs/operators';
 import {default as ConfigureState} from './services/ConfigureState';
 import {default as ConfigSelectors} from './store/selectors';

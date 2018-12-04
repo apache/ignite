@@ -15,15 +15,13 @@
  * limitations under the License.
  */
 
-import {Subject} from 'rxjs/Subject';
-import {merge} from 'rxjs/observable/merge';
+import {Subject, merge, combineLatest} from 'rxjs';
+import {tap, map, refCount, pluck, publishReplay, switchMap, distinctUntilChanged} from 'rxjs/operators';
 import naturalCompare from 'natural-compare-lite';
-import {combineLatest} from 'rxjs/observable/combineLatest';
 import {removeClusterItems, advancedSaveCache} from 'app/components/page-configure/store/actionCreators';
 import ConfigureState from 'app/components/page-configure/services/ConfigureState';
 import ConfigSelectors from 'app/components/page-configure/store/selectors';
 import Caches from 'app/services/Caches';
-import {tap, map, refCount, pluck, publishReplay, switchMap, distinctUntilChanged} from 'rxjs/operators';
 
 // Controller for Caches screen.
 export default class Controller {

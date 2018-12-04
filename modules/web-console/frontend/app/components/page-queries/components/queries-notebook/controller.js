@@ -18,12 +18,8 @@
 import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 import id8 from 'app/utils/id8';
+import {timer, merge, defer, from} from 'rxjs';
 import {mergeMap, tap, switchMap, exhaustMap, take} from 'rxjs/operators';
-
-import { fromPromise } from 'rxjs/observable/fromPromise';
-import { timer } from 'rxjs/observable/timer';
-import { merge } from 'rxjs/observable/merge';
-import { defer } from 'rxjs/observable/defer';
 
 import {CSV} from 'app/services/CSV';
 
@@ -918,7 +914,7 @@ export class NotebookCtrl {
         };
 
         const _startWatch = () => {
-            const awaitClusters$ = fromPromise(
+            const awaitClusters$ = from(
                 agentMgr.startClusterWatch('Leave Queries', 'default-state'));
 
             const finishLoading$ = defer(() => {

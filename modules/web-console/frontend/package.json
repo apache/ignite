@@ -30,7 +30,7 @@
     "@babel/plugin-transform-parameters": "7.0.0",
     "@uirouter/angularjs": "1.0.20",
     "@uirouter/core": "5.0.19",
-    "@uirouter/rx": "0.4.1",
+    "@uirouter/rx": "0.5.0",
     "@uirouter/visualizer": "4.0.2",
     "angular": "1.7.4",
     "angular-acl": "0.1.10",
@@ -70,7 +70,7 @@
     "pako": "1.0.6",
     "resize-observer-polyfill": "1.5.0",
     "roboto-font": "0.1.0",
-    "rxjs": "5.5.11",
+    "rxjs": "6.3.3",
     "socket.io-client": "1.7.3",
     "tf-metatags": "2.0.0"
   },

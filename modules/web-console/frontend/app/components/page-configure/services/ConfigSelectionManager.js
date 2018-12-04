@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-import {Observable} from 'rxjs/Observable';
-import {merge} from 'rxjs/observable/merge';
-import {RejectType} from '@uirouter/angularjs';
+import {Observable, merge} from 'rxjs';
 import {share, distinctUntilChanged, startWith, filter, map, pluck, withLatestFrom, mapTo} from 'rxjs/operators';
+import {RejectType} from '@uirouter/angularjs';
 import isEqual from 'lodash/isEqual';
 
 /**

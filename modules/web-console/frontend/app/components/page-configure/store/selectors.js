@@ -16,13 +16,8 @@
  */
 
 import {uniqueName} from 'app/utils/uniqueName';
-import {of} from 'rxjs/observable/of';
-import {empty} from 'rxjs/observable/empty';
-import {combineLatest} from 'rxjs/observable/combineLatest';
-import {forkJoin} from 'rxjs/observable/forkJoin';
-import {pipe} from 'rxjs';
+import {of, empty, combineLatest, forkJoin, pipe, Observable} from 'rxjs';
 import {filter, mergeMap, pluck, map, switchMap, take, distinctUntilChanged, exhaustMap} from 'rxjs/operators';
-import {Observable} from 'rxjs/Observable';
 import {defaultNames} from '../defaultNames';
 
 import {default as Caches} from 'app/services/Caches';

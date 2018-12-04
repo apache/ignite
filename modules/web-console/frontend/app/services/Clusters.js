@@ -16,11 +16,10 @@
  */
 
 import get from 'lodash/get';
-import {Observable} from 'rxjs/Observable';
+import {Observable, from} from 'rxjs';
 import ObjectID from 'bson-objectid/objectid';
 import {uniqueName} from 'app/utils/uniqueName';
 import omit from 'lodash/fp/omit';
-import {from} from 'rxjs/observable/from';
 
 const uniqueNameValidator = (defaultName = '') => (a, items = []) => {
     return a && !items.some((b) => b._id !== a._id && (a.name || defaultName) === (b.name || defaultName));

@@ -17,8 +17,7 @@
 
 import cloneDeep from 'lodash/cloneDeep';
 
-import {merge} from 'rxjs/observable/merge';
-import {timer} from 'rxjs/observable/timer';
+import {merge, timer} from 'rxjs';
 import {take, tap, ignoreElements, filter, map, pluck} from 'rxjs/operators';
 
 import {

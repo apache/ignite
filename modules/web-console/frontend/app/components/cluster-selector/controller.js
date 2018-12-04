@@ -17,7 +17,7 @@
 
 import _ from 'lodash';
 
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import { BehaviorSubject } from 'rxjs';
 import {tap, filter, combineLatest} from 'rxjs/operators';
 
 export default class {

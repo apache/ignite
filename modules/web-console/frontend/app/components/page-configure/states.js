@@ -20,10 +20,8 @@ import pageConfigureAdvancedModelsComponent from '../page-configure-advanced/com
 import pageConfigureAdvancedCachesComponent from '../page-configure-advanced/components/page-configure-advanced-caches/component';
 import pageConfigureAdvancedIGFSComponent from '../page-configure-advanced/components/page-configure-advanced-igfs/component';
 
-import {Observable} from 'rxjs/Observable';
+import {Observable, from, combineLatest} from 'rxjs';
 import {switchMap, take, map} from 'rxjs/operators';
-import {from} from 'rxjs/observable/from';
-import {combineLatest} from 'rxjs/observable/combineLatest';
 
 const idRegex = `new|[a-z0-9]+`;
 

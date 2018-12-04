@@ -15,17 +15,14 @@
  * limitations under the License.
  */
 
-import {Observable} from 'rxjs/Observable';
-import {Subject} from 'rxjs/Subject';
-import {combineLatest} from 'rxjs/observable/combineLatest';
+import {Observable, Subject, combineLatest, merge} from 'rxjs';
+import {tap, map, distinctUntilChanged, pluck, publishReplay, refCount, switchMap} from 'rxjs/operators';
 import naturalCompare from 'natural-compare-lite';
-import {merge} from 'rxjs/observable/merge';
 import get from 'lodash/get';
 import {removeClusterItems, advancedSaveIGFS} from 'app/components/page-configure/store/actionCreators';
 import ConfigureState from 'app/components/page-configure/services/ConfigureState';
 import ConfigSelectors from 'app/components/page-configure/store/selectors';
 import IGFSs from 'app/services/IGFSs';
-import {tap, map, distinctUntilChanged, pluck, publishReplay, refCount, switchMap} from 'rxjs/operators';
 
 export default class PageConfigureAdvancedIGFS {
     static $inject = ['ConfigSelectors', 'ConfigureState', '$uiRouter', 'IGFSs', '$state', 'configSelectionManager'];

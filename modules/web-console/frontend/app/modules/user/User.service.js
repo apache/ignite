@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {ReplaySubject} from 'rxjs/ReplaySubject';
+import {ReplaySubject} from 'rxjs';
 
 /**
  * @typedef User

@@ -15,9 +15,7 @@
  * limitations under the License.
  */
 
-import {Observable} from 'rxjs/Observable';
-import {forkJoin} from 'rxjs/observable/forkJoin';
-import {merge} from 'rxjs/observable/merge';
+import {Observable, forkJoin, merge} from 'rxjs';
 import {map, tap, pluck, take, filter, distinctUntilChanged, switchMap, publishReplay, refCount} from 'rxjs/operators';
 import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';

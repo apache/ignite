@@ -15,12 +15,7 @@
  * limitations under the License.
  */
 
-import {Observable} from 'rxjs/Observable';
-import {merge} from 'rxjs/observable/merge';
-import {empty} from 'rxjs/observable/empty';
-import {of} from 'rxjs/observable/of';
-import {from} from 'rxjs/observable/from';
-import {fromPromise} from 'rxjs/observable/fromPromise';
+import {Observable, merge, empty, of, from} from 'rxjs';
 import {mapTo, filter, tap, ignoreElements, exhaustMap, switchMap, map, pluck, withLatestFrom, take, catchError, zip} from 'rxjs/operators';
 import uniq from 'lodash/uniq';
 import {uniqueName} from 'app/utils/uniqueName';
@@ -118,7 +113,7 @@ export default class ConfigEffects {
         this.loadConfigurationEffect$ = this.ConfigureState.actions$.pipe(
             ofType('LOAD_COMPLETE_CONFIGURATION'),
             exhaustMap((action) => {
-                return fromPromise(this.Clusters.getConfiguration(action.clusterID)).pipe(
+                return from(this.Clusters.getConfiguration(action.clusterID)).pipe(
                     switchMap(({data}) => of(
                         completeConfiguration(data),
                         {type: 'LOAD_COMPLETE_CONFIGURATION_OK', data}
@@ -183,7 +178,7 @@ export default class ConfigEffects {
 
                 return merge(
                     of(...actions),
-                    fromPromise(Clusters.saveAdvanced(action.changedItems)).pipe(
+                    from(Clusters.saveAdvanced(action.changedItems)).pipe(
                         switchMap((res) => {
                             return of(
                                 {type: 'EDIT_CLUSTER', cluster: action.changedItems.cluster},
@@ -224,7 +219,7 @@ export default class ConfigEffects {
         this.loadUserClustersEffect$ = this.ConfigureState.actions$.pipe(
             ofType('LOAD_USER_CLUSTERS'),
             exhaustMap((a) => {
-                return fromPromise(this.Clusters.getClustersOverview()).pipe(
+                return from(this.Clusters.getClustersOverview()).pipe(
                     switchMap(({data}) => of(
                         {type: shortClustersActionTypes.SET, items: data},
                         {type: `${a.type}_OK`}
@@ -294,7 +289,7 @@ export default class ConfigEffects {
                         if (cache)
                             return of({type: `${a.type}_OK`, cache});
 
-                        return fromPromise(this.Caches.getCache(a.cacheID)).pipe(
+                        return from(this.Caches.getCache(a.cacheID)).pipe(
                             switchMap(({data}) => of(
                                 {type: 'CACHE', cache: data},
                                 {type: `${a.type}_OK`, cache: data}
@@ -329,7 +324,7 @@ export default class ConfigEffects {
                         if (!items.pristine && a.ids && a.ids.every((_id) => items.value.has(_id)))
                             return of({type: `${a.type}_OK`});
 
-                        return fromPromise(this.Clusters.getClusterCaches(a.clusterID)).pipe(
+                        return from(this.Clusters.getClusterCaches(a.clusterID)).pipe(
                             switchMap(({data}) => of(
                                 {type: shortCachesActionTypes.UPSERT, items: data},
                                 {type: `${a.type}_OK`}
@@ -357,7 +352,7 @@ export default class ConfigEffects {
                         if (igfs)
                             return of({type: `${a.type}_OK`, igfs});
 
-                        return fromPromise(this.IGFSs.getIGFS(a.igfsID)).pipe(
+                        return from(this.IGFSs.getIGFS(a.igfsID)).pipe(
                             switchMap(({data}) => of(
                                 {type: 'IGFS', igfs: data},
                                 {type: `${a.type}_OK`, igfs: data}
@@ -395,7 +390,7 @@ export default class ConfigEffects {
                         if (!items.pristine && a.ids && a.ids.every((_id) => items.value.has(_id)))
                             return of({type: `${a.type}_OK`});
 
-                        return fromPromise(this.Clusters.getClusterIGFSs(a.clusterID)).pipe(
+                        return from(this.Clusters.getClusterIGFSs(a.clusterID)).pipe(
                             switchMap(({data}) => of(
                                 {type: shortIGFSsActionTypes.UPSERT, items: data},
                                 {type: `${a.type}_OK`}
@@ -423,7 +418,7 @@ export default class ConfigEffects {
                         if (model)
                             return of({type: `${a.type}_OK`, model});
 
-                        return fromPromise(this.Models.getModel(a.modelID)).pipe(
+                        return from(this.Models.getModel(a.modelID)).pipe(
                             switchMap(({data}) => of(
                                 {type: 'MODEL', model: data},
                                 {type: `${a.type}_OK`, model: data}
@@ -461,7 +456,7 @@ export default class ConfigEffects {
                         if (!items.pristine && a.ids && a.ids.every((_id) => items.value.has(_id)))
                             return of({type: `${a.type}_OK`});
 
-                        return fromPromise(this.Clusters.getClusterModels(a.clusterID)).pipe(
+                        return from(this.Clusters.getClusterModels(a.clusterID)).pipe(
                             switchMap(({data}) => of(
                                 {type: shortModelsActionTypes.UPSERT, items: data},
                                 {type: `${a.type}_OK`}
@@ -574,7 +569,7 @@ export default class ConfigEffects {
             exhaustMap((a) => {
                 return a.confirm
                     // TODO: list items to remove in confirmation
-                    ? fromPromise(this.Confirm.confirm('Are you sure you want to remove these items?')).pipe(
+                    ? from(this.Confirm.confirm('Are you sure you want to remove these items?')).pipe(
                         mapTo(a),
                         catchError(() => empty())
                     )
@@ -604,7 +599,7 @@ export default class ConfigEffects {
                 take(1)
             )),
             exhaustMap((names) => {
-                return fromPromise(this.Confirm.confirm(`
+                return from(this.Confirm.confirm(`
                     <p>Are you sure you want to remove these clusters?</p>
                     <ul>${names.map((name) => `<li>${name}</li>`).join('')}</ul>
                 `)).pipe(

@@ -18,10 +18,8 @@
 import {suite, test} from 'mocha';
 import {assert} from 'chai';
 import {spy} from 'sinon';
-import {TestScheduler} from 'rxjs/testing/TestScheduler';
-import {Observable} from 'rxjs/Observable';
-import {of} from 'rxjs/observable/of';
-import {_throw} from 'rxjs/observable/throw';
+import {Observable, of, throwError} from 'rxjs';
+import {TestScheduler} from 'rxjs/testing';
 
 const mocks = () => new Map([
     ['IgniteConfigurationResource', {}],
@@ -135,7 +133,7 @@ suite.skip('PageConfigure service', () => {
             .set('Clusters', {
                 saveCluster$: (c) => c.name === values.b.clusters[0].name
                     ? of({data: 99})
-                    : _throw()
+                    : throwError()
             })
             .set('ConfigureState', {
                 actions$: testScheduler.createHotObservable(actions, values),
@@ -231,7 +229,7 @@ suite.skip('PageConfigure service', () => {
                 dispatchAction: spy()
             })
             .set('Clusters', {
-                removeCluster$: (v) => v._id % 2 ? of(v) : _throw()
+                removeCluster$: (v) => v._id % 2 ? of(v) : throwError()
             });
             const s = new PageConfigure(...deps.values());
 

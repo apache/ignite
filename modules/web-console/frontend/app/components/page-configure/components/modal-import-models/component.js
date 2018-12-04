@@ -21,7 +21,8 @@ import _ from 'lodash';
 import naturalCompare from 'natural-compare-lite';
 import find from 'lodash/fp/find';
 import get from 'lodash/fp/get';
-import {Observable} from 'rxjs/Observable';
+import {Observable, race, timer, merge, of, from, combineLatest} from 'rxjs';
+import {tap, filter, take, pluck, switchMap} from 'rxjs/operators';
 import ObjectID from 'bson-objectid';
 import {uniqueName} from 'app/utils/uniqueName';
 import {defaultNames} from '../../defaultNames';
@@ -38,13 +39,6 @@ import {default as SqlTypes} from 'app/services/SqlTypes.service';
 import {default as JavaTypes} from 'app/services/JavaTypes.service';
 // eslint-disable-next-line
 import {default as ActivitiesData} from 'app/core/activities/Activities.data';
-import {tap, filter, take, pluck, switchMap} from 'rxjs/operators';
-import {race} from 'rxjs/observable/race';
-import {timer} from 'rxjs/observable/timer';
-import {merge} from 'rxjs/observable/merge';
-import {of} from 'rxjs/observable/of';
-import {from} from 'rxjs/observable/from';
-import {combineLatest} from 'rxjs/observable/combineLatest';
 
 function _mapCaches(caches = []) {
     return caches.map((cache) => {

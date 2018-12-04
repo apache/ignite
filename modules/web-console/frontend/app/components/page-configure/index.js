@@ -49,8 +49,7 @@ import pcSplitButton from './components/pc-split-button';
 import {errorState} from './transitionHooks/errorState';
 import {default as ActivitiesData} from 'app/core/activities/Activities.data';
 
-
-import {Observable} from 'rxjs/Observable';
+import {Observable} from 'rxjs';
 import {withLatestFrom, tap, filter, skip, scan} from 'rxjs/operators';
 
 import {

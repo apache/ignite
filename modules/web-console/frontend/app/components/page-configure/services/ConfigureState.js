@@ -15,8 +15,7 @@
  * limitations under the License.
  */
 
-import {Subject} from 'rxjs/Subject';
-import {BehaviorSubject} from 'rxjs/BehaviorSubject';
+import {Subject, BehaviorSubject} from 'rxjs';
 import {tap, scan} from 'rxjs/operators';
 
 export default class ConfigureState {

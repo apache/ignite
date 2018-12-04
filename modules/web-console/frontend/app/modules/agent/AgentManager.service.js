@@ -18,7 +18,7 @@
 import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 
-import {BehaviorSubject} from 'rxjs/BehaviorSubject';
+import {BehaviorSubject} from 'rxjs';
 import {first, partition, takeUntil, pluck, tap, distinctUntilChanged, map, filter} from 'rxjs/operators';
 
 import AgentModal from './AgentModal.service';

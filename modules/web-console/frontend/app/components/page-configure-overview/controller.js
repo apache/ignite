@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-import {Subject} from 'rxjs/Subject';
-import naturalCompare from 'natural-compare-lite';
+import {Subject} from 'rxjs';
 import {map} from 'rxjs/operators';
+import naturalCompare from 'natural-compare-lite';
 
 const cellTemplate = (state) => `
     <div class="ui-grid-cell-contents">

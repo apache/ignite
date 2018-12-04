@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-import {Subject} from 'rxjs/Subject';
-import {Observable} from 'rxjs/Observable';
-import {combineLatest} from 'rxjs/observable/combineLatest';
-import {merge} from 'rxjs/observable/merge';
+import {Subject, Observable, combineLatest, merge} from 'rxjs';
+import {pluck, tap, publishReplay, refCount, distinctUntilChanged, switchMap, map} from 'rxjs/operators';
+
 import get from 'lodash/get';
 
 import hasIndexTemplate from './hasIndex.template.pug';
@@ -30,8 +29,6 @@ import {removeClusterItems, advancedSaveModel} from 'app/components/page-configu
 import {default as ConfigSelectors} from 'app/components/page-configure/store/selectors';
 import {default as ConfigureState} from 'app/components/page-configure/services/ConfigureState';
 import {default as Models} from 'app/services/Models';
-
-import {pluck, tap, publishReplay, refCount, distinctUntilChanged, switchMap, map} from 'rxjs/operators';
 
 export default class PageConfigureAdvancedModels {
     static $inject = ['ConfigSelectors', 'ConfigureState', '$uiRouter', 'Models', '$state', 'configSelectionManager'];

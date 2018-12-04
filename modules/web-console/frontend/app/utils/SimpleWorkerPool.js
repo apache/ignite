@@ -16,10 +16,7 @@
  */
 
 import _ from 'lodash';
-
-import {Observable} from 'rxjs/Observable';
-import {Subject} from 'rxjs/Subject';
-import {race} from 'rxjs/observable/race';
+import {Observable, Subject, race} from 'rxjs';
 import {filter, take, pluck, map} from 'rxjs/operators';
 
 /**

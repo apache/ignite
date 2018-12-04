@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-import {Observable} from 'rxjs/Observable'
+import {Observable} from 'rxjs';
 /// <reference path="./types/uirouter.d.ts" />
 
 declare namespace ig {
-    type menu<T> = Array<{value: T, label: string}>
+    type menu < T > = Array<{value: T, label: string}>;
 
     namespace config {
         namespace formFieldSize {
@@ -27,7 +27,7 @@ declare namespace ig {
                 label: string,
                 value: number
             }
-            type ISizeType = Array<ISizeTypeOption>
+            type ISizeType = Array<ISizeTypeOption>;
             interface ISizeTypes {
                 [name: string]: ISizeType
             }
@@ -41,14 +41,14 @@ declare namespace ig {
                 | 'Jdbc'
                 | 'SharedFs'
                 | 'ZooKeeper'
-                | 'Kubernetes'
+                | 'Kubernetes';
 
             export type LoadBalancingKinds = 'RoundRobin'
                 | 'Adaptive'
                 | 'WeightedRandom'
-                | 'Custom'
+                | 'Custom';
 
-            export type FailoverSPIs = 'JobStealing' | 'Never' | 'Always' | 'Custom'
+            export type FailoverSPIs = 'JobStealing' | 'Never' | 'Always' | 'Custom';
 
             export interface ShortCluster {
                 _id: string,
@@ -60,8 +60,8 @@ declare namespace ig {
             }
         }
         namespace cache {
-            type CacheModes = 'PARTITIONED' | 'REPLICATED' | 'LOCAL'
-            type AtomicityModes = 'ATOMIC' | 'TRANSACTIONAL'
+            type CacheModes = 'PARTITIONED' | 'REPLICATED' | 'LOCAL';
+            type AtomicityModes = 'ATOMIC' | 'TRANSACTIONAL';
             export interface ShortCache {
                 _id: string,
                 cacheMode: CacheModes,
@@ -70,8 +70,8 @@ declare namespace ig {
             }
         }
         namespace model {
-            type QueryMetadataTypes = 'Annotations' | 'Configuration'
-            type DomainModelKinds = 'query' | 'store' | 'both'
+            type QueryMetadataTypes = 'Annotations' | 'Configuration';
+            type DomainModelKinds = 'query' | 'store' | 'both';
             export interface KeyField {
                 databaseFieldName: string,
                 databaseFieldType: string,
@@ -92,7 +92,7 @@ declare namespace ig {
                 field: string,
                 alias: string
             }
-            type IndexTypes = 'SORTED' | 'FULLTEXT' | 'GEOSPATIAL'
+            type IndexTypes = 'SORTED' | 'FULLTEXT' | 'GEOSPATIAL';
             export interface IndexField {
                 _id: string,
                 name?: string,
@@ -136,7 +136,7 @@ declare namespace ig {
             }
         }
         namespace igfs {
-            type DefaultModes = 'PRIMARY' | 'PROXY' | 'DUAL_SYNC' | 'DUAL_ASYNC'
+            type DefaultModes = 'PRIMARY' | 'PROXY' | 'DUAL_SYNC' | 'DUAL_ASYNC';
             export interface ShortIGFS {
                 _id: string,
                 name: string,
