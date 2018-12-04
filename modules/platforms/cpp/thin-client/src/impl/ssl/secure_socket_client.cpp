@@ -274,7 +274,7 @@ namespace ignite
                     long res = sslGateway.BIO_set_conn_hostname_(bio, address.c_str());
                     if (res != OPERATION_SUCCESS)
                     {
-                        sslGateway.BIO_free_all(bio);
+                        sslGateway.BIO_free_all_(bio);
 
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not set SSL connection hostname.");
                     }
@@ -283,7 +283,7 @@ namespace ignite
                     sslGateway.BIO_get_ssl_(bio, &ssl);
                     if (!ssl)
                     {
-                        sslGateway.BIO_free_all(bio);
+                        sslGateway.BIO_free_all_(bio);
 
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not get SSL instance from BIO.");
                     }

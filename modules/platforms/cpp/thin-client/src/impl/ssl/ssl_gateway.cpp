@@ -620,7 +620,7 @@ namespace ignite
                     return fp(ctx);
                 }
 
-                void SslGateway::BIO_free_all(BIO* a)
+                void SslGateway::BIO_free_all_(BIO* a)
                 {
                     assert(functions.fpBIO_free_all != 0);
 
@@ -631,7 +631,7 @@ namespace ignite
                     fp(a);
                 }
 
-                long SslGateway::BIO_ctrl(BIO* bp, int cmd, long larg, void* parg)
+                long SslGateway::BIO_ctrl_(BIO* bp, int cmd, long larg, void* parg)
                 {
                     assert(functions.fpBIO_ctrl != 0);
 
@@ -644,22 +644,22 @@ namespace ignite
 
                 long SslGateway::BIO_get_fd_(BIO* bp, int* fd)
                 {
-                    return BIO_ctrl(bp, BIO_C_GET_FD, 0, reinterpret_cast<void*>(fd));
+                    return BIO_ctrl_(bp, BIO_C_GET_FD, 0, reinterpret_cast<void*>(fd));
                 }
 
                 long SslGateway::BIO_get_ssl_(BIO* bp, SSL** ssl)
                 {
-                    return BIO_ctrl(bp, BIO_C_GET_SSL, 0, reinterpret_cast<void*>(ssl));
+                    return BIO_ctrl_(bp, BIO_C_GET_SSL, 0, reinterpret_cast<void*>(ssl));
                 }
 
                 long SslGateway::BIO_set_nbio_(BIO* bp, long n)
                 {
-                    return BIO_ctrl(bp, BIO_C_SET_NBIO, n, NULL);
+                    return BIO_ctrl_(bp, BIO_C_SET_NBIO, n, NULL);
                 }
 
                 long SslGateway::BIO_set_conn_hostname_(BIO* bp, const char* name)
                 {
-                    return BIO_ctrl(bp, BIO_C_SET_CONNECT, 0, const_cast<char*>(name));
+                    return BIO_ctrl_(bp, BIO_C_SET_CONNECT, 0, const_cast<char*>(name));
                 }
 
                 unsigned long SslGateway::ERR_get_error_()

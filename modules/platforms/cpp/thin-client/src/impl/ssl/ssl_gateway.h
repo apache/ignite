@@ -180,9 +180,9 @@ namespace ignite
 
                     BIO* BIO_new_ssl_connect_(SSL_CTX* ctx);
 
-                    void BIO_free_all(BIO* a);
+                    void BIO_free_all_(BIO* a);
 
-                    long BIO_ctrl(BIO* bp, int cmd, long larg, void* parg);
+                    long BIO_ctrl_(BIO* bp, int cmd, long larg, void* parg);
 
                     long BIO_get_fd_(BIO* bp, int* fd);
 
