@@ -224,8 +224,6 @@ public class ConnectionManager {
 
         connCache.remove();
 
-        log.info("+++ detach " + reusableConnection.object().connection());
-
         return reusableConnection;
     }
 
@@ -451,10 +449,8 @@ public class ConnectionManager {
             if (t.getState() != Thread.State.TERMINATED)
                 return false;
 
-            for (H2ConnectionWrapper c : e.getValue().values()) {
-                log.info("+++ cleanup " + c.connection());
+            for (H2ConnectionWrapper c : e.getValue().values())
                 U.close(c, log);
-            }
 
             return true;
         });

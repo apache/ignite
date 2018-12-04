@@ -156,7 +156,8 @@ class MapQueryResults {
             for (int i = 0; i < results.length(); i++) {
                 GridQueryCancel cancel = cancels[i];
 
-                if (cancel != null)
+                // Don't cancel statement for closed results because statement may be used by other query.
+                if (cancel != null && results.get(i) != null && !results.get(i).closed())
                     cancel.cancel();
             }
         }

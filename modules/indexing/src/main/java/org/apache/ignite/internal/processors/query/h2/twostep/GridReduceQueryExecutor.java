@@ -676,7 +676,6 @@ public class GridReduceQueryExecutor {
                 h2.connections().connectionForThread(schemaName), qry.mapQueries().size(), qry.pageSize(),
                 U.currentTimeMillis(), sfuFut, cancel);
 
-            log.info("+++ R DETACH " + qryReqId + " " + r.connection());
             ObjectPoolReusable<H2ConnectionWrapper> detachedConn = h2.connections().detachConnection();
 
             Collection<ClusterNode> nodes;
@@ -954,7 +953,6 @@ public class GridReduceQueryExecutor {
 
                             GridCacheSqlQuery rdc = qry.reduceQuery();
 
-                            log.info("+++ R " + qryReqId + " " + r.connection());
                             ResultSet res = h2.executeSqlQueryWithTimer(r.connection(),
                                 rdc.query(),
                                 F.asList(rdc.parameters(params)),

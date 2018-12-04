@@ -51,7 +51,6 @@ public class ObjectPoolReusable<T extends AutoCloseable> {
     public void recycle() {
         assert object != null  : "Already recycled";
 
-        System.out.println("+++ recycle " + object);
         pool.recycle(object);
 
         object = null;

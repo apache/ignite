@@ -1183,7 +1183,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private static void cancelStatement(PreparedStatement stmt) {
         try {
-            System.out.println(Thread.currentThread().getName() + "+++ !CANCELLLL " + stmt.getConnection());
             stmt.cancel();
         }
         catch (SQLException ignored) {
