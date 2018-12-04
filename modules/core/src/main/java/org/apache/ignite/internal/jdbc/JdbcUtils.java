@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
