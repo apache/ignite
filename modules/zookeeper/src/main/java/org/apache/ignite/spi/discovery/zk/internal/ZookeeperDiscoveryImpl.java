@@ -4001,11 +4001,9 @@ public class ZookeeperDiscoveryImpl {
             try {
                 lastCustomEvtLsnrFut.get();
             }
-            catch (IgniteException ignore) {
-                // No-op.
+            finally {
+                lastCustomEvtLsnrFut = null;
             }
-
-            lastCustomEvtLsnrFut = null;
         }
     }
 
