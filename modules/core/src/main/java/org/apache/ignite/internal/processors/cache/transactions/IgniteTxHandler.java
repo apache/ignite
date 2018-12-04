@@ -25,7 +25,6 @@ import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
@@ -34,7 +33,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -64,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridInvokeVal
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishFuture;
@@ -343,14 +342,17 @@ public class IgniteTxHandler {
     }
 
     /**
+     * @param originTx Transaction for copy.
      * @param req Request.
      * @return Prepare future.
      */
-    public IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTxLocal(final GridNearTxPrepareRequest req) {
+    public IgniteInternalFuture<GridNearTxPrepareResponse>  prepareNearTxLocal(
+        final GridNearTxLocal originTx,
+        final GridNearTxPrepareRequest req) {
         // Make sure not to provide Near entries to DHT cache.
         req.cloneEntries();
 
-        return prepareNearTx(ctx.localNode(), req);
+        return prepareNearTx(originTx, ctx.localNode(), req);
     }
 
     /**
@@ -359,6 +361,20 @@ public class IgniteTxHandler {
      * @return Prepare future or {@code null} if need retry operation.
      */
     @Nullable private IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTx(
+        final ClusterNode nearNode,
+        final GridNearTxPrepareRequest req
+    ) {
+        return prepareNearTx(null, nearNode, req);
+    }
+
+    /**
+     * @param originTx Transaction for copy.
+     * @param nearNode Node that initiated transaction.
+     * @param req Near prepare request.
+     * @return Prepare future or {@code null} if need retry operation.
+     */
+    @Nullable private IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTx(
+        final GridNearTxLocal originTx,
         final ClusterNode nearNode,
         final GridNearTxPrepareRequest req
     ) {
@@ -510,7 +526,8 @@ public class IgniteTxHandler {
                     req.transactionNodes(),
                     req.subjectId(),
                     req.taskNameHash(),
-                    req.txLabel()
+                    req.txLabel(),
+                    originTx
                 );
 
                 tx = ctx.tm().onCreated(null, tx);
@@ -688,7 +705,12 @@ public class IgniteTxHandler {
     private boolean needRemap(AffinityTopologyVersion expVer,
         AffinityTopologyVersion curVer,
         GridNearTxPrepareRequest req) {
-        if (expVer.equals(curVer))
+        if (curVer.equals(expVer))
+            return false;
+
+        AffinityTopologyVersion lastAffChangedTopVer = ctx.exchange().lastAffinityChangedTopologyVersion(expVer);
+
+        if (curVer.compareTo(expVer) <= 0 && curVer.compareTo(lastAffChangedTopVer) >= 0)
             return false;
 
         // TODO IGNITE-6754 check mvcc crd for mvcc enabled txs.
@@ -1659,8 +1681,6 @@ public class IgniteTxHandler {
             GridDhtTxRemote tx = ctx.tm().tx(req.version());
 
             if (tx == null) {
-                assert !req.queryUpdate();
-
                 boolean single = req.last() && req.writes().size() == 1;
 
                 tx = new GridDhtTxRemote(
@@ -1861,117 +1881,132 @@ public class IgniteTxHandler {
 
             int part = ctx.affinity().partition(key);
 
-            GridDhtLocalPartition locPart = ctx.topology().localPartition(part, tx.topologyVersion(), false);
-
-            if (locPart == null || !locPart.reserve())
-                throw new ClusterTopologyException("Can not reserve partition. Please retry on stable topology.");
-
             try {
-                CacheObject val = null;
-                EntryProcessor entryProc = null;
-                Object[] invokeArgs = null;
+                GridDhtLocalPartition locPart = ctx.topology().localPartition(part, tx.topologyVersion(), false);
 
-                boolean needOldVal = ctx.shared().mvccCaching().continuousQueryListeners(ctx, tx, key) != null;
-
-                Message val0 = vals != null ? vals.get(i) : null;
-
-                CacheEntryInfoCollection entries =
-                    val0 instanceof CacheEntryInfoCollection ? (CacheEntryInfoCollection)val0 : null;
-
-                if (entries == null && !op.isDeleteOrLock() && !op.isInvoke())
-                    val = (val0 instanceof CacheObject) ? (CacheObject)val0 : null;
-
-                if(entries == null && op.isInvoke()) {
-                    assert val0 instanceof GridInvokeValue;
-
-                    GridInvokeValue invokeVal = (GridInvokeValue)val0;
-
-                    entryProc = invokeVal.entryProcessor();
-                    invokeArgs = invokeVal.invokeArgs();
-                }
-
-                assert entryProc != null || !op.isInvoke();
-
-                GridDhtCacheEntry entry = dht.entryExx(key, tx.topologyVersion());
-
-                GridCacheUpdateTxResult updRes;
-
-                while (true) {
-                    ctx.shared().database().checkpointReadLock();
-
+                if (locPart != null && locPart.reserve()) {
                     try {
-                        if (entries == null) {
-                            switch (op) {
-                                case DELETE:
-                                    updRes = entry.mvccRemove(
-                                        tx,
+                        // do not process renting partitions.
+                        if (locPart.state() == GridDhtPartitionState.RENTING) {
+                            tx.addInvalidPartition(ctx, part);
+
+                            continue;
+                        }
+
+                        CacheObject val = null;
+                        EntryProcessor entryProc = null;
+                        Object[] invokeArgs = null;
+
+                        boolean needOldVal = ctx.shared().mvccCaching().continuousQueryListeners(ctx, tx, key) != null;
+
+                        Message val0 = vals != null ? vals.get(i) : null;
+
+                        CacheEntryInfoCollection entries =
+                            val0 instanceof CacheEntryInfoCollection ? (CacheEntryInfoCollection)val0 : null;
+
+                        if (entries == null && !op.isDeleteOrLock() && !op.isInvoke())
+                            val = (val0 instanceof CacheObject) ? (CacheObject)val0 : null;
+
+                        if (entries == null && op.isInvoke()) {
+                            assert val0 instanceof GridInvokeValue;
+
+                            GridInvokeValue invokeVal = (GridInvokeValue)val0;
+
+                            entryProc = invokeVal.entryProcessor();
+                            invokeArgs = invokeVal.invokeArgs();
+                        }
+
+                        assert entryProc != null || !op.isInvoke() : "entryProc=" + entryProc + ", op=" + op;
+
+                        GridDhtCacheEntry entry = dht.entryExx(key, tx.topologyVersion());
+
+                        GridCacheUpdateTxResult updRes;
+
+                        while (true) {
+                            ctx.shared().database().checkpointReadLock();
+
+                            try {
+                                if (entries == null) {
+                                    switch (op) {
+                                        case DELETE:
+                                            updRes = entry.mvccRemove(
+                                                tx,
+                                                ctx.localNodeId(),
+                                                tx.topologyVersion(),
+                                                snapshot,
+                                                false,
+                                                needOldVal,
+                                                null,
+                                                false);
+
+                                            break;
+
+                                        case INSERT:
+                                        case TRANSFORM:
+                                        case UPSERT:
+                                        case UPDATE:
+                                            updRes = entry.mvccSet(
+                                                tx,
+                                                ctx.localNodeId(),
+                                                val,
+                                                entryProc,
+                                                invokeArgs,
+                                                0,
+                                                tx.topologyVersion(),
+                                                snapshot,
+                                                op.cacheOperation(),
+                                                false,
+                                                false,
+                                                needOldVal,
+                                                null,
+                                                false);
+
+                                            break;
+
+                                        default:
+                                            throw new IgniteSQLException("Cannot acquire lock for operation [op= "
+                                                + op + "]" + "Operation is unsupported at the moment ",
+                                                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                                    }
+                                }
+                                else {
+                                    updRes = entry.mvccUpdateRowsWithPreloadInfo(tx,
                                         ctx.localNodeId(),
                                         tx.topologyVersion(),
-                                        snapshot,
-                                        false,
-                                        needOldVal,
-                                        null,
-                                        false);
-
-                                    break;
-
-                                case INSERT:
-                                case TRANSFORM:
-                                case UPSERT:
-                                case UPDATE:
-                                    updRes = entry.mvccSet(
-                                        tx,
-                                        ctx.localNodeId(),
-                                        val,
-                                        entryProc,
-                                        invokeArgs,
-                                        0,
-                                        tx.topologyVersion(),
-                                        snapshot,
+                                        entries.infos(),
                                         op.cacheOperation(),
-                                        false,
-                                        false,
-                                        needOldVal,
-                                        null,
-                                        false);
+                                        snapshot,
+                                        futId,
+                                        batchNum);
+                                }
 
-                                    break;
-
-                                default:
-                                    throw new IgniteSQLException("Cannot acquire lock for operation [op= "
-                                        + op + "]" + "Operation is unsupported at the moment ",
-                                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                                break;
+                            }
+                            catch (GridCacheEntryRemovedException ignore) {
+                                entry = dht.entryExx(key);
+                            }
+                            finally {
+                                ctx.shared().database().checkpointReadUnlock();
                             }
                         }
-                        else {
-                            updRes = entry.mvccUpdateRowsWithPreloadInfo(tx,
-                                ctx.localNodeId(),
-                                tx.topologyVersion(),
-                                entries.infos(),
-                                op.cacheOperation(),
-                                snapshot,
-                                futId,
-                                batchNum);
-                        }
 
-                        break;
+                        if (!updRes.filtered())
+                            ctx.shared().mvccCaching().addEnlisted(key, updRes.newValue(), 0, 0, tx.xidVersion(),
+                                updRes.oldValue(), tx.local(), tx.topologyVersion(), snapshot, ctx.cacheId(), tx, futId, batchNum);
+
+                        assert updRes.updateFuture() == null : "Entry should not be locked on the backup";
                     }
-                    catch (GridCacheEntryRemovedException ignore) {
-                        entry = dht.entryExx(key);
-                    }
+
                     finally {
-                        ctx.shared().database().checkpointReadUnlock();
+                        locPart.release();
                     }
                 }
-
-                if (!updRes.filtered())
-                    ctx.shared().mvccCaching().addEnlisted(key, updRes.newValue(), 0, 0, tx.xidVersion(),
-                        updRes.oldValue(), tx.local(), tx.topologyVersion(), snapshot, ctx.cacheId(), tx, futId, batchNum);
-
-                assert updRes.updateFuture() == null : "Entry should not be locked on the backup";
+                else {
+                    tx.addInvalidPartition(ctx, part);
+                }
             }
-            finally {
-                locPart.release();
+            catch (GridDhtInvalidPartitionException e) {
+                tx.addInvalidPartition(ctx, e.partition());
             }
         }
     }
@@ -2213,26 +2248,42 @@ public class IgniteTxHandler {
         if (counters == null)
             return;
 
-        int cacheId = CU.UNDEFINED_CACHE_ID;
-        GridDhtPartitionTopology top = null;
-
         for (PartitionUpdateCountersMessage counter : counters) {
-            if (counter.cacheId() != cacheId) {
-                GridCacheContext ctx0 = ctx.cacheContext(cacheId = counter.cacheId());
+            GridCacheContext ctx0 = ctx.cacheContext(counter.cacheId());
 
-                assert ctx0.mvccEnabled();
+            assert ctx0.mvccEnabled();
 
-                top = ctx0.topology();
-            }
+            GridDhtPartitionTopology top = ctx0.topology();
 
             assert top != null;
 
             for (int i = 0; i < counter.size(); i++) {
-                GridDhtLocalPartition part = top.localPartition(counter.partition(i));
+                boolean invalid = false;
 
-                assert part != null;
+                try {
+                    GridDhtLocalPartition part = top.localPartition(counter.partition(i));
 
-                part.updateCounter(counter.initialCounter(i), counter.updatesCount(i));
+                    if (part != null && part.reserve()) {
+                        try {
+                            if (part.state() != GridDhtPartitionState.RENTING)
+                                part.updateCounter(counter.initialCounter(i), counter.updatesCount(i));
+                            else
+                                invalid = true;
+                        }
+                        finally {
+                            part.release();
+                        }
+                    }
+                    else
+                        invalid = true;
+                }
+                catch (GridDhtInvalidPartitionException e) {
+                    invalid = true;
+                }
+
+                if (invalid && log.isDebugEnabled())
+                    log.debug("Received partition update counters message for invalid partition: " +
+                        "[cacheId=" + counter.cacheId() + ", part=" + counter.partition(i) + "]");
             }
         }
     }
@@ -2245,25 +2296,24 @@ public class IgniteTxHandler {
     @Nullable public List<PartitionUpdateCountersMessage> filterUpdateCountersForBackupNode(
         IgniteInternalTx tx, ClusterNode node) {
         TxCounters txCntrs = tx.txCounters(false);
+        Collection<PartitionUpdateCountersMessage> updCntrs;
 
-        if (txCntrs == null || F.isEmpty(txCntrs.updateCounters()))
+        if (txCntrs == null || F.isEmpty(updCntrs = txCntrs.updateCounters()))
             return null;
-
-        Collection<PartitionUpdateCountersMessage> updCntrs = txCntrs.updateCounters();
 
         List<PartitionUpdateCountersMessage> res = new ArrayList<>(updCntrs.size());
 
         AffinityTopologyVersion top = tx.topologyVersionSnapshot();
 
         for (PartitionUpdateCountersMessage partCntrs : updCntrs) {
-            GridCacheAffinityManager affinity = ctx.cacheContext(partCntrs.cacheId()).affinity();
+            GridDhtPartitionTopology topology = ctx.cacheContext(partCntrs.cacheId()).topology();
 
             PartitionUpdateCountersMessage resCntrs = new PartitionUpdateCountersMessage(partCntrs.cacheId(), partCntrs.size());
 
             for (int i = 0; i < partCntrs.size(); i++) {
                 int part = partCntrs.partition(i);
 
-                if (affinity.backupByPartition(node, part, top))
+                if (topology.nodes(part, top).indexOf(node) > 0)
                     resCntrs.add(part, partCntrs.initialCounter(i), partCntrs.updatesCount(i));
             }
 

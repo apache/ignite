@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManag
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.jetbrains.annotations.Nullable;
 

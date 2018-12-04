@@ -32,6 +32,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -53,13 +55,13 @@ import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntry
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.util.deque.FastSizeDeque;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -171,10 +173,14 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param ctx Context.
      * @param grp Cache group.
      * @param id Partition ID.
+     * @param recovery Flag indicates that partition is created during recovery phase.
      */
-    public GridDhtLocalPartition(GridCacheSharedContext ctx,
-        CacheGroupContext grp,
-        int id) {
+    public GridDhtLocalPartition(
+            GridCacheSharedContext ctx,
+            CacheGroupContext grp,
+            int id,
+            boolean recovery
+    ) {
         super(ENTRY_FACTORY);
 
         this.id = id;
@@ -211,7 +217,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             store = grp.offheap().createCacheDataStore(id);
 
             // Log partition creation for further crash recovery purposes.
-            if (grp.walEnabled())
+            if (grp.walEnabled() && !recovery)
                 ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, state(), updateCounter()));
 
             // Inject row cache cleaner on store creation
@@ -350,7 +356,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return {@code True} if partition is empty.
      */
     public boolean isEmpty() {
-        return store.fullSize() == 0 && internalSize() == 0;
+        return store.isEmpty() && internalSize() == 0;
     }
 
     /**
@@ -558,6 +564,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to log partition state change to WAL.", e);
+
+                        ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
                     }
 
                     if (log.isDebugEnabled())
@@ -972,6 +980,19 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         if (grp.sharedGroup())
             grp.onPartitionCounterUpdate(cacheId, id, primaryCntr != null ? primaryCntr : nextCntr, topVer, primary);
 
+        // This is first update in partition, we should log partition state information for further crash recovery.
+        if (nextCntr == 1) {
+            if (grp.persistenceEnabled() && grp.walEnabled())
+                try {
+                    ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, state(), 0));
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to log partition state snapshot to WAL.", e);
+
+                    ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+                }
+        }
+
         return nextCntr;
     }
 
@@ -1363,9 +1384,11 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /**
      * Flushes pending update counters closing all possible gaps.
+     *
+     * @return Even-length array of pairs [start, end] for each gap.
      */
-    public void finalizeUpdateCountres() {
-        store.finalizeUpdateCountres();
+    public GridLongList finalizeUpdateCounters() {
+        return store.finalizeUpdateCounters();
     }
 
     /**

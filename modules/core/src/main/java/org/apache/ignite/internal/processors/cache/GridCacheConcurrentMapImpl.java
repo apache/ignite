@@ -26,7 +26,6 @@ import java.util.Set;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_CREATED;
@@ -55,6 +54,8 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
     /** {@inheritDoc} */
     @Nullable @Override public GridCacheMapEntry getEntry(GridCacheContext ctx, KeyCacheObject key) {
         CacheMapHolder hld = entriesMapIfExists(ctx.cacheIdBoxed());
+
+        key = (KeyCacheObject)ctx.kernalContext().cacheObjects().prepareForCache(key, ctx);
 
         return hld != null ? hld.map.get(key) : null;
     }
@@ -90,7 +91,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
 
         try {
             while (!done) {
-                GridCacheMapEntry entry = hld != null ? hld.map.get(key) : null;
+                GridCacheMapEntry entry = hld != null ? hld.map.get(ctx.kernalContext().cacheObjects().prepareForCache(key, ctx)) : null;
                 created = null;
                 doomed = null;
 

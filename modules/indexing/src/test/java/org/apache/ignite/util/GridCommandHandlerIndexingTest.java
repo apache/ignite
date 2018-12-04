@@ -113,7 +113,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
     }
 
     /**
-     * Tests that missing rows in H2 indexes are detected.
+     * Tests that corrupted pages in the index partition are detected.
      */
     public void testCorruptedIndexPartitionShouldFailValidation() throws Exception {
         Ignite ignite = prepareGridForTest();

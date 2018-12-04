@@ -48,6 +48,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.BaselineNode;
@@ -85,7 +86,6 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
@@ -145,7 +145,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SECURITY_COMPATIBILITY_MODE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
@@ -166,7 +165,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_COMPATIBILITY_MODE;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
@@ -657,8 +655,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     updateClientNodes(node.id());
                 }
 
-                ctx.coordinators().onDiscoveryEvent(type, topSnapshot, topVer, customMsg);
-
                 boolean locJoinEvt = type == EVT_NODE_JOINED && node.id().equals(locNode.id());
 
                 ChangeGlobalStateFinishMessage stateFinishMsg = null;
@@ -769,8 +765,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     // Current version.
                     discoCache = discoCache();
 
-                final DiscoCache discoCache0 = discoCache;
-
                 // If this is a local join event, just save it and do not notify listeners.
                 if (locJoinEvt) {
                     if (gridStartTime == 0)
@@ -791,6 +785,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     discoWrk.discoCache = discoCache;
 
                     if (!isLocDaemon && !ctx.clientDisconnected()) {
+                        ctx.cache().context().coordinators().onLocalJoin(discoEvt);
+
                         ctx.cache().context().exchange().onLocalJoin(discoEvt, discoCache);
 
                         ctx.authentication().onLocalJoin();
@@ -856,7 +852,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             try {
                                 fut.get();
 
-                                discoWrk.addEvent(type, nextTopVer, node, discoCache0, topSnapshot, null);
+                                discoWrk.addEvent(EVT_CLIENT_NODE_RECONNECTED, nextTopVer, node, discoCache, topSnapshot, null);
                             }
                             catch (IgniteException ignore) {
                                 // No-op.
@@ -1096,6 +1092,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      */
     public DiscoveryMetricsProvider createMetricsProvider() {
         return new DiscoveryMetricsProvider() {
+            /** Disable cache metrics update. */
+            private final boolean disableCacheMetricsUpdate = IgniteSystemProperties.getBoolean(
+                IgniteSystemProperties.IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE, false);
+
             /** */
             private final long startTime = U.currentTimeMillis();
 
@@ -1107,6 +1107,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             /** {@inheritDoc} */
             @Override public Map<Integer, CacheMetrics> cacheMetrics() {
                 try {
+                    if (disableCacheMetricsUpdate)
+                        return Collections.emptyMap();
+
                     /** Caches should not be accessed while state transition is in progress. */
                     if (ctx.state().clusterState().transition())
                         return Collections.emptyMap();
@@ -1220,7 +1223,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         boolean locDelayAssign = locNode.attribute(ATTR_LATE_AFFINITY_ASSIGNMENT);
 
-        Boolean locSrvcCompatibilityEnabled = locNode.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
         Boolean locSecurityCompatibilityEnabled = locNode.attribute(ATTR_SECURITY_COMPATIBILITY_MODE);
 
         for (ClusterNode n : nodes) {
@@ -1304,20 +1306,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     ", rmtId8=" + U.id8(n.id()) +
                     ", rmtLateAssign=" + rmtLateAssign +
                     ", rmtAddrs=" + U.addressesAsString(n) + ", rmtNode=" + U.toShortString(n) + "]");
-            }
-
-            Boolean rmtSrvcCompatibilityEnabled = n.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
-
-            if (!F.eq(locSrvcCompatibilityEnabled, rmtSrvcCompatibilityEnabled)) {
-                throw new IgniteCheckedException("Local node's " + IGNITE_SERVICES_COMPATIBILITY_MODE +
-                    " property value differs from remote node's value " +
-                    "(to make sure all nodes in topology have identical IgniteServices compatibility mode enabled, " +
-                    "configure system property explicitly) " +
-                    "[locSrvcCompatibilityEnabled=" + locSrvcCompatibilityEnabled +
-                    ", rmtSrvcCompatibilityEnabled=" + rmtSrvcCompatibilityEnabled +
-                    ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                    ", rmtNodeAddrs=" + U.addressesAsString(n) +
-                    ", locNodeId=" + locNode.id() + ", rmtNode=" + U.toShortString(n) + "]");
             }
 
             if (n.version().compareToIgnoreTimestamp(SERVICE_PERMISSIONS_SINCE) >= 0
@@ -2059,6 +2047,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             snap.discoCache : discoCacheHist.get(topVer);
 
         if (cache == null) {
+            AffinityTopologyVersion lastAffChangedTopVer =
+                ctx.cache().context().exchange().lastAffinityChangedTopologyVersion(topVer);
+
+            DiscoCache lastAffChangedDiscoCache = discoCacheHist.get(lastAffChangedTopVer);
+
+            if (lastAffChangedDiscoCache != null)
+                return lastAffChangedDiscoCache;
+
             CacheGroupDescriptor desc = ctx.cache().cacheGroupDescriptors().get(grpId);
 
             throw new IgniteException("Failed to resolve nodes topology [" +
@@ -2338,8 +2334,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         Collection<ClusterNode> topSnapshot) {
         assert topSnapshot.contains(loc);
 
-        MvccCoordinator mvccCrd = ctx.coordinators().assignedCoordinator();
-
         HashSet<UUID> alives = U.newHashSet(topSnapshot.size());
         HashMap<UUID, ClusterNode> nodeMap = U.newHashMap(topSnapshot.size());
 
@@ -2441,7 +2435,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             topVer,
             state,
             loc,
-            mvccCrd,
             Collections.unmodifiableList(rmtNodes),
             Collections.unmodifiableList(allNodes),
             Collections.unmodifiableList(srvNodes),
@@ -2613,8 +2606,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                                 AffinityTopologyVersion.NONE,
                                 ctx.state().clusterState(),
                                 node,
-                                locNodeOnlyTop
-                            ), locNodeOnlyTop,
+                                locNodeOnlyTop),
+                            locNodeOnlyTop,
                             null);
 
                         lastSegChkRes.set(false);
@@ -3447,7 +3440,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             topVer,
             discoCache.state(),
             discoCache.localNode(),
-            discoCache.mvccCoordinator(),
             discoCache.remoteNodes(),
             allNodes,
             discoCache.serverNodes(),

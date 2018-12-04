@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -177,6 +178,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Store manager. */
     private CacheStoreManager storeMgr;
 
+    /** Compression manager. */
+    private CacheCompressionManager compressMgr;
+
     /** Replication manager. */
     private GridCacheDrManager drMgr;
 
@@ -321,6 +325,7 @@ public class GridCacheContext<K, V> implements Externalizable {
          * ===========================
          */
 
+        CacheCompressionManager compressMgr,
         GridCacheEventManager evtMgr,
         CacheStoreManager storeMgr,
         CacheEvictionManager evictMgr,
@@ -338,6 +343,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert cacheCfg != null;
         assert locStartTopVer != null : cacheCfg.getName();
 
+        assert compressMgr != null;
         assert grp != null;
         assert evtMgr != null;
         assert storeMgr != null;
@@ -364,6 +370,7 @@ public class GridCacheContext<K, V> implements Externalizable {
          * Managers in starting order!
          * ===========================
          */
+        this.compressMgr = add(compressMgr);
         this.evtMgr = add(evtMgr);
         this.storeMgr = add(storeMgr);
         this.evictMgr = add(evictMgr);
@@ -1230,6 +1237,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return Compression manager.
+     */
+    public CacheCompressionManager compress() {
+        return compressMgr;
+    }
+
+    /**
      * Sets cache object context.
      *
      * @param cacheObjCtx Cache object context.
@@ -1247,21 +1261,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     @SuppressWarnings({"unchecked"})
     public IgnitePredicate<Cache.Entry<K, V>>[] vararg(IgnitePredicate<Cache.Entry<K, V>> p) {
         return p == null ? CU.<K, V>empty() : new IgnitePredicate[] {p};
-    }
-
-    /**
-     * Same as {@link GridFunc#isAll(Object, IgnitePredicate[])}, but safely unwraps exceptions.
-     *
-     * @param e Element.
-     * @param p Predicates.
-     * @return {@code True} if predicates passed.
-     * @throws IgniteCheckedException If failed.
-     */
-    public <K1, V1> boolean isAll(
-        GridCacheEntryEx e,
-        @Nullable IgnitePredicate<Cache.Entry<K1, V1>>[] p
-    ) throws IgniteCheckedException {
-        return F.isEmpty(p) || isAll(e.<K1, V1>wrapLazyValue(keepBinary()), p);
     }
 
     /**
@@ -2241,24 +2240,37 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @param affNodes All affinity nodes.
      * @param canRemap Flag indicating that 'get' should be done on a locked topology version.
+     * @param partitionId Partition ID.
      * @return Affinity node to get key from or {@code null} if there is no suitable alive node.
      */
-    @Nullable public ClusterNode selectAffinityNodeBalanced(List<ClusterNode> affNodes, boolean canRemap) {
+    @Nullable public ClusterNode selectAffinityNodeBalanced(
+        List<ClusterNode> affNodes,
+        Set<ClusterNode> invalidNodes,
+        int partitionId,
+        boolean canRemap
+    ) {
         if (!readLoadBalancingEnabled) {
             if (!canRemap) {
+                // Find next available node if we can not wait next topology version.
                 for (ClusterNode node : affNodes) {
-                    if (ctx.discovery().alive(node))
+                    if (ctx.discovery().alive(node) && !invalidNodes.contains(node))
                         return node;
                 }
 
                 return null;
             }
-            else
-                return affNodes.get(0);
+            else {
+                ClusterNode first = affNodes.get(0);
+
+                return !invalidNodes.contains(first) ? first : null;
+            }
         }
 
-        if (!readFromBackup)
-            return affNodes.get(0);
+        if (!readFromBackup){
+            ClusterNode first = affNodes.get(0);
+
+            return !invalidNodes.contains(first) ? first : null;
+        }
 
         assert locMacs != null;
 
@@ -2267,7 +2279,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         ClusterNode n0 = null;
 
         for (ClusterNode node : affNodes) {
-            if (canRemap || discovery().alive(node)) {
+            if ((canRemap || discovery().alive(node)) && !invalidNodes.contains(node)) {
                 if (locMacs.equals(node.attribute(ATTR_MACS)))
                     return node;
 

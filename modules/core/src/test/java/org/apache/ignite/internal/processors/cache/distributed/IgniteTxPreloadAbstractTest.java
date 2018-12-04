@@ -186,7 +186,7 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
 
             IgniteTransactions txs = ignite(i).transactions();
 
-            try (Transaction tx = txs.txStart(txConcurrency, TransactionIsolation.READ_COMMITTED)) {
+            try (Transaction tx = txs.txStart(txConcurrency, TransactionIsolation.REPEATABLE_READ)) {
                 cache.invoke(TX_KEY, new EntryProcessor<String, Integer, Void>() {
                     @Override public Void process(MutableEntry<String, Integer> e, Object... args) {
                         Integer val = e.getValue();
