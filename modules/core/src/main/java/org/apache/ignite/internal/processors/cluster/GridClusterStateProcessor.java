@@ -415,7 +415,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         if (msg.requestId().equals(state.transitionRequestId())) {
             log.info("Received state change finish message: " + msg.clusterActive());
 
-            globalState = globalState.finish(msg.success());
+            globalState = state.finish(msg.success());
 
             afterStateChangeFinished(msg.id(), msg.success());
 
