@@ -73,13 +73,13 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
 
         this.desc = desc;
 
-        this.key = desc.wrap(row.key(), keyType);
+        this.key = desc.indexing().wrap(row.key(), keyType);
 
         if (row.value() != null)
-            this.val = desc.wrap(row.value(), valType);
+            this.val = desc.indexing().wrap(row.value(), valType);
 
         if (row.version() != null)
-            this.ver = desc.wrap(row.version(), Value.JAVA_OBJECT);
+            this.ver = desc.indexing().wrap(row.version(), Value.JAVA_OBJECT);
     }
 
     /** {@inheritDoc} */
@@ -132,7 +132,7 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
             v = ValueNull.INSTANCE;
         else {
             try {
-                v = desc.wrap(res, desc.fieldType(col));
+                v = desc.indexing().wrap(res, desc.fieldType(col));
             }
             catch (IgniteCheckedException e) {
                 throw DbException.convert(e);

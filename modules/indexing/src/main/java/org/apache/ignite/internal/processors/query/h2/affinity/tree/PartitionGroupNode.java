@@ -47,22 +47,6 @@ public class PartitionGroupNode implements PartitionNode {
     }
 
     /**
-     * Merge several partitions of a single type.
-     *
-     * @param vals Values.
-     * @param consts {@code True} if constants, {@code false} if arguments.
-     * @return Group node.
-     */
-    public static PartitionGroupNode merge(Collection<Integer> vals, boolean consts) {
-        HashSet<PartitionSingleNode> nodes = new HashSet<>(vals.size());
-
-        for (Integer val : vals)
-            nodes.add(consts ? new PartitionConstantSingleNode(val) : new PartitionArgumentSingleNode(val));
-
-        return new PartitionGroupNode(nodes);
-    }
-
-    /**
      * Constructor.
      *
      * @param siblings Partitions.
@@ -74,12 +58,12 @@ public class PartitionGroupNode implements PartitionNode {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Integer> apply(PartitionResolver resolver, Object... args) {
+    @Override public Collection<Integer> apply(Object... args) {
         // Deduplicate same partitions which may appear during resolution.
         HashSet<Integer> res = new HashSet<>(siblings.size());
 
         for (PartitionSingleNode sibling : siblings)
-            res.add(sibling.applySingle(resolver, args));
+            res.add(sibling.applySingle(args));
 
         return res;
     }

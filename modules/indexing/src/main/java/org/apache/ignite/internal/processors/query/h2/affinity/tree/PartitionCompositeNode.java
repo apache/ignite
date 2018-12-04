@@ -49,9 +49,9 @@ public class PartitionCompositeNode implements PartitionNode {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Integer> apply(PartitionResolver resolver, Object... args) {
-        Collection<Integer> leftParts = left.apply(resolver, args);
-        Collection<Integer> rightParts = right.apply(resolver, args);
+    @Override public Collection<Integer> apply(Object... args) {
+        Collection<Integer> leftParts = left.apply(args);
+        Collection<Integer> rightParts = right.apply(args);
 
         if (op == PartitionCompositeNodeOperator.AND)
             leftParts.retainAll(rightParts);

@@ -249,12 +249,12 @@ public class H2Utils {
      * Convert value to column's expected type by means of H2.
      *
      * @param val Source value.
-     * @param desc Row descriptor.
+     * @param idx Row descriptor.
      * @param type Expected column type to convert to.
      * @return Converted object.
      * @throws IgniteCheckedException if failed.
      */
-    public static Object convert(Object val, GridH2RowDescriptor desc, int type) throws IgniteCheckedException {
+    public static Object convert(Object val, IgniteH2Indexing idx, int type) throws IgniteCheckedException {
         if (val == null)
             return null;
 
@@ -263,7 +263,7 @@ public class H2Utils {
         if (objType == type)
             return val;
 
-        Value h2Val = desc.wrap(val, objType);
+        Value h2Val = idx.wrap(val, objType);
 
         return h2Val.convertTo(type).getObject();
     }

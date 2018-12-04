@@ -26,9 +26,8 @@ public interface PartitionNode {
     /**
      * Get partitions.
      *
-     * @param resolver Resolver.
      * @param args Query arguments.
      * @return Partitions.
      */
-    Collection<Integer> apply(PartitionResolver resolver, Object... args);
+    Collection<Integer> apply(Object... args);
 }

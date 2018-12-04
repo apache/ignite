@@ -27,14 +27,18 @@ public class PartitionConstantSingleNode extends PartitionSingleNode {
     /**
      * Constructor.
      *
+     * @param resolver Resolver.
+     * @param dataType data type.
      * @param part Partition.
      */
-    public PartitionConstantSingleNode(int part) {
+    public PartitionConstantSingleNode(PartitionTableDescriptor resolver, int dataType, int part) {
+        super(resolver, dataType);
+
         this.part = part;
     }
 
     /** {@inheritDoc} */
-    @Override public int applySingle(PartitionResolver resolver, Object... args) {
+    @Override public int applySingle(Object... args) {
         return part;
     }
 

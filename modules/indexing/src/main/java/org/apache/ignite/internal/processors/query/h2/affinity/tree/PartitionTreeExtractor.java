@@ -189,8 +189,6 @@ public class PartitionTreeExtractor {
             parts.add(part);
         }
 
-        PartitionNode res;
-
         if (parts.size() == 1)
             return parts.iterator().next();
         else

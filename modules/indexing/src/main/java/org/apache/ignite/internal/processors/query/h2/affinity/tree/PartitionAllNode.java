@@ -34,7 +34,7 @@ public class PartitionAllNode implements PartitionNode {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Integer> apply(PartitionResolver resolver, Object... args) {
+    @Override public Collection<Integer> apply(Object... args) {
         return null;
     }
 }

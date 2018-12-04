@@ -24,8 +24,25 @@ import java.util.Collections;
  * Node with a single partition.
  */
 public abstract class PartitionSingleNode implements PartitionNode {
+    /** Resolver. */
+    private final PartitionTableDescriptor resolver;
+
+    /** Data type. */
+    private final int dataType;
+
+    /**
+     * Constructor.
+     *
+     * @param resolver Resolver.
+     * @param dataType Data type.
+     */
+    protected PartitionSingleNode(PartitionTableDescriptor resolver, int dataType) {
+        this.resolver = resolver;
+        this.dataType = dataType;
+    }
+
     /** {@inheritDoc} */
-    @Override public Collection<Integer> apply(PartitionResolver resolver, Object... args) {
+    @Override public Collection<Integer> apply(Object... args) {
         return Collections.singletonList(applySingle(resolver, args));
     }
 
@@ -35,7 +52,7 @@ public abstract class PartitionSingleNode implements PartitionNode {
      * @param args Arguments.
      * @return Partition.
      */
-    public abstract int applySingle(PartitionResolver resolver, Object... args);
+    public abstract int applySingle(Object... args);
 
     /**
      * @return {@code True} if constant, {@code false} if argument.
@@ -46,6 +63,16 @@ public abstract class PartitionSingleNode implements PartitionNode {
      * @return Partition for constant node, index for argument node.
      */
     public abstract int value();
+
+    /**
+     * Internal partition resolution routine.
+     *
+     * @param val Value.
+     * @return Partition.
+     */
+    protected int resolve0(Object val) {
+        return resolver.resolve(val, dataType);
+    }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {

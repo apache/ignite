@@ -35,7 +35,7 @@ public class PartitionNoneNode implements PartitionNode {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Integer> apply(PartitionResolver resolver, Object... args) {
+    @Override public Collection<Integer> apply(Object... args) {
         return Collections.emptySet();
     }
 }

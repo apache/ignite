@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.affinity.tree;
 
 /**
- * Pa
+ * Node with partition which should be extracted from argument.
  */
 public class PartitionArgumentSingleNode extends PartitionSingleNode {
     /** Index. */
@@ -29,16 +29,18 @@ public class PartitionArgumentSingleNode extends PartitionSingleNode {
      *
      * @param idx Index.
      */
-    public PartitionArgumentSingleNode(int idx) {
+    public PartitionArgumentSingleNode(PartitionTableDescriptor resolver, int dataType, int idx) {
+        super(resolver, dataType);
+
         this.idx = idx;
     }
 
     /** {@inheritDoc} */
-    @Override public int applySingle(PartitionResolver resolver, Object... args) {
+    @Override public int applySingle(Object... args) {
         assert args != null;
         assert idx < args.length;
 
-        return resolver.resolve(args[idx]);
+        return resolve0(args[idx]);
     }
 
     /** {@inheritDoc} */
