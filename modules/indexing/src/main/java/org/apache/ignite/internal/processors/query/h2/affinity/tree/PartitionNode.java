@@ -30,4 +30,13 @@ public interface PartitionNode {
      * @return Partitions.
      */
     Collection<Integer> apply(Object... args);
+
+    /**
+     * Try optimizing partition nodes into a simpler form.
+     *
+     * @return Optimized node or {@code this} if optimization failed.
+     */
+    default PartitionNode optimize() {
+        return this;
+    }
 }

@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
 import org.apache.ignite.internal.processors.query.h2.affinity.tree.PartitionCompositeNode;
 import org.apache.ignite.internal.processors.query.h2.affinity.tree.PartitionNode;
+import org.apache.ignite.internal.processors.query.h2.affinity.tree.PartitionResult;
 import org.apache.ignite.internal.processors.query.h2.affinity.tree.PartitionTreeExtractor;
 import org.apache.ignite.internal.util.lang.GridTreePrinter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -136,16 +137,22 @@ public class GridSqlQuerySplitter {
     private IdentityHashMap<GridSqlAst, GridSqlAlias> uniqueFromAliases = new IdentityHashMap<>();
 
     /** */
-    private GridKernalContext ctx;
+    private final GridKernalContext ctx;
+
+    /** Partition extractor. */
+    private final PartitionTreeExtractor extractor;
 
     /**
      * @param params Query parameters.
      * @param collocatedGrpBy If it is a collocated GROUP BY query.
+     * @param idx Indexing.
      */
-    public GridSqlQuerySplitter(Object[] params, boolean collocatedGrpBy, GridKernalContext ctx) {
+    public GridSqlQuerySplitter(Object[] params, boolean collocatedGrpBy, IgniteH2Indexing idx) {
         this.params = params;
         this.collocatedGrpBy = collocatedGrpBy;
-        this.ctx = ctx;
+
+        ctx = idx.kernalContext();
+        extractor = new PartitionTreeExtractor(idx);
     }
 
     /**
@@ -209,7 +216,7 @@ public class GridSqlQuerySplitter {
 
         qry.explain(false);
 
-        GridSqlQuerySplitter splitter = new GridSqlQuerySplitter(params, collocatedGrpBy, h2.kernalContext());
+        GridSqlQuerySplitter splitter = new GridSqlQuerySplitter(params, collocatedGrpBy, h2);
 
         // Normalization will generate unique aliases for all the table filters in FROM.
         // Also it will collect all tables and schemas from the query.
@@ -1552,15 +1559,8 @@ public class GridSqlQuerySplitter {
         map.hasSubQueries(hasSubQueries);
 
         if (map.isPartitioned()) {
-            // TODO.
-            PartitionTreeExtractor e = new PartitionTreeExtractor(ctx);
-
-            PartitionNode node = e.extract(mapQry);
-
-            if (node instanceof PartitionCompositeNode)
-                node = ((PartitionCompositeNode)node).optimize();
-
             map.derivedPartitions(PartitionExtractor.derivePartitionsFromQuery(mapQry, ctx));
+            map.derivedPartitions2(extractor.extract(mapQry));
         }
 
         mapSqlQrys.add(map);

@@ -18,38 +18,37 @@
 package org.apache.ignite.internal.processors.query.h2.affinity.tree;
 
 /**
- * Node with partition which should be extracted from argument.
+ * Partition extraction result.
  */
-public class PartitionArgumentSingleNode extends PartitionSingleNode {
-    /** Index. */
-    private final int idx;
+public class PartitionResult {
+    /** Descriptor. */
+    private final PartitionTableDescriptor desc;
+
+    /** Tree. */
+    private final PartitionNode tree;
 
     /**
      * Constructor.
      *
-     * @param idx Index.
+     * @param desc Descriptor.
+     * @param tree Tree.
      */
-    public PartitionArgumentSingleNode(PartitionTableDescriptor resolver, int dataType, int idx) {
-        super(resolver, dataType);
-
-        this.idx = idx;
+    public PartitionResult(PartitionTableDescriptor desc, PartitionNode tree) {
+        this.desc = desc;
+        this.tree = tree;
     }
 
-    /** {@inheritDoc} */
-    @Override public int applySingle(Object... args) {
-        assert args != null;
-        assert idx < args.length;
-
-        return resolve0(args[idx]);
+    /**
+     * Descriptor.
+     */
+    public PartitionTableDescriptor descriptor() {
+        return desc;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean constant() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int value() {
-        return idx;
+    /**
+     * Tree.
+     */
+    public PartitionNode tree() {
+        return tree;
     }
 }

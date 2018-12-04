@@ -17,19 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity.tree;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.query.h2.H2Utils;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Partition resolver.
  */
 public class PartitionTableDescriptor {
-    /** Indexing. */
-    private final IgniteH2Indexing idx;
-
     /** Cache name. */
     private final String cacheName;
 
@@ -39,32 +32,19 @@ public class PartitionTableDescriptor {
     /**
      * Constructor.
      *
-     * @param idx Indexing.
      * @param cacheName Cache name.
      * @param tblName Table name.
      */
-    public PartitionTableDescriptor(IgniteH2Indexing idx, String cacheName, String tblName) {
-        this.idx = idx;
+    public PartitionTableDescriptor(String cacheName, String tblName) {
         this.cacheName = cacheName;
         this.tblName = tblName;
     }
 
     /**
-     * Resolve partition.
-     *
-     * @param val Value.
-     * @param dataType Data type.
-     * @return Partition.
+     * @return Cache name.
      */
-    public int resolve(Object val, int dataType) {
-        try {
-            Object param = H2Utils.convert(val, idx, dataType);
-
-            return idx.kernalContext().affinity().partition(cacheName, param);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to resolve partition: " + cacheName, e);
-        }
+    public String cacheName() {
+        return cacheName;
     }
 
     /** {@inheritDoc} */

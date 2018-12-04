@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity.tree;
 
+import org.apache.ignite.internal.util.typedef.F;
+
 import java.util.Collection;
 import java.util.Collections;
 
@@ -24,26 +26,21 @@ import java.util.Collections;
  * Node with a single partition.
  */
 public abstract class PartitionSingleNode implements PartitionNode {
-    /** Resolver. */
-    private final PartitionTableDescriptor resolver;
-
-    /** Data type. */
-    private final int dataType;
+    /** Table descriptor. */
+    protected final PartitionTableDescriptor tbl;
 
     /**
      * Constructor.
      *
-     * @param resolver Resolver.
-     * @param dataType Data type.
+     * @param tbl Table descriptor.
      */
-    protected PartitionSingleNode(PartitionTableDescriptor resolver, int dataType) {
-        this.resolver = resolver;
-        this.dataType = dataType;
+    protected PartitionSingleNode(PartitionTableDescriptor tbl) {
+        this.tbl = tbl;
     }
 
     /** {@inheritDoc} */
     @Override public Collection<Integer> apply(Object... args) {
-        return Collections.singletonList(applySingle(resolver, args));
+        return Collections.singletonList(applySingle(args));
     }
 
     /**
@@ -64,19 +61,14 @@ public abstract class PartitionSingleNode implements PartitionNode {
      */
     public abstract int value();
 
-    /**
-     * Internal partition resolution routine.
-     *
-     * @param val Value.
-     * @return Partition.
-     */
-    protected int resolve0(Object val) {
-        return resolver.resolve(val, dataType);
-    }
-
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return (constant() ? 1 : 0) + value();
+        int hash = (constant() ? 1 : 0);
+
+        hash = 31 * hash + value();
+        hash = 31 * hash + tbl.hashCode();
+
+        return hash;
     }
 
     /** {@inheritDoc} */
@@ -89,6 +81,6 @@ public abstract class PartitionSingleNode implements PartitionNode {
 
         PartitionSingleNode other = (PartitionSingleNode)obj;
 
-        return value() == other.value();
+        return F.eq(constant(), other.constant()) && F.eq(value(), other.value()) && F.eq(tbl, other.tbl);
     }
 }

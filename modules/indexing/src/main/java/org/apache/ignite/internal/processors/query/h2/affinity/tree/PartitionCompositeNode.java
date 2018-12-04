@@ -64,12 +64,8 @@ public class PartitionCompositeNode implements PartitionNode {
         return leftParts;
     }
 
-    /**
-     * Try optimizing partition nodes into a simpler form.
-     *
-     * @return Optimized node or {@code this} if optimization failed.
-     */
-    public PartitionNode optimize() {
+    /** {@inheritDoc} */
+    @Override public PartitionNode optimize() {
         // If one of child nodes cannot be optimized, nothing can be done.
         if (left instanceof PartitionCompositeNode || right instanceof PartitionCompositeNode)
             return this;

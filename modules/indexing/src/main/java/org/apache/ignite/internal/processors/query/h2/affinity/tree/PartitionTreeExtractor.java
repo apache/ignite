@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.affinity.tree;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlParameter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.jetbrains.annotations.Nullable;
@@ -43,34 +44,50 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueR
  * Partition tree extractor.
  */
 public class PartitionTreeExtractor {
-    /** Kernal context. */
-    private final GridKernalContext ctx;
+    /** Indexing. */
+    private final IgniteH2Indexing idx;
 
     /**
      * Constructor.
+     *
+     * @param idx Indexing.
      */
-    public PartitionTreeExtractor(GridKernalContext ctx) {
-        this.ctx = ctx;
+    public PartitionTreeExtractor(IgniteH2Indexing idx) {
+        this.idx = idx;
     }
 
     /**
      * Extract partitions.
      *
      * @param qry Query.
-     * @return Partitons.
+     * @return Partitions.
      */
-    public PartitionNode extract(GridSqlQuery qry) throws IgniteCheckedException {
+    public PartitionResult extract(GridSqlQuery qry) throws IgniteCheckedException {
         // No unions support yet.
         if (!(qry instanceof GridSqlSelect))
             return null;
 
         GridSqlSelect select = (GridSqlSelect)qry;
 
-        // no joins support yet
-        if (select.from() == null || select.from().size() != 1)
+        // Currently we can extract data only from a single table.
+        if (select.from() == null || select.from().size() != 1 || !(select.from() instanceof GridSqlTable))
             return null;
 
-        return extractFromExpression(select.where());
+        // Do extract.
+        PartitionNode tree = extractFromExpression(select.where());
+
+        assert tree != null;
+
+        // Reduce tree if possible.
+        tree = tree.optimize();
+
+        if (tree instanceof PartitionAllNode)
+            return null;
+
+        // Return.
+        PartitionTableDescriptor desc = descriptor(((GridSqlTable)select.from()).dataTable());
+
+        return new PartitionResult(desc, tree);
     }
 
     /**
@@ -80,26 +97,34 @@ public class PartitionTreeExtractor {
      * @return Partition tree.
      */
     private PartitionNode extractFromExpression(GridSqlAst expr) throws IgniteCheckedException {
+        PartitionNode res = PartitionAllNode.INSTANCE;
+
         if (expr instanceof GridSqlOperation) {
             GridSqlOperation op = (GridSqlOperation)expr;
 
             switch (op.operationType()) {
                 case AND:
-                    return extractFromAnd(op);
+                    res = extractFromAnd(op);
+
+                    break;
 
                 case OR:
-                    return extractFromOr(op);
+                    res = extractFromOr(op);
+
+                    break;
 
                 case IN:
-                    return extractFromIn(op);
+                    res = extractFromIn(op);
+
+                    break;
 
                 case EQUAL:
-                    return extractFromEqual(op);
+                    res = extractFromEqual(op);
             }
         }
 
         // Cannot determine partition.
-        return PartitionAllNode.INSTANCE;
+        return res;
     }
 
     /**
@@ -212,10 +237,10 @@ public class PartitionTreeExtractor {
         if (left instanceof GridSqlColumn)
             leftCol = (GridSqlColumn)left;
         else
-            return null;
+            return PartitionAllNode.INSTANCE;
 
         if (!(leftCol.column().getTable() instanceof GridH2Table))
-            return null;
+            return PartitionAllNode.INSTANCE;
 
         GridSqlConst rightConst;
         GridSqlParameter rightParam;
@@ -229,7 +254,7 @@ public class PartitionTreeExtractor {
             rightParam = (GridSqlParameter)right;
         }
         else
-            return null;
+            return PartitionAllNode.INSTANCE;
 
         PartitionSingleNode part = extractSingle(leftCol.column(), rightConst, rightParam);
 
@@ -255,13 +280,15 @@ public class PartitionTreeExtractor {
         if (!isAffinityKey(leftCol.getColumnId(), tbl))
             return null;
 
-        if (rightConst != null) {
-            int part = ctx.affinity().partition(tbl.cacheName(), rightConst.value().getObject());
+        PartitionTableDescriptor tblDesc = descriptor(tbl);
 
-            return new PartitionConstantSingleNode(part);
+        if (rightConst != null) {
+            int part = idx.kernalContext().affinity().partition(tbl.cacheName(), rightConst.value().getObject());
+
+            return new PartitionConstantSingleNode(tblDesc, part);
         }
         else if (rightParam != null)
-            return new PartitionArgumentSingleNode(rightParam.index());
+            return new PartitionParameterSingleNode(tblDesc, idx, rightParam.index(), leftCol.getType());
         else
             return null;
     }
@@ -290,5 +317,15 @@ public class PartitionTreeExtractor {
         catch (IllegalStateException e) {
             return false;
         }
+    }
+
+    /**
+     * Get descriptor from table.
+     *
+     * @param tbl Table.
+     * @return Descriptor.
+     */
+    private static PartitionTableDescriptor descriptor(GridH2Table tbl) {
+        return new PartitionTableDescriptor(tbl.cacheName(), tbl.getName());
     }
 }

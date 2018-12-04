@@ -28,11 +28,10 @@ public class PartitionConstantSingleNode extends PartitionSingleNode {
      * Constructor.
      *
      * @param resolver Resolver.
-     * @param dataType data type.
      * @param part Partition.
      */
-    public PartitionConstantSingleNode(PartitionTableDescriptor resolver, int dataType, int part) {
-        super(resolver, dataType);
+    public PartitionConstantSingleNode(PartitionTableDescriptor resolver, int part) {
+        super(resolver);
 
         this.part = part;
     }
