@@ -21,6 +21,7 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
@@ -33,9 +34,10 @@ import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
  */
 public class StandardScalerTrainer<K, V> implements PreprocessingTrainer<K, V, Vector, Vector> {
     /** {@inheritDoc} */
-    @Override public StandardScalerPreprocessor<K, V> fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public StandardScalerPreprocessor<K, V> fit(LearningEnvironmentBuilder envBuilder,
+        DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> basePreprocessor) {
-        StandardScalerData standardScalerData = computeSum(datasetBuilder, basePreprocessor);
+        StandardScalerData standardScalerData = computeSum(envBuilder, datasetBuilder, basePreprocessor);
 
         int n = standardScalerData.sum.length;
         long cnt = standardScalerData.cnt;
@@ -51,11 +53,13 @@ public class StandardScalerTrainer<K, V> implements PreprocessingTrainer<K, V, V
     }
 
     /** Computes sum, squared sum and row count. */
-    private StandardScalerData computeSum(DatasetBuilder<K, V> datasetBuilder,
+    private StandardScalerData computeSum(LearningEnvironmentBuilder envBuilder,
+        DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> basePreprocessor) {
         try (Dataset<EmptyContext, StandardScalerData> dataset = datasetBuilder.build(
-            (upstream, upstreamSize) -> new EmptyContext(),
-            (upstream, upstreamSize, ctx) -> {
+            envBuilder,
+            (env, upstream, upstreamSize) -> new EmptyContext(),
+            (env, upstream, upstreamSize, ctx) -> {
                 double[] sum = null;
                 double[] squaredSum = null;
                 long cnt = 0;
