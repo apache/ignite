@@ -32,6 +32,12 @@ public class GridMultiCollectionWrapper<E> implements Collection<E>{
     public final Collection<E>[] collections;
 
     /**
+     */
+    public GridMultiCollectionWrapper() {
+        this(new Collection[0]);
+    }
+
+    /**
      * @param collections Collections.
      */
     public GridMultiCollectionWrapper(Collection<E> ... collections) {

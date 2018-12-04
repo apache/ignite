@@ -3011,7 +3011,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @SuppressWarnings("NakedNotify")
     public class Checkpointer extends GridWorker {
         /** Temporary write buffer. */
-        private final ByteBuffer checkpointEntryWrtieBuffer;
+        private final ByteBuffer checkpointEntryWriteBuffer;
 
         /** Next scheduled checkpoint progress. */
         private volatile CheckpointProgress scheduledCp;
@@ -3035,9 +3035,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             scheduledCp = new CheckpointProgress(U.currentTimeMillis() + checkpointFreq);
 
-            checkpointEntryWrtieBuffer = ByteBuffer.allocateDirect(pageSize());
+            checkpointEntryWriteBuffer = ByteBuffer.allocateDirect(pageSize());
 
-            checkpointEntryWrtieBuffer.order(ByteOrder.nativeOrder());
+            checkpointEntryWriteBuffer.order(ByteOrder.nativeOrder());
         }
 
         /** {@inheritDoc} */
@@ -3188,11 +3188,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 int destroyedPartitionsCnt;
 
                 try {
-                    if (chp.hasDelta()) {
+                    // Wrtie dirty pages to pageStore and fsync pageStores.
+                    if (chp.hasPages()) {
                         // Identity stores set.
                         Map<PageStore, LongAdder> pageStores = new ConcurrentLinkedHashMap<>();
 
-                        // Wait and check for errors.
+                        // Write pages.
                         writePages(chp, pageStores);
 
                         // Must re-check shutdown flag here because threads may have skipped some pages.
@@ -3200,6 +3201,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         if (checkShutDown(chp))
                             return;
 
+                        // Fsync stores.
                         syncStores(chp, pageStores);
 
                         if (checkShutDown(chp))
@@ -3225,7 +3227,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 chp.metrics.onEnd();
 
-                if (chp.hasDelta() || destroyedPartitionsCnt > 0) {
+                if (chp.hasPages() || destroyedPartitionsCnt > 0) {
                     if (log.isInfoEnabled()) {
                         String walSegsCoveredMsg = prepareWalSegsCoveredMsg(chp.walSegsCoveredRange);
 
@@ -3244,7 +3246,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     }
                 }
 
-                updateMetrics(chp);
+                updateMetricsOnCheckpointFinish(chp);
             }
             catch (IgniteCheckedException e) {
                 if (chp != null)
@@ -3349,7 +3351,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /**
          * @param chp Checkpoint.
          */
-        private void updateMetrics(Checkpoint chp) {
+        private void updateMetricsOnCheckpointFinish(Checkpoint chp) {
             if (persStoreMetrics.metricsEnabled()) {
                 persStoreMetrics.onCheckpoint(
                     chp.metrics.lockWaitDuration(),
@@ -3545,7 +3547,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             WALPointer cpPtr = null;
 
-            final CheckpointProgress curr;
+            CheckpointProgress curr;
 
             CheckpointEntry cp = null;
 
@@ -3581,9 +3583,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 notifyLisnteners(curr, parts);
 
-                if (curr.nextSnapshot) {
+                if (curr.nextSnapshot)
                     snapFut = snapshotMgr.onMarkCheckPointBegin(curr.snapshotOperation, parts);
-                }
 
                 addPartitionState(cpRec);
 
@@ -3603,7 +3604,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 if (hasPages || hasPartitionsToDestroy) {
                     cp = prepareCheckpointEntry(
-                        checkpointEntryWrtieBuffer,
+                        checkpointEntryWriteBuffer,
                         cpTs,
                         cpRec.checkpointId(),
                         cpPtr,
@@ -3622,15 +3623,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             curr.cpBeginFut.onDone();
 
-            if (snapFut != null) {
-                try {
-                    snapFut.get();
-                }
-                catch (IgniteException e) {
-                    U.error(log, "Failed to wait for snapshot operation initialization: " +
-                        curr.snapshotOperation, e);
-                }
-            }
+            awaitSnapshotFuture(curr, snapFut);
 
             if (hasPages || hasPartitionsToDestroy) {
                 assert cpPtr != null;
@@ -3643,7 +3636,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 metrics.onWalCpRecordFsyncEnd();
 
-                writeCheckpointEntry(checkpointEntryWrtieBuffer, cp, CheckpointEntryType.START);
+                writeCheckpointEntry(checkpointEntryWriteBuffer, cp, CheckpointEntryType.START);
 
                 GridMultiCollectionWrapper<FullPageId> cpPages = splitAndSortCpPagesIfNeeded(cpPagesTuple);
 
@@ -3672,7 +3665,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         metrics.lockHoldDuration(),
                         curr.reason));
 
-                return new Checkpoint(null, new GridMultiCollectionWrapper<>(new Collection[0]), curr, metrics);
+                return new Checkpoint(null, new GridMultiCollectionWrapper<>(), curr, metrics);
+            }
+        }
+
+        /**
+         * @param chpProgress Checkpoint progress.
+         * @param fut Snapshot future.
+         */
+        private void awaitSnapshotFuture(CheckpointProgress chpProgress, IgniteFuture<?> fut) {
+            if (fut != null) {
+                try {
+                    fut.get();
+                }
+                catch (IgniteException e) {
+                    U.error(log, "Failed to wait for snapshot operation initialization: " +
+                        chpProgress.snapshotOperation, e);
+                }
             }
         }
 
@@ -3695,9 +3704,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         /**
          *
-         * @param curr
-         * @return
-         * @throws IgniteCheckedException
+         * @param curr Checkpoint progress info.
+         * @param map Map partition allocation.
+         * @throws IgniteCheckedException If some operation failed.
          */
         private void notifyLisnteners(
             CheckpointProgress curr,
@@ -3861,16 +3870,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 currCheckpointPagesCnt = 0;
             }
 
-            if (chp.hasDelta()) {
+            if (chp.hasPages()) {
                 CheckpointEntry cp = prepareCheckpointEntry(
-                    checkpointEntryWrtieBuffer,
+                    checkpointEntryWriteBuffer,
                     chp.cpEntry.timestamp(),
                     chp.cpEntry.checkpointId(),
                     chp.cpEntry.checkpointMark(),
                     null,
                     CheckpointEntryType.END);
 
-                writeCheckpointEntry(checkpointEntryWrtieBuffer, cp, CheckpointEntryType.END);
+                writeCheckpointEntry(checkpointEntryWriteBuffer, cp, CheckpointEntryType.END);
 
                 cctx.wal().notchLastCheckpointPtr(chp.cpEntry.checkpointMark());
             }
@@ -4171,7 +4180,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /**
          * @return {@code true} if this checkpoint contains at least one dirty page.
          */
-        public boolean hasDelta() {
+        public boolean hasPages() {
             return pages != 0;
         }
 
