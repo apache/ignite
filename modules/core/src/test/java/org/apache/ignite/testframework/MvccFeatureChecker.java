@@ -42,7 +42,7 @@ public class MvccFeatureChecker {
         CACHE_EVENTS,
         EVICTION,
         EXPIRATION,
-        METRICS
+        METRICS,
         INTERCEPTOR
     }
 

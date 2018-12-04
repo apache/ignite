@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import javax.management.MBeanServer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -5477,7 +5476,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void afterBinaryMemoryRestore(GridCacheDatabaseSharedManager.RestoreBinaryState binaryState) throws IgniteCheckedException {
+        @Override public void afterBinaryMemoryRestore(
+            IgniteCacheDatabaseSharedManager mgr,
+            GridCacheDatabaseSharedManager.RestoreBinaryState restoreState) throws IgniteCheckedException {
             for (DynamicCacheDescriptor cacheDescriptor : persistentCaches()) {
                 // Skip MVCC caches.
                 // TODO: https://issues.apache.org/jira/browse/IGNITE-10052
@@ -5491,8 +5492,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void afterLogicalUpdatesApplied(GridCacheDatabaseSharedManager.RestoreLogicalState logicalState) throws IgniteCheckedException {
-            restorePartitionStates(cacheGroups(), logicalState.partitionRecoveryStates());
+        @Override public void afterLogicalUpdatesApplied(
+            IgniteCacheDatabaseSharedManager mgr,
+            GridCacheDatabaseSharedManager.RestoreLogicalState restoreState) throws IgniteCheckedException {
+            restorePartitionStates(cacheGroups(), restoreState.partitionRecoveryStates());
         }
 
         /**

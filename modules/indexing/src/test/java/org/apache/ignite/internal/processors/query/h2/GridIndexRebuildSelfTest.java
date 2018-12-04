@@ -115,7 +115,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
         IgniteEx srv = startServer();
 
         execute(srv, "CREATE TABLE T(k int primary key, v int) WITH \"cache_name=T,wrap_value=false," +
-            "atomicity=transactional_snapshot\"");
+            "atomicity=transactional\"");
 
         execute(srv, "CREATE INDEX IDX ON T(v)");
 
