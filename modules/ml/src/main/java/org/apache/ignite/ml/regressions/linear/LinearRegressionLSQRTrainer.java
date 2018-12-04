@@ -50,6 +50,7 @@ public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<Linea
 
         try (LSQROnHeap<K, V> lsqr = new LSQROnHeap<>(
             datasetBuilder,
+            envBuilder,
             new SimpleLabeledDatasetDataBuilder<>(
                 new FeatureExtractorWrapper<>(featureExtractor),
                 lbExtractor.andThen(e -> new double[] {e})
