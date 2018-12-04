@@ -486,6 +486,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
      */
     public void clear() {
         totalAllocatedPages.reset();
+        grpAllocationTrackers.clear();
         largeEntriesPages.reset();
         dirtyPages.reset();
         readPages.reset();
