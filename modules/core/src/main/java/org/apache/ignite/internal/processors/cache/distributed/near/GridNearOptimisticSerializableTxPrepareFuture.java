@@ -270,7 +270,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
     private boolean onComplete() {
         Throwable err0 = err;
 
-        if (err0 == null || tx.needCheckBackup())
+        if ((!tx.onePhaseCommit() || tx.mappings().get(cctx.localNodeId()) == null) &&
+            (err0 == null || tx.needCheckBackup()))
             tx.state(PREPARED);
 
         if (super.onDone(tx, err0)) {
@@ -351,8 +352,12 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                 hasNearCache = true;
         }
 
-        for (IgniteTxEntry read : reads)
+        for (IgniteTxEntry read : reads) {
             map(read, topVer, mappings, txMapping, remap, topLocked);
+
+            if (read.context().isNear())
+                hasNearCache = true;
+        }
 
         if (keyLockFut != null)
             keyLockFut.onAllKeysAdded();
@@ -554,7 +559,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             tx.taskNameHash(),
             m.clientFirst(),
             txNodes.size() == 1,
-            tx.activeCachesDeploymentEnabled());
+            tx.activeCachesDeploymentEnabled(),
+            tx.txState().recovery());
 
         for (IgniteTxEntry txEntry : writes) {
             if (txEntry.op() == TRANSFORM)
@@ -575,7 +581,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         final MiniFuture fut,
         final boolean nearEntries) {
         IgniteInternalFuture<GridNearTxPrepareResponse> prepFut = nearEntries ?
-            cctx.tm().txHandler().prepareNearTxLocal(req) :
+            cctx.tm().txHandler().prepareNearTxLocal(tx, req) :
             cctx.tm().txHandler().prepareColocatedTx(tx, req);
 
         prepFut.listen(new CI1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
