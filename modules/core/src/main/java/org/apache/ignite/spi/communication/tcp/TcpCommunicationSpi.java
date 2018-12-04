@@ -415,7 +415,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             ", rmtAddr=" + ses.remoteAddress() + ']');
 
                     try {
-                        if (ctxInitLatch.getCount() == 0 || !isHandshakeWaitSupported(ses)) {
+                        if (ctxInitLatch.getCount() == 0 || !isHandshakeWaitSupported()) {
                             if (log.isDebugEnabled())
                                 log.debug("Sending local node ID to newly accepted session: " + ses);
 
@@ -4088,9 +4088,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /**
      * Checks whether remote nodes support {@link HandshakeWaitMessage}.
      *
-     * @return {@code True} if remote nodes support the handshake message.
+     * @return {@code True} if remote nodes support {@link HandshakeWaitMessage}.
      */
-    private boolean isHandshakeWaitSupported(GridNioSession ses) {
+    private boolean isHandshakeWaitSupported() {
         Collection<ClusterNode> nodes = ignite().configuration().getDiscoverySpi().getRemoteNodes();
 
         return IgniteFeatures.allNodesSupports(nodes, IgniteFeatures.TCP_COMMUNICATION_SPI_HANDSHAKE_WAIT_MESSAGE);
