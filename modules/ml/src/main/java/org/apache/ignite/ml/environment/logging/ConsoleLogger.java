@@ -82,6 +82,9 @@ public class ConsoleLogger implements MLLogger {
      * ConsoleLogger factory.
      */
     private static class Factory implements MLLogger.Factory {
+        /** Serial version uuid. */
+        private static final long serialVersionUID = 5864605548782107893L;
+
         /** Max Verbose level. */
         private final VerboseLevel maxVerboseLevel;
 
