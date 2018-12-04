@@ -2334,9 +2334,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         int partitions[] = qry.getPartitions();
 
-        if (partitions == null && twoStepQry.derivedPartitions() != null) {
+        if (partitions == null && twoStepQry.derivedPartitions2() != null) {
             try {
-                partitions = calculateQueryPartitions(twoStepQry.derivedPartitions(), qry.getArgs());
+                Collection<Integer> partitions0 = twoStepQry.derivedPartitions2().tree().apply(qry.getArgs());
+
+                if (F.isEmpty(partitions0))
+                    partitions = new int[0];
+                else {
+                    partitions = new int[partitions0.size()];
+
+                    int i = 0;
+
+                    for (Integer part : partitions0)
+                        partitions[i++] = part;
+                }
 
                 if (partitions.length == 0) //here we know that result of requested query is empty
                     return new QueryCursorImpl<List<?>>(new Iterable<List<?>>(){
@@ -3291,82 +3302,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
         rdcQryExec.onDisconnected(reconnectFut);
-    }
-
-    /**
-     * Bind query parameters and calculate partitions derived from the query.
-     *
-     * @param partInfoList Collection of query derived partition info.
-     * @param params Query parameters.
-     * @return Partitions.
-     * @throws IgniteCheckedException, If fails.
-     */
-    private int[] calculateQueryPartitions(PartitionInfo[] partInfoList, Object[] params)
-        throws IgniteCheckedException {
-
-        ArrayList<Integer> list = new ArrayList<>(partInfoList.length);
-
-        for (PartitionInfo partInfo: partInfoList) {
-            int[] partIds = new int[1];
-
-            if (partInfo.partition() >= 0)
-                partIds[0] = partInfo.partition();
-            else if (partInfo.intersections() == null)
-                partIds[0] = bindPartitionInfoParameter(partInfo, params);
-            else{//Case when AND logic is processed for parameterised query
-                if (partInfo.intersections().length == 0)
-                    continue;
-                else if (partInfo.intersections().length == 1)
-                    partIds = calculateQueryPartitions(partInfo.intersections()[0], params);
-                else {
-                    int[] extracted = calculateQueryPartitions(partInfo.intersections()[0], params);
-
-                    ArrayList<Integer> tmpRes = new ArrayList<>(extracted.length);
-
-                    for (int extr : extracted)
-                        tmpRes.add(extr);
-
-                    for (int j=1; j<partInfo.intersections().length; j++){
-                        int[] bJ = calculateQueryPartitions(partInfo.intersections()[j], params);
-
-                        ArrayList<Integer> innerResult = new ArrayList<>(tmpRes.size() + bJ.length);
-
-                        //intersect tmpRes and bJ
-                        for (Integer a : tmpRes)
-                            for (int b : bJ)
-                                if (a == b)
-                                    innerResult.add(a);
-
-                        tmpRes = innerResult;
-                    }
-                    partIds = new int[tmpRes.size()];
-
-                    for (int i = 0; i < tmpRes.size(); i++)
-                        partIds[i] = tmpRes.get(i);
-                }
-            }
-
-            for(int partId : partIds) {
-                int i = 0;
-
-                while (i < list.size() && list.get(i) < partId)
-                    i++;
-
-                if (i < list.size()) {
-                    if (list.get(i) > partId)
-                        list.add(i, partId);
-                }
-                else
-                    list.add(partId);
-            }
-        }
-
-        int[] res = new int[list.size()];
-
-        for (int i = 0; i < list.size(); i++)
-            res[i] = list.get(i);
-
-        return res;
     }
 
     /**

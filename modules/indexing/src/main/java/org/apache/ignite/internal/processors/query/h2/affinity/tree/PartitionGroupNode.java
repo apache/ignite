@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity.tree;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
 
 import java.util.Collection;
@@ -58,7 +59,7 @@ public class PartitionGroupNode implements PartitionNode {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Integer> apply(Object... args) {
+    @Override public Collection<Integer> apply(Object... args) throws IgniteCheckedException {
         // Deduplicate same partitions which may appear during resolution.
         HashSet<Integer> res = new HashSet<>(siblings.size());
 

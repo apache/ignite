@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity.tree;
 
+import org.apache.ignite.IgniteCheckedException;
+
 import java.util.Collection;
 
 /**
@@ -28,8 +30,9 @@ public interface PartitionNode {
      *
      * @param args Query arguments.
      * @return Partitions.
+     * @throws IgniteCheckedException If failed.
      */
-    Collection<Integer> apply(Object... args);
+    Collection<Integer> apply(Object... args) throws IgniteCheckedException;
 
     /**
      * Try optimizing partition nodes into a simpler form.

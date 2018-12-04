@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity.tree;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
 
 import java.util.Collection;
@@ -39,7 +40,7 @@ public abstract class PartitionSingleNode implements PartitionNode {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Integer> apply(Object... args) {
+    @Override public Collection<Integer> apply(Object... args) throws IgniteCheckedException {
         return Collections.singletonList(applySingle(args));
     }
 
@@ -49,7 +50,7 @@ public abstract class PartitionSingleNode implements PartitionNode {
      * @param args Arguments.
      * @return Partition.
      */
-    public abstract int applySingle(Object... args);
+    public abstract int applySingle(Object... args) throws IgniteCheckedException;
 
     /**
      * @return {@code True} if constant, {@code false} if argument.

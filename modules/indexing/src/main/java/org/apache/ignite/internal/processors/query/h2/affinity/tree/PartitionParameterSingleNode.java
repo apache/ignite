@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.affinity.tree;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 
@@ -53,18 +52,13 @@ public class PartitionParameterSingleNode extends PartitionSingleNode {
     }
 
     /** {@inheritDoc} */
-    @Override public int applySingle(Object... args) {
+    @Override public int applySingle(Object... args) throws IgniteCheckedException {
         assert args != null;
         assert idx < args.length;
 
-        try {
-            Object param = H2Utils.convert(args[idx], indexing, dataType);
+        Object param = H2Utils.convert(args[idx], indexing, dataType);
 
-            return indexing.kernalContext().affinity().partition(tbl.cacheName(), param);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to resolve partition: " + tbl.cacheName(), e);
-        }
+        return indexing.kernalContext().affinity().partition(tbl.cacheName(), param);
     }
 
     /** {@inheritDoc} */
