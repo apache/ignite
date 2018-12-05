@@ -275,25 +275,18 @@ class MapQueryResult {
     /**
      * Close the result.
      */
-    public void close() {
-        try {
-            ses.lockTables();
+    void close() {
+        if (closed)
+            return;
 
-            if (closed)
-                return;
+        closed = true;
 
-            closed = true;
+        U.close(rs, log);
 
-            U.close(rs, log);
+        ses.release();
 
-            ses.release();
-
-            if (detachedConn != null)
-                detachedConn.recycle();
-        }
-        finally {
-            ses.unlockTables();
-        }
+        if (detachedConn != null)
+            detachedConn.recycle();
     }
 
     /**

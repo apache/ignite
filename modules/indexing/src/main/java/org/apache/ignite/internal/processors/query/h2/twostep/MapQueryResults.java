@@ -156,8 +156,7 @@ class MapQueryResults {
             for (int i = 0; i < results.length(); i++) {
                 GridQueryCancel cancel = cancels[i];
 
-                // Don't cancel statement for closed results because statement may be used by other query.
-                if (cancel != null && results.get(i) != null && !results.get(i).closed())
+                if (cancel != null)
                     cancel.cancel();
             }
         }
@@ -168,15 +167,39 @@ class MapQueryResults {
     }
 
     /**
+     * Wrap MapQueryResult#close to synchronize close vs cancel.
+     * We have do it because connection returns to pool after close ResultSet but the whole MapQuery
+     * (that may contains several queries) may be canceled later.
+     *
+     * @param idx Map query (result) index.
+     */
+    public void closeResult(int idx) {
+        MapQueryResult res = results.get(idx);
+
+        if (res != null) {
+            try {
+                res.session().lockTables();
+
+                synchronized (this) {
+                    res.close();
+
+                    // The statement of the closed result must not be canceled
+                    // because statement & connection may be reused.
+                    cancels[idx] = null;
+                }
+            }
+            finally {
+                res.session().unlockTables();
+            }
+        }
+    }
+
+    /**
      *
      */
     public void close() {
-        for (int i = 0; i < results.length(); i++) {
-            MapQueryResult res = results.get(i);
-
-            if (res != null)
-                res.close();
-        }
+        for (int i = 0; i < results.length(); i++)
+            closeResult(i);
 
         if (lazy)
             release();

@@ -1267,7 +1267,7 @@ public class GridMapQueryExecutor {
         boolean last = res.fetchNextPage(rows, pageSize);
 
         if (last) {
-            res.close();
+            qr.closeResult(qry);
 
             if (qr.isAllClosed()) {
                 nodeRess.remove(qr.queryRequestId(), segmentId, qr);
