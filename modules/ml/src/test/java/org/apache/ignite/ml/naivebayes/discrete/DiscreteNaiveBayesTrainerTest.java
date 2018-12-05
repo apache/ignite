@@ -36,13 +36,13 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
     /** */
     private static final double LABEL_2 = 2.;
 
-    /** Data. */
+    /** Binary data. */
     private static final Map<Integer, double[]> binarizedData = new HashMap<>();
     /** Data. */
     private static final Map<Integer, double[]> data = new HashMap<>();
     /** */
     private static final double[][] binarizedDatathresholds = new double[][] {{.5}, {.5}, {.5}, {.5}, {.5}};
-    private static final double[][] thresholds = new double[][] {{4, 6, 8}, {.5}, {.3, .4, .5}, {250, 500, 750}};
+    private static final double[][] thresholds = new double[][] {{4, 8}, {.5}, {.3, .4, .5}, {250, 500, 750}};
 
     static {
         binarizedData.put(0, new double[] {0, 0, 1, 1, 1, LABEL_1});
@@ -68,6 +68,10 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
         data.put(5, new double[] {2, 1, .69, 912, LABEL_1});
         data.put(6, new double[] {8, 0, .43, 453, LABEL_1});
         data.put(7, new double[] {2, 0, .45, 752, LABEL_1});
+        data.put(8, new double[] {7, 1, .01, 132, LABEL_2});
+        data.put(9, new double[] {2, 1, .68, 169, LABEL_2});
+        data.put(10, new double[] {8, 0, .43, 453, LABEL_2});
+        data.put(11, new double[] {2, 1, .45, 748, LABEL_2});
     }
 
     /** */
@@ -152,11 +156,15 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
     public void testReturnsCorrectPriorProbabilitiesWithDefferentThresholds() {
         double[][][] expectedPriorProbabilites = new double[][][] {
             {
-                {4. / 8, 1. / 8, 1. / 8, 2. / 8},
+                {4. / 8, 2. / 8, 2. / 8},
                 {.5, .5},
                 {1. / 8, 3. / 8, 2. / 8, 2. / 8},
-                {1. / 8, 2. / 8, 2. / 8, 3. / 8}}//,
-//            {{4. / 8, 1. / 8, 1. / 8, 2. / 8}, {3. / 7, 4. / 7}, {4. / 7, 3. / 7}, {2. / 7, 5. / 7}, {4. / 7, 3. / 7,}}
+                {1. / 8, 2. / 8, 2. / 8, 3. / 8}},
+            {
+                {2. / 4, 1. / 4, 1. / 4},
+                {1. / 4, 3. / 4},
+                {1. / 4, 0, 2. / 4, 1. / 4},
+                {2. / 4, 1. / 4, 1. / 4, 0}}
         };
 
         DiscreteNaiveBayesModel model = trainer
