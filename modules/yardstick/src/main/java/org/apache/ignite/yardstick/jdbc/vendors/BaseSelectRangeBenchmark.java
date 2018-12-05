@@ -24,10 +24,12 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.yardstick.IgniteBenchmarkArguments;
 import org.apache.ignite.yardstick.jdbc.AbstractJdbcBenchmark;
@@ -88,6 +90,13 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
     /** {@inheritDoc} */
     @Override protected void setupData() throws Exception {
         // Don't use default tables.
+        // Instead we are able to use ignite instance to check cluster, before this instance gets closed.
+         Collection<ClusterNode> srvNodes = ignite().cluster().forServers().nodes();
+
+        if (srvNodes.size() > 1) {
+            throw new IllegalStateException("This benchmark is designed to no more than one server (data) node. " +
+                "Currently cluster contains " + srvNodes.size() + " server nodes : " + srvNodes);
+        }
     }
 
     /** {@inheritDoc} */
