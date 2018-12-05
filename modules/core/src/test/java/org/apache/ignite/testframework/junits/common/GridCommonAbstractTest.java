@@ -47,6 +47,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -392,6 +393,14 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected static <K, V> GridDhtColocatedCache<K, V> colocated(IgniteCache<K, V> cache) {
         return ((IgniteKernal)cache.unwrap(Ignite.class)).<K, V>internalCache(cache.getName()).context().colocated();
+    }
+
+    /**
+     * @param cache Ignite cache.
+     * @return CacheAtomicityMode for given cache.
+     */
+    public static CacheAtomicityMode atomicityMode(IgniteCache cache) {
+        return ((CacheConfiguration)cache.getConfiguration(CacheConfiguration.class)).getAtomicityMode();
     }
 
     /**

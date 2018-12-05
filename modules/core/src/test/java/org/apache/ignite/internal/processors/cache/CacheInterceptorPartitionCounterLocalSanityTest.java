@@ -210,7 +210,7 @@ public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonA
 
         Transaction tx = null;
 
-        if (cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL && rnd.nextBoolean())
+        if (atomicityMode(cache) == TRANSACTIONAL && rnd.nextBoolean())
             tx = ignite.transactions().txStart(txRandomConcurrency(rnd), txRandomIsolation(rnd));
 
         try {

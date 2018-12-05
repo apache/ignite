@@ -445,7 +445,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
 
         Transaction tx = null;
 
-        CacheAtomicityMode atomicityMode = cache.getConfiguration(CacheConfiguration.class).getAtomicityMode();
+        CacheAtomicityMode atomicityMode = GridCommonAbstractTest.atomicityMode(cache);
 
         if (atomicityMode == TRANSACTIONAL && rnd.nextBoolean())
             tx = ignite.transactions().txStart(txRandomConcurrency(rnd), txRandomIsolation(rnd));
@@ -680,8 +680,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
         Object key,
         boolean rmv
     ) {
-        Collection<ClusterNode> nodes =
-            cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL ?
+        Collection<ClusterNode> nodes = atomicityMode(cache) == TRANSACTIONAL ?
                 affinity(cache).mapKeyToPrimaryAndBackups(key) :
                 Collections.singletonList(affinity(cache).mapKeyToNode(key));
 

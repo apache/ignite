@@ -1385,7 +1385,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
                             assertEquals(err, e.getValue(), res.get(e.getKey()));
                     }
 
-                    if (cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL) {
+                    if (atomicityMode(cache) == TRANSACTIONAL) {
                         for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
                             for (TransactionIsolation isolation : TransactionIsolation.values())
                                 checkNodeCaches(err, node, cache, concurrency, isolation);

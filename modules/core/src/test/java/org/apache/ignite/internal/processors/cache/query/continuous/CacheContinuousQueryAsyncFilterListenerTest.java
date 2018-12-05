@@ -479,7 +479,7 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
                             try {
                                 assertEquals(val, val0);
 
-                                if (cache0.getConfiguration(CacheConfiguration.class).getAtomicityMode() != ATOMIC) {
+                                if (atomicityMode(cache0) != ATOMIC) {
                                     boolean committed = false;
 
                                     while (!committed && !Thread.currentThread().isInterrupted()) {
@@ -635,7 +635,7 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
                             try {
                                 assertEquals(val, val0);
 
-                                if (cache0.getConfiguration(CacheConfiguration.class).getAtomicityMode() != ATOMIC) {
+                                if (atomicityMode(cache0) != ATOMIC) {
                                     boolean committed = false;
 
                                     while (!committed && !Thread.currentThread().isInterrupted()) {

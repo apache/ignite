@@ -355,8 +355,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
 
                         QueryTestKey key = new QueryTestKey(rnd.nextInt(KEYS));
 
-                        boolean startTx = cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() !=
-                            ATOMIC && rnd.nextBoolean();
+                        boolean startTx = atomicityMode(cache) != ATOMIC && rnd.nextBoolean();
 
                         Transaction tx = null;
 
