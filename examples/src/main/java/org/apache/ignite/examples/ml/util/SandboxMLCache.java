@@ -69,25 +69,6 @@ public class SandboxMLCache {
     /**
      * Fills cache with data and returns it.
      *
-     * @param data Data to fill the cache with.
-     * @return Filled Ignite Cache.
-     */
-    public IgniteCache<Integer, Vector> getVectors(double[][] data) {
-        CacheConfiguration<Integer, Vector> cacheConfiguration = new CacheConfiguration<>();
-        cacheConfiguration.setName("TEST_" + UUID.randomUUID());
-        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
-
-        IgniteCache<Integer, Vector> cache = ignite.createCache(cacheConfiguration);
-
-        for (int i = 0; i < data.length; i++)
-            cache.put(i, VectorUtils.of(data[i]));
-
-        return cache;
-    }
-
-    /**
-     * Fills cache with data and returns it.
-     *
      * @param dataset The chosen dataset.
      * @return Filled Ignite Cache.
      * @throws FileNotFoundException If file not found.
