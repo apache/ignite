@@ -79,6 +79,7 @@ import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
@@ -89,6 +90,7 @@ import static java.util.Arrays.fill;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.TX_RECORD;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
@@ -267,7 +269,10 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
                 WALRecord walRecord = tup.get2();
 
-                if (walRecord.type() == DATA_RECORD) {
+                if (walRecord.type() == DATA_RECORD || walRecord.type() == MVCC_DATA_RECORD) {
+                    assert MvccFeatureChecker.forcedMvcc() && walRecord.type() == MVCC_DATA_RECORD ||
+                        !MvccFeatureChecker.forcedMvcc() && walRecord.type() == DATA_RECORD;
+
                     DataRecord record = (DataRecord)walRecord;
 
                     for (DataEntry entry : record.writeEntries()) {
