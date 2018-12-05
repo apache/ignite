@@ -30,14 +30,14 @@ public class DiscreteNaiveBayesModelTest {
         double first = 1;
         double second = 2;
         double[][][] probabilities = new double[][][] {
-            {{.5, .5}, {.5, .5}, {2. / 3., 1. / 3.}, {.5, .5}, {.5, .5}},
-            {{0, 1}, {3. / 7, 4. / 7}, {4. / 7, 3. / 7}, {2. / 7, 5. / 7}, {4. / 7, 3. / 7,}}
+            {{.5, .5}, {.2, .3, .5}, {2. / 3., 1. / 3.}, {.4, .1, .5}, {.5, .5}},
+            {{0, 1}, {1. / 7, 2. / 7, 4. / 7}, {4. / 7, 3. / 7}, {2. / 7, 3. / 7, 2. / 7}, {4. / 7, 3. / 7,}}
         };
 
         double[] classProbabilities = new double[] {6. / 13, 7. / 13};
-        double[][] thresholds = new double[][] {{.5}, {.5}, {.5}, {.5}, {.5}};
+        double[][] thresholds = new double[][] {{.5}, {.2, .7}, {.5}, {.5, 1.5}, {.5}};
         DiscreteNaiveBayesModel mdl = new DiscreteNaiveBayesModel(probabilities, classProbabilities, new double[] {first, second}, thresholds, new DiscreteNaiveBayesSumsHolder());
-        Vector observation = VectorUtils.of(1, 0, 1, 1, 0);
+        Vector observation = VectorUtils.of(1, 0, 1, 2, 0);
 
         Assert.assertEquals(second, mdl.apply(observation), 0.0001);
     }
