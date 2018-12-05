@@ -853,7 +853,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 buf.clear();
 
-                io.force(true);
+                io.force();
             }
 
             Files.move(Paths.get(cpDir.getAbsolutePath(), tmpFileName), Paths.get(cpDir.getAbsolutePath(), fileName));
@@ -2685,7 +2685,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 tmpWriteBuf.clear();
 
                 if (!skipSync)
-                    io.force(true);
+                    io.force();
             }
 
             if (!skipSync)
