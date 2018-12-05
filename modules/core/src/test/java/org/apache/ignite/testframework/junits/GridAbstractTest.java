@@ -172,6 +172,9 @@ public abstract class GridAbstractTest extends TestCase {
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
 
+    /** Show that test is currently running. */
+    public static volatile boolean testIsRunning = false;
+
     /** Supports obtaining test name for JUnit4 cases. */
     @Rule public transient TestName nameRule = new TestName();
 
@@ -1736,7 +1739,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Failure handler implementation.
      */
     protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
+        return new TestFailingFailureHandler();
     }
 
     /**
@@ -2112,6 +2115,8 @@ public abstract class GridAbstractTest extends TestCase {
 
         Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
             @Override public void run() {
+                testIsRunning = true;
+
                 try {
                     if (forceFailure)
                         fail("Forced failure: " + forceFailureMsg);
@@ -2122,6 +2127,8 @@ public abstract class GridAbstractTest extends TestCase {
                     IgniteClosure<Throwable, Throwable> hnd = errorHandler();
 
                     ex.set(hnd != null ? hnd.apply(e) : e);
+                } finally {
+                    testIsRunning = false;
                 }
             }
         });
