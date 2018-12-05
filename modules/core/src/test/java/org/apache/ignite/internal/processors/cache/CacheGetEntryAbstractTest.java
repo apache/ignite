@@ -170,8 +170,6 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
      * @throws Exception If failed.
      */
     public void testLocalTransactional() throws Exception {
-        // TODO: fails since d13520e9a05bd9e9b987529472d6317951b72f96, need to review changes.
-
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -214,7 +212,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
      * @param cfg Cache configuration.
      * @throws Exception If failed.
      */
-    private void test(CacheConfiguration cfg) throws Exception {
+    protected void test(CacheConfiguration cfg) throws Exception {
         test(cfg, true);
 
         test(cfg, false);

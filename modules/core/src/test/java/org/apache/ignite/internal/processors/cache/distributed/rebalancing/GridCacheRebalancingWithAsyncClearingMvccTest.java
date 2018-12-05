@@ -14,45 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.ignite.internal.processors.cache.integration;
+package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.testframework.MvccFeatureChecker;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  *
  */
-public class IgniteCacheTxNoLoadPreviousValueTest extends IgniteCacheNoLoadPreviousValueAbstractTest {
+public class GridCacheRebalancingWithAsyncClearingMvccTest extends GridCacheRebalancingWithAsyncClearingTest {
     /** {@inheritDoc} */
     @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        fail("https://issues.apache.org/jira/browse/IGNITE-10421");
 
         super.setUp();
     }
 
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 3;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
-    }
-
-    /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
-        return TRANSACTIONAL;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return null;
+        return CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
     }
 }
