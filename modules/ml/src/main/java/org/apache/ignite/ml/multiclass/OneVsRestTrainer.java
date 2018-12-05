@@ -115,7 +115,8 @@ public class OneVsRestTrainer<M extends Model<Vector, Double>>
         List<Double> res = new ArrayList<>();
 
         try (Dataset<EmptyContext, LabelPartitionDataOnHeap> dataset = datasetBuilder.build(
-            (upstream, upstreamSize) -> new EmptyContext(),
+            envBuilder,
+            (env, upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
             final Set<Double> clsLabels = dataset.compute(data -> {
