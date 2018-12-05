@@ -17,6 +17,8 @@
 
 package org.apache.ignite.testframework.junits;
 
+import javax.cache.configuration.Factory;
+import javax.cache.configuration.FactoryBuilder;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
@@ -41,8 +43,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.cache.configuration.Factory;
-import javax.cache.configuration.FactoryBuilder;
 import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -62,7 +62,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;

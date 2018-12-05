@@ -219,6 +219,10 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    @Override protected List<String> additionalRemoteJvmArgs() {
+        return Arrays.asList("-DIGNITE_QUIET=false");
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
