@@ -40,51 +40,6 @@ public class VisorIdleVerifyTaskV2 extends VisorOneNodeTask<VisorIdleVerifyTaskA
 
     /** {@inheritDoc} */
     @Override protected VisorJob<VisorIdleVerifyTaskArg, IdleVerifyResultV2> job(VisorIdleVerifyTaskArg arg) {
-        return new VisorIdleVerifyJobV2(arg, debug);
-    }
-
-    /**
-     *
-     */
-    private static class VisorIdleVerifyJobV2 extends VisorJob<VisorIdleVerifyTaskArg, IdleVerifyResultV2> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private ComputeTaskFuture<IdleVerifyResultV2> fut;
-
-        /** Auto-inject job context. */
-        @JobContextResource
-        protected transient ComputeJobContext jobCtx;
-
-        /**
-         * @param arg Argument.
-         * @param debug Debug.
-         */
-        private VisorIdleVerifyJobV2(VisorIdleVerifyTaskArg arg, boolean debug) {
-            super(arg, debug);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected IdleVerifyResultV2 run(VisorIdleVerifyTaskArg arg) throws IgniteException {
-            if (fut == null) {
-                fut = ignite.compute().executeAsync(VerifyBackupPartitionsTaskV2.class, arg);
-
-                if (!fut.isDone()) {
-                    jobCtx.holdcc();
-
-                    fut.listen((IgniteInClosure<IgniteFuture<IdleVerifyResultV2>>)f -> jobCtx.callcc());
-
-                    return null;
-                }
-            }
-
-            return fut.get();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(VisorIdleVerifyJobV2.class, this);
-        }
+        return new VisorIdleVerifyJob<>(arg, debug, VerifyBackupPartitionsTaskV2.class);
     }
 }

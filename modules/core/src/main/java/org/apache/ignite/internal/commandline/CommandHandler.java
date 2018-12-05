@@ -1145,7 +1145,10 @@ public class CommandHandler {
      */
     private void cacheIdleVerifyV2(GridClient client, CacheArguments cacheArgs) throws GridClientException {
         IdleVerifyResultV2 res = executeTask(
-            client, VisorIdleVerifyTaskV2.class, new VisorIdleVerifyTaskArg(cacheArgs.caches()));
+            client,
+            VisorIdleVerifyTaskV2.class,
+            new VisorIdleVerifyTaskArg(cacheArgs.caches())
+        );
 
         res.print(System.out::print);
     }
