@@ -17,12 +17,12 @@
 
 package org.apache.ignite.ml.trainers.transformers;
 
-import java.util.Random;
 import java.util.stream.Stream;
 import org.apache.commons.math3.distribution.PoissonDistribution;
 import org.apache.commons.math3.random.Well19937c;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.UpstreamTransformer;
+import org.apache.ignite.ml.dataset.UpstreamTransformerBuilder;
 
 /**
  * This class encapsulates the logic needed to do bagging (bootstrap aggregating) by features.
@@ -33,22 +33,43 @@ import org.apache.ignite.ml.dataset.UpstreamTransformer;
  * @param <V> Type of upstream values.
  */
 public class BaggingUpstreamTransformer<K, V> implements UpstreamTransformer<K, V> {
+    /** Serial version uid. */
+    private static final long serialVersionUID = -913152523469994149L;
+
     /** Ratio of subsample to entire upstream size */
     private double subsampleRatio;
+
+    /** Seed used for generating poisson distribution. */
+    private long seed;
+
+    /**
+     * Get builder of {@link BaggingUpstreamTransformer} for a model with a specified index in ensemble.
+     *
+     * @param subsampleRatio Subsample ratio.
+     * @param mdlIdx Index of model in ensemble.
+     * @param <K> Type of upstream keys.
+     * @param <V> Type of upstream values.
+     * @return Builder of {@link BaggingUpstreamTransformer}.
+     */
+    public static <K, V> UpstreamTransformerBuilder<K, V> builder(double subsampleRatio, int mdlIdx) {
+        return env -> new BaggingUpstreamTransformer<>(env.randomNumbersGenerator().nextLong() + mdlIdx, subsampleRatio);
+    }
 
     /**
      * Construct instance of this transformer with a given subsample ratio.
      *
+     * @param seed Seed used for generating poisson distribution which in turn used to make subsamples.
      * @param subsampleRatio Subsample ratio.
      */
-    public BaggingUpstreamTransformer(double subsampleRatio) {
+    public BaggingUpstreamTransformer(long seed, double subsampleRatio) {
         this.subsampleRatio = subsampleRatio;
+        this.seed = seed;
     }
 
     /** {@inheritDoc} */
-    @Override public Stream<UpstreamEntry<K, V>> transform(Random rnd, Stream<UpstreamEntry<K, V>> upstream) {
+    @Override public Stream<UpstreamEntry<K, V>> transform(Stream<UpstreamEntry<K, V>> upstream) {
         PoissonDistribution poisson = new PoissonDistribution(
-            new Well19937c(rnd.nextLong()),
+            new Well19937c(seed),
             subsampleRatio,
             PoissonDistribution.DEFAULT_EPSILON,
             PoissonDistribution.DEFAULT_MAX_ITERATIONS);

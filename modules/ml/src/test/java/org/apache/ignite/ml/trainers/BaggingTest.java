@@ -28,6 +28,8 @@ import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictio
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -75,11 +77,15 @@ public class BaggingTest extends TrainerTest {
                 .withBatchSize(10)
                 .withSeed(123L);
 
+        trainer.withEnvironmentBuilder(TestUtils.testEnvBuilder());
+
         DatasetTrainer<ModelsComposition, Double> baggedTrainer =
             TrainerTransformers.makeBagged(
                 trainer,
                 10,
                 0.7,
+                2,
+                2,
                 new OnMajorityPredictionsAggregator());
 
         ModelsComposition mdl = baggedTrainer.fit(
@@ -98,14 +104,20 @@ public class BaggingTest extends TrainerTest {
      *
      * @param counter Function specifying which data we should count.
      */
-    protected void count(IgniteTriFunction<Long, CountData, Integer, Long> counter) {
+    protected void count(IgniteTriFunction<Long, CountData, LearningEnvironment, Long> counter) {
         Map<Integer, Double[]> cacheMock = getCacheMock();
 
         CountTrainer countTrainer = new CountTrainer(counter);
 
         double subsampleRatio = 0.3;
 
-        ModelsComposition model = TrainerTransformers.makeBagged(countTrainer, 100, subsampleRatio, new MeanValuePredictionsAggregator())
+        ModelsComposition model = TrainerTransformers.makeBagged(
+            countTrainer,
+            100,
+            subsampleRatio,
+            2,
+            2,
+            new MeanValuePredictionsAggregator())
             .fit(cacheMock, parts, null, null);
 
         Double res = model.apply(null);
@@ -155,14 +167,14 @@ public class BaggingTest extends TrainerTest {
         /**
          * Function specifying which entries to count.
          */
-        private final IgniteTriFunction<Long, CountData, Integer, Long> counter;
+        private final IgniteTriFunction<Long, CountData, LearningEnvironment, Long> counter;
 
         /**
          * Construct instance of this class.
          *
          * @param counter Function specifying which entries to count.
          */
-        public CountTrainer(IgniteTriFunction<Long, CountData, Integer, Long> counter) {
+        public CountTrainer(IgniteTriFunction<Long, CountData, LearningEnvironment, Long> counter) {
             this.counter = counter;
         }
 
@@ -172,8 +184,9 @@ public class BaggingTest extends TrainerTest {
             IgniteBiFunction<K, V, Vector> featureExtractor,
             IgniteBiFunction<K, V, Double> lbExtractor) {
             Dataset<Long, CountData> dataset = datasetBuilder.build(
-                (upstreamData, upstreamDataSize) -> upstreamDataSize,
-                (upstreamData, upstreamDataSize, ctx) -> new CountData(upstreamDataSize)
+                TestUtils.testEnvBuilder(),
+                (env, upstreamData, upstreamDataSize) -> upstreamDataSize,
+                (env, upstreamData, upstreamDataSize, ctx) -> new CountData(upstreamDataSize)
             );
 
             Long cnt = dataset.computeWithCtx(counter, BaggingTest::plusOfNullables);
@@ -192,6 +205,11 @@ public class BaggingTest extends TrainerTest {
             DatasetBuilder<K, V> datasetBuilder,
             IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
             return fit(datasetBuilder, featureExtractor, lbExtractor);
+        }
+
+        /** {@inheritDoc} */
+        @Override public CountTrainer withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+            return (CountTrainer)super.withEnvironmentBuilder(envBuilder);
         }
     }
 
