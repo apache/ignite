@@ -657,7 +657,7 @@ public interface IgniteCacheOffheapManager {
          * @param cacheSizes Cache sizes if store belongs to group containing multiple caches.
          * @param gaps Gaps.
          */
-        void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, ByteArrayDataRow gaps);
+        void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, byte[] gaps);
 
         /**
          * @param cacheId Cache ID.

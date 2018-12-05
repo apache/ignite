@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.NavigableSet;
@@ -35,6 +37,8 @@ import org.jetbrains.annotations.Nullable;
  * Partition update counter.
  */
 public class PartitionUpdateCounter {
+    private static final byte VERSION = 1;
+
     /** */
     private IgniteLogger log;
 
@@ -46,7 +50,6 @@ public class PartitionUpdateCounter {
 
     /** Initial counter points to last update which is written to persistent storage. */
     private long initCntr;
-    private byte[] bytes;
 
     /**
      * @param log Logger.
@@ -57,12 +60,12 @@ public class PartitionUpdateCounter {
 
     /**
      * @param initUpdCntr Initial update counter.
-     * @param holes Holes or null if counter is sequential.
+     * @param rawData Byte array of holes raw data.
      */
-    public void init(long initUpdCntr, @Nullable TreeSet<Item> holes) {
+    public void init(long initUpdCntr, @Nullable byte[] rawData) {
         cntr.set(initUpdCntr);
 
-        queue = holes;
+        queue = fromBytes(rawData);
     }
 
     /**
@@ -308,18 +311,60 @@ public class PartitionUpdateCounter {
 
             DataOutputStream dos = new DataOutputStream(bos);
 
-            dos.writeInt(queue.size());
+            dos.writeByte(VERSION); // Version.
+
+            dos.writeInt(queue.size()); // Holes count.
+
+            // TODO store as deltas in varint format. Eg:
+            // 10000000000, 2; 10000000002, 4; 10000000004, 10;
+            // stored as:
+            // 10000000000; 0, 2; 2, 4; 4, 10.
+            // All ints are packed.
 
             for (Item item : queue) {
                 dos.writeLong(item.start);
-                //dos.writeP
+                dos.writeLong(item.delta);
             }
 
-            return bytes;
+            bos.close();
+
+            return bos.toByteArray();
         }
         catch (IOException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     * @param raw Raw.
+     */
+    private @Nullable TreeSet<Item> fromBytes(@Nullable byte[] raw) {
+        if (raw == null)
+            return new TreeSet<>();
+
+        TreeSet<Item> ret = new TreeSet<>();
+
+        try {
+            ByteArrayInputStream bis = new ByteArrayInputStream(raw);
+
+            DataInputStream dis = new DataInputStream(bis);
+
+            dis.readByte(); // Version.
+
+            int cnt = dis.readInt(); // Holes count.
+
+            while(cnt-- > 0)
+                ret.add(new Item(dis.readLong(), dis.readLong()));
+
+            return ret;
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    public TreeSet<Item> holes() {
+        return queue;
     }
 
     /**

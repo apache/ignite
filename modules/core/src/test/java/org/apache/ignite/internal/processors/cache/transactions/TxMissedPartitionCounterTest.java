@@ -686,9 +686,7 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
                 pc.reserve(3);
                 pc.reserve(1);
 
-                byte[] data = pc.getBytes();
-
-                byte[] rawData = U.marshal(new JdkMarshaller(), pc);
+                byte[] rawData = pc.getBytes();
 
                 ByteArrayDataRow row0 = new ByteArrayDataRow(part.id(), 0, rawData);
 
@@ -699,7 +697,12 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
                 ByteArrayDataRow row1 = new ByteArrayDataRow(part.group(), row0.link(), part.id());
                 byte[] bytes = row1.value().valueBytes(null);
 
-                System.out.println(bytes.length);
+                PartitionUpdateCounter pc2 = new PartitionUpdateCounter(log);
+                pc2.init(0, bytes);
+
+                assertEquals(pc.get(), pc2.get());
+
+                assertEquals(pc.holes(), pc2.holes());
             }
             finally {
                 grid.context().cache().context().database().checkpointReadUnlock();

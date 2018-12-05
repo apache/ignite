@@ -1841,7 +1841,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, ByteArrayDataRow gaps) {
+        @Override public void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, byte[] gaps) {
             throw new IllegalStateException("Should be never called.");
         }
 
