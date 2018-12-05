@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHan
 import org.apache.ignite.internal.processors.cache.tree.SearchRow;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 
@@ -44,6 +45,14 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends AbstractTransactionIntergrityTest {
     /** Corruption enabled flag. */
     private static volatile boolean corruptionEnabled;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10470");
+
+        super.beforeTest();
+    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
