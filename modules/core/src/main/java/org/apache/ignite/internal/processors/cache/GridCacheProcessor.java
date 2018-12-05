@@ -2925,7 +2925,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 .collect(Collectors.toList());
 
         Map<Integer, List<ExchangeActions.CacheActionData>> cachesToStop = exchActions.cacheStopRequests().stream()
-                .filter(action -> cacheGrps.containsKey(action.descriptor().groupId()))
                 .collect(Collectors.groupingBy(action -> action.descriptor().groupId()));
 
         try {
@@ -2936,15 +2935,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     cachesToStopByGrp -> {
                         CacheGroupContext gctx = cacheGrps.get(cachesToStopByGrp.getKey());
 
-                        gctx.preloader().pause();
+                        if (gctx != null)
+                            gctx.preloader().pause();
 
                         try {
-                            final String msg = "Failed to wait for topology update, cache group is stopping.";
 
-                            // If snapshot operation in progress we must throw CacheStoppedException
-                            // for correct cache proxy restart. For more details see
-                            // IgniteCacheProxy.cacheException()
-                            gctx.affinity().cancelFutures(new CacheStoppedException(msg));
+                            if (gctx != null) {
+                                final String msg = "Failed to wait for topology update, cache group is stopping.";
+
+                                // If snapshot operation in progress we must throw CacheStoppedException
+                                // for correct cache proxy restart. For more details see
+                                // IgniteCacheProxy.cacheException()
+                                gctx.affinity().cancelFutures(new CacheStoppedException(msg));
+                            }
 
                             for (ExchangeActions.CacheActionData action: cachesToStopByGrp.getValue()) {
                                 stopGateway(action.request());
@@ -2960,7 +2963,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             }
                         }
                         finally {
-                            gctx.preloader().resume();
+                            if (gctx != null)
+                                gctx.preloader().resume();
                         }
 
                         return null;
