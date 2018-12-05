@@ -59,9 +59,10 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
-import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.MarshalledDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -89,7 +90,7 @@ import static java.util.Arrays.fill;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.TX_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_DATA_RECORD;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
@@ -267,7 +268,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
                 WALRecord walRecord = tup.get2();
 
-                if (walRecord.type() == DATA_RECORD) {
+                if (walRecord.type() == DATA_RECORD || walRecord.type() == MVCC_DATA_RECORD) {
                     DataRecord record = (DataRecord)walRecord;
 
                     for (DataEntry entry : record.writeEntries()) {
@@ -1287,62 +1288,74 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
                 WALRecord walRecord = tup.get2();
 
-                if (walRecord.type() == DATA_RECORD && walRecord instanceof DataRecord) {
-                    DataRecord dataRecord = (DataRecord)walRecord;
+                WALRecord.RecordType type = walRecord.type();
 
-                    if (dataRecordHnd != null)
-                        dataRecordHnd.apply(dataRecord);
+                switch (type) {
 
-                    List<DataEntry> entries = dataRecord.writeEntries();
+                    case MVCC_DATA_RECORD:
+                    case DATA_RECORD: {
+                        DataRecord dataRecord = (DataRecord)walRecord;
 
-                    for (DataEntry entry : entries) {
-                        GridCacheVersion globalTxId = entry.nearXidVersion();
+                        if (dataRecordHnd != null)
+                            dataRecordHnd.apply(dataRecord);
 
-                        Object unwrappedKeyObj;
-                        Object unwrappedValObj;
+                        List<DataEntry> entries = dataRecord.writeEntries();
 
-                        if (entry instanceof UnwrapDataEntry) {
-                            UnwrapDataEntry unwrapDataEntry = (UnwrapDataEntry)entry;
-                            unwrappedKeyObj = unwrapDataEntry.unwrappedKey();
-                            unwrappedValObj = unwrapDataEntry.unwrappedValue();
+                        for (DataEntry entry : entries) {
+                            GridCacheVersion globalTxId = entry.nearXidVersion();
+
+                            Object unwrappedKeyObj;
+                            Object unwrappedValObj;
+
+                            if (entry instanceof UnwrappedDataEntry) {
+                                UnwrappedDataEntry unwrapDataEntry = (UnwrappedDataEntry)entry;
+                                unwrappedKeyObj = unwrapDataEntry.unwrappedKey();
+                                unwrappedValObj = unwrapDataEntry.unwrappedValue();
+                            }
+                            else if (entry instanceof MarshalledDataEntry) {
+                                unwrappedKeyObj = null;
+                                unwrappedValObj = null;
+                                //can't check value
+                            }
+                            else {
+                                final CacheObject val = entry.value();
+
+                                unwrappedValObj = val instanceof BinaryObject ? val : val.value(null, false);
+
+                                final CacheObject key = entry.key();
+
+                                unwrappedKeyObj = key instanceof BinaryObject ? key : key.value(null, false);
+                            }
+
+                            if (DUMP_RECORDS)
+                                log.info("//Entry operation " + entry.op() + "; cache Id" + entry.cacheId() + "; " +
+                                    "under transaction: " + globalTxId +
+                                    //; entry " + entry +
+                                    "; Key: " + unwrappedKeyObj +
+                                    "; Value: " + unwrappedValObj);
+
+                            if (cacheObjHnd != null && (unwrappedKeyObj != null || unwrappedValObj != null))
+                                cacheObjHnd.apply(unwrappedKeyObj, unwrappedValObj);
+
+                            Integer entriesUnderTx = entriesUnderTxFound.get(globalTxId);
+
+                            entriesUnderTxFound.put(globalTxId, entriesUnderTx == null ? 1 : entriesUnderTx + 1);
                         }
-                        else if (entry instanceof LazyDataEntry) {
-                            unwrappedKeyObj = null;
-                            unwrappedValObj = null;
-                            //can't check value
-                        }
-                        else {
-                            final CacheObject val = entry.value();
 
-                            unwrappedValObj = val instanceof BinaryObject ? val : val.value(null, false);
+                        break;
+                    }
 
-                            final CacheObject key = entry.key();
+                    case TX_RECORD:
+                    case MVCC_TX_RECORD: {
+                        assert walRecord instanceof TxRecord;
 
-                            unwrappedKeyObj = key instanceof BinaryObject ? key : key.value(null, false);
-                        }
+                        TxRecord txRecord = (TxRecord)walRecord;
+                        GridCacheVersion globalTxId = txRecord.nearXidVersion();
 
                         if (DUMP_RECORDS)
-                            log.info("//Entry operation " + entry.op() + "; cache Id" + entry.cacheId() + "; " +
-                                "under transaction: " + globalTxId +
-                                //; entry " + entry +
-                                "; Key: " + unwrappedKeyObj +
-                                "; Value: " + unwrappedValObj);
-
-                        if (cacheObjHnd != null && (unwrappedKeyObj != null || unwrappedValObj != null))
-                            cacheObjHnd.apply(unwrappedKeyObj, unwrappedValObj);
-
-                        Integer entriesUnderTx = entriesUnderTxFound.get(globalTxId);
-
-                        entriesUnderTxFound.put(globalTxId, entriesUnderTx == null ? 1 : entriesUnderTx + 1);
+                            log.info("//Tx Record, state: " + txRecord.state() +
+                                "; nearTxVersion" + globalTxId);
                     }
-                }
-                else if (walRecord.type() == TX_RECORD && walRecord instanceof TxRecord) {
-                    TxRecord txRecord = (TxRecord)walRecord;
-                    GridCacheVersion globalTxId = txRecord.nearXidVersion();
-
-                    if (DUMP_RECORDS)
-                        log.info("//Tx Record, state: " + txRecord.state() +
-                            "; nearTxVersion" + globalTxId);
                 }
             }
         }
