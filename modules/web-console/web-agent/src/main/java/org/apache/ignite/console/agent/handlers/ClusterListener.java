@@ -20,11 +20,12 @@ package org.apache.ignite.console.agent.handlers;
 import io.socket.client.Socket;
 import java.io.IOException;
 import java.net.ConnectException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -198,7 +199,7 @@ public class ClusterListener implements AutoCloseable {
         private String clusterName;
 
         /** */
-        private Collection<UUID> nids;
+        private Set<UUID> nids;
 
         /** */
         private Map<UUID, String> addrs;
@@ -235,7 +236,7 @@ public class ClusterListener implements AutoCloseable {
         TopologySnapshot(Collection<GridClientNodeBean> nodes) {
             int sz = nodes.size();
 
-            nids = new ArrayList<>(sz);
+            nids = new LinkedHashSet<>(sz);
             addrs = U.newHashMap(sz);
             clients = U.newHashMap(sz);
             active = false;
@@ -329,7 +330,7 @@ public class ClusterListener implements AutoCloseable {
         /**
          * @return Cluster nodes IDs.
          */
-        public Collection<UUID> getNids() {
+        public Set<UUID> getNids() {
             return nids;
         }
 
@@ -367,6 +368,14 @@ public class ClusterListener implements AutoCloseable {
          */
         boolean differentCluster(TopologySnapshot prev) {
             return prev == null || F.isEmpty(prev.nids) || Collections.disjoint(nids, prev.nids);
+        }
+
+        /**
+         * @param prev Previous topology.
+         * @return {@code true} in case if current topology is the same cluster, but topology changed.
+         */
+        boolean topologyChanged(TopologySnapshot prev) {
+            return prev != null && !prev.nids.equals(nids) && !Collections.disjoint(nids, prev.nids);
         }
     }
 
@@ -495,6 +504,8 @@ public class ClusterListener implements AutoCloseable {
 
                         if (newTop.differentCluster(top))
                             log.info("Connection successfully established to cluster with nodes: " + newTop.nid8());
+                        else if (newTop.topologyChanged(top))
+                            log.info("Cluster topology changed, new topology: " + newTop.nid8());
 
                         boolean active = active(newTop.clusterVersion(), F.first(newTop.getNids()));
 

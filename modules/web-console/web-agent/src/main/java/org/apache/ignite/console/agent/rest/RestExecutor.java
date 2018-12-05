@@ -191,12 +191,11 @@ public class RestExecutor implements AutoCloseable {
             try {
                 RestResult res = sendRequest(nodeUrl, params, headers);
 
-                String s = "Connected to cluster [url=" + nodeUrl + "]";
-
+                // If first attempt failed then throttling should be cleared.
                 if (i > 0)
-                    LT.clearKey(s);
+                    LT.clear();
 
-                LT.info(log, s);
+                LT.info(log, "Connected to cluster [url=" + nodeUrl + "]");
 
                 startIdxs.put(nodeURIs, currIdx);
 
