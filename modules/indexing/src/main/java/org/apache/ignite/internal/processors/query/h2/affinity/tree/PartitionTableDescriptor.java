@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.affinity.tree;
 
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Partition resolver.
@@ -63,5 +64,10 @@ public class PartitionTableDescriptor {
         PartitionTableDescriptor other = (PartitionTableDescriptor)o;
 
         return F.eq(cacheName, other.cacheName) && F.eq(tblName, other.tblName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PartitionTableDescriptor.class, this);
     }
 }

@@ -151,7 +151,7 @@ public class PartitionTreeExtractor {
      */
    @Nullable private static GridSqlTable unwrapTable(GridSqlAst from) {
         if (from instanceof GridSqlAlias)
-            from = ((GridSqlAlias)from).child();
+            from = from.child();
 
         if (from instanceof GridSqlTable)
             return (GridSqlTable)from;
@@ -354,10 +354,10 @@ public class PartitionTreeExtractor {
         if (rightConst != null) {
             int part = idx.kernalContext().affinity().partition(tbl.cacheName(), rightConst.value().getObject());
 
-            return new PartitionConstantSingleNode(tblDesc, part);
+            return new PartitionConstantNode(tblDesc, part);
         }
         else if (rightParam != null)
-            return new PartitionParameterSingleNode(tblDesc, idx, rightParam.index(), leftCol.getType());
+            return new PartitionParameterNode(tblDesc, idx, rightParam.index(), leftCol.getType());
         else
             return null;
     }

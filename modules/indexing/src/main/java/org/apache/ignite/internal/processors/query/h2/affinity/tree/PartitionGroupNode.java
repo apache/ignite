@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.query.h2.affinity.tree;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -29,6 +31,7 @@ import java.util.Set;
  */
 public class PartitionGroupNode implements PartitionNode {
     /** Partitions. */
+    @GridToStringInclude
     private final Set<PartitionSingleNode> siblings;
 
     /**
@@ -106,5 +109,10 @@ public class PartitionGroupNode implements PartitionNode {
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PartitionGroupNode.class, this);
     }
 }

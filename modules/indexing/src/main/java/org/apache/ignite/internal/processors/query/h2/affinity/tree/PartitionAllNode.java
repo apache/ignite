@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity.tree;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 import java.util.Collection;
 
 /**
@@ -36,5 +38,10 @@ public class PartitionAllNode implements PartitionNode {
     /** {@inheritDoc} */
     @Override public Collection<Integer> apply(Object... args) {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PartitionAllNode.class, this);
     }
 }

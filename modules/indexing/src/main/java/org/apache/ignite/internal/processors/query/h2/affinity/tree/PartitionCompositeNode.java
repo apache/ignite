@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.affinity.tree;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -29,9 +30,11 @@ import java.util.Set;
  */
 public class PartitionCompositeNode implements PartitionNode {
     /** Left node. */
+    @GridToStringInclude
     private final PartitionNode left;
 
     /** Right node. */
+    @GridToStringInclude
     private final PartitionNode right;
 
     /** Operator. */
@@ -166,7 +169,7 @@ public class PartitionCompositeNode implements PartitionNode {
             Set<PartitionSingleNode> consts = new HashSet<>(left.siblings());
             Set<PartitionSingleNode> rightConsts = null;
 
-            if (right instanceof PartitionConstantSingleNode)
+            if (right instanceof PartitionConstantNode)
                 rightConsts = Collections.singleton((PartitionSingleNode)right);
             else if (right instanceof PartitionGroupNode) {
                 PartitionGroupNode right0 = (PartitionGroupNode)right;

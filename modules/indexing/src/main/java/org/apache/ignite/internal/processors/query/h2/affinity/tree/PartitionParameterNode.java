@@ -20,12 +20,15 @@ package org.apache.ignite.internal.processors.query.h2.affinity.tree;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Node with partition which should be extracted from argument.
  */
-public class PartitionParameterSingleNode extends PartitionSingleNode {
+public class PartitionParameterNode extends PartitionSingleNode {
     /** Indexing. */
+    @GridToStringExclude
     private final IgniteH2Indexing indexing;
 
     /** Index. */
@@ -42,7 +45,7 @@ public class PartitionParameterSingleNode extends PartitionSingleNode {
      * @param idx Parameter index.
      * @param dataType Parameter data type.
      */
-    public PartitionParameterSingleNode(PartitionTableDescriptor tbl, IgniteH2Indexing indexing, int idx,
+    public PartitionParameterNode(PartitionTableDescriptor tbl, IgniteH2Indexing indexing, int idx,
         int dataType) {
         super(tbl);
 
@@ -69,5 +72,10 @@ public class PartitionParameterSingleNode extends PartitionSingleNode {
     /** {@inheritDoc} */
     @Override public int value() {
         return idx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PartitionParameterNode.class, this);
     }
 }

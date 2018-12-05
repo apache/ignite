@@ -17,14 +17,19 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity.tree;
 
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  * Partition extraction result.
  */
 public class PartitionResult {
     /** Descriptor. */
+    @GridToStringInclude
     private final PartitionTableDescriptor desc;
 
     /** Tree. */
+    @GridToStringInclude
     private final PartitionNode tree;
 
     /**
@@ -50,5 +55,10 @@ public class PartitionResult {
      */
     public PartitionNode tree() {
         return tree;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PartitionResult.class, this);
     }
 }

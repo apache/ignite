@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.affinity.tree;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 
 import java.util.Collection;
@@ -28,6 +29,7 @@ import java.util.Collections;
  */
 public abstract class PartitionSingleNode implements PartitionNode {
     /** Table descriptor. */
+    @GridToStringExclude
     protected final PartitionTableDescriptor tbl;
 
     /**

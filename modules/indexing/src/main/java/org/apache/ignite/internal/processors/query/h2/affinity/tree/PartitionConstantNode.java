@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity.tree;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  * Node with constant partition.
  */
-public class PartitionConstantSingleNode extends PartitionSingleNode {
+public class PartitionConstantNode extends PartitionSingleNode {
     /** Partition. */
     private final int part;
 
@@ -30,7 +32,7 @@ public class PartitionConstantSingleNode extends PartitionSingleNode {
      * @param resolver Resolver.
      * @param part Partition.
      */
-    public PartitionConstantSingleNode(PartitionTableDescriptor resolver, int part) {
+    public PartitionConstantNode(PartitionTableDescriptor resolver, int part) {
         super(resolver);
 
         this.part = part;
@@ -49,5 +51,10 @@ public class PartitionConstantSingleNode extends PartitionSingleNode {
     /** {@inheritDoc} */
     @Override public int value() {
         return part;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PartitionConstantNode.class, this);
     }
 }
