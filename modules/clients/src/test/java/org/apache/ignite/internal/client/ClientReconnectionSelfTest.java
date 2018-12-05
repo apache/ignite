@@ -36,12 +36,6 @@ public class ClientReconnectionSelfTest extends GridCommonAbstractTestWithNoOpHa
     /** */
     private ClientTestRestServer[] srvs = new ClientTestRestServer[ClientTestRestServer.SERVERS_CNT];
 
-    @Override
-    protected void beforeTest() throws Exception {
-        System.out.println(getFailureHandler(""));
-        super.beforeTest();
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < srvs.length; i++) {
