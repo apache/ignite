@@ -315,6 +315,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWalDisabledDuringRebalancingWithPendingTxTracker() throws Exception {
         enablePendingTxTracker = true;
         dfltCacheBackupCnt = 2;
