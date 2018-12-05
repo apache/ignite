@@ -173,7 +173,7 @@ class MapQueryResults {
      *
      * @param idx Map query (result) index.
      */
-    public void closeResult(int idx) {
+    void closeResult(int idx) {
         MapQueryResult res = results.get(idx);
 
         if (res != null) {
