@@ -42,16 +42,17 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.GridIterator;
@@ -94,16 +95,27 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
     }
 
     /** {@inheritDoc} */
+    @Override
+    public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteException {
+        try {
+            return super.result(res, rcvd);
+        }
+        catch (IgniteException e) {
+            return ComputeJobResultPolicy.WAIT;
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public @Nullable IdleVerifyResultV2 reduce(List<ComputeJobResult> results) throws IgniteException {
         Map<UUID, Exception> exceptions = new HashMap<>(results.size());
 
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
 
         for (ComputeJobResult res : results) {
-            if(res.getException() != null)
+            if (res.getException() != null)
                 exceptions.put(res.getNode().id(), res.getException());
             else {
-                if(!F.isEmpty(exceptions))
+                if (!F.isEmpty(exceptions))
                     continue;
 
                 Map<PartitionKeyV2, PartitionHashRecordV2> nodeHashes = res.getData();
@@ -123,7 +135,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingParts = new HashMap<>();
 
-        if(F.isEmpty(exceptions)) {
+        if (F.isEmpty(exceptions)) {
             for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> e : clusterHashes.entrySet()) {
                 Integer partHash = null;
                 Long updateCntr = null;
@@ -236,7 +248,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
          * @return Cache group ids.
          * @throws IgniteException If some caches not found.
          */
-        private Set<Integer> getGroupIds() throws IgniteException{
+        private Set<Integer> getGroupIds() throws IgniteException {
             Set<Integer> grpIds = new HashSet<>();
 
             if (arg.getCaches() != null) {
@@ -281,7 +293,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
          * @param grpIds Cache group ids.
          * @return List of futures.
          */
-        private  List<Future<Map<PartitionKeyV2, PartitionHashRecordV2>>> calcPartitionsHashAsync(Set<Integer> grpIds) {
+        private List<Future<Map<PartitionKeyV2, PartitionHashRecordV2>>> calcPartitionsHashAsync(Set<Integer> grpIds) {
             List<Future<Map<PartitionKeyV2, PartitionHashRecordV2>>> partHashCalcFutures = new ArrayList<>();
 
             for (Integer grpId : grpIds) {
@@ -309,7 +321,6 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
         ) {
             return ForkJoinPool.commonPool().submit(() -> calculatePartitionHash(grpCtx, part));
         }
-
 
         /**
          * @param grpCtx Group context.
@@ -390,6 +401,8 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
          */
         private void checkPartitionCrc(CacheGroupContext grpCtx, GridDhtLocalPartition part) {
             if (grpCtx.persistenceEnabled()) {
+                FilePageStore pageStore = null;
+
                 try {
                     FilePageStoreManager pageStoreMgr =
                         (FilePageStoreManager)ignite.context().cache().context().pageStore();
@@ -397,7 +410,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                     if (pageStoreMgr == null)
                         return;
 
-                    PageStore pageStore = pageStoreMgr.getStore(grpCtx.groupId(), part.id());
+                    pageStore = (FilePageStore)pageStoreMgr.getStore(grpCtx.groupId(), part.id());
 
                     long pageId = PageIdUtils.pageId(part.id(), PageIdAllocator.FLAG_DATA, 0);
 
@@ -412,8 +425,8 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                     }
                 }
                 catch (Throwable t) {
-                    String msg = "CRC check of partition: " + part + ", for cache group " + grpCtx.cacheOrGroupName() +
-                        " failed";
+                    String msg = "CRC check of partition: " + part.id() + ", for cache group " + grpCtx.cacheOrGroupName() +
+                        " failed." + (pageStore != null ? " file: " + pageStore.getFileAbsolutePath() : "");
 
                     log.error(msg, t);
 

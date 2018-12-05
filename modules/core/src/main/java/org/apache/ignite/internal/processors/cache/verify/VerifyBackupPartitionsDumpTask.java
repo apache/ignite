@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
@@ -80,6 +81,12 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
             taskArg = (VisorIdleVerifyDumpTaskArg)arg;
 
         return delegate.map(subgrid, arg);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteException {
+        return delegate.result(res, rcvd);
     }
 
     /** {@inheritDoc} */
@@ -176,6 +183,8 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
                 writeExceptions(conflictRes.exceptions(), writer);
             else
                 writeResult(partitions, conflictRes, skippedRecords, writer);
+
+            writer.flush();
 
             ignite.log().info("IdleVerifyDumpTask successfully written dump to '" + out.getAbsolutePath() + "'");
         }
