@@ -42,8 +42,11 @@ public class PagePartitionMetaIO extends PageMetaIO {
     /** */
     private static final int NEXT_PART_META_PAGE_OFF = PARTITION_STATE_OFF + 1;
 
+    /** */
+    private static final int GAPS_LINK = NEXT_PART_META_PAGE_OFF + 8;
+
     /** End of page partition meta. */
-    static final int END_OF_PARTITION_PAGE_META = NEXT_PART_META_PAGE_OFF + 8;
+    static final int END_OF_PARTITION_PAGE_META = GAPS_LINK + 8;
 
     /** */
     public static final IOVersions<PagePartitionMetaIO> VERSIONS = new IOVersions<>(
@@ -60,6 +63,7 @@ public class PagePartitionMetaIO extends PageMetaIO {
         setGlobalRemoveId(pageAddr, 0);
         setPartitionState(pageAddr, (byte)-1);
         setCountersPageId(pageAddr, 0);
+        setGapsLink(pageAddr, 0);
     }
 
     /**
@@ -192,6 +196,27 @@ public class PagePartitionMetaIO extends PageMetaIO {
     public void setPendingTreeRoot(long pageAddr, long treeRoot) {
         throw new UnsupportedOperationException("Per partition pending tree is not supported by " +
             "this PagePartitionMetaIO version: ver=" + getVersion());
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @return Partition size.
+     */
+    public long getGapsLink(long pageAddr) {
+        return PageUtils.getLong(pageAddr, GAPS_LINK);
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param size Partition size.
+     */
+    public boolean setGapsLink(long pageAddr, long link) {
+        if (getGapsLink(pageAddr) == link)
+            return false;
+
+        PageUtils.putLong(pageAddr, GAPS_LINK, link);
+
+        return true;
     }
 
     /** {@inheritDoc} */

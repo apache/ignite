@@ -259,6 +259,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             long size = store.fullSize();
             long rmvId = globalRemoveId().get();
 
+            byte[] rawGaps = store.partUpdateCounter().getBytes();
+
             PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
             IgniteWriteAheadLogManager wal = this.ctx.wal();
 
@@ -302,6 +304,37 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     try {
                         PagePartitionMetaIO io = PageIO.getPageIO(partMetaPageAddr);
+
+                        long link = io.getGapsLink(partMetaPageAddr);
+
+                        if (rawGaps == null && link != 0) {
+                            freeList.removeDataRowByLink(link);
+
+                            io.setGapsLink(partMetaPageAddr, (link = 0));
+
+                            changed = true;
+                        }
+                        else if (rawGaps != null && link == 0) {
+                            ByteArrayDataRow row = new ByteArrayDataRow(store.partId(), grpId, rawGaps);
+
+                            freeList.insertDataRow(row);
+
+                            io.setGapsLink(partMetaPageAddr, (link = row.link()));
+
+                            changed = true;
+                        }
+                        else if (rawGaps != null) {
+                            // TODO could the link change ?
+                            ByteArrayDataRow row = new ByteArrayDataRow(store.partId(), grpId, rawGaps);
+
+                            freeList.updateDataRow(link, row);
+
+                            if (row.link() != link) {
+                                io.setGapsLink(partMetaPageAddr, (link = row.link()));
+
+                                changed = true;
+                            }
+                        }
 
                         changed |= io.setUpdateCounter(partMetaPageAddr, updCntr);
                         changed |= io.setGlobalRemoveId(partMetaPageAddr, rmvId);
@@ -382,7 +415,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                 (int)size, // TODO: Partition size may be long
                                 cntrsPageId,
                                 state == null ? -1 : (byte)state.ordinal(),
-                                pageCnt
+                                pageCnt,
+                                link
                             ));
                     }
                     finally {
@@ -1579,7 +1613,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                 if (grp.sharedGroup())
                                     cacheSizes = readSharedGroupCacheSizes(pageMem, grpId, io.getCountersPageId(pageAddr));
 
-                                delegate0.init(io.getSize(pageAddr), io.getUpdateCounter(pageAddr), cacheSizes, null);
+                                long link = io.getGapsLink(pageAddr);
+
+                                byte[] data = link == 0 ? null :
+                                    new ByteArrayDataRow(grp, link, partId()).value().valueBytes(null);
+
+                                delegate0.init(io.getSize(pageAddr), io.getUpdateCounter(pageAddr), cacheSizes, data);
 
                                 globalRemoveId().setIfGreater(io.getGlobalRemoveId(pageAddr));
                             }
