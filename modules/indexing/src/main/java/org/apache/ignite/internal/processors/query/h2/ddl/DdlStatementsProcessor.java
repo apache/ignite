@@ -528,7 +528,7 @@ public class DdlStatementsProcessor {
      * @param tbl Table.
      */
     private static void isDdlSupported(GridH2Table tbl) {
-        //Local cache always started, so if cache is not started it's not local.
+        //Cache with local mode always started, so if cache is not started it's not local and DDL are supported.
         if (tbl.isCacheLazy())
             return;
 
