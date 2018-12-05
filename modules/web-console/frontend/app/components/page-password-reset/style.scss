@@ -19,6 +19,8 @@ page-password-reset {
 	display: flex;
     flex: 1 0 auto;
     flex-direction: column;
+    grid-column: span 3;
+    grid-row: span 3;
 
     footer {
         display: flex;

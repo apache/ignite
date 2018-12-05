@@ -27,10 +27,18 @@
 page-landing {
     font-family: Roboto;
     display: block;
+    grid-column: span 3;
+    grid-row: span 3;
 
-    margin-left: -30px;
-    margin-right: -30px;
-    display: block;
+    .page-landing__button-signin {
+        align-self: center;
+        margin-left: 30px;
+        margin-right: 30px;
+        min-width: 80px;
+        font-weight: 500;
+        padding: 10px 25px !important;
+        flex: 0 0 auto;
+    }
 
     .btn-custom {
         @include custom_btn;

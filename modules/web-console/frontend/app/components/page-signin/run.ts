@@ -21,11 +21,11 @@ import {IIgniteNg1StateDeclaration} from 'app/types';
 export function registerState($uiRouter: UIRouter) {
     const state: IIgniteNg1StateDeclaration = {
         url: '/signin',
-        name: 'base.signin',
+        name: 'signin',
         component: 'pageSignin',
         unsaved: true,
         redirectTo: (trans) => {
-            const skipStates = new Set(['base.signup', 'base.forgotPassword', 'base.landing']);
+            const skipStates = new Set(['signup', 'forgotPassword', 'landing']);
 
             if (skipStates.has(trans.from().name))
                 return;

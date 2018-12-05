@@ -14,15 +14,11 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-span.web-console-header-content__title(ng-if='$ctrl.showTitle') Management console for Apache Ignite
-
 .web-console-header-content__right
     .web-console-header-item(ng-if='$ctrl.showConnectedClusters')
         connected-clusters
     .web-console-header-item(ng-if='$ctrl.showDemoModeButton')
         demo-mode-button
-    .web-console-header-content__sign-in(ng-if='$ctrl.showSignInButton')
-        .btn-ignite.btn-ignite--primary(ui-sref='base.signin') Sign In
 
 .web-console-header-item(ng-if='$ctrl.showUserMenu')
     user-menu

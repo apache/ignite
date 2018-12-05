@@ -19,11 +19,14 @@ page-forgot-password {
     display: flex;
     flex-direction: column;
     flex: 1 0 auto;
+    grid-column: span 3;
+    grid-row: span 3;
 
     section {
         margin-left: auto;
         margin-right: auto;
         width: 530px;
+        flex: 1;
 
         h3 {
             font-size: 38px;

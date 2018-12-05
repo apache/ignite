@@ -54,7 +54,7 @@ export default class AuthService {
     }
 
     remindPassword(email: string) {
-        return this._auth('password/forgot', {email}).then(() => this.$state.go('base.password.send'));
+        return this._auth('password/forgot', {email}).then(() => this.$state.go('password.send'));
     }
 
     // TODO IGNITE-7994: Remove _auth and move API calls to corresponding methods
@@ -83,7 +83,7 @@ export default class AuthService {
             .then(() => {
                 this.User.clean();
 
-                this.$window.open(this.$state.href('base.signin'), '_self');
+                this.$window.open(this.$state.href('signin'), '_self');
             })
             .catch((e) => this.Messages.showError(e));
     }

@@ -25,7 +25,7 @@ export default class WebConsoleHeaderContent {
     ) {}
 
     static connectedClusterInvisibleStates = [
-        'base.403', 'base.404', 'base.signin'
+        '403', '404', 'signin'
     ];
 
     get showConnectedClusters(): boolean {
@@ -35,19 +35,11 @@ export default class WebConsoleHeaderContent {
             !this.$rootScope.user.becomeUsed;
     }
 
-    get showTitle(): boolean {
-        return ['base.signin', 'base.signup', 'base.landing'].some((name) => this.$state.includes(name));
-    }
-
     get showUserMenu(): boolean {
         return !!this.$rootScope.user;
     }
 
     get showDemoModeButton(): boolean {
         return this.$rootScope.user && !this.$rootScope.user.becomeUsed && !this.$rootScope.IgniteDemoMode;
-    }
-
-    get showSignInButton(): boolean {
-        return this.$state.is('base.landing');
     }
 }

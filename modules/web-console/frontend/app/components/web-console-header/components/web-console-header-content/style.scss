@@ -19,13 +19,6 @@ web-console-header-content {
     display: flex;
     flex: 1;
 
-    .web-console-header-content__title {
-        display: flex;
-        align-items: center;
-        margin-left: 80px;
-        font-size: 1.4em;
-    }
-
     .web-console-header-content__right {
         margin-left: auto;
         display: flex;
@@ -40,14 +33,12 @@ web-console-header-content {
         border-left: 1px solid #dddddd;
         height: 100%;
     }
+}
 
-    .web-console-header-content__sign-in {
-        align-self: center;
-        margin-right: 30px;
-
-        .btn-ignite {
-            font-weight: 500;
-            padding: 10px 25px !important;
-        }
-    }
+.web-console-header-content__title {
+    display: flex;
+    align-items: center;
+    margin-left: 80px;
+    font-size: 1.4em;
+    margin-right: auto;
 }

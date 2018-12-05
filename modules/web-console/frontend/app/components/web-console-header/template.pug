@@ -18,13 +18,14 @@ button.web-console-header__togle-menu-button(
     type='button'
     title='Toggle menu'
     ng-click='$ctrl.toggleSidebar()'
+    ng-class='::{"web-console-header__togle-menu-button-hidden": $ctrl.hideMenuButton}'
 )
     svg(ignite-icon='menu')
 
 a(ui-sref='default-state' ng-if='$ctrl.isAuthorized()').wch-logo-anchor
     img.wch-logo(src='/images/ignite-logo.svg')
 
-a(ui-sref='base.landing' ng-if='!$ctrl.isAuthorized()').wch-logo-anchor
+a(ui-sref='landing' ng-if='!$ctrl.isAuthorized()').wch-logo-anchor
     img.wch-logo(src='/images/ignite-logo.svg')
 
 ng-transclude

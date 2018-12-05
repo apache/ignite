@@ -16,6 +16,9 @@
 
 include /app/helpers/jade/mixins
 
+web-console-header(hide-menu-button='true')
+    .web-console-header-content__title Management console for Apache Ignite
+
 .container.body-container
     .row
         .main-content(ng-if='error')
@@ -72,3 +75,5 @@ include /app/helpers/jade/mixins
                     )
                         svg.icon-left(ignite-icon='checkmark')
                         | Save Changes
+
+web-console-footer

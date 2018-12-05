@@ -36,5 +36,8 @@ export default {
             return !!this.$rootScope.user;
         }
     },
-    transclude: true
+    transclude: true,
+    bindings: {
+        hideMenuButton: '<?'
+    }
 };
