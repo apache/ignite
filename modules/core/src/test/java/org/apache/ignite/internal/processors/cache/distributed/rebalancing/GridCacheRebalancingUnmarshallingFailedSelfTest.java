@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -109,6 +110,7 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
         cfg.setCacheMode(CacheMode.PARTITIONED);
         cfg.setRebalanceMode(CacheRebalanceMode.SYNC);
         cfg.setBackups(0);
+        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         iCfg.setCacheConfiguration(cfg);
 

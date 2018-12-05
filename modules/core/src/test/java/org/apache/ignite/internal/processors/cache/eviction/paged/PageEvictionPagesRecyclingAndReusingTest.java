@@ -83,6 +83,24 @@ public class PageEvictionPagesRecyclingAndReusingTest extends PageEvictionAbstra
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testPagesRecyclingAndReusingMvccTxReplicated() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10448");
+
+        testPagesRecyclingAndReusing(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.REPLICATED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPagesRecyclingAndReusingMvccTxLocal() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+
+        testPagesRecyclingAndReusing(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.LOCAL);
+    }
+
+    /**
      * @param atomicityMode Atomicity mode.
      * @param cacheMode Cache mode.
      */

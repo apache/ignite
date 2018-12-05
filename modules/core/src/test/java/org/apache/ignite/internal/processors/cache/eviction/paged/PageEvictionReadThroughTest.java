@@ -68,6 +68,24 @@ public class PageEvictionReadThroughTest extends PageEvictionAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testEvictionWithReadThroughMvccTxReplicated() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
+
+        testEvictionWithReadThrough(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.REPLICATED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testEvictionWithReadThroughMvccTxLocal() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+
+        testEvictionWithReadThrough(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.LOCAL);
+    }
+
+    /**
      * @param atomicityMode Atomicity mode.
      * @param cacheMode Cache mode.
      * @throws Exception If failed.

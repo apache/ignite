@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
@@ -140,11 +141,16 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
         }
     }
 
+    /**
+     * @param cacheName Cache name.
+     * @return Cache configuration.
+     */
     private static CacheConfiguration<Integer, Integer> cacheConfiguration(String cacheName) {
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>(cacheName);
 
         cfg.setBackups(1);
         cfg.setStatisticsEnabled(true);
+        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         return cfg;
     }
 }
