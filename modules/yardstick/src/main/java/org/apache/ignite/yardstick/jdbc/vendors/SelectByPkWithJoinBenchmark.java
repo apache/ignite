@@ -19,6 +19,7 @@ package org.apache.ignite.yardstick.jdbc.vendors;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Benchmark that performs selects with filter by primary key field with join on Organization table.
@@ -26,7 +27,9 @@ import java.sql.SQLException;
 public class SelectByPkWithJoinBenchmark extends BaseSelectRangeBenchmark {
     /** {@inheritDoc} */
     @Override protected void fillTestedQueryParams(PreparedStatement select) throws SQLException {
-        fillRandomPersonIdRange(select);
+        long persId = ThreadLocalRandom.current().nextLong(args.range());
+
+        select.setLong(1, persId);
     }
 
     /** {@inheritDoc} */

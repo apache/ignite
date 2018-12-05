@@ -74,9 +74,9 @@ public class QueryFactory {
         return "SELECT * FROM PUBLIC.PERSON WHERE SALARY BETWEEN ? AND ?";
     }
 
-    /** Simple select query which WHERE clause uses only primary key. */
+    /** Simple select query that fetches person with specified Person.id. */
     public String selectPersonsByPK() {
-        return "SELECT * FROM PUBLIC.PERSON WHERE id BETWEEN ? AND ? ";
+        return "SELECT * FROM PUBLIC.PERSON WHERE id = ? ;";
     }
 
     /** Query that inserts new Person record. Has 5 jdbc parameters - fields of the Person. */
@@ -102,15 +102,14 @@ public class QueryFactory {
     }
 
     /**
-     * Query that fetches info about persons and theirs organization for that persons who has Person.id in specified
-     * range.
+     * Query that fetches info about person with specified Person.id and it's organization.
      */
     public String selectPersonsJoinOrgWherePersonPK() {
         return "SELECT p.id, p.org_id, p.first_name, p.last_name, p.salary, o.name " +
             "FROM PUBLIC.PERSON p " +
             "INNER JOIN PUBLIC.ORGANIZATION o " +
             "ON p.org_id = o.id " +
-            "WHERE p.id BETWEEN ? AND ?;";
+            "WHERE p.id = ?;";
     }
 
     /** Query that fetches all ids from Person table. Has no parameters. */

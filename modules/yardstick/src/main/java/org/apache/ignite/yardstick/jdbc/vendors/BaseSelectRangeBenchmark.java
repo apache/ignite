@@ -269,23 +269,6 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
     }
 
     /**
-     * Given query that has 2 parameters which should be values of Person.id, according to the data model. This method
-     * generates range with a random begin point and fixed width({@link IgniteBenchmarkArguments#sqlRange()}) and fills
-     * prepared statement, that represents such query, with values : range begin and range end.
-     *
-     * @param selectBySalary Prepared statement, representing select with filter by Person.id field.
-     */
-    protected void fillRandomPersonIdRange(PreparedStatement selectBySalary) throws SQLException {
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-        long minId = rnd.nextLong(args.range() - args.sqlRange() + 1);
-        long maxId = minId + args.sqlRange() - 1;
-
-        selectBySalary.setLong(1, minId);
-        selectBySalary.setLong(2, maxId);
-    }
-
-    /**
      * Template method for benchmark. Executes thread-local  PreparedStatement. Children are specifying what query with
      * what parameters to execute and how to fill it's parameters.
      */
