@@ -19,9 +19,11 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -92,7 +94,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
     private volatile GridCacheReturn res;
 
     /** */
-    public final Map<UUID, Batch> batches = new ConcurrentHashMap<>();
+    private final Map<UUID, Batch> batches = new ConcurrentHashMap<>();
 
     /** Row extracted from iterator but not yet used. */
     private Object peek;
@@ -615,6 +617,10 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
         tx.hasRemoteLocks(true);
 
         return true;
+    }
+
+    @Override public Set<UUID> pendingResponseNodes() {
+        return Collections.unmodifiableSet(batches.keySet());
     }
 
     /** {@inheritDoc} */

@@ -1,6 +1,7 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -50,7 +51,7 @@ public class DdCollaborator {
                     tx.rollbackAsync();
                 }
                 else {
-                    // probe each waiting key
+                    // probe each blocker
                     // t0d0 multiple blockers
                     // t0d0 check if holding some lock already
                     // t0d0 first find all peers then send messages
@@ -76,10 +77,11 @@ public class DdCollaborator {
     }
 
     private IgniteInternalFuture<NearTxLocator> collectBlockers(GridNearTxLocal tx) {
-        Optional<UUID> optNode = tx.getPendingResponseNode();
+        Set<UUID> optNode = tx.getPendingResponseNodes();
 
-        if (optNode.isPresent()) {
-            UUID nodeId = optNode.get();
+        // t0d0 use all blockers
+        if (!optNode.isEmpty()) {
+            UUID nodeId = optNode.iterator().next();
             // t0d0 employ local check as well
             return cctx.coordinators().checkWaiting(nodeId, tx.mvccSnapshot());
         }

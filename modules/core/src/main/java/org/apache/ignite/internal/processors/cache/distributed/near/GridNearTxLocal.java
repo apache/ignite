@@ -4785,12 +4785,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         }
     }
 
-    public Optional<UUID> getPendingResponseNode() {
+    public Set<UUID> getPendingResponseNodes() {
         // t0d0 handle primaries local to near node
         // t0d0 different future types
-        Optional<GridNearTxEnlistFuture> optFut = cctx.mvcc().activeFutures().stream()
-            .filter(GridNearTxEnlistFuture.class::isInstance)
-            .map(GridNearTxEnlistFuture.class::cast)
+        Optional<GridNearTxAbstractEnlistFuture> optFut = cctx.mvcc().activeFutures().stream()
+            .filter(GridNearTxAbstractEnlistFuture.class::isInstance)
+            .map(GridNearTxAbstractEnlistFuture.class::cast)
             .filter(enlistFut -> enlistFut.tx == this)
             .findAny();
 
@@ -4798,7 +4798,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         // t0d0 it might be better if pending batches are provided by tx
 
         return optFut
-            .flatMap(fut -> fut.batches.keySet().stream().findAny());
+            .map(GridNearTxAbstractEnlistFuture::pendingResponseNodes)
+            .orElse(Collections.emptySet());
     }
 
     /**
