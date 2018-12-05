@@ -115,6 +115,7 @@ public class IgniteCacheMvccTestSuite2 extends TestSuite {
         ignoredTests.add(CacheOptimisticTransactionsWithFilterSingleServerTest.class);
         ignoredTests.add(CacheOptimisticTransactionsWithFilterTest.class);
 
+        // Irrelevant Tx tests.
         ignoredTests.add(IgniteOnePhaseCommitInvokeTest.class);
         ignoredTests.add(IgniteOnePhaseCommitNearReadersTest.class);
         ignoredTests.add(GridCacheDhtPreloadOnheapSelfTest.class);

@@ -81,11 +81,17 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     /** Tx cache name. */
     private static final String TX_CACHE_NAME = "tx-cache";
 
+    /** Mvcc tx cache name. */
+    private static final String MVCC_TX_CACHE_NAME = "mvcc-tx-cache";
+
     /** Near atomic cache name. */
     private static final String NEAR_ATOMIC_CACHE_NAME = "near-atomic-cache";
 
     /** Near tx cache name. */
     private static final String NEAR_TX_CACHE_NAME = "near-tx-cache";
+
+    /** Near mvcc tx cache name. */
+    private static final String NEAR_MVCC_TX_CACHE_NAME = "near-mvcc-tx-cache";
 
     /** Failed caches. */
     private static final Set<String> FAILED_CACHES;
@@ -97,6 +103,8 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         set.add(TX_CACHE_NAME);
         set.add(NEAR_ATOMIC_CACHE_NAME);
         set.add(NEAR_TX_CACHE_NAME);
+        set.add(MVCC_TX_CACHE_NAME);
+        set.add(NEAR_MVCC_TX_CACHE_NAME);
 
         FAILED_CACHES = Collections.unmodifiableSet(set);
     }
@@ -124,7 +132,13 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
             ccfg2.setName(TX_CACHE_NAME);
             ccfg2.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
-            cfg.setCacheConfiguration(ccfg1, ccfg2);
+            CacheConfiguration<Integer, String> ccfg3 = new CacheConfiguration<>();
+
+            ccfg3.setIndexedTypes(Integer.class, String.class);
+            ccfg3.setName(MVCC_TX_CACHE_NAME);
+            ccfg3.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+
+            cfg.setCacheConfiguration(ccfg1, ccfg2, ccfg3);
         }
         else {
             GridQueryProcessor.idxCls = FailedIndexing.class;
@@ -152,6 +166,13 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    public void testMvccTransactionalCacheInitialization() throws Exception {
+        checkCacheInitialization(MVCC_TX_CACHE_NAME);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testAtomicNearCacheInitialization() throws Exception {
         checkCacheInitialization(NEAR_ATOMIC_CACHE_NAME);
     }
@@ -161,6 +182,15 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
      */
     public void testTransactionalNearCacheInitialization() throws Exception {
         checkCacheInitialization(NEAR_TX_CACHE_NAME);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMvccTransactionalNearCacheInitialization() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+
+        checkCacheInitialization(NEAR_MVCC_TX_CACHE_NAME);
     }
 
     /**
@@ -201,12 +231,15 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
                 IgniteCache<Integer, String> cache;
 
                 // Start cache with near enabled.
-                if (NEAR_ATOMIC_CACHE_NAME.equals(cacheName) || NEAR_TX_CACHE_NAME.equals(cacheName)) {
+                if (NEAR_ATOMIC_CACHE_NAME.equals(cacheName) || NEAR_TX_CACHE_NAME.equals(cacheName) ||
+                    NEAR_MVCC_TX_CACHE_NAME.equals(cacheName)) {
                     CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<Integer, String>(cacheName)
                         .setNearConfiguration(new NearCacheConfiguration<Integer, String>());
 
                     if (NEAR_TX_CACHE_NAME.equals(cacheName))
                         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+                    else if (NEAR_MVCC_TX_CACHE_NAME.equals(cacheName))
+                        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
 
                     cache = client.getOrCreateCache(ccfg);
                 }

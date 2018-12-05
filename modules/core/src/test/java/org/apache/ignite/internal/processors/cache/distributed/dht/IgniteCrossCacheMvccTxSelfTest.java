@@ -14,23 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-package org.apache.ignite.internal.processors.cache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- * Test getEntry and getEntries methods.
+ *
  */
-public class CacheGetEntryPessimisticReadCommittedSeltTest extends CacheGetEntryAbstractTest {
+public class IgniteCrossCacheMvccTxSelfTest extends IgniteCrossCacheTxAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected TransactionConcurrency concurrency() {
-        return TransactionConcurrency.PESSIMISTIC;
+    @Override public CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
     }
 
-    /** {@inheritDoc} */
-    @Override protected TransactionIsolation isolation() {
-        return TransactionIsolation.READ_COMMITTED;
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPessimisticRepeatableRead() throws Exception {
+        checkTxsSingleOp(PESSIMISTIC, REPEATABLE_READ);
     }
 }

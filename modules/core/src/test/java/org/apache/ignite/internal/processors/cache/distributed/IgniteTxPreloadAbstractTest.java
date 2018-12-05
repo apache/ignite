@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -78,6 +79,9 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
      * @throws Exception If failed.
      */
     public void testRemoteTxPreloading() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10391");
+
         IgniteCache<String, Integer> cache = jcache(0);
 
         for (int i = 0; i < 10_000; i++)
@@ -147,13 +151,17 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
      * @throws Exception If failed.
      */
     public void testLocalTxPreloadingOptimistic() throws Exception {
-        testLocalTxPreloading(OPTIMISTIC);
+        if (!MvccFeatureChecker.forcedMvcc()) // Do not check optimistic tx for mvcc.
+            testLocalTxPreloading(OPTIMISTIC);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testLocalTxPreloadingPessimistic() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10391");
+
         testLocalTxPreloading(PESSIMISTIC);
     }
 
