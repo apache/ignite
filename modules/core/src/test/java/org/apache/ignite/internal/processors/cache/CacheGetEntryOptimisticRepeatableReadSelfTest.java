@@ -23,7 +23,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 /**
  * Test getEntry and getEntries methods.
  */
-public class CacheGetEntryOptimisticSerializableSeltTest extends CacheGetEntryAbstractTest {
+public class CacheGetEntryOptimisticRepeatableReadSelfTest extends CacheGetEntryAbstractTest {
     /** {@inheritDoc} */
     @Override protected TransactionConcurrency concurrency() {
         return TransactionConcurrency.OPTIMISTIC;
@@ -31,6 +31,6 @@ public class CacheGetEntryOptimisticSerializableSeltTest extends CacheGetEntryAb
 
     /** {@inheritDoc} */
     @Override protected TransactionIsolation isolation() {
-        return TransactionIsolation.SERIALIZABLE;
+        return TransactionIsolation.REPEATABLE_READ;
     }
 }
