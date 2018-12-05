@@ -27,7 +27,6 @@ import static org.junit.Assert.assertArrayEquals;
  * Tests for {@link StandardScalerPreprocessor}.
  */
 public class StandardScalerPreprocessorTest {
-
     /** Test {@code apply()} method. */
     @Test
     public void testApply() {

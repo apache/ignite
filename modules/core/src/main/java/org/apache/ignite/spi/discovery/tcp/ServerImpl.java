@@ -261,6 +261,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     private final ConcurrentMap<InetSocketAddress, GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>>> pingMap =
         new ConcurrentHashMap<>();
 
+    /** Last listener future. */
+    private IgniteFuture<?> lastCustomEvtLsnrFut;
+
     /**
      * @param adapter Adapter.
      */
@@ -2154,6 +2157,20 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** */
     private static WorkersRegistry getWorkerRegistry(TcpDiscoverySpi spi) {
         return spi.ignite() instanceof IgniteEx ? ((IgniteEx)spi.ignite()).context().workersRegistry() : null;
+    }
+
+    /**
+     * Wait for all the listeners from previous discovery message to be completed.
+     */
+    private void waitForLastCustomEventListenerFuture() {
+        if (lastCustomEvtLsnrFut != null) {
+            try {
+                lastCustomEvtLsnrFut.get();
+            }
+            finally {
+                lastCustomEvtLsnrFut = null;
+            }
+        }
     }
 
     /**
@@ -4160,6 +4177,15 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void processNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
             assert msg != null;
 
+            blockingSectionBegin();
+
+            try {
+                waitForLastCustomEventListenerFuture();
+            }
+            finally {
+                blockingSectionEnd();
+            }
+
             TcpDiscoveryNode node = msg.node();
 
             assert node != null;
@@ -5232,6 +5258,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (clientNodeIds.contains(clientNode.id()))
                                 clientNode.clientAliveTime(spi.clientFailureDetectionTimeout());
                             else {
+                                if (clientNode.clientAliveTime() == 0L)
+                                    clientNode.clientAliveTime(spi.clientFailureDetectionTimeout());
+
                                 boolean aliveCheck = clientNode.isClientAlive();
 
                                 if (!aliveCheck && isLocalNodeCoordinator()) {
@@ -5603,8 +5632,19 @@ class ServerImpl extends TcpDiscoveryImpl {
                     hist,
                     msgObj);
 
-                if (waitForNotification || msgObj.isMutable())
-                    fut.get();
+                if (waitForNotification || msgObj.isMutable()) {
+                    blockingSectionBegin();
+
+                    try {
+                        fut.get();
+                    }
+                    finally {
+                        blockingSectionEnd();
+                    }
+                }
+                else {
+                    lastCustomEvtLsnrFut = fut;
+                }
 
                 if (msgObj.isMutable()) {
                     try {

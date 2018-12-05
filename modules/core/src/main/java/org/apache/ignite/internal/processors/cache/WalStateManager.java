@@ -387,9 +387,12 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * in OWNING state if such feature is enabled.
      *
      * @param topVer Topology version.
+     * @param changedBaseline The exchange is caused by Baseline Topology change.
      */
-    public void changeLocalStatesOnExchangeDone(AffinityTopologyVersion topVer) {
-        if (!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING, false))
+    public void changeLocalStatesOnExchangeDone(AffinityTopologyVersion topVer, boolean changedBaseline) {
+        if (changedBaseline
+            && IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_PENDING_TX_TRACKER_ENABLED)
+            || !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING, false))
             return;
 
         Set<Integer> grpsToEnableWal = new HashSet<>();
@@ -473,7 +476,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     public void onGroupRebalanceFinished(int grpId, AffinityTopologyVersion topVer) {
         TemporaryDisabledWal session0 = tmpDisabledWal;
 
-        if (session0 == null || !session0.topVer.equals(topVer))
+        if (session0 == null || session0.topVer.compareTo(topVer) > 0)
             return;
 
         session0.remainingGrps.remove(grpId);
@@ -506,7 +509,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
                         assert grp != null;
 
-                        grp.topology().ownMoving(session0.topVer);
+                        grp.topology().ownMoving(topVer);
                     }
 
                     cctx.exchange().refreshPartitions();
