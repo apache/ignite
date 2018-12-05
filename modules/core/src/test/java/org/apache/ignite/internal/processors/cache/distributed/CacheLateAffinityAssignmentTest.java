@@ -1727,7 +1727,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     public void testRandomOperations() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
-            fail("//https://issues.apache.org/jira/browse/IGNITE-10261");
+            fail("https://issues.apache.org/jira/browse/IGNITE-10261");
 
         forceSrvMode = true;
 

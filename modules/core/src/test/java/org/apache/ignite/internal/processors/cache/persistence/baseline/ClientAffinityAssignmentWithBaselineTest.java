@@ -49,6 +49,7 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -152,6 +153,14 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
             IgniteNodeAttributes.ATTR_MACS_OVERRIDE, UUID.randomUUID().toString()));
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10261");
+
+        super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
