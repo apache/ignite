@@ -105,6 +105,7 @@ import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
+import org.apache.ignite.internal.processors.query.h2.affinity.tree.PartitionNode;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeClientIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
@@ -2337,7 +2338,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (partitions == null && twoStepQry.derivedPartitions2() != null) {
             try {
-                Collection<Integer> partitions0 = twoStepQry.derivedPartitions2().tree().apply(qry.getArgs());
+                PartitionNode partTree = twoStepQry.derivedPartitions2().tree();
+
+                Collection<Integer> partitions0 = partTree.apply(qry.getArgs());
 
                 if (F.isEmpty(partitions0))
                     partitions = new int[0];
