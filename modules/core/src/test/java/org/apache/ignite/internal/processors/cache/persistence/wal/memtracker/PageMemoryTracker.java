@@ -544,7 +544,7 @@ public class PageMemoryTracker implements IgnitePlugin {
             long rmtPage = pageMem.acquirePage(fullPageId.groupId(), fullPageId.pageId());
 
             try {
-                long rmtPageAddr = pageMem.readLock(fullPageId.groupId(), fullPageId.pageId(), rmtPage);
+                long rmtPageAddr = pageMem.readLockForce(fullPageId.groupId(), fullPageId.pageId(), rmtPage);
 
                 try {
                     page.lock();
