@@ -61,7 +61,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -229,7 +229,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                         ArrayList<Index> indexes = gridH2Tbl.getIndexes();
 
                         for (Index idx : indexes)
-                            if (idx instanceof H2TreeIndex)
+                            if (idx instanceof H2TreeIndexBase)
                                 idxArgs.add(new T2<>(ctx, idx));
                     }
                 }
@@ -260,7 +260,8 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
                 Map<PartitionKey, ValidateIndexesPartitionResult> partRes = fut.get();
 
-                partResults.putAll(partRes);
+                if (!partRes.isEmpty() && partRes.entrySet().stream().anyMatch(e -> !e.getValue().issues().isEmpty()))
+                    partResults.putAll(partRes);
             }
 
             for (; curIdx < procIdxFutures.size(); curIdx++) {
@@ -268,7 +269,8 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
                 Map<String, ValidateIndexesPartitionResult> idxRes = fut.get();
 
-                idxResults.putAll(idxRes);
+                if (!idxRes.isEmpty() && idxRes.entrySet().stream().anyMatch(e -> !e.getValue().issues().isEmpty()))
+                    idxResults.putAll(idxRes);
             }
 
             log.warning("ValidateIndexesClosure finished: processed " + totalPartitions + " partitions and "
@@ -296,7 +298,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
         for (Integer grpId: grpIds) {
             final CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(grpId);
 
-            if (grpCtx == null) {
+            if (grpCtx == null || !grpCtx.persistenceEnabled()) {
                 integrityCheckedIndexes.incrementAndGet();
 
                 continue;
@@ -515,7 +517,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                     ArrayList<Index> indexes = gridH2Tbl.getIndexes();
 
                     for (Index idx : indexes) {
-                        if (!(idx instanceof H2TreeIndex))
+                        if (!(idx instanceof H2TreeIndexBase))
                             continue;
 
                         try {

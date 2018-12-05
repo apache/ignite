@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl;
 
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCount2;
 
@@ -28,6 +30,11 @@ import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCoun
  *   x { phase where the error happens }.
  */
 public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceTest {
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
+    }
+
     /**
      * Tests recovery.
      *
