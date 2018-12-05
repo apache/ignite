@@ -97,12 +97,14 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_VALIDATE_CACHE_REQUESTS;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
+import static org.apache.ignite.internal.util.lang.GridFunc.isEmpty;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 
 /**
@@ -898,8 +900,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             tx.onePhaseCommit(),
             tx.activeCachesDeploymentEnabled());
 
-        res.mvccSnapshot(tx.mvccSnapshot());
-
         if (prepErr == null) {
             if (tx.needReturnValue() || tx.nearOnOriginatingNode() || tx.hasInterceptor())
                 addDhtValues(res);
@@ -1003,7 +1003,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      * @return {@code True} if {@code done} flag was changed as a result of this call.
      */
     private boolean onComplete(@Nullable GridNearTxPrepareResponse res) {
-        if ((last || tx.isSystemInvalidate()) && !(tx.near() && tx.local()))
+        if (!tx.onePhaseCommit() && ((last || tx.isSystemInvalidate()) && !(tx.near() && tx.local())))
             tx.state(PREPARED);
 
         if (super.onDone(res, res == null ? err : null)) {
@@ -1047,6 +1047,24 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         this.req = req;
 
+        ClusterNode node = cctx.discovery().node(tx.topologyVersion(), tx.nearNodeId());
+
+        boolean validateCache = needCacheValidation(node);
+
+        if (validateCache) {
+            GridDhtTopologyFuture topFut = cctx.exchange().lastFinishedFuture();
+
+            if (topFut != null && !isEmpty(req.writes())) {
+                // All caches either read only or not. So validation of one cache context is enough.
+                GridCacheContext ctx = F.first(req.writes()).context();
+
+                Throwable err = topFut.validateCache(ctx, req.recovery(), isEmpty(req.writes()), null, null);
+
+                if (err != null)
+                    onDone(null, new IgniteCheckedException(err));
+            }
+        }
+
         boolean ser = tx.serializable() && tx.optimistic();
 
         if (!F.isEmpty(req.writes()) || (ser && !F.isEmpty(req.reads()))) {
@@ -1076,6 +1094,22 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         }
 
         mapIfLocked();
+    }
+
+    /**
+     * Returns {@code true} if cache validation needed.
+     *
+     * @param node Originating node.
+     * @return {@code True} if cache should be validated, {@code false} - otherwise.
+     */
+    private boolean needCacheValidation(ClusterNode node) {
+        if (node == null) {
+            // The originating (aka near) node has left the topology
+            // and therefore the cache validation doesn't make sense.
+            return false;
+        }
+
+        return Boolean.TRUE.equals(node.attribute(ATTR_VALIDATE_CACHE_REQUESTS));
     }
 
     /**
@@ -1258,27 +1292,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 }
             }
 
-            if (req.requestMvccCounter()) {
-                assert last;
-
-                assert tx.txState().mvccEnabled();
-
-                try {
-                    // Request snapshot locally only because
-                    // Mvcc Coordinator is expected to be local.
-                    MvccSnapshot snapshot = cctx.coordinators().tryRequestSnapshotLocal(tx);
-
-                    assert snapshot != null : tx.topologyVersion();
-
-                    tx.mvccSnapshot(snapshot);
-                }
-                catch (ClusterTopologyCheckedException e) {
-                    onDone(e);
-
-                    return;
-                }
-            }
-
             onEntriesLocked();
 
             // We are holding transaction-level locks for entries here, so we can get next write version.
@@ -1298,8 +1311,14 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             if (isDone())
                 return;
 
-            if (last)
+            if (last) {
+                recheckOnePhaseCommit();
+
+                if (tx.onePhaseCommit())
+                    tx.chainState(PREPARED);
+
                 sendPrepareRequests();
+            }
         }
         finally {
             markInitialized();
@@ -1307,9 +1326,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     }
 
     /**
-     *
+     * Checking that one phase commit for transaction still actual.
      */
-    private void sendPrepareRequests() {
+    private void recheckOnePhaseCommit() {
         if (tx.onePhaseCommit() && !tx.nearMap().isEmpty()) {
             for (GridDistributedTxMapping nearMapping : tx.nearMap().values()) {
                 if (!tx.dhtMap().containsKey(nearMapping.primary().id())) {
@@ -1319,7 +1338,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 }
             }
         }
+    }
 
+    /**
+     *
+     */
+    private void sendPrepareRequests() {
         assert !tx.txState().mvccEnabled() || !tx.onePhaseCommit() || tx.mvccSnapshot() != null;
 
         int miniId = 0;
@@ -1894,8 +1918,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                 drType,
                                 false)) {
                                 if (rec && !entry.isInternal())
-                                    cacheCtx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
-                                        (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
+                                    cacheCtx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(), null,
+                                        null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
                                         false, null, null, null, false);
 
                                 if (retVal && !invoke)

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.examples.ml.util;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.nio.file.Paths;
 import java.text.NumberFormat;
@@ -28,6 +29,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.math.exceptions.knn.FileParsingException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -67,25 +69,6 @@ public class SandboxMLCache {
     /**
      * Fills cache with data and returns it.
      *
-     * @param data Data to fill the cache with.
-     * @return Filled Ignite Cache.
-     */
-    public IgniteCache<Integer, Vector> getVectors(double[][] data) {
-        CacheConfiguration<Integer, Vector> cacheConfiguration = new CacheConfiguration<>();
-        cacheConfiguration.setName("TEST_" + UUID.randomUUID());
-        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
-
-        IgniteCache<Integer, Vector> cache = ignite.createCache(cacheConfiguration);
-
-        for (int i = 0; i < data.length; i++)
-            cache.put(i, VectorUtils.of(data[i]));
-
-        return cache;
-    }
-
-    /**
-     * Fills cache with data and returns it.
-     *
      * @param dataset The chosen dataset.
      * @return Filled Ignite Cache.
      * @throws FileNotFoundException If file not found.
@@ -94,7 +77,14 @@ public class SandboxMLCache {
 
         IgniteCache<Integer, Vector> cache = getCache();
 
-        Scanner scanner = new Scanner(SandboxMLCache.class.getResourceAsStream(dataset.getFileName()));
+        String fileName = dataset.getFileName();
+
+        File file = IgniteUtils.resolveIgnitePath(fileName);
+
+        if (file == null)
+            throw new FileNotFoundException(fileName);
+
+        Scanner scanner = new Scanner(file);
 
         int cnt = 0;
         while (scanner.hasNextLine()) {

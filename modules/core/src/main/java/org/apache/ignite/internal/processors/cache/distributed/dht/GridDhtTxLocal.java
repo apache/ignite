@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -96,6 +97,9 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     @GridToStringExclude
     private volatile GridDhtTxPrepareFuture prepFut;
 
+    /** Transaction label. */
+    private @Nullable String lb;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -118,6 +122,8 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
      * @param storeEnabled Store enabled flag.
      * @param txSize Expected transaction size.
      * @param txNodes Transaction nodes mapping.
+     * @param lb Transaction label.
+     * @param parentTx Transaction from which this transaction was copied by(if it was).
      */
     public GridDhtTxLocal(
         GridCacheSharedContext cctx,
@@ -141,7 +147,9 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         int txSize,
         Map<UUID, Collection<UUID>> txNodes,
         UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        @Nullable String lb,
+        GridNearTxLocal parentTx
     ) {
         super(
             cctx,
@@ -161,6 +169,8 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             subjId,
             taskNameHash);
 
+        this.lb = lb;
+
         assert nearNodeId != null;
         assert nearFutId != null;
         assert nearXidVer != null;
@@ -172,6 +182,8 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         this.txNodes = txNodes;
 
         threadId = nearThreadId;
+
+        setParentTx(parentTx);
 
         assert !F.eq(xidVer, nearXidVer);
 
@@ -530,6 +542,11 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<IgniteInternalTx> commitAsync() {
         return commitDhtLocalAsync();
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String label() {
+        return lb;
     }
 
     /** {@inheritDoc} */

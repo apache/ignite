@@ -70,6 +70,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
@@ -267,6 +269,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++)
             info("Grid " + i + ": " + grid(i).localNode().id());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /**
@@ -6006,6 +6013,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             doTransformResourceInjectionInTx(ignite, cache, true, false);
             doTransformResourceInjectionInTx(ignite, cache, true, true);
         }
+
+        grid(0).services( grid(0).cluster()).cancel(SERVICE_NAME1);
     }
 
     /**

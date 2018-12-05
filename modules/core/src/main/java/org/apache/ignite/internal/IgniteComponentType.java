@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import java.lang.reflect.Constructor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
@@ -89,6 +90,12 @@ public enum IgniteComponentType {
         "org.apache.ignite.internal.processors.schedule.IgniteNoopScheduleProcessor",
         "org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessor",
         "ignite-schedule"
+    ),
+
+    COMPRESSION(
+        CompressionProcessor.class.getName(),
+        "org.apache.ignite.internal.processors.compress.CompressionProcessorImpl",
+        "ignite-compress"
     );
 
     /** No-op class name. */

@@ -127,12 +127,19 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
 
             assertEquals(10, cache.get(key));
 
-            try (Transaction ignored = grid.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
-                assertEquals(10, cache.get(key));
-            }
+            if(((IgniteCacheProxy)cache).context().config().getAtomicityMode() != CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT) {
+                try (Transaction ignored = grid.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+                    assertEquals(10, cache.get(key));
+                }
 
-            try (Transaction ignored = grid.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-                assertEquals(10, cache.get(key));
+                try (Transaction ignored = grid.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+                    assertEquals(10, cache.get(key));
+                }
+            }
+            else {
+                try (Transaction ignored = grid.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    assertEquals(10, cache.get(key));
+                }
             }
         }
         finally {

@@ -120,7 +120,6 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         }
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
-        memCfg.setPageSize(4 * 1024);
         memCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
             .setMaxSize(150L * 1024 * 1024)
             .setPersistenceEnabled(persistenceEnabled()));
@@ -845,8 +844,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         checkCaches1(SRVS + CLIENTS);
 
         // Wait for late affinity assignment to finish.
-        grid(0).context().cache().context().exchange().affinityReadyFuture(
-            new AffinityTopologyVersion(SRVS + CLIENTS, 1)).get();
+        awaitPartitionMapExchange();
 
         final AffinityTopologyVersion STATE_CHANGE_TOP_VER = new AffinityTopologyVersion(SRVS + CLIENTS + 1, 1);
 
@@ -1203,13 +1201,13 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         client = false;
 
-        IgniteInternalFuture startFut1 = GridTestUtils.runAsync((Callable)() -> {
+        IgniteInternalFuture<?> startFut1 = GridTestUtils.runAsync(() -> {
             startGrid(4);
 
             return null;
         }, "start-node1");
 
-        IgniteInternalFuture startFut2 = GridTestUtils.runAsync((Callable)() -> {
+        IgniteInternalFuture<?> startFut2 = GridTestUtils.runAsync(() -> {
             startGrid(5);
 
             return null;
@@ -1331,6 +1329,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         ccfgs[4] = cacheConfiguration(CACHE_NAME_PREFIX + 4, TRANSACTIONAL);
 
         ccfgs[4].setDataRegionName(NO_PERSISTENCE_REGION);
+        ccfgs[4].setDiskPageCompression(null);
 
         return ccfgs;
     }

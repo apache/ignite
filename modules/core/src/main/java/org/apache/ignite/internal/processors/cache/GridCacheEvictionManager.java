@@ -29,7 +29,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManag
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.jetbrains.annotations.Nullable;
 
@@ -154,7 +153,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
                 cache.metrics0().onEvict();
 
             if (recordable)
-                cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), (IgniteUuid)null, null,
+                cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), null, null, null,
                     EVT_CACHE_ENTRY_EVICTED, null, false, oldVal, hasVal, null, null, null, false);
 
             if (log.isDebugEnabled())
@@ -295,7 +294,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
                     notifyPolicy(entry);
 
                 if (recordable)
-                    cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), (IgniteUuid)null, null,
+                    cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), null, null, null,
                         EVT_CACHE_ENTRY_EVICTED, null, false, entry.rawGet(), entry.hasValue(), null, null, null,
                         false);
             }
