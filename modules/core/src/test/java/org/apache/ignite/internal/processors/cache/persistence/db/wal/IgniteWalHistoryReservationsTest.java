@@ -304,6 +304,9 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNodeIsClearedIfHistoryIsUnavailable() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10551");
+
         int entryCnt = 10_000;
 
         IgniteEx ig0 = (IgniteEx)startGrids(2);
@@ -364,6 +367,9 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testWalHistoryPartiallyRemoved() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10551");
+
         int entryCnt = 10_000;
 
         IgniteEx ig0 = (IgniteEx)startGrids(2);
