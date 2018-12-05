@@ -60,8 +60,10 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.LazyMvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.UnwrapMvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -141,7 +143,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         CacheConfiguration<Integer, IndexedObject> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
-        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
         ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
         ccfg.setIndexedTypes(Integer.class, IndexedObject.class);
@@ -850,7 +852,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testRemoveOperationPresentedForDataEntry() throws Exception {
-        runRemoveOperationTest(CacheAtomicityMode.TRANSACTIONAL);
+        runRemoveOperationTest(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
     }
 
     /**
@@ -1312,12 +1314,12 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                             Object unwrappedKeyObj;
                             Object unwrappedValObj;
 
-                            if (entry instanceof UnwrapDataEntry) {
+                            if (entry instanceof UnwrapDataEntry || entry instanceof UnwrapMvccDataEntry) {
                                 UnwrapDataEntry unwrapDataEntry = (UnwrapDataEntry)entry;
                                 unwrappedKeyObj = unwrapDataEntry.unwrappedKey();
                                 unwrappedValObj = unwrapDataEntry.unwrappedValue();
                             }
-                            else if (entry instanceof LazyDataEntry) {
+                            else if (entry instanceof LazyDataEntry || entry instanceof LazyMvccDataEntry) {
                                 unwrappedKeyObj = null;
                                 unwrappedValObj = null;
                                 //can't check value
