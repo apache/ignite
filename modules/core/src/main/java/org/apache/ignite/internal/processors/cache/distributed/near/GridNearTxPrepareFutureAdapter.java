@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -185,8 +186,8 @@ public abstract class GridNearTxPrepareFutureAdapter extends
 
             Collection<UUID> backups = entry.getValue();
 
-//            if (backups.size() <= 1)
-//                tx.onePhaseCommit(true);
+            if (backups.size() <= 1 && !Boolean.getBoolean(IgniteSystemProperties.IGNITE_PENDING_TX_TRACKER_ENABLED))
+                tx.onePhaseCommit(true);
         }
     }
 
