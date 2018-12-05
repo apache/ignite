@@ -20,6 +20,7 @@ package org.apache.ignite.cache.store;
 import java.util.Random;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -40,6 +41,13 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
  */
 @RunWith(JUnit4.class)
 public class CacheStoreListenerRWThroughDisabledTransactionalCacheTest extends CacheStoreSessionListenerReadWriteThroughDisabledAbstractTest {
+    /** {@inheritDoc} */
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        super.setUp();
+    }
+
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;

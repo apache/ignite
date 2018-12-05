@@ -21,6 +21,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  *
@@ -44,6 +45,9 @@ public class GridCacheMultinodeUpdateNearEnabledNoBackupsSelfTest extends GridCa
     /** {@inheritDoc} */
     @Test
     @Override public void testInvoke() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-809");
+        if (!MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-809");
+        else
+            super.testInvoke();
     }
 }

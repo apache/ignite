@@ -42,6 +42,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -69,6 +70,13 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
 
     /** Test cache name. */
     protected static final String CACHE_NAME = "cache_name";
+
+    /** {@inheritDoc} */
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        super.setUp();
+    }
 
     /**
      * @return Cache mode.
@@ -127,7 +135,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
 
         cc.setBackups(0);
 
-        cc.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+        cc.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         return cc;
     }

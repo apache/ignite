@@ -289,6 +289,14 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testStartStopCacheSimpleTransactionalMvcc() throws Exception {
+        checkStartStopCacheSimple(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testStartStopCacheSimpleAtomic() throws Exception {
         checkStartStopCacheSimple(CacheAtomicityMode.ATOMIC);
     }
@@ -299,6 +307,14 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     @Test
     public void testStartStopCachesSimpleTransactional() throws Exception {
         checkStartStopCachesSimple(CacheAtomicityMode.TRANSACTIONAL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testStartStopCachesSimpleTransactionalMvcc() throws Exception {
+        checkStartStopCachesSimple(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
     }
 
     /**
@@ -659,7 +675,6 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testStartFromClientNode() throws Exception {
         try {
             testAttribute = false;

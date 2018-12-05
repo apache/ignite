@@ -32,6 +32,7 @@ import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.testframework.MvccFeatureChecker.assertMvccWriteConflict;
 
 /**
  * Multinode update test.
@@ -102,8 +103,20 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
 
                     final IgniteCache<Integer, Integer> cache = grid(idx).cache(DEFAULT_CACHE_NAME);
 
-                    for (int i = 0; i < ITERATIONS_PER_THREAD && !failed; i++)
-                        cache.invoke(key, new IncProcessor());
+                        for (int i = 0; i < ITERATIONS_PER_THREAD && !failed; i++) {
+                            boolean updated = false;
+
+                            while (!updated) {
+                                try {
+                                    cache.invoke(key, new IncProcessor());
+
+                                    updated = true;
+                                }
+                                catch (Exception e) {
+                                    assertMvccWriteConflict(e);
+                                }
+                            }
+                        }
 
                     return null;
                 }

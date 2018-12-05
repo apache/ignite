@@ -14,39 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  *
  */
-public class IgniteCacheTxLocalPeekModesTest extends IgniteCachePeekModesAbstractTest {
+public class IgniteCrossCacheMvccTxSelfTest extends IgniteCrossCacheTxAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-
-        super.setUp();
+    @Override public CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
     }
 
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return TRANSACTIONAL;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return LOCAL;
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPessimisticRepeatableRead() throws Exception {
+        checkTxsSingleOp(PESSIMISTIC, REPEATABLE_READ);
     }
 }

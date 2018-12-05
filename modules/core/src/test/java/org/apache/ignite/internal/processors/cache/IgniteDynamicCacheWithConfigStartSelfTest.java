@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -67,6 +68,7 @@ public class IgniteDynamicCacheWithConfigStartSelfTest extends GridCommonAbstrac
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
         ccfg.setIndexedTypes(String.class, String.class);
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         return ccfg;
     }

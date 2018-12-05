@@ -17,36 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.testframework.MvccFeatureChecker;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
 /**
- *
+ * Test getEntry and getEntries methods.
  */
-public class IgniteCacheTxLocalPeekModesTest extends IgniteCachePeekModesAbstractTest {
+public class CacheGetEntryPessimisticSerializableSelfTest extends CacheGetEntryAbstractTest {
     /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-
-        super.setUp();
+    @Override protected TransactionConcurrency concurrency() {
+        return TransactionConcurrency.PESSIMISTIC;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return TRANSACTIONAL;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return LOCAL;
+    @Override protected TransactionIsolation isolation() {
+        return TransactionIsolation.SERIALIZABLE;
     }
 }

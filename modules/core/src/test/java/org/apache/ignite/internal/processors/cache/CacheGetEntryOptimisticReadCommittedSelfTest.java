@@ -19,27 +19,18 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test getEntry and getEntries methods.
  */
-@RunWith(JUnit4.class)
-public class CacheGetEntryPessimisticRepeatableReadSeltTest extends CacheGetEntryAbstractTest {
+public class CacheGetEntryOptimisticReadCommittedSelfTest extends CacheGetEntryAbstractTest {
     /** {@inheritDoc} */
     @Override protected TransactionConcurrency concurrency() {
-        return TransactionConcurrency.PESSIMISTIC;
+        return TransactionConcurrency.OPTIMISTIC;
     }
 
     /** {@inheritDoc} */
     @Override protected TransactionIsolation isolation() {
-        return TransactionIsolation.REPEATABLE_READ;
-    }
-
-    @Test
-    @Override public void testReplicatedTransactional() throws Exception {
-        super.testReplicatedTransactional();
+        return TransactionIsolation.READ_COMMITTED;
     }
 }

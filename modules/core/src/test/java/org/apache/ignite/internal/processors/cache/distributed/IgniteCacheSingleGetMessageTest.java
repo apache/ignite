@@ -40,6 +40,7 @@ import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -93,10 +94,24 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSingleGetMessage() throws Exception {
+        checkSingleGetMessage(cacheConfigurations());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMvccSingleGetMessage() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7371");
+
+        checkSingleGetMessage(mvccCacheConfigurations());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void checkSingleGetMessage(List<CacheConfiguration<Integer, Integer>> ccfgs) throws Exception {
         assertFalse(ignite(0).configuration().isClientMode());
         assertTrue(ignite(SRVS).configuration().isClientMode());
-
-        List<CacheConfiguration<Integer, Integer>> ccfgs = cacheConfigurations();
 
         for (int i = 0; i < ccfgs.size(); i++) {
             CacheConfiguration<Integer, Integer> ccfg = ccfgs.get(i);
@@ -287,6 +302,19 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return Mvcc cache configurations to test.
+     */
+    private List<CacheConfiguration<Integer, Integer>> mvccCacheConfigurations() {
+        List<CacheConfiguration<Integer, Integer>> ccfgs = new ArrayList<>();
+
+        ccfgs.add(cacheConfiguration(PARTITIONED, TRANSACTIONAL_SNAPSHOT, FULL_SYNC, 0));
+        ccfgs.add(cacheConfiguration(PARTITIONED, TRANSACTIONAL_SNAPSHOT, FULL_SYNC, 1));
+        ccfgs.add(cacheConfiguration(REPLICATED, TRANSACTIONAL_SNAPSHOT, FULL_SYNC, 0));
+
+        return ccfgs;
+    }
+
+    /**
      * @param cacheMode Cache mode.
      * @param atomicityMode Cache atomicity mode.
      * @param syncMode Write synchronization mode.
@@ -302,7 +330,6 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
 
         ccfg.setCacheMode(cacheMode);
         ccfg.setAtomicityMode(atomicityMode);
-        ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(syncMode);
 
         if (cacheMode == PARTITIONED)

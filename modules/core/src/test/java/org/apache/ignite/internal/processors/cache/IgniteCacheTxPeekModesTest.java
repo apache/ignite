@@ -22,6 +22,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -48,10 +49,10 @@ public class IgniteCacheTxPeekModesTest extends IgniteCachePeekModesAbstractTest
 
     /** {@inheritDoc} */
     @Test
-    @Override public void testLocalPeek() throws Exception {
-        // TODO: uncomment and re-open ticket if fails.
-//        fail("https://issues.apache.org/jira/browse/IGNITE-1824");
+    @Override public void testLocalEntries() throws Exception {
+         if (MvccFeatureChecker.forcedMvcc())
+             fail("https://issues.apache.org/jira/browse/IGNITE-10167");
 
-        super.testLocalPeek();
+        super.testLocalEntries();
     }
 }

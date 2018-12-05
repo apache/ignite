@@ -25,6 +25,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -42,6 +43,13 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 @RunWith(JUnit4.class)
 public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstractTest {
+    /** {@inheritDoc} */
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        super.setUp();
+    }
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 3;

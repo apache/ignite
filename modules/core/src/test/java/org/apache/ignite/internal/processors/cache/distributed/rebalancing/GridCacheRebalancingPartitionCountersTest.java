@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -65,6 +66,7 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
                                 .setMaxSize(100L * 1024 * 1024))
                         .setWalMode(WALMode.LOG_ONLY))
                 .setCacheConfiguration(new CacheConfiguration(CACHE_NAME)
+                    .setAtomicityMode(atomicityMode())
                     .setBackups(2)
                     .setRebalanceBatchSize(4096) // Force to create several supply messages during rebalancing.
                     .setAffinity(
@@ -81,6 +83,13 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+    }
+
+    /**
+     * @return Cache atomicity mode.
+     */
+    protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.ATOMIC;
     }
 
     /**

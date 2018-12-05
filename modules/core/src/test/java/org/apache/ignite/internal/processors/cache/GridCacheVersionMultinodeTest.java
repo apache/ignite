@@ -36,6 +36,7 @@ import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -116,6 +117,31 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testVersionMvccTx() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
+
+        atomicityMode = TRANSACTIONAL_SNAPSHOT;
+
+        checkVersion();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testVersionMvccTxNearEnabled() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+
+        atomicityMode = TRANSACTIONAL_SNAPSHOT;
+
+        near = true;
+
+        checkVersion();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testVersionAtomicPrimary() throws Exception {
         atomicityMode = ATOMIC;
 
@@ -146,17 +172,19 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
             checkVersion(String.valueOf(i), null); // Update.
         }
 
-        if (atomicityMode == TRANSACTIONAL) {
+        if (atomicityMode != ATOMIC) {
             for (int i = 100; i < 200; i++) {
                 checkVersion(String.valueOf(i), PESSIMISTIC); // Create.
 
                 checkVersion(String.valueOf(i), PESSIMISTIC); // Update.
             }
 
-            for (int i = 200; i < 300; i++) {
-                checkVersion(String.valueOf(i), OPTIMISTIC); // Create.
+            if (atomicityMode != TRANSACTIONAL_SNAPSHOT) {
+                for (int i = 200; i < 300; i++) {
+                    checkVersion(String.valueOf(i), OPTIMISTIC); // Create.
 
-                checkVersion(String.valueOf(i), OPTIMISTIC); // Update.
+                    checkVersion(String.valueOf(i), OPTIMISTIC); // Update.
+                }
             }
         }
     }

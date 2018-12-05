@@ -28,9 +28,11 @@ import org.apache.ignite.internal.processors.cache.local.GridLocalCacheEntry;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -80,6 +82,9 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
         cfg.setAtomicityMode(atomicityMode);
         cfg.setName(cacheName);
 
+        if (atomicityMode == TRANSACTIONAL_SNAPSHOT && !MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE))
+            cfg.setNearConfiguration(null);
+
         return cfg;
     }
 
@@ -92,13 +97,22 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
 
         checkCacheMapEntry(TRANSACTIONAL, LOCAL, GridLocalCacheEntry.class);
 
+        if (MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.LOCAL_CACHE))
+            checkCacheMapEntry(TRANSACTIONAL_SNAPSHOT, LOCAL, GridLocalCacheEntry.class);
+
         checkCacheMapEntry(ATOMIC, PARTITIONED, GridNearCacheEntry.class);
 
         checkCacheMapEntry(TRANSACTIONAL, PARTITIONED, GridNearCacheEntry.class);
 
+        if (MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.CACHE_STORE))
+            checkCacheMapEntry(TRANSACTIONAL_SNAPSHOT, PARTITIONED, GridDhtCacheEntry.class);
+
         checkCacheMapEntry(ATOMIC, REPLICATED, GridDhtCacheEntry.class);
 
         checkCacheMapEntry(TRANSACTIONAL, REPLICATED, GridDhtCacheEntry.class);
+
+        if (MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.CACHE_STORE))
+            checkCacheMapEntry(TRANSACTIONAL_SNAPSHOT, REPLICATED, GridDhtCacheEntry.class);
     }
 
     /**
