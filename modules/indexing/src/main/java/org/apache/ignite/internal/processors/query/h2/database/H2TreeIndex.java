@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
-import org.apache.ignite.internal.stat.IoStatisticsManager;
 import org.apache.ignite.internal.stat.IoStatisticsType;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -150,8 +149,6 @@ public class H2TreeIndex extends H2TreeIndexBase {
         IgniteCacheDatabaseSharedManager db = cctx.shared().database();
 
         AtomicInteger maxCalculatedInlineSize = new AtomicInteger();
-
-        IoStatisticsManager statMgr = cctx.kernalContext().ioStats();
 
         IoStatisticsHolder stats = cctx.kernalContext().ioStats().register(
             IoStatisticsType.SORTED_INDEX,
