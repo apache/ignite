@@ -269,7 +269,8 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
                 if (grpId == CU.cacheId(GROUP_1) || grpId == CU.cacheId(GROUP_2)) {
                     try {
                         U.sleep(50);
-                    } catch (IgniteInterruptedCheckedException e) {
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
                         e.printStackTrace();
                     }
                 }
