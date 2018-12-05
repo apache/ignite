@@ -171,7 +171,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     }
 
     /** */
-    public void init(IgniteCacheDatabaseSharedManager db) throws IgniteCheckedException {
+    public void init(GridCacheDatabaseSharedManager db) throws IgniteCheckedException {
         initInternal(db);
 
         if (!PRESERVE_LEGACY_METASTORAGE_PARTITION_ID) {
@@ -188,9 +188,9 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
                 CacheGroupContext cgc = cctx.cache().cacheGroup(METASTORAGE_CACHE_ID);
 
                 if (cgc != null) {
-                    ((GridCacheOffheapManager)cgc.offheap()).destroyPartitionStore(METASTORAGE_CACHE_ID, 0);
+                    db.schedulePartitionDestroy(METASTORAGE_CACHE_ID, 0);
 
-                    ((GridCacheOffheapManager)cgc.offheap()).destroyPartitionStore(METASTORAGE_CACHE_ID, PageIdAllocator.INDEX_PARTITION);
+                    db.schedulePartitionDestroy(METASTORAGE_CACHE_ID, PageIdAllocator.INDEX_PARTITION);
                 }
             }
         }
