@@ -389,7 +389,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @param topVer Topology version.
      */
     public void changeLocalStatesOnExchangeDone(AffinityTopologyVersion topVer) {
-        if (!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING, false))
+        if (!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING, true))
             return;
 
         Set<Integer> grpsToEnableWal = new HashSet<>();
