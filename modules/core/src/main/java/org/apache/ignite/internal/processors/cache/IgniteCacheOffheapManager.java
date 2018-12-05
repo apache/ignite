@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
-import org.apache.ignite.internal.processors.cache.persistence.Gaps;
+import org.apache.ignite.internal.processors.cache.persistence.ByteArrayDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -657,7 +657,7 @@ public interface IgniteCacheOffheapManager {
          * @param cacheSizes Cache sizes if store belongs to group containing multiple caches.
          * @param gaps Gaps.
          */
-        void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, Gaps gaps);
+        void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, ByteArrayDataRow gaps);
 
         /**
          * @param cacheId Cache ID.

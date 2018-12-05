@@ -17,16 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.BitSet;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.NavigableSet;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.cache.persistence.Gaps;
+import org.apache.ignite.internal.processors.cache.persistence.ByteArrayDataRow;
 import org.apache.ignite.internal.util.GridLongList;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Partition update counter.
@@ -43,6 +46,7 @@ public class PartitionUpdateCounter {
 
     /** Initial counter points to last update which is written to persistent storage. */
     private long initCntr;
+    private byte[] bytes;
 
     /**
      * @param log Logger.
@@ -53,13 +57,12 @@ public class PartitionUpdateCounter {
 
     /**
      * @param initUpdCntr Initial update counter.
-     * @param gaps Gaps.
+     * @param holes Holes or null if counter is sequential.
      */
-    public void init(long initUpdCntr, Gaps gaps) {
+    public void init(long initUpdCntr, @Nullable TreeSet<Item> holes) {
         cntr.set(initUpdCntr);
 
-        for (T2<Long, Long> gap : gaps)
-            queue.add(new Item(gap.get1(), gap.get2()));
+        queue = holes;
     }
 
     /**
@@ -293,6 +296,30 @@ public class PartitionUpdateCounter {
 
         if (!last.open() && items.first() == last)
             release(last.start, last.delta);
+    }
+
+    public @Nullable byte[] getBytes() {
+        if (queue.isEmpty())
+            return null;
+
+        // TODO slow output stream
+        try {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+
+            DataOutputStream dos = new DataOutputStream(bos);
+
+            dos.writeInt(queue.size());
+
+            for (Item item : queue) {
+                dos.writeLong(item.start);
+                //dos.writeP
+            }
+
+            return bytes;
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**

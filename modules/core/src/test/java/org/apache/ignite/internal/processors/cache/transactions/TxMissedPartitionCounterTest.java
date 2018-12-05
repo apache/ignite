@@ -19,22 +19,29 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.persistence.ByteArrayDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.max;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -49,9 +56,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    private static final int GRID_CNT = 3;
 
     /** */
     private static final int MB = 1024 * 1024;
@@ -656,6 +660,50 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
             }
 
             fut.get();
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    public void testSaveGaps() throws Exception {
+        try {
+            IgniteEx grid = (IgniteEx)startGridsMultiThreaded(1);
+            grid.cache(DEFAULT_CACHE_NAME).put(0, 0);
+
+            @Nullable GridDhtLocalPartition part = internalCache(0).context().topology().localPartition(0);
+            GridCacheOffheapManager.GridCacheDataStore rowStore = (GridCacheOffheapManager.GridCacheDataStore)part.dataStore();
+
+            FreeList list = U.field(rowStore, "freeList");
+
+            grid.context().cache().context().database().checkpointReadLock();
+
+            try {
+                PartitionUpdateCounter pc = new PartitionUpdateCounter(log);
+
+                pc.reserve(2);
+                pc.reserve(6);
+                pc.reserve(3);
+                pc.reserve(1);
+
+                byte[] data = pc.getBytes();
+
+                byte[] rawData = U.marshal(new JdkMarshaller(), pc);
+
+                ByteArrayDataRow row0 = new ByteArrayDataRow(part.id(), 0, rawData);
+
+                list.insertDataRow(row0);
+
+                System.out.println(row0.link());
+
+                ByteArrayDataRow row1 = new ByteArrayDataRow(part.group(), row0.link(), part.id());
+                byte[] bytes = row1.value().valueBytes(null);
+
+                System.out.println(bytes.length);
+            }
+            finally {
+                grid.context().cache().context().database().checkpointReadUnlock();
+            }
         }
         finally {
             stopAllGrids();

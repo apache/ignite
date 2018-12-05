@@ -17,26 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import java.util.BitSet;
-import java.util.Iterator;
-import java.util.Spliterator;
-import java.util.TreeSet;
-import java.util.function.Consumer;
-import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.tree.DataRow;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 
 /**
+ * Represents byte array in data pages.
  */
-public class Gaps implements Iterable<T2<Long, Long>> {
-    @Override public Iterator<T2<Long, Long>> iterator() {
-        return null;
+public class ByteArrayDataRow extends DataRow {
+    public ByteArrayDataRow(CacheGroupContext grp, long link, int part) {
+        super(grp, 0, link, part, RowData.NO_KEY);
     }
 
-    @Override public void forEach(Consumer<? super T2<Long, Long>> action) {
-
-    }
-
-    @Override public Spliterator<T2<Long, Long>> spliterator() {
-        return null;
+    public ByteArrayDataRow(int part, int grpId, byte[] data) {
+        super(new KeyCacheObjectImpl(new Object(), new byte[0], part), new CacheObjectByteArrayImpl(data),
+            GridCacheVersionManager.EVICT_VER, part, 0, grpId);
     }
 }

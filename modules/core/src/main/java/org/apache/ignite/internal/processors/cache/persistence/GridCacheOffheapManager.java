@@ -1579,9 +1579,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                 if (grp.sharedGroup())
                                     cacheSizes = readSharedGroupCacheSizes(pageMem, grpId, io.getCountersPageId(pageAddr));
 
-                                Gaps gaps = new Gaps();
-
-                                delegate0.init(io.getSize(pageAddr), io.getUpdateCounter(pageAddr), cacheSizes, gaps);
+                                delegate0.init(io.getSize(pageAddr), io.getUpdateCounter(pageAddr), cacheSizes, null);
 
                                 globalRemoveId().setIfGreater(io.getGlobalRemoveId(pageAddr));
                             }
@@ -1843,7 +1841,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, Gaps gaps) {
+        @Override public void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, ByteArrayDataRow gaps) {
             throw new IllegalStateException("Should be never called.");
         }
 

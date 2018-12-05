@@ -58,7 +58,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
-import org.apache.ignite.internal.processors.cache.persistence.Gaps;
+import org.apache.ignite.internal.processors.cache.persistence.ByteArrayDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -3034,7 +3034,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, Gaps gaps) {
+        @Override public void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, ByteArrayDataRow gaps) {
             pCntr.init(updCntr, gaps);
 
             storageSize.set(size);
