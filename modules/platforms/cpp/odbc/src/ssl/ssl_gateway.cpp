@@ -30,6 +30,14 @@
 #   define SSL_CTRL_OPTIONS 32
 #endif // SSL_CTRL_OPTIONS
 
+#ifndef OPENSSL_INIT_LOAD_SSL_STRINGS
+#   define OPENSSL_INIT_LOAD_SSL_STRINGS 0x00200000L
+#endif // OPENSSL_INIT_LOAD_SSL_STRINGS
+
+#ifndef OPENSSL_INIT_LOAD_CRYPTO_STRINGS
+#   define OPENSSL_INIT_LOAD_CRYPTO_STRINGS 0x00000002L
+#endif // OPENSSL_INIT_LOAD_CRYPTO_STRINGS
+
 namespace ignite
 {
     namespace odbc
@@ -262,11 +270,11 @@ namespace ignite
                 return fp(type);
             }
 
-            int SslGateway::OPENSSL_init_ssl_(uint64_t opts, const OPENSSL_INIT_SETTINGS* settings)
+            int SslGateway::OPENSSL_init_ssl_(uint64_t opts, const void* settings)
             {
                 assert(functions.fpOPENSSL_init_ssl != 0);
 
-                typedef int (FuncType)(uint64_t, const OPENSSL_INIT_SETTINGS*);
+                typedef int (FuncType)(uint64_t, const void*);
 
                 FuncType* fp = reinterpret_cast<FuncType*>(functions.fpOPENSSL_init_ssl);
 

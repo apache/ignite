@@ -118,7 +118,7 @@ namespace ignite
 
                     char* SSLeay_version_(int type);
 
-                    int OPENSSL_init_ssl_(uint64_t opts, const OPENSSL_INIT_SETTINGS *settings);
+                    int OPENSSL_init_ssl_(uint64_t opts, const void* settings);
 
                     long SSL_CTX_set_options_(SSL_CTX* ctx, long options);
 
