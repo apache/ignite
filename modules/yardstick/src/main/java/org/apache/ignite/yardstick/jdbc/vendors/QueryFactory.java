@@ -71,12 +71,12 @@ public class QueryFactory {
      * PreparedStatement.
      */
     public String selectPersonsWithSalaryBetween() {
-        return "SELECT ID FROM PUBLIC.PERSON WHERE SALARY BETWEEN ? AND ?";
+        return "SELECT * FROM PUBLIC.PERSON WHERE SALARY BETWEEN ? AND ?";
     }
 
     /** Simple select query which WHERE clause uses only primary key. */
     public String selectPersonsByPK() {
-        return "SELECT id FROM PUBLIC.PERSON WHERE id BETWEEN ? AND ? ";
+        return "SELECT * FROM PUBLIC.PERSON WHERE id BETWEEN ? AND ? ";
     }
 
     /** Query that inserts new Person record. Has 5 jdbc parameters - fields of the Person. */
@@ -115,7 +115,7 @@ public class QueryFactory {
 
     /** Query that fetches all ids from Person table. Has no parameters. */
     public String selectAllPersons() {
-        return "SELECT id FROM PUBLIC.PERSON;";
+        return "SELECT * FROM PUBLIC.PERSON;";
     }
 
     /** Query that fetches all records about all persons with info about theirs organizations. */
