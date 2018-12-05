@@ -1,3 +1,4 @@
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -527,6 +528,10 @@ public class DdlStatementsProcessor {
      * @param tbl Table.
      */
     private static void isDdlSupported(GridH2Table tbl) {
+        //Local cache always started, so if cache is not started it's not local.
+        if (tbl.isCacheLazy())
+            return;
+
         GridCacheContext cctx = tbl.cacheContext();
 
         assert cctx != null;
