@@ -85,6 +85,16 @@ public class PartitionCompositeNode implements PartitionNode {
 
     /** {@inheritDoc} */
     @Override public PartitionNode optimize() {
+        PartitionNode left = this.left;
+        PartitionNode right = this.right;
+
+        // Optimize composite nodes is possible.
+        if (left instanceof PartitionCompositeNode)
+            left = left.optimize();
+
+        if (right instanceof PartitionCompositeNode)
+            right = right.optimize();
+
         // ALL and NONE always can be optimized.
         if (left == PartitionAllNode.INSTANCE || left == PartitionNoneNode.INSTANCE)
             return optimizeSpecial(left, right);
@@ -92,9 +102,10 @@ public class PartitionCompositeNode implements PartitionNode {
         if (right == PartitionAllNode.INSTANCE || right == PartitionNoneNode.INSTANCE)
             return optimizeSpecial(right, left);
 
-        // If one of child nodes cannot be optimized, nothing can be done.
+        // If one of child nodes cannot be optimized, nothing can be done further.
+        // Note that we cannot return "this" here because left or right parts might have been optimized.
         if (left instanceof PartitionCompositeNode || right instanceof PartitionCompositeNode)
-            return this;
+            return new PartitionCompositeNode(left, right, op);
 
         // Try optimizing composite nodes.
         if (left instanceof PartitionGroupNode)
@@ -126,7 +137,7 @@ public class PartitionCompositeNode implements PartitionNode {
                 // ALL and (...) -> (...).
                 assert op == PartitionCompositeNodeOperator.AND;
 
-                return right.optimize();
+                return right;
             }
         }
         else {
@@ -134,7 +145,7 @@ public class PartitionCompositeNode implements PartitionNode {
 
             if (op == PartitionCompositeNodeOperator.OR)
                 // NONE or (...) -> (...).
-                return right.optimize();
+                return right;
             else {
                 // NONE and (...) -> NONE.
                 assert op == PartitionCompositeNodeOperator.AND;
@@ -169,6 +180,8 @@ public class PartitionCompositeNode implements PartitionNode {
      * @return Optimized node.
      */
     private PartitionNode optimizeGroupAnd(PartitionGroupNode left, PartitionNode right) {
+        assert op == PartitionCompositeNodeOperator.AND;
+
         // Optimistic check whether both sides are equal.
         if (right instanceof PartitionGroupNode) {
             PartitionGroupNode right0 = (PartitionGroupNode)right;
@@ -212,7 +225,7 @@ public class PartitionCompositeNode implements PartitionNode {
         // Note that in fact we can optimize expression to certain extent (e.g. (A) and (B, :C) -> (A) and (:C)),
         // but resulting expression is always composite node still, which cannot be optimized on upper levels.
         // So we skip any fine-grained optimization in favor of simplicity.
-        return this;
+        return new PartitionCompositeNode(left, right, PartitionCompositeNodeOperator.AND);
     }
 
     /**
@@ -223,6 +236,8 @@ public class PartitionCompositeNode implements PartitionNode {
      * @return Optimized node.
      */
     private PartitionNode optimizeGroupOr(PartitionGroupNode left, PartitionNode right) {
+        assert op == PartitionCompositeNodeOperator.OR;
+
         HashSet<PartitionSingleNode> siblings = new HashSet<>(left.siblings());
 
         if (right instanceof PartitionSingleNode)
@@ -261,6 +276,8 @@ public class PartitionCompositeNode implements PartitionNode {
      * @return Optimized node.
      */
     private PartitionNode optimizeSimpleAnd(PartitionSingleNode left, PartitionSingleNode right) {
+        assert op == PartitionCompositeNodeOperator.AND;
+
         // Check if both sides are equal.
         if (left.equals(right))
             // (X) and (X) -> X
@@ -274,7 +291,7 @@ public class PartitionCompositeNode implements PartitionNode {
 
         // Otherwise it is a mixed set, cannot reduce.
         // X and :Y -> (X) AND (:Y)
-        return this;
+        return new PartitionCompositeNode(left, right, PartitionCompositeNodeOperator.AND);
     }
 
     /**
@@ -285,6 +302,8 @@ public class PartitionCompositeNode implements PartitionNode {
      * @return Optimized node.
      */
     private PartitionNode optimizeSimpleOr(PartitionSingleNode left, PartitionSingleNode right) {
+        assert op == PartitionCompositeNodeOperator.OR;
+
         if (left.equals(right))
             return left;
         else
