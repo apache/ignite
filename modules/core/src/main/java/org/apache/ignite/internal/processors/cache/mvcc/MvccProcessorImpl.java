@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -87,7 +88,6 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -97,7 +97,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -1821,13 +1820,13 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         }
     }
 
-    @Override public IgniteInternalFuture<T2<GridCacheVersion, UUID>> checkWaiting(MvccVersion ver, UUID nodeId) {
-        LockWaitCheckFuture fut = new LockWaitCheckFuture(nodeId, ver, ctx.cache().context());
+    @Override public IgniteInternalFuture<NearTxLocator> checkWaiting(UUID nodeId, MvccVersion mvccVer) {
+        LockWaitCheckFuture fut = new LockWaitCheckFuture(nodeId, mvccVer, ctx.cache().context());
         fut.init();
         return fut;
     }
 
-    public class LockWaitCheckFuture extends GridCacheFutureAdapter<T2<GridCacheVersion, UUID>> {
+    public class LockWaitCheckFuture extends GridCacheFutureAdapter<NearTxLocator> {
         private final UUID nodeId;
         private final IgniteUuid futId = IgniteUuid.randomUuid();
         private final MvccVersionImpl txVersion;
@@ -1852,7 +1851,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             }
         }
 
-        @Override public boolean onDone(@Nullable T2<GridCacheVersion, UUID> res, @Nullable Throwable err) {
+        @Override public boolean onDone(@Nullable NearTxLocator res, @Nullable Throwable err) {
             if (super.onDone(res, err)) {
                 cctx.mvcc().removeFuture(futId);
 
@@ -1863,7 +1862,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         }
 
         public void onResponse(LockWaitCheckResponse res) {
-            onDone(new T2<>(res.blockerTxVersion(), res.blockerNodeId()));
+            onDone(res.isWaiting() ? new NearTxLocator(res.blockerNodeId(), res.blockerTxVersion()) : null);
         }
 
         @Override public IgniteUuid futureId() {
@@ -1891,6 +1890,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     private class CoordinatorMessageListener implements GridMessageListener {
         /** {@inheritDoc} */
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
+            // t0d0 setup message handler in proper place
             if (msg instanceof DeadlockProbe) {
                 new DdCollaborator(ctx.cache().context()).handleDeadlockProbe((DeadlockProbe)msg);
                 return;
@@ -1967,25 +1967,27 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     private void handleLockCheckRequest(UUID nodeId, LockWaitCheckRequest req) {
-        // t0d0 ensure response is sent in all cases
-        waitMap.entrySet().stream()
-            .filter(e -> e.getValue().txVersion().stream().anyMatch(waitingVer -> DdCollaborator.belongToSameTx(waitingVer, req.txVersion())))
+        LockWaitCheckResponse res = findBlockerTx(req.txVersion())
+            .map(tx -> LockWaitCheckResponse.waiting(req.futId(), tx.eventNodeId(), tx.nearXidVersion()))
+            .orElseGet(() -> LockWaitCheckResponse.notWaiting(req.futId()));
+
+        try {
+            sendMessage(nodeId, res);
+        }
+        catch (IgniteCheckedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private Optional<IgniteInternalTx> findBlockerTx(MvccVersion checkedTxVer) {
+        return waitMap.entrySet().stream()
+            .filter(e -> e.getValue().txVersion().stream()
+                .anyMatch(waitingVer -> DdCollaborator.belongToSameTx(waitingVer, checkedTxVer)))
             .map(e -> e.getKey())
             .findAny()
-            .ifPresent(txKey -> {
-                IgniteInternalTx blockerTx = ctx.cache().context().tm().activeTransactions().stream()
-                    .filter(tx -> tx.mvccSnapshot().coordinatorVersion() == txKey.major() && tx.mvccSnapshot().counter() == txKey.minor())
-                    .findAny()
-                    // t0d0 handle possible race here
-                    .get();
-                try {
-                    sendMessage(nodeId, new LockWaitCheckResponse(
-                        req.futId(), blockerTx.nearXidVersion(), blockerTx.eventNodeId()));
-                }
-                catch (IgniteCheckedException e) {
-                    e.printStackTrace();
-                }
-            });
+            .flatMap(txKey -> ctx.cache().context().tm().activeTransactions().stream()
+                .filter(tx -> tx.mvccSnapshot().coordinatorVersion() == txKey.major() && tx.mvccSnapshot().counter() == txKey.minor())
+                .findAny());
     }
 
     /**

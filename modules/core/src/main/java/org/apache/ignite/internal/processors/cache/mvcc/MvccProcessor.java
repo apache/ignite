@@ -29,9 +29,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -242,5 +240,5 @@ public interface MvccProcessor extends GridProcessor {
      */
     void ensureStarted() throws IgniteCheckedException;
 
-    IgniteInternalFuture<T2<GridCacheVersion, UUID>> checkWaiting(MvccVersion ver, UUID nodeId);
+    IgniteInternalFuture<NearTxLocator> checkWaiting(UUID nodeId, MvccVersion mvccVer);
 }

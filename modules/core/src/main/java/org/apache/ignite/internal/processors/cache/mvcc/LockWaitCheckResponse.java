@@ -15,10 +15,19 @@ public class LockWaitCheckResponse implements MvccMessage {
     private GridCacheVersion blockerTxVersion;
     private UUID blockerNodeId;
 
+    public static LockWaitCheckResponse waiting(
+        IgniteUuid futId, UUID blockerNodeId, GridCacheVersion blockerTxVersion) {
+        return new LockWaitCheckResponse(futId, blockerNodeId, blockerTxVersion);
+    }
+
+    public static LockWaitCheckResponse notWaiting(IgniteUuid futId) {
+        return new LockWaitCheckResponse(futId, null, null);
+    }
+
     public LockWaitCheckResponse() {
     }
 
-    public LockWaitCheckResponse(IgniteUuid futId, GridCacheVersion blockerTxVersion, UUID blockerNodeId) {
+    private LockWaitCheckResponse(IgniteUuid futId, UUID blockerNodeId, GridCacheVersion blockerTxVersion) {
         this.futId = futId;
         this.blockerTxVersion = blockerTxVersion;
         this.blockerNodeId = blockerNodeId;
@@ -34,6 +43,10 @@ public class LockWaitCheckResponse implements MvccMessage {
 
     public UUID blockerNodeId() {
         return blockerNodeId;
+    }
+
+    public boolean isWaiting() {
+        return blockerTxVersion != null;
     }
 
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {

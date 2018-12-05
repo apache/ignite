@@ -4796,10 +4796,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         // t0d0 handle multiple batches
         // t0d0 it might be better if pending batches are provided by tx
-        Optional<UUID> optBatch = optFut
-            .flatMap(fut -> fut.batches.keySet().stream().findAny());
 
-        return optBatch;
+        return optFut
+            .flatMap(fut -> fut.batches.keySet().stream().findAny());
     }
 
     /**
