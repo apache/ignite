@@ -856,7 +856,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         rmt.run(new AsyncLoadRunnable());
 
-        Thread.sleep(20_000);
+        Thread.sleep(10_000);
 
         info(">>> Killing remote process...");
 
@@ -889,7 +889,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         rmt.run(new AsyncLargeLoadRunnable());
 
-        Thread.sleep(5_000);
+        Thread.sleep(10_000);
 
         info(">>> Killing remote process...");
 
