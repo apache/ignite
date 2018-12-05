@@ -319,7 +319,7 @@ public class PartitionUpdateCounter {
             // 10000000000, 2; 10000000002, 4; 10000000004, 10;
             // stored as:
             // 10000000000; 0, 2; 2, 4; 4, 10.
-            // All ints are packed.
+            // All ints are packed except first.
 
             for (Item item : queue) {
                 dos.writeLong(item.start);
