@@ -1831,7 +1831,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         private final IgniteUuid futId = IgniteUuid.randomUuid();
         private final MvccVersionImpl txVersion;
         private final GridCacheSharedContext<?, ?> cctx;
-        private boolean trackable = true;
 
         private LockWaitCheckFuture(UUID nodeId, MvccVersion txVersion, GridCacheSharedContext<?, ?> cctx) {
             this.nodeId = nodeId;
@@ -1876,11 +1875,10 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         }
 
         @Override public boolean trackable() {
-            return trackable;
+            return true;
         }
 
         @Override public void markNotTrackable() {
-            trackable = false;
         }
     }
 
