@@ -215,6 +215,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
      */
     public void testDropIdxOnClient() {
         srvNode.getOrCreateCache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("CREATE INDEX IDX_TST ON " + FULL_TABLE_NAME + " (name asc)")).getAll();
+
         getDefaultCacheOnClient().query(new SqlFieldsQuery("DROP INDEX " + PERSON_SCHEMA + ".IDX_TST")).getAll();
     }
 
