@@ -231,7 +231,8 @@ public class TestUtils {
     public static boolean checkIsInEpsilonNeighbourhoodBoolean(Vector v1, Vector v2, double epsilon) {
         try {
             checkIsInEpsilonNeighbourhood(new Vector[] {v1}, new Vector[] {v2}, epsilon);
-        } catch (Throwable e) {
+        }
+        catch (Throwable e) {
             return false;
         }
 
@@ -422,7 +423,8 @@ public class TestUtils {
     public static <I, O, M extends Model<I, O>, L> DatasetTrainer<M, L> constantTrainer(M ml) {
         return new DatasetTrainer<M, L>() {
             /** {@inheritDoc} */
-            @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
+            @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor,
                 IgniteBiFunction<K, V, L> lbExtractor) {
                 return ml;
             }
@@ -438,79 +440,5 @@ public class TestUtils {
                 return ml;
             }
         };
-    }
-
-    public static class CombinableDatasetTrainer<I, O, M extends Model<I, O>, L> extends DatasetTrainer<M, L> {
-        protected DatasetTrainer<M, L> delegate;
-
-        public CombinableDatasetTrainer(DatasetTrainer<M, L> delegate) {
-            this.delegate = delegate;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
-            IgniteBiFunction<K, V, L> lbExtractor) {
-            return delegate.fit(datasetBuilder, featureExtractor, lbExtractor);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean checkState(M mdl) {
-            return delegate.checkState(mdl);
-        }
-
-        /** {@inheritDoc} */
-        @Override public <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
-            IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-            return delegate.updateModel(mdl, datasetBuilder, featureExtractor, lbExtractor);
-        }
-
-        public <I1> CombinableDatasetTrainer<I1, O, Model.ModelAfterMapping<I, I1, O, M>, L> beforeTrainedModel(
-            IgniteFunction<I1, I> f) {
-            DatasetTrainer<M, L> self = this;
-            return new CombinableDatasetTrainer<>(new DatasetTrainer<Model.ModelAfterMapping<I, I1, O, M>, L>() {
-                /** {@inheritDoc} */
-                @Override public <K, V> Model.ModelAfterMapping<I, I1, O, M> fit(DatasetBuilder<K, V> datasetBuilder,
-                    IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-                    return new Model.ModelAfterMapping<>(self.fit(datasetBuilder, featureExtractor, lbExtractor), f);
-                }
-
-                /** {@inheritDoc} */
-                @Override public boolean checkState(Model.ModelAfterMapping<I, I1, O, M> mdl) {
-                    return self.checkState(mdl.model());
-                }
-
-                /** {@inheritDoc} */
-                @Override public <K, V> Model.ModelAfterMapping<I, I1, O, M> updateModel(
-                    Model.ModelAfterMapping<I, I1, O, M> mdl,
-                    DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
-                    IgniteBiFunction<K, V, L> lbExtractor) {
-                    return new Model.ModelAfterMapping<>(self.updateModel(mdl.model(), datasetBuilder, featureExtractor, lbExtractor), f);
-                }
-            });
-        }
-
-        public <O1> CombinableDatasetTrainer<I, O1, Model.ModelBeforeMapping<I, O, O1, M>, L> afterTrainedModel(IgniteFunction<O, O1> f) {
-            DatasetTrainer<M, L> self = this;
-            return new CombinableDatasetTrainer<>(new DatasetTrainer<Model.ModelBeforeMapping<I, O, O1, M>, L>() {
-                /** {@inheritDoc} */
-                @Override public <K, V> Model.ModelBeforeMapping<I, O, O1, M> fit(DatasetBuilder<K, V> datasetBuilder,
-                    IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-                    return new Model.ModelBeforeMapping<>(self.fit(datasetBuilder, featureExtractor, lbExtractor), f);
-                }
-
-                /** {@inheritDoc} */
-                @Override public boolean checkState(Model.ModelBeforeMapping<I, O, O1, M> mdl) {
-                    return self.checkState(mdl.model());
-                }
-
-                /** {@inheritDoc} */
-                @Override public <K, V> Model.ModelBeforeMapping<I, O, O1, M> updateModel(
-                    Model.ModelBeforeMapping<I, O, O1, M> mdl,
-                    DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
-                    IgniteBiFunction<K, V, L> lbExtractor) {
-                    return new Model.ModelBeforeMapping<>(self.updateModel(mdl.model(), datasetBuilder, featureExtractor, lbExtractor), f);
-                }
-            });
-        }
     }
 }

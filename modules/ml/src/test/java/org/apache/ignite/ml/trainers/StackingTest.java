@@ -77,18 +77,19 @@ public class StackingTest extends TrainerTest {
         );
 
         // Convert model trainer to produce Vector -> Vector model
-        DatasetTrainer<? extends Model<Vector, Vector>, Double> mlpTrainer = new TestUtils.CombinableDatasetTrainer<>(trainer1)
+        DatasetTrainer<? extends Model<Vector, Vector>, Double> mlpTrainer = ComposableDatasetTrainer.of(trainer1)
             .beforeTrainedModel((Vector v) -> new DenseMatrix(v.asArray(), 1))
             .afterTrainedModel((Matrix mtx) -> mtx.getRow(0))
             .withConvertedLabels(VectorUtils::num2Arr)
-            .withEnvironmentBuilder(TestUtils.testEnvBuilder());
+            .simplyTyped();
 
         final double factor = 3;
         StackedModel<Vector, Vector, Double, LinearRegressionModel> mdl = trainer
             .withAggregatorTrainer(new LinearRegressionLSQRTrainer().withConvertedLabels(x -> x * factor))
             .withAddedTrainer(mlpTrainer, IgniteFunction.identity(), IgniteFunction.identity(), IgniteFunction.identity())
             .withAggregatorInputMerger(VectorUtils::concat)
-            .withOriginalFeaturesDropped()
+            .withOriginalFeaturesKept(IgniteFunction.identity())
+            .withEnvironmentBuilder(TestUtils.testEnvBuilder())
             .fit(getCacheMock(xor),
                 parts,
                 (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),

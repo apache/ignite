@@ -104,7 +104,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
      * @param submodelInput2AggregatingInputConverter Function used to propagate submodels input to aggregator.
      * @return This object.
      */
-    public StackedDatasetTrainer<IS, IA, O, AM, L> keepingOriginalFeatures(
+    public StackedDatasetTrainer<IS, IA, O, AM, L> withOriginalFeaturesKept(
         IgniteFunction<IS, IA> submodelInput2AggregatingInputConverter) {
         this.submodelInput2AggregatingInputConverter = submodelInput2AggregatingInputConverter;
 
