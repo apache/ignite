@@ -3211,7 +3211,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             assert !forceSndPending || msg instanceof TcpDiscoveryNodeLeftMessage;
 
-                            if (failure || forceSndPending) {
+                            if (failure || forceSndPending || newNextNode) {
                                 if (log.isDebugEnabled())
                                     log.debug("Pending messages will be sent [failure=" + failure +
                                         ", newNextNode=" + newNextNode +
@@ -5671,7 +5671,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (elapsed > 0 || !isLocalNodeCoordinator())
                 return;
 
-            debugLogQ.add("sendMetricsUpdateMessage : " + elapsed);
+//            debugLogQ.add("sendMetricsUpdateMessage : " + elapsed);
 
             TcpDiscoveryMetricsUpdateMessage msg = new TcpDiscoveryMetricsUpdateMessage(getConfiguredNodeId());
 
@@ -5699,7 +5699,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (elapsed > 0)
                 return;
 
-            debugLogQ.add("checkMetricsReceiving : status ceck");
+//            debugLogQ.add("checkMetricsReceiving : status ceck");
 
             msgWorker.addMessage(new TcpDiscoveryStatusCheckMessage(locNode, null));
 
@@ -5736,7 +5736,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (hasRemoteSrvNodes == null)
                 hasRemoteSrvNodes = ring.hasRemoteServerNodes();
 
-            debugLogQ.add("CheckCOnnection : " + hasRemoteSrvNodes);
+//            debugLogQ.add("CheckCOnnection : " + hasRemoteSrvNodes);
 
             if (hasRemoteSrvNodes) {
                 sendMessageAcrossRing(new TcpDiscoveryConnectionCheckMessage(locNode));
