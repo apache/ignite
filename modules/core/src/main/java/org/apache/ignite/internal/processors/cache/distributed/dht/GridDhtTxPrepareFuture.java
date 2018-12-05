@@ -1003,7 +1003,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      * @return {@code True} if {@code done} flag was changed as a result of this call.
      */
     private boolean onComplete(@Nullable GridNearTxPrepareResponse res) {
-        if ((last || tx.isSystemInvalidate()) && !(tx.near() && tx.local()))
+        if (!tx.onePhaseCommit() && ((last || tx.isSystemInvalidate()) && !(tx.near() && tx.local())))
             tx.state(PREPARED);
 
         if (super.onDone(res, res == null ? err : null)) {
@@ -1311,8 +1311,14 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             if (isDone())
                 return;
 
-            if (last)
+            if (last) {
+                recheckOnePhaseCommit();
+
+                if (tx.onePhaseCommit())
+                    tx.chainState(PREPARED);
+
                 sendPrepareRequests();
+            }
         }
         finally {
             markInitialized();
@@ -1320,9 +1326,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     }
 
     /**
-     *
+     * Checking that one phase commit for transaction still actual.
      */
-    private void sendPrepareRequests() {
+    private void recheckOnePhaseCommit() {
         if (tx.onePhaseCommit() && !tx.nearMap().isEmpty()) {
             for (GridDistributedTxMapping nearMapping : tx.nearMap().values()) {
                 if (!tx.dhtMap().containsKey(nearMapping.primary().id())) {
@@ -1332,7 +1338,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 }
             }
         }
+    }
 
+    /**
+     *
+     */
+    private void sendPrepareRequests() {
         assert !tx.txState().mvccEnabled() || !tx.onePhaseCommit() || tx.mvccSnapshot() != null;
 
         int miniId = 0;
