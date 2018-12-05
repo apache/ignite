@@ -335,8 +335,8 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
             U.warn(log, "TcpDiscoveryMulticastIpFinder has no pre-configured addresses " +
                 "(it is recommended in production to specify at least one address in " +
                 "TcpDiscoveryMulticastIpFinder.getAddresses() configuration property)");
-
-        boolean clientMode = discoveryClientMode();
+//
+//        boolean clientMode = discoveryClientMode();
 
         try {
             mcastAddr = InetAddress.getByName(mcastGrp);
@@ -378,8 +378,8 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
             if (!addr.isLoopbackAddress()) {
                 try {
-                    if (!clientMode)
-                        addrSnds.add(new AddressSender(mcastAddr, addr, addrs));
+//                    if (!clientMode)
+                    addrSnds.add(new AddressSender(mcastAddr, addr, addrs));
 
                     reqItfs.add(addr);
                 }
@@ -392,7 +392,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
             }
         }
 
-        if (!clientMode) {
+//        if (!clientMode) {
             locNodeAddrs = new HashSet<>(addrs);
 
             if (addrSnds.isEmpty()) {
@@ -428,12 +428,12 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
             }
             else
                 mcastErr = true;
-        }
-        else {
-            assert addrSnds.isEmpty() : addrSnds;
-
-            locNodeAddrs = Collections.emptySet();
-        }
+//        }
+//        else {
+//            assert addrSnds.isEmpty() : addrSnds;
+//
+//            locNodeAddrs = Collections.emptySet();
+//        }
     }
 
     /** {@inheritDoc} */
@@ -770,7 +770,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
          * @param sockAddr Optional address multicast socket should be bound to.
          */
         private AddressReceiver(InetAddress mcastAddr, InetAddress sockAddr) {
-            super(ignite == null ? null : ignite.name(), "tcp-disco-multicast-addr-rcvr", log);
+            super(null, "tcp-disco-multicast-addr-rcvr", log);
             this.mcastAddr = mcastAddr;
             this.sockAddr = sockAddr;
         }
@@ -814,7 +814,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
          */
         private AddressSender(InetAddress mcastGrp, @Nullable InetAddress sockItf, Collection<InetSocketAddress> addrs)
             throws IOException {
-            super(ignite == null ? null : ignite.name(), "tcp-disco-multicast-addr-sender", log);
+            super(null, "tcp-disco-multicast-addr-sender", log);
             this.mcastGrp = mcastGrp;
             this.addrs = addrs;
             this.sockItf = sockItf;
