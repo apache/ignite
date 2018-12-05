@@ -185,7 +185,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
             printer.accept("Idle verify failed on nodes:\n");
 
             for (Map.Entry<UUID, Exception> e : exceptions().entrySet()) {
-                printer.accept("Node ID = " + e.getKey() + "\n");
+                printer.accept("Node ID: " + e.getKey() + "\n");
                 printer.accept("Exception message:" + "\n");
                 printer.accept(e.getValue().getMessage() + "\n");
             }

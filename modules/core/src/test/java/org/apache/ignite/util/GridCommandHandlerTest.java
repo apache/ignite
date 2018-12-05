@@ -1169,7 +1169,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
             assertTrue(dumpWithConflicts.contains("Idle verify failed on nodes:\n" +
-                "Node ID = " + unstableNodeId + "\n" +
+                "Node ID: " + unstableNodeId + "\n" +
                 "Exception message:\n" +
                 "Node has left grid: " + unstableNodeId));
         }
