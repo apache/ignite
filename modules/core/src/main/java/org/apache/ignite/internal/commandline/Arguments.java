@@ -71,10 +71,10 @@ public class Arguments {
      */
     private String walArgs;
 
-    /** Ping timeout for grid client. See {@link GridClientConfiguration#pingTimeout}. */
+    /** Ping timeout for grid client. See {@link GridClientConfiguration#getPingTimeout()}. */
     private long pingTimeout;
 
-    /** Ping interval for grid client. See {@link GridClientConfiguration#pingInterval}. */
+    /** Ping interval for grid client. See {@link GridClientConfiguration#getPingInterval()}. */
     private long pingInterval;
 
     /** SSL Protocol. */
@@ -116,8 +116,8 @@ public class Arguments {
      * @param cacheArgs --cache subcommand arguments.
      * @param walAct WAL action.
      * @param walArgs WAL args.
-     * @param pingTimeout Ping timeout. See {@link GridClientConfiguration#pingTimeout}.
-     * @param pingInterval Ping interval. See {@link GridClientConfiguration#pingInterval}.
+     * @param pingTimeout Ping timeout. See {@link GridClientConfiguration#getPingTimeout()}.
+     * @param pingInterval Ping interval. See {@link GridClientConfiguration#getPingInterval()}.
      * @param autoConfirmation Auto confirmation flag.
      * @param sslProtocol SSL Protocol.
      * @param sslCipherSuites SSL cipher suites.
@@ -156,7 +156,6 @@ public class Arguments {
 
         this.autoConfirmation = autoConfirmation;
 
-        this.sslEnable = sslEnable;
         this.sslProtocol = sslProtocol;
         this.sslCipherSuites = sslCipherSuites;
 
@@ -262,7 +261,7 @@ public class Arguments {
     }
 
     /**
-     * See {@link GridClientConfiguration#pingTimeout}.
+     * See {@link GridClientConfiguration#getPingInterval()}.
      *
      * @return Ping timeout.
      */
@@ -271,7 +270,7 @@ public class Arguments {
     }
 
     /**
-     * See {@link GridClientConfiguration#pingInterval}.
+     * See {@link GridClientConfiguration#getPingInterval()}.
      *
      * @return Ping interval.
      */
@@ -284,13 +283,6 @@ public class Arguments {
      */
     public boolean autoConfirmation() {
         return autoConfirmation;
-    }
-
-    /**
-     * @return {@code true} if SSL should be used.
-     */
-    public boolean isSslEnable() {
-        return sslEnable;
     }
 
     /**

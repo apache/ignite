@@ -201,9 +201,6 @@ public class CommandHandler {
     // SSL configuration section
 
     /** */
-    private static final String CMD_SSL_ENABLED = "--ssl_enabled";
-
-    /** */
     private static final String CMD_SSL_PROTOCOL = "--ssl-protocol";
 
     /** */
@@ -247,7 +244,6 @@ public class CommandHandler {
         AUX_COMMANDS.add(CMD_PING_INTERVAL);
         AUX_COMMANDS.add(CMD_PING_TIMEOUT);
 
-        AUX_COMMANDS.add(CMD_SSL_ENABLED);
         AUX_COMMANDS.add(CMD_SSL_PROTOCOL);
         AUX_COMMANDS.add(CMD_SSL_CIPHER_SUITES);
 
@@ -370,7 +366,6 @@ public class CommandHandler {
     private static final String COMMON_OPTIONS = String.join(" ", op(CMD_HOST, "HOST_OR_IP"), op(CMD_PORT, "PORT"),
         op(CMD_USER, "USER"), op(CMD_PASSWORD, "PASSWORD"),
         op(CMD_PING_INTERVAL, "PING_INTERVAL"), op(CMD_PING_TIMEOUT, "PING_TIMEOUT"),
-        op(CMD_SSL_ENABLED),
         op(CMD_SSL_PROTOCOL, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ...]"),
         op(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1[, SSL_CIPHER_2, ...]"),
         op(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM"),
@@ -1834,8 +1829,6 @@ public class CommandHandler {
 
         VisorTxTaskArg txArgs = null;
 
-        boolean sslEnable = false;
-
         String sslProtocol = SslContextFactory.DFLT_SSL_PROTOCOL;
 
         String sslCipherSuites = "";
@@ -1966,10 +1959,6 @@ public class CommandHandler {
 
                         break;
 
-                    case CMD_SSL_ENABLED:
-                        sslEnable = true;
-
-                        break;
                     case CMD_SSL_PROTOCOL:
                         sslProtocol = nextArg("Expected SSL protocol");
 
@@ -2041,7 +2030,7 @@ public class CommandHandler {
             txArgs, cacheArgs,
             walAct, walArgs,
             pingTimeout, pingInterval, autoConfirmation,
-            sslEnable, sslProtocol, sslCipherSuites,
+            sslProtocol, sslCipherSuites,
             sslKeyAlgorithm, sslKeyStorePath, sslKeyStorePassword, sslKeyStoreType,
             sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType);
     }
@@ -2587,8 +2576,8 @@ public class CommandHandler {
                 log(i("PING_TIMEOUT=" + DFLT_PING_TIMEOUT, 2));
                 log(i("SSL_PROTOCOL=" + SslContextFactory.DFLT_SSL_PROTOCOL, 2));
                 log(i("SSL_KEY_ALGORITHM=" + SslContextFactory.DFLT_KEY_ALGORITHM, 2));
-                log(i("SSL_KEY_STORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
-                log(i("SSL_TRUST_STORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
+                log(i("KEY_STORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
+                log(i("TRUST_STORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
                 nl();
 
                 log("Exit codes:");
@@ -2647,7 +2636,7 @@ public class CommandHandler {
                 if (!F.isEmpty(args.sslKeyStorePath())) {
                     GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
 
-                    List<String> sslProtocols = split(args.getSslProtocol(), ",");
+                    List<String> sslProtocols = split(args.sslProtocol(), ",");
 
                     String sslProtocol = F.isEmpty(sslProtocols) ? SslContextFactory.DFLT_SSL_PROTOCOL : sslProtocols.get(0);
 
@@ -2669,7 +2658,7 @@ public class CommandHandler {
 
                     factory.setKeyStoreType(args.sslKeyStoreType());
 
-                    if (args.sslTrustStorePath() == null)
+                    if (F.isEmpty(args.sslTrustStorePath()))
                         factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
                     else {
                         factory.setTrustStoreFilePath(args.sslTrustStorePath());
