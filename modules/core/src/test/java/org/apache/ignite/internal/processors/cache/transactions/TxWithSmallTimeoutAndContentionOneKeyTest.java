@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -112,6 +113,9 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
      * @return Random transaction type.
      */
     protected TransactionConcurrency transactionConcurrency() {
+        if (MvccFeatureChecker.forcedMvcc())
+            return PESSIMISTIC;
+
         ThreadLocalRandom random = ThreadLocalRandom.current();
 
         return random.nextBoolean() ? OPTIMISTIC : PESSIMISTIC;
@@ -121,6 +125,9 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
      * @return Random transaction isolation level.
      */
     protected TransactionIsolation transactionIsolation(){
+        if (MvccFeatureChecker.forcedMvcc())
+            return REPEATABLE_READ;
+
         ThreadLocalRandom random = ThreadLocalRandom.current();
 
         switch (random.nextInt(3)) {
@@ -150,6 +157,9 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void test() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10455");
+
         startGrids(4);
 
         client = true;

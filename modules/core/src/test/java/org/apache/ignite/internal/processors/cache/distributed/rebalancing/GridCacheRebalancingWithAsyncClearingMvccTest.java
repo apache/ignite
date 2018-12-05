@@ -14,24 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
-package org.apache.ignite.internal.processors.cache.transactions;
-
-import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.apache.ignite.cache.CacheAtomicityMode;
 
 /**
- * Tests an ability to async rollback near transactions.
+ *
  */
-public class TxRollbackAsyncNearCacheTest extends TxRollbackAsyncTest {
+public class GridCacheRebalancingWithAsyncClearingMvccTest extends GridCacheRebalancingWithAsyncClearingTest {
     /** {@inheritDoc} */
-    @Override protected boolean nearCacheEnabled() {
-        return true;
+    @Override public void setUp() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10421");
+
+        super.setUp();
     }
 
     /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
-        super.setUp();
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
     }
 }

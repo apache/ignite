@@ -25,6 +25,7 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  *
@@ -46,6 +47,9 @@ public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbst
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10448");
+
         startGridsMultiThreaded(4, false);
 
         clientGrid = startGrid("client");
