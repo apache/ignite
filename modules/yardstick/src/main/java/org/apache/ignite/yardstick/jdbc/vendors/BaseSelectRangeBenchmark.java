@@ -137,7 +137,7 @@ public abstract class BaseSelectRangeBenchmark extends AbstractJdbcBenchmark {
 
                 insOrg.addBatch();
 
-                if ((orgId + 1) % BATCH_SIZE == 0) {
+                if ((orgId + 1) % BATCH_SIZE == 0 || (orgId + 1) == orgRng) {
                     insOrg.executeBatch();
 
                     long newPercent = (orgId + 1) * 100 / orgRng;
