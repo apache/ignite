@@ -162,7 +162,7 @@ public abstract class GridAbstractTest extends TestCase {
         setAddresses(Collections.singleton("127.0.0.1:47500..47509"));
     }};
 
-    /** Static shared IP finder. */
+    /** Shared static IP finder. */
     public static final TcpDiscoveryIpFinder SHARED_STATIC_IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
@@ -1915,8 +1915,10 @@ public abstract class GridAbstractTest extends TestCase {
     /**
      * Gets flag whether {@link TcpDiscoveryMulticastIpFinder} should be used as IP finder during preparing of
      * configuration at node startup in{@link #getConfiguration(String)}.
+     * <p/>
+     * NOTE: the value of this method will be ignored if {@link #isMultiJvm()} is {@code true}.
      *
-     * @return {@code true} if multicast ip finder shoud be used, otherwise static shared ip finder will be used.
+     * @return {@code true} if multicast IP finder will be used, otherwise shared static IP finder will be used.
      */
     protected boolean useMulticastIpFinder() {
         return false;
