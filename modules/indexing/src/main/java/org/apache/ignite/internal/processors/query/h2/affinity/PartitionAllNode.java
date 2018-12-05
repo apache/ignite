@@ -26,7 +26,7 @@ import java.util.Collection;
  */
 public class PartitionAllNode implements PartitionNode {
     /** Singleton. */
-    public static PartitionAllNode INSTANCE = new PartitionAllNode();
+    public static final PartitionAllNode INSTANCE = new PartitionAllNode();
 
     /**
      * Constructor.

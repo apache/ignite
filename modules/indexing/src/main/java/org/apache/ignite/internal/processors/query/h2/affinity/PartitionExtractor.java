@@ -283,10 +283,7 @@ public class PartitionExtractor {
             parts.add(part);
         }
 
-        if (parts.size() == 1)
-            return parts.iterator().next();
-        else
-            return new PartitionGroupNode(parts);
+        return parts.size() == 1 ? parts.iterator().next() : new PartitionGroupNode(parts);
     }
 
     /**

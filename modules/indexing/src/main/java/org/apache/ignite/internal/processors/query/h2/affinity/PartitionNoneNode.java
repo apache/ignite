@@ -27,7 +27,7 @@ import java.util.Collections;
  */
 public class PartitionNoneNode implements PartitionNode {
     /** Singleton. */
-    public static PartitionNoneNode INSTANCE = new PartitionNoneNode();
+    public static final PartitionNoneNode INSTANCE = new PartitionNoneNode();
 
     /**
      * Constructor.

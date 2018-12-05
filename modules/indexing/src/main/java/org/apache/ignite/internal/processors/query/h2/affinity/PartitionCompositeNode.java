@@ -209,7 +209,7 @@ public class PartitionCompositeNode implements PartitionNode {
                 // {A, B) and (B, C) -> (B).
                 consts.retainAll(rightConsts);
 
-                if (consts.size() == 0)
+                if (consts.isEmpty())
                     // {A, B) and (C, D) -> NONE.
                     return PartitionNoneNode.INSTANCE;
                 else if (consts.size() == 1)
@@ -304,10 +304,7 @@ public class PartitionCompositeNode implements PartitionNode {
     private PartitionNode optimizeSimpleOr(PartitionSingleNode left, PartitionSingleNode right) {
         assert op == PartitionCompositeNodeOperator.OR;
 
-        if (left.equals(right))
-            return left;
-        else
-            return PartitionGroupNode.merge(left, right);
+        return left.equals(right) ? left : PartitionGroupNode.merge(left, right);
     }
 
     /** {@inheritDoc} */
