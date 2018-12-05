@@ -76,7 +76,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
 
         client = false;
 
-        srvNode = (IgniteEx)startGridsMultiThreaded(1);
+        srvNode = startGrid(0);
 
         client = true;
 
