@@ -15,50 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.affinity.tree;
+package org.apache.ignite.internal.processors.query.h2.affinity;
 
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-/**
- * Partition extraction result.
- */
-public class PartitionResult {
-    /** Descriptor. */
-    @GridToStringInclude
-    private final PartitionTableDescriptor desc;
+import java.util.Collection;
+import java.util.Collections;
 
-    /** Tree. */
-    @GridToStringInclude
-    private final PartitionNode tree;
+/**
+ * Node denoting empty partition set.
+ */
+public class PartitionNoneNode implements PartitionNode {
+    /** Singleton. */
+    public static PartitionNoneNode INSTANCE = new PartitionNoneNode();
 
     /**
      * Constructor.
-     *
-     * @param desc Descriptor.
-     * @param tree Tree.
      */
-    public PartitionResult(PartitionTableDescriptor desc, PartitionNode tree) {
-        this.desc = desc;
-        this.tree = tree;
+    private PartitionNoneNode() {
+        // No-op.
     }
 
-    /**
-     * Descriptor.
-     */
-    public PartitionTableDescriptor descriptor() {
-        return desc;
-    }
-
-    /**
-     * Tree.
-     */
-    public PartitionNode tree() {
-        return tree;
+    /** {@inheritDoc} */
+    @Override public Collection<Integer> apply(Object... args) {
+        return Collections.emptySet();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(PartitionResult.class, this);
+        return S.toString(PartitionNoneNode.class, this);
     }
 }

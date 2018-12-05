@@ -15,34 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.affinity.tree;
+package org.apache.ignite.internal.processors.query.h2.affinity;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.Collection;
-import java.util.Collections;
 
 /**
- * Node denoting empty partition set.
+ * Node denoting all available partitions
  */
-public class PartitionNoneNode implements PartitionNode {
+public class PartitionAllNode implements PartitionNode {
     /** Singleton. */
-    public static PartitionNoneNode INSTANCE = new PartitionNoneNode();
+    public static PartitionAllNode INSTANCE = new PartitionAllNode();
 
     /**
      * Constructor.
      */
-    private PartitionNoneNode() {
+    private PartitionAllNode() {
         // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public Collection<Integer> apply(Object... args) {
-        return Collections.emptySet();
+        return null;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(PartitionNoneNode.class, this);
+        return S.toString(PartitionAllNode.class, this);
     }
 }

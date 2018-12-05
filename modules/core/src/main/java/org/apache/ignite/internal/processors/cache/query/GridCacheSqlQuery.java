@@ -72,12 +72,7 @@ public class GridCacheSqlQuery implements Message {
     /** Derived partition info. */
     @GridToStringInclude
     @GridDirectTransient
-    private transient Object[] derivedPartitions;
-
-    /** Derived partition info. */
-    @GridToStringInclude
-    @GridDirectTransient
-    private transient Object derivedPartitions2;
+    private transient Object derivedPartitions;
 
     /** Flag indicating that query contains sub-queries. */
     @GridToStringInclude
@@ -345,35 +340,15 @@ public class GridCacheSqlQuery implements Message {
     /**
      * @return Derived partitions.
      */
-    public Object[] derivedPartitions() {
+    public Object derivedPartitions() {
         return derivedPartitions;
     }
 
     /**
      * @param derivedPartitions Derived partitions.
-     * @return {@code this}.
      */
-    public GridCacheSqlQuery derivedPartitions(Object[] derivedPartitions) {
+    public void derivedPartitions(Object derivedPartitions) {
         this.derivedPartitions = derivedPartitions;
-
-        return this;
-    }
-
-    /**
-     * @return Derived partitions.
-     */
-    public Object derivedPartitions2() {
-        return derivedPartitions2;
-    }
-
-    /**
-     * @param derivedPartitions2 Derived partitions.
-     * @return {@code this}.
-     */
-    public GridCacheSqlQuery derivedPartitions2(Object derivedPartitions2) {
-        this.derivedPartitions2 = derivedPartitions2;
-
-        return this;
     }
 
     /**

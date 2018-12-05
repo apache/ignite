@@ -15,33 +15,46 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.affinity.tree;
+package org.apache.ignite.internal.processors.query.h2.affinity;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-import java.util.Collection;
-
 /**
- * Node denoting all available partitions
+ * Node with constant partition.
  */
-public class PartitionAllNode implements PartitionNode {
-    /** Singleton. */
-    public static PartitionAllNode INSTANCE = new PartitionAllNode();
+public class PartitionConstantNode extends PartitionSingleNode {
+    /** Partition. */
+    private final int part;
 
     /**
      * Constructor.
+     *
+     * @param resolver Resolver.
+     * @param part Partition.
      */
-    private PartitionAllNode() {
-        // No-op.
+    public PartitionConstantNode(PartitionTableDescriptor resolver, int part) {
+        super(resolver);
+
+        this.part = part;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Integer> apply(Object... args) {
-        return null;
+    @Override public int applySingle(Object... args) {
+        return part;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean constant() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int value() {
+        return part;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(PartitionAllNode.class, this);
+        return S.toString(PartitionConstantNode.class, this);
     }
 }

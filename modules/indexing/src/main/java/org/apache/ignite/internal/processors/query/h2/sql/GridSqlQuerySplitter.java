@@ -34,7 +34,6 @@ import java.util.TreeSet;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -43,10 +42,6 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
-import org.apache.ignite.internal.processors.query.h2.affinity.tree.PartitionCompositeNode;
-import org.apache.ignite.internal.processors.query.h2.affinity.tree.PartitionNode;
-import org.apache.ignite.internal.processors.query.h2.affinity.tree.PartitionResult;
-import org.apache.ignite.internal.processors.query.h2.affinity.tree.PartitionTreeExtractor;
 import org.apache.ignite.internal.util.lang.GridTreePrinter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -136,11 +131,8 @@ public class GridSqlQuerySplitter {
     /** */
     private IdentityHashMap<GridSqlAst, GridSqlAlias> uniqueFromAliases = new IdentityHashMap<>();
 
-    /** */
-    private final GridKernalContext ctx;
-
     /** Partition extractor. */
-    private final PartitionTreeExtractor extractor;
+    private final PartitionExtractor extractor;
 
     /**
      * @param params Query parameters.
@@ -151,8 +143,7 @@ public class GridSqlQuerySplitter {
         this.params = params;
         this.collocatedGrpBy = collocatedGrpBy;
 
-        ctx = idx.kernalContext();
-        extractor = new PartitionTreeExtractor(idx);
+        extractor = new PartitionExtractor(idx);
     }
 
     /**
@@ -271,8 +262,7 @@ public class GridSqlQuerySplitter {
         twoStepQry.distributedJoins(distributedJoins);
 
         // all map queries must have non-empty derivedPartitions to use this feature.
-        twoStepQry.derivedPartitions(PartitionExtractor.mergePartitionsFromMultipleQueries(twoStepQry.mapQueries()));
-        twoStepQry.derivedPartitions2(splitter.extractor.merge(twoStepQry.mapQueries()));
+        twoStepQry.derivedPartitions(splitter.extractor.merge(twoStepQry.mapQueries()));
 
         twoStepQry.forUpdate(forUpdate);
 
@@ -1559,10 +1549,8 @@ public class GridSqlQuerySplitter {
         map.partitioned(hasPartitionedTables(mapQry));
         map.hasSubQueries(hasSubQueries);
 
-        if (map.isPartitioned()) {
-            map.derivedPartitions(PartitionExtractor.derivePartitionsFromQuery(mapQry, ctx));
-            map.derivedPartitions2(extractor.extract(mapQry));
-        }
+        if (map.isPartitioned())
+            map.derivedPartitions(extractor.extract(mapQry));
 
         mapSqlQrys.add(map);
     }

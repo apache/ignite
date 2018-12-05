@@ -15,30 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.affinity.tree;
+package org.apache.ignite.internal.processors.query.h2.affinity;
 
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.IgniteCheckedException;
+
+import java.util.Collection;
 
 /**
- * Composite node operator.
+ * Common node of partition tree.
  */
-public enum PartitionCompositeNodeOperator {
-    /** Conjunction. */
-    AND,
-
-    /** Disjunction. */
-    OR;
-
-    /** Enumerated values. */
-    private static final PartitionCompositeNodeOperator[] VALS = values();
+public interface PartitionNode {
+    /**
+     * Get partitions.
+     *
+     * @param args Query arguments.
+     * @return Partitions.
+     * @throws IgniteCheckedException If failed.
+     */
+    Collection<Integer> apply(Object... args) throws IgniteCheckedException;
 
     /**
-     * Efficiently gets enumerated value from its ordinal.
+     * Try optimizing partition nodes into a simpler form.
      *
-     * @param ord Ordinal value.
-     * @return Enumerated value or {@code null} if ordinal out of range.
+     * @return Optimized node or {@code this} if optimization failed.
      */
-    @Nullable public static PartitionCompositeNodeOperator fromOrdinal(int ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    default PartitionNode optimize() {
+        return this;
     }
 }
