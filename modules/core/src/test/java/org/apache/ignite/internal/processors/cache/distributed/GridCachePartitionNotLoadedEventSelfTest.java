@@ -112,6 +112,8 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
      */
     @Test
     public void testPrimaryAndBackupDead() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5968");
+
         backupCnt = 1;
 
         startGridsMultiThreaded(4);
