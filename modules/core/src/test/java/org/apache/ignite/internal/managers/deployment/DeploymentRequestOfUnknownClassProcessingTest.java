@@ -19,13 +19,16 @@ package org.apache.ignite.internal.managers.deployment;
 
 import java.net.URL;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -39,19 +42,28 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_CLASSLOAD;
  */
 public class DeploymentRequestOfUnknownClassProcessingTest extends GridCommonAbstractTest {
     /** */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
     private static final String TEST_TOPIC_NAME = "TEST_TOPIC_NAME";
 
     /** */
     private static final String UNKNOWN_CLASS_NAME = "unknown.UnknownClassName";
 
     /** */
-    private final ListeningTestLogger remNodeLog = new ListeningTestLogger(false, super.log);
+    private final ListeningTestLogger remNodeLog = new ListeningTestLogger(false, log);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(true);
+
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
+
+        discoSpi.setIpFinder(IP_FINDER);
+
+        cfg.setDiscoverySpi(discoSpi);
 
         return cfg;
     }
@@ -92,7 +104,7 @@ public class DeploymentRequestOfUnknownClassProcessingTest extends GridCommonAbs
 
         GridDeployment locDep = remNode.context().deploy().deploy(task, task.getClassLoader());
 
-        final CompletableFuture<Boolean> testResultFut = new CompletableFuture<>();
+        final GridFutureAdapter<Void> testResultFut = new GridFutureAdapter<>();
 
         final LogListener remNodeLogLsnr = LogListener
             .matches(s -> s.startsWith("Failed to resolve class: " + UNKNOWN_CLASS_NAME)).build();
@@ -115,24 +127,25 @@ public class DeploymentRequestOfUnknownClassProcessingTest extends GridCommonAbs
                     assertTrue("Response contains unexpected error message, errorMessage=" + errMsg,
                         errMsg.startsWith("Requested resource not found (ignoring locally): " + UNKNOWN_CLASS_NAME));
 
-                    testResultFut.complete(true);
+                    testResultFut.onDone();
                 }
                 catch (Error e) {
-                    testResultFut.completeExceptionally(e);
+                    testResultFut.onDone(e);
                 }
             }
         });
 
-        GridDeploymentRequest req = new GridDeploymentRequest(TEST_TOPIC_NAME, locDep.classLoaderId(), UNKNOWN_CLASS_NAME, false);
+        GridDeploymentRequest req = new GridDeploymentRequest(TEST_TOPIC_NAME, locDep.classLoaderId(),
+            UNKNOWN_CLASS_NAME, false);
 
         req.responseTopicBytes(U.marshal(locNode.context(), req.responseTopic()));
 
         locNode.context().io().sendToGridTopic(remNode.localNode(), TOPIC_CLASSLOAD, req, GridIoPolicy.P2P_POOL);
 
-        // Сhecks that the expected response has been received
-        assertTrue(testResultFut.get(5_000, TimeUnit.MILLISECONDS));
+        // Сhecks that the expected response has been received.
+        testResultFut.get(5_000, TimeUnit.MILLISECONDS);
 
-        // Checks that error has been logged on remote node
+        // Checks that error has been logged on remote node.
         assertTrue(remNodeLogLsnr.check());
     }
 }
