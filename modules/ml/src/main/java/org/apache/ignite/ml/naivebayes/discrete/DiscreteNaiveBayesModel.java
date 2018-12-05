@@ -70,7 +70,10 @@ public class DiscreteNaiveBayesModel implements Model<Vector, Double>, Exportabl
         exporter.save(this, path);
     }
 
-    /** Returns a label with max probability. */
+    /**
+     * @param vector features vector.
+     * @return a label with max probability.
+     */
     @Override public Double apply(Vector vector) {
         double maxProbapilityPower = -Double.MAX_VALUE;
         int maxLabelIndex = -1;
