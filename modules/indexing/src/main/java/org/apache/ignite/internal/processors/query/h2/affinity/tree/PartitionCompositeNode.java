@@ -59,11 +59,24 @@ public class PartitionCompositeNode implements PartitionNode {
         Collection<Integer> leftParts = left.apply(args);
         Collection<Integer> rightParts = right.apply(args);
 
-        if (op == PartitionCompositeNodeOperator.AND)
+        if (op == PartitionCompositeNodeOperator.AND) {
+            // () and (...) -> ()
+            if (leftParts == null || rightParts == null)
+                return null;
+
+            // (A, B) and (B, C) -> (B)
             leftParts.retainAll(rightParts);
+        }
         else {
             assert op == PartitionCompositeNodeOperator.OR;
 
+            // () or (...) -> (...)
+            if (leftParts == null)
+                return rightParts;
+            else if (rightParts == null)
+                return leftParts;
+
+            // (A, B) or (B, C) -> (A, B, C)
             leftParts.addAll(rightParts);
         }
 
@@ -72,16 +85,16 @@ public class PartitionCompositeNode implements PartitionNode {
 
     /** {@inheritDoc} */
     @Override public PartitionNode optimize() {
-        // If one of child nodes cannot be optimized, nothing can be done.
-        if (left instanceof PartitionCompositeNode || right instanceof PartitionCompositeNode)
-            return this;
-
         // ALL and NONE always can be optimized.
         if (left == PartitionAllNode.INSTANCE || left == PartitionNoneNode.INSTANCE)
             return optimizeSpecial(left, right);
 
         if (right == PartitionAllNode.INSTANCE || right == PartitionNoneNode.INSTANCE)
             return optimizeSpecial(right, left);
+
+        // If one of child nodes cannot be optimized, nothing can be done.
+        if (left instanceof PartitionCompositeNode || right instanceof PartitionCompositeNode)
+            return this;
 
         // Try optimizing composite nodes.
         if (left instanceof PartitionGroupNode)
@@ -113,7 +126,7 @@ public class PartitionCompositeNode implements PartitionNode {
                 // ALL and (...) -> (...).
                 assert op == PartitionCompositeNodeOperator.AND;
 
-                return right;
+                return right.optimize();
             }
         }
         else {
@@ -121,7 +134,7 @@ public class PartitionCompositeNode implements PartitionNode {
 
             if (op == PartitionCompositeNodeOperator.OR)
                 // NONE or (...) -> (...).
-                return right;
+                return right.optimize();
             else {
                 // NONE and (...) -> NONE.
                 assert op == PartitionCompositeNodeOperator.AND;
