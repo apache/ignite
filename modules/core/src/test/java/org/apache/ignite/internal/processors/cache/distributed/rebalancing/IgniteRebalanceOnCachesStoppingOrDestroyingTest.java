@@ -253,7 +253,6 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg,
                                           IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
-
             slowDownMessage(msg);
 
             super.sendMessage(node, msg, ackC);
