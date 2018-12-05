@@ -441,7 +441,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     U.error(log, "Unsupported message type: " + m.getClass().getName());
                             }
 
-                            U.warn(log, "Cache group whit id=" + m.groupId() + " is stopped or absent");
+                            U.warn(log, "Cache group with id=" + m.groupId() + " is stopped or absent");
                         }
                         finally {
                             leaveBusy();
