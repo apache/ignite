@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -162,9 +165,9 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
     }
 
     /**
-     * @param consumer Action that trigger stop or destroy of caches.
+     * @param testAction Action that trigger stop or destroy of caches.
      */
-    private void performTest(IgniteThrowableConsumer<Ignite, Void> consumer) throws Exception {
+    private void performTest(IgniteThrowableConsumer<Ignite, Void> testAction) throws Exception {
         IgniteEx ig0 = (IgniteEx)startGrids(2);
 
         ig0.cluster().active(true);
@@ -177,7 +180,7 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
 
         runLoad(ig0);
 
-        consumer.accept(ig0);
+        testAction.accept(ig0);
 
         U.sleep(1000);
 
@@ -190,42 +193,27 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
      * @param ig Ig.
      */
     private void loadData(Ignite ig) {
-        ig.getOrCreateCaches(Arrays.asList(
-                new CacheConfiguration<>(CACHE_1)
-                        .setCacheMode(CacheMode.REPLICATED)
-                        .setRebalanceBatchSize(REBALANCE_BATCH_SIZE)
-                        .setGroupName(GROUP_1),
-                new CacheConfiguration<>(CACHE_2)
-                        .setCacheMode(CacheMode.REPLICATED)
-                        .setRebalanceBatchSize(REBALANCE_BATCH_SIZE)
-                        .setGroupName(GROUP_1),
-                new CacheConfiguration<>(CACHE_3)
-                        .setCacheMode(CacheMode.REPLICATED)
-                        .setRebalanceBatchSize(REBALANCE_BATCH_SIZE)
-                        .setGroupName(GROUP_2),
-                new CacheConfiguration<>(CACHE_4)
-                        .setCacheMode(CacheMode.REPLICATED)
-                        .setRebalanceBatchSize(REBALANCE_BATCH_SIZE)
-                        .setGroupName(GROUP_2)
-        ));
+        List<CacheConfiguration> configs = Stream.of(
+                F.t(CACHE_1, GROUP_1),
+                F.t(CACHE_2, GROUP_1),
+                F.t(CACHE_3, GROUP_2),
+                F.t(CACHE_4, GROUP_2)
+        ).map(names -> new CacheConfiguration<>(names.get1())
+                .setGroupName(names.get2())
+                .setRebalanceBatchSize(REBALANCE_BATCH_SIZE)
+                .setCacheMode(CacheMode.REPLICATED)
+        ).collect(Collectors.toList());
 
-        try (IgniteDataStreamer<Object, Object> streamer1 = ig.dataStreamer(CACHE_1);
-             IgniteDataStreamer<Object, Object> streamer2 = ig.dataStreamer(CACHE_2);
-             IgniteDataStreamer<Object, Object> streamer3 = ig.dataStreamer(CACHE_3);
-             IgniteDataStreamer<Object, Object> streamer4 = ig.dataStreamer(CACHE_4)
-        ) {
-            for (int i = 0; i < 3_000; i++) {
-                streamer1.addData(i, new byte[1024]);
-                streamer2.addData(i, new byte[1024]);
-                streamer3.addData(i, new byte[1024]);
-                streamer4.addData(i, new byte[1024]);
+        ig.getOrCreateCaches(configs);
+
+        configs.forEach(cfg -> {
+            try (IgniteDataStreamer<Object, Object> streamer = ig.dataStreamer(cfg.getName())) {
+                for (int i = 0; i < 3_000; i++)
+                    streamer.addData(i, new byte[1024]);
+
+                streamer.flush();
             }
-
-            streamer1.flush();
-            streamer2.flush();
-            streamer3.flush();
-            streamer4.flush();
-        }
+        });
     }
 
     /**
@@ -256,17 +244,7 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
 
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
-            if (msg instanceof GridIoMessage && ((GridIoMessage) msg).message() instanceof GridDhtPartitionSupplyMessage) {
-                int grpId = ((GridCacheGroupIdMessage) ((GridIoMessage) msg).message()).groupId();
-
-                if (grpId == CU.cacheId(GROUP_1) || grpId == CU.cacheId(GROUP_2)) {
-                    try {
-                        U.sleep(50);
-                    } catch (IgniteInterruptedCheckedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
+            slowDownMessage(msg);
 
             super.sendMessage(node, msg);
 
@@ -275,6 +253,16 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg,
                                           IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
+
+            slowDownMessage(msg);
+
+            super.sendMessage(node, msg, ackC);
+        }
+
+        /**
+         * @param msg Message.
+         */
+        private void slowDownMessage(Message msg) {
             if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionSupplyMessage) {
                 int grpId = ((GridCacheGroupIdMessage)((GridIoMessage)msg).message()).groupId();
 
@@ -286,8 +274,6 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
                     }
                 }
             }
-
-            super.sendMessage(node, msg, ackC);
         }
     }
 }

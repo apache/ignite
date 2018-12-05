@@ -73,6 +73,7 @@ import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -2113,10 +2114,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else {
             Map<StartCacheInfo, GridCacheContext> cacheContexts = new ConcurrentHashMap<>();
 
-            int parallelismLvl = sharedCtx.kernalContext().config().getSystemThreadPoolSize();
-
             // Reserve at least 2 threads for system operations.
-            parallelismLvl = Math.max(1, parallelismLvl - 2);
+            int parallelismLvl = U.availableThreadCount(ctx, GridIoPolicy.SYSTEM_POOL, 2);
 
             doInParallel(
                 parallelismLvl,
@@ -2908,10 +2907,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param exchActions Change requests.
      */
     private void processCacheStopRequestOnExchangeDone(ExchangeActions exchActions) {
-        int parallelismLvl = sharedCtx.kernalContext().config().getSystemThreadPoolSize();
-
         // Reserve at least 2 threads for system operations.
-        parallelismLvl = Math.max(1, parallelismLvl - 2);
+        int parallelismLvl = U.availableThreadCount(ctx, GridIoPolicy.SYSTEM_POOL, 2);
 
         if (!exchActions.cacheStopRequests().isEmpty()) {
             try {

@@ -593,9 +593,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         try {
             final List<GridTuple3<Integer, UUID, GridDhtPartitionSupplyMessage>> msgToProc =
-                    new ArrayList<>(pausedDemanderQueue.size());
-
-            msgToProc.addAll(pausedDemanderQueue);
+                    new ArrayList<>(pausedDemanderQueue);
 
             pausedDemanderQueue.clear();
 
