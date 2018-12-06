@@ -214,7 +214,9 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
      * Test DDL operation for not started cache on client node.
      */
     public void testDropIdxOnClient() {
-        srvNode.getOrCreateCache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("CREATE INDEX IDX_TST ON " + FULL_TABLE_NAME + " (name asc)")).getAll();
+        srvNode.getOrCreateCache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("CREATE INDEX IDX_TST ON " + FULL_TABLE_NAME + " (name desc)")).getAll();
+
+        doSleep(5000);
 
         getDefaultCacheOnClient().query(new SqlFieldsQuery("DROP INDEX " + PERSON_SCHEMA + ".IDX_TST")).getAll();
     }
@@ -268,9 +270,8 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
         person.setKeyType(Integer.class.getName());
         person.setValueType(Person.class.getName());
         person.addQueryField("orgId", Integer.class.getName(), null);
-        person.addQueryField("id", Integer.class.getName(), null);
         person.addQueryField("name", String.class.getName(), null);
-        person.setIndexes(F.asList(new QueryIndex("orgId"), new QueryIndex("id"), new QueryIndex("name")));
+        person.setIndexes(F.asList(new QueryIndex("orgId"), new QueryIndex("name")));
 
         ccfg.setQueryEntities(F.asList(person));
 
