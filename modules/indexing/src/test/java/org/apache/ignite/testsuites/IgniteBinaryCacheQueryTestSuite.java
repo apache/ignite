@@ -43,6 +43,8 @@ import org.apache.ignite.internal.processors.cache.CacheReplicatedQueryMetricsLo
 import org.apache.ignite.internal.processors.cache.CacheSqlQueryValueCopySelfTest;
 import org.apache.ignite.internal.processors.cache.DdlTransactionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheCrossCacheQuerySelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheDynamicLoadOnClientPersistentTest;
+import org.apache.ignite.internal.processors.cache.GridCacheDynamicLoadOnClientTest;
 import org.apache.ignite.internal.processors.cache.GridCacheFullTextQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheLazyQueryPartitionsReleaseTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQueryIndexDisabledSelfTest;
@@ -532,6 +534,9 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
 
         // Partition pruning.
         suite.addTestSuite(InOperationExtractPartitionSelfTest.class);
+
+        suite.addTestSuite(GridCacheDynamicLoadOnClientTest.class);
+        suite.addTestSuite(GridCacheDynamicLoadOnClientPersistentTest.class);
 
         return suite;
     }

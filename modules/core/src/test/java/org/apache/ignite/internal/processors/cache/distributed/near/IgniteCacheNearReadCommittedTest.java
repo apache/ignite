@@ -22,6 +22,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -33,6 +34,13 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
  */
 @SuppressWarnings("RedundantMethodOverride")
 public class IgniteCacheNearReadCommittedTest extends GridCacheAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
+        super.setUp();
+    }
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 2;

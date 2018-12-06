@@ -26,5 +26,15 @@ import java.util.function.Function;
  * @see java.util.function.Function
  */
 public interface IgniteFunction<T, R> extends Function<T, R>, Serializable {
-
+    /**
+     * {@link IgniteFunction} returning specified constant.
+     *
+     * @param r Constant to return.
+     * @param <T> Type of input.
+     * @param <R> Type of output.
+     * @return {@link IgniteFunction} returning specified constant.
+     */
+    static <T, R> IgniteFunction<T, R> constant(R r) {
+        return t -> r;
+    }
 }

@@ -105,7 +105,7 @@ public abstract class JettyRestProcessorAuthenticationAbstractTest extends Jetty
             "user", "user1",
             "password", "password1");
 
-        JsonNode res = jsonResponse(ret);
+        JsonNode res = validateJsonResponse(ret);
 
         assertTrue(res.asBoolean());
 
@@ -118,7 +118,7 @@ public abstract class JettyRestProcessorAuthenticationAbstractTest extends Jetty
             "user", "user1",
             "password", "password2");
 
-        res = jsonResponse(ret);
+        res = validateJsonResponse(ret);
 
         assertTrue(res.asBoolean());
 
@@ -128,7 +128,7 @@ public abstract class JettyRestProcessorAuthenticationAbstractTest extends Jetty
         ret = content(null, GridRestCommand.REMOVE_USER,
             "user", "user1");
 
-        res = jsonResponse(ret);
+        res = validateJsonResponse(ret);
 
         assertTrue(res.asBoolean());
 
