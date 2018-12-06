@@ -42,8 +42,9 @@ public class ClientCacheGetSizeRequest extends ClientCacheRequest {
 
         modes = new CachePeekMode[cnt];
 
-        for (int i = 0; i < cnt; i++)
+        for (int i = 0; i < cnt; i++) {
             modes[i] = CachePeekMode.fromOrdinal(reader.readByte());
+        }
     }
 
     /** {@inheritDoc} */

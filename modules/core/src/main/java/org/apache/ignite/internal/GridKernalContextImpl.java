@@ -50,7 +50,8 @@ import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
-import org.apache.ignite.internal.processors.security.SecurityContextResolverSecurityProcessor;
+import org.apache.ignite.internal.processors.security.GridSecurityManager;
+import org.apache.ignite.internal.processors.security.GridSecurityManagerImpl;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
@@ -159,7 +160,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private GridSecurityProcessor securityProc;
+    private GridSecurityManager securityMgr;
 
     /** */
     @GridToStringExclude
@@ -566,7 +567,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof GridCollisionManager)
             colMgr = (GridCollisionManager)comp;
         else if (comp instanceof GridSecurityProcessor)
-            securityProc = new SecurityContextResolverSecurityProcessor(this,(GridSecurityProcessor)comp);
+            securityMgr = new GridSecurityManagerImpl(this,(GridSecurityProcessor)comp);
         else if (comp instanceof GridLoadBalancerManager)
             loadMgr = (GridLoadBalancerManager)comp;
         else if (comp instanceof GridIndexingManager)
@@ -805,8 +806,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecurityProcessor security() {
-        return securityProc;
+    @Override public GridSecurityManager security() {
+        return securityMgr;
     }
 
     /** {@inheritDoc} */

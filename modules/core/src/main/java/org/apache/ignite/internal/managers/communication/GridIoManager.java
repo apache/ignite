@@ -70,7 +70,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccMessage;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
-import org.apache.ignite.internal.processors.security.CurrentRemoteInitiator;
+import org.apache.ignite.internal.processors.security.GridSecuritySession;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
@@ -1565,16 +1565,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (change)
             CUR_PLC.set(plc);
 
-        CurrentRemoteInitiator.set(ctx, nodeId);
-
-        try {
+        try(GridSecuritySession s = ctx.security().context(nodeId)) {
             lsnr.onMessage(nodeId, msg, plc);
         }
         finally {
             if (change)
                 CUR_PLC.set(oldPlc);
-
-            CurrentRemoteInitiator.remove(ctx, nodeId);
         }
     }
 
@@ -2560,14 +2556,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                 if (msgBody != null) {
                     if (predLsnr != null) {
-                        CurrentRemoteInitiator.set(ctx, initNodeId);
-
-                        try {
+                        try(GridSecuritySession s = ctx.security().context(initNodeId)) {
                             if (!predLsnr.apply(nodeId, msgBody))
                                 removeMessageListener(TOPIC_COMM_USER, this);
-                        }
-                        finally {
-                            CurrentRemoteInitiator.remove(ctx, initNodeId);
                         }
                     }
                 }

@@ -2029,7 +2029,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cacheId);
 
             if (desc != null)
-                ctx.security().authorize(desc.cacheName(), SecurityPermission.CACHE_READ, null);
+                ctx.security().authorize(desc.cacheName(), SecurityPermission.CACHE_READ);
         }
     }
 
