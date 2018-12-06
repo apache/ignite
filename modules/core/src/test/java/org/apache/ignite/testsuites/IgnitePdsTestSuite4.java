@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.cache.ResetLostPartitionTest;
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse;
+import org.apache.ignite.internal.processors.cache.distributed.CachePageWriteLockUnlockTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRecoveryAfterFileCorruptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTaskCancelingTest;
@@ -50,6 +51,8 @@ public class IgnitePdsTestSuite4 extends TestSuite {
         suite.addTestSuite(IgnitePdsPartitionPreloadTest.class);
 
         suite.addTestSuite(ResetLostPartitionTest.class);
+
+        suite.addTestSuite(CachePageWriteLockUnlockTest.class);
 
         suite.addTestSuite(IgnitePdsCacheWalDisabledOnRebalancingTest.class);
 

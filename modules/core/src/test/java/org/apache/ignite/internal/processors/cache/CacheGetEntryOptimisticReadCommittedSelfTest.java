@@ -15,8 +15,22 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.processors.cache;
+
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
+
 /**
- * <!-- Package description. -->
- * SVM Binary Classification Examples.
+ * Test getEntry and getEntries methods.
  */
-package org.apache.ignite.examples.ml.svm.binary;
+public class CacheGetEntryOptimisticReadCommittedSelfTest extends CacheGetEntryAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected TransactionConcurrency concurrency() {
+        return TransactionConcurrency.OPTIMISTIC;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected TransactionIsolation isolation() {
+        return TransactionIsolation.READ_COMMITTED;
+    }
+}
