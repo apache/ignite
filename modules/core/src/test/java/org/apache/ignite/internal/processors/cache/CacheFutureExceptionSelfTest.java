@@ -83,9 +83,12 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
 
         testGet(false, true);
 
-        testGet(true, false);
+        if (!MvccFeatureChecker.forcedMvcc() ||
+                MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE)) {
+            testGet(true, false);
 
-        testGet(true, true);
+            testGet(true, true);
+        }
     }
 
     /**
@@ -94,11 +97,6 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void testGet(boolean nearCache, boolean cpyOnRead) throws Exception {
-        if (MvccFeatureChecker.forcedMvcc()) {
-            if (!MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE))
-                return;
-        }
-
         fail = false;
 
         Ignite srv = grid(0);
