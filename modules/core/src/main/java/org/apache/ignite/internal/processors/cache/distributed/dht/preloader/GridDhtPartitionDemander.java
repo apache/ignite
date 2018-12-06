@@ -890,6 +890,9 @@ public class GridDhtPartitionDemander {
             try {
                 GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(entry.cacheId()) : grp.singleCacheContext();
 
+                if (cctx == null)
+                    return true;
+
                 if (cctx.isNear())
                     cctx = cctx.dhtCache().context();
 
