@@ -14,23 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
-package org.apache.ignite.internal.processors.cache;
-
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.cache.CacheAtomicityMode;
 
 /**
- * Test getEntry and getEntries methods.
+ *
  */
-public class CacheGetEntryPessimisticReadCommittedSeltTest extends CacheGetEntryAbstractTest {
+public class GridCacheRebalancingWithAsyncClearingMvccTest extends GridCacheRebalancingWithAsyncClearingTest {
     /** {@inheritDoc} */
-    @Override protected TransactionConcurrency concurrency() {
-        return TransactionConcurrency.PESSIMISTIC;
+    @Override public void setUp() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10421");
+
+        super.setUp();
     }
 
     /** {@inheritDoc} */
-    @Override protected TransactionIsolation isolation() {
-        return TransactionIsolation.READ_COMMITTED;
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
     }
 }

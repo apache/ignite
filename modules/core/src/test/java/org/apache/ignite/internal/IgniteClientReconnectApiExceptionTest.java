@@ -63,7 +63,6 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
  *
  */
 public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnectAbstractTest {
-
     /** Cache key for test put and invoke operation after reconnect */
     private static final int CACHE_PUT_INVOKE_KEY = 10010;
 

@@ -17,17 +17,31 @@
 
 package org.apache.ignite.ml.environment;
 
+import java.util.Map;
+import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.TestUtils;
+import org.apache.ignite.ml.dataset.Dataset;
+import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
+import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.logging.ConsoleLogger;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.environment.parallelism.DefaultParallelismStrategy;
 import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer;
 import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategies;
 import org.junit.Test;
 
+import static org.apache.ignite.ml.TestUtils.constantModel;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -48,13 +62,115 @@ public class LearningEnvironmentTest {
             .withSubSampleSize(0.3)
             .withSeed(0);
 
-        LearningEnvironment environment = LearningEnvironment.builder()
-            .withParallelismStrategy(ParallelismStrategy.Type.ON_DEFAULT_POOL)
-            .withLoggingFactory(ConsoleLogger.factory(MLLogger.VerboseLevel.LOW))
-            .build();
-        trainer.setEnvironment(environment);
-        assertEquals(DefaultParallelismStrategy.class, environment.parallelismStrategy().getClass());
-        assertEquals(ConsoleLogger.class, environment.logger().getClass());
+        LearningEnvironmentBuilder envBuilder = LearningEnvironmentBuilder.defaultBuilder()
+            .withParallelismStrategyType(ParallelismStrategy.Type.ON_DEFAULT_POOL)
+            .withLoggingFactoryDependency(part -> ConsoleLogger.factory(MLLogger.VerboseLevel.LOW));
+
+        trainer.withEnvironmentBuilder(envBuilder);
+
+        assertEquals(DefaultParallelismStrategy.class, trainer.learningEnvironment().parallelismStrategy().getClass());
+        assertEquals(ConsoleLogger.class, trainer.learningEnvironment().logger().getClass());
+    }
+
+    /**
+     * Test random number generator provided by  {@link LearningEnvironment}.
+     * We test that:
+     * 1. Correct random generator is returned for each partition.
+     * 2. Its state is saved between compute calls (for this we do several iterations of compute).
+     */
+    @Test
+    public void testRandomNumbersGenerator() {
+        // We make such builders that provide as functions returning partition index * iteration as random number generator nextInt
+        LearningEnvironmentBuilder envBuilder = TestUtils.testEnvBuilder().withRandomDependency(MockRandom::new);
+        int partitions = 10;
+        int iterations = 2;
+
+        DatasetTrainer<Model<Object, Vector>, Void> trainer = new DatasetTrainer<Model<Object, Vector>, Void>() {
+            /** {@inheritDoc} */
+            @Override public <K, V> Model<Object, Vector> fit(DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Void> lbExtractor) {
+                Dataset<EmptyContext, TestUtils.DataWrapper<Integer>> ds = datasetBuilder.build(envBuilder,
+                    new EmptyContextBuilder<>(),
+                    (PartitionDataBuilder<K, V, EmptyContext, TestUtils.DataWrapper<Integer>>)(env, upstreamData, upstreamDataSize, ctx) ->
+                        TestUtils.DataWrapper.of(env.partition()));
+
+                Vector v = null;
+                for (int iter = 0; iter < iterations; iter++) {
+                    v = ds.compute((dw, env) -> VectorUtils.fill(-1, partitions).set(env.partition(), env.randomNumbersGenerator().nextInt()),
+                        (v1, v2) -> zipOverridingEmpty(v1, v2, -1));
+                }
+                return constantModel(v);
+            }
+
+            /** {@inheritDoc} */
+            @Override protected boolean checkState(Model<Object, Vector> mdl) {
+                return false;
+            }
+
+            /** {@inheritDoc} */
+            @Override protected <K, V> Model<Object, Vector> updateModel(Model<Object, Vector> mdl,
+                DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Void> lbExtractor) {
+                return null;
+            }
+        };
+        trainer.withEnvironmentBuilder(envBuilder);
+        Model<Object, Vector> mdl = trainer.fit(getCacheMock(partitions), partitions, null, null);
+
+        Vector exp = VectorUtils.zeroes(partitions);
+        for (int i = 0; i < partitions; i++)
+            exp.set(i, i * iterations);
+
+
+        Vector res = mdl.apply(null);
+        assertEquals(exp, res);
+    }
+
+    /**
+     * For given two vectors {@code v2, v2} produce vector {@code v} where each component of {@code v}
+     * is produced from corresponding components {@code c1, c2} of {@code v1, v2} respectfully in following way
+     * {@code c = c1 != empty ? c1 : c2}. For example, zipping [2, -1, -1], [-1, 3, -1] will result in [2, 3, -1].
+     *
+     * @param v1 First vector.
+     * @param v2 Second vector.
+     * @param empty Value treated as empty.
+     * @return Result of zipping as described above.
+     */
+    private static Vector zipOverridingEmpty(Vector v1, Vector v2, double empty) {
+        return v1 != null ? (v2 != null ? VectorUtils.zipWith(v1, v2, (d1, d2) -> d1 != empty ? d1 : d2) : v1) : v2;
+    }
+
+    /** Get cache mock */
+    private Map<Integer, Integer> getCacheMock(int partsCnt) {
+        return IntStream.range(0, partsCnt).boxed().collect(Collectors.toMap(x -> x, x -> x));
+    }
+
+    /** Mock random numners generator. */
+    private static class MockRandom extends Random {
+        /** Serial version uuid. */
+        private static final long serialVersionUID = -7738558243461112988L;
+
+        /** Start value. */
+        private int startVal;
+
+        /** Iteration. */
+        private int iter;
+
+        /**
+         * Constructs instance of this class with a specified start value.
+         *
+         * @param startVal Start value.
+         */
+        MockRandom(int startVal) {
+            this.startVal = startVal;
+            iter = 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int nextInt() {
+            iter++;
+            return startVal * iter;
+        }
     }
 }
 
