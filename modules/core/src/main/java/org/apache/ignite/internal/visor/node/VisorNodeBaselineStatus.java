@@ -15,20 +15,31 @@
  * limitations under the License.
  */
 
-import {Ng1StateDeclaration} from '@uirouter/angularjs';
+package org.apache.ignite.internal.visor.node;
 
-interface ITfMetatagsConfig {
-    title: string
-}
+import org.jetbrains.annotations.Nullable;
 
-export interface IIgniteNg1StateDeclaration extends Ng1StateDeclaration {
+/**
+ * Node baseline status.
+ */
+public enum VisorNodeBaselineStatus {
+    /** */
+    NODE_IN_BASELINE,
+    /** */
+    NODE_NOT_IN_BASELINE,
+    /** */
+    BASELINE_NOT_AVAILABLE;
+
+    /** Enumerated values. */
+    private static final VisorNodeBaselineStatus[] VALS = values();
+
     /**
-     * Whether to store state as last visited in local storage or not:
-     * `true` - will be saved
-     * `false` (default) - won't be saved
-     * @type {boolean}
+     * Efficiently gets enumerated value from its ordinal.
+     *
+     * @param ord Ordinal value.
+     * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    unsaved?: boolean,
-    tfMetaTags: ITfMetatagsConfig,
-    permission?: string
+    @Nullable public static VisorNodeBaselineStatus fromOrdinal(int ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    }
 }
