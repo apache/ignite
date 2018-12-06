@@ -287,9 +287,8 @@ body {
 
     &>.content {
         grid-area: content;
-        padding-left: 30px;
-        padding-right: 30px;
-
+        padding-left: var(--page-side-padding);
+        padding-right: var(--page-side-padding);
     }
 }
 
