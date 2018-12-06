@@ -39,7 +39,7 @@ public class LearningEnvironmentBuilderTest {
     /** */
     @Test
     public void basic() {
-        LearningEnvironment env = LearningEnvironment.DEFAULT;
+        LearningEnvironment env = LearningEnvironment.DEFAULT_TRAINER_ENV;
 
         assertNotNull("Strategy", env.parallelismStrategy());
         assertNotNull("Logger", env.logger());
@@ -49,42 +49,44 @@ public class LearningEnvironmentBuilderTest {
     /** */
     @Test
     public void withParallelismStrategy() {
-        assertTrue(LearningEnvironment.builder().withParallelismStrategy(NoParallelismStrategy.INSTANCE).build()
+        assertTrue(LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategyDependency(part -> NoParallelismStrategy.INSTANCE)
+            .buildForTrainer()
             .parallelismStrategy() instanceof NoParallelismStrategy);
 
-        assertTrue(LearningEnvironment.builder().withParallelismStrategy(new DefaultParallelismStrategy()).build()
+        assertTrue(LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategyDependency(part -> new DefaultParallelismStrategy())
+            .buildForTrainer()
             .parallelismStrategy() instanceof DefaultParallelismStrategy);
     }
 
     /** */
     @Test
     public void withParallelismStrategyType() {
-        assertTrue(LearningEnvironment.builder().withParallelismStrategy(NO_PARALLELISM).build()
+        assertTrue(LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategyType(NO_PARALLELISM).buildForTrainer()
             .parallelismStrategy() instanceof NoParallelismStrategy);
 
-        assertTrue(LearningEnvironment.builder().withParallelismStrategy(ON_DEFAULT_POOL).build()
+        assertTrue(LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategyType(ON_DEFAULT_POOL).buildForTrainer()
             .parallelismStrategy() instanceof DefaultParallelismStrategy);
     }
 
     /** */
     @Test
     public void withLoggingFactory() {
-        assertTrue(LearningEnvironment.builder().withLoggingFactory(ConsoleLogger.factory(MLLogger.VerboseLevel.HIGH))
-            .build().logger() instanceof ConsoleLogger);
+        assertTrue(LearningEnvironmentBuilder.defaultBuilder().withLoggingFactoryDependency(part -> ConsoleLogger.factory(MLLogger.VerboseLevel.HIGH))
+            .buildForTrainer().logger() instanceof ConsoleLogger);
 
-        assertTrue(LearningEnvironment.builder().withLoggingFactory(ConsoleLogger.factory(MLLogger.VerboseLevel.HIGH))
-            .build().logger(this.getClass()) instanceof ConsoleLogger);
+        assertTrue(LearningEnvironmentBuilder.defaultBuilder().withLoggingFactoryDependency(part -> ConsoleLogger.factory(MLLogger.VerboseLevel.HIGH))
+            .buildForTrainer().logger(this.getClass()) instanceof ConsoleLogger);
 
-        assertTrue(LearningEnvironment.builder().withLoggingFactory(NoOpLogger.factory())
-            .build().logger() instanceof NoOpLogger);
+        assertTrue(LearningEnvironmentBuilder.defaultBuilder().withLoggingFactoryDependency(part -> NoOpLogger.factory())
+            .buildForTrainer().logger() instanceof NoOpLogger);
 
-        assertTrue(LearningEnvironment.builder().withLoggingFactory(NoOpLogger.factory())
-            .build().logger(this.getClass()) instanceof NoOpLogger);
+        assertTrue(LearningEnvironmentBuilder.defaultBuilder().withLoggingFactoryDependency(part -> NoOpLogger.factory())
+            .buildForTrainer().logger(this.getClass()) instanceof NoOpLogger);
 
-        assertTrue(LearningEnvironment.builder().withLoggingFactory(CustomMLLogger.factory(new NullLogger()))
-            .build().logger() instanceof CustomMLLogger);
+        assertTrue(LearningEnvironmentBuilder.defaultBuilder().withLoggingFactoryDependency(part -> CustomMLLogger.factory(new NullLogger()))
+            .buildForTrainer().logger() instanceof CustomMLLogger);
 
-        assertTrue(LearningEnvironment.builder().withLoggingFactory(CustomMLLogger.factory(new NullLogger()))
-            .build().logger(this.getClass()) instanceof CustomMLLogger);
+        assertTrue(LearningEnvironmentBuilder.defaultBuilder().withLoggingFactoryDependency(part -> CustomMLLogger.factory(new NullLogger()))
+            .buildForTrainer().logger(this.getClass()) instanceof CustomMLLogger);
     }
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.preprocessing.normalization;
 
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
@@ -33,7 +34,9 @@ public class NormalizationTrainer<K, V> implements PreprocessingTrainer<K, V, Ve
     private int p = 2;
 
     /** {@inheritDoc} */
-    @Override public NormalizationPreprocessor<K, V> fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public NormalizationPreprocessor<K, V> fit(
+        LearningEnvironmentBuilder envBuilder,
+        DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> basePreprocessor) {
         return new NormalizationPreprocessor<>(p, basePreprocessor);
     }
