@@ -28,6 +28,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -94,8 +95,8 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(memCfg);
 
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>()
-            .setName(DEFAULT_CACHE_NAME)
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(1);
 
@@ -136,7 +137,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
             assertTrue(currMetrics.getTotalAllocatedPages() >= currMetrics.getPhysicalMemoryPages());
 
-            final IgniteCache<String, String> cache = node.getOrCreateCache(DEFAULT_CACHE_NAME);
+            final IgniteCache<String, String> cache = node.cache(DEFAULT_CACHE_NAME);
 
             Map<String, String> map = new HashMap<>();
 
@@ -170,7 +171,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         node0.cluster().active(true);
 
-        final IgniteCache<Integer, String> cache = node0.getOrCreateCache(DEFAULT_CACHE_NAME);
+        final IgniteCache<Integer, String> cache = node0.cache(DEFAULT_CACHE_NAME);
 
         Map<Integer, String> map = new HashMap<>();
 
@@ -299,7 +300,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         assert pageStoreMgr != null : "Persistence is not enabled";
 
         File cacheWorkDir = pageStoreMgr.cacheWorkDir(
-            node.getOrCreateCache(cacheName).getConfiguration(CacheConfiguration.class)
+            node.cache(cacheName).getConfiguration(CacheConfiguration.class)
         );
 
         long totalPersistenceSize = 0;

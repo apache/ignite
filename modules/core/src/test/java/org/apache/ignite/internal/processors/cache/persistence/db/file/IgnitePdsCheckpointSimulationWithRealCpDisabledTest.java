@@ -110,13 +110,10 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration ccfg = defaultCacheConfiguration()
-                .setName(CACHE_NAME)
+        CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME)
                 .setRebalanceMode(CacheRebalanceMode.NONE);
 
-        CacheConfiguration mvccCfg = defaultCacheConfiguration()
-                .setName(MVCC_CACHE_NAME)
-                .setNearConfiguration(null)
+        CacheConfiguration mvccCfg =  new CacheConfiguration(MVCC_CACHE_NAME)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
                 .setRebalanceMode(CacheRebalanceMode.NONE);
 
