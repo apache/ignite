@@ -2332,7 +2332,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (cancel == null)
             cancel = new GridQueryCancel();
 
-        // TODO: We should do intersection here!
+        // TODO: Use intersection (https://issues.apache.org/jira/browse/IGNITE-10567)
         int partitions[] = qry.getPartitions();
 
         if (partitions == null && twoStepQry.derivedPartitions() != null) {
