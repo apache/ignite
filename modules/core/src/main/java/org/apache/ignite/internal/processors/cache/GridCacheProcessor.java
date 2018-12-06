@@ -70,6 +70,7 @@ import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -2774,8 +2775,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param exchActions Change requests.
      */
     private void processCacheStopRequestOnExchangeDone(ExchangeActions exchActions) {
-        // Force checkpoint if there is any cache stop request
-        if (exchActions.cacheStopRequests().size() > 0) {
+        // Reserve at least 2 threads for system operations.
+        int parallelismLvl = U.availableThreadCount(ctx, GridIoPolicy.SYSTEM_POOL, 2);
+
+        if (!exchActions.cacheStopRequests().isEmpty()) {
             try {
                 sharedCtx.database().waitForCheckpoint("caches stop");
             }
@@ -2784,63 +2787,88 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        for (ExchangeActions.CacheActionData action : exchActions.cacheStopRequests()) {
-            CacheGroupContext gctx = cacheGrps.get(action.descriptor().groupId());
+        List<IgniteBiTuple<CacheGroupContext, Boolean>> grpToStop = exchActions.cacheGroupsToStop().stream()
+                .filter(a -> cacheGrps.containsKey(a.descriptor().groupId()))
+                .map(a -> F.t(cacheGrps.get(a.descriptor().groupId()), a.destroy()))
+                .collect(Collectors.toList());
 
-            // Cancel all operations blocking gateway
-            if (gctx != null) {
-                final String msg = "Failed to wait for topology update, cache group is stopping.";
+        Map<Integer, List<ExchangeActions.CacheActionData>> cachesToStop = exchActions.cacheStopRequests().stream()
+                .collect(Collectors.groupingBy(action -> action.descriptor().groupId()));
 
-                // If snapshot operation in progress we must throw CacheStoppedException
-                // for correct cache proxy restart. For more details see
-                // IgniteCacheProxy.cacheException()
-                gctx.affinity().cancelFutures(new CacheStoppedException(msg));
-            }
+        try {
+            doInParallel(
+                    parallelismLvl,
+                    sharedCtx.kernalContext().getSystemExecutorService(),
+                    cachesToStop.entrySet(),
+                    cachesToStopByGrp -> {
+                        CacheGroupContext gctx = cacheGrps.get(cachesToStopByGrp.getKey());
 
-            stopGateway(action.request());
+                        if (gctx != null)
+                            gctx.preloader().pause();
 
-            sharedCtx.database().checkpointReadLock();
+                        try {
 
-            try {
-                prepareCacheStop(action.request().cacheName(), action.request().destroy());
-            }
-            finally {
-                sharedCtx.database().checkpointReadUnlock();
-            }
+                            if (gctx != null) {
+                                final String msg = "Failed to wait for topology update, cache group is stopping.";
+
+                                // If snapshot operation in progress we must throw CacheStoppedException
+                                // for correct cache proxy restart. For more details see
+                                // IgniteCacheProxy.cacheException()
+                                gctx.affinity().cancelFutures(new CacheStoppedException(msg));
+                            }
+
+                            for (ExchangeActions.CacheActionData action: cachesToStopByGrp.getValue()) {
+                                stopGateway(action.request());
+
+                                sharedCtx.database().checkpointReadLock();
+
+                                try {
+                                    prepareCacheStop(action.request().cacheName(), action.request().destroy());
+                                }
+                                finally {
+                                    sharedCtx.database().checkpointReadUnlock();
+                                }
+                            }
+                        }
+                        finally {
+                            if (gctx != null)
+                                gctx.preloader().resume();
+                        }
+
+                        return null;
+                    }
+            );
+        }
+        catch (IgniteCheckedException e) {
+            String msg = "Failed to stop caches";
+
+            log.error(msg, e);
+
+            throw new IgniteException(msg, e);
         }
 
         sharedCtx.database().checkpointReadLock();
 
         try {
             // Do not invoke checkpoint listeners for groups are going to be destroyed to prevent metadata corruption.
-            for (ExchangeActions.CacheGroupActionData action : exchActions.cacheGroupsToStop()) {
-                Integer groupId = action.descriptor().groupId();
-                CacheGroupContext grp = cacheGrps.get(groupId);
+            grpToStop.forEach(grp -> {
+                CacheGroupContext gctx = grp.getKey();
 
-                if (grp != null && grp.persistenceEnabled() && sharedCtx.database() instanceof GridCacheDatabaseSharedManager) {
-                    GridCacheDatabaseSharedManager mngr = (GridCacheDatabaseSharedManager) sharedCtx.database();
-                    mngr.removeCheckpointListener((DbCheckpointListener) grp.offheap());
+                if (gctx != null && gctx.persistenceEnabled() && sharedCtx.database() instanceof GridCacheDatabaseSharedManager) {
+                    GridCacheDatabaseSharedManager mngr = (GridCacheDatabaseSharedManager)sharedCtx.database();
+                    mngr.removeCheckpointListener((DbCheckpointListener)gctx.offheap());
                 }
-            }
+            });
         }
         finally {
             sharedCtx.database().checkpointReadUnlock();
         }
 
-        List<IgniteBiTuple<CacheGroupContext, Boolean>> stoppedGroups = new ArrayList<>();
-
-        for (ExchangeActions.CacheGroupActionData action : exchActions.cacheGroupsToStop()) {
-            Integer groupId = action.descriptor().groupId();
-
-            if (cacheGrps.containsKey(groupId)) {
-                stoppedGroups.add(F.t(cacheGrps.get(groupId), action.destroy()));
-
-                stopCacheGroup(groupId);
-            }
-        }
+        for (IgniteBiTuple<CacheGroupContext, Boolean> grp : grpToStop)
+            stopCacheGroup(grp.get1().groupId());
 
         if (!sharedCtx.kernalContext().clientNode())
-            sharedCtx.database().onCacheGroupsStopped(stoppedGroups);
+            sharedCtx.database().onCacheGroupsStopped(grpToStop);
 
         if (exchActions.deactivate())
             sharedCtx.deactivate();

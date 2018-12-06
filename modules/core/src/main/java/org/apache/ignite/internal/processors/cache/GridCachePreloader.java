@@ -185,4 +185,14 @@ public interface GridCachePreloader {
      * Dumps debug information.
      */
     public void dumpDebugInfo();
+
+    /**
+     *  Pause preloader.
+     */
+    public void pause();
+
+    /**
+     * Resume preloader.
+     */
+    public void resume();
 }

@@ -175,4 +175,14 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     @Override public void dumpDebugInfo() {
         // No-op.
     }
+
+    /** {@inheritDoc} */
+    @Override public void pause() {
+        // No-op
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resume() {
+        // No-op
+    }
 }
