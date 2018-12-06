@@ -22,14 +22,19 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.util.typedef.F;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class JdbcUpdateStatementSelfTest extends JdbcAbstractUpdateStatementSelfTest {
     /**
      *
      */
+    @Test
     public void testExecute() throws SQLException {
         conn.createStatement().execute("update Person set firstName = 'Jack' where " +
             "cast(substring(_key, 2, 1) as int) % 2 = 0");
@@ -41,6 +46,7 @@ public class JdbcUpdateStatementSelfTest extends JdbcAbstractUpdateStatementSelf
     /**
      *
      */
+    @Test
     public void testExecuteUpdate() throws SQLException {
         conn.createStatement().executeUpdate("update Person set firstName = 'Jack' where " +
                 "cast(substring(_key, 2, 1) as int) % 2 = 0");
@@ -52,6 +58,7 @@ public class JdbcUpdateStatementSelfTest extends JdbcAbstractUpdateStatementSelf
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testBatch() throws SQLException {
         PreparedStatement ps = conn.prepareStatement("update Person set lastName = concat(firstName, 'son') " +
             "where firstName = ?");

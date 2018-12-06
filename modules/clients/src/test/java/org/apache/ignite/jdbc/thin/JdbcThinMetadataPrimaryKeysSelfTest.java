@@ -27,10 +27,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Verifies that primary keys in the metadata are valid.
  */
+@RunWith(JUnit4.class)
 public class JdbcThinMetadataPrimaryKeysSelfTest extends GridCommonAbstractTest {
     /** Url. */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1";
@@ -68,6 +72,7 @@ public class JdbcThinMetadataPrimaryKeysSelfTest extends GridCommonAbstractTest 
     /**
      * Checks for PK that contains single unwrapped field.
      */
+    @Test
     public void testSingleUnwrappedKey() throws Exception {
         executeUpdate("CREATE TABLE TEST (ID LONG PRIMARY KEY, NAME VARCHAR);");
 
@@ -77,6 +82,7 @@ public class JdbcThinMetadataPrimaryKeysSelfTest extends GridCommonAbstractTest 
     /**
      * Checks for PK that contains single field. Key is forcibly wrapped.
      */
+    @Test
     public void testSingleWrappedKey() throws Exception {
         executeUpdate("CREATE TABLE TEST (" +
             "ID LONG PRIMARY KEY, " +
@@ -89,6 +95,7 @@ public class JdbcThinMetadataPrimaryKeysSelfTest extends GridCommonAbstractTest 
     /**
      * Checks for composite (so implicitly wrapped) primary key.
      */
+    @Test
     public void testCompositeKey() throws Exception {
         executeUpdate("CREATE TABLE TEST (" +
             "ID LONG, " +
@@ -102,6 +109,7 @@ public class JdbcThinMetadataPrimaryKeysSelfTest extends GridCommonAbstractTest 
     /**
      * Checks for composite (so implicitly wrapped) primary key. Additionally, affinity key is used.
      */
+    @Test
     public void testCompositeKeyWithAK() throws Exception {
         final String tpl = "CREATE TABLE TEST (" +
             "ID LONG, " +

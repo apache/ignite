@@ -31,10 +31,14 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for consistent hash management class.
  */
+@RunWith(JUnit4.class)
 public class ClientConsistentHashSelfTest extends GridCommonAbstractTest {
     /** Replicas count. */
     private static final int REPLICAS = 512;
@@ -44,6 +48,7 @@ public class ClientConsistentHashSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of any exception.
      */
+    @Test
     public void testCollisions() throws Exception {
         Map<Integer, Set<UUID>> map = new HashMap<>();
 
@@ -95,6 +100,7 @@ public class ClientConsistentHashSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of any exception.
      */
+    @Test
     public void testTreeSetRestrictions() throws Exception {
         // Constructs hash without explicit node's comparator.
         GridClientConsistentHash<Object> hash = new GridClientConsistentHash<>();
@@ -129,6 +135,7 @@ public class ClientConsistentHashSelfTest extends GridCommonAbstractTest {
      * Validate generated hashes.<p>
      * Note! This test should be ported into all supported platforms.
      */
+    @Test
     public void testHashGeneraton() {
         // Validate strings.
         checkHash("", -1484017934);
@@ -167,6 +174,7 @@ public class ClientConsistentHashSelfTest extends GridCommonAbstractTest {
     /**
      * Test mapping to nodes.
      */
+    @Test
     public void testMappingToNodes() {
         String n1 = "node #1";
         String n2 = "node #2";

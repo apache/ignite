@@ -47,6 +47,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jsr166.ConcurrentLinkedHashMap;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -57,6 +60,7 @@ import static org.apache.ignite.internal.client.GridClientProtocol.TCP;
 /**
  * Test for {@code GridTaskCommandHandler}
  */
+@RunWith(JUnit4.class)
 public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -163,6 +167,7 @@ public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testManyTasksRun() throws Exception {
         GridClientCompute compute = client.compute();
 

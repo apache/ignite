@@ -77,6 +77,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -89,6 +92,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests basic client behavior with multiple nodes.
  */
+@RunWith(JUnit4.class)
 public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -261,6 +265,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEmptyProjections() throws Exception {
         final GridClientCompute dflt = client.compute();
 
@@ -296,6 +301,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testProjectionRun() throws Exception {
         GridClientCompute dflt = client.compute();
 
@@ -325,6 +331,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyListener() throws Exception {
         final Collection<UUID> added = new ArrayList<>(1);
         final Collection<UUID> rmvd = new ArrayList<>(1);

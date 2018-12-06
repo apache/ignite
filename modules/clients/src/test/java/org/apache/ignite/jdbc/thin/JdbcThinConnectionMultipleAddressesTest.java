@@ -45,11 +45,15 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * JDBC driver reconnect test with multiple addresses.
  */
 @SuppressWarnings("ThrowableNotThrown")
+@RunWith(JUnit4.class)
 public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -131,6 +135,7 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleAddressesConnect() throws Exception {
         try (Connection conn = DriverManager.getConnection(url())) {
             try (Statement stmt = conn.createStatement()) {
@@ -148,6 +153,7 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPortRangeConnect() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL_PORT_RANGE)) {
             try (Statement stmt = conn.createStatement()) {
@@ -165,6 +171,7 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleAddressesOneNodeFailoverOnStatementExecute() throws Exception {
         checkReconnectOnStatementExecute(url(), false);
     }
@@ -172,6 +179,7 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleAddressesAllNodesFailoverOnStatementExecute() throws Exception {
         checkReconnectOnStatementExecute(url(), true);
     }
@@ -179,6 +187,7 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPortRangeAllNodesFailoverOnStatementExecute() throws Exception {
         checkReconnectOnStatementExecute(URL_PORT_RANGE, true);
     }
@@ -186,6 +195,7 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleAddressesOneNodeFailoverOnResultSet() throws Exception {
         checkReconnectOnResultSet(url(), false);
     }
@@ -193,6 +203,7 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleAddressesAllNodesFailoverOnResultSet() throws Exception {
         checkReconnectOnResultSet(url(), true);
     }
@@ -200,6 +211,7 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPortRangeAllNodesFailoverOnResultSet() throws Exception {
         checkReconnectOnResultSet(URL_PORT_RANGE, true);
     }
@@ -207,6 +219,7 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleAddressesOneNodeFailoverOnMeta() throws Exception {
         checkReconnectOnMeta(url(), false);
     }
@@ -214,6 +227,7 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleAddressesAllNodesFailoverOnMeta() throws Exception {
         checkReconnectOnMeta(url(), true);
     }
@@ -221,6 +235,7 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPortRangeAllNodesFailoverOnMeta() throws Exception {
         checkReconnectOnMeta(URL_PORT_RANGE, true);
     }
@@ -228,6 +243,7 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleAddressesOneNodeFailoverOnStreaming() throws Exception {
         checkReconnectOnStreaming(url(), false);
     }
@@ -235,6 +251,7 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientConnectionMXBean() throws Exception {
         Connection conn = DriverManager.getConnection(URL_PORT_RANGE);
 

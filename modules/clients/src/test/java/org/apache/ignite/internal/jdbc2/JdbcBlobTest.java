@@ -22,14 +22,19 @@ import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.Arrays;
 import junit.framework.TestCase;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class JdbcBlobTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLength() throws Exception {
         JdbcBlob blob = new JdbcBlob(new byte[16]);
 
@@ -50,6 +55,7 @@ public class JdbcBlobTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetBytes() throws Exception {
         byte[] arr = new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 
@@ -124,6 +130,7 @@ public class JdbcBlobTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetBinaryStream() throws Exception {
         byte[] arr = new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 
@@ -150,6 +157,7 @@ public class JdbcBlobTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetBinaryStreamWithParams() throws Exception {
         byte[] arr = new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 
@@ -222,6 +230,7 @@ public class JdbcBlobTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPositionBytePattern() throws Exception {
         byte[] arr = new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 
@@ -256,6 +265,7 @@ public class JdbcBlobTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPositionBlobPattern() throws Exception {
         byte[] arr = new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 
@@ -290,6 +300,7 @@ public class JdbcBlobTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetBytes() throws Exception {
         byte[] arr = new byte[] {0, 1, 2, 3, 4, 5, 6, 7};
 
@@ -341,6 +352,7 @@ public class JdbcBlobTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetBytesWithOffsetAndLength() throws Exception {
         byte[] arr = new byte[] {0, 1, 2, 3, 4, 5, 6, 7};
 
@@ -419,6 +431,7 @@ public class JdbcBlobTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTruncate() throws Exception {
         byte[] arr = new byte[] {0, 1, 2, 3, 4, 5, 6, 7};
 

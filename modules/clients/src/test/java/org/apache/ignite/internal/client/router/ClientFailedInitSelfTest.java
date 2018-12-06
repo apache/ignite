@@ -42,6 +42,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 import static org.apache.ignite.internal.client.GridClientProtocol.TCP;
@@ -53,6 +56,7 @@ import static org.apache.ignite.internal.client.integration.ClientAbstractSelfTe
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class ClientFailedInitSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int RECONN_CNT = 3;
@@ -103,6 +107,7 @@ public class ClientFailedInitSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testEmptyAddresses() {
         try {
             GridClientFactory.start(new GridClientConfiguration());
@@ -117,6 +122,7 @@ public class ClientFailedInitSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRoutersAndServersAddressesProvided() {
         try {
             GridClientConfiguration c = new GridClientConfiguration();
@@ -136,6 +142,7 @@ public class ClientFailedInitSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTcpClient() throws Exception {
         doTestClient(TCP);
     }
@@ -143,6 +150,7 @@ public class ClientFailedInitSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTcpRouter() throws Exception {
         doTestRouter(TCP);
     }

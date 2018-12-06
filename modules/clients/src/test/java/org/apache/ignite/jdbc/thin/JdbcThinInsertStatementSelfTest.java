@@ -25,10 +25,14 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.concurrent.Callable;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Statement test.
  */
+@RunWith(JUnit4.class)
 public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
     /** SQL query. */
     private static final String SQL = "insert into Person(_key, id, firstName, lastName, age) values " +
@@ -140,6 +144,7 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testExecuteUpdate() throws SQLException {
         assertEquals(3, stmt.executeUpdate(SQL));
     }
@@ -147,6 +152,7 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testPreparedExecuteUpdate() throws SQLException {
         assertEquals(3, prepStmt.executeUpdate());
     }
@@ -154,6 +160,7 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testExecute() throws SQLException {
         assertFalse(stmt.execute(SQL));
     }
@@ -161,6 +168,7 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testPreparedExecute() throws SQLException {
         assertFalse(prepStmt.execute());
     }
@@ -168,6 +176,7 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
     /**
      *
      */
+    @Test
     public void testDuplicateKeys() {
         jcache(0).put("p2", new Person(2, "Joe", "Black", 35));
 

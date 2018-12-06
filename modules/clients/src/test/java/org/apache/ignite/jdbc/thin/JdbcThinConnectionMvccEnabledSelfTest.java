@@ -33,6 +33,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.sql.Connection.TRANSACTION_NONE;
 import static java.sql.Connection.TRANSACTION_READ_COMMITTED;
@@ -44,6 +47,7 @@ import static java.sql.Connection.TRANSACTION_SERIALIZABLE;
  * Connection test.
  */
 @SuppressWarnings("ThrowableNotThrown")
+@RunWith(JUnit4.class)
 public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -99,6 +103,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMetadataDefaults() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData meta = conn.getMetaData();
@@ -117,6 +122,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetSetAutoCommit() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             assertTrue(conn.getMetaData().supportsTransactions());
@@ -145,6 +151,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCommit() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             assertTrue(conn.getMetaData().supportsTransactions());
@@ -180,6 +187,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRollback() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             assertTrue(conn.getMetaData().supportsTransactions());
@@ -215,6 +223,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetSavepoint() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             assert !conn.getMetaData().supportsSavepoints();
@@ -254,6 +263,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetSavepointName() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             assert !conn.getMetaData().supportsSavepoints();
@@ -308,6 +318,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRollbackSavePoint() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             assert !conn.getMetaData().supportsSavepoints();
