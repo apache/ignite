@@ -108,6 +108,13 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
     }
 
     /**
+     * @return Indexing.
+     */
+    public IgniteH2Indexing indexing() {
+        return idx;
+    }
+
+    /**
      * @return Table.
      */
     public GridH2Table table() {

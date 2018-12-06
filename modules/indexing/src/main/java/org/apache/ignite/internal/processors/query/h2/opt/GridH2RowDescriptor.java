@@ -68,9 +68,6 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueR
  * Row descriptor.
  */
 public class GridH2RowDescriptor {
-    /** Indexing SPI. */
-    private final IgniteH2Indexing idx;
-
     /** Table descriptor. */
     private final H2TableDescriptor tbl;
 
@@ -101,14 +98,12 @@ public class GridH2RowDescriptor {
     /**
      * Constructor.
      *
-     * @param idx Indexing.
      * @param tbl Table.
      * @param type Type descriptor.
      */
-    public GridH2RowDescriptor(IgniteH2Indexing idx, H2TableDescriptor tbl, GridQueryTypeDescriptor type) {
+    public GridH2RowDescriptor(H2TableDescriptor tbl, GridQueryTypeDescriptor type) {
         assert type != null;
 
-        this.idx = idx;
         this.tbl = tbl;
         this.type = type;
 
@@ -161,7 +156,7 @@ public class GridH2RowDescriptor {
      * @return indexing.
      */
     public IgniteH2Indexing indexing() {
-        return idx;
+        return tbl.indexing();
     }
 
     /**
@@ -208,9 +203,9 @@ public class GridH2RowDescriptor {
             CacheObject co = (CacheObject)obj;
 
             if (type == Value.JAVA_OBJECT)
-                return new GridH2ValueCacheObject(co, idx.objectContext());
+                return new GridH2ValueCacheObject(co, indexing().objectContext());
 
-            obj = co.value(idx.objectContext(), false);
+            obj = co.value(indexing().objectContext(), false);
         }
 
         switch (type) {

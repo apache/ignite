@@ -2308,7 +2308,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Creating DB table with SQL: " + sql);
 
-        GridH2RowDescriptor rowDesc = new GridH2RowDescriptor(this, tbl, tbl.type());
+        GridH2RowDescriptor rowDesc = new GridH2RowDescriptor(tbl, tbl.type());
 
         H2RowFactory rowFactory = tbl.rowFactory(rowDesc);
 
