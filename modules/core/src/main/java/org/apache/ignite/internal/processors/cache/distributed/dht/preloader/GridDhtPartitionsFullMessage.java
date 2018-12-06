@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -415,7 +416,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         if (marshal) {
             // Reserve at least 2 threads for system operations.
-            int parallelismLvl = Math.max(1, ctx.kernalContext().config().getSystemThreadPoolSize() - 2);
+            int parallelismLvl = U.availableThreadCount(ctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2);
 
             Collection<Object> objectsToMarshall = new ArrayList<>();
 
@@ -509,7 +510,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         Collection<byte[]> objectsToUnmarshall = new ArrayList<>();
 
         // Reserve at least 2 threads for system operations.
-        int parallelismLvl = Math.max(1, ctx.kernalContext().config().getSystemThreadPoolSize() - 2);
+        int parallelismLvl = U.availableThreadCount(ctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2);
 
         if (partsBytes != null && parts == null)
             objectsToUnmarshall.add(partsBytes);
