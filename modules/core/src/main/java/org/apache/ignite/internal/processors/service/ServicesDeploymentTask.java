@@ -124,13 +124,12 @@ class ServicesDeploymentTask {
      * @param depId Service deployment process id.
      */
     protected ServicesDeploymentTask(GridKernalContext ctx, ServicesDeploymentProcessId depId) {
+        assert ctx.service() instanceof IgniteServiceProcessor;
+
         this.depId = depId;
         this.ctx = ctx;
 
-        assert ctx.service() instanceof IgniteServiceProcessor;
-
-        this.srvcProc = (IgniteServiceProcessor)ctx.service();
-
+        srvcProc = (IgniteServiceProcessor)ctx.service();
         log = ctx.log(getClass());
     }
 
