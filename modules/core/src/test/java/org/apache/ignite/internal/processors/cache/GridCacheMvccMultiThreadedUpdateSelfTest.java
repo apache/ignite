@@ -45,14 +45,6 @@ public class GridCacheMvccMultiThreadedUpdateSelfTest extends GridCacheOffHeapMu
         return CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-9470");
-
-        super.beforeTestsStarted();
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -82,10 +74,17 @@ public class GridCacheMvccMultiThreadedUpdateSelfTest extends GridCacheOffHeapMu
                     if (i % 500 == 0)
                         log.info("Iteration " + i);
 
-                    try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        cache.invoke(key, new IncProcessor());
+                    while (true) {
+                        try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            cache.invoke(key, new IncProcessor());
 
-                        tx.commit();
+                            tx.commit();
+
+                            break;
+                        } catch (Exception ex) {
+                            // Try again on write conflict.
+                            MvccFeatureChecker.assertMvccWriteConflict(ex);
+                        }
                     }
                 }
 
@@ -134,12 +133,20 @@ public class GridCacheMvccMultiThreadedUpdateSelfTest extends GridCacheOffHeapMu
                     if (i % 500 == 0)
                         log.info("Iteration " + i);
 
-                    try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        Integer val = cache.getAndPut(key, i);
+                    while (true) {
+                        try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            Integer val = cache.getAndPut(key, i);
 
-                        assertNotNull(val);
+                            assertNotNull(val);
 
-                        tx.commit();
+                            tx.commit();
+
+                            break;
+                        }
+                        catch (Exception ex) {
+                            // Retry on write conflict.
+                            MvccFeatureChecker.assertMvccWriteConflict(ex);
+                        }
                     }
                 }
 

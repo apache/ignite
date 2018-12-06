@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -96,7 +97,16 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
                     if (i % 500 == 0)
                         log.info("Iteration " + i);
 
-                    cache.invoke(key, new IncProcessor());
+                    while (true) {
+                        try {
+                            cache.invoke(key, new IncProcessor());
+
+                            break;
+                        } catch (Exception ex) {
+                            // Retry on write conflict.
+                            MvccFeatureChecker.assertMvccWriteConflict(ex);
+                        }
+                    }
                 }
 
                 return null;
@@ -140,9 +150,17 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
                     if (i % 500 == 0)
                         log.info("Iteration " + i);
 
-                    Integer val = cache.getAndPut(key, i);
+                    try {
+                        Integer val = cache.getAndPut(key, i);
 
-                    assertNotNull(val);
+                        assertNotNull(val);
+
+                        break;
+
+                    } catch (Exception ex) {
+                        // Try again on write conflict.
+                        MvccFeatureChecker.assertMvccWriteConflict(ex);
+                    }
                 }
 
                 return null;
@@ -230,7 +248,16 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
                     if (i % 1000 == 0)
                         log.info("Put iteration " + i);
 
-                    cache.put(key, i);
+                    while (true) {
+                        try {
+                            cache.put(key, i);
+
+                            break;
+                        } catch (Exception ex) {
+                            // Retry on write conflict.
+                            MvccFeatureChecker.assertMvccWriteConflict(ex);
+                        }
+                    }
                 }
 
                 return null;
