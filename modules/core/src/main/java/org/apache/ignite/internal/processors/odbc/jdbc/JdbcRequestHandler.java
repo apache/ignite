@@ -1058,7 +1058,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private static boolean matches(String str, String ptrn) {
         return str != null && (F.isEmpty(ptrn) ||
-            str.matches(ptrn.replace("%", ".*").replace("_", ".")));
+            str.toUpperCase().matches(ptrn.toUpperCase().replace("%", ".*").replace("_", ".")));
     }
 
     /**
