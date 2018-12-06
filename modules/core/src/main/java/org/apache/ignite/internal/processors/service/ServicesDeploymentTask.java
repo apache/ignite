@@ -455,7 +455,7 @@ class ServicesDeploymentTask {
 
                     assert depResults != null : "Services deployment actions should be attached.";
 
-                    final Map<IgniteUuid, HashMap<UUID, Integer>> fullTops = depResults.deploymentTopologies();
+                    final Map<IgniteUuid, Map<UUID, Integer>> fullTops = depResults.deploymentTopologies();
                     final Map<IgniteUuid, Collection<byte[]>> fullErrors = depResults.deploymentErrors();
 
                     depActions.deploymentTopologies(fullTops);

@@ -1272,7 +1272,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      *
      * @param fullTops Deployment topologies.
      */
-    protected void updateServicesTopologies(@NotNull final Map<IgniteUuid, HashMap<UUID, Integer>> fullTops) {
+    protected void updateServicesTopologies(@NotNull final Map<IgniteUuid, Map<UUID, Integer>> fullTops) {
         if (!enterBusy())
             return;
 
@@ -1599,14 +1599,14 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         else if (msg instanceof ServicesFullDeploymentsMessage) {
             ServicesFullDeploymentsMessage msg0 = (ServicesFullDeploymentsMessage)msg;
 
-            final Map<IgniteUuid, HashMap<UUID, Integer>> fullTops = new HashMap<>();
+            final Map<IgniteUuid, Map<UUID, Integer>> fullTops = new HashMap<>();
             final Map<IgniteUuid, Collection<byte[]>> fullErrors = new HashMap<>();
 
             for (ServiceFullDeploymentsResults depRes : msg0.results()) {
                 final IgniteUuid srvcId = depRes.serviceId();
                 final Map<UUID, ServiceSingleDeploymentsResults> deps = depRes.results();
 
-                final HashMap<UUID, Integer> top = new HashMap<>();
+                final Map<UUID, Integer> top = new HashMap<>();
                 final Collection<byte[]> errors = new ArrayList<>();
 
                 deps.forEach((nodeId, res) -> {
@@ -1660,7 +1660,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * @param tops Deployment topologies.
      */
     private void updateServicesMap(Map<IgniteUuid, ServiceInfo> services,
-        Map<IgniteUuid, HashMap<UUID, Integer>> tops) {
+        Map<IgniteUuid, Map<UUID, Integer>> tops) {
 
         tops.forEach((srvcId, top) -> {
             ServiceInfo desc = services.get(srvcId);

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.service;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.lang.IgniteUuid;
@@ -39,7 +38,7 @@ public class ServicesDeploymentActions {
     private Map<IgniteUuid, ServiceInfo> servicesToUndeploy;
 
     /** Services deployment topologies. */
-    private Map<IgniteUuid, HashMap<UUID, Integer>> depTops;
+    private Map<IgniteUuid, Map<UUID, Integer>> depTops;
 
     /** Services deployment errors. */
     private Map<IgniteUuid, Collection<byte[]>> depErrors;
@@ -89,14 +88,14 @@ public class ServicesDeploymentActions {
     /**
      * @return Deployment topologies.
      */
-    @NotNull public Map<IgniteUuid, HashMap<UUID, Integer>> deploymentTopologies() {
+    @NotNull public Map<IgniteUuid, Map<UUID, Integer>> deploymentTopologies() {
         return depTops != null ? depTops : Collections.emptyMap();
     }
 
     /**
      * @param depTops Deployment topologies.
      */
-    public void deploymentTopologies(@NotNull Map<IgniteUuid, HashMap<UUID, Integer>> depTops) {
+    public void deploymentTopologies(@NotNull Map<IgniteUuid, Map<UUID, Integer>> depTops) {
         this.depTops = depTops;
     }
 
