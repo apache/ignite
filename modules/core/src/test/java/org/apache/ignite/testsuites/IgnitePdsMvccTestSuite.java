@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import java.util.HashSet;
 import java.util.Set;
 import junit.framework.TestSuite;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheConfigurationFileConsistencyCheckTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.DefaultPageSizeBackwardsCompatibilityTest;
@@ -44,6 +45,8 @@ public class IgnitePdsMvccTestSuite extends TestSuite {
      * @return Suite.
      */
     public static TestSuite suite() {
+        System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
+
         TestSuite suite = new TestSuite("Ignite Persistent Store Mvcc Test Suite");
 
         Set<Class> ignoredTests = new HashSet<>();
