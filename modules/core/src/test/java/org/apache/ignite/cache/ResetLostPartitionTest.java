@@ -32,6 +32,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
@@ -265,6 +266,7 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> cache = node.createCache(
             new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
+                .setAffinity(new RendezvousAffinityFunction(false, 32))
                 .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE));
 
         for (int i = 0; i < CACHE_SIZE; i++)
@@ -274,31 +276,44 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
         int lostPartsCnt = count(DEFAULT_CACHE_NAME, OWNING, failedNodeIdx);
 
+        log.info(">xxx> stop " + failedNodeIdx);
+
         stopGrid(failedNodeIdx);
 
         int[] liveIdxs = new int[] {0, 1, 2};
 
-        waitForCondition(() -> lostPartsCnt == count(DEFAULT_CACHE_NAME, LOST, liveIdxs), timeout);
-        assertEquals(lostPartsCnt, count(DEFAULT_CACHE_NAME, LOST, liveIdxs));
+//        waitForCondition(() -> lostPartsCnt == count(DEFAULT_CACHE_NAME, LOST, liveIdxs), timeout);
+//        assertEquals(lostPartsCnt, count(DEFAULT_CACHE_NAME, LOST, liveIdxs));
+
+        U.sleep(5_000);
+
+        log.info(">xxx> start " + failedNodeIdx);
 
         startGrid(failedNodeIdx);
 
-        waitForCondition(() -> lostPartsCnt == count(DEFAULT_CACHE_NAME, LOST, failedNodeIdx), timeout);
-        assertEquals(lostPartsCnt, count(DEFAULT_CACHE_NAME, LOST, failedNodeIdx));
+        U.sleep(5_000);
+//        waitForCondition(() -> lostPartsCnt == count(DEFAULT_CACHE_NAME, LOST, failedNodeIdx), timeout);
+//        assertEquals(lostPartsCnt, count(DEFAULT_CACHE_NAME, LOST, failedNodeIdx));
+//
+//        waitForCondition(() -> 0 == count(DEFAULT_CACHE_NAME, LOST, liveIdxs), timeout);
+//        assertEquals(0, count(DEFAULT_CACHE_NAME, LOST, liveIdxs));
+//
+//        for (Ignite grid : G.allGrids()) {
+//            GridCacheSharedContext cctx = ((IgniteEx)grid).context().cache().context();
+//
+//            cctx.exchange().affinityReadyFuture(cctx.discovery().topologyVersionEx()).get(timeout);
+//
+//            for (GridCacheContext ctx : (Collection<GridCacheContext>)cctx.cacheContexts())
+//                ctx.preloader().rebalanceFuture().get(timeout);
+//        }
 
-        waitForCondition(() -> 0 == count(DEFAULT_CACHE_NAME, LOST, liveIdxs), timeout);
-        assertEquals(0, count(DEFAULT_CACHE_NAME, LOST, liveIdxs));
-
-        for (Ignite grid : G.allGrids()) {
-            GridCacheSharedContext cctx = ((IgniteEx)grid).context().cache().context();
-
-            cctx.exchange().affinityReadyFuture(cctx.discovery().topologyVersionEx()).get(timeout);
-
-            for (GridCacheContext ctx : (Collection<GridCacheContext>)cctx.cacheContexts())
-                ctx.preloader().rebalanceFuture().get(timeout);
-        }
+        log.info(">xxx> reset lost partitions");
 
         node.resetLostPartitions(Collections.singleton(DEFAULT_CACHE_NAME));
+
+        U.sleep(5_000);
+
+        log.info(">xxx> check duplicate owners");
 
         waitForCondition(() -> lostPartsCnt == count(DEFAULT_CACHE_NAME, OWNING, failedNodeIdx), timeout);
         assertEquals(lostPartsCnt, count(DEFAULT_CACHE_NAME, OWNING, failedNodeIdx));
@@ -309,6 +324,10 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
         waitForCondition(() -> parts == count(DEFAULT_CACHE_NAME, OWNING, allIdxs), timeout);
         assertEquals(parts, count(DEFAULT_CACHE_NAME, OWNING, allIdxs));
+
+        for (int idx : allIdxs)
+            assertEquals("" + idx, 0, count(DEFAULT_CACHE_NAME, LOST, idx));
+            //assert grid(idx).cache(DEFAULT_CACHE_NAME).lostPartitions().isEmpty();
     }
 
     /**

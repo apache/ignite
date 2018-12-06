@@ -2337,9 +2337,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (affNodes.contains(ctx.localNode()))
                 continue;
 
-            AffinityTopologyVersion topVer = aff.topologyVersion();
-
-            List<ClusterNode> nodes = part.state() == LOST ? nodes(p, topVer, OWNING, LOST) : nodes(p, topVer, OWNING);
+            List<ClusterNode> nodes = nodes(p, aff.topologyVersion(), OWNING);
 
             Collection<UUID> nodeIds = F.nodeIds(nodes);
 
