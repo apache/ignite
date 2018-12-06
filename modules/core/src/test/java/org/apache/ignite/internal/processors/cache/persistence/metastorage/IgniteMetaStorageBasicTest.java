@@ -167,12 +167,139 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param metaStorage Meta storage.
+     * @param size Size.
+     */
+    private Map<String, byte[]> putDataToMetaStorage(MetaStorage metaStorage, int size, int from) throws IgniteCheckedException {
+        Map<String, byte[]> res = new HashMap<>();
+
+        for (Iterator<IgniteBiTuple<String, byte[]>> it = generateTestData(size, from).iterator(); it.hasNext(); ) {
+            IgniteBiTuple<String, byte[]> d = it.next();
+
+            metaStorage.putData(d.getKey(), d.getValue());
+
+            res.put(d.getKey(), d.getValue());
+        }
+
+        return res;
+    }
+
+    /**
+     * Testing data migration between metastorage partitions (delete partition case)
+     */
+    public void testDeletePartitionFromMetaStorageMigration() throws Exception {
+        final Map<String, byte[]> testData = new HashMap<>();
+
+        MetaStorage.PRESERVE_LEGACY_METASTORAGE_PARTITION_ID = true;
+
+        try {
+            IgniteEx ig = startGrid(0);
+
+            ig.cluster().active(true);
+
+            IgniteCacheDatabaseSharedManager db = ig.context().cache().context().database();
+
+            MetaStorage metaStorage = db.metaStorage();
+
+            assertNotNull(metaStorage);
+
+            db.checkpointReadLock();
+
+            try {
+                testData.putAll(putDataToMetaStorage(metaStorage, 1_000, 0));
+            }
+            finally {
+                db.checkpointReadUnlock();
+            }
+
+            db.waitForCheckpoint("Test");
+
+            ((GridCacheDatabaseSharedManager)db).enableCheckpoints(false);
+
+            db.checkpointReadLock();
+
+            try {
+                testData.putAll(putDataToMetaStorage(metaStorage, 1_000, 1_000));
+            }
+            finally {
+                db.checkpointReadUnlock();
+            }
+
+            stopGrid(0);
+
+            MetaStorage.PRESERVE_LEGACY_METASTORAGE_PARTITION_ID = false;
+
+            IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
+
+            cfg.getDataStorageConfiguration().setCheckpointFrequency(3600 * 1000L);
+
+            ig = (IgniteEx)startGrid(getTestIgniteInstanceName(0), optimize(cfg), null);
+
+            ig.cluster().active(true);
+
+            db = ig.context().cache().context().database();
+
+            metaStorage = db.metaStorage();
+
+            assertNotNull(metaStorage);
+
+            db.checkpointReadLock();
+
+            try {
+                testData.putAll(putDataToMetaStorage(metaStorage, 1_000, 2_000));
+            }
+            finally {
+                db.checkpointReadUnlock();
+            }
+
+            db.waitForCheckpoint("Test");
+
+            stopGrid(0);
+
+            ig = startGrid(0);
+
+            ig.cluster().active(true);
+
+            db = ig.context().cache().context().database();
+
+            metaStorage = db.metaStorage();
+
+            assertNotNull(metaStorage);
+
+            db.checkpointReadLock();
+            try {
+                Collection<IgniteBiTuple<String, byte[]>> read = metaStorage.readAll();
+
+                int cnt = 0;
+                for (IgniteBiTuple<String, byte[]> r : read) {
+                    byte[] test = testData.get(r.get1());
+
+                    if (test != null) {
+                        Assert.assertArrayEquals(r.get2(), test);
+
+                        cnt++;
+                    }
+                }
+
+                assertEquals(cnt, testData.size());
+            }
+            finally {
+                db.checkpointReadUnlock();
+            }
+        }
+        finally {
+            MetaStorage.PRESERVE_LEGACY_METASTORAGE_PARTITION_ID = false;
+        }
+
+    }
+
+    /**
      * Testing data migration between metastorage partitions
      */
     public void testMetaStorageMigration() throws Exception {
         final Map<String, byte[]> testData = new HashMap<>(5_000);
 
-        generateTestData(5_000).forEach(t -> testData.put(t.get1(), t.get2()));
+        generateTestData(5_000, -1).forEach(t -> testData.put(t.get1(), t.get2()));
 
         MetaStorage.PRESERVE_LEGACY_METASTORAGE_PARTITION_ID = true;
 
@@ -242,7 +369,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
      * Testing temporary storage
      */
     public void testMetaStoreMigrationTmpStorage() throws Exception {
-        List<IgniteBiTuple<String, byte[]>> data = generateTestData(2_000).collect(Collectors.toList());
+        List<IgniteBiTuple<String, byte[]>> data = generateTestData(2_000, -1).collect(Collectors.toList());
 
         // memory
         try (MetaStorage.TmpStorage tmpStorage = new MetaStorage.TmpStorage(4 * 1024 * 1024, log)) {
@@ -264,8 +391,8 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
     /**
      * Test data generation
      */
-    private static Stream<IgniteBiTuple<String, byte[]>> generateTestData(int size) {
-        final AtomicInteger idx = new AtomicInteger();
+    private static Stream<IgniteBiTuple<String, byte[]>> generateTestData(int size, int fromKey) {
+        final AtomicInteger idx = new AtomicInteger(fromKey);
         final Random rnd = new Random();
 
         return Stream.generate(() -> {
@@ -273,7 +400,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
 
             rnd.nextBytes(val);
 
-            return new IgniteBiTuple<>("KEY_" + idx.getAndIncrement(), val);
+            return new IgniteBiTuple<>("KEY_" + (fromKey < 0 ? rnd.nextInt() : idx.getAndIncrement()), val);
         }).limit(size);
     }
 
