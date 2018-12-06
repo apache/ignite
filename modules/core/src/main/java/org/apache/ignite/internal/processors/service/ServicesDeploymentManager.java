@@ -434,7 +434,7 @@ public class ServicesDeploymentManager {
 
         /** {@inheritDoc} */
         private ServicesDeploymentWorker() {
-            super(ctx.igniteInstanceName(), "services-deployment-deployer",
+            super(ctx.igniteInstanceName(), "services-deployment-worker",
                 ServicesDeploymentManager.this.log, ctx.workersRegistry());
         }
 

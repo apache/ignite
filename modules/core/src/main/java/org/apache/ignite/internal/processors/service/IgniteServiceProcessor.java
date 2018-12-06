@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -101,7 +103,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /** Cluster services info <b>updated from discovery thread</b>. */
     private final ConcurrentMap<IgniteUuid, ServiceInfo> registeredServices = new ConcurrentHashMap<>();
 
-    /** Cluster services info <b>updated from deployer thread</b>. */
+    /** Cluster services info <b>updated from services deployment worker</b>. */
     private final ConcurrentMap<IgniteUuid, ServiceInfo> deployedServices = new ConcurrentHashMap<>();
 
     /** Deployment futures. */
@@ -336,7 +338,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     }
 
     /**
-     * Invokes from deployer worker.
+     * Invokes from services deployment worker.
      * <p/>
      * {@inheritDoc}
      */
@@ -952,7 +954,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         String cacheName = cfg.getCacheName();
         Object affKey = cfg.getAffinityKey();
 
-        Map<UUID, Integer> cnts = new HashMap<>();
+        Map<UUID, Integer> cnts = new TreeMap<>();
 
         if (affKey != null && cacheName != null) { // Affinity service
             ClusterNode n = ctx.affinity().mapKeyToNode(cacheName, affKey, topVer);
@@ -1000,7 +1002,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                     Random rnd = new Random(srvcId.localId());
 
                     if (oldTop != null && !oldTop.isEmpty()) {
-                        Collection<UUID> used = new HashSet<>();
+                        Collection<UUID> used = new TreeSet<>();
 
                         // Avoid redundant moving of services.
                         for (Map.Entry<UUID, Integer> e : oldTop.entrySet()) {
@@ -1057,7 +1059,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /**
      * Redeploys local services based on assignments.
      * <p/>
-     * Invokes from deployer worker.
+     * Invokes from services deployment worker.
      *
      * @param srvcId Service id.
      * @param cfg Service configuration.
@@ -1261,7 +1263,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /**
      * Undeployes service with given id.
      * <p/>
-     * Invokes from deployer worker.
+     * Invokes from services deployment worker.
      *
      * @param srvcId Service id.
      */
@@ -1341,7 +1343,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /**
      * Updates deployed services map according to deployment task.
      * <p/>
-     * Invokes from deployer worker.
+     * Invokes from services deployment worker.
      *
      * @param depActions Service deployment actions.
      */
