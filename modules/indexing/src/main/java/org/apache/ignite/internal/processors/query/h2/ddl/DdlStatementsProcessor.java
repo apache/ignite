@@ -596,7 +596,7 @@ public class DdlStatementsProcessor {
                 sqlCode = IgniteQueryErrorCode.UNKNOWN;
         }
 
-        return new IgniteSQLException(e.getMessage(), sqlCode, e);
+        return new IgniteSQLException(e.getMessage(), sqlCode);
     }
 
     /**
