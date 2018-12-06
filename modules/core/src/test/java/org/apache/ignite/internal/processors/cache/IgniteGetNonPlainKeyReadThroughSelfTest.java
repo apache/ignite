@@ -58,15 +58,13 @@ public class IgniteGetNonPlainKeyReadThroughSelfTest extends GridCommonAbstractT
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+        ((TcpDiscoverySpi) cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-        ccfg.setCacheMode(CacheMode.PARTITIONED);
-
-        ccfg.setReadThrough(true);
-
-        ccfg.setCacheStoreFactory(storeFactory);
+        CacheConfiguration ccfg = defaultCacheConfiguration()
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setNearConfiguration(null)
+                .setCacheStoreFactory(storeFactory)
+                .setReadThrough(true);
 
         cfg.setCacheConfiguration(ccfg);
 

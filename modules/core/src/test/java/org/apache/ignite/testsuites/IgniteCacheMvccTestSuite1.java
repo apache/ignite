@@ -36,6 +36,7 @@ import org.apache.ignite.internal.managers.communication.IgniteCommunicationBala
 import org.apache.ignite.internal.managers.communication.IgniteCommunicationSslBalanceTest;
 import org.apache.ignite.internal.managers.communication.IgniteIoTestMessagesTest;
 import org.apache.ignite.internal.managers.communication.IgniteVariousConnectionNumberTest;
+import org.apache.ignite.internal.processors.cache.BinaryMetadataRegistrationInsideEntryProcessorTest;
 import org.apache.ignite.internal.processors.cache.CacheAffinityCallSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheDeferredDeleteQueueTest;
 import org.apache.ignite.internal.processors.cache.CacheDeferredDeleteSanitySelfTest;
@@ -99,6 +100,7 @@ import org.apache.ignite.internal.processors.cache.context.IgniteCacheReplicated
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheSharedExecutionContextTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicNearUpdateTopologyChangeTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesTcpClientDiscoveryAbstractTest;
+import org.apache.ignite.internal.processors.cache.distributed.GridCacheEntrySetIterationPreloadingSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheAtomicMessageRecovery10ConnectionsTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheAtomicMessageRecoveryPairedConnectionsTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheAtomicMessageRecoveryTest;
@@ -141,6 +143,8 @@ public class IgniteCacheMvccTestSuite1 extends TestSuite {
         ignoredTests.add(GridCacheStopSelfTest.class);
         ignoredTests.add(GridCacheBinariesNearPartitionedByteArrayValuesSelfTest.class);
         ignoredTests.add(GridCacheBinariesPartitionedOnlyByteArrayValuesSelfTest.class);
+        ignoredTests.add(GridCacheEntrySetIterationPreloadingSelfTest.class);
+        ignoredTests.add(BinaryMetadataRegistrationInsideEntryProcessorTest.class);
 
         // Atomic caches.
         ignoredTests.add(IgniteCacheEntryListenerAtomicTest.class);
