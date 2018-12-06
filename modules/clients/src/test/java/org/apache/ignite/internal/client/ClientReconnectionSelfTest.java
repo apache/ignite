@@ -93,7 +93,7 @@ public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
     public void testNoFailedReconnection() throws Exception {
         for (int i = 0; i < ClientTestRestServer.SERVERS_CNT; i++)
             runServer(i, false);
-        
+
         try (GridClient client = client()) { // Here client opens initial connection and fetches topology.
             // Only first server in list should be contacted.
             assertEquals(1, srvs[0].getConnectCount());
@@ -193,7 +193,7 @@ public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
     @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-590", forceFailure = true)
     public void testIdleConnection() throws Exception {
         int srvsCnt = 4; // TODO: IGNITE-590 it may be wrong value. Need to investigate after IGNITE-590 will be fixed.
-
+        
         for (int i = 0; i < srvsCnt; i++)
             runServer(i, false);
 
