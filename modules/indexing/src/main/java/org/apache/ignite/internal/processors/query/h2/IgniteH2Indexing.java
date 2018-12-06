@@ -389,70 +389,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void dynamicIndexCreate(final String schemaName, final String tblName,
-        final QueryIndexDescriptorImpl idxDesc, boolean ifNotExists, SchemaIndexCacheVisitor cacheVisitor)
-        throws IgniteCheckedException {
-        // Locate table.
-        H2Schema schema = schemaMgr.schema(schemaName);
-
-        H2TableDescriptor desc = (schema != null ? schema.tableByName(tblName) : null);
-
-        if (desc == null)
-            throw new IgniteCheckedException("Table not found in internal H2 database [schemaName=" + schemaName +
-                ", tblName=" + tblName + ']');
-
-        GridH2Table h2Tbl = desc.table();
-
-        // Create index.
-        final GridH2IndexBase h2Idx = desc.createUserIndex(idxDesc);
-
-        h2Tbl.proposeUserIndex(h2Idx);
-
-        try {
-            // Populate index with existing cache data.
-            final GridH2RowDescriptor rowDesc = h2Tbl.rowDescriptor();
-
-            cacheVisitor.visit(new IndexBuildClosure(rowDesc, h2Idx));
-
-            // At this point index is in consistent state, promote it through H2 SQL statement, so that cached
-            // prepared statements are re-built.
-            String sql = H2Utils.indexCreateSql(desc.fullTableName(), h2Idx, ifNotExists);
-
-            connMgr.executeStatement(schemaName, sql);
-        }
-        catch (Exception e) {
-            // Rollback and re-throw.
-            h2Tbl.rollbackUserIndex(h2Idx.getName());
-
-            throw e;
-        }
+    @Override public void dynamicIndexCreate(String schemaName, String tblName, QueryIndexDescriptorImpl idxDesc,
+        boolean ifNotExists, SchemaIndexCacheVisitor cacheVisitor) throws IgniteCheckedException {
+        schemaMgr.createIndex(schemaName, tblName, idxDesc, ifNotExists, cacheVisitor);
     }
 
     /** {@inheritDoc} */
-    @Override public void dynamicIndexDrop(final String schemaName, String idxName, boolean ifExists)
+    @Override public void dynamicIndexDrop(String schemaName, String idxName, boolean ifExists)
         throws IgniteCheckedException{
-        String sql = H2Utils.indexDropSql(schemaName, idxName, ifExists);
-
-        connMgr.executeStatement(schemaName, sql);
+        schemaMgr.dropIndex(schemaName, idxName, ifExists);
     }
 
     /** {@inheritDoc} */
     @Override public void dynamicAddColumn(String schemaName, String tblName, List<QueryField> cols,
         boolean ifTblExists, boolean ifColNotExists) throws IgniteCheckedException {
-        // Locate table.
-        H2Schema schema = schemaMgr.schema(schemaName);
-
-        H2TableDescriptor desc = (schema != null ? schema.tableByName(tblName) : null);
-
-        if (desc == null) {
-            if (!ifTblExists)
-                throw new IgniteCheckedException("Table not found in internal H2 database [schemaName=" + schemaName +
-                    ", tblName=" + tblName + ']');
-            else
-                return;
-        }
-
-        desc.table().addColumns(cols, ifColNotExists);
+        schemaMgr.addColumn(schemaName, tblName, cols, ifTblExists, ifColNotExists);
 
         clearCachedQueries();
     }
@@ -460,20 +411,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void dynamicDropColumn(String schemaName, String tblName, List<String> cols, boolean ifTblExists,
         boolean ifColExists) throws IgniteCheckedException {
-        // Locate table.
-        H2Schema schema = schemaMgr.schema(schemaName);
-
-        H2TableDescriptor desc = (schema != null ? schema.tableByName(tblName) : null);
-
-        if (desc == null) {
-            if (!ifTblExists)
-                throw new IgniteCheckedException("Table not found in internal H2 database [schemaName=" + schemaName +
-                    ",tblName=" + tblName + ']');
-            else
-                return;
-        }
-
-        desc.table().dropColumns(cols, ifColExists);
+        schemaMgr.dropColumn(schemaName, tblName, cols, ifTblExists, ifColExists);
 
         clearCachedQueries();
     }
@@ -867,7 +805,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Prepared statement with set parameters.
      * @throws IgniteCheckedException If failed.
      */
-    // TODO: Move to ConnectionManager
     private PreparedStatement preparedStatementWithParams(Connection conn, String sql, Collection<Object> params,
         boolean useStmtCache) throws IgniteCheckedException {
         final PreparedStatement stmt;
@@ -2082,7 +2019,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param sqlQry Query.
      * @return H2 prepared statement.
      */
-    // TODO: Remove!
     private PreparedStatement prepareStatementAndCaches(Connection c, String sqlQry) {
         try {
             return connMgr.prepareStatement(c, sqlQry);

@@ -24,6 +24,8 @@ import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryField;
+import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
@@ -37,6 +39,7 @@ import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCach
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeAttributes;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeMetrics;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodes;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.index.Index;
@@ -50,6 +53,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -422,36 +426,9 @@ public class SchemaManager {
         GridH2Table h2Tbl = H2TableEngine.createTable(conn, sql, rowDesc, rowFactory, tbl);
 
         for (GridH2IndexBase usrIdx : tbl.createUserIndexes())
-            addInitialUserIndex(schemaName, tbl, usrIdx);
+            createInitialUserIndex(schemaName, tbl, usrIdx);
 
         return h2Tbl;
-    }
-
-    /**
-     * Add initial user index.
-     *
-     * @param schemaName Schema name.
-     * @param desc Table descriptor.
-     * @param h2Idx User index.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void addInitialUserIndex(String schemaName, H2TableDescriptor desc, GridH2IndexBase h2Idx)
-        throws IgniteCheckedException {
-        GridH2Table h2Tbl = desc.table();
-
-        h2Tbl.proposeUserIndex(h2Idx);
-
-        try {
-            String sql = H2Utils.indexCreateSql(desc.fullTableName(), h2Idx, false);
-
-            connMgr.executeStatement(schemaName, sql);
-        }
-        catch (Exception e) {
-            // Rollback and re-throw.
-            h2Tbl.rollbackUserIndex(h2Idx.getName());
-
-            throw e;
-        }
     }
 
     /**
@@ -500,5 +477,151 @@ public class SchemaManager {
 
         if (log.isDebugEnabled())
             log.debug("Dropped H2 schema for index database: " + schema);
+    }
+
+    /**
+     * Add initial user index.
+     *
+     * @param schemaName Schema name.
+     * @param desc Table descriptor.
+     * @param h2Idx User index.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void createInitialUserIndex(String schemaName, H2TableDescriptor desc, GridH2IndexBase h2Idx)
+        throws IgniteCheckedException {
+        GridH2Table h2Tbl = desc.table();
+
+        h2Tbl.proposeUserIndex(h2Idx);
+
+        try {
+            String sql = H2Utils.indexCreateSql(desc.fullTableName(), h2Idx, false);
+
+            connMgr.executeStatement(schemaName, sql);
+        }
+        catch (Exception e) {
+            // Rollback and re-throw.
+            h2Tbl.rollbackUserIndex(h2Idx.getName());
+
+            throw e;
+        }
+    }
+
+    /**
+     * Create index.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param idxDesc Index descriptor.
+     * @param ifNotExists If-not-exists.
+     * @param cacheVisitor Cache visitor.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void createIndex(String schemaName, String tblName, QueryIndexDescriptorImpl idxDesc, boolean ifNotExists,
+        SchemaIndexCacheVisitor cacheVisitor) throws IgniteCheckedException {
+        // Locate table.
+        H2Schema schema = schema(schemaName);
+
+        H2TableDescriptor desc = (schema != null ? schema.tableByName(tblName) : null);
+
+        if (desc == null)
+            throw new IgniteCheckedException("Table not found in internal H2 database [schemaName=" + schemaName +
+                ", tblName=" + tblName + ']');
+
+        GridH2Table h2Tbl = desc.table();
+
+        // Create index.
+        final GridH2IndexBase h2Idx = desc.createUserIndex(idxDesc);
+
+        h2Tbl.proposeUserIndex(h2Idx);
+
+        try {
+            // Populate index with existing cache data.
+            final GridH2RowDescriptor rowDesc = h2Tbl.rowDescriptor();
+
+            cacheVisitor.visit(new IndexBuildClosure(rowDesc, h2Idx));
+
+            // At this point index is in consistent state, promote it through H2 SQL statement, so that cached
+            // prepared statements are re-built.
+            String sql = H2Utils.indexCreateSql(desc.fullTableName(), h2Idx, ifNotExists);
+
+            connMgr.executeStatement(schemaName, sql);
+        }
+        catch (Exception e) {
+            // Rollback and re-throw.
+            h2Tbl.rollbackUserIndex(h2Idx.getName());
+
+            throw e;
+        }
+    }
+
+    /**
+     * Drop index.
+     *
+     * @param schemaName Schema name.
+     * @param idxName Index name.
+     * @param ifExists If exists.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void dropIndex(final String schemaName, String idxName, boolean ifExists)
+        throws IgniteCheckedException{
+        String sql = H2Utils.indexDropSql(schemaName, idxName, ifExists);
+
+        connMgr.executeStatement(schemaName, sql);
+    }
+
+    /**
+     * Add column.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param cols Columns.
+     * @param ifTblExists If table exists.
+     * @param ifColNotExists If column not exists.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void addColumn(String schemaName, String tblName, List<QueryField> cols,
+        boolean ifTblExists, boolean ifColNotExists) throws IgniteCheckedException {
+        // Locate table.
+        H2Schema schema = schema(schemaName);
+
+        H2TableDescriptor desc = (schema != null ? schema.tableByName(tblName) : null);
+
+        if (desc == null) {
+            if (!ifTblExists)
+                throw new IgniteCheckedException("Table not found in internal H2 database [schemaName=" + schemaName +
+                    ", tblName=" + tblName + ']');
+            else
+                return;
+        }
+
+        desc.table().addColumns(cols, ifColNotExists);
+    }
+
+    /**
+     * Drop column.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param cols Columns.
+     * @param ifTblExists If table exists.
+     * @param ifColExists If column exists.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void dropColumn(String schemaName, String tblName, List<String> cols, boolean ifTblExists,
+        boolean ifColExists) throws IgniteCheckedException {
+        // Locate table.
+        H2Schema schema = schema(schemaName);
+
+        H2TableDescriptor desc = (schema != null ? schema.tableByName(tblName) : null);
+
+        if (desc == null) {
+            if (!ifTblExists)
+                throw new IgniteCheckedException("Table not found in internal H2 database [schemaName=" + schemaName +
+                    ",tblName=" + tblName + ']');
+            else
+                return;
+        }
+
+        desc.table().dropColumns(cols, ifColExists);
     }
 }
