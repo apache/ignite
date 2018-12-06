@@ -331,7 +331,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                             freeList.insertDataRow(row);
 
-                            link = row.link();
+                            io.setGapsLink(partMetaPageAddr, (link = row.link()));
 
                             changed = true;
                         }

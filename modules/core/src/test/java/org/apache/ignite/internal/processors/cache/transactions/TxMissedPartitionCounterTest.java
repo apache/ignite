@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.persistence.ByteArrayDataRow;
@@ -88,7 +89,7 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
         cfg.setClientMode(client);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration().
-            setWalSegmentSize(12 * MB).setWalMode(LOG_ONLY).setPageSize(1024).setCheckpointFrequency(10000000000L).
+            setWalSegmentSize(8 * MB).setWalMode(LOG_ONLY).setPageSize(1024).setCheckpointFrequency(10000000000L).
             setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true).
                 setInitialSize(100 * MB).setMaxSize(100 * MB)));
 
@@ -450,13 +451,23 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 //        }
 //    }
 
+    /**
+     * Test scenario:
+     *
+     * 1. Start 2 tx on client
+     * 2. Force reorder on primary:  4 5 6 | cp | 1 2 3
+     * 3. Stop primary without forcing cp.
+     * 4. Make sure counters are applied correctly on recovery.
+     *
+     * @throws Exception
+     */
     public void testBasicCounterAssignmentOnPrimary() throws Exception {
         try {
-            backups = 0;
+            Ignite crd = startGridsMultiThreaded(1);
 
-            Ignite crd = startGridsMultiThreaded(2);
+            int partId = 0;
 
-            List<Integer> keys = partitionKeys(crd.cache(DEFAULT_CACHE_NAME), 0, 10);
+            List<Integer> keys = partitionKeys(crd.cache(DEFAULT_CACHE_NAME), partId, 10);
 
             IgniteEx client = startGrid("client");
 
@@ -469,7 +480,11 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
                 tx.commit();
             }
 
-            printPartitionState(DEFAULT_CACHE_NAME, 0);
+            @Nullable GridDhtLocalPartition locPart = internalCache(0).context().topology().localPartition(partId);
+
+            PartitionUpdateCounter cntr = locPart.dataStore().partUpdateCounter();
+
+            System.out.println();
 
             try(Transaction tx = client.transactions().txStart()) {
                 for (Integer key : keys.subList(7, 10))
@@ -478,7 +493,9 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
                 tx.commit();
             }
 
-            printPartitionState(DEFAULT_CACHE_NAME, 0);
+            PartitionUpdateCounter cntr2 = locPart.dataStore().partUpdateCounter();
+
+            System.out.println();
 
 //            prim.close();
 //
@@ -690,64 +707,50 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
             grid.context().cache().context().database().checkpointReadLock();
 
             try {
-                Random r = new Random();
-                byte[] buf0 = new byte[5555];
-                r.nextBytes(buf0);
-
-                // insert
-                ByteArrayDataRow row = new ByteArrayDataRow(cctx.cacheObjectContext(), part.id(), 0, buf0);
-                list.insertDataRow(row);
-
-                assertTrue(Arrays.equals(buf0, getData(part.group(), row.link(), part.id())));
-
-                long link0 = row.link();
-
-//                // update in-place
-//                byte[] buf1 = new byte[555];
-//                r.nextBytes(buf1);
+//                Random r = new Random();
+//                byte[] buf0 = new byte[5555];
+//                r.nextBytes(buf0);
 //
-//                row = new ByteArrayDataRow(part.id(), 0, buf1);
-//                list.updateDataRow(link0, row);
+//                // insert
+//                ByteArrayDataRow row = new ByteArrayDataRow(cctx.cacheObjectContext(), part.id(), 0, buf0);
+//                list.insertDataRow(row);
 //
-//                assertTrue(Arrays.equals(buf1, getData(part.group(), link0, part.id())));
+//                assertTrue(Arrays.equals(buf0, getData(part.group(), row.link(), part.id())));
+//
+//                long link0 = row.link();
+//
+//                // remove
+//                list.removeDataRowByLink(link0);
+//
+//                // update and shrink
+//                byte[] buf2 = new byte[5555];
+//                r.nextBytes(buf2);
+//
+//                row = new ByteArrayDataRow(cctx.cacheObjectContext(), part.id(), 0, buf2);
+//                list.insertDataRow(row);
+//
+//                assertTrue(Arrays.equals(buf2, getData(part.group(), row.link(), part.id())));
 
-                // remove
-                list.removeDataRowByLink(link0);
+                PartitionUpdateCounter pc = new PartitionUpdateCounter(log);
 
-                // update and shrink
-                byte[] buf2 = new byte[5555];
-                r.nextBytes(buf2);
+                pc.reserve(2);
+                pc.reserve(6);
+                pc.reserve(3);
+                pc.reserve(1);
 
-                row = new ByteArrayDataRow(cctx.cacheObjectContext(), part.id(), 0, buf2);
-                list.insertDataRow(row);
+                byte[] rawData = pc.getBytes();
 
-                assertTrue(Arrays.equals(buf2, getData(part.group(), row.link(), part.id())));
+                ByteArrayDataRow row0 = new ByteArrayDataRow(cctx.cacheObjectContext(), part.id(), 0, rawData);
 
-                System.out.println();
+                list.insertDataRow(row0);
 
-                //assertTrue(Arrays.equals(buf1, getData(part.group(), row.link(), part.id())));
+                System.out.println(row0.link());
 
-//                PartitionUpdateCounter pc = new PartitionUpdateCounter(log);
-//
-//                pc.reserve(2);
-//                pc.reserve(6);
-//                pc.reserve(3);
-//                pc.reserve(1);
-//
-//                byte[] rawData = pc.getBytes();
-//
-//                ByteArrayDataRow row0 = new ByteArrayDataRow(part.id(), 0, rawData);
-//
-//                list.insertDataRow(row0);
-//
-//                System.out.println(row0.link());
-//
-//                PartitionUpdateCounter pc2 = new PartitionUpdateCounter(log);
-//                pc2.init(0, getData(part.group(), row0.link(), part.id()));
-//
-//                assertEquals(pc.get(), pc2.get());
-//
-//                assertEquals(pc.holes(), pc2.holes());
+                PartitionUpdateCounter pc2 = new PartitionUpdateCounter(log);
+                pc2.init(0, getData(part.group(), row0.link(), part.id()));
+
+                assertEquals(pc.get(), pc2.get());
+                assertEquals(pc.holes(), pc2.holes());
             }
             finally {
                 grid.context().cache().context().database().checkpointReadUnlock();

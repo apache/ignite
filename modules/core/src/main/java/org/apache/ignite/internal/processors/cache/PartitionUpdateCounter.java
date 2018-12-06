@@ -226,12 +226,14 @@ public class PartitionUpdateCounter {
     public synchronized long reserve(long delta) {
         long start;
 
+        long cntr = this.cntr.get();
+
         if (queue.isEmpty())
-            offer(new Item((start = 0), delta));
+            offer(new Item((start = cntr), delta));
         else {
             Item last = queue.last();
 
-            offer(new Item((start = last.start + last.delta), delta));
+            offer(new Item((start = cntr + last.start + last.delta), delta));
         }
 
         return start;
