@@ -212,9 +212,6 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
 
         Collection<Object> addrSnds = GridTestUtils.getFieldValue(spi0.getIpFinder(), "addrSnds");
 
-        if (client)
-            assertTrue(F.isEmpty(addrSnds)); // Check client does not send its address.
-        else
-            assertFalse(F.isEmpty(addrSnds));
+        assertEquals(client, F.isEmpty(addrSnds));
     }
 }
