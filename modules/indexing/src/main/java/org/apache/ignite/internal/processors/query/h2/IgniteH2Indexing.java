@@ -409,7 +409,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         try {
             String sql = H2Utils.indexCreateSql(desc.fullTableName(), h2Idx, false);
 
-            executeSql(schemaName, sql);
+            connMgr.executeStatement(schemaName, sql);
         }
         catch (Exception e) {
             // Rollback and re-throw.
@@ -449,7 +449,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             // prepared statements are re-built.
             String sql = H2Utils.indexCreateSql(desc.fullTableName(), h2Idx, ifNotExists);
 
-            executeSql(schemaName, sql);
+            connMgr.executeStatement(schemaName, sql);
         }
         catch (Exception e) {
             // Rollback and re-throw.
@@ -464,7 +464,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         throws IgniteCheckedException{
         String sql = H2Utils.indexDropSql(schemaName, idxName, ifExists);
 
-        executeSql(schemaName, sql);
+        connMgr.executeStatement(schemaName, sql);
     }
 
     /** {@inheritDoc} */
@@ -507,26 +507,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         desc.table().dropColumns(cols, ifColExists);
 
         clearCachedQueries();
-    }
-
-    /**
-     * Execute DDL command.
-     *
-     * @param schemaName Schema name.
-     * @param sql SQL.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void executeSql(String schemaName, String sql) throws IgniteCheckedException {
-        try {
-            Connection conn = connMgr.connectionForThread(schemaName);
-
-            try (PreparedStatement stmt = connMgr.prepareStatementNoCache(conn, sql)) {
-                stmt.execute();
-            }
-        }
-        catch (Exception e) {
-            throw new IgniteCheckedException("Failed to execute SQL statement on internal H2 database: " + sql, e);
-        }
     }
 
     /**
