@@ -19,6 +19,7 @@ package org.apache.ignite.internal.commandline.cache;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.commandline.OutputFormat;
+import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
 import org.jetbrains.annotations.Nullable;
 
@@ -70,6 +71,23 @@ public class CacheArguments {
 
     /** Full config flag. */
     private boolean fullConfig;
+
+    /** Cache filter. */
+    private CacheFilterEnum cacheFilterEnum = CacheFilterEnum.ALL;
+
+    /**
+     * @return Gets filter of caches, which will by checked.
+     */
+    public CacheFilterEnum getCacheFilterEnum() {
+        return cacheFilterEnum;
+    }
+
+    /**
+     * @param cacheFilterEnum Cache filter.
+     */
+    public void setCacheFilterEnum(CacheFilterEnum cacheFilterEnum) {
+        this.cacheFilterEnum = cacheFilterEnum;
+    }
 
     /**
      * @return Full config flag.
