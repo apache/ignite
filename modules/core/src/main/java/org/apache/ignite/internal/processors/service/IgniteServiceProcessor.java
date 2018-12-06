@@ -49,8 +49,8 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.SkipDaemon;
+import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
@@ -131,7 +131,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      */
     public IgniteServiceProcessor(GridKernalContext ctx) {
         super(ctx);
-
     }
 
     /** {@inheritDoc} */
@@ -143,6 +142,38 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         if (cfg.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED) &&
             !F.isEmpty(cfg.getServiceConfiguration()))
             throw new IgniteCheckedException("Cannot deploy services in PRIVATE or ISOLATED deployment mode: " + depMode);
+
+        ctx.discovery().setCustomEventListener(DynamicServicesChangeRequestBatchMessage.class,
+            new CustomEventListener<DynamicServicesChangeRequestBatchMessage>() {
+                @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
+                    DynamicServicesChangeRequestBatchMessage msg) {
+                    processServicesChangeRequest(snd, msg);
+                }
+            });
+
+        ctx.discovery().setCustomEventListener(ChangeGlobalStateMessage.class,
+            new CustomEventListener<ChangeGlobalStateMessage>() {
+                @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
+                    ChangeGlobalStateMessage msg) {
+                    processChangeGlobalStateRequest(msg);
+                }
+            });
+
+        ctx.discovery().setCustomEventListener(DynamicCacheChangeBatch.class,
+            new CustomEventListener<DynamicCacheChangeBatch>() {
+                @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
+                    DynamicCacheChangeBatch msg) {
+                    processDynamicCacheChangeRequest(msg);
+                }
+            });
+
+        ctx.discovery().setCustomEventListener(ServicesFullDeploymentsMessage.class,
+            new CustomEventListener<ServicesFullDeploymentsMessage>() {
+                @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
+                    ServicesFullDeploymentsMessage msg) {
+                    processServicesFullDeployments(msg);
+                }
+            });
     }
 
     /** {@inheritDoc} */
@@ -1391,7 +1422,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         assert evt.type() == EVT_NODE_JOINED;
 
         if (isLocalNodeCoordinator()) {
-            // First node start, {@link #onGridDataReceived(DiscoveryDataBag.GridDiscoveryData)} has not been called
+            // First node start, method onGridDataReceived(DiscoveryDataBag.GridDiscoveryData) has not been called.
             ArrayList<ServiceInfo> staticServicesInfo = staticallyConfiguredServices(false);
 
             staticServicesInfo.forEach(desc -> registeredServices.put(desc.serviceId(), desc));
@@ -1406,6 +1437,13 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         }
 
         depMgr.onLocalJoin(evt, discoCache, depActions);
+    }
+
+    /**
+     * @return Services deployment manager.
+     */
+    public ServicesDeploymentManager deployment() {
+        return depMgr;
     }
 
     /**
@@ -1438,206 +1476,198 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     }
 
     /**
-     * @return Services deployment manager.
+     * @param snd Sender.
+     * @param msg Message.
      */
-    public ServicesDeploymentManager deployment() {
-        return depMgr;
-    }
+    private void processServicesChangeRequest(ClusterNode snd, DynamicServicesChangeRequestBatchMessage msg) {
+        DiscoveryDataClusterState state = ctx.state().clusterState();
 
-    /**
-     * Callback invoked from discovery thread when discovery custom message is received, before discovery listeners
-     * notification.
-     *
-     * @param msg Discovery custom message.
-     * @param node Event node.
-     * @param state Current cluster state.
-     */
-    public void onCustomEvent(DiscoveryCustomMessage msg, ClusterNode node, DiscoveryDataClusterState state) {
-        assert msg != null;
+        if (!state.active() || state.transition()) {
+            for (DynamicServiceChangeRequest req : msg.requests()) {
+                GridFutureAdapter<?> fut = req.deploy() ?
+                    depFuts.remove(req.serviceId()) :
+                    undepFuts.remove(req.serviceId());
 
-        if (msg instanceof DynamicServicesChangeRequestBatchMessage) {
-            DynamicServicesChangeRequestBatchMessage msg0 = ((DynamicServicesChangeRequestBatchMessage)msg);
-
-            if (!state.active() || state.transition()) {
-                for (DynamicServiceChangeRequest req : msg0.requests()) {
-                    GridFutureAdapter<?> fut = req.deploy() ?
-                        depFuts.remove(req.serviceId()) :
-                        undepFuts.remove(req.serviceId());
-
-                    if (fut != null) {
-                        fut.onDone(new IgniteCheckedException("Operation has been cancelled " +
-                            "cluster state change is in progress."));
-                    }
+                if (fut != null) {
+                    fut.onDone(new IgniteCheckedException("Operation has been canceled, cluster state " +
+                        "change is in progress."));
                 }
-
-                return;
             }
 
-            Map<IgniteUuid, ServiceInfo> toDeploy = new HashMap<>();
-            Map<IgniteUuid, ServiceInfo> toUndeploy = new HashMap<>();
+            return;
+        }
 
-            for (DynamicServiceChangeRequest req : msg0.requests()) {
-                IgniteUuid reqSrvcId = req.serviceId();
-                ServiceInfo oldDesc = registeredServices.get(reqSrvcId);
+        Map<IgniteUuid, ServiceInfo> toDeploy = new HashMap<>();
+        Map<IgniteUuid, ServiceInfo> toUndeploy = new HashMap<>();
 
-                if (req.deploy()) {
-                    IgniteCheckedException err = null;
+        for (DynamicServiceChangeRequest req : msg.requests()) {
+            IgniteUuid reqSrvcId = req.serviceId();
+            ServiceInfo oldDesc = registeredServices.get(reqSrvcId);
 
-                    if (oldDesc != null) { // In case of a collision of IgniteUuid.randomUuid() (almost impossible case)
-                        err = new IgniteCheckedException("Failed to deploy service. Service with generated id already" +
-                            "exists : [" + "srvcId" + reqSrvcId + ", srvcTop=" + oldDesc.topologySnapshot() + ']');
-                    }
-                    else {
-                        ServiceConfiguration cfg = req.configuration();
+            if (req.deploy()) {
+                IgniteCheckedException err = null;
 
-                        oldDesc = lookupInRegisteredServices(cfg.getName());
+                if (oldDesc != null) { // In case of a collision of IgniteUuid.randomUuid() (almost impossible case)
+                    err = new IgniteCheckedException("Failed to deploy service. Service with generated id already" +
+                        "exists : [" + "srvcId" + reqSrvcId + ", srvcTop=" + oldDesc.topologySnapshot() + ']');
+                }
+                else {
+                    ServiceConfiguration cfg = req.configuration();
 
-                        if (oldDesc == null) {
-                            if (cfg.getCacheName() != null && ctx.cache().cacheDescriptor(cfg.getCacheName()) == null) {
-                                err = new IgniteCheckedException("Failed to deploy service, " +
-                                    "affinity cache is not found, cfg=" + cfg);
-                            }
-                            else {
-                                ServiceInfo desc = new ServiceInfo(node.id(), reqSrvcId, cfg);
+                    oldDesc = lookupInRegisteredServices(cfg.getName());
 
-                                registeredServices.put(reqSrvcId, desc);
-
-                                toDeploy.put(reqSrvcId, desc);
-                            }
+                    if (oldDesc == null) {
+                        if (cfg.getCacheName() != null && ctx.cache().cacheDescriptor(cfg.getCacheName()) == null) {
+                            err = new IgniteCheckedException("Failed to deploy service, " +
+                                "affinity cache is not found, cfg=" + cfg);
                         }
                         else {
-                            if (!oldDesc.configuration().equalsIgnoreNodeFilter(cfg)) {
-                                err = new IgniteCheckedException("Failed to deploy service " +
-                                    "(service already exists with different configuration) : " +
-                                    "[deployed=" + oldDesc.configuration() + ", new=" + cfg + ']');
-                            }
-                            else {
-                                GridServiceDeploymentFuture<IgniteUuid> fut = depFuts.remove(reqSrvcId);
+                            ServiceInfo desc = new ServiceInfo(snd.id(), reqSrvcId, cfg);
 
-                                if (fut != null) {
-                                    fut.onDone();
+                            registeredServices.put(reqSrvcId, desc);
 
-                                    if (log.isDebugEnabled()) {
-                                        log.debug("Service sent to deploy is already deployed : " +
-                                            "[srvcId=" + oldDesc.serviceId() + ", cfg=" + oldDesc.configuration());
-                                    }
+                            toDeploy.put(reqSrvcId, desc);
+                        }
+                    }
+                    else {
+                        if (!oldDesc.configuration().equalsIgnoreNodeFilter(cfg)) {
+                            err = new IgniteCheckedException("Failed to deploy service " +
+                                "(service already exists with different configuration) : " +
+                                "[deployed=" + oldDesc.configuration() + ", new=" + cfg + ']');
+                        }
+                        else {
+                            GridServiceDeploymentFuture<IgniteUuid> fut = depFuts.remove(reqSrvcId);
+
+                            if (fut != null) {
+                                fut.onDone();
+
+                                if (log.isDebugEnabled()) {
+                                    log.debug("Service sent to deploy is already deployed : " +
+                                        "[srvcId=" + oldDesc.serviceId() + ", cfg=" + oldDesc.configuration());
                                 }
                             }
                         }
                     }
-
-                    if (err != null) {
-                        completeInitiatingFuture(true, reqSrvcId, err);
-
-                        U.warn(log, err.getMessage(), err);
-                    }
                 }
-                else if (req.undeploy()) {
-                    ServiceInfo rmv = registeredServices.remove(reqSrvcId);
 
-                    assert oldDesc == rmv : "Concurrent map modification.";
+                if (err != null) {
+                    completeInitiatingFuture(true, reqSrvcId, err);
 
-                    toUndeploy.put(reqSrvcId, rmv);
+                    U.warn(log, err.getMessage(), err);
                 }
             }
+            else if (req.undeploy()) {
+                ServiceInfo rmv = registeredServices.remove(reqSrvcId);
 
-            if (!toDeploy.isEmpty() || !toUndeploy.isEmpty()) {
-                ServicesDeploymentActions depActions = new ServicesDeploymentActions();
+                assert oldDesc == rmv : "Concurrent map modification.";
 
-                if (!toDeploy.isEmpty())
-                    depActions.servicesToDeploy(toDeploy);
-
-                if (!toUndeploy.isEmpty())
-                    depActions.servicesToUndeploy(toUndeploy);
-
-                msg0.servicesDeploymentActions(depActions);
+                toUndeploy.put(reqSrvcId, rmv);
             }
         }
-        else if (msg instanceof ChangeGlobalStateMessage) {
-            ChangeGlobalStateMessage msg0 = (ChangeGlobalStateMessage)msg;
 
-            if (msg0.activate() && registeredServices.isEmpty())
-                return;
-
+        if (!toDeploy.isEmpty() || !toUndeploy.isEmpty()) {
             ServicesDeploymentActions depActions = new ServicesDeploymentActions();
 
-            if (msg0.activate())
-                depActions.servicesToDeploy(new HashMap<>(registeredServices));
-            else
-                depActions.deactivate(true);
+            if (!toDeploy.isEmpty())
+                depActions.servicesToDeploy(toDeploy);
 
-            msg0.servicesDeploymentActions(depActions);
-        }
-        else if (msg instanceof DynamicCacheChangeBatch) {
-            DynamicCacheChangeBatch msg0 = (DynamicCacheChangeBatch)msg;
-            Map<IgniteUuid, ServiceInfo> toUndeploy = new HashMap<>();
-
-            for (DynamicCacheChangeRequest chReq : msg0.requests()) {
-                if (chReq.stop()) {
-                    registeredServices.entrySet().removeIf(e -> {
-                        ServiceInfo desc = e.getValue();
-
-                        if (desc.cacheName().equals(chReq.cacheName())) {
-                            toUndeploy.put(desc.serviceId(), desc);
-
-                            return true;
-                        }
-
-                        return false;
-                    });
-                }
-            }
-
-            if (!toUndeploy.isEmpty()) {
-                ServicesDeploymentActions depActions = new ServicesDeploymentActions();
-
+            if (!toUndeploy.isEmpty())
                 depActions.servicesToUndeploy(toUndeploy);
 
-                msg0.servicesDeploymentActions(depActions);
+            msg.servicesDeploymentActions(depActions);
+        }
+    }
+
+    /**
+     * @param msg Message.
+     */
+    private void processChangeGlobalStateRequest(ChangeGlobalStateMessage msg) {
+        if (msg.activate() && registeredServices.isEmpty())
+            return;
+
+        ServicesDeploymentActions depActions = new ServicesDeploymentActions();
+
+        if (msg.activate())
+            depActions.servicesToDeploy(new HashMap<>(registeredServices));
+        else
+            depActions.deactivate(true);
+
+        msg.servicesDeploymentActions(depActions);
+    }
+
+    /**
+     * @param msg Message.
+     */
+    private void processDynamicCacheChangeRequest(DynamicCacheChangeBatch msg) {
+        Map<IgniteUuid, ServiceInfo> toUndeploy = new HashMap<>();
+
+        for (DynamicCacheChangeRequest chReq : msg.requests()) {
+            if (chReq.stop()) {
+                registeredServices.entrySet().removeIf(e -> {
+                    ServiceInfo desc = e.getValue();
+
+                    if (desc.cacheName().equals(chReq.cacheName())) {
+                        toUndeploy.put(desc.serviceId(), desc);
+
+                        return true;
+                    }
+
+                    return false;
+                });
             }
         }
-        else if (msg instanceof ServicesFullDeploymentsMessage) {
-            ServicesFullDeploymentsMessage msg0 = (ServicesFullDeploymentsMessage)msg;
 
-            final Map<IgniteUuid, Map<UUID, Integer>> fullTops = new HashMap<>();
-            final Map<IgniteUuid, Collection<byte[]>> fullErrors = new HashMap<>();
-
-            for (ServiceFullDeploymentsResults depRes : msg0.results()) {
-                final IgniteUuid srvcId = depRes.serviceId();
-                final Map<UUID, ServiceSingleDeploymentsResults> deps = depRes.results();
-
-                final Map<UUID, Integer> top = new HashMap<>();
-                final Collection<byte[]> errors = new ArrayList<>();
-
-                deps.forEach((nodeId, res) -> {
-                    int cnt = res.count();
-
-                    if (cnt > 0)
-                        top.put(nodeId, cnt);
-
-                    if (!res.errors().isEmpty())
-                        errors.addAll(res.errors());
-                });
-
-                if (!errors.isEmpty())
-                    fullErrors.computeIfAbsent(srvcId, e -> new ArrayList<>()).addAll(errors);
-
-                fullTops.put(srvcId, top);
-            }
-
-            synchronized (servicesTopsUpdateMux) {
-                updateServicesMap(registeredServices, fullTops);
-
-                servicesTopsUpdateMux.notifyAll();
-            }
-
+        if (!toUndeploy.isEmpty()) {
             ServicesDeploymentActions depActions = new ServicesDeploymentActions();
 
-            depActions.deploymentTopologies(fullTops);
-            depActions.deploymentErrors(fullErrors);
+            depActions.servicesToUndeploy(toUndeploy);
 
-            msg0.servicesDeploymentActions(depActions);
+            msg.servicesDeploymentActions(depActions);
         }
+    }
+
+    /**
+     * @param msg Message.
+     */
+    private void processServicesFullDeployments(ServicesFullDeploymentsMessage msg) {
+        final Map<IgniteUuid, Map<UUID, Integer>> fullTops = new HashMap<>();
+        final Map<IgniteUuid, Collection<byte[]>> fullErrors = new HashMap<>();
+
+        for (ServiceFullDeploymentsResults depRes : msg.results()) {
+            final IgniteUuid srvcId = depRes.serviceId();
+            final Map<UUID, ServiceSingleDeploymentsResults> deps = depRes.results();
+
+            final Map<UUID, Integer> top = new HashMap<>();
+            final Collection<byte[]> errors = new ArrayList<>();
+
+            deps.forEach((nodeId, res) -> {
+                int cnt = res.count();
+
+                if (cnt > 0)
+                    top.put(nodeId, cnt);
+
+                if (!res.errors().isEmpty())
+                    errors.addAll(res.errors());
+            });
+
+            if (!errors.isEmpty())
+                fullErrors.computeIfAbsent(srvcId, e -> new ArrayList<>()).addAll(errors);
+
+            fullTops.put(srvcId, top);
+        }
+
+        synchronized (servicesTopsUpdateMux) {
+            updateServicesMap(registeredServices, fullTops);
+
+            servicesTopsUpdateMux.notifyAll();
+        }
+
+        ServicesDeploymentActions depActions = new ServicesDeploymentActions();
+
+        depActions.deploymentTopologies(fullTops);
+        depActions.deploymentErrors(fullErrors);
+
+        msg.servicesDeploymentActions(depActions);
     }
 
     /**
