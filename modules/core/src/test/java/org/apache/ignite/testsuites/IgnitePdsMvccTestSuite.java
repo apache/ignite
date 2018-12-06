@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheConfigurationFileConsistencyCheckTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.DefaultPageSizeBackwardsCompatibilityTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCheckpointSimulationWithRealCpDisabledTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsPageReplacementTest;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.IgniteMetaStorageBasicTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreePageMemoryImplTest;
@@ -50,6 +51,9 @@ public class IgnitePdsMvccTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Persistent Store Mvcc Test Suite");
 
         Set<Class> ignoredTests = new HashSet<>();
+
+        // Skip classes that already contains Mvcc tests.
+        ignoredTests.add(IgnitePdsCheckpointSimulationWithRealCpDisabledTest.class);
 
         // Non-relevant tests.
         ignoredTests.add(IgnitePdsCacheConfigurationFileConsistencyCheckTest.class);
