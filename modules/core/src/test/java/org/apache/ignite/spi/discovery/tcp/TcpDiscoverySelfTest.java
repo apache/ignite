@@ -1938,9 +1938,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             coord.events().localListen(evt -> {
                 assertEquals(EVT_NODE_SEGMENTED, evt.type());
 
-                UUID failedId = ((DiscoveryEvent)evt).eventNode().id();
+                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
-                if (coordId.equals(failedId))
+                if (coordId.equals(nodeId))
                     coordSegmented.set(true);
 
                 return true;
@@ -1951,9 +1951,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             ignite1.events().localListen(evt -> {
                 assertEquals(EVT_NODE_FAILED, evt.type());
 
-                UUID failedId = ((DiscoveryEvent)evt).eventNode().id();
+                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
-                if (coordId.equals(failedId))
+                if (coordId.equals(nodeId))
                     failedLatch.countDown();
 
                 return true;
