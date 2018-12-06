@@ -123,8 +123,12 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
     /** */
     private static final int LARGE_ARR_SIZE = 1025;
-    public static final int LARGE_ENTRY_COUNT = 500;
-    public static final int ENTRY_COUNT = 2_000;
+
+    /** */
+    private static final int LARGE_ENTRY_COUNT = 500;
+
+    /** */
+    private static final int ENTRY_COUNT = 2_000;
 
     /** */
     private boolean fork;
