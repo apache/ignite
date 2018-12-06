@@ -42,7 +42,12 @@ export default angular
         })
         .state('password.reset', {
             url: '/reset?{token}',
-            component: 'pagePasswordReset',
+            views: {
+                '@': {
+                    component: 'pagePasswordReset'
+
+                }
+            },
             redirectTo: (trans) => {
                 if (_.isEmpty(trans.params('to').token))
                     return 'signin';

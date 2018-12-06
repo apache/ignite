@@ -19,8 +19,8 @@ export default class {
     static $inject = ['$state', '$timeout'];
 
     constructor($state, $timeout) {
-        $timeout(() => {
-            $state.go('signin');
-        }, 10000);
+        // $timeout(() => {
+        //     $state.go('signin');
+        // }, 10000);
     }
 }

@@ -32,7 +32,11 @@ export default angular
     .config(['$stateProvider', ($stateProvider) => {
         $stateProvider.state('password.send', {
             url: '/changed',
-            component: 'pagePasswordChanged',
+            views: {
+                '@': {
+                    component: 'pagePasswordChanged'
+                }
+            },
             tfMetaTags: {
                 title: 'Password send'
             },

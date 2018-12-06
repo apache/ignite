@@ -14,9 +14,14 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.container.body-container
+web-console-header(hide-menu-button='true')
+    .web-console-header-content__title Management console for Apache Ignite
+
+section
     h2 Ready!
 
     p 
         | Further instructions for password reset have been sent to your e-mail address.#[br]
         | You'll be redirected back automatically in a few seconds. If not, please #[a(ui-sref='signin') click here].
+
+web-console-footer
