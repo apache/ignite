@@ -14,9 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.distributed.dht;
+
+import org.apache.ignite.cache.CacheAtomicityMode;
+
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- * <!-- Package description. -->
- * SVM Multi-class Classification Examples.
+ *
  */
-package org.apache.ignite.examples.ml.svm.multiclass;
+public class IgniteCrossCacheMvccTxSelfTest extends IgniteCrossCacheTxAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override public CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPessimisticRepeatableRead() throws Exception {
+        checkTxsSingleOp(PESSIMISTIC, REPEATABLE_READ);
+    }
+}

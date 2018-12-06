@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.version;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  *
@@ -38,4 +39,12 @@ public class CacheVersionedEntryLocalTransactionalSelfTest extends CacheVersione
     @Override protected CacheAtomicityMode atomicityMode() {
         return CacheAtomicityMode.TRANSACTIONAL;
     }
+
+    /** {@inheritDoc} */
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
+        super.setUp();
+    }
+
 }
