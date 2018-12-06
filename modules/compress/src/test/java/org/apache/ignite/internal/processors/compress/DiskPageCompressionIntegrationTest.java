@@ -48,6 +48,9 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.configuration.DataStorageConfiguration.MAX_PAGE_SIZE;
@@ -64,6 +67,7 @@ import static org.apache.ignite.internal.processors.compress.CompressionProcesso
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class DiskPageCompressionIntegrationTest extends GridCommonAbstractTest {
     /** */
     private DiskPageCompression compression;
@@ -112,6 +116,7 @@ public class DiskPageCompressionIntegrationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPageCompression_Zstd_Max() throws Exception {
         compression = ZSTD;
         compressionLevel = ZSTD_MAX_LEVEL;
@@ -122,6 +127,7 @@ public class DiskPageCompressionIntegrationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPageCompression_Zstd_Default() throws Exception {
         compression = ZSTD;
         compressionLevel = null;
@@ -132,6 +138,7 @@ public class DiskPageCompressionIntegrationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPageCompression_Zstd_Min() throws Exception {
         compression = ZSTD;
         compressionLevel = ZSTD_MIN_LEVEL;
@@ -142,6 +149,7 @@ public class DiskPageCompressionIntegrationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPageCompression_Lz4_Max() throws Exception {
         compression = LZ4;
         compressionLevel = LZ4_MAX_LEVEL;
@@ -152,6 +160,7 @@ public class DiskPageCompressionIntegrationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPageCompression_Lz4_Default() throws Exception {
         compression = LZ4;
         compressionLevel = null;
@@ -162,6 +171,7 @@ public class DiskPageCompressionIntegrationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPageCompression_Lz4_Min() throws Exception {
         assertEquals(LZ4_MIN_LEVEL, LZ4_DEFAULT_LEVEL);
     }
@@ -169,6 +179,7 @@ public class DiskPageCompressionIntegrationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPageCompression_SkipGarbage() throws Exception {
         compression = SKIP_GARBAGE;
 
@@ -178,6 +189,7 @@ public class DiskPageCompressionIntegrationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPageCompression_Snappy() throws Exception {
         compression = SNAPPY;
 

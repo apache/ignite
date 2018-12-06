@@ -26,6 +26,9 @@ import java.nio.file.Paths;
 import junit.framework.TestCase;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
@@ -37,10 +40,12 @@ import static org.apache.ignite.internal.processors.compress.FileSystemUtils.pun
 
 /**
  */
+@RunWith(JUnit4.class)
 public class FileSystemUtilsTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSparseFiles() throws Exception {
         if (!U.isLinux())
             return;
