@@ -256,7 +256,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             freeList.saveMetadata();
 
             long updCntr = store.updateCounter();
-            long size = store.fullSize(); // TODO FIXME size is wrong.
+            long size = store.fullSize(); // TODO FIXME size is wrong (ahead of counter).
             long rmvId = globalRemoveId().get();
 
             byte[] rawGaps = store.partUpdateCounter().getBytes();
