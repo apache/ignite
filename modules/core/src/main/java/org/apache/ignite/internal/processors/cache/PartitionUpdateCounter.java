@@ -168,6 +168,11 @@ public class PartitionUpdateCounter {
      * @param cntr Initial counter.
      */
     public void updateInitial(long cntr) {
+        long cntr0 = get();
+
+        if (cntr < cntr0) // These counter updates was already applied before checkpoint.
+            return;
+
         releaseOne(cntr);
 
         initCntr = get();

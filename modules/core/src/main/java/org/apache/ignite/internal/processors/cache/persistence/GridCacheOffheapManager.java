@@ -203,32 +203,32 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
         }
 
-        if (execSvc == null) {
+        //if (execSvc == null) {
             reuseList.saveMetadata();
 
             for (CacheDataStore store : partDataStores.values())
                 saveStoreMetadata(store, ctx, false, needSnapshot);
-        }
-        else {
-            execSvc.execute(() -> {
-                try {
-                    reuseList.saveMetadata();
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            });
-
-            for (CacheDataStore store : partDataStores.values())
-                execSvc.execute(() -> {
-                    try {
-                        saveStoreMetadata(store, ctx, false, needSnapshot);
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
-                });
-        }
+//        }
+//        else {
+//            execSvc.execute(() -> {
+//                try {
+//                    reuseList.saveMetadata();
+//                }
+//                catch (IgniteCheckedException e) {
+//                    throw new IgniteException(e);
+//                }
+//            });
+//
+//            for (CacheDataStore store : partDataStores.values())
+//                execSvc.execute(() -> {
+//                    try {
+//                        saveStoreMetadata(store, ctx, false, needSnapshot);
+//                    }
+//                    catch (IgniteCheckedException e) {
+//                        throw new IgniteException(e);
+//                    }
+//                });
+//        }
     }
 
     /**
@@ -256,7 +256,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             freeList.saveMetadata();
 
             long updCntr = store.updateCounter();
-            long size = store.fullSize();
+            long size = store.fullSize(); // TODO FIXME size is wrong.
             long rmvId = globalRemoveId().get();
 
             byte[] rawGaps = store.partUpdateCounter().getBytes();
@@ -264,7 +264,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
             IgniteWriteAheadLogManager wal = this.ctx.wal();
 
-            if (size > 0 || updCntr > 0) {
+            if (size > 0 || updCntr > 0 || !store.partUpdateCounter().holes().isEmpty()) {
                 GridDhtPartitionState state = null;
 
                 // localPartition will not acquire writeLock here because create=false.

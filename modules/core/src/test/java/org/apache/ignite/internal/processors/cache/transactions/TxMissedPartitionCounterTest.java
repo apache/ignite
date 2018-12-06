@@ -559,7 +559,7 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
                                 return vers.get("t1").equals(req.version());
                             }
-                        }, false);
+                        });
 
                         doSleep(1000);
 
@@ -631,6 +631,20 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
             PartitionUpdateCounter cntr = locPart.dataStore().partUpdateCounter();
 
             assertTrue(cntr.holes().isEmpty());
+
+            // After all txs are finished counter should be moved forward.
+            assertEquals(10, cntr.get());
+
+            stopGrid(0, false); // Skip checkpoint. TODO add true
+
+            crd = startGrid(0);
+            crd.cluster().active(true);
+
+            locPart = internalCache(0).context().topology().localPartition(partId);
+
+            cntr = locPart.dataStore().partUpdateCounter();
+
+            System.out.println();
         }
         finally {
             stopAllGrids();

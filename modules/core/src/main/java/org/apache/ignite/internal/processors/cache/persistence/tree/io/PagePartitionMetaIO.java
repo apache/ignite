@@ -208,7 +208,7 @@ public class PagePartitionMetaIO extends PageMetaIO {
 
     /**
      * @param pageAddr Page address.
-     * @param size Partition size.
+     * @param link Link.
      */
     public boolean setGapsLink(long pageAddr, long link) {
         if (getGapsLink(pageAddr) == link)
