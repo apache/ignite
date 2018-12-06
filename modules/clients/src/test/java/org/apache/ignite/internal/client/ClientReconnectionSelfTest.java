@@ -93,7 +93,7 @@ public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
     public void testNoFailedReconnection() throws Exception {
         for (int i = 0; i < ClientTestRestServer.SERVERS_CNT; i++)
             runServer(i, false);
-
+        
         try (GridClient client = client()) { // Here client opens initial connection and fetches topology.
             // Only first server in list should be contacted.
             assertEquals(1, srvs[0].getConnectCount());
