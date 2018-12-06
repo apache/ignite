@@ -34,6 +34,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -94,8 +95,18 @@ public class IgniteCacheCreatePutMultiNodeSelfTest extends GridCommonAbstractTes
 
                                 IgniteCache<Integer, Integer> cache = getCache(ignite, cacheName);
 
-                                for (int i = 0; i < 100; i++)
-                                    cache.getAndPut(i, i);
+                                for (int i = 0; i < 100; i++) {
+                                    while (true) {
+                                        try {
+                                            cache.getAndPut(i, i);
+
+                                            break;
+                                        }
+                                        catch (Exception e) {
+                                            MvccFeatureChecker.assertMvccWriteConflict(e);
+                                        }
+                                    }
+                                }
 
                                 barrier.await();
 
@@ -139,7 +150,7 @@ public class IgniteCacheCreatePutMultiNodeSelfTest extends GridCommonAbstractTes
         CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(cacheName);
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
-        ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setBackups(1);
         ccfg.setNearConfiguration(null);
 
