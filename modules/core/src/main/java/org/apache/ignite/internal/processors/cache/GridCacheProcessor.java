@@ -5295,9 +5295,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 initialize(cfg, cacheObjCtx);
 
-                IgniteCacheProxyImpl cacheProxy = ctx.cache().jcacheProxy(req.cacheName(), false);
-
-                if (cacheProxy != null && cacheProxy.isRestarting())
+                if (cachesInfo.restartingCaches().contains(req.cacheName()))
                     req.schema(new QuerySchema(qryEntities != null ? qryEntities : cfg.getQueryEntities()));
                 else
                     req.schema(new QuerySchema(qryEntities != null ? QueryUtils.normalizeQueryEntities(qryEntities, cfg)
