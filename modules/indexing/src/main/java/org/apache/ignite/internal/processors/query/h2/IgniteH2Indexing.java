@@ -170,7 +170,6 @@ import org.h2.command.Prepared;
 import org.h2.command.dml.NoOperation;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
-import org.h2.jdbc.JdbcStatement;
 import org.h2.table.IndexColumn;
 import org.h2.util.JdbcUtils;
 import org.jetbrains.annotations.NotNull;
@@ -218,8 +217,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** Dummy metadata for update result. */
-    public static final List<GridQueryFieldMetadata> UPDATE_RESULT_META = Collections.<GridQueryFieldMetadata>
-        singletonList(new H2SqlFieldMetadata(null, null, "UPDATED", Long.class.getName(), -1, -1));
+    public static final List<GridQueryFieldMetadata> UPDATE_RESULT_META =
+        Collections.singletonList(new H2SqlFieldMetadata(null, null, "UPDATED", Long.class.getName(), -1, -1));
 
     /** */
     private static final int TWO_STEP_QRY_CACHE_SIZE = 1024;
@@ -304,88 +303,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("ConstantConditions")
     @Nullable private PreparedStatement cachedStatement(Connection c, String sql) {
         try {
-            return prepareStatement(c, sql, true, true);
+            return connMgr.cachedPreparedStatement(c, sql);
         }
         catch (SQLException e) {
             // We actually don't except anything SQL related here as we're supposed to work with cache only.
             throw new AssertionError(e);
         }
-    }
-
-    /**
-     * @param c Connection.
-     * @param sql SQL.
-     * @param useStmtCache If {@code true} uses statement cache.
-     * @return Prepared statement.
-     * @throws SQLException If failed.
-     */
-    @SuppressWarnings("ConstantConditions")
-    @NotNull public PreparedStatement prepareStatement(Connection c, String sql, boolean useStmtCache)
-        throws SQLException {
-        return prepareStatement(c, sql, useStmtCache, false);
-    }
-
-    /**
-     * @param c Connection.
-     * @param sql SQL.
-     * @param useStmtCache If {@code true} uses statement cache.
-     * @param cachedOnly Whether parsing should be avoided if statement has not been found in cache.
-     * @return Prepared statement.
-     * @throws SQLException If failed.
-     */
-    @Nullable private PreparedStatement prepareStatement(Connection c, String sql, boolean useStmtCache,
-        boolean cachedOnly) throws SQLException {
-        // We can't avoid parsing and avoid using cache at the same time.
-        assert useStmtCache || !cachedOnly;
-
-        if (useStmtCache) {
-            H2StatementCache cache = connMgr.statementCacheForThread();
-
-            H2CachedStatementKey key = new H2CachedStatementKey(c.getSchema(), sql);
-
-            PreparedStatement stmt = cache.get(key);
-
-            if (stmt != null && !stmt.isClosed() && !stmt.unwrap(JdbcStatement.class).isCancelled() &&
-                !GridSqlQueryParser.prepared(stmt).needRecompile()) {
-                assert stmt.getConnection() == c;
-
-                return stmt;
-            }
-
-            if (cachedOnly)
-                return null;
-
-            cache.put(key, stmt = PreparedStatementExImpl.wrap(prepare0(c, sql)));
-
-            return stmt;
-        }
-        else
-            return prepare0(c, sql);
-    }
-
-    /**
-     * Prepare statement.
-     *
-     * @param c Connection.
-     * @param sql SQL.
-     * @return Prepared statement.
-     * @throws SQLException If failed.
-     */
-    private PreparedStatement prepare0(Connection c, String sql) throws SQLException {
-        boolean insertHack = GridH2Table.insertHackRequired(sql);
-
-        if (insertHack) {
-            GridH2Table.insertHack(true);
-
-            try {
-                return c.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-            }
-            finally {
-                GridH2Table.insertHack(false);
-            }
-        }
-        else
-            return c.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
     }
 
     /** {@inheritDoc} */
@@ -597,7 +520,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         try {
             Connection conn = connMgr.connectionForThread(schemaName);
 
-            try (PreparedStatement stmt = prepareStatement(conn, sql, false)) {
+            try (PreparedStatement stmt = connMgr.prepareStatementNoCache(conn, sql)) {
                 stmt.execute();
             }
         }
@@ -928,7 +851,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final PreparedStatement stmt;
 
         try {
-            stmt = prepareStatement(conn, qry, true);
+            stmt = connMgr.prepareStatement(conn, qry);
         }
         catch (SQLException e) {
             throw new IgniteSQLException(e);
@@ -995,12 +918,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Prepared statement with set parameters.
      * @throws IgniteCheckedException If failed.
      */
-    public PreparedStatement preparedStatementWithParams(Connection conn, String sql, Collection<Object> params,
+    // TODO: Move to ConnectionManager
+    private PreparedStatement preparedStatementWithParams(Connection conn, String sql, Collection<Object> params,
         boolean useStmtCache) throws IgniteCheckedException {
         final PreparedStatement stmt;
 
         try {
-            stmt = prepareStatement(conn, sql, useStmtCache);
+            stmt = useStmtCache ? connMgr.prepareStatement(conn, sql) : connMgr.prepareStatementNoCache(conn, sql);
         }
         catch (SQLException e) {
             throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
@@ -1088,15 +1012,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param conn Connection,
      * @param sql Sql query.
      * @param params Parameters.
-     * @param useStmtCache If {@code true} uses stmt cache.
      * @param timeoutMillis Query timeout.
      * @param cancel Query cancel.
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
     public ResultSet executeSqlQueryWithTimer(Connection conn, String sql, @Nullable Collection<Object> params,
-        boolean useStmtCache, int timeoutMillis, @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
-        return executeSqlQueryWithTimer(preparedStatementWithParams(conn, sql, params, useStmtCache),
+        int timeoutMillis, @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
+        return executeSqlQueryWithTimer(preparedStatementWithParams(conn, sql, params, false),
             conn, sql, params, timeoutMillis, cancel);
     }
 
@@ -1254,6 +1177,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 o = GridSqlAlias.unwrap((GridSqlAst) o);
             if (o instanceof GridSqlTable && ((GridSqlTable) o).dataTable() != null) {
                 GridCacheContext cctx = ((GridSqlTable)o).dataTable().cacheContext();
+
+                assert cctx != null;
 
                 if (mvccEnabled == null) {
                     mvccEnabled = cctx.mvccEnabled();
@@ -2208,9 +2133,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param sqlQry Query.
      * @return H2 prepared statement.
      */
+    // TODO: Remove!
     private PreparedStatement prepareStatementAndCaches(Connection c, String sqlQry) {
         try {
-            return prepareStatement(c, sqlQry, true);
+            return connMgr.prepareStatement(c, sqlQry);
         }
         catch (SQLException e) {
             throw new IgniteSQLException("Failed to parse query. " + e.getMessage(),

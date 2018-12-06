@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
@@ -160,7 +159,7 @@ public class SchemaManager {
      *
      * @param schemaNames Schema names.
      */
-    private void createPredefinedSchemas(String[] schemaNames) {
+    private void createPredefinedSchemas(String[] schemaNames) throws IgniteCheckedException {
         if (F.isEmpty(schemaNames))
             return;
 
@@ -240,7 +239,7 @@ public class SchemaManager {
                 try {
                     dropSchema(schemaName);
                 }
-                catch (IgniteException e) {
+                catch (Exception e) {
                     U.error(log, "Failed to drop schema on cache stop (will ignore): " + cacheName, e);
                 }
             }
@@ -258,7 +257,7 @@ public class SchemaManager {
      * @param schemaName Schema name.
      * @param predefined Whether this is predefined schema.
      */
-    private void createSchema(String schemaName, boolean predefined) {
+    private void createSchema(String schemaName, boolean predefined) throws IgniteCheckedException {
         assert Thread.holdsLock(schemaMux);
 
         if (!predefined)
@@ -281,7 +280,7 @@ public class SchemaManager {
      *
      * @param schema Schema name.
      */
-    private void createSchema0(String schema) {
+    private void createSchema0(String schema) throws IgniteCheckedException {
         connMgr.executeSystemStatement("CREATE SCHEMA IF NOT EXISTS " + H2Utils.withQuotes(schema));
 
         if (log.isDebugEnabled())
@@ -406,7 +405,7 @@ public class SchemaManager {
      *
      * @param schema Schema name.
      */
-    private void dropSchema(String schema) {
+    private void dropSchema(String schema) throws IgniteCheckedException {
         connMgr.executeSystemStatement("DROP SCHEMA IF EXISTS " + H2Utils.withQuotes(schema));
 
         if (log.isDebugEnabled())
