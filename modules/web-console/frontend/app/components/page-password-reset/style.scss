@@ -22,6 +22,10 @@ page-password-reset {
     grid-column: span 3;
     grid-row: span 3;
 
+    &>.container {
+        padding: 0 var(--page-side-padding);
+    }
+
     footer {
         display: flex;
         justify-content: flex-end;

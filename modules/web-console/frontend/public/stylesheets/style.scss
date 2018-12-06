@@ -255,6 +255,10 @@ body {
     flex-direction: column;
 }
 
+:root {
+    --page-side-padding: 30px;
+}
+
 .wrapper {
     --header-height: 62px;
 

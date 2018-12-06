@@ -33,7 +33,7 @@ page-landing {
     .page-landing__button-signin {
         align-self: center;
         margin-left: 30px;
-        margin-right: 30px;
+        margin-right: var(--page-side-padding);;
         min-width: 80px;
         font-weight: 500;
         padding: 10px 25px !important;
