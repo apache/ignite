@@ -2934,7 +2934,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if(msg instanceof TcpDiscoveryStatusCheckMessage)
                 log.info("GetStatusCheckAccrossRing : " + ((TcpDiscoveryStatusCheckMessage)msg).creatorNode().id());
 
-            if(msg instanceof TcpDiscoveryStatusCheckMessage)
+            if(msg instanceof TcpDiscoveryConnectionCheckMessage)
                 log.info("GetTcpDiscoveryConnectionCheckMessage : " + ((TcpDiscoveryConnectionCheckMessage)msg).creatorNodeId());
 
             assert ring.hasRemoteNodes();
@@ -5057,28 +5057,28 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void processStatusCheckMessage(final TcpDiscoveryStatusCheckMessage msg) {
             assert msg != null;
 
-            log.info("StatusCheckMessage : " + msg.creatorNode().id());
+            log.info("StatusCheckMessage : " + msg);
 
             UUID locNodeId = getLocalNodeId();
 
             if (msg.failedNodeId() != null) {
                 if (locNodeId.equals(msg.failedNodeId())) {
-                    if (log.isDebugEnabled())
-                        log.debug("Status check message discarded (suspect node is local node).");
+                    if (log.isInfoEnabled())
+                        log.info("Status check message discarded (suspect node is local node).");
 
                     return;
                 }
 
                 if (locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() != null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Status check message discarded (local node is the sender of the status message).");
+                    if (log.isInfoEnabled())
+                        log.info("Status check message discarded (local node is the sender of the status message).");
 
                     return;
                 }
 
                 if (isLocalNodeCoordinator() && ring.node(msg.creatorNodeId()) == null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Status check message discarded (creator node is not in topology).");
+                    if (log.isInfoEnabled())
+                        log.info("Status check message discarded (creator node is not in topology).");
 
                     return;
                 }
@@ -5158,16 +5158,16 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() == null &&
                     U.currentTimeMillis() - locNode.lastUpdateTime() < spi.metricsUpdateFreq) {
-                    if (log.isDebugEnabled())
-                        log.debug("Status check message discarded (local node receives updates).");
+                    if (log.isInfoEnabled())
+                        log.info("Status check message discarded (local node receives updates).");
 
                     return;
                 }
 
                 if (locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() == null &&
                     spiStateCopy() != CONNECTED) {
-                    if (log.isDebugEnabled())
-                        log.debug("Status check message discarded (local node is not connected to topology).");
+                    if (log.isInfoEnabled())
+                        log.info("Status check message discarded (local node is not connected to topology)." + spiStateCopy());
 
                     return;
                 }
@@ -5177,8 +5177,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         return;
 
                     if (msg.status() == STATUS_OK) {
-                        if (log.isDebugEnabled())
-                            log.debug("Received OK status response from coordinator: " + msg);
+                        if (log.isInfoEnabled())
+                            log.info("Received OK status response from coordinator: " + msg);
                     }
                     else if (msg.status() == STATUS_RECON) {
                         U.warn(log, "Node is out of topology (probably, due to short-time network problems).");
@@ -5187,8 +5187,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         return;
                     }
-                    else if (log.isDebugEnabled())
-                        log.debug("Status value was not updated in status response: " + msg);
+                    else if (log.isInfoEnabled())
+                        log.info("Status value was not updated in status response: " + msg);
 
                     // Discard the message.
                     return;
@@ -5209,7 +5209,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             assert !msg.client();
 
-            log.info("MetricsUpdateMessage : " + msg.creatorNodeId());
+            log.info("MetricsUpdateMessage : " + msg);
 
             UUID locNodeId = getLocalNodeId();
 
@@ -5753,7 +5753,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 hasRemoteSrvNodes = ring.hasRemoteServerNodes();
 
 //            debugLogQ.add("CheckCOnnection : " + hasRemoteSrvNodes);
-            log.info("CheckCOnnection : " + hasRemoteSrvNodes);
+
 
             if (hasRemoteSrvNodes) {
                 sendMessageAcrossRing(new TcpDiscoveryConnectionCheckMessage(locNode));
