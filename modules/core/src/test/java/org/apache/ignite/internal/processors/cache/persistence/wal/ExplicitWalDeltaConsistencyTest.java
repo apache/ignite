@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.PageMemoryTrackerPluginProvider;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  * WAL delta records consistency test with explicit checks.
@@ -29,6 +30,9 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
      * @throws Exception If failed.
      */
     public final void testPutRemoveAfterCheckpoint() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10584");
+
         IgniteEx ignite = startGrid(0);
 
         try {
@@ -66,6 +70,9 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
      * @throws Exception If failed.
      */
     public final void testNotEmptyPds() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10584");
+
         IgniteEx ignite = startGrid(0);
 
         try {

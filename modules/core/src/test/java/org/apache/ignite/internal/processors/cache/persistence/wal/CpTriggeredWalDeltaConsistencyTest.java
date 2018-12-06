@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  * Checkpoint triggered WAL delta records consistency test.
@@ -33,6 +34,9 @@ public class CpTriggeredWalDeltaConsistencyTest extends AbstractWalDeltaConsiste
      * @throws Exception If failed.
      */
     public final void testPutRemoveCacheDestroy() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10584");
+
         IgniteEx ignite = startGrid(0);
 
         try {
