@@ -22,50 +22,80 @@ import java.util.Collection;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Tests entry wrappers after preloading happened.
  */
-public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCacheAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
-    }
+public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCommonAbstractTest {
+    /**
+     * @param atomicityMode Cache atomicity mode.
+     * @return Cache configuration.
+     */
+    @SuppressWarnings("unchecked")
+    protected <K, V> CacheConfiguration<K, V> cacheConfiguration(CacheAtomicityMode atomicityMode) throws Exception {
+        CacheConfiguration<K, V> ccfg = defaultCacheConfiguration();
 
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return CacheMode.PARTITIONED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.ATOMIC;
-    }
-
-    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
-
+        ccfg.setName(DEFAULT_CACHE_NAME);
+        ccfg.setAtomicityMode(atomicityMode);
+        ccfg.setNearConfiguration(null);
         ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
 
         return ccfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        grid(0).destroyCache(DEFAULT_CACHE_NAME);
+
+        super.afterTest();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        startGrid(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        super.afterTestsStopped();
+    }
+
     /**
      * @throws Exception If failed.
      */
-    public void testIteration()  throws Exception {
+    public void testIteration() throws Exception {
+        checkIteration(cacheConfiguration(CacheAtomicityMode.ATOMIC));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIterationTx() throws Exception {
+        checkIteration(cacheConfiguration(CacheAtomicityMode.TRANSACTIONAL));
+    }
+
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIterationMvcc() throws Exception {
+        checkIteration(cacheConfiguration(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT));
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @throws Exception If failed.
+     */
+    private void checkIteration(CacheConfiguration<String, Integer> ccfg) throws Exception {
         try {
-            final IgniteCache<String, Integer> cache = jcache();
+            final IgniteCache<String, Integer> cache = grid(0).createCache(ccfg);
 
             final int entryCnt = 1000;
 

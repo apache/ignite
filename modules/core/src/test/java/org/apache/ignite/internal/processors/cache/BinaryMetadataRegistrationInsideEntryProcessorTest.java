@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import javax.cache.processor.EntryProcessor;
@@ -25,8 +24,11 @@ import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -35,25 +37,67 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class BinaryMetadataRegistrationInsideEntryProcessorTest extends GridCommonAbstractTest {
     /** */
-    private static final String CACHE_NAME = "test-cache";
+    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() {
-        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder()
-            .setAddresses(Collections.singletonList("127.0.0.1:47500..47509"));
-
         return new IgniteConfiguration()
-            .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder))
-            .setPeerClassLoadingEnabled(true);
+                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder))
+                .setPeerClassLoadingEnabled(true);
+    }
+
+    /**
+     * @param atomicityMode Cache atomicity mode.
+     * @return Cache configuration.
+     */
+    @SuppressWarnings("unchecked")
+    protected <K, V> CacheConfiguration<K, V> cacheConfiguration(CacheAtomicityMode atomicityMode) throws Exception {
+        CacheConfiguration<K, V> ccfg = defaultCacheConfiguration();
+
+        ccfg.setName(DEFAULT_CACHE_NAME);
+        ccfg.setAtomicityMode(atomicityMode);
+        ccfg.setNearConfiguration(null);
+
+        return ccfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
     }
 
     /**
      * @throws Exception If failed;
      */
-    public void test() throws Exception {
+    public void testAtomic() throws Exception {
+        check(cacheConfiguration(CacheAtomicityMode.ATOMIC));
+    }
+
+    /**
+     * @throws Exception If failed;
+     */
+    public void testTx() throws Exception {
+        check(cacheConfiguration(CacheAtomicityMode.TRANSACTIONAL));
+    }
+
+    /**
+     * @throws Exception If failed;
+     */
+    public void testMvcc() throws Exception {
+        check(cacheConfiguration(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT));
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @throws Exception If failed;
+     */
+    @SuppressWarnings("unchecked")
+    public void check(CacheConfiguration ccfg) throws Exception {
         Ignite ignite = startGrids(2);
 
-        IgniteCache<Integer, Map<Integer, CustomObj>> cache = ignite.createCache(CACHE_NAME);
+        IgniteCache<Integer, Map<Integer, CustomObj>> cache = ignite.createCache(ccfg);
 
         try {
             for (int i = 0; i < 10_000; i++)
