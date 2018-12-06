@@ -287,11 +287,10 @@ public class PartitionUpdateCounter {
 
     /**
      * Used on recovery.
-     * TODO FIXME make thread safe.
-     * @param c
+     * @param cntr Counter.
      */
-    public synchronized void releaseOne(long c) {
-        NavigableSet<Item> items = queue.headSet(new Item(c, 0), true);
+    public synchronized void releaseOne(long cntr) {
+        NavigableSet<Item> items = queue.headSet(new Item(cntr, 0), true);
 
         assert !items.isEmpty();
 

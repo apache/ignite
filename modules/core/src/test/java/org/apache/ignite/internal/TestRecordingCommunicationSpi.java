@@ -300,7 +300,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
      * Stops block messages and sends all already blocked messages.
      */
     public void stopBlock() {
-        stopBlock(true, null);
+        stopBlock(true, null, true);
     }
 
     /**
@@ -309,7 +309,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
      * @param sndMsgs {@code True} to send blocked messages.
      */
     public void stopBlock(boolean sndMsgs) {
-        stopBlock(sndMsgs, null);
+        stopBlock(sndMsgs, null, true);
     }
 
     /**
@@ -320,9 +320,24 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
      * @param unblockPred If not null unblocks only messages allowed by predicate.
      */
     public void stopBlock(boolean sndMsgs, @Nullable IgnitePredicate<T2<ClusterNode, GridIoMessage>> unblockPred) {
+        stopBlock(sndMsgs, unblockPred, true);
+    }
+
+        /**
+         * Stops block messages and sends all already blocked messages if sndMsgs is 'true' optionally filtered
+         * by unblockPred.
+         *
+         * @param sndMsgs If {@code true} sends blocked messages.
+         * @param unblockPred If not null unblocks only messages allowed by predicate.
+         * @param clearFilters {@code true} to clear filters.
+         */
+    public void stopBlock(boolean sndMsgs, @Nullable IgnitePredicate<T2<ClusterNode, GridIoMessage>> unblockPred,
+        boolean clearFilters) {
         synchronized (this) {
-            blockCls.clear();
-            blockP = null;
+            if (clearFilters) {
+                blockCls.clear();
+                blockP = null;
+            }
 
             Collection<T2<ClusterNode, GridIoMessage>> msgs =
                 unblockPred == null ? blockedMsgs : F.view(blockedMsgs, unblockPred);

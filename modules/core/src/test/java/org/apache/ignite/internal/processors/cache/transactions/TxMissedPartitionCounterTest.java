@@ -2,7 +2,6 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,13 +26,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.persistence.ByteArrayDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
-import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
@@ -41,19 +39,17 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.Collections.max;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -213,7 +209,7 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
             });
 
             // Reorder updates on primary and backup.
-            IgniteInternalFuture fut0 = GridTestUtils.runAsync(new Runnable() {
+            IgniteInternalFuture fut0 = runAsync(new Runnable() {
                 @Override public void run() {
                     try {
                         TestRecordingCommunicationSpi.spi(primaryNode).waitForBlocked(txCnt);
@@ -471,38 +467,85 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
             IgniteEx client = startGrid("client");
 
+            TestRecordingCommunicationSpi.spi(client).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                @Override public boolean apply(ClusterNode node, Message msg) {
+                    return msg instanceof GridNearTxPrepareRequest || msg instanceof GridNearTxFinishRequest;
+                }
+            });
+
             assertNotNull(client.cache(DEFAULT_CACHE_NAME));
 
-            try(Transaction tx = client.transactions().txStart()) {
-                for (Integer key : keys.subList(0, 7))
-                    client.cache(DEFAULT_CACHE_NAME).put(key, 0);
+            // Reordering thread.
+            IgniteInternalFuture fut = runAsync(new Runnable() {
+                @Override public void run() {
+                    try {
+                        TestRecordingCommunicationSpi.spi(client).waitForBlocked(2);
 
-                tx.commit();
-            }
+                        // Order prepare requests: t2, when t1.
+                        TestRecordingCommunicationSpi.spi(client).stopBlock(true, new IgnitePredicate<T2<ClusterNode, GridIoMessage>>() {
+                            @Override public boolean apply(T2<ClusterNode, GridIoMessage> objects) {
+                                GridIoMessage objects2 = objects.get2();
 
-            @Nullable GridDhtLocalPartition locPart = internalCache(0).context().topology().localPartition(partId);
+                                GridNearTxPrepareRequest req = (GridNearTxPrepareRequest)objects2.message();
 
-            PartitionUpdateCounter cntr = locPart.dataStore().partUpdateCounter();
+                                return "t2".equals(req.txLabel());
+                            }
+                        }, false);
 
-            System.out.println();
+                        doSleep(1000);
 
-            try(Transaction tx = client.transactions().txStart()) {
-                for (Integer key : keys.subList(7, 10))
-                    client.cache(DEFAULT_CACHE_NAME).put(key, 0);
+                        TestRecordingCommunicationSpi.spi(client).stopBlock(true, new IgnitePredicate<T2<ClusterNode, GridIoMessage>>() {
+                            @Override public boolean apply(T2<ClusterNode, GridIoMessage> objects) {
+                                GridIoMessage objects2 = objects.get2();
 
-                tx.commit();
-            }
+                                return objects2.message() instanceof GridNearTxPrepareRequest;
+                            }
+                        }, false);
 
-            PartitionUpdateCounter cntr2 = locPart.dataStore().partUpdateCounter();
+                        doSleep(1000);
 
-            System.out.println();
+                        // Finish prepare and wait for commit.
+                        TestRecordingCommunicationSpi.spi(client).waitForBlocked(2);
 
-//            prim.close();
-//
-//            awaitPartitionMapExchange();
-//
-//            // TODO FIXME reserveCntr is wrong !!!
-//            printPartitionState(DEFAULT_CACHE_NAME, 0);
+                        @Nullable GridDhtLocalPartition locPart = internalCache(0).context().topology().localPartition(partId);
+
+                        PartitionUpdateCounter cntr = locPart.dataStore().partUpdateCounter();
+
+                        System.out.println();
+                    }
+                    catch (Exception e) {
+                        fail();
+                    }
+                }
+            });
+
+            IgniteInternalFuture fut0 = runAsync(new Runnable() {
+                @Override public void run() {
+                    try (Transaction tx = client.transactions().withLabel("t1").txStart()) {
+                        for (Integer key : keys.subList(0, 7))
+                            client.cache(DEFAULT_CACHE_NAME).put(key, 0);
+
+                        tx.commit();
+                    }
+                }
+            });
+
+            //@Nullable GridDhtLocalPartition locPart = internalCache(0).context().topology().localPartition(partId);
+
+            IgniteInternalFuture fut1 = runAsync(new Runnable() {
+                @Override public void run() {
+                    try (Transaction tx = client.transactions().withLabel("t2").txStart()) {
+                        for (Integer key : keys.subList(7, 10))
+                            client.cache(DEFAULT_CACHE_NAME).put(key, 0);
+
+                        tx.commit();
+                    }
+                }
+            });
+
+            fut.get();
+            fut0.get();
+            fut1.get();
         }
         finally {
             stopAllGrids();
@@ -528,7 +571,7 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
             assertNotNull(client.cache(DEFAULT_CACHE_NAME));
 
-            IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
+            IgniteInternalFuture fut = runAsync(new Runnable() {
                 @Override public void run() {
                     try {
                         TestRecordingCommunicationSpi.spi(prim).waitForBlocked();
@@ -592,7 +635,7 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
             assertNotNull(client.cache(DEFAULT_CACHE_NAME));
 
-            IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
+            IgniteInternalFuture fut = runAsync(new Runnable() {
                 @Override public void run() {
                     try {
                         TestRecordingCommunicationSpi.spi(prim0).waitForBlocked();
@@ -656,7 +699,7 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
             assertNotNull(client.cache(DEFAULT_CACHE_NAME));
 
-            IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
+            IgniteInternalFuture fut = runAsync(new Runnable() {
                 @Override public void run() {
                     try {
                         TestRecordingCommunicationSpi.spi(client).waitForBlocked();
