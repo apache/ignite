@@ -2200,6 +2200,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param type Type name.
      * @return Descriptor.
      */
+    // TODO: Move
     @Nullable private H2TableDescriptor tableDescriptor(String schemaName, String cacheName, String type) {
         H2Schema schema = schemaMgr.schema(schemaName);
 
@@ -2220,6 +2221,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param cacheName Cache name.
      * @return Collection of table descriptors.
      */
+    // TODO: Move
     Collection<H2TableDescriptor> tables(String cacheName) {
         H2Schema s = schemaMgr.schema(schema(cacheName));
 

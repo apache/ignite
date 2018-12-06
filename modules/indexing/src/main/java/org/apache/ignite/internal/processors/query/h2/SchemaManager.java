@@ -395,6 +395,7 @@ public class SchemaManager {
      * @param schemaName Schema name.
      * @return Schema.
      */
+    // TODO: Should be private!
     public H2Schema schema(String schemaName) {
         return schemas.get(schemaName);
     }
