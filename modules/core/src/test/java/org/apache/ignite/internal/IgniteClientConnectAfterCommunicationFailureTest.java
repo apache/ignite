@@ -51,6 +51,11 @@ public class IgniteClientConnectAfterCommunicationFailureTest extends GridCommon
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected boolean useMulticastIpFinder() {
+        return true;
+    }
+
     /**
      * @throws Exception If failed.
      */

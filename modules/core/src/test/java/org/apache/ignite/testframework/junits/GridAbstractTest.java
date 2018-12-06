@@ -162,9 +162,6 @@ public abstract class GridAbstractTest extends TestCase {
         setAddresses(Collections.singleton("127.0.0.1:47500..47509"));
     }};
 
-    /** Shared static IP finder. */
-    public static final TcpDiscoveryIpFinder SHARED_STATIC_IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int DFLT_TOP_WAIT_TIMEOUT = 2000;
 
@@ -218,6 +215,12 @@ public abstract class GridAbstractTest extends TestCase {
     private volatile Method currTestMtd;
 
     /**
+     * Shared static IP finder. Will be used in configuration at nodes startup <b>for all test methods in class</b> if
+     * {@link #useMulticastIpFinder()} is {@code false} (by default).
+     */
+    protected final TcpDiscoveryIpFinder sharedStaticIpFinder;
+
+    /**
      *
      */
     static {
@@ -265,6 +268,7 @@ public abstract class GridAbstractTest extends TestCase {
         log = new GridTestLog4jLogger();
 
         this.startGrid = startGrid;
+        this.sharedStaticIpFinder = new TcpDiscoveryVmIpFinder(true);
     }
 
     /** {@inheritDoc} */
@@ -1699,7 +1703,7 @@ public abstract class GridAbstractTest extends TestCase {
 
         if (!isMultiJvm()) {
             if (!useMulticastIpFinder())
-                discoSpi.setIpFinder(SHARED_STATIC_IP_FINDER);
+                discoSpi.setIpFinder(sharedStaticIpFinder);
             else {
                 TcpDiscoveryMulticastIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
 
