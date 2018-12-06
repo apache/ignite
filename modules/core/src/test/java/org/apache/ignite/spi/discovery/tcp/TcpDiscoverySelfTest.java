@@ -69,6 +69,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
@@ -100,6 +101,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
+import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.MARSHALLER_PROC;
@@ -130,6 +132,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
     /** */
     private boolean client;
+
+    /** */
+    private SegmentationPolicy segPlc;
 
     /**
      * @throws Exception If fails.
@@ -171,6 +176,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             cfg.setCacheConfiguration(ccfgs);
         else
             cfg.setCacheConfiguration();
+
+        if (segPlc != null)
+            cfg.setSegmentationPolicy(segPlc);
 
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 
@@ -1894,12 +1902,42 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFailedCoordinatorNode() throws Exception {
+        checkFailedCoordinatorNode(SegmentationPolicy.STOP);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFailedCoordinatorNodeNoopSegmentationPolicy() throws Exception {
+        checkFailedCoordinatorNode(SegmentationPolicy.NOOP);
+    }
+
+    /**
+     * @param segPlc Segmentation policy.
+     * @throws Exception If failed.
+     */
+    private void checkFailedCoordinatorNode(SegmentationPolicy segPlc) throws Exception {
         try {
+            this.segPlc = segPlc;
+
             IgniteEx coord = startGrid(0);
 
             UUID coordId = coord.localNode().id();
 
             IgniteEx ignite1 = startGrid(1);
+
+            AtomicBoolean coordSegmented = new AtomicBoolean();
+
+            coord.events().localListen(evt -> {
+                assertEquals(EVT_NODE_SEGMENTED, evt.type());
+
+                UUID failedId = ((DiscoveryEvent)evt).eventNode().id();
+
+                if (coordId.equals(failedId))
+                    coordSegmented.set(true);
+
+                return true;
+            }, EVT_NODE_SEGMENTED);
 
             CountDownLatch failedLatch = new CountDownLatch(1);
 
@@ -1916,9 +1954,17 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             ignite1.configuration().getDiscoverySpi().failNode(coord.localNode().id(), null);
 
-            assertTrue(failedLatch.await(1000, MILLISECONDS));
+            assertTrue(failedLatch.await(2000, MILLISECONDS));
 
-            waitNodeStop(coord.name());
+            assertTrue(coordSegmented.get());
+
+            if (segPlc.equals(SegmentationPolicy.STOP)) {
+                assertTrue(coord.context().isStopping());
+
+                waitNodeStop(coord.name());
+            }
+            else
+                assertFalse(coord.context().isStopping());
 
             assertEquals(1, ignite1.context().discovery().allNodes().size());
         }
