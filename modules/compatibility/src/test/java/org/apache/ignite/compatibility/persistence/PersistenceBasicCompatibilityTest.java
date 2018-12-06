@@ -38,10 +38,14 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Saves data using previous version of ignite and then load this data using actual version.
  */
+@RunWith(JUnit4.class)
 public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatibilityAbstractTest {
     /** */
     protected static final String TEST_CACHE_NAME = PersistenceBasicCompatibilityTest.class.getSimpleName();
@@ -76,6 +80,7 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeStartByOldVersionPersistenceData_2_2() throws Exception {
         doTestStartupWithOldVersion("2.2.0");
     }
@@ -85,6 +90,7 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeStartByOldVersionPersistenceData_2_1() throws Exception {
         doTestStartupWithOldVersion("2.1.0");
     }
@@ -94,6 +100,7 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeStartByOldVersionPersistenceData_2_3() throws Exception {
         doTestStartupWithOldVersion("2.3.0");
     }
@@ -103,6 +110,7 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeStartByOldVersionPersistenceData_2_4() throws Exception {
         doTestStartupWithOldVersion("2.4.0");
     }
@@ -112,6 +120,7 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeStartByOldVersionPersistenceData_2_5() throws Exception {
         doTestStartupWithOldVersion("2.5.0");
     }
@@ -121,6 +130,7 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeStartByOldVersionPersistenceData_2_6() throws Exception {
         doTestStartupWithOldVersion("2.6.0");
     }
