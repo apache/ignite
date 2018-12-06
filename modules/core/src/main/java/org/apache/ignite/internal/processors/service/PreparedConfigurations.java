@@ -24,18 +24,18 @@ import org.apache.ignite.services.ServiceConfiguration;
 /**
  * Result of services validation before deployment.
  */
-class PreparedConfigurations {
+class PreparedConfigurations<T> {
     /** */
     final List<ServiceConfiguration> cfgs;
 
     /** */
-    final List<GridServiceDeploymentFuture> failedFuts;
+    final List<GridServiceDeploymentFuture<T>> failedFuts;
 
     /**
      * @param cfgs Configurations to deploy.
      * @param failedFuts Finished futures for failed configurations.
      */
-    PreparedConfigurations(List<ServiceConfiguration> cfgs, List<GridServiceDeploymentFuture> failedFuts) {
+    PreparedConfigurations(List<ServiceConfiguration> cfgs, List<GridServiceDeploymentFuture<T>> failedFuts) {
         this.cfgs = cfgs;
         this.failedFuts = failedFuts;
     }

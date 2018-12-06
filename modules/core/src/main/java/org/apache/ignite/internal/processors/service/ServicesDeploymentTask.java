@@ -825,7 +825,7 @@ class ServicesDeploymentTask {
      *
      * @return {@code true} if task is has not been added previously, otherwise {@code false}.
      */
-    protected boolean onAdditionInQueue() {
+    protected boolean onEnqueued() {
         return addedInQueue.compareAndSet(false, true);
     }
 

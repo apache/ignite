@@ -105,7 +105,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     private final ConcurrentMap<IgniteUuid, ServiceInfo> deployedServices = new ConcurrentHashMap<>();
 
     /** Deployment futures. */
-    private final ConcurrentMap<IgniteUuid, GridServiceDeploymentFuture> depFuts = new ConcurrentHashMap<>();
+    private final ConcurrentMap<IgniteUuid, GridServiceDeploymentFuture<IgniteUuid>> depFuts = new ConcurrentHashMap<>();
 
     /** Undeployment futures. */
     private final ConcurrentMap<IgniteUuid, GridFutureAdapter<?>> undepFuts = new ConcurrentHashMap<>();
@@ -447,13 +447,14 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * because of {@link GridMarshallerMappingProcessor} is not started at this point, otherwise {@code false}.
      * @return Configurations to deploy.
      */
-    private PreparedConfigurations prepareServiceConfigurations(Collection<ServiceConfiguration> cfgs,
+    @SuppressWarnings("deprecation")
+    private PreparedConfigurations<IgniteUuid> prepareServiceConfigurations(Collection<ServiceConfiguration> cfgs,
         IgnitePredicate<ClusterNode> dfltNodeFilter, boolean staticCfgs) {
         List<ServiceConfiguration> cfgsCp = new ArrayList<>(cfgs.size());
 
         Marshaller marsh = !staticCfgs ? ctx.config().getMarshaller() : new JdkMarshaller();
 
-        List<GridServiceDeploymentFuture> failedFuts = null;
+        List<GridServiceDeploymentFuture<IgniteUuid>> failedFuts = null;
 
         for (ServiceConfiguration cfg : cfgs) {
             Exception err = null;
@@ -497,7 +498,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 if (failedFuts == null)
                     failedFuts = new ArrayList<>();
 
-                GridServiceDeploymentFuture fut = new GridServiceDeploymentFuture(cfg, null);
+                GridServiceDeploymentFuture<IgniteUuid> fut = new GridServiceDeploymentFuture<>(cfg, null);
 
                 fut.onDone(err);
 
@@ -505,7 +506,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             }
         }
 
-        return new PreparedConfigurations(cfgsCp, failedFuts);
+        return new PreparedConfigurations<>(cfgsCp, failedFuts);
     }
 
     /**
@@ -564,13 +565,13 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             if (cfgs.isEmpty())
                 return new GridFinishedFuture<>();
 
-            PreparedConfigurations srvCfg = prepareServiceConfigurations(cfgs, dfltNodeFilter, false);
+            PreparedConfigurations<IgniteUuid> srvCfg = prepareServiceConfigurations(cfgs, dfltNodeFilter, false);
 
             List<ServiceConfiguration> cfgsCp = srvCfg.cfgs;
 
-            List<GridServiceDeploymentFuture> failedFuts = srvCfg.failedFuts;
+            List<GridServiceDeploymentFuture<IgniteUuid>> failedFuts = srvCfg.failedFuts;
 
-            GridServiceDeploymentCompoundFuture<IgniteUuid> res = new GridServiceDeploymentCompoundFuture();
+            GridServiceDeploymentCompoundFuture<IgniteUuid> res = new GridServiceDeploymentCompoundFuture<>();
 
             if (!cfgsCp.isEmpty()) {
                 try {
@@ -579,7 +580,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                     for (ServiceConfiguration cfg : cfgsCp) {
                         IgniteUuid srvcId = IgniteUuid.randomUuid();
 
-                        GridServiceDeploymentFuture fut = new GridServiceDeploymentFuture(cfg, srvcId);
+                        GridServiceDeploymentFuture<IgniteUuid> fut = new GridServiceDeploymentFuture<>(cfg, srvcId);
 
                         res.add(fut, true);
 
@@ -609,7 +610,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             }
 
             if (failedFuts != null) {
-                for (GridServiceDeploymentFuture fut : failedFuts)
+                for (GridServiceDeploymentFuture<IgniteUuid> fut : failedFuts)
                     res.add(fut, false);
             }
 
@@ -633,6 +634,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<?> cancelAll(@NotNull Collection<String> servicesNames) {
         opsLock.readLock().lock();
 
@@ -1416,12 +1418,12 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         ArrayList<ServiceInfo> staticServicesInfo = new ArrayList<>();
 
         if (cfgs != null) {
-            PreparedConfigurations prepCfgs = prepareServiceConfigurations(Arrays.asList(cfgs),
+            PreparedConfigurations<IgniteUuid> prepCfgs = prepareServiceConfigurations(Arrays.asList(cfgs),
                 node -> !node.isClient(), true);
 
             if (logErrors) {
                 if (prepCfgs.failedFuts != null) {
-                    for (GridServiceDeploymentFuture fut : prepCfgs.failedFuts) {
+                    for (GridServiceDeploymentFuture<IgniteUuid> fut : prepCfgs.failedFuts) {
                         U.warn(log, "Failed to validate static service configuration (won't be deployed), " +
                             "cfg=" + fut.configuration() + ", err=" + fut.result());
                     }
@@ -1510,7 +1512,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                                     "[deployed=" + oldDesc.configuration() + ", new=" + cfg + ']');
                             }
                             else {
-                                GridServiceDeploymentFuture fut = depFuts.remove(reqSrvcId);
+                                GridServiceDeploymentFuture<IgniteUuid> fut = depFuts.remove(reqSrvcId);
 
                                 if (fut != null) {
                                     fut.onDone();

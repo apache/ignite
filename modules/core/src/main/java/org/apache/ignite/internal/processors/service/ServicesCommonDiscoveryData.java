@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Initial data container to send on joined node.
+ * Initial data container to be sent to newly joining node.
  */
 class ServicesCommonDiscoveryData implements Serializable {
     /** */
@@ -42,7 +42,7 @@ class ServicesCommonDiscoveryData implements Serializable {
     /**
      * Returns clusters registered services descriptors.
      *
-     * @return Deployed services descriptors.
+     * @return Registered services descriptors.
      */
     public ArrayList<ServiceInfo> registeredServices() {
         return registeredServices;

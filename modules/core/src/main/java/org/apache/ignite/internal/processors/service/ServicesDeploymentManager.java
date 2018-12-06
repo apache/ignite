@@ -234,8 +234,12 @@ public class ServicesDeploymentManager {
         ServicesDeploymentTask task = tasks.computeIfAbsent(depId,
             t -> new ServicesDeploymentTask(ctx, depId));
 
-        if (!task.onAdditionInQueue()) {
-            log.warning("Do not start service deployment process for event: " + evt);
+        if (!task.onEnqueued()) {
+            if (log.isDebugEnabled()) {
+                log.debug("Service deployment process hasn't been started for discovery event, because of " +
+                    "a task with the same deployment process id is already added (possible cause is message's" +
+                    " double delivering), evt=" + evt);
+            }
 
             return;
         }

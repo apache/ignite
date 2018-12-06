@@ -203,12 +203,12 @@ public class GridServiceProxy<T> implements Serializable {
                 }
                 catch (IgniteCheckedException e) {
                     // Check if ignorable exceptions are in the cause chain.
-                    Throwable ignorableCause = X.cause(e, GridServiceNotFoundException.class);
+                    Throwable ignorableCause = X.cause(e, ClusterTopologyCheckedException.class);
 
-                    if (ignorableCause == null)
-                        ignorableCause = X.cause(e, ClusterTopologyCheckedException.class);
+                    if (ignorableCause == null && !ctx.service().eventDrivenServiceProcessorEnabled())
+                        ignorableCause = X.cause(e, GridServiceNotFoundException.class);
 
-                    if (ignorableCause != null && !ctx.service().eventDrivenServiceProcessorEnabled()) {
+                    if (ignorableCause != null) {
                         if (log.isDebugEnabled())
                             log.debug("Service was not found or topology changed (will retry): " + ignorableCause.getMessage());
                     }

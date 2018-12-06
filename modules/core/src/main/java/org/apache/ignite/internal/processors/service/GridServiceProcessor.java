@@ -511,13 +511,13 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
      * @param dfltNodeFilter Default NodeFilter.
      * @return Configurations to deploy.
      */
-    private PreparedConfigurations prepareServiceConfigurations(Collection<ServiceConfiguration> cfgs,
+    private PreparedConfigurations<String> prepareServiceConfigurations(Collection<ServiceConfiguration> cfgs,
         IgnitePredicate<ClusterNode> dfltNodeFilter) {
         List<ServiceConfiguration> cfgsCp = new ArrayList<>(cfgs.size());
 
         Marshaller marsh = ctx.config().getMarshaller();
 
-        List<GridServiceDeploymentFuture> failedFuts = null;
+        List<GridServiceDeploymentFuture<String>> failedFuts = null;
 
         for (ServiceConfiguration cfg : cfgs) {
             Exception err = null;
@@ -567,7 +567,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
                 if (failedFuts == null)
                     failedFuts = new ArrayList<>();
 
-                GridServiceDeploymentFuture fut = new GridServiceDeploymentFuture(cfg);
+                GridServiceDeploymentFuture<String> fut = new GridServiceDeploymentFuture<>(cfg);
 
                 fut.onDone(err);
 
@@ -575,7 +575,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
             }
         }
 
-        return new PreparedConfigurations(cfgsCp, failedFuts);
+        return new PreparedConfigurations<>(cfgsCp, failedFuts);
     }
 
     /** {@inheritDoc} */
@@ -599,11 +599,11 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
         @Nullable IgnitePredicate<ClusterNode> dfltNodeFilter) {
         assert cfgs != null;
 
-        PreparedConfigurations srvCfg = prepareServiceConfigurations(cfgs, dfltNodeFilter);
+        PreparedConfigurations<String> srvCfg = prepareServiceConfigurations(cfgs, dfltNodeFilter);
 
         List<ServiceConfiguration> cfgsCp = srvCfg.cfgs;
 
-        List<GridServiceDeploymentFuture> failedFuts = srvCfg.failedFuts;
+        List<GridServiceDeploymentFuture<String>> failedFuts = srvCfg.failedFuts;
 
         Collections.sort(cfgsCp, new Comparator<ServiceConfiguration>() {
             @Override public int compare(ServiceConfiguration cfg1, ServiceConfiguration cfg2) {
@@ -614,7 +614,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
         GridServiceDeploymentCompoundFuture<String> res;
 
         while (true) {
-            res = new GridServiceDeploymentCompoundFuture();
+            res = new GridServiceDeploymentCompoundFuture<>();
 
             if (ctx.deploy().enabled())
                 ctx.cache().context().deploy().ignoreOwnership(true);
@@ -669,7 +669,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
                     "Failed to deploy services, client node disconnected: " + cfgs);
 
             for (String name : res.servicesToRollback()) {
-                GridServiceDeploymentFuture fut = depFuts.remove(name);
+                GridServiceDeploymentFuture<String> fut = depFuts.remove(name);
 
                 if (fut != null)
                     fut.onDone(err);
@@ -679,7 +679,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
         }
 
         if (failedFuts != null) {
-            for (GridServiceDeploymentFuture fut : failedFuts)
+            for (GridServiceDeploymentFuture<String> fut : failedFuts)
                 res.add(fut, false);
         }
 
@@ -693,13 +693,13 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
      * @param cfg Service configuration.
      * @throws IgniteCheckedException If operation failed.
      */
-    private void writeServiceToCache(GridServiceDeploymentCompoundFuture res, ServiceConfiguration cfg)
+    private void writeServiceToCache(GridServiceDeploymentCompoundFuture<String> res, ServiceConfiguration cfg)
         throws IgniteCheckedException {
         String name = cfg.getName();
 
-        GridServiceDeploymentFuture fut = new GridServiceDeploymentFuture(cfg);
+        GridServiceDeploymentFuture<String> fut = new GridServiceDeploymentFuture<>(cfg);
 
-        GridServiceDeploymentFuture old = depFuts.putIfAbsent(name, fut);
+        GridServiceDeploymentFuture<String> old = depFuts.putIfAbsent(name, fut);
 
         try {
             if (old != null) {
@@ -793,6 +793,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<?> cancelAll(Collection<String> servicesNames) {
         List<String> svcNamesCp = new ArrayList<>(servicesNames);
 
@@ -1924,7 +1925,7 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
                 t = th;
             }
 
-            GridServiceDeploymentFuture fut = depFuts.get(assigns.name());
+            GridServiceDeploymentFuture<String> fut = depFuts.get(assigns.name());
 
             if (fut != null && fut.configuration().equalsIgnoreNodeFilter(assigns.configuration())) {
                 depFuts.remove(assigns.name(), fut);
