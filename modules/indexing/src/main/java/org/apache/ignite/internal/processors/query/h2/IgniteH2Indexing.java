@@ -2122,6 +2122,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         String schemaName = schema(cacheInfo.name());
 
+        // TODO: Could be simplified: H2TableDescriptor do not need schema!
         H2Schema schema = schemaMgr.schema(schemaName);
 
         H2TableDescriptor tbl = new H2TableDescriptor(this, schema, type, cacheInfo, isSql);
@@ -2591,6 +2592,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         String cacheName = cacheInfo.name();
 
+        // TODO: Replace with "schemaExists" check.
         H2Schema schema = schemaMgr.schema(schema(cacheName));
 
         if (schema != null) {
