@@ -17,22 +17,28 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 
 /**
  * Represents byte array in data pages.
+ *
+ * TODO FIXME how to dispose of not needed key?
+ * Probably needs refactoring of CacheFreeListImpl.
+ * Or create dedicated FreeList for system pages (other candidate is PagePartitionCountersIO) ?
  */
 public class ByteArrayDataRow extends DataRow {
     public ByteArrayDataRow(CacheGroupContext grp, long link, int part) {
         super(grp, 0, link, part, RowData.NO_KEY);
     }
 
-    public ByteArrayDataRow(int part, int grpId, byte[] data) {
-        super(new KeyCacheObjectImpl(new Object(), new byte[0], part), new CacheObjectByteArrayImpl(data),
+    public ByteArrayDataRow(CacheObjectContext ctx, int part, int grpId, byte[] data) throws IgniteCheckedException {
+        super(new KeyCacheObjectImpl((byte)0, ctx.kernalContext().cacheObjects().marshal(ctx, (byte)0), part), new CacheObjectByteArrayImpl(data),
             GridCacheVersionManager.EVICT_VER, part, 0, grpId);
     }
 }

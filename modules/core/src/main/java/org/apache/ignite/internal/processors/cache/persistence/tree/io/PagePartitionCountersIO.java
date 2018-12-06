@@ -28,6 +28,8 @@ import org.apache.ignite.internal.util.GridUnsafe;
 /**
  * Page IO for Partition Counters, IO for pages containing cache ID mapping to its size. Used only for caches in shared
  * cache groups.
+ *
+ * TODO FIXME move to compressable data page.
  */
 public class PagePartitionCountersIO extends PageIO {
     /** */

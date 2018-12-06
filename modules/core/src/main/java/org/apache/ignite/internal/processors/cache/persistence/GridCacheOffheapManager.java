@@ -315,7 +315,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             changed = true;
                         }
                         else if (rawGaps != null && link == 0) {
-                            ByteArrayDataRow row = new ByteArrayDataRow(store.partId(), grpId, rawGaps);
+                            ByteArrayDataRow row = new ByteArrayDataRow(grp.cacheObjectContext(), store.partId(), grpId, rawGaps);
 
                             freeList.insertDataRow(row);
 
@@ -324,16 +324,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             changed = true;
                         }
                         else if (rawGaps != null) {
-                            // TODO could the link change ?
-                            ByteArrayDataRow row = new ByteArrayDataRow(store.partId(), grpId, rawGaps);
+                            // TODO FIXME update in-place optimization.
+                            freeList.removeDataRowByLink(link);
 
-                            freeList.updateDataRow(link, row);
+                            ByteArrayDataRow row = new ByteArrayDataRow(grp.cacheObjectContext(), store.partId(), grpId, rawGaps);
 
-                            if (row.link() != link) {
-                                io.setGapsLink(partMetaPageAddr, (link = row.link()));
+                            freeList.insertDataRow(row);
 
-                                changed = true;
-                            }
+                            link = row.link();
+
+                            changed = true;
                         }
 
                         changed |= io.setUpdateCounter(partMetaPageAddr, updCntr);

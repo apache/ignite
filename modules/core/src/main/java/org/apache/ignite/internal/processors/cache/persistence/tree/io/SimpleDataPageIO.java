@@ -40,8 +40,7 @@ public class SimpleDataPageIO extends AbstractDataPageIO<MetastorageDataRow> {
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected void writeFragmentData(
+    @Override protected void writeFragmentData(
         final MetastorageDataRow row,
         final ByteBuffer buf,
         final int rowOff,
@@ -89,8 +88,7 @@ public class SimpleDataPageIO extends AbstractDataPageIO<MetastorageDataRow> {
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected void writeRowData(
+    @Override protected void writeRowData(
         long pageAddr,
         int dataOff,
         int payloadSize,

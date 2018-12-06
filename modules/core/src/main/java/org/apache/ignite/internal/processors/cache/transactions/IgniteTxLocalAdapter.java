@@ -929,7 +929,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     }
                 }
 
-                if (!txState.mvccEnabled() && !near())
+                if (!txState.mvccEnabled() && local())
                     cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters(), true);
 
                 // Apply cache sizes only for primary nodes. Update counters were applied on prepare state.
