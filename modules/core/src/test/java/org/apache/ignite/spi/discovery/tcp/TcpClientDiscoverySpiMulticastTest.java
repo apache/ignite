@@ -24,6 +24,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
@@ -211,11 +212,9 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
 
         Collection<Object> addrSnds = GridTestUtils.getFieldValue(spi0.getIpFinder(), "addrSnds");
 
-        assertNotNull(addrSnds);
-
         if (client)
-            assertTrue(addrSnds.isEmpty()); // Check client does not send its address.
+            assertTrue(F.isEmpty(addrSnds)); // Check client does not send its address.
         else
-            assertFalse(addrSnds.isEmpty());
+            assertFalse(F.isEmpty(addrSnds));
     }
 }
