@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -109,6 +110,9 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10561");
+
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -213,14 +217,17 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    public void testRebalncingDuringLoad_10_10_1_1() throws Exception {
+    public void testRebalancingDuringLoad_10_10_1_1() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10583");
+
         checkRebalancingDuringLoad(10, 10, 1, 1);
     }
 
     /**
      * @throws Exception if failed.
      */
-    public void testRebalncingDuringLoad_10_500_8_16() throws Exception {
+    public void testRebalancingDuringLoad_10_500_8_16() throws Exception {
         checkRebalancingDuringLoad(10, 500, 8, 16);
     }
 
@@ -265,7 +272,16 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
                         map.put(key, new Person("fn" + key, "ln" + key));
                     }
 
-                    cache.putAll(map);
+                    while (true) {
+                        try {
+                            cache.putAll(map);
+
+                            break;
+                        }
+                        catch (Exception e) {
+                            MvccFeatureChecker.assertMvccWriteConflict(e);
+                        }
+                    }
                 }
 
                 return null;

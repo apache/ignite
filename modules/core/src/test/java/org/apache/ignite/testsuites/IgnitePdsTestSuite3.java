@@ -17,21 +17,31 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.Collection;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithExpiryPolicy;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  *
  */
 public class IgnitePdsTestSuite3 extends TestSuite {
     /**
-     * @return Suite.
+     * @return IgniteCache test suite.
      */
     public static TestSuite suite() {
+        return suite(null);
+    }
+
+    /**
+     * @param ignoredTests Ignored tests.
+     * @return IgniteCache test suite.
+     */
+    public static TestSuite suite(Collection<Class> ignoredTests) {
         TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite 3");
 
-        addRealPageStoreTestsNotForDirectIo(suite);
+        addRealPageStoreTestsNotForDirectIo(suite, ignoredTests);
 
         return suite;
     }
@@ -40,10 +50,11 @@ public class IgnitePdsTestSuite3 extends TestSuite {
      * Fills {@code suite} with PDS test subset, which operates with real page store, but requires long time to execute.
      *
      * @param suite suite to add tests into.
+     * @param ignoredTests Ignored tests list.`
      */
-    private static void addRealPageStoreTestsNotForDirectIo(TestSuite suite) {
+    private static void addRealPageStoreTestsNotForDirectIo(TestSuite suite, Collection<Class> ignoredTests) {
         // Rebalancing test
-        suite.addTestSuite(IgnitePdsContinuousRestartTest.class);
-        suite.addTestSuite(IgnitePdsContinuousRestartTestWithExpiryPolicy.class);
+        GridTestUtils.addTestIfNeeded(suite, IgnitePdsContinuousRestartTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgnitePdsContinuousRestartTestWithExpiryPolicy.class, ignoredTests);
     }
 }

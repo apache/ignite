@@ -120,9 +120,9 @@ public class MvccFeatureChecker {
     public static void assertMvccWriteConflict(Exception e) {
         IgniteSQLException sqlEx = X.cause(e, IgniteSQLException.class);
 
-        assertNotNull(sqlEx);
+        assertNotNull("Unexpected exception:" + X.getFullStackTrace(e), sqlEx);
 
-        assertEquals(TRANSACTION_SERIALIZATION_ERROR, sqlEx.statusCode());
+        assertEquals("Unexpected exception:" + X.getFullStackTrace(e),TRANSACTION_SERIALIZATION_ERROR, sqlEx.statusCode());
     }
 
     /**
