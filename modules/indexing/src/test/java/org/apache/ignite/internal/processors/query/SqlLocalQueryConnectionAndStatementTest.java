@@ -29,31 +29,18 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Test for statement reuse.
  */
 public class SqlLocalQueryConnectionAndStatementTest extends GridCommonAbstractTest {
-    /** Url. */
-    final String URL = "jdbc:ignite:thin://localhost";
-
-    /** Test duration. */
-    final long TEST_DUR = 10_000;
-
     /** {@inheritDoc} */
-    public void beforeTest() throws Exception {
-        super.beforeTest();
+    public void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
 
         startGrids(1);
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
-        super.afterTest();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setClientConnectorConfiguration(new ClientConnectorConfiguration()
-                .setThreadPoolSize(1));
+        super.afterTestsStopped();
     }
 
     /**
