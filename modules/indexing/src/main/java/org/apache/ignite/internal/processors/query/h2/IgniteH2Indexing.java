@@ -84,7 +84,6 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
-import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
@@ -95,7 +94,6 @@ import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
-import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeClientIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
@@ -149,7 +147,6 @@ import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
@@ -183,7 +180,6 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
-import static org.apache.ignite.internal.processors.query.QueryUtils.VER_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.h2.PreparedStatementEx.MVCC_CACHE_ID;
 import static org.apache.ignite.internal.processors.query.h2.PreparedStatementEx.MVCC_STATE;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
@@ -389,33 +385,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (tbl.table().remove(row)) {
             if (tbl.luceneIndex() != null)
                 tbl.luceneIndex().remove(row.key());
-        }
-    }
-
-    /**
-     * Add initial user index.
-     *
-     * @param schemaName Schema name.
-     * @param desc Table descriptor.
-     * @param h2Idx User index.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void addInitialUserIndex(String schemaName, H2TableDescriptor desc, GridH2IndexBase h2Idx)
-        throws IgniteCheckedException {
-        GridH2Table h2Tbl = desc.table();
-
-        h2Tbl.proposeUserIndex(h2Idx);
-
-        try {
-            String sql = H2Utils.indexCreateSql(desc.fullTableName(), h2Idx, false);
-
-            connMgr.executeStatement(schemaName, sql);
-        }
-        catch (Exception e) {
-            // Rollback and re-throw.
-            h2Tbl.rollbackUserIndex(h2Idx.getName());
-
-            throw e;
         }
     }
 
@@ -2221,84 +2190,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         H2TableDescriptor tbl = new H2TableDescriptor(this, schema, type, cacheInfo, isSql);
 
-        try {
-            Connection conn = connMgr.connectionForThread(schemaName);
-
-            createTable(schemaName, schema, tbl, conn);
-
-            schema.add(tbl);
-        }
-        catch (SQLException e) {
-            connMgr.onSqlException();
-
-            throw new IgniteCheckedException("Failed to register query type: " + type, e);
-        }
-
-        return true;
-    }
-
-    /**
-     * Create db table by using given table descriptor.
-     *
-     * @param schemaName Schema name.
-     * @param schema Schema.
-     * @param tbl Table descriptor.
-     * @param conn Connection.
-     * @throws SQLException If failed to create db table.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void createTable(String schemaName, H2Schema schema, H2TableDescriptor tbl, Connection conn)
-        throws SQLException, IgniteCheckedException {
-        assert schema != null;
-        assert tbl != null;
-
-        GridQueryProperty keyProp = tbl.type().property(KEY_FIELD_NAME);
-        GridQueryProperty valProp = tbl.type().property(VAL_FIELD_NAME);
-
-        String keyType = dbTypeFromClass(tbl.type().keyClass(),
-            keyProp == null ? -1 : keyProp.precision(),
-            keyProp == null ? -1 : keyProp.scale());
-
-        String valTypeStr = dbTypeFromClass(tbl.type().valueClass(),
-            valProp == null ? -1 : valProp.precision(),
-            valProp == null ? -1 : valProp.scale());
-
-        SB sql = new SB();
-
-        String keyValVisibility = tbl.type().fields().isEmpty() ? " VISIBLE" : " INVISIBLE";
-
-        sql.a("CREATE TABLE ").a(tbl.fullTableName()).a(" (")
-            .a(KEY_FIELD_NAME).a(' ').a(keyType).a(keyValVisibility).a(" NOT NULL");
-
-        sql.a(',').a(VAL_FIELD_NAME).a(' ').a(valTypeStr).a(keyValVisibility);
-        sql.a(',').a(VER_FIELD_NAME).a(" OTHER INVISIBLE");
-
-        for (Map.Entry<String, Class<?>> e : tbl.type().fields().entrySet()) {
-            GridQueryProperty prop = tbl.type().property(e.getKey());
-
-            sql.a(',')
-                .a(H2Utils.withQuotes(e.getKey()))
-                .a(' ')
-                .a(dbTypeFromClass(e.getValue(), prop.precision(), prop.scale()))
-                .a(prop.notNull() ? " NOT NULL" : "");
-        }
-
-        sql.a(')');
-
-        if (log.isDebugEnabled())
-            log.debug("Creating DB table with SQL: " + sql);
-
-        GridH2RowDescriptor rowDesc = new GridH2RowDescriptor(tbl, tbl.type());
-
-        H2RowFactory rowFactory = tbl.rowFactory(rowDesc);
-
-        GridH2Table h2Tbl = H2TableEngine.createTable(conn, sql.toString(), rowDesc, rowFactory, tbl);
-
-        for (GridH2IndexBase usrIdx : tbl.createUserIndexes())
-            addInitialUserIndex(schemaName, tbl, usrIdx);
+        GridH2Table h2Tbl = schemaMgr.onCacheTypeCreated(schema, tbl);
 
         if (dataTables.putIfAbsent(h2Tbl.identifier(), h2Tbl) != null)
             throw new IllegalStateException("Table already exists: " + h2Tbl.identifierString());
+
+        return true;
     }
 
     /**
@@ -2357,23 +2254,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         return null;
-    }
-
-    /**
-     * Gets corresponding DB type from java class.
-     *
-     * @param cls Java class.
-     * @param precision Field precision.
-     * @param scale Field scale.
-     * @return DB type name.
-     */
-    private String dbTypeFromClass(Class<?> cls, int precision, int scale) {
-        String dbType = H2DatabaseType.fromClass(cls).dBTypeAsString();
-
-        if (precision != -1 && dbType.equalsIgnoreCase(H2DatabaseType.VARCHAR.dBTypeAsString()))
-            return dbType + "(" + precision + ")";
-
-        return dbType;
     }
 
     /**

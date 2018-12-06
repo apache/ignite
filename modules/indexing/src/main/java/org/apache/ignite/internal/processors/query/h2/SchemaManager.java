@@ -25,6 +25,10 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sys.SqlSystemTableEngine;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewBaselineNodes;
@@ -199,6 +203,33 @@ public class SchemaManager {
     }
 
     /**
+     * Registers new class description.
+     *
+     * This implementation doesn't support type reregistration.
+     *
+     * @param schema Schema.
+     * @param tblDesc Table descriptor.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public GridH2Table onCacheTypeCreated(H2Schema schema, H2TableDescriptor tblDesc)
+        throws IgniteCheckedException {
+        try {
+            Connection conn = connMgr.connectionForThread(schema.schemaName());
+
+            GridH2Table tbl0 = createTable(schema.schemaName(), schema, tblDesc, conn);
+
+            schema.add(tblDesc);
+
+            return tbl0;
+        }
+        catch (SQLException e) {
+            connMgr.onSqlException();
+
+            throw new IgniteCheckedException("Failed to register query type: " + tblDesc, e);
+        }
+    }
+
+    /**
      * Handle cache destroy.
      *
      * @param cacheName Cache name.
@@ -362,6 +393,65 @@ public class SchemaManager {
      */
     public H2Schema schema(String schemaName) {
         return schemas.get(schemaName);
+    }
+
+    /**
+     * Create db table by using given table descriptor.
+     *
+     * @param schemaName Schema name.
+     * @param schema Schema.
+     * @param tbl Table descriptor.
+     * @param conn Connection.
+     * @throws SQLException If failed to create db table.
+     * @throws IgniteCheckedException If failed.
+     */
+    private GridH2Table createTable(String schemaName, H2Schema schema, H2TableDescriptor tbl, Connection conn)
+        throws SQLException, IgniteCheckedException {
+        assert schema != null;
+        assert tbl != null;
+
+        String sql = H2Utils.tableCreateSql(tbl);
+
+        if (log.isDebugEnabled())
+            log.debug("Creating DB table with SQL: " + sql);
+
+        GridH2RowDescriptor rowDesc = new GridH2RowDescriptor(tbl, tbl.type());
+
+        H2RowFactory rowFactory = tbl.rowFactory(rowDesc);
+
+        GridH2Table h2Tbl = H2TableEngine.createTable(conn, sql, rowDesc, rowFactory, tbl);
+
+        for (GridH2IndexBase usrIdx : tbl.createUserIndexes())
+            addInitialUserIndex(schemaName, tbl, usrIdx);
+
+        return h2Tbl;
+    }
+
+    /**
+     * Add initial user index.
+     *
+     * @param schemaName Schema name.
+     * @param desc Table descriptor.
+     * @param h2Idx User index.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void addInitialUserIndex(String schemaName, H2TableDescriptor desc, GridH2IndexBase h2Idx)
+        throws IgniteCheckedException {
+        GridH2Table h2Tbl = desc.table();
+
+        h2Tbl.proposeUserIndex(h2Idx);
+
+        try {
+            String sql = H2Utils.indexCreateSql(desc.fullTableName(), h2Idx, false);
+
+            connMgr.executeStatement(schemaName, sql);
+        }
+        catch (Exception e) {
+            // Rollback and re-throw.
+            h2Tbl.rollbackUserIndex(h2Idx.getName());
+
+            throw e;
+        }
     }
 
     /**
