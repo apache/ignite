@@ -34,6 +34,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -43,7 +44,15 @@ public class IgniteGetNonPlainKeyReadThroughSelfTest extends GridCommonAbstractT
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
+    /** */
     private StoreFactory storeFactory;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        super.beforeTestsStarted();
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -64,9 +73,12 @@ public class IgniteGetNonPlainKeyReadThroughSelfTest extends GridCommonAbstractT
         return cfg;
     }
 
+    /** Store Factory. */
     private static class StoreFactory implements Factory<CacheStore<Object, Object>> {
+        /** */
         private boolean nullVal;
 
+        /** Constructor. */
         public StoreFactory(boolean nullVal) {
             this.nullVal = nullVal;
         }
@@ -84,8 +96,12 @@ public class IgniteGetNonPlainKeyReadThroughSelfTest extends GridCommonAbstractT
      *
      */
     private static class Store extends CacheStoreAdapter<Object, Object> implements Serializable {
+        /** */
         private boolean nullVal;
 
+        /**
+         * Constructor.
+         * @param nullVal If {@code True} then {@link #load(Object)} will always return null. */
         public Store(boolean nullVal) {
             this.nullVal = nullVal;
         }
