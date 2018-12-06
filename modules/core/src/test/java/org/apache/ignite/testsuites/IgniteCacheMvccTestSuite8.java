@@ -20,6 +20,7 @@ import java.util.HashSet;
 import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorNearPartitionedAtomicCacheGroupsTest;
+import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorNearPartitionedAtomicCacheTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorPartitionedAtomicCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorPartitionedAtomicCacheTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedAtomicCacheGroupsTest;
@@ -94,9 +95,10 @@ public class IgniteCacheMvccTestSuite8  extends TestSuite {
         ignoredTests.add(GridCacheAtomicLocalMetricsNoStoreSelfTest.class);
         ignoredTests.add(GridCacheAtomicReplicatedMetricsSelfTest.class);
         ignoredTests.add(GridCacheAtomicPartitionedMetricsSelfTest.class);
-        ignoredTests.add(GridCacheAtomicPartitionedTckMetricsSelfTestImpl.class);//
+        ignoredTests.add(GridCacheAtomicPartitionedTckMetricsSelfTestImpl.class);
         ignoredTests.add(GridCacheAtomicLocalTckMetricsSelfTestImpl.class);
         ignoredTests.add(IgniteTopologyValidatorPartitionedAtomicCacheTest.class);
+        ignoredTests.add(IgniteTopologyValidatorNearPartitionedAtomicCacheTest.class);
         ignoredTests.add(IgniteTopologyValidatorReplicatedAtomicCacheTest.class);
         ignoredTests.add(IgniteTopologyValidatorNearPartitionedAtomicCacheGroupsTest.class);
         ignoredTests.add(IgniteTopologyValidatorPartitionedAtomicCacheGroupsTest.class);
