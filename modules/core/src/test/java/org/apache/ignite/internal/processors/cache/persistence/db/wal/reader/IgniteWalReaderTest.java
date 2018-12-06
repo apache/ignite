@@ -143,7 +143,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         CacheConfiguration<Integer, IndexedObject> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
-        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
         ccfg.setIndexedTypes(Integer.class, IndexedObject.class);

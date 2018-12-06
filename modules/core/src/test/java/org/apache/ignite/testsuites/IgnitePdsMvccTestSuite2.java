@@ -55,6 +55,9 @@ public class IgnitePdsMvccTestSuite2 extends TestSuite {
 
         Collection<Class> ignoredTests = new HashSet<>();
 
+        // Atomic caches
+        ignoredTests.add(IgnitePersistentStoreDataStructuresTest.class);
+
         // Skip irrelevant test
         ignoredTests.add(IgniteDataIntegrityTests.class);
         ignoredTests.add(IgniteStandaloneWalIteratorInvalidCrcTest.class);
@@ -65,9 +68,6 @@ public class IgnitePdsMvccTestSuite2 extends TestSuite {
 
         ignoredTests.add(IgnitePdsPageSizesTest.class);
         ignoredTests.add(IgniteDataStorageMetricsSelfTest.class);
-        //TODO IGNITE-10462: create a ticket for datastructure support.
-        ignoredTests.add(IgnitePersistentStoreDataStructuresTest.class);
-
         ignoredTests.add(IgniteWalFormatFileFailoverTest.class);
         ignoredTests.add(IgnitePdsExchangeDuringCheckpointTest.class);
         ignoredTests.add(IgnitePdsReserveWalSegmentsTest.class);
