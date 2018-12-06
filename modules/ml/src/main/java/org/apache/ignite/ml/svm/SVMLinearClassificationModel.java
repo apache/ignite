@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.regressions.logistic.binomial;
+package org.apache.ignite.ml.svm;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -25,11 +25,17 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
- * Logistic regression (logit model) is a generalized linear model used for binomial regression.
+ * Base class for SVM linear classification model.
  */
-public class LogisticRegressionModel implements Model<Vector, Double>, Exportable<LogisticRegressionModel>, Serializable {
+public class SVMLinearClassificationModel implements Model<Vector, Double>, Exportable<SVMLinearClassificationModel>, Serializable {
     /** */
-    private static final long serialVersionUID = -133984600091550776L;
+    private static final long serialVersionUID = -996984622291440226L;
+
+    /** Output label format. '0' and '1' for false value and raw distances from the separating hyperplane otherwise. */
+    private boolean isKeepingRawLabels = false;
+
+    /** Threshold to assign '1' label to the observation if raw value more than this threshold. */
+    private double threshold = 0.5;
 
     /** Multiplier of the objects's vector required to make prediction. */
     private Vector weights;
@@ -37,14 +43,8 @@ public class LogisticRegressionModel implements Model<Vector, Double>, Exportabl
     /** Intercept of the linear regression model. */
     private double intercept;
 
-    /** Output label format. 0 and 1 for false value and raw sigmoid regression value otherwise. */
-    private boolean isKeepingRawLabels = false;
-
-    /** Threshold to assign '1' label to the observation if raw value more than this threshold. */
-    private double threshold = 0.5;
-
     /** */
-    public LogisticRegressionModel(Vector weights, double intercept) {
+    public SVMLinearClassificationModel(Vector weights, double intercept) {
         this.weights = weights;
         this.intercept = intercept;
     }
@@ -55,7 +55,7 @@ public class LogisticRegressionModel implements Model<Vector, Double>, Exportabl
      * @param isKeepingRawLabels The parameter value.
      * @return Model with new isKeepingRawLabels parameter value.
      */
-    public LogisticRegressionModel withRawLabels(boolean isKeepingRawLabels) {
+    public SVMLinearClassificationModel withRawLabels(boolean isKeepingRawLabels) {
         this.isKeepingRawLabels = isKeepingRawLabels;
         return this;
     }
@@ -66,7 +66,7 @@ public class LogisticRegressionModel implements Model<Vector, Double>, Exportabl
      * @param threshold The parameter value.
      * @return Model with new threshold parameter value.
      */
-    public LogisticRegressionModel withThreshold(double threshold) {
+    public SVMLinearClassificationModel withThreshold(double threshold) {
         this.threshold = threshold;
         return this;
     }
@@ -77,7 +77,7 @@ public class LogisticRegressionModel implements Model<Vector, Double>, Exportabl
      * @param weights The parameter value.
      * @return Model with new weights parameter value.
      */
-    public LogisticRegressionModel withWeights(Vector weights) {
+    public SVMLinearClassificationModel withWeights(Vector weights) {
         this.weights = weights;
         return this;
     }
@@ -88,9 +88,18 @@ public class LogisticRegressionModel implements Model<Vector, Double>, Exportabl
      * @param intercept The parameter value.
      * @return Model with new intercept parameter value.
      */
-    public LogisticRegressionModel withIntercept(double intercept) {
+    public SVMLinearClassificationModel withIntercept(double intercept) {
         this.intercept = intercept;
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Double apply(Vector input) {
+        final double res = input.dot(weights) + intercept;
+        if (isKeepingRawLabels)
+            return res;
+        else
+            return res - threshold > 0 ? 1.0 : 0;
     }
 
     /**
@@ -130,27 +139,7 @@ public class LogisticRegressionModel implements Model<Vector, Double>, Exportabl
     }
 
     /** {@inheritDoc} */
-    @Override public Double apply(Vector input) {
-
-        final double res = sigmoid(input.dot(weights) + intercept);
-
-        if (isKeepingRawLabels)
-            return res;
-        else
-            return res - threshold > 0 ? 1.0 : 0;
-    }
-
-    /**
-     * Sigmoid function.
-     * @param z The regression value.
-     * @return The result.
-     */
-    private static double sigmoid(double z) {
-        return 1.0 / (1.0 + Math.exp(-z));
-    }
-
-    /** {@inheritDoc} */
-    @Override public <P> void saveModel(Exporter<LogisticRegressionModel, P> exporter, P path) {
+    @Override public <P> void saveModel(Exporter<SVMLinearClassificationModel, P> exporter, P path) {
         exporter.save(this, path);
     }
 
@@ -161,7 +150,7 @@ public class LogisticRegressionModel implements Model<Vector, Double>, Exportabl
         if (o == null || getClass() != o.getClass())
             return false;
 
-        LogisticRegressionModel mdl = (LogisticRegressionModel)o;
+        SVMLinearClassificationModel mdl = (SVMLinearClassificationModel)o;
 
         return Double.compare(mdl.intercept, intercept) == 0
             && Double.compare(mdl.threshold, threshold) == 0
@@ -192,7 +181,7 @@ public class LogisticRegressionModel implements Model<Vector, Double>, Exportabl
             return builder.toString();
         }
 
-        return "LogisticRegressionModel [" +
+        return "SVMModel [" +
             "weights=" + weights +
             ", intercept=" + intercept +
             ']';

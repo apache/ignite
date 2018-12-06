@@ -16,15 +16,23 @@
  */
 
 export default class ModalImportModels {
-    static $inject = ['$modal', '$uiRouter', 'AgentManager'];
+    static $inject = ['$modal', '$q', '$uiRouter', 'AgentManager'];
 
-    constructor($modal, $uiRouter, AgentManager) {
+    deferred;
+
+    constructor($modal, $q, $uiRouter, AgentManager) {
         this.$modal = $modal;
+        this.$q = $q;
         this.$uiRouter = $uiRouter;
         this.AgentManager = AgentManager;
     }
 
     _goToDynamicState() {
+        if (this.deferred)
+            return this.deferred.promise;
+
+        this.deferred = this.$q.defer();
+
         if (this._state)
             this.$uiRouter.stateRegistry.deregister(this._state);
 
@@ -36,7 +44,6 @@ export default class ModalImportModels {
             },
             onExit: () => {
                 this.AgentManager.stopWatch();
-
                 this._modal && this._modal.hide();
             }
         });
@@ -45,21 +52,34 @@ export default class ModalImportModels {
     }
 
     _open() {
+        const self = this;
+
         this._modal = this.$modal({
             template: `
                 <modal-import-models
-                    on-hide='$ctrl.$state.go("^")'
+                    on-hide='$ctrl.onHide()'
                     cluster-id='$ctrl.$state.params.clusterID'
                 ></modal-import-models>
             `,
-            controller: ['$state', function($state) {this.$state = $state;}],
+            controller: ['$state', function($state) {
+                this.$state = $state;
+
+                this.onHide = () => {
+                    self.deferred.resolve(true);
+
+                    this.$state.go('^');
+                };
+            }],
             controllerAs: '$ctrl',
+            backdrop: 'static',
             show: false
         });
 
         return this.AgentManager.startAgentWatch('Back', this.$uiRouter.globals.current.name)
             .then(() => this._modal.$promise)
-            .then(() => this._modal.show());
+            .then(() => this._modal.show())
+            .then(() => this.deferred.promise)
+            .finally(() => this.deferred = null);
     }
 
     open() {

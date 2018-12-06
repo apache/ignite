@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.svm.binary;
+package org.apache.ignite.examples.ml.svm;
 
 import java.io.FileNotFoundException;
 import java.util.Arrays;
@@ -28,11 +28,11 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
 import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
-import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationTrainer;
+import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
+import org.apache.ignite.ml.svm.SVMLinearClassificationTrainer;
 
 /**
- * Run SVM binary-class classification model ({@link SVMLinearBinaryClassificationModel}) over distributed dataset.
+ * Run SVM binary-class classification model ({@link SVMLinearClassificationModel}) over distributed dataset.
  * <p>
  * Code in this example launches Ignite grid and fills the cache with test data points (based on the
  * <a href="https://en.wikipedia.org/wiki/Iris_flower_data_set"></a>Iris dataset</a>).</p>
@@ -57,9 +57,9 @@ public class SVMBinaryClassificationExample {
             IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
                 .fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
-            SVMLinearBinaryClassificationTrainer trainer = new SVMLinearBinaryClassificationTrainer();
+            SVMLinearClassificationTrainer trainer = new SVMLinearClassificationTrainer();
 
-            SVMLinearBinaryClassificationModel mdl = trainer.fit(
+            SVMLinearClassificationModel mdl = trainer.fit(
                 ignite,
                 dataCache,
                 (k, v) -> v.copyOfRange(1, v.size()),

@@ -27,11 +27,14 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
@@ -96,6 +99,11 @@ public class IgniteDynamicCacheStartCoordinatorFailoverTest extends GridCommonAb
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
+    }
+
     /**
      * Tests coordinator failover during cache start failure.
      *
@@ -117,6 +125,8 @@ public class IgniteDynamicCacheStartCoordinatorFailoverTest extends GridCommonAb
         CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setName("test-coordinator-failover");
+
+        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         cfg.setAffinity(new BrokenAffinityFunction(false, getTestIgniteInstanceName(2)));
 
