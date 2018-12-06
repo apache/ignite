@@ -15,8 +15,22 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.processors.cache;
+
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
+
 /**
- * <!-- Package description. -->
- * Contains multi-class logistic regression.
+ * Test getEntry and getEntries methods.
  */
-package org.apache.ignite.ml.regressions.logistic.multiclass;
+public class CacheGetEntryPessimisticReadCommittedSelfTest extends CacheGetEntryAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected TransactionConcurrency concurrency() {
+        return TransactionConcurrency.PESSIMISTIC;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected TransactionIsolation isolation() {
+        return TransactionIsolation.READ_COMMITTED;
+    }
+}
