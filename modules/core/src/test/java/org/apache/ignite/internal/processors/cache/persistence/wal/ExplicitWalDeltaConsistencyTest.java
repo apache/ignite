@@ -26,70 +26,76 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.Pa
  */
 public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyTest {
     /**
-     *
+     * @throws Exception If failed.
      */
     public final void testPutRemoveAfterCheckpoint() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        try {
+            ignite.cluster().active(true);
 
-        IgniteCache<Integer, Object> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+            IgniteCache<Integer, Object> cache = ignite.createCache(cacheConfiguration(DEFAULT_CACHE_NAME));
 
-        for (int i = 0; i < 5_000; i++)
-            cache.put(i, "Cache value " + i);
+            for (int i = 0; i < 5_000; i++)
+                cache.put(i, "Cache value " + i);
 
-        for (int i = 1_000; i < 2_000; i++)
-            cache.put(i, i);
+            for (int i = 1_000; i < 2_000; i++)
+                cache.put(i, i);
 
-        for (int i = 500; i < 1_500; i++)
-            cache.remove(i);
+            for (int i = 500; i < 1_500; i++)
+                cache.remove(i);
 
-        assertTrue(PageMemoryTrackerPluginProvider.tracker(ignite).checkPages(true));
+            assertTrue(PageMemoryTrackerPluginProvider.tracker(ignite).checkPages(true));
 
-        forceCheckpoint();
+            forceCheckpoint();
 
-        for (int i = 3_000; i < 10_000; i++)
-            cache.put(i, "Changed cache value " + i);
+            for (int i = 3_000; i < 10_000; i++)
+                cache.put(i, "Changed cache value " + i);
 
-        for (int i = 4_000; i < 7_000; i++)
-            cache.remove(i);
+            for (int i = 4_000; i < 7_000; i++)
+                cache.remove(i);
 
-        assertTrue(PageMemoryTrackerPluginProvider.tracker(ignite).checkPages(true));
-
-        stopAllGrids();
+            assertTrue(PageMemoryTrackerPluginProvider.tracker(ignite).checkPages(true));
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public final void testNotEmptyPds() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        try {
+            ignite.cluster().active(true);
 
-        IgniteCache<Integer, Object> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+            IgniteCache<Integer, Object> cache = ignite.createCache(cacheConfiguration(DEFAULT_CACHE_NAME));
 
-        for (int i = 0; i < 3_000; i++)
-            cache.put(i, "Cache value " + i);
+            for (int i = 0; i < 3_000; i++)
+                cache.put(i, "Cache value " + i);
 
-        forceCheckpoint();
+            forceCheckpoint();
 
-        stopGrid(0);
+            stopGrid(0);
 
-        ignite = startGrid(0);
+            ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+            ignite.cluster().active(true);
 
-        cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+            cache = ignite.getOrCreateCache(cacheConfiguration(DEFAULT_CACHE_NAME));;
 
-        for (int i = 2_000; i < 5_000; i++)
-            cache.put(i, "Changed cache value " + i);
+            for (int i = 2_000; i < 5_000; i++)
+                cache.put(i, "Changed cache value " + i);
 
-        for (int i = 1_000; i < 4_000; i++)
-            cache.remove(i);
+            for (int i = 1_000; i < 4_000; i++)
+                cache.remove(i);
 
-        assertTrue(PageMemoryTrackerPluginProvider.tracker(ignite).checkPages(true));
-
-        stopAllGrids();
+            assertTrue(PageMemoryTrackerPluginProvider.tracker(ignite).checkPages(true));
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 }

@@ -30,36 +30,39 @@ public class CpTriggeredWalDeltaConsistencyTest extends AbstractWalDeltaConsiste
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public final void testPutRemoveCacheDestroy() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        try {
+            ignite.cluster().active(true);
 
-        IgniteCache<Integer, Object> cache0 = ignite.getOrCreateCache("cache0");
+            IgniteCache<Integer, Object> cache0 = ignite.createCache(cacheConfiguration("cache0"));
 
-        for (int i = 0; i < 3_000; i++)
-            cache0.put(i, "Cache value " + i);
+            for (int i = 0; i < 3_000; i++)
+                cache0.put(i, "Cache value " + i);
 
-        for (int i = 2_000; i < 5_000; i++)
-            cache0.put(i, "Changed cache value " + i);
+            for (int i = 2_000; i < 5_000; i++)
+                cache0.put(i, "Changed cache value " + i);
 
-        for (int i = 1_000; i < 4_000; i++)
-            cache0.remove(i);
+            for (int i = 1_000; i < 4_000; i++)
+                cache0.remove(i);
 
-        for (int i = 5; i >= 0; i--) {
-            IgniteCache<Integer, Object> cache1 = ignite.getOrCreateCache("cache1");
+            for (int i = 5; i >= 0; i--) {
+                IgniteCache<Integer, Object> cache1 = ignite.getOrCreateCache(cacheConfiguration("cache1"));
 
-            for (int j = 0; j < 300; j++)
-                cache1.put(j + i * 100, "Cache value " + j);
+                for (int j = 0; j < 300; j++)
+                    cache1.put(j + i * 100, "Cache value " + j);
 
-            if (i != 0)
-                ignite.destroyCache("cache1");
+                if (i != 0)
+                    ignite.destroyCache("cache1");
+            }
+
+            forceCheckpoint();
         }
-
-        forceCheckpoint();
-
-        stopAllGrids();
+        finally {
+            stopAllGrids();
+        }
     }
 }

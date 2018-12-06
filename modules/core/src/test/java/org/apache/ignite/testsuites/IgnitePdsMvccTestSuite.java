@@ -23,6 +23,8 @@ import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheConfigurationFileConsistencyCheckTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDestroyCacheTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDestroyCacheWithoutCheckpointsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.DefaultPageSizeBackwardsCompatibilityTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCheckpointSimulationWithRealCpDisabledTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsPageReplacementTest;
@@ -73,6 +75,9 @@ public class IgnitePdsMvccTestSuite extends TestSuite {
         ignoredTests.add(FillFactorMetricTest.class);
         ignoredTests.add(IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest.class);
         ignoredTests.add(SegmentAwareTest.class);
+
+        ignoredTests.add(IgnitePdsDestroyCacheTest.class);
+        ignoredTests.add(IgnitePdsDestroyCacheWithoutCheckpointsTest.class);
 
         suite.addTest(IgnitePdsTestSuite.suite(ignoredTests));
 

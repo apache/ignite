@@ -50,33 +50,36 @@ public class SysPropWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyT
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public final void testPutRemoveMultinode() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
-        ignite0.cluster().active(true);
+        try {
+            ignite0.cluster().active(true);
 
-        IgniteCache<Integer, Object> cache0 = ignite0.getOrCreateCache("cache0");
+            IgniteCache<Integer, Object> cache0 = ignite0.createCache(cacheConfiguration("cache0"));
 
-        for (int i = 0; i < 3_000; i++)
-            cache0.put(i, "Cache value " + i);
+            for (int i = 0; i < 3_000; i++)
+                cache0.put(i, "Cache value " + i);
 
-        IgniteEx ignite1 = startGrid(1);
+            IgniteEx ignite1 = startGrid(1);
 
-        for (int i = 2_000; i < 5_000; i++)
-            cache0.put(i, "Changed cache value " + i);
+            for (int i = 2_000; i < 5_000; i++)
+                cache0.put(i, "Changed cache value " + i);
 
-        for (int i = 1_000; i < 4_000; i++)
-            cache0.remove(i);
+            for (int i = 1_000; i < 4_000; i++)
+                cache0.remove(i);
 
-        IgniteCache<Integer, Object> cache1 = ignite1.getOrCreateCache("cache1");
+            IgniteCache<Integer, Object> cache1 = ignite1.createCache(cacheConfiguration("cache1"));
 
-        for (int i = 0; i < 1_000; i++)
-            cache1.put(i, "Cache value " + i);
+            for (int i = 0; i < 1_000; i++)
+                cache1.put(i, "Cache value " + i);
 
-        forceCheckpoint();
-
-        stopAllGrids();
+            forceCheckpoint();
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 }
