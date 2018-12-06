@@ -409,7 +409,8 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
     public void checkHoldQuery(Ignite node) throws Exception {
         ArrayList rows = new ArrayList<>();
 
-        FieldsQueryCursor<List<?>> cursor0 = execute(node, query(BASE_QRY_ARG).setPageSize(PAGE_SIZE_SMALL));
+        Iterator<List<?>> it0 = execute(node, query(BASE_QRY_ARG).setPageSize(PAGE_SIZE_SMALL)).iterator();
+        rows.add(it0.next());
 
         // Do many concurrent queries to Test full iteration.
         GridTestUtils.runMultiThreaded(new Runnable() {
@@ -423,8 +424,16 @@ public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTe
             }
         }, 5, "test-qry");
 
-        for (List<?> row : cursor0)
-            rows.add(row);
+        // Do the same query in the same thread.
+        {
+            FieldsQueryCursor<List<?>> cursor = execute(node, query(BASE_QRY_ARG)
+                .setPageSize(PAGE_SIZE_SMALL));
+
+            cursor.getAll();
+        }
+
+        while (it0.hasNext())
+            rows.add(it0.next());
 
         assertBaseQueryResults(rows);
     }
