@@ -31,11 +31,15 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.apache.log4j.Level;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Gridify single split load test.
  */
 @GridCommonTest(group = "Load Test")
+@RunWith(JUnit4.class)
 public class GridifySingleSplitLoadTest extends GridCommonAbstractTest {
     /** */
     public GridifySingleSplitLoadTest() {
@@ -97,6 +101,7 @@ public class GridifySingleSplitLoadTest extends GridCommonAbstractTest {
      *
      * @throws Exception If task execution failed.
      */
+    @Test
     public void testGridifyLoad() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
