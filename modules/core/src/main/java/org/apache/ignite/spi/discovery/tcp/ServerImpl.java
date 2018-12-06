@@ -2931,6 +2931,11 @@ class ServerImpl extends TcpDiscoveryImpl {
         @SuppressWarnings({"BreakStatementWithLabel", "LabeledStatement", "ContinueStatementWithLabel"})
         private void sendMessageAcrossRing(TcpDiscoveryAbstractMessage msg) {
             assert msg != null;
+            if(msg instanceof TcpDiscoveryStatusCheckMessage)
+                log.info("GetStatusCheckAccrossRing : " + ((TcpDiscoveryStatusCheckMessage)msg).creatorNode().id());
+
+            if(msg instanceof TcpDiscoveryStatusCheckMessage)
+                log.info("GetTcpDiscoveryConnectionCheckMessage : " + ((TcpDiscoveryConnectionCheckMessage)msg).creatorNodeId());
 
             assert ring.hasRemoteNodes();
 
@@ -2964,8 +2969,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 TcpDiscoveryNode newNext = ring.nextNode(failedNodes);
 
                 if (newNext == null) {
-                    if (log.isDebugEnabled())
-                        log.debug("No next node in topology.");
+                    if (log.isInfoEnabled())
+                        log.info("No next node in topology.");
 
                     if (debugMode)
                         debugLog(msg, "No next node in topology.");
@@ -3286,7 +3291,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (latencyCheck && log.isInfoEnabled())
                                     log.info("Latency check message has been written to socket: " + msg.id());
 
-                                spi.writeToSocket(newNextNode ? newNext : next,
+                                TcpDiscoveryNode node = newNextNode ? newNext : next;
+
+                                if(msg instanceof TcpDiscoveryStatusCheckMessage)
+                                    log.info("StatusCheckAccrossRing : " + node.id());
+
+                                spi.writeToSocket(node,
                                     sock,
                                     out,
                                     msg,
@@ -5047,6 +5057,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void processStatusCheckMessage(final TcpDiscoveryStatusCheckMessage msg) {
             assert msg != null;
 
+            log.info("StatusCheckMessage : " + msg.creatorNode().id());
+
             UUID locNodeId = getLocalNodeId();
 
             if (msg.failedNodeId() != null) {
@@ -5107,6 +5119,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 }
 
                                 try {
+                                    log.info("TrySendMessageDIrecly : " + msg0.creatorNode().id());
+
                                     trySendMessageDirectly(msg0.creatorNode(), msg0);
 
                                     if (log.isDebugEnabled())
@@ -5194,6 +5208,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             assert msg != null;
 
             assert !msg.client();
+
+            log.info("MetricsUpdateMessage : " + msg.creatorNodeId());
 
             UUID locNodeId = getLocalNodeId();
 
@@ -5737,6 +5753,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 hasRemoteSrvNodes = ring.hasRemoteServerNodes();
 
 //            debugLogQ.add("CheckCOnnection : " + hasRemoteSrvNodes);
+            log.info("CheckCOnnection : " + hasRemoteSrvNodes);
 
             if (hasRemoteSrvNodes) {
                 sendMessageAcrossRing(new TcpDiscoveryConnectionCheckMessage(locNode));
