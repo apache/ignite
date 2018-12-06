@@ -55,6 +55,8 @@ import 'rxjs/add/operator/skip';
 import {Observable} from 'rxjs/Observable';
 
 import {navigationMenuItem, AppStore} from '../../store';
+import {default as configurationIcon} from './icons/configuration.icon.svg';
+import {default as IconsService} from '../ignite-icon/service';
 
 Observable.prototype.debug = function(l) {
     return this.do((v) => console.log(l, v), (e) => console.error(l, e), () => console.log(l, 'completed'));
@@ -117,7 +119,9 @@ export default angular
         DefaultState.setRedirectTo(() => 'base.configuration.overview');
     }])
     .run(registerActivitiesHook)
-    .run(['ConfigEffects', 'ConfigureState', '$uiRouter', 'Store', (ConfigEffects, ConfigureState, $uiRouter, store: AppStore) => {
+    .run(['ConfigEffects', 'ConfigureState', '$uiRouter', 'Store', 'IgniteIcon', (ConfigEffects, ConfigureState, $uiRouter, store: AppStore, icons: IconsService) => {
+        icons.registerIcons({configuration: configurationIcon});
+
         $uiRouter.plugin(UIRouterRx);
 
         ConfigureState.addReducer(refsReducer({
@@ -168,7 +172,7 @@ export default angular
 
         store.dispatch(navigationMenuItem({
             activeSref: 'base.configuration.**',
-            icon: 'cluster',
+            icon: 'configuration',
             label: 'Configuration',
             order: 1,
             sref: 'base.configuration.overview'
