@@ -371,7 +371,7 @@ public class PartitionUpdateCounter {
     /**
      * Update counter task. Update from start value by delta value.
      */
-    private static class Item implements Comparable<Item> {
+    public static class Item implements Comparable<Item> {
         /** */
         private final long start;
 
@@ -402,6 +402,14 @@ public class PartitionUpdateCounter {
                 ", open=" + open() +
                 ", delta=" + delta +
                 ']';
+        }
+
+        public long start() {
+            return start;
+        }
+
+        public long delta() {
+            return delta;
         }
 
         public void increment() {

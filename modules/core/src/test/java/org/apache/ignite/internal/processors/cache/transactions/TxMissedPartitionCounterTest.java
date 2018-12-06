@@ -1,7 +1,9 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapM
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -481,12 +484,16 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
                     try {
                         TestRecordingCommunicationSpi.spi(client).waitForBlocked(2);
 
+                        Map<String, GridCacheVersion> vers = new HashMap<String, GridCacheVersion>();
+
                         // Order prepare requests: t2, when t1.
                         TestRecordingCommunicationSpi.spi(client).stopBlock(true, new IgnitePredicate<T2<ClusterNode, GridIoMessage>>() {
                             @Override public boolean apply(T2<ClusterNode, GridIoMessage> objects) {
                                 GridIoMessage objects2 = objects.get2();
 
                                 GridNearTxPrepareRequest req = (GridNearTxPrepareRequest)objects2.message();
+
+                                vers.put(req.txLabel(), req.version());
 
                                 return "t2".equals(req.txLabel());
                             }
@@ -498,7 +505,15 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
                             @Override public boolean apply(T2<ClusterNode, GridIoMessage> objects) {
                                 GridIoMessage objects2 = objects.get2();
 
-                                return objects2.message() instanceof GridNearTxPrepareRequest;
+                                if (objects2.message() instanceof GridNearTxPrepareRequest) {
+                                    GridNearTxPrepareRequest req = (GridNearTxPrepareRequest)objects2.message();
+
+                                    vers.put(req.txLabel(), req.version());
+
+                                    return true;
+                                }
+
+                                return false;
                             }
                         }, false);
 
@@ -511,7 +526,71 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
                         PartitionUpdateCounter cntr = locPart.dataStore().partUpdateCounter();
 
-                        System.out.println();
+                        assertEquals(2, cntr.holes().size());
+
+                        int c = 0;
+                        for (PartitionUpdateCounter.Item item : cntr.holes()) {
+                            switch (c) {
+                                case 0:
+                                    assertEquals(0, item.start());
+                                    assertEquals(3, item.delta());
+                                    assertTrue(item.open());
+
+                                    break;
+                                case 1:
+                                    assertEquals(item.start(), 3);
+                                    assertEquals(item.delta(), 7);
+                                    assertTrue(item.open());
+
+                                    break;
+                                default:
+                                    fail();
+                            }
+
+                            c++;
+                        }
+
+                        // Finish tx out of order.
+                        TestRecordingCommunicationSpi.spi(client).stopBlock(true, new IgnitePredicate<T2<ClusterNode, GridIoMessage>>() {
+                            @Override public boolean apply(T2<ClusterNode, GridIoMessage> objects) {
+                                GridIoMessage objects2 = objects.get2();
+
+                                GridNearTxFinishRequest req = (GridNearTxFinishRequest)objects2.message();
+
+                                return vers.get("t1").equals(req.version());
+                            }
+                        }, false);
+
+                        doSleep(1000);
+
+                        cntr = locPart.dataStore().partUpdateCounter();
+
+                        c = 0; // TODO fix copypaste.
+                        for (PartitionUpdateCounter.Item item : cntr.holes()) {
+                            switch (c) {
+                                case 0:
+                                    assertEquals(item.start(), 0);
+                                    assertEquals(item.delta(), 3);
+                                    assertTrue(item.open());
+
+                                    break;
+                                case 1:
+                                    assertEquals(item.start(), 3);
+                                    assertEquals(item.delta(), 7);
+                                    assertFalse(item.open());
+
+                                    break;
+                                default:
+                                    fail();
+                            }
+
+                            c++;
+                        }
+
+                        // Checkpoint before finishing other tx.
+                        forceCheckpoint();
+
+                        TestRecordingCommunicationSpi.spi(client).stopBlock();
                     }
                     catch (Exception e) {
                         fail();
@@ -546,6 +625,12 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
             fut.get();
             fut0.get();
             fut1.get();
+
+            @Nullable GridDhtLocalPartition locPart = internalCache(0).context().topology().localPartition(partId);
+
+            PartitionUpdateCounter cntr = locPart.dataStore().partUpdateCounter();
+
+            assertTrue(cntr.holes().isEmpty());
         }
         finally {
             stopAllGrids();
