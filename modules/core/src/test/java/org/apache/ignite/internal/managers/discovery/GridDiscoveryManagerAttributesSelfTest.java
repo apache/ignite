@@ -21,6 +21,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
@@ -89,6 +91,11 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /**
