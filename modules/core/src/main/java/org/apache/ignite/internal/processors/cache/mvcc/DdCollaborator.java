@@ -1,15 +1,15 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.util.Collection;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_COORDINATOR;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
@@ -52,41 +52,34 @@ public class DdCollaborator {
                 }
                 else {
                     // probe each blocker
-                    // t0d0 multiple blockers
+                    // t0d0 pending responses from MULTIPLE nodes, MULTIPLE blocking transactions from each node
+                    // consider grouping (only if it will lead to correct results!)
                     // t0d0 check if holding some lock already
                     // t0d0 first find all peers then send messages
-                    collectBlockers(tx).listen(fut -> {
-                        try {
-                            NearTxLocator blockerTx = fut.get();
+                    collectBlockers(tx).forEach(fut -> {
+                        fut.listen(fut0 -> {
+                            try {
+                                NearTxLocator blockerTx = fut.get();
 
-                            if (blockerTx == null)
-                                return;
-
-                            sendProbe(
-                                probe.initiatorVersion(),
-                                tx.nearXidVersion(),
-                                blockerTx.xidVersion(),
-                                blockerTx.nodeId());
-                        }
-                        catch (IgniteCheckedException e) {
-                            e.printStackTrace();
-                        }
+                                sendProbe(
+                                    probe.initiatorVersion(),
+                                    tx.nearXidVersion(),
+                                    blockerTx.xidVersion(),
+                                    blockerTx.nodeId());
+                            }
+                            catch (IgniteCheckedException e) {
+                                e.printStackTrace();
+                            }
+                        });
                     });
                 }
             });
     }
 
-    private IgniteInternalFuture<NearTxLocator> collectBlockers(GridNearTxLocal tx) {
-        Set<UUID> optNode = tx.getPendingResponseNodes();
-
-        // t0d0 use all blockers
-        if (!optNode.isEmpty()) {
-            UUID nodeId = optNode.iterator().next();
-            // t0d0 employ local check as well
-            return cctx.coordinators().checkWaiting(nodeId, tx.mvccSnapshot());
-        }
-
-        return new GridFinishedFuture<>();
+    private Collection<IgniteInternalFuture<NearTxLocator>> collectBlockers(GridNearTxLocal tx) {
+        return tx.getPendingResponseNodes().stream()
+            .map(nodeId -> cctx.coordinators().checkWaiting(nodeId, tx.mvccSnapshot()))
+            .collect(Collectors.toList());
     }
 
     private void sendProbe(

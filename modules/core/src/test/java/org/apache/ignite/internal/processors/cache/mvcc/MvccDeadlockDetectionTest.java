@@ -1,5 +1,7 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import com.google.common.collect.ImmutableMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
@@ -116,6 +118,66 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
             cache.put(key2, 1);
             b.await();
             cache.put(key0, 0);
+
+            tx.commit();
+        }
+
+        fut1.get();
+        fut2.get();
+    }
+
+    @Test
+    public void detectGraphDeadlock() throws Exception {
+        // Does not work! It seems putAll requests locks sequentially
+
+        // T0 -> T1
+        //  \-> T2 -> T0
+        // t0d0 ensure test will not hang
+        setUpGrids(3);
+
+        IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
+
+        Integer key0 = primaryKey(grid(0).cache(DEFAULT_CACHE_NAME));
+        Integer key1 = primaryKey(grid(1).cache(DEFAULT_CACHE_NAME));
+        Integer key2 = primaryKey(grid(2).cache(DEFAULT_CACHE_NAME));
+
+        CountDownLatch t1t2locksOwnLatch = new CountDownLatch(2);
+        CountDownLatch t0lockOwnLatch = new CountDownLatch(1);
+
+        IgniteInternalFuture<Object> fut1 = GridTestUtils.runAsync(() -> {
+            try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                cache.put(key1, 1);
+                t1t2locksOwnLatch.countDown();
+                // t0d0
+                TimeUnit.SECONDS.sleep(5);
+//                cache.put(key0, 1);
+
+                // rollback to prevent waiting tx abort due write conflict
+                tx.rollback();
+            }
+            return null;
+        });
+
+        IgniteInternalFuture<Object> fut2 = GridTestUtils.runAsync(() -> {
+            try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                cache.put(key2, 2);
+                t1t2locksOwnLatch.countDown();
+                t0lockOwnLatch.await();
+                // t0d0
+//                TimeUnit.SECONDS.sleep(5);
+                cache.put(key0, 2);
+
+                tx.rollback();
+            }
+            return null;
+        });
+
+        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            t1t2locksOwnLatch.await();
+            cache.put(key0, 0);
+            t0lockOwnLatch.countDown();
+            TimeUnit.SECONDS.sleep(1);
+            cache.putAll(ImmutableMap.of(key2, 0, key1, 0));
 
             tx.commit();
         }

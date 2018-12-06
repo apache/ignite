@@ -1978,6 +1978,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     private Optional<IgniteInternalTx> findBlockerTx(MvccVersion checkedTxVer) {
+        // t0d0 multiple bloker txs seems to be possible
         return waitMap.entrySet().stream()
             .filter(e -> e.getValue().txVersion().stream()
                 .anyMatch(waitingVer -> DdCollaborator.belongToSameTx(waitingVer, checkedTxVer)))
