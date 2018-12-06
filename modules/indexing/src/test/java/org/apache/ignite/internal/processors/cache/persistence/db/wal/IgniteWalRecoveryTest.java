@@ -109,6 +109,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Assert;
 
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
@@ -122,6 +123,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
     /** */
     private static final int LARGE_ARR_SIZE = 1025;
+    public static final int LARGE_ENTRY_COUNT = 500;
+    public static final int ENTRY_COUNT = 2_000;
 
     /** */
     private boolean fork;
@@ -139,19 +142,23 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     private static final String LOC_CACHE_NAME = "local";
 
     /** */
-    private boolean renamed;
+    private boolean renamed = false;
 
     /** */
-    private int walSegmentSize;
+    private int walSegmentSize = 16 * 1024 * 1024;
 
     /** */
     private int walSegments = 10;
 
     /** Log only. */
-    private boolean logOnly;
+    private boolean logOnly = false;
 
     /** */
     private long customFailureDetectionTimeout = -1;
+
+    /** */
+    private long checkpointFrequency = DFLT_CHECKPOINT_FREQ;
+    ;
 
     /** {@inheritDoc} */
     @Override protected boolean isMultiJvm() {
@@ -202,6 +209,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         dbCfg.setWalSegments(walSegments);
 
+        dbCfg.setCheckpointFrequency(checkpointFrequency);
+
         cfg.setDataStorageConfiguration(dbCfg);
 
         BinaryConfiguration binCfg = new BinaryConfiguration();
@@ -228,15 +237,11 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
-
-        renamed = false;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-
-        logOnly = false;
 
         cleanPersistenceDir();
     }
@@ -772,17 +777,17 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         IgniteCache<Object, Object> cache = cacheGrid.cache(CACHE_NAME);
 
-        for (int i = 0; i < 10_000; i++)
+        for (int i = 0; i < ENTRY_COUNT; i++)
             assertEquals(new IndexedObject(i), cache.get(i));
 
         List<List<?>> res = cache.query(new SqlFieldsQuery("select count(iVal) from IndexedObject")).getAll();
 
         assertEquals(1, res.size());
-        assertEquals(10_000L, res.get(0).get(0));
+        assertEquals((long)ENTRY_COUNT, res.get(0).get(0));
 
         IgniteCache<Object, Object> locCache = cacheGrid.cache(LOC_CACHE_NAME);
 
-        for (int i = 0; i < 10_000; i++)
+        for (int i = 0; i < ENTRY_COUNT; i++)
             assertEquals(new IndexedObject(i), locCache.get(i));
     }
 
@@ -821,7 +826,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         IgniteCache<Object, Object> cache = cacheGrid.cache(CACHE_NAME);
         IgniteCache<Object, Object> locCache = cacheGrid.cache(LOC_CACHE_NAME);
 
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < LARGE_ENTRY_COUNT; i++) {
             final long[] data = new long[LARGE_ARR_SIZE];
 
             Arrays.fill(data, i);
@@ -840,6 +845,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testRandomCrash() throws Exception {
+        checkpointFrequency = 2_000 + new Random().nextInt(4_000);
+
         IgniteEx ctrlGrid = startGrid(0);
 
         fork = true;
@@ -856,7 +863,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         rmt.run(new AsyncLoadRunnable());
 
-        Thread.sleep(10_000);
+        Thread.sleep(5_000);
 
         info(">>> Killing remote process...");
 
@@ -873,6 +880,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testLargeRandomCrash() throws Exception {
+        checkpointFrequency = 2_000 + new Random().nextInt(4_000);
+
         IgniteEx ctrlGrid = startGrid(0);
 
         fork = true;
@@ -889,7 +898,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         rmt.run(new AsyncLargeLoadRunnable());
 
-        Thread.sleep(10_000);
+        Thread.sleep(5_000);
 
         info(">>> Killing remote process...");
 
@@ -1709,7 +1718,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
             IgniteCache<Object, Object> locCache = ignite.cache(LOC_CACHE_NAME);
 
-            for (int i = 0; i < 10_000; i++) {
+            for (int i = 0; i < ENTRY_COUNT; i++) {
                 cache.put(i, new IndexedObject(i));
                 locCache.put(i, new IndexedObject(i));
             }
@@ -1796,7 +1805,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
             IgniteCache<Object, Object> locCache = ignite.cache(LOC_CACHE_NAME);
 
-            for (int i = 0; i < 10_000; i++) {
+            for (int i = 0; i < ENTRY_COUNT; i++) {
                 {
                     Object val = cache.get(i);
 
@@ -1867,7 +1876,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
             IgniteCache<Object, Object> locCache = ignite.cache(LOC_CACHE_NAME);
 
-            for (int i = 0; i < 1000; i++) {
+            for (int i = 0; i < LARGE_ENTRY_COUNT; i++) {
                 final long[] data = new long[LARGE_ARR_SIZE];
 
                 Arrays.fill(data, i);
@@ -1961,7 +1970,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
             IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
 
-            for (int i = 0; i < 1000; i++) {
+            for (int i = 0; i < LARGE_ENTRY_COUNT; i++) {
                 final long[] data = new long[LARGE_ARR_SIZE];
 
                 Arrays.fill(data, i);
