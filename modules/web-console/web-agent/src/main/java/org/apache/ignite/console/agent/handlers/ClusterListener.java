@@ -375,7 +375,7 @@ public class ClusterListener implements AutoCloseable {
          * @return {@code true} in case if current topology is the same cluster, but topology changed.
          */
         boolean topologyChanged(TopologySnapshot prev) {
-            return prev != null && !prev.nids.equals(nids) && !Collections.disjoint(nids, prev.nids);
+            return prev != null && !prev.nids.equals(nids);
         }
     }
 
