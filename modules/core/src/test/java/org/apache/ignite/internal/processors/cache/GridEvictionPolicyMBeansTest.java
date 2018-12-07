@@ -37,6 +37,13 @@ public class GridEvictionPolicyMBeansTest extends GridCommonAbstractTest {
         super(true);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+
+        super.beforeTestsStarted();
+    }
+
     /**
      * {@inheritDoc}
      *

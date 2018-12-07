@@ -158,9 +158,7 @@ public abstract class GridAbstractTest extends TestCase {
     private static final boolean BINARY_MARSHALLER = false;
 
     /** Ip finder for TCP discovery. */
-    public static final TcpDiscoveryIpFinder LOCAL_IP_FINDER = new TcpDiscoveryVmIpFinder(false) {{
-        setAddresses(Collections.singleton("127.0.0.1:47500..47509"));
-    }};
+    public static final TcpDiscoveryIpFinder LOCAL_IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final int DFLT_TOP_WAIT_TIMEOUT = 2000;

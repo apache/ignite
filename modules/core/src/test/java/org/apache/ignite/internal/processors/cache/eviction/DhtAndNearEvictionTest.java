@@ -61,6 +61,13 @@ public class DhtAndNearEvictionTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+
+        super.beforeTestsStarted();
+    }
+
     /** */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
