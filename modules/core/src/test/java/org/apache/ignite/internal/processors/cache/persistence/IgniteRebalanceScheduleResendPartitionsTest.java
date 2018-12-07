@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -79,8 +80,8 @@ public class IgniteRebalanceScheduleResendPartitionsTest extends GridCommonAbstr
 
         cfg.setCacheConfiguration(
             new CacheConfiguration(DEFAULT_CACHE_NAME)
-                .setAffinity(
-                    new RendezvousAffinityFunction(false, 32))
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                .setAffinity(new RendezvousAffinityFunction(false, 32))
                 .setBackups(1)
         );
 

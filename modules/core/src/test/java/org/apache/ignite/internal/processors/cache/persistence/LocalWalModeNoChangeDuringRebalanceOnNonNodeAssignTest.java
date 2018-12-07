@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -47,7 +48,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /**
  *
  */
-public class LocalWacModeNoChangeDuringRebalanceOnNonNodeAssignTest extends GridCommonAbstractTest {
+public class LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest extends GridCommonAbstractTest {
 
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -76,8 +77,8 @@ public class LocalWacModeNoChangeDuringRebalanceOnNonNodeAssignTest extends Grid
 
         cfg.setCacheConfiguration(
             new CacheConfiguration(DEFAULT_CACHE_NAME)
-                .setAffinity(
-                    new RendezvousAffinityFunction(false, 3))
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                .setAffinity(new RendezvousAffinityFunction(false, 3))
         );
 
         return cfg;

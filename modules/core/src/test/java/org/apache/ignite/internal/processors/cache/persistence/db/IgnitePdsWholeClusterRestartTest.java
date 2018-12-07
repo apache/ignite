@@ -44,9 +44,6 @@ public class IgnitePdsWholeClusterRestartTest extends GridCommonAbstractTest {
     /** */
     private static final int ENTRIES_COUNT = 1_000;
 
-    /** */
-    public static final String CACHE_NAME = "cache1";
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -58,9 +55,8 @@ public class IgnitePdsWholeClusterRestartTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(memCfg);
 
-        CacheConfiguration ccfg1 = new CacheConfiguration();
+        CacheConfiguration ccfg1 = defaultCacheConfiguration();
 
-        ccfg1.setName(CACHE_NAME);
         ccfg1.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg1.setRebalanceMode(CacheRebalanceMode.SYNC);
         ccfg1.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
@@ -103,7 +99,7 @@ public class IgnitePdsWholeClusterRestartTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        try (IgniteDataStreamer<Object, Object> ds = ignite(0).dataStreamer(CACHE_NAME)) {
+        try (IgniteDataStreamer<Object, Object> ds = ignite(0).dataStreamer(DEFAULT_CACHE_NAME)) {
             for (int i = 0; i < ENTRIES_COUNT; i++)
                 ds.addData(i, i);
         }
@@ -130,9 +126,9 @@ public class IgnitePdsWholeClusterRestartTest extends GridCommonAbstractTest {
                     Ignite ig = ignite(g);
 
                     for (int k = 0; k < ENTRIES_COUNT; k++)
-                        assertEquals("Failed to read [g=" + g + ", part=" + ig.affinity(CACHE_NAME).partition(k) +
-                            ", nodes=" + ig.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(k) + ']',
-                            k, ig.cache(CACHE_NAME).get(k));
+                        assertEquals("Failed to read [g=" + g + ", part=" + ig.affinity(DEFAULT_CACHE_NAME).partition(k) +
+                            ", nodes=" + ig.affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(k) + ']',
+                            k, ig.cache(DEFAULT_CACHE_NAME).get(k));
                 }
             }
             finally {

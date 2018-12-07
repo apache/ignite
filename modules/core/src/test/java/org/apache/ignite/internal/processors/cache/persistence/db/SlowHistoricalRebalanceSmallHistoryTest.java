@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -123,8 +124,8 @@ public class SlowHistoricalRebalanceSmallHistoryTest extends GridCommonAbstractT
 
         ig.cluster().active(true);
 
-        ig.getOrCreateCache(new CacheConfiguration<>()
-            .setName(SLOW_REBALANCE_CACHE)
+        ig.getOrCreateCache(new CacheConfiguration<>(SLOW_REBALANCE_CACHE)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setAffinity(new RendezvousAffinityFunction(false, 1))
             .setBackups(1)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
@@ -141,8 +142,8 @@ public class SlowHistoricalRebalanceSmallHistoryTest extends GridCommonAbstractT
 
         resetBaselineTopology();
 
-        IgniteCache<Object, Object> anotherCache = ig.getOrCreateCache(new CacheConfiguration<>()
-            .setName(REGULAR_CACHE)
+        IgniteCache<Object, Object> anotherCache = ig.getOrCreateCache(new CacheConfiguration<>(REGULAR_CACHE)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setAffinity(new RendezvousAffinityFunction(false, 1))
             .setBackups(1)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)

@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -99,11 +100,13 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         cfg.setCacheConfiguration(
             new CacheConfiguration(DEFAULT_CACHE_NAME)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                 // Test checks internal state before and after rebalance, so it is configured to be triggered manually
                 .setRebalanceDelay(-1)
                 .setBackups(dfltCacheBackupCnt),
 
             new CacheConfiguration(REPL_CACHE)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                 .setRebalanceDelay(-1)
                 .setCacheMode(CacheMode.REPLICATED)
         );

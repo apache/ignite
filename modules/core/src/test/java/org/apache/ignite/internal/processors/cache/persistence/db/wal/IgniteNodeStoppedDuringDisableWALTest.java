@@ -77,7 +77,7 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
 
         cfg.setAutoActivationEnabled(false);
 
-        cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME));
+        cfg.setCacheConfiguration(defaultCacheConfiguration());
 
         return cfg;
     }
