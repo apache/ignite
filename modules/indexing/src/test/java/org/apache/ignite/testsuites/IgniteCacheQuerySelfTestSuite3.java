@@ -54,7 +54,7 @@ public class IgniteCacheQuerySelfTestSuite3 extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Cache Continuous Queries Test Suite");
 
         // Continuous queries 1.
-/*        suite.addTestSuite(GridCacheContinuousQueryNodesFilteringTest.class);
+        suite.addTestSuite(GridCacheContinuousQueryNodesFilteringTest.class);
         suite.addTestSuite(GridCacheContinuousQueryPartitionTxOneNodeTest.class);
         suite.addTestSuite(CacheContinuousWithTransformerReplicatedSelfTest.class);
         suite.addTestSuite(CacheContinuousQueryExecuteInPrimaryTest.class);
@@ -84,9 +84,8 @@ public class IgniteCacheQuerySelfTestSuite3 extends TestSuite {
         suite.addTestSuite(CacheContinuousQueryCounterPartitionedTxTest.class);
         suite.addTestSuite(CacheContinuousQueryCounterReplicatedAtomicTest.class);
         suite.addTestSuite(CacheContinuousQueryCounterReplicatedTxTest.class);
-        suite.addTestSuite(CacheContinuousQueryFailoverAtomicNearEnabledSelfSelfTest.class);*/
+        suite.addTestSuite(CacheContinuousQueryFailoverAtomicNearEnabledSelfSelfTest.class);
 
-        for (int i = 0; i < 150; i++)
         suite.addTestSuite(IgniteCacheContinuousQueryReconnectTest.class);
 
         return suite;
