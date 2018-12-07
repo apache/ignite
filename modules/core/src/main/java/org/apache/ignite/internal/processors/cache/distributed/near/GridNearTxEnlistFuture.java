@@ -620,6 +620,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
     }
 
     @Override public Set<UUID> pendingResponseNodes() {
+        // t0d0 not all batches are in flight!
         return Collections.unmodifiableSet(batches.keySet());
     }
 
