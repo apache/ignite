@@ -26,6 +26,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -52,6 +53,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -202,6 +204,7 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
                 .setGroupName(names.get2())
                 .setRebalanceBatchSize(REBALANCE_BATCH_SIZE)
                 .setCacheMode(CacheMode.REPLICATED)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
         ).collect(Collectors.toList());
 
         ig.getOrCreateCaches(configs);
@@ -229,7 +232,16 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
                 for (int i = 0; i < 3_000; i++) {
                     int idx = ThreadLocalRandom.current().nextInt(3_000);
 
-                    cache.put(idx, new byte[1024]);
+                    while (true) {
+                        try {
+                            cache.put(idx, new byte[1024]);
+
+                            break;
+                        }
+                        catch (Exception e) {
+                            MvccFeatureChecker.assertMvccWriteConflict(e);
+                        }
+                    }
                 }
             }
         }, 4, "load-thread");

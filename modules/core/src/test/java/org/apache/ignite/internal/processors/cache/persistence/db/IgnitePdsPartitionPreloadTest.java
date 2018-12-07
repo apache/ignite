@@ -44,6 +44,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
@@ -166,8 +167,31 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    public void testLocalPreloadPartitionClientMvcc() throws Exception {
+        cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT).setDataRegionName(MEM);
+
+        startGridsMultiThreaded(GRIDS_CNT);
+
+        IgniteEx client = startGrid("client");
+
+        assertNotNull(client.cache(DEFAULT_CACHE_NAME));
+
+        assertFalse(client.cache(DEFAULT_CACHE_NAME).localPreloadPartition(0));
+        assertFalse(grid(0).cache(DEFAULT_CACHE_NAME).localPreloadPartition(0));
+    }
+
+
+    /** */
     public void testLocalPreloadPartitionPrimary() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL);
+
+        preloadPartition(
+            () -> G.allGrids().stream().filter(PrimaryNodePredicate.INSTANCE).findFirst().get(), PreloadMode.LOCAL);
+    }
+
+    /** */
+    public void testLocalPreloadPartitionPrimaryMvcc() throws Exception {
+        cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT);
 
         preloadPartition(
             () -> G.allGrids().stream().filter(PrimaryNodePredicate.INSTANCE).findFirst().get(), PreloadMode.LOCAL);
@@ -182,8 +206,36 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    public void testLocalPreloadPartitionBackupMvcc() throws Exception {
+        cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT);
+
+        preloadPartition(
+            () -> G.allGrids().stream().filter(BackupNodePredicate.INSTANCE).findFirst().get(), PreloadMode.LOCAL);
+    }
+
+    /** */
     public void testPreloadPartitionInMemoryRemote() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL).setDataRegionName(MEM);
+
+        startGridsMultiThreaded(GRIDS_CNT);
+
+        IgniteEx client = startGrid("client");
+
+        assertNotNull(client.cache(DEFAULT_CACHE_NAME));
+
+        try {
+            client.cache(DEFAULT_CACHE_NAME).preloadPartition(0);
+
+            fail("Exception is expected");
+        }
+        catch (Exception e) {
+            log.error("Expected", e);
+        }
+    }
+
+    /** */
+    public void testPreloadPartitionInMemoryRemoteMvcc() throws Exception {
+        cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT).setDataRegionName(MEM);
 
         startGridsMultiThreaded(GRIDS_CNT);
 
@@ -224,8 +276,44 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    public void testPreloadPartitionInMemoryLocalMvcc() throws Exception {
+        cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT).setDataRegionName(MEM);
+
+        startGridsMultiThreaded(GRIDS_CNT);
+
+        int key = 0;
+
+        Ignite prim = primaryNode(key, DEFAULT_CACHE_NAME);
+
+        int part = prim.affinity(DEFAULT_CACHE_NAME).partition(key);
+
+        try {
+            prim.cache(DEFAULT_CACHE_NAME).preloadPartition(part);
+
+            fail("Exception is expected");
+        }
+        catch (Exception e) {
+            log.error("Expected", e);
+        }
+    }
+
+    /** */
     public void testPreloadPartitionTransactionalClientSync() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL);
+
+        preloadPartition(() -> {
+            try {
+                return startGrid(CLIENT_GRID_NAME);
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }, PreloadMode.SYNC);
+    }
+
+    /** */
+    public void testPreloadPartitionTransactionalClientSyncMvcc() throws Exception {
+        cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT);
 
         preloadPartition(() -> {
             try {
@@ -252,6 +340,20 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    public void testPreloadPartitionTransactionalClientAsyncMvcc() throws Exception {
+        cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT);
+
+        preloadPartition(() -> {
+            try {
+                return startGrid(CLIENT_GRID_NAME);
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }, PreloadMode.ASYNC);
+    }
+
+    /** */
     public void testPreloadPartitionTransactionalNodeFilteredSync() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL);
 
@@ -259,7 +361,21 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    public void testPreloadPartitionTransactionalNodeFilteredSyncMvcc() throws Exception {
+        cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT);
+
+        preloadPartition(() -> grid(0), PreloadMode.SYNC);
+    }
+
+    /** */
     public void testPreloadPartitionTransactionalNodeFilteredAsync() throws Exception {
+        cfgFactory = () -> cacheConfiguration(TRANSACTIONAL);
+
+        preloadPartition(() -> grid(0), PreloadMode.ASYNC);
+    }
+
+    /** */
+    public void testPreloadPartitionTransactionalNodeFilteredAsyncMvcc() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL);
 
         preloadPartition(() -> grid(0), PreloadMode.ASYNC);
@@ -274,8 +390,24 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    public void testPreloadPartitionTransactionalPrimarySyncMvcc() throws Exception {
+        cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT);
+
+        preloadPartition(
+            () -> G.allGrids().stream().filter(PrimaryNodePredicate.INSTANCE).findFirst().get(), PreloadMode.SYNC);
+    }
+
+    /** */
     public void testPreloadPartitionTransactionalPrimaryAsync() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL);
+
+        preloadPartition(
+            () -> G.allGrids().stream().filter(PrimaryNodePredicate.INSTANCE).findFirst().get(), PreloadMode.ASYNC);
+    }
+
+    /** */
+    public void testPreloadPartitionTransactionalPrimaryAsyncMvcc() throws Exception {
+        cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT);
 
         preloadPartition(
             () -> G.allGrids().stream().filter(PrimaryNodePredicate.INSTANCE).findFirst().get(), PreloadMode.ASYNC);
@@ -290,8 +422,24 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    public void testPreloadPartitionTransactionalBackupSyncMvcc() throws Exception {
+        cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT);
+
+        preloadPartition(
+            () -> G.allGrids().stream().filter(BackupNodePredicate.INSTANCE).findFirst().get(), PreloadMode.SYNC);
+    }
+
+    /** */
     public void testPreloadPartitionTransactionalBackupAsync() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL);
+
+        preloadPartition(
+            () -> G.allGrids().stream().filter(BackupNodePredicate.INSTANCE).findFirst().get(), PreloadMode.ASYNC);
+    }
+
+    /** */
+    public void testPreloadPartitionTransactionalBackupAsyncMvcc() throws Exception {
+        cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT);
 
         preloadPartition(
             () -> G.allGrids().stream().filter(BackupNodePredicate.INSTANCE).findFirst().get(), PreloadMode.ASYNC);
@@ -380,8 +528,28 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    public void testPreloadLocalTransactionalSyncMvcc() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+
+        cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT).setCacheMode(LOCAL);
+
+        preloadPartition(
+            () -> G.allGrids().stream().filter(PrimaryNodePredicate.INSTANCE).findFirst().get(), PreloadMode.SYNC);
+    }
+
+    /** */
     public void testPreloadLocalTransactionalAsync() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL).setCacheMode(LOCAL);
+
+        preloadPartition(
+            () -> G.allGrids().stream().filter(PrimaryNodePredicate.INSTANCE).findFirst().get(), PreloadMode.ASYNC);
+    }
+
+    /** */
+    public void testPreloadLocalTransactionalAsyncMvcc() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+
+        cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT).setCacheMode(LOCAL);
 
         preloadPartition(
             () -> G.allGrids().stream().filter(PrimaryNodePredicate.INSTANCE).findFirst().get(), PreloadMode.ASYNC);

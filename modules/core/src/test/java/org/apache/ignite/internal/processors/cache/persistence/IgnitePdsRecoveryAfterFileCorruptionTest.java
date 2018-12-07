@@ -23,6 +23,7 @@ import java.nio.ByteOrder;
 import java.util.Collection;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -77,6 +78,8 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
         ccfg.setAffinity(new RendezvousAffinityFunction(true, 1));
 
         ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
+
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         cfg.setCacheConfiguration(ccfg);
 

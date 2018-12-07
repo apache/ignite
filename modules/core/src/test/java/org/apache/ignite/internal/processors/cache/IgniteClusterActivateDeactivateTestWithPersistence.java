@@ -28,6 +28,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -106,9 +107,11 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     public void testDeactivateInactiveCluster() throws Exception {
         ccfgs = new CacheConfiguration[] {
             new CacheConfiguration<>("test_cache_1")
-                .setGroupName("test_cache"),
+                .setGroupName("test_cache")
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL),
             new CacheConfiguration<>("test_cache_2")
                 .setGroupName("test_cache")
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
         };
 
         Ignite ignite = startGrids(3);
@@ -290,13 +293,15 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         srv.cluster().active(true);
 
-        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         srv.createCache(ccfg);
 
         stopAllGrids();
 
-        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME + 1);
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME + 1)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         ccfg.setGroupName(DEFAULT_CACHE_NAME);
 
@@ -328,7 +333,8 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
             .setBackups(1)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
             .setIndexedTypes(Integer.class, Integer.class)
-            .setAffinity(new RendezvousAffinityFunction(false, 64));
+            .setAffinity(new RendezvousAffinityFunction(false, 64))
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         IgniteCache cache = srv.createCache(ccfg);
 
