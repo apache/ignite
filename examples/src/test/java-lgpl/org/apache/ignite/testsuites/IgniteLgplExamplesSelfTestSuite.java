@@ -18,6 +18,8 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.examples.ComputeScheduleExampleMultiNodeSelfTest;
+import org.apache.ignite.examples.ComputeScheduleExampleSelfTest;
 import org.apache.ignite.examples.HibernateL2CacheExampleMultiNodeSelfTest;
 import org.apache.ignite.examples.HibernateL2CacheExampleSelfTest;
 import org.apache.ignite.examples.SpatialQueryExampleMultiNodeSelfTest;
@@ -42,10 +44,12 @@ public class IgniteLgplExamplesSelfTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(HibernateL2CacheExampleSelfTest.class));
         suite.addTest(new TestSuite(SpatialQueryExampleSelfTest.class));
+        suite.addTest(new TestSuite(ComputeScheduleExampleSelfTest.class));
 
         // Multi-node.
         suite.addTest(new TestSuite(HibernateL2CacheExampleMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(SpatialQueryExampleMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(ComputeScheduleExampleMultiNodeSelfTest.class));
 
         return suite;
     }
