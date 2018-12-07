@@ -29,8 +29,7 @@ web-console-footer {
     }
 }
 
-
-*:not(web-console-sidebar) > web-console-footer {
+.web-console-footer__page-bottom {
     color: #fafafa;
     background: #393939;
     font-size: 12px;
@@ -51,5 +50,5 @@ web-console-footer {
 
     .web-console-footer__legal {
         color: inherit;
-    }
+    }    
 }
