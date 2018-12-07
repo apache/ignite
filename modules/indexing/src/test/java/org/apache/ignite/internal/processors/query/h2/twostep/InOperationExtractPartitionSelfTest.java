@@ -35,11 +35,15 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.query.h2.twostep.JoinSqlTestHelper.ORG;
 import static org.apache.ignite.internal.processors.query.h2.twostep.JoinSqlTestHelper.ORG_COUNT;
 
 /** */
+@RunWith(JUnit4.class)
 public class InOperationExtractPartitionSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES_COUNT = 8;
@@ -115,6 +119,7 @@ public class InOperationExtractPartitionSelfTest extends GridCommonAbstractTest 
     }
 
     /** */
+    @Test
     public void testAlternativeUsageOfIn(){
         try (FieldsQueryCursor<List<?>> cur = orgCache.query(new SqlFieldsQuery(
             "SELECT * FROM Organization org WHERE org._KEY IN (SELECT subOrg._KEY FROM Organization subOrg)"))) {
@@ -128,11 +133,13 @@ public class InOperationExtractPartitionSelfTest extends GridCommonAbstractTest 
     }
 
     /** */
+    @Test
     public void testEmptyList() {
         testInOperator(Collections.emptyList(), null, 0L, NODES_COUNT - 1);
     }
 
     /** */
+    @Test
     public void testSingleValueList() {
         testInOperator(Collections.singletonList(ORG + 0), null, 1L, 1);
         testInOperator(Collections.singletonList(ORG + 1), null, 1L, 1);
@@ -145,6 +152,7 @@ public class InOperationExtractPartitionSelfTest extends GridCommonAbstractTest 
     }
 
     /** */
+    @Test
     public void testMultipleValueList() {
         testInOperator(Arrays.asList(ORG + 0, ORG + 3, ORG + String.valueOf(ORG_COUNT - 1)), null, 3, 3);
         testInOperator(Arrays.asList("ORG", ORG + 0, ORG + 4, ORG + String.valueOf(ORG_COUNT - 1)), null, 3, 4);

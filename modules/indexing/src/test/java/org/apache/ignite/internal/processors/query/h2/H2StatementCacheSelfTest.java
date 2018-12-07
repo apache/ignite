@@ -19,15 +19,20 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.sql.PreparedStatement;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class H2StatementCacheSelfTest extends GridCommonAbstractTest {
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEviction() throws Exception {
         H2StatementCache stmtCache = new H2StatementCache(1);
         H2CachedStatementKey key1 = new H2CachedStatementKey("", "1");
@@ -44,6 +49,7 @@ public class H2StatementCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLruEvictionInStoreOrder() throws Exception {
         H2StatementCache stmtCache = new H2StatementCache(2);
 
@@ -60,6 +66,7 @@ public class H2StatementCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLruEvictionInAccessOrder() throws Exception {
         H2StatementCache stmtCache = new H2StatementCache(2);
 

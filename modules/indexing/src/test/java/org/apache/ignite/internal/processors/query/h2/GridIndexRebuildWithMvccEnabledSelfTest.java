@@ -33,10 +33,14 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Index rebuild after node restart test.
  */
+@RunWith(JUnit4.class)
 public class GridIndexRebuildWithMvccEnabledSelfTest extends GridIndexRebuildSelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration serverConfiguration(int idx, boolean filter) throws Exception {
@@ -45,6 +49,7 @@ public class GridIndexRebuildWithMvccEnabledSelfTest extends GridIndexRebuildSel
     }
 
     /** {@inheritDoc} */
+    @Test
     public void testIndexRebuild() throws Exception {
         IgniteEx srv = startServer();
 

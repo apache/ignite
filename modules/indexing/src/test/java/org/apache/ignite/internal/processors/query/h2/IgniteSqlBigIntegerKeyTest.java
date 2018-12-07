@@ -26,10 +26,14 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Ensures that BigInteger can be used as key
  */
+@RunWith(JUnit4.class)
 public class IgniteSqlBigIntegerKeyTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "Mycache";
@@ -65,6 +69,7 @@ public class IgniteSqlBigIntegerKeyTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testBigIntegerKeyGet() {
         IgniteCache<Object, Object> cache = getCache();
 
@@ -82,6 +87,7 @@ public class IgniteSqlBigIntegerKeyTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testBigIntegerKeyQuery() {
         IgniteCache<Object, Object> cache = getCache();
 
@@ -90,6 +96,7 @@ public class IgniteSqlBigIntegerKeyTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testBigIntegerFieldQuery() {
         IgniteCache<Object, Object> cache = getCache();
 

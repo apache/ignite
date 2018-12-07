@@ -29,10 +29,14 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for iterator data link erasure after closing or completing
  */
+@RunWith(JUnit4.class)
 public class H2ResultSetIteratorNullifyOnEndSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES_COUNT = 2;
@@ -46,6 +50,7 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends GridCommonAbstractT
     /**
      * Non local SQL Fields check nullification after close
      */
+    @Test
     public void testSqlFieldsQueryClose() {
         SqlFieldsQuery qry = new SqlFieldsQuery(SELECT_MAX_SAL_SQLF);
 
@@ -63,6 +68,7 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends GridCommonAbstractT
     /**
      * Non local SQL Fields check nullification after complete
      */
+    @Test
     public void testSqlFieldsQueryComplete() {
         SqlFieldsQuery qry = new SqlFieldsQuery(SELECT_MAX_SAL_SQLF);
 
@@ -78,6 +84,7 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends GridCommonAbstractT
     /**
      * Local SQL Fields check nullification after close
      */
+    @Test
     public void testSqlFieldsQueryLocalClose() {
         SqlFieldsQuery qry = new SqlFieldsQuery(SELECT_MAX_SAL_SQLF);
 
@@ -97,6 +104,7 @@ public class H2ResultSetIteratorNullifyOnEndSelfTest extends GridCommonAbstractT
     /**
      * Local SQL Fields check nullification after complete
      */
+    @Test
     public void testSqlFieldsQueryLocalComplete() {
         SqlFieldsQuery qry = new SqlFieldsQuery(SELECT_MAX_SAL_SQLF);
 

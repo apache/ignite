@@ -25,10 +25,14 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Smoke checks for explain operations.
  */
+@RunWith(JUnit4.class)
 public class ExplainSelfTest extends GridCommonAbstractTest {
     /** Ignite instance. */
     private static IgniteEx ignite;
@@ -61,6 +65,7 @@ public class ExplainSelfTest extends GridCommonAbstractTest {
      * Complex negative check that verifies EXPLAINs of update operations are not supported and cause correct
      * exceptions. Used local and non local queries
      */
+    @Test
     public void testComplex() {
         assertNotSupported("EXPLAIN INSERT INTO PUBLIC.TEST VALUES (1, 2);", false);
         assertNotSupported("EXPLAIN UPDATE PUBLIC.TEST SET VAL = VAL + 1;", false);
@@ -80,6 +85,7 @@ public class ExplainSelfTest extends GridCommonAbstractTest {
     /**
      * Check that explain updates are not supported. Perform the same sql query as non-local and then as local query.
      */
+    @Test
     public void test2InsertsLocalLast() {
         assertNotSupported("EXPLAIN INSERT INTO PUBLIC.TEST VALUES (1, 2);", false);
         assertNotSupported("EXPLAIN INSERT INTO PUBLIC.TEST VALUES (1, 2);", true);
@@ -88,6 +94,7 @@ public class ExplainSelfTest extends GridCommonAbstractTest {
     /**
      * Check that explain updates are not supported. Perform the same sql query as local and then as non-local query.
      */
+    @Test
     public void test2InsertsLocalFirst() {
         assertNotSupported("EXPLAIN INSERT INTO PUBLIC.TEST VALUES (3, 4);", true);
         assertNotSupported("EXPLAIN INSERT INTO PUBLIC.TEST VALUES (3, 4);", false);
@@ -96,6 +103,7 @@ public class ExplainSelfTest extends GridCommonAbstractTest {
     /**
      * Check that explain updates are not supported. Perform the same sql query as local 2 times in a row.
      */
+    @Test
     public void test2LocalInserts() {
         assertNotSupported("EXPLAIN INSERT INTO PUBLIC.TEST VALUES (5, 6);", true);
         assertNotSupported("EXPLAIN INSERT INTO PUBLIC.TEST VALUES (5, 6);", true);
@@ -104,6 +112,7 @@ public class ExplainSelfTest extends GridCommonAbstractTest {
     /**
      * Check that explain updates are not supported. Perform the same sql query as non-local 2 times in a row.
      */
+    @Test
     public void test2NonLocalInserts() {
         assertNotSupported("EXPLAIN INSERT INTO PUBLIC.TEST VALUES (7, 8);", false);
         assertNotSupported("EXPLAIN INSERT INTO PUBLIC.TEST VALUES (7, 8);", false);
@@ -112,6 +121,7 @@ public class ExplainSelfTest extends GridCommonAbstractTest {
     /**
      * Check that EXPLAIN SELECT queries doesn't cause errors.
      */
+    @Test
     public void testExplainSelect() {
         execute("EXPLAIN SELECT * FROM PUBLIC.TEST;", false);
         execute("EXPLAIN SELECT * FROM PUBLIC.TEST;", true);
