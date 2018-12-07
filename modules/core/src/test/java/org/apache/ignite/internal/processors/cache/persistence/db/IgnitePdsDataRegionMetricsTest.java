@@ -124,6 +124,9 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
     /** */
     public void testMemoryUsageSingleNode() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10591");
+
         DataRegionMetrics initMetrics = null;
 
         for (int iter = 0; iter < ITERATIONS; iter++) {

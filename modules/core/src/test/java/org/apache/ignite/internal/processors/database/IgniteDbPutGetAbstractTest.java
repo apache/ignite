@@ -827,7 +827,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
 
         long seed = System.currentTimeMillis();
 
-        int iterations = SF.apply(300_000);
+        int iterations = SF.apply(MvccFeatureChecker.forcedMvcc() ? 100_000 : 300_000);
 
         X.println("Seed: " + seed);
 
