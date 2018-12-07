@@ -4704,13 +4704,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * Recovery lifecycle for read-write metastorage.
      */
     private class MetastorageRecoveryLifecycle implements DatabaseLifecycleListener {
+        /** {@inheritDoc} */
         @Override public void beforeBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
             cctx.pageStore().initializeForMetastorage();
         }
 
+        /** {@inheritDoc} */
         @Override public void afterBinaryMemoryRestore(
             IgniteCacheDatabaseSharedManager mgr,
-            RestoreBinaryState restoreState) throws IgniteCheckedException {
+            RestoreBinaryState restoreState
+        ) throws IgniteCheckedException {
             assert metaStorage == null;
 
             metaStorage = createMetastorage(false);
@@ -4779,6 +4782,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     switch (rec.type()) {
                         case METASTORE_DATA_RECORD:
                         case MVCC_DATA_RECORD:
+                        case ENCRYPTED_DATA_RECORD:
                         case DATA_RECORD:
                             if (skipDataRecords)
                                 continue;

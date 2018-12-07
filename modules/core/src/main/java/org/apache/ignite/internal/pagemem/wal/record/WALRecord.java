@@ -22,6 +22,8 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordPurpose.*;
+
 /**
  * Log entry abstract class.
  */
@@ -205,7 +207,17 @@ public abstract class WALRecord {
         MVCC_DATA_RECORD,
 
         /** Mvcc Tx state change record. */
-        MVCC_TX_RECORD;
+        MVCC_TX_RECORD (LOGICAL);
+
+        private final RecordPurpose purpose;
+
+        RecordType(RecordPurpose purpose) {
+            this.purpose = purpose;
+        }
+
+        RecordType() {
+            this(CUSTOM);
+        }
 
         /** */
         private static final RecordType[] VALS = RecordType.values();
@@ -221,6 +233,12 @@ public abstract class WALRecord {
          * For {@link WALMode#FSYNC} this value is at least came from padding
          */
         public static final int STOP_ITERATION_RECORD_TYPE = 0;
+    }
+
+    public enum RecordPurpose {
+        PHYSICAL,
+        LOGICAL,
+        CUSTOM
     }
 
     /** */
