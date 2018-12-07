@@ -2778,9 +2778,17 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 );
 
                 row = clo.row();
+                if (row != null && row.expireTime() == 0) {
+                    System.out.println();
+                }
             }
-            else
+            else {
                 row = dataTree.findOne(new SearchRow(cacheId, key), CacheDataRowAdapter.RowData.NO_KEY);
+
+                if (row != null && row.expireTime() == 0) {
+                    System.out.println();
+                }
+            }
 
             afterRowFound(row, key);
 
