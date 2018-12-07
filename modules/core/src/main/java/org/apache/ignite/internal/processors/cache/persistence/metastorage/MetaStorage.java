@@ -171,6 +171,8 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
 
     /** */
     public void init(GridCacheDatabaseSharedManager db) throws IgniteCheckedException {
+        regionMetrics.clear();
+
         initInternal(db);
 
         if (!PRESERVE_LEGACY_METASTORAGE_PARTITION_ID) {
