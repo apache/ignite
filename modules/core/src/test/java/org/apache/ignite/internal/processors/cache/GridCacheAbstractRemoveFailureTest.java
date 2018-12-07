@@ -170,7 +170,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testPutAndRemovePessimisticTx() throws Exception {
-        if (atomicityMode() != CacheAtomicityMode.TRANSACTIONAL)
+        if (atomicityMode() == CacheAtomicityMode.ATOMIC)
             return;
 
         putAndRemove(duration(), PESSIMISTIC, REPEATABLE_READ);
@@ -180,7 +180,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testPutAndRemoveOptimisticSerializableTx() throws Exception {
-        if (atomicityMode() != CacheAtomicityMode.TRANSACTIONAL)
+        if (atomicityMode() != CacheAtomicityMode.TRANSACTIONAL || MvccFeatureChecker.forcedMvcc())
             return;
 
         putAndRemove(duration(), OPTIMISTIC, SERIALIZABLE);
