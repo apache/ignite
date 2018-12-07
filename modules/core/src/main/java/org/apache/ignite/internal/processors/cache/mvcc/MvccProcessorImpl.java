@@ -1980,7 +1980,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     private Optional<IgniteInternalTx> findBlockerTx(MvccVersion checkedTxVer) {
         // t0d0 multiple bloker txs seems to be possible
         return waitMap.entrySet().stream()
-            .filter(e -> e.getValue().txVersion().stream()
+            .filter(e -> e.getValue().waitQueue().stream()
                 .anyMatch(waitingVer -> DdCollaborator.belongToSameTx(waitingVer, checkedTxVer)))
             .map(e -> e.getKey())
             .findAny()
@@ -2089,24 +2089,22 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         boolean compound();
 
         // t0d0 develop a good way for checking waiting transactions
-        default Set<MvccVersion> txVersion() {
-            return Collections.emptySet();
-        }
+        Set<MvccVersion> waitQueue();
     }
 
     /** */
     private static class LockFuture extends GridFutureAdapter<Void> implements Waiter, Runnable {
         /** */
         private final byte plc;
-        private final MvccVersion txVersion;
+        private final MvccVersion blockedTxVer;
 
         /**
          * @param plc Pool policy.
-         * @param version
+         * @param blockedTxVer t0d0
          */
-        LockFuture(byte plc, MvccVersion version) {
+        LockFuture(byte plc, MvccVersion blockedTxVer) {
             this.plc = plc;
-            txVersion = version;
+            this.blockedTxVer = blockedTxVer;
         }
 
         /** {@inheritDoc} */
@@ -2139,8 +2137,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             return false;
         }
 
-        @Override public Set<MvccVersion> txVersion() {
-            return Collections.singleton(txVersion);
+        @Override public Set<MvccVersion> waitQueue() {
+            return Collections.singleton(blockedTxVer);
         }
     }
 
@@ -2164,6 +2162,10 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         /** {@inheritDoc} */
         @Override public boolean compound() {
             return false;
+        }
+
+        @Override public Set<MvccVersion> waitQueue() {
+            return Collections.emptySet();
         }
     }
 
@@ -2206,9 +2208,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         /** {@inheritDoc} */
         @Override public void run(GridKernalContext ctx) {
             if (inner.getClass() == ArrayList.class) {
-                for (Waiter waiter : (List<Waiter>)inner) {
+                for (Waiter waiter : (List<Waiter>)inner)
                     waiter.run(ctx);
-                }
             }
             else
                 ((Waiter)inner).run(ctx);
@@ -2229,16 +2230,15 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             return true;
         }
 
-        @Override public Set<MvccVersion> txVersion() {
+        @Override public Set<MvccVersion> waitQueue() {
             if (inner.getClass() == ArrayList.class) {
-                HashSet<MvccVersion> versions = new HashSet<>();
-                for (Waiter waiter : (List<Waiter>)inner) {
-                    versions.addAll(waiter.txVersion());
-                }
-                return versions;
+                return ((List<Waiter>)inner).stream()
+                    .map(Waiter::waitQueue)
+                    .flatMap(Collection::stream)
+                    .collect(Collectors.toSet());
             }
             else
-                return ((Waiter)inner).txVersion();
+                return ((Waiter)inner).waitQueue();
         }
     }
 
