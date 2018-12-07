@@ -136,87 +136,87 @@ public class IgniteBasicTestSuite extends TestSuite {
         GridTestUtils.addTestIfNeeded(suite, GridMessagingNoPeerClassLoadingSelfTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, GridReleaseTypeSelfTest.class, ignoredTests);
-        suite.addTestSuite(GridProductVersionSelfTest.class);
-        suite.addTestSuite(GridAffinityProcessorRendezvousSelfTest.class);
-        suite.addTestSuite(GridAffinityProcessorMemoryLeakTest.class);
-        suite.addTestSuite(GridClosureProcessorSelfTest.class);
-        suite.addTestSuite(GridClosureProcessorRemoteTest.class);
-        suite.addTestSuite(GridClosureSerializationTest.class);
-        suite.addTestSuite(ClosureServiceClientsNodesTest.class);
-        suite.addTestSuite(GridStartStopSelfTest.class);
-        suite.addTestSuite(GridProjectionForCachesSelfTest.class);
-        suite.addTestSuite(GridProjectionForCachesOnDaemonNodeSelfTest.class);
-        suite.addTestSuite(GridSpiLocalHostInjectionTest.class);
-        suite.addTestSuite(GridLifecycleBeanSelfTest.class);
-        suite.addTestSuite(GridStopWithCancelSelfTest.class);
-        suite.addTestSuite(GridReduceSelfTest.class);
-        suite.addTestSuite(GridEventConsumeSelfTest.class);
-        suite.addTestSuite(GridSuppressedExceptionSelfTest.class);
-        suite.addTestSuite(GridLifecycleAwareSelfTest.class);
-        suite.addTestSuite(GridMessageListenSelfTest.class);
-        suite.addTestSuite(GridFailFastNodeFailureDetectionSelfTest.class);
-        suite.addTestSuite(IgniteSlowClientDetectionSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridProductVersionSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridAffinityProcessorRendezvousSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridAffinityProcessorMemoryLeakTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridClosureProcessorSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridClosureProcessorRemoteTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridClosureSerializationTest.class));
+        suite.addTest(new JUnit4TestAdapter(ClosureServiceClientsNodesTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridStartStopSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridProjectionForCachesSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridProjectionForCachesOnDaemonNodeSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridSpiLocalHostInjectionTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridLifecycleBeanSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridStopWithCancelSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridReduceSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridEventConsumeSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridSuppressedExceptionSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridLifecycleAwareSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridMessageListenSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridFailFastNodeFailureDetectionSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteSlowClientDetectionSelfTest.class));
         GridTestUtils.addTestIfNeeded(suite, IgniteDaemonNodeMarshallerCacheTest.class, ignoredTests);
-        suite.addTestSuite(IgniteMarshallerCacheConcurrentReadWriteTest.class);
-        suite.addTestSuite(GridNodeMetricsLogSelfTest.class);
-        suite.addTestSuite(GridLocalIgniteSerializationTest.class);
-        suite.addTestSuite(GridMBeansTest.class);
-        suite.addTestSuite(TransactionsMXBeanImplTest.class);
-        suite.addTestSuite(SetTxTimeoutOnPartitionMapExchangeTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteMarshallerCacheConcurrentReadWriteTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridNodeMetricsLogSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridLocalIgniteSerializationTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridMBeansTest.class));
+        suite.addTest(new JUnit4TestAdapter(TransactionsMXBeanImplTest.class));
+        suite.addTest(new JUnit4TestAdapter(SetTxTimeoutOnPartitionMapExchangeTest.class));
 
-        suite.addTestSuite(IgniteExceptionInNioWorkerSelfTest.class);
-        suite.addTestSuite(IgniteLocalNodeMapBeforeStartTest.class);
-        suite.addTestSuite(OdbcConfigurationValidationSelfTest.class);
-        suite.addTestSuite(OdbcEscapeSequenceSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteExceptionInNioWorkerSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteLocalNodeMapBeforeStartTest.class));
+        suite.addTest(new JUnit4TestAdapter(OdbcConfigurationValidationSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(OdbcEscapeSequenceSelfTest.class));
 
         GridTestUtils.addTestIfNeeded(suite, DynamicProxySerializationMultiJvmSelfTest.class, ignoredTests);
 
         // Tests against configuration variations framework.
-        suite.addTestSuite(ParametersTest.class);
-        suite.addTestSuite(VariationsIteratorTest.class);
-        suite.addTestSuite(ConfigVariationsTestSuiteBuilderTest.class);
-        suite.addTestSuite(NotStringSystemPropertyTest.class);
+        suite.addTest(new JUnit4TestAdapter(ParametersTest.class));
+        suite.addTest(new JUnit4TestAdapter(VariationsIteratorTest.class));
+        suite.addTest(new JUnit4TestAdapter(ConfigVariationsTestSuiteBuilderTest.class));
+        suite.addTest(new JUnit4TestAdapter(NotStringSystemPropertyTest.class));
 
-        suite.addTestSuite(MarshallerContextLockingSelfTest.class);
-        suite.addTestSuite(MarshallerContextSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(MarshallerContextLockingSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(MarshallerContextSelfTest.class));
 
-        suite.addTestSuite(SecurityPermissionSetBuilderTest.class);
+        suite.addTest(new JUnit4TestAdapter(SecurityPermissionSetBuilderTest.class));
 
-        suite.addTestSuite(AttributeNodeFilterSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(AttributeNodeFilterSelfTest.class));
 
         // Basic DB data structures.
-        suite.addTestSuite(BPlusTreeSelfTest.class);
-        suite.addTestSuite(BPlusTreeFakeReuseSelfTest.class);
-        suite.addTestSuite(BPlusTreeReuseSelfTest.class);
-        suite.addTestSuite(IndexStorageSelfTest.class);
-        suite.addTestSuite(CacheFreeListImplSelfTest.class);
-        suite.addTestSuite(DataRegionMetricsSelfTest.class);
-        suite.addTestSuite(SwapPathConstructionSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(BPlusTreeSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BPlusTreeFakeReuseSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BPlusTreeReuseSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IndexStorageSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheFreeListImplSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(DataRegionMetricsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(SwapPathConstructionSelfTest.class));
 
-        suite.addTestSuite(IgniteMarshallerCacheFSRestoreTest.class);
-        suite.addTestSuite(IgniteMarshallerCacheClassNameConflictTest.class);
-        suite.addTestSuite(IgniteMarshallerCacheClientRequestsMappingOnMissTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteMarshallerCacheFSRestoreTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteMarshallerCacheClassNameConflictTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteMarshallerCacheClientRequestsMappingOnMissTest.class));
 
-        suite.addTestSuite(IgniteDiagnosticMessagesTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteDiagnosticMessagesTest.class));
 
-        suite.addTestSuite(IgniteRejectConnectOnNodeStopTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteRejectConnectOnNodeStopTest.class));
 
-        suite.addTestSuite(GridCleanerTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridCleanerTest.class));
 
-        suite.addTestSuite(ClassSetTest.class);
+        suite.addTest(new JUnit4TestAdapter(ClassSetTest.class));
 
         // Basic failure handlers.
-        suite.addTestSuite(FailureHandlerTriggeredTest.class);
-        suite.addTestSuite(StopNodeFailureHandlerTest.class);
-        suite.addTestSuite(StopNodeOrHaltFailureHandlerTest.class);
-        suite.addTestSuite(OomFailureHandlerTest.class);
-        suite.addTestSuite(TransactionIntegrityWithSystemWorkerDeathTest.class);
+        suite.addTest(new JUnit4TestAdapter(FailureHandlerTriggeredTest.class));
+        suite.addTest(new JUnit4TestAdapter(StopNodeFailureHandlerTest.class));
+        suite.addTest(new JUnit4TestAdapter(StopNodeOrHaltFailureHandlerTest.class));
+        suite.addTest(new JUnit4TestAdapter(OomFailureHandlerTest.class));
+        suite.addTest(new JUnit4TestAdapter(TransactionIntegrityWithSystemWorkerDeathTest.class));
 
-        suite.addTestSuite(AtomicOperationsInTxTest.class);
+        suite.addTest(new JUnit4TestAdapter(AtomicOperationsInTxTest.class));
 
-        suite.addTestSuite(CacheRebalanceConfigValidationTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheRebalanceConfigValidationTest.class));
 
-        suite.addTestSuite(ListeningTestLoggerTest.class);
+        suite.addTest(new JUnit4TestAdapter(ListeningTestLoggerTest.class));
 
         return suite;
     }

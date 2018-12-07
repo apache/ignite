@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.GridCacheOrderedPreloadingSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRabalancingDelayedPartitionMapExchangeSelfTest;
@@ -50,13 +51,13 @@ public class IgniteCacheTestSuite8 extends TestSuite {
         suite.addTest(IgniteCacheIteratorsSelfTestSuite.suite());
 
         // Rebalancing.
-        suite.addTestSuite(GridCacheOrderedPreloadingSelfTest.class);
-        suite.addTestSuite(GridCacheRebalancingSyncSelfTest.class);
-        suite.addTestSuite(GridCacheRebalancingSyncCheckDataTest.class);
-        suite.addTestSuite(GridCacheRebalancingUnmarshallingFailedSelfTest.class);
-        suite.addTestSuite(GridCacheRebalancingAsyncSelfTest.class);
-        suite.addTestSuite(GridCacheRabalancingDelayedPartitionMapExchangeSelfTest.class);
-        suite.addTestSuite(GridCacheRebalancingCancelTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridCacheOrderedPreloadingSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheRebalancingSyncSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheRebalancingSyncCheckDataTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheRebalancingUnmarshallingFailedSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheRebalancingAsyncSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheRabalancingDelayedPartitionMapExchangeSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheRebalancingCancelTest.class));
 
         return suite;
     }

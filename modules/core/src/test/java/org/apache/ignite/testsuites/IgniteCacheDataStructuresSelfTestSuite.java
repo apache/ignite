@@ -93,9 +93,8 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.Ignite
 public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
     /**
      * @return Cache test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Cache Data Structures Test Suite");
 
         // Data structures.
@@ -189,7 +188,7 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
 
         suite.addTest(new JUnit4TestAdapter(IgniteSequenceInternalCleanupTest.class));
 
-        suite.addTestSuite(AtomicCacheAffinityConfigurationTest.class);
+        suite.addTest(new JUnit4TestAdapter(AtomicCacheAffinityConfigurationTest.class));
 
         return suite;
     }

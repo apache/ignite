@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.TransactionMetricsMxBeanImplTest;
 import org.apache.ignite.internal.processors.cache.CacheGroupsMetricsRebalanceTest;
@@ -45,38 +46,37 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheLocalMetricsSe
 public class IgniteCacheMetricsSelfTestSuite extends TestSuite {
     /**
      * @return Cache metrics test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Cache Metrics Test Suite");
 
-        suite.addTestSuite(GridCacheLocalMetricsSelfTest.class);
-        suite.addTestSuite(GridCacheLocalAtomicMetricsNoReadThroughSelfTest.class);
-        suite.addTestSuite(GridCacheNearMetricsSelfTest.class);
-        suite.addTestSuite(GridCacheNearAtomicMetricsSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedMetricsSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedMetricsSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedHitsAndMissesSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridCacheLocalMetricsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheLocalAtomicMetricsNoReadThroughSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheNearMetricsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheNearAtomicMetricsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedMetricsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedMetricsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedHitsAndMissesSelfTest.class));
 
         // Atomic cache.
-        suite.addTestSuite(GridCacheAtomicLocalMetricsSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicLocalMetricsNoStoreSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicReplicatedMetricsSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicPartitionedMetricsSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicPartitionedTckMetricsSelfTestImpl.class);
-        suite.addTestSuite(GridCacheAtomicLocalTckMetricsSelfTestImpl.class);
+        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicLocalMetricsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicLocalMetricsNoStoreSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicReplicatedMetricsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicPartitionedMetricsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicPartitionedTckMetricsSelfTestImpl.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicLocalTckMetricsSelfTestImpl.class));
 
-        suite.addTestSuite(CacheGroupsMetricsRebalanceTest.class);
-        suite.addTestSuite(CacheValidatorMetricsTest.class);
-        suite.addTestSuite(CacheMetricsEntitiesCountTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheGroupsMetricsRebalanceTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheValidatorMetricsTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMetricsEntitiesCountTest.class));
 
         // Cluster wide metrics.
-        suite.addTestSuite(CacheMetricsForClusterGroupSelfTest.class);
-        suite.addTestSuite(OffheapCacheMetricsForClusterGroupSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheMetricsForClusterGroupSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(OffheapCacheMetricsForClusterGroupSelfTest.class));
 
-        suite.addTestSuite(TransactionMetricsMxBeanImplTest.class);
+        suite.addTest(new JUnit4TestAdapter(TransactionMetricsMxBeanImplTest.class));
 
-        suite.addTestSuite(GridEvictionPolicyMBeansTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridEvictionPolicyMBeansTest.class));
 
         return suite;
     }
