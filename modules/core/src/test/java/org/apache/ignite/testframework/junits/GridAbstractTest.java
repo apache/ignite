@@ -218,7 +218,7 @@ public abstract class GridAbstractTest extends TestCase {
      * Shared static IP finder. Will be used in configuration at nodes startup <b>for all test methods in class</b> if
      * {@link #useMulticastIpFinder()} is {@code false} (by default).
      */
-    protected final TcpDiscoveryIpFinder sharedStaticIpFinder;
+    protected final transient TcpDiscoveryIpFinder sharedStaticIpFinder;
 
     /**
      *
