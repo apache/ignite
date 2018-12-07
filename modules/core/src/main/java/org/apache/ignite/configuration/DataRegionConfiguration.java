@@ -134,6 +134,9 @@ public final class DataRegionConfiguration implements Serializable {
     /** Flag to enable warming up. */
     private boolean warmingUpEnabled = false;
 
+    /** Warming up indexes only flag. */
+    private boolean warmingUpIndexesOnly = false;
+
     /** Wait warming up on start flag. */
     private boolean waitWarmingUpOnStart = false;
 
@@ -381,6 +384,27 @@ public final class DataRegionConfiguration implements Serializable {
      */
     public DataRegionConfiguration setWarmingUpEnabled(boolean warmingUpEnabled) {
         this.warmingUpEnabled = warmingUpEnabled;
+
+        return this;
+    }
+
+    /**
+     * If enabled, only index partitions will be tracked and warmed up.
+     *
+     * @return Warming up indexes only flag.
+     */
+    public boolean isWarmingUpIndexesOnly() {
+        return warmingUpIndexesOnly;
+    }
+
+    /**
+     * Sets warming up indexes only flag.
+     *
+     * @param warmingUpIndexesOnly Warming up indexes only flag.
+     * @return {@code this} for chaining.
+     */
+    public DataRegionConfiguration setWarmingUpIndexesOnly(boolean warmingUpIndexesOnly) {
+        this.warmingUpIndexesOnly = warmingUpIndexesOnly;
 
         return this;
     }
