@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.regressions.logistic.binomial;
+package org.apache.ignite.ml.regressions.logistic;
 
 import java.io.Serializable;
 import java.util.Arrays;

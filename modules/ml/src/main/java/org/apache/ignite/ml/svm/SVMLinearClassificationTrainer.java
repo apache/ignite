@@ -39,7 +39,7 @@ import org.jetbrains.annotations.NotNull;
  * and 1 labels for two classes and makes binary classification. </p> The paper about this algorithm could be found
  * here https://arxiv.org/abs/1409.1458.
  */
-public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrainer<SVMLinearBinaryClassificationModel> {
+public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SVMLinearClassificationModel> {
     /** Amount of outer SDCA algorithm iterations. */
     private int amountOfIterations = 200;
 
@@ -60,14 +60,14 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
      * @param lbExtractor Label extractor.
      * @return Model.
      */
-    @Override public <K, V> SVMLinearBinaryClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> SVMLinearClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
         return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> SVMLinearBinaryClassificationModel updateModel(SVMLinearBinaryClassificationModel mdl,
+    @Override protected <K, V> SVMLinearClassificationModel updateModel(SVMLinearClassificationModel mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
@@ -117,11 +117,11 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        return new SVMLinearBinaryClassificationModel(weights.viewPart(1, weights.size() - 1), weights.get(0));
+        return new SVMLinearClassificationModel(weights.viewPart(1, weights.size() - 1), weights.get(0));
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(SVMLinearBinaryClassificationModel mdl) {
+    @Override protected boolean checkState(SVMLinearClassificationModel mdl) {
         return true;
     }
 
@@ -129,7 +129,7 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
      * @param mdl Model.
      * @return vector of model weights with intercept.
      */
-    private Vector getStateVector(SVMLinearBinaryClassificationModel mdl) {
+    private Vector getStateVector(SVMLinearClassificationModel mdl) {
         double intercept = mdl.intercept();
         Vector weights = mdl.weights();
 
@@ -262,7 +262,7 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
      * @param lambda The regularization parameter. Should be more than 0.0.
      * @return Trainer with new lambda parameter value.
      */
-    public SVMLinearBinaryClassificationTrainer withLambda(double lambda) {
+    public SVMLinearClassificationTrainer withLambda(double lambda) {
         assert lambda > 0.0;
         this.lambda = lambda;
         return this;
@@ -292,7 +292,7 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
      * @param amountOfIterations The parameter value.
      * @return Trainer with new amountOfIterations parameter value.
      */
-    public SVMLinearBinaryClassificationTrainer withAmountOfIterations(int amountOfIterations) {
+    public SVMLinearClassificationTrainer withAmountOfIterations(int amountOfIterations) {
         this.amountOfIterations = amountOfIterations;
         return this;
     }
@@ -312,7 +312,7 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
      * @param amountOfLocIterations The parameter value.
      * @return Trainer with new amountOfLocIterations parameter value.
      */
-    public SVMLinearBinaryClassificationTrainer withAmountOfLocIterations(int amountOfLocIterations) {
+    public SVMLinearClassificationTrainer withAmountOfLocIterations(int amountOfLocIterations) {
         this.amountOfLocIterations = amountOfLocIterations;
         return this;
     }
@@ -332,7 +332,7 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
      * @param seed The parameter value.
      * @return Model with new seed parameter value.
      */
-    public SVMLinearBinaryClassificationTrainer withSeed(long seed) {
+    public SVMLinearClassificationTrainer withSeed(long seed) {
         this.seed = seed;
         return this;
     }
