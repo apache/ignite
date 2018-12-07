@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -165,11 +166,19 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
 
     /** {@inheritDoc} */
     @Override public void onPageLoad(int grpId, long pageId) {
+        if (dataRegCfg.isWarmingUpIndexesOnly() &&
+            PageIdUtils.partId(pageId) != PageIdAllocator.INDEX_PARTITION)
+            return;
+
         getSegment(Segment.key(grpId, pageId)).incCount();
     }
 
     /** {@inheritDoc} */
     @Override public void onPageUnload(int grpId, long pageId) {
+        if (dataRegCfg.isWarmingUpIndexesOnly() &&
+            PageIdUtils.partId(pageId) != PageIdAllocator.INDEX_PARTITION)
+            return;
+
         getSegment(Segment.key(grpId, pageId)).decCount();
     }
 
@@ -226,8 +235,14 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
                     if (stopping || stopWarmingUp)
                         continue;
 
-                    int grpId = Integer.parseInt(segFile.getName().substring(0, 8), 16);
-                    int partId = Integer.parseInt(segFile.getName().substring(8, Segment.FILE_NAME_LENGTH), 16);
+                    int partId = Integer.parseInt(segFile.getName().substring(
+                        Segment.GRP_ID_PREFIX_LENGTH,
+                        Segment.FILE_NAME_LENGTH), 16);
+
+                    if (dataRegCfg.isWarmingUpIndexesOnly() && partId != PageIdAllocator.INDEX_PARTITION)
+                        continue;
+
+                    int grpId = Integer.parseInt(segFile.getName().substring(0, Segment.GRP_ID_PREFIX_LENGTH), 16);
 
                     int[] pageIdxArr = loadPageIndexes(segFile);
 
@@ -306,6 +321,10 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
             long startTs = U.currentTimeMillis();
 
             pageMem.forEachAsync((fullId, val) -> {
+                if (dataRegCfg.isWarmingUpIndexesOnly() &&
+                    PageIdUtils.partId(fullId.pageId()) != PageIdAllocator.INDEX_PARTITION)
+                    return;
+
                 Segment seg = !onStopping && stopping ?
                     updated.get(
                         Segment.key(fullId.groupId(), fullId.pageId())) :
@@ -428,6 +447,9 @@ public class PageMemoryWarmingUpImpl implements PageMemoryWarmingUp, LoadedPages
 
         /** File name length. */
         private static final int FILE_NAME_LENGTH = 12;
+
+        /** Group ID prefix length. */
+        private static final int GRP_ID_PREFIX_LENGTH = 8;
 
         /** File name pattern. */
         private static final Pattern FILE_NAME_PATTERN = Pattern.compile("[0-9A-Fa-f]{" + FILE_NAME_LENGTH + "}\\" + FILE_EXT);
