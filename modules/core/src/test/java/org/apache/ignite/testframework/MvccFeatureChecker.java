@@ -26,8 +26,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 /**
@@ -120,9 +118,8 @@ public class MvccFeatureChecker {
     public static void assertMvccWriteConflict(Exception e) {
         IgniteSQLException sqlEx = X.cause(e, IgniteSQLException.class);
 
-        assertNotNull("Unexpected exception:" + X.getFullStackTrace(e), sqlEx);
-
-        assertEquals("Unexpected exception:" + X.getFullStackTrace(e),TRANSACTION_SERIALIZATION_ERROR, sqlEx.statusCode());
+        if (sqlEx == null ||  sqlEx.statusCode() != TRANSACTION_SERIALIZATION_ERROR)
+            fail("Unexpected exception: " + X.getFullStackTrace(e));
     }
 
     /**
