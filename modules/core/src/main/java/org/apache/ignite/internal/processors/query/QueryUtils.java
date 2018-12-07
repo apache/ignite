@@ -1440,6 +1440,18 @@ public class QueryUtils {
     }
 
     /**
+     * Checks whether string matches SQL pattern.
+     *
+     * @param str String.
+     * @param ptrn Pattern.
+     * @return Whether string matches pattern.
+     */
+    public static boolean matches(String str, String ptrn) {
+        return str != null && (F.isEmpty(ptrn) ||
+            str.matches(ptrn.replace("%", ".*").replace("_", ".")));
+    }
+
+    /**
      * Private constructor.
      */
     private QueryUtils() {

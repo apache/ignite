@@ -38,6 +38,8 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetadataInfo;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcPrimaryKeyMeta;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
@@ -62,6 +64,8 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** Connection. */
     private final JdbcConnection conn;
 
+    private final JdbcMetadataInfo newMeta;
+
     /** Metadata. */
     private Map<String, Map<String, Map<String, ColumnInfo>>> meta;
 
@@ -73,6 +77,8 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
      */
     JdbcDatabaseMetadata(JdbcConnection conn) {
         this.conn = conn;
+
+        newMeta = new JdbcMetadataInfo(conn.ignite().context());
     }
 
     /** {@inheritDoc} */
@@ -968,20 +974,20 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getPrimaryKeys(String catalog, String schemaPtrn, String tblNamePtrn)
         throws SQLException {
-        updateMetaData();
 
-        List<List<?>> rows = new LinkedList<>();
+        List<List<?>> rows;
 
         if (isValidCatalog(catalog)) {
-            for (Map.Entry<String, Map<String, Map<String, ColumnInfo>>> schema : meta.entrySet()) {
-                if (matches(schema.getKey(), schemaPtrn)) {
-                    for (Map.Entry<String, Map<String, ColumnInfo>> tbl : schema.getValue().entrySet()) {
-                        if (matches(tbl.getKey(), tblNamePtrn))
-                            rows.add(Arrays.<Object>asList(CATALOG_NAME, schema.getKey(), tbl.getKey(), "_KEY", 1, "_KEY"));
-                    }
-                }
-            }
+            Collection<JdbcPrimaryKeyMeta> tabsKeyInfo = newMeta.getPrimaryKeys(schemaPtrn, tblNamePtrn);
+
+            rows = new ArrayList<>();
+
+            for (JdbcPrimaryKeyMeta keyInfo : tabsKeyInfo)
+                rows.addAll(primaryKeyRows(keyInfo));
+
         }
+        else
+            rows = Collections.emptyList();
 
         return new JdbcResultSet(true, null,
             conn.createStatement0(),
@@ -991,6 +997,29 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
                 String.class.getName(), Short.class.getName(), String.class.getName()),
             rows, true
         );
+    }
+
+    /**
+     * @param pkMeta Primary key metadata.
+     * @return Result set rows for primary key.
+     */
+    private List<List<Object>> primaryKeyRows(JdbcPrimaryKeyMeta pkMeta) {
+        List<List<Object>> rows = new ArrayList<>(pkMeta.fields().size());
+
+        for (int i = 0; i < pkMeta.fields().size(); ++i) {
+            List<Object> row = new ArrayList<>(6);
+
+            row.add(CATALOG_NAME); // table catalog
+            row.add(pkMeta.schemaName());
+            row.add(pkMeta.tableName());
+            row.add(pkMeta.fields().get(i));
+            row.add(i + 1); // sequence number
+            row.add(pkMeta.name());
+
+            rows.add(row);
+        }
+
+        return rows;
     }
 
     /** {@inheritDoc} */
