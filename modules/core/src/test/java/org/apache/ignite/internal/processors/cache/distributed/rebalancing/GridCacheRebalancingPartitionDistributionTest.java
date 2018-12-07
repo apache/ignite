@@ -48,12 +48,17 @@ public class GridCacheRebalancingPartitionDistributionTest extends GridRollingRe
     /** {@inheritDoc} */
     @Override protected CacheConfiguration<Integer, Integer> getCacheConfiguration() {
         return new CacheConfiguration<Integer, Integer>(CACHE_NAME)
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                .setAtomicityMode(atomicityMode())
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setBackups(1)
                 .setAffinity(new RendezvousAffinityFunction(true /* machine-safe */, 1024))
                 .setRebalanceMode(CacheRebalanceMode.SYNC)
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+    }
+
+    /** */
+    protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL;
     }
 
     /**

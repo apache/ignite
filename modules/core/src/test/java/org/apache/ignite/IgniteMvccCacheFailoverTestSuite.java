@@ -29,6 +29,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCa
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicInvalidPartitionHandlingSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicRemoveFailureTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearRemoveFailureTest;
+import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionDistributionMvccTest;
+import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionDistributionTest;
 import org.apache.ignite.testsuites.IgniteCacheFailoverTestSuite;
 
 /**
@@ -58,9 +60,15 @@ public class IgniteMvccCacheFailoverTestSuite extends TestSuite {
 
         //TODO IGNITE-10458: ignore or fix? IgniteAtomicLongChangingTopologySelfTest.
 
+        // Skip classes that has mvcc clones added above.
+        ignoredTests.add(GridCacheRebalancingPartitionDistributionTest.class); // See GridCacheRebalancingPartitionDistributionMvccTest.
+
         TestSuite suite = new TestSuite("Mvcc Cache Failover Test Suite");
 
         suite.addTest(IgniteCacheFailoverTestSuite.suite(ignoredTests));
+
+        // Add mvcc clones.
+        suite.addTestSuite(GridCacheRebalancingPartitionDistributionMvccTest.class);
 
         return suite;
     }

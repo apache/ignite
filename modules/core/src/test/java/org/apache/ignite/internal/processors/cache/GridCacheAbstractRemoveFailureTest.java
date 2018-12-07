@@ -61,7 +61,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -197,6 +196,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
      * @param txIsolation Transaction isolation if test explicit transaction.
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     private void putAndRemove(long duration,
         final TransactionConcurrency txConcurrency,
         final TransactionIsolation txIsolation) throws Exception {
@@ -204,10 +204,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
 
         grid(0).destroyCache(DEFAULT_CACHE_NAME);
 
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-
-        ccfg.setWriteSynchronizationMode(FULL_SYNC);
-
+        CacheConfiguration<Integer, Integer> ccfg = defaultCacheConfiguration();
         ccfg.setCacheMode(cacheMode());
 
         if (cacheMode() == PARTITIONED)
