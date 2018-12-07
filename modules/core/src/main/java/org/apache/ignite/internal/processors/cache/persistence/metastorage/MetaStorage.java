@@ -139,6 +139,8 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
 
     /** */
     public void init(IgniteCacheDatabaseSharedManager db) throws IgniteCheckedException {
+        regionMetrics.clear();
+
         getOrAllocateMetas();
 
         if (!empty) {
