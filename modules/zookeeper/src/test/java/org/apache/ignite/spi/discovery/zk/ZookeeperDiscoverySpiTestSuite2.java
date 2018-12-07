@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.zk;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.IgniteClientReconnectCacheTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMultiNodeFullApiSelfTest;
@@ -43,12 +44,12 @@ public class ZookeeperDiscoverySpiTestSuite2 extends ZookeeperDiscoverySpiAbstra
 
         TestSuite suite = new TestSuite("ZookeeperDiscoverySpi Test Suite");
 
-        suite.addTestSuite(GridCachePartitionedNodeRestartTest.class);
-        suite.addTestSuite(IgniteCacheEntryListenerWithZkDiscoAtomicTest.class);
-        suite.addTestSuite(IgniteClientReconnectCacheTest.class);
-        suite.addTestSuite(GridCachePartitionedMultiNodeFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedMultiNodeFullApiSelfTest.class);
-        suite.addTestSuite(GridCommandHandlerTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedNodeRestartTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheEntryListenerWithZkDiscoAtomicTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteClientReconnectCacheTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedMultiNodeFullApiSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedMultiNodeFullApiSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCommandHandlerTest.class));
 
         return suite;
     }

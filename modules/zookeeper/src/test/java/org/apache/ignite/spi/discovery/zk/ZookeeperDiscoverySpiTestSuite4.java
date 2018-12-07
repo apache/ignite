@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.zk;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.ClusterNodeMetricsUpdateTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryAtomicSelfTest;
@@ -44,13 +45,13 @@ public class ZookeeperDiscoverySpiTestSuite4 extends ZookeeperDiscoverySpiAbstra
 
         TestSuite suite = new TestSuite("ZookeeperDiscoverySpi Test Suite");
 
-        suite.addTestSuite(ZookeeperDiscoverySuitePreprocessorTest.class);
-        suite.addTestSuite(IgniteCachePutRetryAtomicSelfTest.class);
-        suite.addTestSuite(IgniteCachePutRetryTransactionalSelfTest.class);
-        suite.addTestSuite(ClusterNodeMetricsUpdateTest.class);
-        suite.addTestSuite(GridCacheAtomicMultiNodeFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedAtomicMultiNodeFullApiSelfTest.class);
-        suite.addTestSuite(IgniteCacheReplicatedQuerySelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(ZookeeperDiscoverySuitePreprocessorTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCachePutRetryAtomicSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCachePutRetryTransactionalSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(ClusterNodeMetricsUpdateTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicMultiNodeFullApiSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedAtomicMultiNodeFullApiSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheReplicatedQuerySelfTest.class));
 
         return suite;
     }

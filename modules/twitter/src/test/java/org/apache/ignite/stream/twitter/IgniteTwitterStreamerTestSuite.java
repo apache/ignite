@@ -17,6 +17,7 @@
 
 package org.apache.ignite.stream.twitter;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 
 /**
@@ -25,12 +26,11 @@ import junit.framework.TestSuite;
 public class IgniteTwitterStreamerTestSuite extends TestSuite {
     /**
      * @return Twitter streamer tests suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Twitter streamed Test Suite");
 
-        suite.addTestSuite(IgniteTwitterStreamerTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteTwitterStreamerTest.class));
 
         return suite;
     }

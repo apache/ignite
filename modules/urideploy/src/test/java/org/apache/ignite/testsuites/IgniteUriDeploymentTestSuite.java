@@ -40,9 +40,8 @@ import org.apache.ignite.spi.deployment.uri.scanners.http.GridHttpDeploymentSelf
 public class IgniteUriDeploymentTestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("URI Deployment Spi Test Suite");
 
         suite.addTest(new JUnit4TestAdapter(GridUriDeploymentConfigSelfTest.class));
@@ -64,7 +63,7 @@ public class IgniteUriDeploymentTestSuite {
         // GAR Ant task tests.
         suite.addTest(IgniteToolsSelfTestSuite.suite());
 
-        suite.addTestSuite(GridTaskUriDeploymentDeadlockSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridTaskUriDeploymentDeadlockSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(GridP2PDisabledSelfTest.class));
 
         return suite;

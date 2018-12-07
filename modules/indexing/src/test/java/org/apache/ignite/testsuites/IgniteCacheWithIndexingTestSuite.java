@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.BinaryTypeMismatchLoggingTest;
 import org.apache.ignite.internal.processors.cache.CacheBinaryKeyConcurrentQueryTest;
@@ -49,46 +50,45 @@ import org.apache.ignite.internal.processors.query.h2.database.InlineIndexHelper
 public class IgniteCacheWithIndexingTestSuite extends TestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Cache With Indexing Test Suite");
 
-        suite.addTestSuite(InlineIndexHelperTest.class);
+        suite.addTest(new JUnit4TestAdapter(InlineIndexHelperTest.class));
 
-        suite.addTestSuite(GridIndexingWithNoopSwapSelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridIndexingWithNoopSwapSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheOffHeapSelfTest.class));
 
-        suite.addTestSuite(CacheTtlTransactionalLocalSelfTest.class);
-        suite.addTestSuite(CacheTtlTransactionalPartitionedSelfTest.class);
-        suite.addTestSuite(CacheTtlAtomicLocalSelfTest.class);
-        suite.addTestSuite(CacheTtlAtomicPartitionedSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheTtlTransactionalLocalSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheTtlTransactionalPartitionedSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheTtlAtomicLocalSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheTtlAtomicPartitionedSelfTest.class));
 
-        suite.addTestSuite(GridCacheOffheapIndexGetSelfTest.class);
-        suite.addTestSuite(GridCacheOffheapIndexEntryEvictTest.class);
-        suite.addTestSuite(CacheIndexStreamerTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridCacheOffheapIndexGetSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheOffheapIndexEntryEvictTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheIndexStreamerTest.class));
 
-        suite.addTestSuite(CacheConfigurationP2PTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheConfigurationP2PTest.class));
 
-        suite.addTestSuite(IgniteCacheConfigurationPrimitiveTypesSelfTest.class);
-        suite.addTestSuite(IgniteClientReconnectQueriesTest.class);
-        suite.addTestSuite(CacheRandomOperationsMultithreadedTest.class);
-        suite.addTestSuite(IgniteCacheStarvationOnRebalanceTest.class);
-        suite.addTestSuite(CacheOperationsWithExpirationTest.class);
-        suite.addTestSuite(CacheBinaryKeyConcurrentQueryTest.class);
-        suite.addTestSuite(CacheQueryFilterExpiredTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheConfigurationPrimitiveTypesSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteClientReconnectQueriesTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheRandomOperationsMultithreadedTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheStarvationOnRebalanceTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheOperationsWithExpirationTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheBinaryKeyConcurrentQueryTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheQueryFilterExpiredTest.class));
 
-        suite.addTestSuite(ClientReconnectAfterClusterRestartTest.class);
+        suite.addTest(new JUnit4TestAdapter(ClientReconnectAfterClusterRestartTest.class));
 
-        suite.addTestSuite(CacheQueryAfterDynamicCacheStartFailureTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheQueryAfterDynamicCacheStartFailureTest.class));
 
-        suite.addTestSuite(IgniteCacheGroupsSqlTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheGroupsSqlTest.class));
 
-        suite.addTestSuite(IgniteDataStreamerTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteDataStreamerTest.class));
 
-        suite.addTestSuite(BinaryTypeMismatchLoggingTest.class);
+        suite.addTest(new JUnit4TestAdapter(BinaryTypeMismatchLoggingTest.class));
 
-        suite.addTestSuite(ClusterReadOnlyModeSqlTest.class);
+        suite.addTest(new JUnit4TestAdapter(ClusterReadOnlyModeSqlTest.class));
 
         return suite;
     }

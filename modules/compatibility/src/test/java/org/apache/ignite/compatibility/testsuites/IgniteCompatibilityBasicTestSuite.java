@@ -34,13 +34,13 @@ public class IgniteCompatibilityBasicTestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Compatibility Basic Test Suite");
 
-        suite.addTestSuite(PersistenceBasicCompatibilityTest.class);
+        suite.addTest(new JUnit4TestAdapter(PersistenceBasicCompatibilityTest.class);
 
-        suite.addTestSuite(PdsWithTtlCompatibilityTest.class);
+        suite.addTest(new JUnit4TestAdapter(PdsWithTtlCompatibilityTest.class);
 
-        suite.addTestSuite(FoldersReuseCompatibilityTest.class);
+        suite.addTest(new JUnit4TestAdapter(FoldersReuseCompatibilityTest.class);
 
-        suite.addTestSuite(MigratingToWalV2SerializerWithCompactionTest.class);
+        suite.addTest(new JUnit4TestAdapter(MigratingToWalV2SerializerWithCompactionTest.class);
 
         return suite;
     }

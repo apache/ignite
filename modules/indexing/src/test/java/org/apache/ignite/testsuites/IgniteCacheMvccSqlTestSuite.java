@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
@@ -84,78 +85,78 @@ public class IgniteCacheMvccSqlTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("IgniteCache SQL MVCC Test Suite");
 
         // Simple tests.
-        suite.addTestSuite(MvccEmptyTransactionSelfTest.class);
-        suite.addTestSuite(CacheMvccSqlConfigurationValidationTest.class);
-        suite.addTestSuite(CacheMvccDmlSimpleTest.class);
-        suite.addTestSuite(SqlTransactionsCommandsWithMvccEnabledSelfTest.class);
-        suite.addTestSuite(CacheMvccSizeTest.class);
-        suite.addTestSuite(CacheMvccSqlUpdateCountersTest.class);
-        suite.addTestSuite(CacheMvccSqlLockTimeoutTest.class);
+        suite.addTest(new JUnit4TestAdapter(MvccEmptyTransactionSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccSqlConfigurationValidationTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccDmlSimpleTest.class));
+        suite.addTest(new JUnit4TestAdapter(SqlTransactionsCommandsWithMvccEnabledSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccSizeTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccSqlUpdateCountersTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccSqlLockTimeoutTest.class));
 
-        suite.addTestSuite(GridIndexRebuildWithMvccEnabledSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridIndexRebuildWithMvccEnabledSelfTest.class));
 
-        suite.addTestSuite(CacheMvccTxNodeMappingTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheMvccTxNodeMappingTest.class));
 
         // SQL vs CacheAPI consistency.
-        suite.addTestSuite(MvccRepeatableReadOperationsTest.class);
-        suite.addTestSuite(MvccRepeatableReadBulkOpsTest.class);
+        suite.addTest(new JUnit4TestAdapter(MvccRepeatableReadOperationsTest.class));
+        suite.addTest(new JUnit4TestAdapter(MvccRepeatableReadBulkOpsTest.class));
 
         // JDBC tests.
-        suite.addTestSuite(CacheMvccSizeWithConcurrentJdbcTransactionTest.class);
-        suite.addTestSuite(CacheMvccScanQueryWithConcurrentJdbcTransactionTest.class);
-        suite.addTestSuite(CacheMvccLocalEntriesWithConcurrentJdbcTransactionTest.class);
-        suite.addTestSuite(CacheMvccIteratorWithConcurrentJdbcTransactionTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheMvccSizeWithConcurrentJdbcTransactionTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccScanQueryWithConcurrentJdbcTransactionTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccLocalEntriesWithConcurrentJdbcTransactionTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccIteratorWithConcurrentJdbcTransactionTest.class));
 
         // Load tests.
-        suite.addTestSuite(CacheMvccBulkLoadTest.class);
-        suite.addTestSuite(CacheMvccStreamingInsertTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheMvccBulkLoadTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccStreamingInsertTest.class));
 
-        suite.addTestSuite(CacheMvccPartitionedSqlQueriesTest.class);
-        suite.addTestSuite(CacheMvccReplicatedSqlQueriesTest.class);
-        suite.addTestSuite(CacheMvccPartitionedSqlTxQueriesTest.class);
-        suite.addTestSuite(CacheMvccReplicatedSqlTxQueriesTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheMvccPartitionedSqlQueriesTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccReplicatedSqlQueriesTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccPartitionedSqlTxQueriesTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccReplicatedSqlTxQueriesTest.class));
 
-        suite.addTestSuite(CacheMvccPartitionedSqlTxQueriesWithReducerTest.class);
-        suite.addTestSuite(CacheMvccReplicatedSqlTxQueriesWithReducerTest.class);
-        suite.addTestSuite(CacheMvccPartitionedSelectForUpdateQueryTest.class);
-        suite.addTestSuite(CacheMvccReplicatedSelectForUpdateQueryTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheMvccPartitionedSqlTxQueriesWithReducerTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccReplicatedSqlTxQueriesWithReducerTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccPartitionedSelectForUpdateQueryTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccReplicatedSelectForUpdateQueryTest.class));
 
         // Failover tests.
-        suite.addTestSuite(CacheMvccPartitionedBackupsTest.class);
-        suite.addTestSuite(CacheMvccReplicatedBackupsTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheMvccPartitionedBackupsTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccReplicatedBackupsTest.class));
 
-        suite.addTestSuite(CacheMvccPartitionedSqlCoordinatorFailoverTest.class);
-        suite.addTestSuite(CacheMvccReplicatedSqlCoordinatorFailoverTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheMvccPartitionedSqlCoordinatorFailoverTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccReplicatedSqlCoordinatorFailoverTest.class));
 
         // Continuous queries.
-        suite.addTestSuite(CacheMvccBasicContinuousQueryTest.class);
-        suite.addTestSuite(CacheMvccContinuousQueryPartitionedSelfTest.class);
-        suite.addTestSuite(CacheMvccContinuousQueryReplicatedSelfTest.class);
-        suite.addTestSuite(CacheMvccSqlContinuousQueryPartitionedSelfTest.class);
-        suite.addTestSuite(CacheMvccSqlContinuousQueryReplicatedSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheMvccBasicContinuousQueryTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccContinuousQueryPartitionedSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccContinuousQueryReplicatedSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccSqlContinuousQueryPartitionedSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccSqlContinuousQueryReplicatedSelfTest.class));
 
-        suite.addTestSuite(CacheMvccContinuousQueryPartitionedTxOneNodeTest.class);
-        suite.addTestSuite(CacheMvccContinuousQueryReplicatedTxOneNodeTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheMvccContinuousQueryPartitionedTxOneNodeTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccContinuousQueryReplicatedTxOneNodeTest.class));
 
-        suite.addTestSuite(CacheMvccContinuousQueryClientReconnectTest.class);
-        suite.addTestSuite(CacheMvccContinuousQueryClientTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheMvccContinuousQueryClientReconnectTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccContinuousQueryClientTest.class));
 
-        suite.addTestSuite(CacheMvccContinuousQueryMultiNodesFilteringTest.class);
-        suite.addTestSuite(CacheMvccContinuousQueryBackupQueueTest.class);
-        suite.addTestSuite(CacheMvccContinuousQueryImmutableEntryTest.class);
-        suite.addTestSuite(CacheMvccClientReconnectContinuousQueryTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheMvccContinuousQueryMultiNodesFilteringTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccContinuousQueryBackupQueueTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccContinuousQueryImmutableEntryTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccClientReconnectContinuousQueryTest.class));
 
-        suite.addTestSuite(CacheMvccContinuousWithTransformerClientSelfTest.class);
-        suite.addTestSuite(CacheMvccContinuousWithTransformerPartitionedSelfTest.class);
-        suite.addTestSuite(CacheMvccContinuousWithTransformerReplicatedSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheMvccContinuousWithTransformerClientSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccContinuousWithTransformerPartitionedSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccContinuousWithTransformerReplicatedSelfTest.class));
 
         // Transaction recovery.
-        suite.addTestSuite(CacheMvccTxRecoveryTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheMvccTxRecoveryTest.class));
 
-        suite.addTestSuite(MvccPartitionedPrimaryNodeFailureRecoveryTest.class);
-        suite.addTestSuite(MvccPartitionedTwoBackupsPrimaryNodeFailureRecoveryTest.class);
-        suite.addTestSuite(MvccColocatedTxPessimisticOriginatingNodeFailureRecoveryTest.class);
-        suite.addTestSuite(MvccReplicatedTxPessimisticOriginatingNodeFailureRecoveryTest.class);
+        suite.addTest(new JUnit4TestAdapter(MvccPartitionedPrimaryNodeFailureRecoveryTest.class));
+        suite.addTest(new JUnit4TestAdapter(MvccPartitionedTwoBackupsPrimaryNodeFailureRecoveryTest.class));
+        suite.addTest(new JUnit4TestAdapter(MvccColocatedTxPessimisticOriginatingNodeFailureRecoveryTest.class));
+        suite.addTest(new JUnit4TestAdapter(MvccReplicatedTxPessimisticOriginatingNodeFailureRecoveryTest.class));
 
         return suite;
     }

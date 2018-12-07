@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexingAndGroupPutGetPersistenceSelfTest;
 import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest;
@@ -33,19 +34,18 @@ import org.apache.ignite.internal.processors.database.IgniteTwoRegionsRebuildInd
 public class IgnitePdsWithIndexingTestSuite extends TestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Db Memory Leaks With Indexing Test Suite");
 
-        suite.addTestSuite(IgniteDbSingleNodeWithIndexingWalRestoreTest.class);
-        suite.addTestSuite(IgniteDbSingleNodeWithIndexingPutGetTest.class);
-        suite.addTestSuite(IgniteDbMultiNodeWithIndexingPutGetTest.class);
-        suite.addTestSuite(IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest.class);
-        suite.addTestSuite(IgnitePdsSingleNodeWithIndexingAndGroupPutGetPersistenceSelfTest.class);
-        suite.addTestSuite(IgnitePersistentStoreSchemaLoadTest.class);
-        suite.addTestSuite(IgnitePersistentStoreQueryWithMultipleClassesPerCacheTest.class);
-        suite.addTestSuite(IgniteTwoRegionsRebuildIndexTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteDbSingleNodeWithIndexingWalRestoreTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteDbSingleNodeWithIndexingPutGetTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteDbMultiNodeWithIndexingPutGetTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsSingleNodeWithIndexingAndGroupPutGetPersistenceSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgnitePersistentStoreSchemaLoadTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgnitePersistentStoreQueryWithMultipleClassesPerCacheTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteTwoRegionsRebuildIndexTest.class));
 
         return suite;
     }

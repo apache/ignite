@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.CacheScanPartitionQueryFallbackSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheCrossCacheJoinRandomTest;
@@ -66,67 +67,66 @@ import org.apache.ignite.testframework.IgniteTestSuite;
 public class IgniteBinaryCacheQueryTestSuite2 extends TestSuite {
     /**
      * @return Test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new IgniteTestSuite("Ignite Cache Queries Test Suite 2");
 
         // Dynamic index create/drop tests.
-        suite.addTestSuite(DynamicIndexPartitionedAtomicConcurrentSelfTest.class);
-        suite.addTestSuite(DynamicIndexPartitionedTransactionalConcurrentSelfTest.class);
-        suite.addTestSuite(DynamicIndexReplicatedAtomicConcurrentSelfTest.class);
-        suite.addTestSuite(DynamicIndexReplicatedTransactionalConcurrentSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(DynamicIndexPartitionedAtomicConcurrentSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(DynamicIndexPartitionedTransactionalConcurrentSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(DynamicIndexReplicatedAtomicConcurrentSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(DynamicIndexReplicatedTransactionalConcurrentSelfTest.class));
 
-        suite.addTestSuite(DynamicColumnsConcurrentAtomicPartitionedSelfTest.class);
-        suite.addTestSuite(DynamicColumnsConcurrentTransactionalPartitionedSelfTest.class);
-        suite.addTestSuite(DynamicColumnsConcurrentAtomicReplicatedSelfTest.class);
-        suite.addTestSuite(DynamicColumnsConcurrentTransactionalReplicatedSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(DynamicColumnsConcurrentAtomicPartitionedSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(DynamicColumnsConcurrentTransactionalPartitionedSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(DynamicColumnsConcurrentAtomicReplicatedSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(DynamicColumnsConcurrentTransactionalReplicatedSelfTest.class));
 
         // Distributed joins.
-        suite.addTestSuite(IgniteCacheQueryNodeRestartDistributedJoinSelfTest.class);
-        suite.addTestSuite(IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheQueryNodeRestartDistributedJoinSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest.class));
 
         // Other tests.
-        suite.addTestSuite(IgniteCacheQueryMultiThreadedSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheQueryMultiThreadedSelfTest.class));
 
-        suite.addTestSuite(IgniteCacheQueryEvictsMultiThreadedSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheQueryEvictsMultiThreadedSelfTest.class));
 
-        suite.addTestSuite(ScanQueryOffheapExpiryPolicySelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(ScanQueryOffheapExpiryPolicySelfTest.class));
 
-        suite.addTestSuite(IgniteCacheCrossCacheJoinRandomTest.class);
-        suite.addTestSuite(IgniteCacheClientQueryReplicatedNodeRestartSelfTest.class);
-        suite.addTestSuite(IgniteCacheQueryNodeFailTest.class);
-        suite.addTestSuite(IgniteCacheQueryNodeRestartSelfTest.class);
-        suite.addTestSuite(IgniteSqlQueryWithBaselineTest.class);
-        suite.addTestSuite(IgniteChangingBaselineCacheQueryNodeRestartSelfTest.class);
-        suite.addTestSuite(IgniteStableBaselineCacheQueryNodeRestartsSelfTest.class);
-        suite.addTestSuite(IgniteCacheQueryNodeRestartSelfTest2.class);
-        suite.addTestSuite(IgniteCacheQueryNodeRestartTxSelfTest.class);
-        suite.addTestSuite(IgniteCacheSqlQueryMultiThreadedSelfTest.class);
-        suite.addTestSuite(IgniteCachePartitionedQueryMultiThreadedSelfTest.class);
-        suite.addTestSuite(CacheScanPartitionQueryFallbackSelfTest.class);
-        suite.addTestSuite(IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest.class);
-        suite.addTestSuite(IgniteCacheObjectKeyIndexingSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheCrossCacheJoinRandomTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheClientQueryReplicatedNodeRestartSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheQueryNodeFailTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheQueryNodeRestartSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteSqlQueryWithBaselineTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteChangingBaselineCacheQueryNodeRestartSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteStableBaselineCacheQueryNodeRestartsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheQueryNodeRestartSelfTest2.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheQueryNodeRestartTxSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheSqlQueryMultiThreadedSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCachePartitionedQueryMultiThreadedSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheScanPartitionQueryFallbackSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheObjectKeyIndexingSelfTest.class));
 
-        suite.addTestSuite(IgniteCacheGroupsCompareQueryTest.class);
-        suite.addTestSuite(IgniteCacheGroupsSqlSegmentedIndexSelfTest.class);
-        suite.addTestSuite(IgniteCacheGroupsSqlSegmentedIndexMultiNodeSelfTest.class);
-        suite.addTestSuite(IgniteCacheGroupsSqlDistributedJoinSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheGroupsCompareQueryTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheGroupsSqlSegmentedIndexSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheGroupsSqlSegmentedIndexMultiNodeSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheGroupsSqlDistributedJoinSelfTest.class));
 
-        suite.addTestSuite(QueryJoinWithDifferentNodeFiltersTest.class);
+        suite.addTest(new JUnit4TestAdapter(QueryJoinWithDifferentNodeFiltersTest.class));
 
-        suite.addTestSuite(CacheQueryMemoryLeakTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheQueryMemoryLeakTest.class));
 
-        suite.addTestSuite(CreateTableWithDateKeySelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(CreateTableWithDateKeySelfTest.class));
 
-        suite.addTestSuite(NonCollocatedRetryMessageSelfTest.class);
-        suite.addTestSuite(RetryCauseMessageSelfTest.class);
-        suite.addTestSuite(DisappearedCacheCauseRetryMessageSelfTest.class);
-        suite.addTestSuite(DisappearedCacheWasNotFoundMessageSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(NonCollocatedRetryMessageSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(RetryCauseMessageSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(DisappearedCacheCauseRetryMessageSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(DisappearedCacheWasNotFoundMessageSelfTest.class));
 
-        suite.addTestSuite(TableViewSubquerySelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(TableViewSubquerySelfTest.class));
 
-        suite.addTestSuite(IgniteCacheQueriesLoadTest1.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheQueriesLoadTest1.class));
 
         return suite;
     }

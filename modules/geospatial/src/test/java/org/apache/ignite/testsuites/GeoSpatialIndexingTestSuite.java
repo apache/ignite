@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.query.h2.H2IndexingGeoSelfTest;
 import org.apache.ignite.internal.processors.query.h2.H2IndexingSegmentedGeoSelfTest;
@@ -27,13 +28,12 @@ import org.apache.ignite.internal.processors.query.h2.H2IndexingSegmentedGeoSelf
 public class GeoSpatialIndexingTestSuite extends TestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("H2 Geospatial Indexing Test Suite");
 
-        suite.addTestSuite(H2IndexingGeoSelfTest.class);
-        suite.addTestSuite(H2IndexingSegmentedGeoSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(H2IndexingGeoSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(H2IndexingSegmentedGeoSelfTest.class));
 
         return suite;
     }
