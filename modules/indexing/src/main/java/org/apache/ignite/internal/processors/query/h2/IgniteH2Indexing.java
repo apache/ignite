@@ -2253,10 +2253,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         mapQryExec.start(ctx, this);
         rdcQryExec.start(ctx, this);
 
-        dmlProc = new DmlStatementsProcessor();
+        dmlProc = new DmlStatementsProcessor(ctx, this);
         ddlProc = new DdlStatementsProcessor();
 
-        dmlProc.start(ctx, this);
         ddlProc.start(ctx, schemaMgr);
 
         if (JdbcUtils.serializer != null)
