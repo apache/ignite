@@ -257,9 +257,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private DdlStatementsProcessor ddlProc;
 
     /** */
-    private final ConcurrentMap<QueryTable, GridH2Table> dataTables = new ConcurrentHashMap<>();
-
-    /** */
     private volatile GridBoundedConcurrentLinkedHashMap<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery> twoStepCache =
         new GridBoundedConcurrentLinkedHashMap<>(TWO_STEP_QRY_CACHE_SIZE);
 
@@ -1231,7 +1228,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             SqlCommand cmd = parser.nextCommand();
 
-            // TODO support transansaction commands in multistatements
+            // TODO support transaction commands in multi-statements
             // https://issues.apache.org/jira/browse/IGNITE-10063
 
             // No support for multiple commands for now.
@@ -1561,7 +1558,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param twoStepQry Two-step query if this query must be executed in a distributed way.
      * @param meta Metadata for {@code twoStepQry}.
      * @param keepBinary Whether binary objects must not be deserialized automatically.
-     * @param startTx Start transactionq flag.
+     * @param startTx Start transaction flag.
      * @param tracker MVCC tracker.
      * @param cancel Query cancel state holder.
      * @return Query result.
@@ -2078,14 +2075,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         schemaMgr.onCacheTypeCreated(cacheInfo, this, type, isSql);
 
         return true;
-    }
-
-    /**
-     * @param h2Tbl Remove data table.
-     */
-    // TODO
-    public void removeDataTable(GridH2Table h2Tbl) {
-        dataTables.remove(h2Tbl.identifier(), h2Tbl);
     }
 
     /** {@inheritDoc} */

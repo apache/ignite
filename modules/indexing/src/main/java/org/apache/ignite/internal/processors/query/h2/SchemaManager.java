@@ -279,6 +279,10 @@ public class SchemaManager {
                 schema.drop(tbl);
 
                 rmvTbls.add(tbl);
+
+                GridH2Table h2Tbl = tbl.table();
+
+                dataTables.remove(h2Tbl.identifier(), h2Tbl);
             }
         }
 
