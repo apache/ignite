@@ -58,6 +58,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 
 /**
  * Test data loss on recovery due to missed updates with lower partition counter.
+ * TODO add test in shared group.
  */
 public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
     /** IP finder. */
@@ -453,16 +454,41 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
     /**
      * Test scenario:
      *
-     * 1. Start 2 tx on client
-     * 2. Force reorder on primary:  4 5 6 | cp | 1 2 3
-     * 3. Stop primary without forcing cp.
-     * 4. Make sure counters are applied correctly on recovery.
+     * 1. Generate 10 keys for the same partition.
+     * 2. Start 2 txs on client with labels: t1 updating keys [0,7), t2 [7,10)
+     * 3. Force following id generation order:  t1 | t2
+     * 4. Force following entries write order:  t2 | cp | t1
+     * 5. Stop primary node with cp on stop.
+     * 6. Make sure counters are applied correctly on recovery.
      *
      * @throws Exception
      */
-    public void testBasicCounterAssignmentOnPrimary() throws Exception {
+    public void testPartitionCounterAssignmentOnPrimaryWithCheckpoint() throws Exception {
+        doTestPartitionCounterAssignmentOnPrimary(false);
+    }
+
+    /**
+     * Test scenario:
+     *
+     * 1. Generate 10 keys for the same partition.
+     * 2. Start 2 txs on client with labels: t1 updating keys [0,7), t2 [7,10)
+     * 3. Force following id generation order:  t1 | t2
+     * 4. Force following entries write order:  t2 | cp | t1
+     * 5. Stop primary node without cp on stop.
+     * 6. Make sure counters are applied correctly on recovery.
+     *
+     * @throws Exception
+     */
+    public void testPartitionCounterAssignmentOnPrimarySkipCheckpoint() throws Exception {
+        doTestPartitionCounterAssignmentOnPrimary(true);
+    }
+
+    /**
+     * @param skipCheckpointOnNodeLeft Skip checkpoint on node left.
+     */
+    private void doTestPartitionCounterAssignmentOnPrimary(boolean skipCheckpointOnNodeLeft) throws Exception {
         try {
-            Ignite crd = startGridsMultiThreaded(1);
+            IgniteEx crd = (IgniteEx)startGridsMultiThreaded(1);
 
             int partId = 0;
 
@@ -635,7 +661,14 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
             // After all txs are finished counter should be moved forward.
             assertEquals(10, cntr.get());
 
-            stopGrid(0, false); // Skip checkpoint. TODO add true
+            if (skipCheckpointOnNodeLeft) {
+                GridCacheDatabaseSharedManager db =
+                    (GridCacheDatabaseSharedManager)crd.context().cache().context().database();
+
+                db.enableCheckpoints(false);
+            }
+
+            stopGrid(0, skipCheckpointOnNodeLeft); // Skip checkpoint. TODO add true
 
             crd = startGrid(0);
             crd.cluster().active(true);

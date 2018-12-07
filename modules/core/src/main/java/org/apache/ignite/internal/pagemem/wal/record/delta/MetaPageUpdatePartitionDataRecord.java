@@ -129,6 +129,9 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
         return allocatedIdxCandidate;
     }
 
+    /**
+     *
+     */
     public long link() {
         return link;
     }

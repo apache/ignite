@@ -315,7 +315,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             changed = true;
                         }
                         else if (rawGaps != null && link == 0) {
-                            ByteArrayDataRow row = new ByteArrayDataRow(grp.cacheObjectContext(), store.partId(), grpId, rawGaps);
+                            ByteArrayDataRow row = new ByteArrayDataRow(grp.cacheObjectContext(), store.partId(), grp.storeCacheIdInDataPage() ? grp.groupId() : 0, rawGaps);
 
                             freeList.insertDataRow(row);
 
@@ -327,7 +327,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             // TODO FIXME update in-place optimization.
                             freeList.removeDataRowByLink(link);
 
-                            ByteArrayDataRow row = new ByteArrayDataRow(grp.cacheObjectContext(), store.partId(), grpId, rawGaps);
+                            ByteArrayDataRow row = new ByteArrayDataRow(grp.cacheObjectContext(), store.partId(), grp.storeCacheIdInDataPage() ? grp.groupId() : 0, rawGaps);
 
                             freeList.insertDataRow(row);
 
