@@ -23,10 +23,14 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link IgniteSink}.
  */
+@RunWith(JUnit4.class)
 public class FlinkIgniteSinkSelfTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String TEST_CACHE = "testCache";
@@ -34,6 +38,7 @@ public class FlinkIgniteSinkSelfTest extends GridCommonAbstractTest {
     /** Ignite test configuration file. */
     private static final String GRID_CONF_FILE = "modules/flink/src/test/resources/example-ignite.xml";
 
+    @Test
     public void testIgniteSink() throws Exception {
         Configuration configuration = new Configuration();
 
@@ -56,6 +61,7 @@ public class FlinkIgniteSinkSelfTest extends GridCommonAbstractTest {
         assertEquals("testValue", igniteSink.getIgnite().getOrCreateCache(TEST_CACHE).get("testData"));
     }
 
+    @Test
     public void testIgniteSinkStreamExecution() throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
