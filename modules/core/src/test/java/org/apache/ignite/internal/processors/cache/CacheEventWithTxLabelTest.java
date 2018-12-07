@@ -38,6 +38,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -52,7 +53,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
  * Test to check passing transaction's label for EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT,
  * EVT_CACHE_OBJECT_REMOVED events.
  */
-public class CashEventWithTxLabelTest extends GridCommonAbstractTest {
+public class CacheEventWithTxLabelTest extends GridCommonAbstractTest {
     /** Types event to be checked. */
     private static final int[] CACHE_EVENT_TYPES = {EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED};
 
@@ -105,6 +106,9 @@ public class CashEventWithTxLabelTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10270");
+
         super.beforeTestsStarted();
 
         client = false;
@@ -147,6 +151,9 @@ public class CashEventWithTxLabelTest extends GridCommonAbstractTest {
 
                 for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
                     this.concurrency = concurrency;
+
+                    if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, isolation))
+                        continue;
 
                     for (int i = 0; i < nodes.length - 1; i++) {
                         Ignite nodeForPut = nodes[i];
