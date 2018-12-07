@@ -19,6 +19,7 @@ package org.apache.ignite.internal.util;
 
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.java.JavaLogger;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -138,6 +139,21 @@ public class StripedExecutorTest extends GridCommonAbstractTest {
         sleepASec();
 
         assertEquals(1, stripedExecSvc.queueSize());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStarvationDetected() throws Exception {
+        final int stripeIdx = 0;
+
+        stripedExecSvc.execute(stripeIdx, new TestRunnable(true));
+        assertFalse(GridTestUtils.waitForCondition(() -> stripedExecSvc.activeStripesCount() == 0, 2000));
+
+        stripedExecSvc.execute(stripeIdx, new TestRunnable());
+        assertTrue(GridTestUtils.waitForCondition(() -> stripedExecSvc.activeStripesCount() == 1, 10000));
+
+        assertTrue(stripedExecSvc.isStarvationDetected());
     }
 
     /**

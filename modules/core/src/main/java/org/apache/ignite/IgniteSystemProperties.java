@@ -99,6 +99,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_STARVATION_CHECK_INTERVAL = "IGNITE_STARVATION_CHECK_INTERVAL";
 
     /**
+     * This system property defines threshold in milliseconds for striped pool starvation check. Possible starvation
+     * will be detected if there's a stripe running a task longer than this threshold while starvation check is happening.
+     */
+    public static final String IGNITE_STRIPED_POOL_STARVATION_THRESHOLD = "IGNITE_STRIPED_POOL_STARVATION_THRESHOLD";
+
+    /**
      * If this system property is present (any value) - no ASCII logo will
      * be printed.
      */

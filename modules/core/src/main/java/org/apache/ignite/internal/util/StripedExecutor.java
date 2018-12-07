@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.util;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
@@ -39,6 +38,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -48,15 +48,20 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_STRIPED_POOL_STARVATION_THRESHOLD;
+
 /**
  * Striped executor.
  */
 public class StripedExecutor implements ExecutorService {
+    /** Default threshold for starvation check */
+    private static final long DEFAULT_THRESHOLD = 30 * 1000;
+
     /** Stripes. */
     private final Stripe[] stripes;
 
-    /** For starvation checks. */
-    private final long[] completedCntrs;
+    /** Threshold for starvation checks */
+    private final long threshold;
 
     /** */
     private final IgniteLogger log;
@@ -104,9 +109,8 @@ public class StripedExecutor implements ExecutorService {
 
         stripes = new Stripe[cnt];
 
-        completedCntrs = new long[cnt];
-
-        Arrays.fill(completedCntrs, -1);
+        final String thresholdStr = IgniteSystemProperties.getString(IGNITE_STRIPED_POOL_STARVATION_THRESHOLD);
+        threshold = F.isEmpty(thresholdStr) ? DEFAULT_THRESHOLD : Long.parseLong(thresholdStr);
 
         this.log = log;
 
@@ -139,20 +143,28 @@ public class StripedExecutor implements ExecutorService {
     }
 
     /**
-     * Checks starvation in striped pool. Maybe too verbose
-     * but this is needed to faster debug possible issues.
+     * Checks starvation in striped pool.
      */
     public void checkStarvation() {
-        for (int i = 0; i < stripes.length; i++) {
-            Stripe stripe = stripes[i];
+        isStarvationDetected();
+    }
 
-            long completedCnt = stripe.completedCnt;
+    /**
+     * Check starvation in striped pool. Maybe too verbose
+     * but this is needed to faster debug possible issues.
+     *
+     * @return Flag representing presence of possible starvation in striped pool.
+     */
+    public boolean isStarvationDetected() {
+        boolean retVal = false;
 
+        for (Stripe stripe : stripes) {
             boolean active = stripe.active;
 
-            if (completedCntrs[i] != -1 &&
-                completedCntrs[i] == completedCnt &&
-                active) {
+            long lastStartedTs = stripe.lastStartedTs;
+
+            if (lastStartedTs + threshold < U.currentTimeMillis() && active) {
+                retVal = true;
                 boolean deadlockPresent = U.deadlockPresent();
 
                 GridStringBuilder sb = new GridStringBuilder();
@@ -161,7 +173,7 @@ public class StripedExecutor implements ExecutorService {
                     .a("    Thread name: ").a(stripe.thread.getName()).a(U.nl())
                     .a("    Queue: ").a(stripe.queueToString()).a(U.nl())
                     .a("    Deadlock: ").a(deadlockPresent).a(U.nl())
-                    .a("    Completed: ").a(completedCnt).a(U.nl());
+                    .a("    Completed: ").a(stripe.completedCnt).a(U.nl());
 
                 U.printStackTrace(
                     stripe.thread.getId(),
@@ -171,10 +183,8 @@ public class StripedExecutor implements ExecutorService {
 
                 U.warn(log, msg);
             }
-
-            if (active || completedCnt > 0)
-                completedCntrs[i] = completedCnt;
         }
+        return retVal;
     }
 
     /**
@@ -436,6 +446,9 @@ public class StripedExecutor implements ExecutorService {
         /** */
         private volatile boolean active;
 
+        /** */
+        private volatile long lastStartedTs;
+
         /** Thread executing the loop. */
         protected Thread thread;
 
@@ -498,6 +511,7 @@ public class StripedExecutor implements ExecutorService {
 
                     if (cmd != null) {
                         active = true;
+                        lastStartedTs = U.currentTimeMillis();
 
                         updateHeartbeat();
 
