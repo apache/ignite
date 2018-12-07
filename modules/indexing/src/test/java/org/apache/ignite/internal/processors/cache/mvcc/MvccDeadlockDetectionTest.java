@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import com.google.common.collect.ImmutableMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -35,17 +34,18 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 @RunWith(JUnit4.class)
 public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
-    private Ignite client;
+    private IgniteEx client;
 
     private void setUpGrids(int n) throws Exception {
         Ignite ign = startGridsMultiThreaded(n);
         ign.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT));
+            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
 
         G.setClientMode(true);
 
@@ -144,30 +144,32 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
     }
 
     @Test
-    public void detectGraphDeadlock() throws Exception {
-        // Does not work! It seems putAll requests locks sequentially
-
+    public void detectMultipleLockWaitDeadlock() throws Exception {
         // T0 -> T1
         //  \-> T2 -> T0
         // t0d0 ensure test will not hang
         setUpGrids(3);
 
-        IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache = client.getOrCreateCache(new CacheConfiguration<>("test")
+            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
+            .setIndexedTypes(Integer.class, Integer.class));
 
         Integer key0 = primaryKey(grid(0).cache(DEFAULT_CACHE_NAME));
         Integer key1 = primaryKey(grid(1).cache(DEFAULT_CACHE_NAME));
         Integer key2 = primaryKey(grid(2).cache(DEFAULT_CACHE_NAME));
 
-        CountDownLatch t1t2locksOwnLatch = new CountDownLatch(2);
-        CountDownLatch t0lockOwnLatch = new CountDownLatch(1);
+        cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, ?)").setArgs(key0, -1));
+        cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, ?)").setArgs(key1, -1));
+        cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, ?)").setArgs(key2, -1));
+
+        CyclicBarrier b = new CyclicBarrier(3);
 
         IgniteInternalFuture<Object> fut1 = GridTestUtils.runAsync(() -> {
             try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                cache.put(key1, 1);
-                t1t2locksOwnLatch.countDown();
+                cache.query(new SqlFieldsQuery("update Integer set _val = 1 where _key = ?").setArgs(key1));
+                b.await();
                 // t0d0
-                TimeUnit.SECONDS.sleep(5);
-//                cache.put(key0, 1);
+                TimeUnit.SECONDS.sleep(10);
 
                 // rollback to prevent waiting tx abort due write conflict
                 tx.rollback();
@@ -177,24 +179,22 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<Object> fut2 = GridTestUtils.runAsync(() -> {
             try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                cache.put(key2, 2);
-                t1t2locksOwnLatch.countDown();
-                t0lockOwnLatch.await();
-                // t0d0
-//                TimeUnit.SECONDS.sleep(5);
+                cache.query(new SqlFieldsQuery("update Integer set _val = 2 where _key = ?").setArgs(key2));
+                b.await();
+                TimeUnit.SECONDS.sleep(3);
                 cache.put(key0, 2);
 
+                // rollback to prevent waiting tx abort due write conflict
                 tx.rollback();
             }
             return null;
         });
 
         try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            t1t2locksOwnLatch.await();
-            cache.put(key0, 0);
-            t0lockOwnLatch.countDown();
-            TimeUnit.SECONDS.sleep(1);
-            cache.putAll(ImmutableMap.of(key2, 0, key1, 0));
+            cache.query(new SqlFieldsQuery("update Integer set _val = 0 where _key = ?").setArgs(key0));
+            b.await();
+            cache.query(
+                new SqlFieldsQuery("update Integer set _val = 0 where _key = ? or _key = ?").setArgs(key2, key1));
 
             tx.commit();
         }

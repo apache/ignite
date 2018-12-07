@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -321,6 +324,18 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
 
         if (mini != null)
             mini.onResult(res, null);
+    }
+
+    @Override public Set<UUID> pendingResponseNodes() {
+        if (initialized() && !isDone()) {
+            return futures().stream()
+                .map(MiniFuture.class::cast)
+                .filter(mini -> !mini.isDone())
+                .map(mini -> mini.node.id())
+                .collect(Collectors.toSet());
+        }
+
+        return Collections.emptySet();
     }
 
     /** {@inheritDoc} */
