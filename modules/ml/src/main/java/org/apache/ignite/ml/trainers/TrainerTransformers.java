@@ -97,7 +97,7 @@ public class TrainerTransformers {
             }
 
             /** {@inheritDoc} */
-            @Override public boolean checkState(ModelsComposition mdl) {
+            @Override protected boolean checkState(ModelsComposition mdl) {
                 return mdl.getModels().stream().allMatch(m -> trainer.checkState((M)m));
             }
 

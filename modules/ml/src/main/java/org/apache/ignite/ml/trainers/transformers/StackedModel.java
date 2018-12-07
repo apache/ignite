@@ -26,7 +26,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 public class StackedModel<IS, IA, O, AM extends Model<IA, O>> implements Model<IS, O> {
     private Model<IS, IA> subModelsLayer;
     private final AM aggregatorModel;
-    private List<Model<IS, ?>> submodels;
+    private List<Model<IS, IA>> submodels;
     private final IgniteBinaryOperator<IA> aggregatingInputMerger;
 
     StackedModel(AM aggregatorMdl,
@@ -38,7 +38,7 @@ public class StackedModel<IS, IA, O, AM extends Model<IA, O>> implements Model<I
         submodels = new ArrayList<>();
     }
 
-    List<Model<IS, ?>> submodels() {
+    List<Model<IS, IA>> submodels() {
         return submodels;
     }
 

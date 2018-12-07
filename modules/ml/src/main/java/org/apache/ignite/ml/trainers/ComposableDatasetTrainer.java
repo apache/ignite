@@ -68,7 +68,7 @@ public class ComposableDatasetTrainer<I, O, M extends Model<I, O>, L> extends Da
     }
 
     /** {@inheritDoc} */
-    @Override public boolean checkState(M mdl) {
+    @Override protected boolean checkState(M mdl) {
         return delegate.checkState(mdl);
     }
 
@@ -141,7 +141,8 @@ public class ComposableDatasetTrainer<I, O, M extends Model<I, O>, L> extends Da
                 ModelBeforeFunction<I, O, O1, M> mdl,
                 DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
                 IgniteBiFunction<K, V, L> lbExtractor) {
-                return new ModelBeforeFunction<>(self.updateModel(mdl.model(), datasetBuilder, featureExtractor, lbExtractor), f);
+                return new ModelBeforeFunction<>(
+                    self.updateModel(mdl.model(), datasetBuilder, featureExtractor, lbExtractor), f);
             }
         });
     }
@@ -210,6 +211,12 @@ public class ComposableDatasetTrainer<I, O, M extends Model<I, O>, L> extends Da
         public M model() {
             return mdl;
         }
+    }
+
+    public static class ParallelModels<I, O, M extends Model<I, O>, Next extends ParallelModels> {
+        private M head;
+        private Next tail;
+
     }
 
     /**

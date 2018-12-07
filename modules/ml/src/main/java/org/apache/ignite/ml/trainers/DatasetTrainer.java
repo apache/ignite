@@ -71,6 +71,7 @@ public abstract class DatasetTrainer<M extends Model, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated model.
      */
+    //
     public <K,V> M update(M mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
 
@@ -93,8 +94,7 @@ public abstract class DatasetTrainer<M extends Model, L> {
      * @param mdl Model.
      * @return true if current critical for training parameters correspond to parameters from last training.
      */
-    //TODO: check if we can revert to protected.
-    public abstract boolean checkState(M mdl);
+    protected abstract boolean checkState(M mdl);
 
     /**
      * Used on update phase when given dataset is empty.
@@ -122,7 +122,7 @@ public abstract class DatasetTrainer<M extends Model, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated model.
      */
-    public abstract <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
+    protected abstract <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor);
 
     /**
@@ -319,16 +319,18 @@ public abstract class DatasetTrainer<M extends Model, L> {
     public <L1> DatasetTrainer<M, L1> withConvertedLabels(IgniteFunction<L1, L> new2Old) {
         DatasetTrainer<M, L> old = this;
         return new DatasetTrainer<M, L1>() {
-            @Override
-            public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
+            /** {@inheritDoc} */
+            @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
                 IgniteBiFunction<K, V, L1> lbExtractor) {
                 return old.fit(datasetBuilder, featureExtractor, lbExtractor.andThen(new2Old));
             }
 
+            /** {@inheritDoc} */
             @Override public boolean checkState(M mdl) {
                 return old.checkState(mdl);
             }
 
+            /** {@inheritDoc} */
             @Override public <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
                 IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L1> lbExtractor) {
                 return old.update(mdl, datasetBuilder, featureExtractor, lbExtractor.andThen(new2Old));
