@@ -424,4 +424,63 @@ public class H2Utils {
 
         return dbType;
     }
+
+    /**
+     * Generate SqlFieldsQuery string from SqlQuery.
+     *
+     * @param qry Query string.
+     * @param tableAlias table alias.
+     * @param tbl Table to use.
+     * @return Prepared statement.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public static String generateFieldsQueryString(String qry, String tableAlias, H2TableDescriptor tbl)
+        throws IgniteCheckedException {
+        assert tbl != null;
+
+        final String qry0 = qry;
+
+        String t = tbl.fullTableName();
+
+        String from = " ";
+
+        qry = qry.trim();
+
+        String upper = qry.toUpperCase();
+
+        if (upper.startsWith("SELECT")) {
+            qry = qry.substring(6).trim();
+
+            final int star = qry.indexOf('*');
+
+            if (star == 0)
+                qry = qry.substring(1).trim();
+            else if (star > 0) {
+                if (F.eq('.', qry.charAt(star - 1))) {
+                    t = qry.substring(0, star - 1);
+
+                    qry = qry.substring(star + 1).trim();
+                }
+                else
+                    throw new IgniteCheckedException("Invalid query (missing alias before asterisk): " + qry0);
+            }
+            else
+                throw new IgniteCheckedException("Only queries starting with 'SELECT *' and 'SELECT alias.*' " +
+                    "are supported (rewrite your query or use SqlFieldsQuery instead): " + qry0);
+
+            upper = qry.toUpperCase();
+        }
+
+        if (!upper.startsWith("FROM"))
+            from = " FROM " + t + (tableAlias != null ? " as " + tableAlias : "") +
+                (upper.startsWith("WHERE") || upper.startsWith("ORDER") || upper.startsWith("LIMIT") ?
+                    " " : " WHERE ");
+
+        if(tableAlias != null)
+            t = tableAlias;
+
+        qry = "SELECT " + t + "." + KEY_FIELD_NAME + ", " + t + "." + VAL_FIELD_NAME + from + qry;
+
+        return qry;
+    }
 }

@@ -22,7 +22,9 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
@@ -43,6 +45,7 @@ import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisito
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.index.Index;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -51,6 +54,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -209,14 +213,21 @@ public class SchemaManager {
     /**
      * Registers new class description.
      *
-     * This implementation doesn't support type reregistration.
-     *
-     * @param schema Schema.
-     * @param tblDesc Table descriptor.
-     * @throws IgniteCheckedException In case of error.
+     * @param cacheInfo Cache info.
+     * @param idx Indexing.
+     * @param type Type descriptor.
+     * @param isSql Whether SQL enabled.
+     * @return Table.
+     * @throws IgniteCheckedException If failed.
      */
-    public GridH2Table onCacheTypeCreated(H2Schema schema, H2TableDescriptor tblDesc)
-        throws IgniteCheckedException {
+    public GridH2Table onCacheTypeCreated(GridCacheContextInfo cacheInfo, IgniteH2Indexing idx,
+        GridQueryTypeDescriptor type, boolean isSql) throws IgniteCheckedException {
+        String schemaName = schemaName(cacheInfo.name());
+
+        H2TableDescriptor tblDesc = new H2TableDescriptor(idx, schemaName, type, cacheInfo, isSql);
+
+        H2Schema schema = schema(schemaName);
+
         try {
             Connection conn = connMgr.connectionForThread(schema.schemaName());
 
@@ -395,8 +406,7 @@ public class SchemaManager {
      * @param schemaName Schema name.
      * @return Schema.
      */
-    // TODO: Should be private!
-    public H2Schema schema(String schemaName) {
+    private H2Schema schema(String schemaName) {
         return schemas.get(schemaName);
     }
 
@@ -624,5 +634,44 @@ public class SchemaManager {
         }
 
         desc.table().dropColumns(cols, ifColExists);
+    }
+
+    /**
+     * Get table descriptor.
+     *
+     * @param schemaName Schema name.
+     * @param cacheName Cache name.
+     * @param type Type name.
+     * @return Descriptor.
+     */
+    @Nullable public H2TableDescriptor tableForType(String schemaName, String cacheName, String type) {
+        H2Schema schema = schema(schemaName);
+
+        if (schema == null)
+            return null;
+
+        return schema.tableByTypeName(cacheName, type);
+    }
+
+    /**
+     * Gets collection of table for given schema name.
+     *
+     * @param cacheName Cache name.
+     * @return Collection of table descriptors.
+     */
+    public Collection<H2TableDescriptor> tablesForCache(String cacheName) {
+        H2Schema schema = schema(schemaName(cacheName));
+
+        if (schema == null)
+            return Collections.emptySet();
+
+        List<H2TableDescriptor> tbls = new ArrayList<>();
+
+        for (H2TableDescriptor tbl : schema.tables()) {
+            if (F.eq(tbl.cacheName(), cacheName))
+                tbls.add(tbl);
+        }
+
+        return tbls;
     }
 }
