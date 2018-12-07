@@ -2102,7 +2102,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
 
             if (changedAffinity())
-                cctx.walState().changeLocalStatesOnExchangeDone(res);
+                cctx.walState().changeLocalStatesOnExchangeDone(res, changedBaseline());
         }
 
         final Throwable err0 = err;
