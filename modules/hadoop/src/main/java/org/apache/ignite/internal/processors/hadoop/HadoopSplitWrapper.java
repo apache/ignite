@@ -96,7 +96,6 @@ public class HadoopSplitWrapper extends HadoopInputSplit {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         id = in.readInt();
 

@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManag
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.jetbrains.annotations.Nullable;
 
@@ -155,7 +154,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
                 cache.metrics0().onEvict();
 
             if (recordable)
-                cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), (IgniteUuid)null, null,
+                cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), null, null, null,
                     EVT_CACHE_ENTRY_EVICTED, null, false, oldVal, hasVal, null, null, null, false);
 
             if (log.isDebugEnabled())
@@ -171,6 +170,11 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
 
     /** {@inheritDoc} */
     @Override public void touch(IgniteTxEntry txEntry, boolean loc) {
+        assert txEntry.context() == cctx : "Entry from another cache context passed to eviction manager: [" +
+            "entry=" + txEntry +
+            ", cctx=" + cctx +
+            ", entryCtx=" + txEntry.context() + "]";
+
         if (!plcEnabled)
             return;
 
@@ -197,6 +201,11 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
 
     /** {@inheritDoc} */
     @Override public void touch(GridCacheEntryEx e, AffinityTopologyVersion topVer) {
+        assert e.context() == cctx : "Entry from another cache context passed to eviction manager: [" +
+            "entry=" + e +
+            ", cctx=" + cctx +
+            ", entryCtx=" + e.context() + "]";
+
         if (e.detached() || e.isInternal())
             return;
 
@@ -244,6 +253,11 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
     /** {@inheritDoc} */
     @Override public boolean evict(@Nullable GridCacheEntryEx entry, @Nullable GridCacheVersion obsoleteVer,
         boolean explicit, @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
+        assert entry == null || entry.context() == cctx : "Entry from another cache context passed to eviction manager: [" +
+            "entry=" + entry +
+            ", cctx=" + cctx +
+            ", entryCtx=" + entry.context() + "]";
+
         if (entry == null)
             return true;
 
@@ -281,7 +295,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
                     notifyPolicy(entry);
 
                 if (recordable)
-                    cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), (IgniteUuid)null, null,
+                    cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), null, null, null,
                         EVT_CACHE_ENTRY_EVICTED, null, false, entry.rawGet(), entry.hasValue(), null, null, null,
                         false);
             }
@@ -291,11 +305,14 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
     /**
      * @param e Entry to notify eviction policy.
      */
-    @SuppressWarnings({"IfMayBeConditional", "RedundantIfStatement"})
     private void notifyPolicy(GridCacheEntryEx e) {
         assert plcEnabled;
         assert plc != null;
         assert !e.isInternal() : "Invalid entry for policy notification: " + e;
+        assert e.context() == cctx : "Entry from another cache context passed to eviction manager: [" +
+            "entry=" + e +
+            ", cctx=" + cctx +
+            ", entryCtx=" + e.context() + "]";
 
         if (log.isDebugEnabled())
             log.debug("Notifying eviction policy with entry: " + e);

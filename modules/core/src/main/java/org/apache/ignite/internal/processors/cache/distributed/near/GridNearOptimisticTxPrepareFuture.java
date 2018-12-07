@@ -52,7 +52,6 @@ import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -215,13 +214,12 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     /**
      * @return Keys for which {@code MiniFuture} isn't completed.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public Set<IgniteTxKey> requestedKeys() {
         synchronized (this) {
             int size = futuresCountNoLock();
 
             for (int i = 0; i < size; i++) {
-                IgniteInternalFuture<GridNearTxPrepareResponse> fut = future(i);
+                IgniteInternalFuture fut = future(i);
 
                 if (isMini(fut) && !fut.isDone()) {
                     MiniFuture miniFut = (MiniFuture)fut;
@@ -247,7 +245,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
      * @param miniId Mini ID to find.
      * @return Mini future.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (this) {
@@ -255,7 +252,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
             // Avoid iterator creation.
             for (int i = size - 1; i >= 0; i--) {
-                IgniteInternalFuture<GridNearTxPrepareResponse> fut = future(i);
+                IgniteInternalFuture fut = future(i);
 
                 if (!isMini(fut))
                     continue;
@@ -300,7 +297,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     private boolean onComplete() {
         Throwable err0 = err;
 
-        if (err0 == null || tx.needCheckBackup())
+        if ((!tx.onePhaseCommit() || tx.mappings().get(cctx.localNodeId()) == null) &&
+                (err0 == null || tx.needCheckBackup()))
             tx.state(PREPARED);
 
         if (super.onDone(tx, err0)) {
@@ -540,7 +538,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     tx.taskNameHash(),
                     m.clientFirst(),
                     true,
-                    tx.activeCachesDeploymentEnabled());
+                    tx.activeCachesDeploymentEnabled(),
+                    tx.txState().recovery());
 
                 for (IgniteTxEntry txEntry : m.entries()) {
                     if (txEntry.op() == TRANSFORM)
@@ -563,13 +562,13 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
                 req.miniId(fut.futureId());
 
-                add(fut); // Append new future.
+                add((IgniteInternalFuture)fut); // Append new future.
 
                 if (n.isLocal()) {
                     assert !(m.hasColocatedCacheEntries() && m.hasNearCacheEntries()) : m;
 
                     IgniteInternalFuture<GridNearTxPrepareResponse> prepFut =
-                        m.hasNearCacheEntries() ? cctx.tm().txHandler().prepareNearTxLocal(req)
+                        m.hasNearCacheEntries() ? cctx.tm().txHandler().prepareNearTxLocal(tx, req)
                         : cctx.tm().txHandler().prepareColocatedTx(tx, req);
 
                     prepFut.listen(new CI1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
@@ -680,7 +679,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 if (keyLockFut == null) {
                     keyLockFut = new KeyLockFuture();
 
-                    add(keyLockFut);
+                    add((IgniteInternalFuture)keyLockFut);
                 }
 
                 keyLockFut.addLockKey(entry.txKey());
@@ -727,7 +726,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     /**
      *
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private void onTimeout() {
         if (cctx.tm().deadlockDetectionEnabled()) {
             Set<IgniteTxKey> keys = null;
@@ -739,7 +737,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     int size = futuresCountNoLock();
 
                     for (int i = 0; i < size; i++) {
-                        IgniteInternalFuture<GridNearTxPrepareResponse> fut = future(i);
+                        IgniteInternalFuture fut = future(i);
 
                         if (isMini(fut) && !fut.isDone()) {
                             MiniFuture miniFut = (MiniFuture)fut;
@@ -757,7 +755,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 }
             }
 
-            add(new GridEmbeddedFuture<>(new IgniteBiClosure<TxDeadlock, Exception, GridNearTxPrepareResponse>() {
+            add(new GridEmbeddedFuture<>(new IgniteBiClosure<TxDeadlock, Exception, Object>() {
                 @Override public GridNearTxPrepareResponse apply(TxDeadlock deadlock, Exception e) {
                     if (e != null)
                         U.warn(log, "Failed to detect deadlock.", e);
@@ -788,7 +786,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     /** {@inheritDoc} */
     @Override public void addDiagnosticRequest(IgniteDiagnosticPrepareContext ctx) {
         if (!isDone()) {
-            for (IgniteInternalFuture<GridNearTxPrepareResponse> fut : futures()) {
+            for (IgniteInternalFuture fut : futures()) {
                 if (!fut.isDone()) {
                     if (fut instanceof MiniFuture) {
                         MiniFuture miniFut = (MiniFuture)fut;
@@ -844,19 +842,22 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     @Override public String toString() {
         Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
             @Override public String apply(IgniteInternalFuture<?> f) {
-                return "[node=" + ((MiniFuture)f).node().id() +
-                    ", loc=" + ((MiniFuture)f).node().isLocal() +
-                    ", done=" + f.isDone() + "]";
+                if (isMini(f)) {
+                    return "[node=" + ((MiniFuture)f).node().id() +
+                        ", loc=" + ((MiniFuture)f).node().isLocal() +
+                        ", done=" + f.isDone() + "]";
+                }
+                else
+                    return f.toString();
             }
-        }, new P1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
-            @Override public boolean apply(IgniteInternalFuture<GridNearTxPrepareResponse> fut) {
+        }, new P1<IgniteInternalFuture<Object>>() {
+            @Override public boolean apply(IgniteInternalFuture<Object> fut) {
                 return isMini(fut);
             }
         });
 
         return S.toString(GridNearOptimisticTxPrepareFuture.class, this,
             "innerFuts", futs,
-            "keyLockFut", keyLockFut,
             "tx", tx,
             "super", super.toString());
     }
@@ -880,7 +881,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         private GridDistributedTxMapping m;
 
         /** Flag to signal some result being processed. */
-        @SuppressWarnings("UnusedDeclaration")
         private volatile int rcvRes;
 
         /** Mappings to proceed prepare. */
@@ -965,7 +965,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         /**
          * @param res Result callback.
          */
-        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
         void onResult(final GridNearTxPrepareResponse res) {
             if (isDone())
                 return;
@@ -989,22 +988,12 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                         IgniteInternalFuture<?> affFut =
                             parent.cctx.exchange().affinityReadyFuture(res.clientRemapVersion());
 
-                        if (affFut != null && !affFut.isDone()) {
-                            affFut.listen(new CI1<IgniteInternalFuture<?>>() {
-                                @Override public void apply(IgniteInternalFuture<?> fut) {
-                                    try {
-                                        fut.get();
+                        parent.cctx.time().waitAsync(affFut, parent.tx.remainingTime(), (e, timedOut) -> {
+                            if (parent.errorOrTimeoutOnTopologyVersion(e, timedOut))
+                                return;
 
-                                        remap();
-                                    }
-                                    catch (IgniteCheckedException e) {
-                                        onDone(e);
-                                    }
-                                }
-                            });
-                        }
-                        else
                             remap();
+                        });
                     }
                     else {
                         parent.onPrepareResponse(m, res, m.hasNearCacheEntries());

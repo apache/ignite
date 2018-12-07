@@ -36,6 +36,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -51,6 +52,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -79,6 +81,9 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testJmxNoPdsStatisticsEnable() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-9224");
+
         testJmxStatisticsEnable(false);
     }
 
@@ -86,6 +91,9 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testJmxPdsStatisticsEnable() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
+
         testJmxStatisticsEnable(true);
     }
 
@@ -100,7 +108,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
             .setName(CACHE1)
             .setGroupName(GROUP)
             .setCacheMode(CacheMode.PARTITIONED)
-            .setAtomicityMode(CacheAtomicityMode.ATOMIC);
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         mgr1.createCache(CACHE1, cfg1);
 
@@ -489,7 +497,8 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
             .setName(CACHE1)
             .setGroupName(GROUP)
             .setCacheMode(CacheMode.PARTITIONED)
-            .setAtomicityMode(CacheAtomicityMode.ATOMIC);
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         cfg.setCacheConfiguration(cacheCfg);
 

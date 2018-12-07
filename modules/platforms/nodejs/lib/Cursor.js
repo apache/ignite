@@ -20,8 +20,6 @@
 const Errors = require('./Errors');
 const BinaryUtils = require('./internal/BinaryUtils');
 const BinaryObject = require('./BinaryObject');
-const BinaryReader = require('./internal/BinaryReader');
-const BinaryWriter = require('./internal/BinaryWriter');
 
 /**
  * Class representing a cursor to obtain results of SQL and Scan query operations.
@@ -101,7 +99,7 @@ class Cursor {
     async close() {
         // Close cursor only if the server has more pages: the server closes cursor automatically on last page
         if (this._id && this._hasNext) {
-            await this._socket.send(
+            await this._communicator.send(
                 BinaryUtils.OPERATION.RESOURCE_CLOSE,
                 async (payload) => {
                     await this._write(payload);
@@ -114,8 +112,8 @@ class Cursor {
     /**
      * @ignore
      */
-    constructor(socket, operation, buffer, keyType = null, valueType = null) {
-        this._socket = socket;
+    constructor(communicator, operation, buffer, keyType = null, valueType = null) {
+        this._communicator = communicator;
         this._operation = operation;
         this._buffer = buffer;
         this._keyType = keyType;
@@ -133,7 +131,7 @@ class Cursor {
         this._hasNext = false;
         this._values = null;
         this._buffer = null;
-        await this._socket.send(
+        await this._communicator.send(
             this._operation,
             async (payload) => {
                 await this._write(payload);
@@ -175,8 +173,8 @@ class Cursor {
     async _readRow(buffer) {
         const CacheEntry = require('./CacheClient').CacheEntry;
         return new CacheEntry(
-            await BinaryReader.readObject(buffer, this._keyType),
-            await BinaryReader.readObject(buffer, this._valueType));
+            await this._communicator.readObject(buffer, this._keyType),
+            await this._communicator.readObject(buffer, this._valueType));
     }
 
     /**
@@ -273,8 +271,8 @@ class SqlFieldsCursor extends Cursor {
     /**
      * @ignore
      */
-    constructor(socket, buffer) {
-        super(socket, BinaryUtils.OPERATION.QUERY_SQL_FIELDS_CURSOR_GET_PAGE, buffer);
+    constructor(communicator, buffer) {
+        super(communicator, BinaryUtils.OPERATION.QUERY_SQL_FIELDS_CURSOR_GET_PAGE, buffer);
         this._fieldNames = [];
     }
 
@@ -286,7 +284,7 @@ class SqlFieldsCursor extends Cursor {
         this._fieldCount = buffer.readInteger();
         if (includeFieldNames) {
             for (let i = 0; i < this._fieldCount; i++) {
-                this._fieldNames[i] = await BinaryReader.readObject(buffer);
+                this._fieldNames[i] = await this._communicator.readObject(buffer);
             }
         }
     }
@@ -299,7 +297,7 @@ class SqlFieldsCursor extends Cursor {
         let fieldType;
         for (let i = 0; i < this._fieldCount; i++) {
             fieldType = this._fieldTypes && i < this._fieldTypes.length ? this._fieldTypes[i] : null;
-            values[i] = await BinaryReader.readObject(buffer);
+            values[i] = await this._communicator.readObject(buffer, fieldType);
         }
         return values;
     }

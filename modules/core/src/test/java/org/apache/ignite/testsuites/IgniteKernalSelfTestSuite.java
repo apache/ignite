@@ -35,7 +35,6 @@ import org.apache.ignite.internal.GridNodeVisorAttributesSelfTest;
 import org.apache.ignite.internal.GridRuntimeExceptionSelfTest;
 import org.apache.ignite.internal.GridSameVmStartupSelfTest;
 import org.apache.ignite.internal.GridSpiExceptionSelfTest;
-import org.apache.ignite.internal.GridStartupTest;
 import org.apache.ignite.internal.GridVersionSelfTest;
 import org.apache.ignite.internal.IgniteConcurrentEntryProcessorAccessStopTest;
 import org.apache.ignite.internal.IgniteConnectionConcurrentReserveAndRemoveTest;
@@ -43,6 +42,7 @@ import org.apache.ignite.internal.IgniteUpdateNotifierPerClusterSettingSelfTest;
 import org.apache.ignite.internal.LongJVMPauseDetectorTest;
 import org.apache.ignite.internal.managers.GridManagerStopSelfTest;
 import org.apache.ignite.internal.managers.communication.GridCommunicationSendMessageSelfTest;
+import org.apache.ignite.internal.managers.deployment.DeploymentRequestOfUnknownClassProcessingTest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManagerStopSelfTest;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerAliveCacheSelfTest;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerAttributesSelfTest;
@@ -54,7 +54,6 @@ import org.apache.ignite.internal.processors.port.GridPortProcessorSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceClientNodeTest;
 import org.apache.ignite.internal.processors.service.GridServiceContinuousQueryRedeployTest;
 import org.apache.ignite.internal.processors.service.GridServiceDeploymentCompoundFutureSelfTest;
-import org.apache.ignite.internal.processors.service.GridServiceDeploymentExceptionPropagationTest;
 import org.apache.ignite.internal.processors.service.GridServicePackagePrivateSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProcessorBatchDeploySelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProcessorMultiNodeConfigSelfTest;
@@ -104,8 +103,7 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
     public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
         TestSuite suite = new TestSuite("Ignite Kernal Test Suite");
 
-        //suite.addTestSuite(GridStartupTest.class);
-        //suite.addTestSuite(GridGetOrStartSelfTest.class);
+        suite.addTestSuite(GridGetOrStartSelfTest.class);
         suite.addTestSuite(GridSameVmStartupSelfTest.class);
         suite.addTestSuite(GridSpiExceptionSelfTest.class);
         suite.addTestSuite(GridRuntimeExceptionSelfTest.class);
@@ -139,7 +137,8 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(ComputeJobCancelWithServiceSelfTest.class);
         suite.addTestSuite(IgniteConnectionConcurrentReserveAndRemoveTest.class);
         suite.addTestSuite(LongJVMPauseDetectorTest.class);
-        //suite.addTestSuite(ClusterMetricsSelfTest.class);
+        suite.addTestSuite(ClusterMetricsSelfTest.class);
+        suite.addTestSuite(DeploymentRequestOfUnknownClassProcessingTest.class);
 
         // Managed Services.
         suite.addTestSuite(GridServiceProcessorSingleNodeSelfTest.class);
@@ -162,14 +161,15 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridServiceProcessorBatchDeploySelfTest.class);
         suite.addTestSuite(GridServiceDeploymentCompoundFutureSelfTest.class);
         suite.addTestSuite(SystemCacheNotConfiguredTest.class);
+        // IGNITE-3392
         //suite.addTestSuite(GridServiceDeploymentExceptionPropagationTest.class);
 
         suite.addTestSuite(IgniteServiceDeploymentClassLoadingDefaultMarshallerTest.class);
         suite.addTestSuite(IgniteServiceDeploymentClassLoadingJdkMarshallerTest.class);
-        //suite.addTestSuite(IgniteServiceDeploymentClassLoadingOptimizedMarshallerTest.class);
+        suite.addTestSuite(IgniteServiceDeploymentClassLoadingOptimizedMarshallerTest.class);
         suite.addTestSuite(IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest.class);
         suite.addTestSuite(IgniteServiceDeployment2ClassLoadersJdkMarshallerTest.class);
-        //suite.addTestSuite(IgniteServiceDeployment2ClassLoadersOptimizedMarshallerTest.class);
+        suite.addTestSuite(IgniteServiceDeployment2ClassLoadersOptimizedMarshallerTest.class);
 
         return suite;
     }

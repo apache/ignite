@@ -90,8 +90,11 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
      * @param delegate Delegate object.
      * @param opCtx Optional operation context which will be passed to gateway.
      */
-    public GridCacheProxyImpl(GridCacheContext<K, V> ctx, IgniteInternalCache<K, V> delegate,
-        @Nullable CacheOperationContext opCtx) {
+    public GridCacheProxyImpl(
+        GridCacheContext<K, V> ctx,
+        IgniteInternalCache<K, V> delegate,
+        @Nullable CacheOperationContext opCtx
+    ) {
         assert ctx != null;
         assert delegate != null;
 
@@ -229,6 +232,42 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
 
         try {
             return delegate.localLoadCacheAsync(p, args);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void preloadPartition(int part) throws IgniteCheckedException {
+        CacheOperationContext prev = gate.enter(opCtx);
+
+        try {
+            delegate.preloadPartition(part);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> preloadPartitionAsync(int part) throws IgniteCheckedException {
+        CacheOperationContext prev = gate.enter(opCtx);
+
+        try {
+            return delegate.preloadPartitionAsync(part);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean localPreloadPartition(int part) throws IgniteCheckedException {
+        CacheOperationContext prev = gate.enter(opCtx);
+
+        try {
+            return delegate.localPreloadPartition(part);
         }
         finally {
             gate.leave(prev);
@@ -438,30 +477,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
 
         try {
             return delegate.igfsDataSpaceUsed();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMongoDataCache() {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return delegate.isMongoDataCache();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMongoMetaCache() {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return delegate.isMongoMetaCache();
         }
         finally {
             gate.leave(prev);

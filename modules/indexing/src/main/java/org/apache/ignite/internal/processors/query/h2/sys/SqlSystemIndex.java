@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.sys;
 
+import java.util.Iterator;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
@@ -73,9 +74,9 @@ public class SqlSystemIndex extends BaseIndex {
     @Override public Cursor find(Session ses, SearchRow first, SearchRow last) {
         assert table instanceof SqlSystemTable;
 
-        Iterable<Row> rows = ((SqlSystemTable)table).getRows(ses, first, last);
+        Iterator<Row> rows = ((SqlSystemTable)table).getRows(ses, first, last);
 
-        return new GridH2Cursor(rows.iterator());
+        return new GridH2Cursor(rows);
     }
 
     /** {@inheritDoc} */

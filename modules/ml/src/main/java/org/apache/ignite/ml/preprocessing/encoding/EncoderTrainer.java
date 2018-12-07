@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.preprocessing.encoding;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -27,6 +29,7 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
@@ -35,9 +38,7 @@ import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderPr
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Trainer of the String Encoder preprocessor.
- * The String Encoder encodes string values (categories) to double values in range [0.0, amountOfCategories)
- * where the most popular value will be presented as 0.0 and the least popular value presented with amountOfCategories-1 value.
+ * Trainer of the String Encoder and One-Hot Encoder preprocessors.
  *
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
@@ -49,15 +50,21 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[]
     /** Encoder preprocessor type. */
     private EncoderType encoderType = EncoderType.ONE_HOT_ENCODER;
 
+    /** Encoder sorting strategy. */
+    private EncoderSortingStrategy encoderSortingStgy = EncoderSortingStrategy.FREQUENCY_DESC;
+
     /** {@inheritDoc} */
-    @Override public EncoderPreprocessor<K, V> fit(DatasetBuilder<K, V> datasetBuilder,
-                                                   IgniteBiFunction<K, V, Object[]> basePreprocessor) {
+    @Override public EncoderPreprocessor<K, V> fit(
+        LearningEnvironmentBuilder envBuilder,
+        DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Object[]> basePreprocessor) {
         if (handledIndices.isEmpty())
             throw new RuntimeException("Add indices of handled features");
 
         try (Dataset<EmptyContext, EncoderPartitionData> dataset = datasetBuilder.build(
-            (upstream, upstreamSize) -> new EmptyContext(),
-            (upstream, upstreamSize, ctx) -> {
+            envBuilder,
+            (env, upstream, upstreamSize) -> new EmptyContext(),
+            (env, upstream, upstreamSize, ctx) -> {
                 // This array will contain not null values for handled indices
                 Map<String, Integer>[] categoryFrequencies = null;
 
@@ -131,9 +138,16 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[]
      * @return Encoding values.
      */
     private Map<String, Integer> transformFrequenciesToEncodingValues(Map<String, Integer> frequencies) {
+        Comparator<Map.Entry<String, Integer>> comp;
+
+        if (encoderSortingStgy.equals(EncoderSortingStrategy.FREQUENCY_DESC))
+            comp = Map.Entry.comparingByValue();
+        else
+            comp = Collections.reverseOrder(Map.Entry.comparingByValue());
+
         final HashMap<String, Integer> resMap = frequencies.entrySet()
             .stream()
-            .sorted(Map.Entry.comparingByValue())
+            .sorted(comp)
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
                 (oldValue, newValue) -> oldValue, LinkedHashMap::new));
 
@@ -207,8 +221,19 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[]
      * @param idx The index of encoded feature.
      * @return The changed trainer.
      */
-    public EncoderTrainer<K, V> encodeFeature(int idx) {
+    public EncoderTrainer<K, V> withEncodedFeature(int idx) {
         handledIndices.add(idx);
+        return this;
+    }
+
+    /**
+     * Sets the encoder indexing strategy.
+     *
+     * @param encoderSortingStgy The encoder indexing strategy.
+     * @return The changed trainer.
+     */
+    public EncoderTrainer<K, V> withEncoderIndexingStrategy(EncoderSortingStrategy encoderSortingStgy) {
+        this.encoderSortingStgy = encoderSortingStgy;
         return this;
     }
 
@@ -220,6 +245,17 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[]
      */
     public EncoderTrainer<K, V> withEncoderType(EncoderType type) {
         this.encoderType = type;
+        return this;
+    }
+
+    /**
+     * Sets the indices of features which should be encoded.
+     *
+     * @param handledIndices Indices of features which should be encoded.
+     * @return The changed trainer.
+     */
+    public EncoderTrainer<K, V> withEncodedFeatures(Set<Integer> handledIndices) {
+        this.handledIndices = handledIndices;
         return this;
     }
 }

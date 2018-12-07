@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.events.EventType.EVTS_CACHE;
@@ -77,6 +78,8 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+
         super.beforeTestsStarted();
 
         gridCnt = gridCount();
@@ -718,14 +721,14 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
         /**
          *
          */
-        public void listen() {
+        @Override public void listen() {
             listen = true;
         }
 
         /**
          *
          */
-        public void stopListen() {
+        @Override public void stopListen() {
             listen = false;
         }
 
@@ -733,7 +736,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
          * @param type Event type.
          * @return Count.
          */
-        public int eventCount(int type) {
+        @Override public int eventCount(int type) {
             assert type > 0;
 
             AtomicInteger cntr = cntrs.get(type);
@@ -744,7 +747,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
         /**
          * Reset listener.
          */
-        public void reset() {
+        @Override public void reset() {
             cntrs.clear();
 
             futs.clear();
@@ -778,7 +781,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
          * @param evtCnts Array of tuples with values: V1 - event type, V2 - expected event count.
          * @throws IgniteCheckedException If failed to wait.
          */
-        public void waitForEventCount(IgniteBiTuple<Integer, Integer>... evtCnts)
+        @Override public void waitForEventCount(IgniteBiTuple<Integer, Integer>... evtCnts)
             throws IgniteCheckedException {
             if (F.isEmpty(evtCnts))
                 return;

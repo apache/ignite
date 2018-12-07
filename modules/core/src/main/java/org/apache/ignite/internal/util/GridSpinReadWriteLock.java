@@ -56,11 +56,9 @@ public class GridSpinReadWriteLock {
     };
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     private volatile int state;
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     private volatile int pendingWLocks;
 
     /** */

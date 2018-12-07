@@ -34,6 +34,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -41,9 +42,12 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.IgniteReflectionFactory;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -51,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -67,6 +72,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -95,6 +101,13 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /** */
     private TestStore store;
 
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        if (persistenceEnabled())
+            cleanPersistenceDir();
+    }
+
     /** {@inheritDoc} */
     @Override public void afterTest() throws Exception {
         super.afterTest();
@@ -102,8 +115,15 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         useCache = false;
     }
 
+    /**
+     * @return {@code True} if persistent store is enabled for test.
+     */
+    public boolean persistenceEnabled() {
+        return false;
+    }
+
     /** {@inheritDoc} */
-    @SuppressWarnings({"IfMayBeConditional", "unchecked"})
+    @SuppressWarnings({"unchecked"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -122,7 +142,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             CacheConfiguration cc = defaultCacheConfiguration();
 
             cc.setCacheMode(mode);
-            cc.setAtomicityMode(TRANSACTIONAL);
+            cc.setAtomicityMode(getCacheAtomicityMode());
 
             if (nearEnabled) {
                 NearCacheConfiguration nearCfg = new NearCacheConfiguration();
@@ -139,6 +159,12 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             }
 
             cfg.setCacheConfiguration(cc);
+
+            if (persistenceEnabled())
+                cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+                    .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                            .setPersistenceEnabled(true))
+                    .setWalMode(WALMode.LOG_ONLY));
         }
         else {
             cfg.setCacheConfiguration();
@@ -147,6 +173,13 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         }
 
         return cfg;
+    }
+
+    /**
+     * @return Default cache atomicity mode.
+     */
+    protected CacheAtomicityMode getCacheAtomicityMode() {
+        return TRANSACTIONAL;
     }
 
     /**
@@ -204,7 +237,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ErrorNotRethrown")
     private void checkDataStreamer() throws Exception {
         try {
             useCache = true;
@@ -216,6 +248,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             useCache = false;
 
             Ignite igniteWithoutCache = startGrid(1);
+
+            afterGridStarted();
 
             final IgniteDataStreamer<Integer, Integer> ldr = igniteWithoutCache.dataStreamer(DEFAULT_CACHE_NAME);
 
@@ -329,7 +363,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             startGrid(1);
             startGrid(2);
 
-            awaitPartitionMapExchange();
+            afterGridStarted();
 
             IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -371,11 +405,27 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                     if (aff.isPrimary(locNode, key) || aff.isBackup(locNode, key)) {
                         GridCacheEntryEx entry = cache0.entryEx(key);
 
-                        entry.unswap();
+                        try {
+                            // lock non obsolete entry
+                            while (true) {
+                                entry.lockEntry();
 
-                        assertNotNull("Missing entry for key: " + key, entry);
-                        assertEquals(new Integer((key < 100 ? -1 : key)),
-                            CU.value(entry.rawGet(), cache0.context(), false));
+                                if (!entry.obsolete())
+                                    break;
+
+                                entry.unlockEntry();
+
+                                entry = cache0.entryEx(key);
+                            }
+
+                            entry.unswap();
+
+                            assertEquals(new Integer((key < 100 ? -1 : key)),
+                                CU.value(entry.rawGet(), cache0.context(), false));
+                        }
+                        finally {
+                            entry.unlockEntry();
+                        }
                     }
                 }
             }
@@ -397,6 +447,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             Ignite g1 = startGrid(1);
             startGrid(2); // Reproduced only for several nodes in topology (if marshalling is used).
+
+            afterGridStarted();
 
             List<Object> arrays = Arrays.<Object>asList(
                 new byte[] {1}, new boolean[] {true, false}, new char[] {2, 3}, new short[] {3, 4},
@@ -460,6 +512,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                 startGrid(idx++);
 
             Ignite g1 = grid(idx - 1);
+
+            afterGridStarted();
 
             // Get and configure loader.
             final IgniteDataStreamer<Integer, Integer> ldr = g1.dataStreamer(DEFAULT_CACHE_NAME);
@@ -564,6 +618,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
         try {
             Ignite g1 = startGrid(1);
+
+            afterGridStarted();
 
             IgniteDataStreamer<Object, Object> ldr = g1.dataStreamer(DEFAULT_CACHE_NAME);
 
@@ -714,12 +770,15 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFlush() throws Exception {
-        mode = LOCAL;
+        // Local caches are not allowed with MVCC enabled.
+        mode = getCacheAtomicityMode() != TRANSACTIONAL_SNAPSHOT ? LOCAL : PARTITIONED;
 
         useCache = true;
 
         try {
             Ignite g = startGrid();
+
+            afterGridStarted();
 
             final IgniteCache<Integer, Integer> c = g.cache(DEFAULT_CACHE_NAME);
 
@@ -766,12 +825,15 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTryFlush() throws Exception {
-        mode = LOCAL;
+        // Local caches are not allowed with MVCC enabled.
+        mode = getCacheAtomicityMode() != TRANSACTIONAL_SNAPSHOT ? LOCAL : PARTITIONED;
 
         useCache = true;
 
         try {
             Ignite g = startGrid();
+
+            afterGridStarted();
 
             IgniteCache<Integer, Integer> c = g.cache(DEFAULT_CACHE_NAME);
 
@@ -801,12 +863,15 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFlushTimeout() throws Exception {
-        mode = LOCAL;
+        // Local caches are not allowed with MVCC enabled.
+        mode = getCacheAtomicityMode() != TRANSACTIONAL_SNAPSHOT ? LOCAL : PARTITIONED;
 
         useCache = true;
 
         try {
             Ignite g = startGrid();
+
+            afterGridStarted();
 
             final CountDownLatch latch = new CountDownLatch(9);
 
@@ -864,6 +929,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             startGrid(2);
             startGrid(3);
 
+            afterGridStarted();
+
             for (int i = 0; i < 1000; i++)
                 storeMap.put(i, i);
 
@@ -913,6 +980,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         }
         finally {
             storeMap = null;
+
+            stopAllGrids();
         }
     }
 
@@ -927,6 +996,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             startGrid(2);
             startGrid(3);
+
+            afterGridStarted();
 
             try (IgniteDataStreamer<String, TestObject> ldr = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
                 ldr.allowOverwrite(true);
@@ -960,6 +1031,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             useCache = true;
 
             Ignite ignite = startGrid(1);
+
+            afterGridStarted();
 
             final IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
@@ -1006,6 +1079,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             useCache = false;
 
             Ignite client = startGrid(0);
+
+            afterGridStarted();
 
             final IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
@@ -1070,6 +1145,19 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      */
     protected StreamReceiver<String, TestObject> getStreamReceiver() {
         return new TestDataReceiver();
+    }
+
+    /**
+     * Activates grid if necessary and wait for partition map exchange.
+     */
+    private void afterGridStarted() throws InterruptedException {
+        G.allGrids().stream()
+            .filter(g -> !g.cluster().node().isClient())
+            .findAny()
+            .filter(g -> !g.cluster().active())
+            .ifPresent(g -> g.cluster().active(true));
+
+        awaitPartitionMapExchange();
     }
 
     /**

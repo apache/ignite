@@ -40,7 +40,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
@@ -65,8 +65,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_WAL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 
 /**
  * Write-ahead log state manager. Manages WAL enable and disable.
@@ -121,6 +121,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
     /** */
     private volatile WALDisableContext walDisableContext;
+
+    /** Denies or allows WAL disabling. */
+    private volatile boolean prohibitDisabling;
 
     /**
      * Constructor.
@@ -266,6 +269,24 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Denies or allows WAL disabling with subsequent {@link #init(Collection, boolean)} call.
+     *
+     * @param val denial status.
+     */
+    public void prohibitWALDisabling(boolean val) {
+        prohibitDisabling = val;
+    }
+
+    /**
+     * Reports whether WAL disabling with subsequent {@link #init(Collection, boolean)} is denied.
+     *
+     * @return denial status.
+     */
+    public boolean prohibitWALDisabling() {
+        return prohibitDisabling;
+    }
+
+    /**
      * Initiate WAL mode change operation.
      *
      * @param cacheNames Cache names.
@@ -273,6 +294,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @return Future completed when operation finished.
      */
     public IgniteInternalFuture<Boolean> init(Collection<String> cacheNames, boolean enabled) {
+        if (!enabled && prohibitDisabling)
+            return errorFuture("WAL disabling is prohibited.");
+
         if (F.isEmpty(cacheNames))
             return errorFuture("Cache names cannot be empty.");
 
@@ -363,9 +387,12 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * in OWNING state if such feature is enabled.
      *
      * @param topVer Topology version.
+     * @param changedBaseline The exchange is caused by Baseline Topology change.
      */
-    public void changeLocalStatesOnExchangeDone(AffinityTopologyVersion topVer) {
-        if (!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING, false))
+    public void changeLocalStatesOnExchangeDone(AffinityTopologyVersion topVer, boolean changedBaseline) {
+        if (changedBaseline
+            && IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_PENDING_TX_TRACKER_ENABLED)
+            || !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING, false))
             return;
 
         Set<Integer> grpsToEnableWal = new HashSet<>();
@@ -449,7 +476,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     public void onGroupRebalanceFinished(int grpId, AffinityTopologyVersion topVer) {
         TemporaryDisabledWal session0 = tmpDisabledWal;
 
-        if (session0 == null || !session0.topVer.equals(topVer))
+        if (session0 == null || session0.topVer.compareTo(topVer) > 0)
             return;
 
         session0.remainingGrps.remove(grpId);
@@ -482,7 +509,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
                         assert grp != null;
 
-                        grp.topology().ownMoving(session0.topVer);
+                        grp.topology().ownMoving(topVer);
                     }
 
                     cctx.exchange().refreshPartitions();

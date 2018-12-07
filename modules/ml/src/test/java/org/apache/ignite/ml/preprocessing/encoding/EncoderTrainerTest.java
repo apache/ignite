@@ -17,15 +17,14 @@
 
 package org.apache.ignite.ml.preprocessing.encoding;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.TestUtils;
+import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownCategorialFeatureValue;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertArrayEquals;
@@ -33,26 +32,7 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * Tests for {@link EncoderTrainer}.
  */
-@RunWith(Parameterized.class)
-public class EncoderTrainerTest {
-    /** Parameters. */
-    @Parameterized.Parameters(name = "Data divided on {0} partitions")
-    public static Iterable<Integer[]> data() {
-        return Arrays.asList(
-            new Integer[]{1},
-            new Integer[]{2},
-            new Integer[]{3},
-            new Integer[]{5},
-            new Integer[]{7},
-            new Integer[]{100},
-            new Integer[]{1000}
-        );
-    }
-
-    /** Number of partitions. */
-    @Parameterized.Parameter
-    public int parts;
-
+public class EncoderTrainerTest extends TrainerTest {
     /** Tests {@code fit()} method. */
     @Test
     public void testFitOnStringCategorialFeatures() {
@@ -68,10 +48,11 @@ public class EncoderTrainerTest {
 
         EncoderTrainer<Integer, String[]> strEncoderTrainer = new EncoderTrainer<Integer, String[]>()
             .withEncoderType(EncoderType.STRING_ENCODER)
-            .encodeFeature(0)
-            .encodeFeature(1);
+            .withEncodedFeature(0)
+            .withEncodedFeature(1);
 
         EncoderPreprocessor<Integer, String[]> preprocessor = strEncoderTrainer.fit(
+            TestUtils.testEnvBuilder(),
             datasetBuilder,
             (k, v) -> v
         );
@@ -94,10 +75,11 @@ public class EncoderTrainerTest {
 
         EncoderTrainer<Integer, Object[]> strEncoderTrainer = new EncoderTrainer<Integer, Object[]>()
             .withEncoderType(EncoderType.ONE_HOT_ENCODER)
-            .encodeFeature(0)
-            .encodeFeature(1);
+            .withEncodedFeature(0)
+            .withEncodedFeature(1);
 
         EncoderPreprocessor<Integer, Object[]> preprocessor = strEncoderTrainer.fit(
+            TestUtils.testEnvBuilder(),
             datasetBuilder,
             (k, v) -> v
         );
@@ -120,10 +102,11 @@ public class EncoderTrainerTest {
 
         EncoderTrainer<Integer, Object[]> strEncoderTrainer = new EncoderTrainer<Integer, Object[]>()
             .withEncoderType(EncoderType.STRING_ENCODER)
-            .encodeFeature(0)
-            .encodeFeature(1);
+            .withEncodedFeature(0)
+            .withEncodedFeature(1);
 
         EncoderPreprocessor<Integer, Object[]> preprocessor = strEncoderTrainer.fit(
+            TestUtils.testEnvBuilder(),
             datasetBuilder,
             (k, v) -> v
         );
@@ -135,5 +118,33 @@ public class EncoderTrainerTest {
             return;
         }
         fail("UnknownCategorialFeatureValue");
+    }
+
+    /** Tests {@code fit()} method. */
+    @Test
+    public void testFitOnStringCategorialFeaturesWithReversedOrder() {
+        Map<Integer, String[]> data = new HashMap<>();
+        data.put(1, new String[] {"Monday", "September"});
+        data.put(2, new String[] {"Monday", "August"});
+        data.put(3, new String[] {"Monday", "August"});
+        data.put(4, new String[] {"Friday", "June"});
+        data.put(5, new String[] {"Friday", "June"});
+        data.put(6, new String[] {"Sunday", "August"});
+
+        DatasetBuilder<Integer, String[]> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
+
+        EncoderTrainer<Integer, String[]> strEncoderTrainer = new EncoderTrainer<Integer, String[]>()
+            .withEncoderType(EncoderType.STRING_ENCODER)
+            .withEncoderIndexingStrategy(EncoderSortingStrategy.FREQUENCY_ASC)
+            .withEncodedFeature(0)
+            .withEncodedFeature(1);
+
+        EncoderPreprocessor<Integer, String[]> preprocessor = strEncoderTrainer.fit(
+            TestUtils.testEnvBuilder(),
+            datasetBuilder,
+            (k, v) -> v
+        );
+
+        assertArrayEquals(new double[] {2.0, 0.0}, preprocessor.apply(7, new String[] {"Monday", "September"}).asArray(), 1e-8);
     }
 }

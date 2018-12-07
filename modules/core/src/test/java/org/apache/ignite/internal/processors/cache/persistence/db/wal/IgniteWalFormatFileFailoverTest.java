@@ -32,7 +32,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.TestFailureHandler;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -41,10 +41,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAhea
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
 
 /**
  *
@@ -112,6 +108,8 @@ public class IgniteWalFormatFileFailoverTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFailureHandlerTriggeredFsync() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10035");
+
         fsync = true;
 
         failFormatFileOnClusterActivate();
@@ -121,6 +119,8 @@ public class IgniteWalFormatFileFailoverTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFailureHandlerTriggered() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10035");
+
         fsync = false;
 
         failFormatFileOnClusterActivate();
@@ -222,11 +222,6 @@ public class IgniteWalFormatFileFailoverTest extends GridCommonAbstractTest {
             assertNotNull(failMtdNameRef);
 
             this.failMtdNameRef = failMtdNameRef;
-        }
-
-        /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            return create(file, CREATE, READ, WRITE);
         }
 
         /** {@inheritDoc} */

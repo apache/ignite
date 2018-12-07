@@ -31,9 +31,9 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionMetrics;
-import org.apache.ignite.transactions.TransactionException;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -48,6 +48,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
 
     /**
      * @param cctx Cache shared context.
+     * @param lb Label.
      */
     public IgniteTransactionsImpl(GridCacheSharedContext<K, V> cctx, @Nullable String lb) {
         this.cctx = cctx;
@@ -150,7 +151,6 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
      * @param sysCacheCtx System cache context.
      * @return Transaction.
      */
-    @SuppressWarnings("unchecked")
     private GridNearTxLocal txStart0(
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
@@ -175,6 +175,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
                 isolation,
                 timeout,
                 true,
+                null,
                 txSize,
                 lb
             );

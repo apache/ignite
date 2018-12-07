@@ -70,6 +70,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
@@ -269,23 +271,22 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             info("Grid " + i + ": " + grid(i).localNode().id());
     }
 
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
+    }
+
     /**
      * Checks that any invoke returns result.
      *
      * @throws Exception if something goes bad.
-     *
-     * TODO https://issues.apache.org/jira/browse/IGNITE-4380.
      */
-    public void _testInvokeAllMultithreaded() throws Exception {
+    public void testInvokeAllMultithreaded() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-4380");
+
         final IgniteCache<String, Integer> cache = jcache();
         final int threadCnt = 4;
         final int cnt = 5000;
-
-        // Concurrent invoke can not be used for ATOMIC cache in CLOCK mode.
-        if (atomicityMode() == ATOMIC &&
-            cacheMode() != LOCAL &&
-            false)
-            return;
 
         final Set<String> keys = Collections.singleton("myKey");
 
@@ -4057,7 +4058,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
-     * TODO GG-11133.
      * @throws Exception In case of error.
      */
     public void testEvictExpired() throws Exception {
@@ -4111,8 +4111,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
-     * TODO GG-11133.
-     *
      * @throws Exception If failed.
      */
     public void testPeekExpired() throws Exception {
@@ -4146,8 +4144,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
-     * TODO GG-11133.
-     *
      * @throws Exception If failed.
      */
     public void testPeekExpiredTx() throws Exception {
@@ -4205,10 +4201,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     private void checkTtl(boolean inTx, boolean oldEntry) throws Exception {
-        // TODO GG-11133.
-        if (true)
-            return;
-
         int ttl = 1000;
 
         final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
@@ -4273,7 +4265,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                 assertNotNull(curEntryTtl.get1());
                 assertNotNull(curEntryTtl.get2());
-                assertEquals(ttl, (long)curEntryTtl.get1());
                 assertTrue(curEntryTtl.get2() > startTime);
 
                 expireTimes[i] = curEntryTtl.get2();
@@ -4302,7 +4293,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                 assertNotNull(curEntryTtl.get1());
                 assertNotNull(curEntryTtl.get2());
-                assertEquals(ttl, (long)curEntryTtl.get1());
                 assertTrue(curEntryTtl.get2() > startTime);
 
                 expireTimes[i] = curEntryTtl.get2();
@@ -4331,7 +4321,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                 assertNotNull(curEntryTtl.get1());
                 assertNotNull(curEntryTtl.get2());
-                assertEquals(ttl, (long)curEntryTtl.get1());
                 assertTrue(curEntryTtl.get2() > startTime);
 
                 expireTimes[i] = curEntryTtl.get2();
@@ -4364,7 +4353,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                 assertNotNull(curEntryTtl.get1());
                 assertNotNull(curEntryTtl.get2());
-                assertEquals(ttl, (long)curEntryTtl.get1());
                 assertEquals(expireTimes[i], (long)curEntryTtl.get2());
             }
         }
@@ -4499,8 +4487,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
-     * TODO GG-11133.
-     *
      * @throws Exception If failed.
      */
     public void testCompactExpired() throws Exception {
@@ -5046,7 +5032,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 // If AssertionFailedError is in the chain, assume we need to wait and retry.
                 if (!X.hasCause(t, AssertionFailedError.class))
                     throw t;
-                
+
                 if (i == 9) {
                     for (int j = 0; j < gridCount(); j++)
                         executeOnLocalOrRemoteJvm(j, new PrintIteratorStateTask());
@@ -5754,7 +5740,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertTrue(storeStgy.getStoreSize() != 0);
 
         try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
-            assertTrue(cacheSkipStore.getAll(data.keySet()).size() == 0);
+            assertTrue(cacheSkipStore.getAll(data.keySet()).isEmpty());
 
             for (String key : keys) {
                 assertNull(cacheSkipStore.get(key));
@@ -6027,6 +6013,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             doTransformResourceInjectionInTx(ignite, cache, true, false);
             doTransformResourceInjectionInTx(ignite, cache, true, true);
         }
+
+        grid(0).services( grid(0).cluster()).cancel(SERVICE_NAME1);
     }
 
     /**
@@ -6390,7 +6378,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                     size++;
 
-                    ctx.evicts().touch(e, null);
+                    e.touch(null);
                 }
             }
 
@@ -6492,11 +6480,16 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             if (useDhtForNearCache && internalCache.context().isNear())
                 internalCache = internalCache.context().near().dht();
 
-            GridCacheEntryEx entry = internalCache.peekEx(key);
+            GridCacheEntryEx entry = internalCache.entryEx(key);
 
-            return entry != null ?
-                new IgnitePair<>(entry.ttl(), entry.expireTime()) :
-                new IgnitePair<Long>(null, null);
+            entry.unswap();
+
+            IgnitePair<Long> pair = new IgnitePair<>(entry.ttl(), entry.expireTime());
+
+            if (!entry.isNear())
+                entry.context().cache().removeEntry(entry);
+
+            return  pair;
         }
     }
 

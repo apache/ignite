@@ -37,12 +37,16 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -51,7 +55,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
- * Checks that no future hangs on non-srializable exceptions and values.
+ * Checks that no future hangs on non-serializable exceptions and values.
  */
 public class IgniteCacheFailedUpdateResponseTest extends GridCommonAbstractTest {
     /** Atomic cache. */
@@ -60,11 +64,17 @@ public class IgniteCacheFailedUpdateResponseTest extends GridCommonAbstractTest 
     /** Tx cache. */
     private static final String TX_CACHE = "tx";
 
+    /** Mvcc tx cache. */
+    private static final String MVCC_TX_CACHE = "mvcc-tx";
+
     /** Atomic cache. */
     private IgniteCache<Object, Object> atomicCache;
 
     /** Tx cache. */
     private IgniteCache<Object, Object> txCache;
+
+    /** Mvcc tx cache. */
+    private IgniteCache<Object, Object> mvccTxCache;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -72,13 +82,16 @@ public class IgniteCacheFailedUpdateResponseTest extends GridCommonAbstractTest 
 
         CacheConfiguration atomicCfg = new CacheConfiguration(ATOMIC_CACHE);
         CacheConfiguration txCfg = new CacheConfiguration(TX_CACHE);
+        CacheConfiguration mvccTxCfg = new CacheConfiguration(MVCC_TX_CACHE);
 
         atomicCfg.setBackups(1);
         txCfg.setBackups(1);
+        mvccTxCfg.setBackups(1);
 
         txCfg.setAtomicityMode(TRANSACTIONAL);
+        mvccTxCfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
-        cfg.setCacheConfiguration(atomicCfg, txCfg);
+        cfg.setCacheConfiguration(atomicCfg, txCfg, mvccTxCfg);
 
         cfg.setClientMode(igniteInstanceName.contains("client"));
 
@@ -98,6 +111,12 @@ public class IgniteCacheFailedUpdateResponseTest extends GridCommonAbstractTest 
     @Override protected void beforeTest() throws Exception {
         atomicCache = grid("client").cache(ATOMIC_CACHE);
         txCache = grid("client").cache(TX_CACHE);
+        mvccTxCache = grid("client").cache(MVCC_TX_CACHE);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /**
@@ -135,10 +154,31 @@ public class IgniteCacheFailedUpdateResponseTest extends GridCommonAbstractTest 
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeMvccTx() throws Exception {
+        testInvoke(mvccTxCache);
+        testInvokeAll(mvccTxCache);
+
+        IgniteEx client = grid("client");
+
+        Callable<Object> clos = new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                testInvoke(mvccTxCache);
+                testInvokeAll(mvccTxCache);
+
+                return null;
+            }
+        };
+
+        doInTransaction(client, PESSIMISTIC, REPEATABLE_READ, clos);
+    }
+
+    /**
      * @param cache Cache.
      */
     private void testInvoke(final IgniteCache<Object, Object> cache) throws Exception {
-        Class<? extends Exception> exp = grid("client").transactions().tx() == null
+        Class<? extends Exception> exp = grid("client").transactions().tx() == null || ((IgniteCacheProxy)cache).context().mvccEnabled()
             ? EntryProcessorException.class
             : NonSerializableException.class;
 
@@ -174,7 +214,7 @@ public class IgniteCacheFailedUpdateResponseTest extends GridCommonAbstractTest 
         assertNotNull(epRes);
 
         // In transactions EP will be invoked locally.
-        Class<? extends Exception> exp = grid("client").transactions().tx() == null
+        Class<? extends Exception> exp = grid("client").transactions().tx() == null || ((IgniteCacheProxy)cache).context().mvccEnabled()
             ? EntryProcessorException.class
             : NonSerializableException.class;
 

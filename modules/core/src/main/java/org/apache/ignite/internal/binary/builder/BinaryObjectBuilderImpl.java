@@ -36,6 +36,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
@@ -174,6 +175,11 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     /** {@inheritDoc} */
     @Override public BinaryObject build() {
         try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx)) {
+            Thread curThread = Thread.currentThread();
+
+            if (curThread instanceof IgniteThread)
+                writer.failIfUnregistered(((IgniteThread)curThread).isForbiddenToRequestBinaryMetadata());
+
             writer.typeId(typeId);
 
             BinaryBuilderSerializer serializationCtx = new BinaryBuilderSerializer();
@@ -192,7 +198,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * @param writer Writer.
      * @param serializer Serializer.
      */
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     void serializeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer serializer) {
         try {
             writer.preWrite(registeredType ? null : clsNameToWrite);
@@ -333,7 +338,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 reader.position(start + BinaryUtils.length(reader, start));
             }
 
-            //noinspection NumberEquality
             writer.postWrite(true, registeredType);
 
             // Update metadata if needed.
@@ -360,7 +364,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 ctx.registerUserClassName(typeId, typeName);
 
                 ctx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fieldsMeta, affFieldName0,
-                    Collections.singleton(curSchema), false, null));
+                    Collections.singleton(curSchema), false, null), writer.failIfUnregistered());
 
                 schemaReg.addSchema(curSchema.schemaId(), curSchema);
             }

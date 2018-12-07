@@ -23,6 +23,8 @@ import java.net.ServerSocket;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
@@ -31,6 +33,8 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -38,6 +42,7 @@ import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -79,7 +84,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
         spi.setIdleConnectionTimeout(100);
         spi.setSharedMemoryPort(-1);
 
-        TcpDiscoverySpi discoSpi = (TcpDiscoverySpi) cfg.getDiscoverySpi();
+        TcpDiscoverySpi discoSpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);
         discoSpi.setClientReconnectDisabled(true);
@@ -94,11 +99,11 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL,"true");
+        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, "true");
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTestsStopped() {
         System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
     }
 
@@ -114,6 +119,11 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
         super.afterTest();
 
         stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /**
@@ -150,12 +160,30 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
             startGrid(2);
             startGrid(3);
 
-            U.sleep(1000); // Wait for write timeout and closing idle connections.
+            // Need to wait for PME to avoid opening new connections during closing idle connections.
+            awaitPartitionMapExchange();
+
+            CommunicationSpi commSpi = grid(0).configuration().getCommunicationSpi();
+
+            ConcurrentMap<UUID, GridCommunicationClient[]> clients = U.field(commSpi, "clients");
+
+            // Wait for write timeout and closing idle connections.
+            assertTrue("Failed to wait for closing idle connections.",
+                GridTestUtils.waitForCondition(() -> {
+                    for (GridCommunicationClient[] clients0 : clients.values()) {
+                        for (GridCommunicationClient client : clients0) {
+                            if (client != null)
+                                return false;
+                        }
+                    }
+
+                    return true;
+                }, 1000));
 
             final CountDownLatch latch = new CountDownLatch(1);
 
             grid(0).events().localListen(new IgnitePredicate<Event>() {
-                @Override public boolean apply(Event event) {
+                @Override public boolean apply(Event evt) {
                     latch.countDown();
 
                     return true;
@@ -171,7 +199,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
                     }
                 });
             }
-            catch (IgniteException e) {
+            catch (IgniteException ignored) {
                 // No-op.
             }
 
@@ -218,7 +246,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
          * Default constructor.
          */
         FakeServer() throws IOException {
-            this.srv = new ServerSocket(47200, 50, InetAddress.getByName("127.0.0.1"));
+            srv = new ServerSocket(47200, 50, InetAddress.getByName("127.0.0.1"));
         }
 
         /**
@@ -235,7 +263,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
                     try {
                         U.sleep(10);
                     }
-                    catch (IgniteInterruptedCheckedException e) {
+                    catch (IgniteInterruptedCheckedException ignored) {
                         // No-op.
                     }
                 }

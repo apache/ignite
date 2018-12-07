@@ -69,6 +69,7 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -154,17 +155,6 @@ class ClusterCachesInfo {
 
         if (conflictErr != null)
             throw new IgniteCheckedException("Failed to start configured cache. " + conflictErr);
-    }
-
-    /**
-     * @param cacheName Cache name.
-     * @param grpName Group name.
-     * @return Group ID.
-     */
-    private int cacheGroupId(String cacheName, @Nullable String grpName) {
-        assert cacheName != null;
-
-        return grpName != null ? CU.cacheId(grpName) : CU.cacheId(cacheName);
     }
 
     /**
@@ -357,8 +347,14 @@ class ClusterCachesInfo {
                 CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityKeyBackups",
                     "Affinity key backups", locAttr.affinityKeyBackups(),
                     rmtAttr.affinityKeyBackups(), true);
+
+                CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "qryParallelism",
+                    "Query parallelism", locAttr.qryParallelism(), rmtAttr.qryParallelism(), true);
             }
         }
+
+        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "isEncryptionEnabled",
+            "Cache encrypted", locAttr.isEncryptionEnabled(), rmtAttr.isEncryptionEnabled(), true);
     }
 
     /**
@@ -570,7 +566,8 @@ class ClusterCachesInfo {
                             ccfg,
                             cacheId,
                             req.initiatingNodeId(),
-                            req.deploymentId());
+                            req.deploymentId(),
+                            req.encryptionKey());
 
                         DynamicCacheDescriptor startDesc = new DynamicCacheDescriptor(ctx,
                             ccfg,
@@ -670,14 +667,6 @@ class ClusterCachesInfo {
                         ctx.cache().completeCacheStartFuture(req, false,
                             new IgniteCheckedException("Only cache created with CREATE TABLE may be removed with " +
                                 "DROP TABLE [cacheName=" + req.cacheName() + ']'));
-
-                        continue;
-                    }
-
-                    if (!req.sql() && desc.sql()) {
-                        ctx.cache().completeCacheStartFuture(req, false,
-                            new IgniteCheckedException("Only cache created with cache API may be removed with " +
-                                "direct call to destroyCache [cacheName=" + req.cacheName() + ']'));
 
                         continue;
                     }
@@ -1292,6 +1281,7 @@ class ClusterCachesInfo {
 
         if (joinDiscoData != null) {
             List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> locJoinStartCaches = new ArrayList<>();
+            List<DynamicCacheDescriptor> locJoinInitCaches = new ArrayList<>();
             locCfgsForActivation = new HashMap<>();
 
             boolean active = ctx.state().clusterState().active();
@@ -1340,10 +1330,13 @@ class ClusterCachesInfo {
                     else
                         locCfgsForActivation.put(desc.cacheName(), new T2<>(desc.cacheConfiguration(), nearCfg));
                 }
+                else
+                    locJoinInitCaches.add(desc);
             }
 
             locJoinCachesCtx = new LocalJoinCachesContext(
                 locJoinStartCaches,
+                locJoinInitCaches,
                 new HashMap<>(registeredCacheGrps),
                 new HashMap<>(registeredCaches));
         }
@@ -1532,7 +1525,7 @@ class ClusterCachesInfo {
                     ", conflictingCacheName=" + desc.cacheName() + ']';
         }
 
-        int grpId = cacheGroupId(cfg.getName(), cfg.getGroupName());
+        int grpId = CU.cacheGroupId(cfg.getName(), cfg.getGroupName());
 
         if (cfg.getGroupName() != null) {
             if (cacheGroupByName(cfg.getGroupName()) == null) {
@@ -1643,7 +1636,8 @@ class ClusterCachesInfo {
             cfg,
             cacheId,
             nodeId,
-            joinData.cacheDeploymentId());
+            joinData.cacheDeploymentId(),
+            null);
 
         ctx.discovery().setCacheFilter(
             cacheId,
@@ -1757,6 +1751,7 @@ class ClusterCachesInfo {
      * @param cacheId Cache ID.
      * @param rcvdFrom Node ID cache was recived from.
      * @param deploymentId Deployment ID.
+     * @param encKey Encryption key.
      * @return Group descriptor.
      */
     private CacheGroupDescriptor registerCacheGroup(
@@ -1765,7 +1760,8 @@ class ClusterCachesInfo {
         CacheConfiguration<?, ?> startedCacheCfg,
         Integer cacheId,
         UUID rcvdFrom,
-        IgniteUuid deploymentId) {
+        IgniteUuid deploymentId,
+        @Nullable byte[] encKey) {
         if (startedCacheCfg.getGroupName() != null) {
             CacheGroupDescriptor desc = cacheGroupByName(startedCacheCfg.getGroupName());
 
@@ -1776,7 +1772,7 @@ class ClusterCachesInfo {
             }
         }
 
-        int grpId = cacheGroupId(startedCacheCfg.getName(), startedCacheCfg.getGroupName());
+        int grpId = CU.cacheGroupId(startedCacheCfg.getName(), startedCacheCfg.getGroupName());
 
         Map<String, Integer> caches = Collections.singletonMap(startedCacheCfg.getName(), cacheId);
 
@@ -1793,6 +1789,9 @@ class ClusterCachesInfo {
             persistent,
             persistent,
             null);
+
+        if (startedCacheCfg.isEncryptionEnabled())
+            ctx.encryption().beforeCacheGroupStart(grpId, encKey);
 
         if (ctx.cache().context().pageStore() != null)
             ctx.cache().context().pageStore().beforeCacheGroupStart(grpDesc);
@@ -1866,7 +1865,7 @@ class ClusterCachesInfo {
      * @param ccfg Cache configuration to start.
      * @throws IgniteCheckedException If failed.
      */
-    public void validateStartCacheConfiguration(CacheConfiguration ccfg) throws IgniteCheckedException {
+    void validateStartCacheConfiguration(CacheConfiguration ccfg) throws IgniteCheckedException {
         if (ccfg.getGroupName() != null) {
             CacheGroupDescriptor grpDesc = cacheGroupByName(ccfg.getGroupName());
 
@@ -1890,6 +1889,10 @@ class ClusterCachesInfo {
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "cacheMode", "Cache mode",
             cfg.getCacheMode(), startCfg.getCacheMode(), true);
+
+        if (cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT || startCfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
+            CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "atomicityMode", "Atomicity mode",
+                attr1.atomicityMode(), attr2.atomicityMode(), true);
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "affinity", "Affinity function",
             attr1.cacheAffinityClassName(), attr2.cacheAffinityClassName(), true);
@@ -1922,6 +1925,9 @@ class ClusterCachesInfo {
             CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "backups", "Backups",
                 cfg.getBackups(), startCfg.getBackups(), true);
         }
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "encryptionEnabled", "Encrypted",
+            cfg.isEncryptionEnabled(), startCfg.isEncryptionEnabled(), true);
     }
 
     /**

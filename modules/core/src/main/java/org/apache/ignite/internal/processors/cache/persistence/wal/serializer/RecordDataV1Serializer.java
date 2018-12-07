@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.serializer;
 import java.io.DataInput;
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,19 +29,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.EncryptedRecord;
 import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
+import org.apache.ignite.internal.pagemem.wal.record.WalRecordCacheGroupAware;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccMarkUpdatedRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccUpdateNewTxStateHintRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccUpdateTxStateHintRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageSetFreeListPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
@@ -79,20 +87,35 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.SplitForwardPageRecor
 import org.apache.ignite.internal.pagemem.wal.record.delta.TrackingPageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
+import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInputImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
+import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.REC_TYPE_SIZE;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.putRecordType;
 
 /**
  * Record data V1 serializer.
@@ -101,17 +124,35 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     /** Length of HEADER record data. */
     static final int HEADER_RECORD_DATA_SIZE = /*Magic*/8 + /*Version*/4;
 
-    /** Cache shared context */
-    private final GridCacheSharedContext cctx;
+    /** Cache shared context. */
+    protected final GridCacheSharedContext cctx;
 
-    /** Size of page used for PageMemory regions */
+    /** Size of page used for PageMemory regions. */
     private final int pageSize;
 
-    /** Cache object processor to reading {@link DataEntry DataEntries} */
-    private final IgniteCacheObjectProcessor co;
+    /** Size of page without encryption overhead. */
+    private final int realPageSize;
+
+    /** Cache object processor to reading {@link DataEntry DataEntries}. */
+    protected final IgniteCacheObjectProcessor co;
 
     /** Serializer of {@link TxRecord} records. */
     private TxRecordSerializer txRecordSerializer;
+
+    /** Encryption SPI instance. */
+    private final EncryptionSpi encSpi;
+
+    /** Encryption manager. */
+    private final GridEncryptionManager encMgr;
+
+    /** */
+    private final boolean encryptionDisabled;
+
+    /** */
+    private static final byte ENCRYPTED = 1;
+
+    /** */
+    private static final byte PLAIN = 0;
 
     /**
      * @param cctx Cache shared context.
@@ -121,10 +162,185 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         this.txRecordSerializer = new TxRecordSerializer();
         this.co = cctx.kernalContext().cacheObjects();
         this.pageSize = cctx.database().pageSize();
+        this.encSpi = cctx.gridConfig().getEncryptionSpi();
+        this.encMgr = cctx.kernalContext().encryption();
+
+        encryptionDisabled = encSpi instanceof NoopEncryptionSpi;
+
+        //This happen on offline WAL iteration(we don't have encryption keys available).
+        if (encSpi != null)
+            this.realPageSize = CU.encryptedPageSize(pageSize, encSpi);
+        else
+            this.realPageSize = pageSize;
     }
 
     /** {@inheritDoc} */
     @Override public int size(WALRecord record) throws IgniteCheckedException {
+        int clSz = plainSize(record);
+
+        if (needEncryption(record))
+            return encSpi.encryptedSize(clSz) + 4 /* groupId */ + 4 /* data size */ + REC_TYPE_SIZE;
+
+        return clSz;
+    }
+
+    /** {@inheritDoc} */
+    @Override public WALRecord readRecord(RecordType type, ByteBufferBackedDataInput in)
+        throws IOException, IgniteCheckedException {
+        if (type == ENCRYPTED_RECORD) {
+            if (encSpi == null) {
+                T2<Integer, RecordType> knownData = skipEncryptedRecord(in, true);
+
+                //This happen on offline WAL iteration(we don't have encryption keys available).
+                return new EncryptedRecord(knownData.get1(), knownData.get2());
+            }
+
+            T3<ByteBufferBackedDataInput, Integer, RecordType> clData = readEncryptedData(in, true);
+
+            //This happen during startup. On first WAL iteration we restore only metastore.
+            //So, no encryption keys available. See GridCacheDatabaseSharedManager#readMetastore
+            if (clData.get1() == null)
+                return new EncryptedRecord(clData.get2(), clData.get3());
+
+            return readPlainRecord(clData.get3(), clData.get1(), true);
+        }
+
+        return readPlainRecord(type, in, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
+        if (needEncryption(rec)) {
+            int clSz = plainSize(rec);
+
+            ByteBuffer clData = ByteBuffer.allocate(clSz);
+
+            writePlainRecord(rec, clData);
+
+            clData.rewind();
+
+            writeEncryptedData(((WalRecordCacheGroupAware)rec).groupId(), rec.type(), clData, buf);
+
+            return;
+        }
+
+        writePlainRecord(rec, buf);
+    }
+
+    /**
+     * @param rec Record to check.
+     * @return {@code True} if this record should be encrypted.
+     */
+    private boolean needEncryption(WALRecord rec) {
+        if (encryptionDisabled)
+            return false;
+
+        if (!(rec instanceof WalRecordCacheGroupAware))
+            return false;
+
+        return needEncryption(((WalRecordCacheGroupAware)rec).groupId());
+    }
+
+    /**
+     * @param grpId Group id.
+     * @return {@code True} if this record should be encrypted.
+     */
+    private boolean needEncryption(int grpId) {
+        if (encryptionDisabled)
+            return false;
+
+        GridEncryptionManager encMgr = cctx.kernalContext().encryption();
+
+        return encMgr != null && encMgr.groupKey(grpId) != null;
+    }
+
+    /**
+     * Reads and decrypt data from {@code in} stream.
+     *
+     * @param in Input stream.
+     * @param readType If {@code true} plain record type will be read from {@code in}.
+     * @return Plain data stream, group id, plain record type,
+     * @throws IOException If failed.
+     * @throws IgniteCheckedException If failed.
+     */
+    private T3<ByteBufferBackedDataInput, Integer, RecordType> readEncryptedData(ByteBufferBackedDataInput in,
+        boolean readType)
+        throws IOException, IgniteCheckedException {
+        int grpId = in.readInt();
+        int encRecSz = in.readInt();
+        RecordType plainRecType = null;
+
+        if (readType)
+            plainRecType = RecordV1Serializer.readRecordType(in);
+
+        byte[] encData = new byte[encRecSz];
+
+        in.readFully(encData);
+
+        Serializable key = encMgr.groupKey(grpId);
+
+        if (key == null)
+            return new T3<>(null, grpId, plainRecType);
+
+        byte[] clData = encSpi.decrypt(encData, key);
+
+        return new T3<>(new ByteBufferBackedDataInputImpl().buffer(ByteBuffer.wrap(clData)), grpId, plainRecType);
+    }
+
+    /**
+     * Reads encrypted record without decryption.
+     * Should be used only for a offline WAL iteration.
+     *
+     * @param in Data stream.
+     * @param readType If {@code true} plain record type will be read from {@code in}.
+     * @return Group id and type of skipped record.
+     */
+    private T2<Integer, RecordType> skipEncryptedRecord(ByteBufferBackedDataInput in, boolean readType)
+        throws IOException, IgniteCheckedException {
+        int grpId = in.readInt();
+        int encRecSz = in.readInt();
+        RecordType plainRecType = null;
+
+        if (readType)
+            plainRecType = RecordV1Serializer.readRecordType(in);
+
+        int skipped = in.skipBytes(encRecSz);
+
+        assert skipped == encRecSz;
+
+        return new T2<>(grpId, plainRecType);
+    }
+
+    /**
+     * Writes encrypted {@code clData} to {@code dst} stream.
+     *
+     * @param grpId Group id;
+     * @param plainRecType Plain record type
+     * @param clData Plain data.
+     * @param dst Destination buffer.
+     */
+    private void writeEncryptedData(int grpId, @Nullable RecordType plainRecType, ByteBuffer clData, ByteBuffer dst) {
+        int dtSz = encSpi.encryptedSize(clData.capacity());
+
+        dst.putInt(grpId);
+        dst.putInt(dtSz);
+
+        if (plainRecType != null)
+            putRecordType(dst, plainRecType);
+
+        Serializable key = encMgr.groupKey(grpId);
+
+        assert key != null;
+
+        encSpi.encrypt(clData, key, dst);
+    }
+
+    /**
+     * @param record Record to measure.
+     * @return Plain(without encryption) size of serialized rec in bytes.
+     * @throws IgniteCheckedException If failed.
+     */
+    int plainSize(WALRecord record) throws IgniteCheckedException {
         switch (record.type()) {
             case PAGE_RECORD:
                 assert record instanceof PageSnapshot;
@@ -193,6 +409,15 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case DATA_PAGE_SET_FREE_LIST_PAGE:
                 return 4 + 8 + 8;
+
+            case MVCC_DATA_PAGE_MARK_UPDATED_RECORD:
+                return 4 + 8 + 4 + 8 + 8 + 4;
+
+            case MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD:
+                return 4 + 8 + 4 + 1;
+
+            case MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD:
+                return 4 + 8 + 4 + 1;
 
             case INIT_NEW_PAGE_RECORD:
                 return 4 + 8 + 2 + 2 + 8;
@@ -301,8 +526,19 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public WALRecord readRecord(WALRecord.RecordType type, ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
+    /**
+     * Reads {@code WalRecord} of {@code type} from input.
+     * Input should be plain(not encrypted).
+     *
+     * @param type Record type.
+     * @param in Input
+     * @param encrypted Record was encrypted.
+     * @return Deserialized record.
+     * @throws IOException If failed.
+     * @throws IgniteCheckedException If failed.
+     */
+    WALRecord readPlainRecord(RecordType type, ByteBufferBackedDataInput in,
+        boolean encrypted) throws IOException, IgniteCheckedException {
         WALRecord res;
 
         switch (type) {
@@ -314,7 +550,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 in.readFully(arr);
 
-                res = new PageSnapshot(new FullPageId(pageId, cacheId), arr);
+                res = new PageSnapshot(new FullPageId(pageId, cacheId), arr, encrypted ? realPageSize : pageSize);
 
                 break;
 
@@ -389,7 +625,19 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 List<DataEntry> entries = new ArrayList<>(entryCnt);
 
                 for (int i = 0; i < entryCnt; i++)
-                    entries.add(readDataEntry(in));
+                    entries.add(readPlainDataEntry(in));
+
+                res = new DataRecord(entries, 0L);
+
+                break;
+
+            case ENCRYPTED_DATA_RECORD:
+                entryCnt = in.readInt();
+
+                entries = new ArrayList<>(entryCnt);
+
+                for (int i = 0; i < entryCnt; i++)
+                    entries.add(readEncryptedDataEntry(in));
 
                 res = new DataRecord(entries, 0L);
 
@@ -501,6 +749,41 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 long freeListPage = in.readLong();
 
                 res = new DataPageSetFreeListPageRecord(cacheId, pageId, freeListPage);
+
+                break;
+
+            case MVCC_DATA_PAGE_MARK_UPDATED_RECORD:
+                cacheId = in.readInt();
+                pageId = in.readLong();
+
+                itemId = in.readInt();
+                long newMvccCrd = in.readLong();
+                long newMvccCntr = in.readLong();
+                int newMvccOpCntr = in.readInt();
+
+                res = new DataPageMvccMarkUpdatedRecord(cacheId, pageId, itemId, newMvccCrd, newMvccCntr, newMvccOpCntr);
+
+                break;
+
+            case MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD:
+                cacheId = in.readInt();
+                pageId = in.readLong();
+
+                itemId = in.readInt();
+                byte txState = in.readByte();
+
+                res = new DataPageMvccUpdateTxStateHintRecord(cacheId, pageId, itemId, txState);
+
+                break;
+
+            case MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD:
+                cacheId = in.readInt();
+                pageId = in.readLong();
+
+                itemId = in.readInt();
+                byte newTxState = in.readByte();
+
+                res = new DataPageMvccUpdateNewTxStateHintRecord(cacheId, pageId, itemId, newTxState);
 
                 break;
 
@@ -853,7 +1136,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 throw new EOFException("END OF SEGMENT");
 
             case TX_RECORD:
-                res = txRecordSerializer.read(in);
+                res = txRecordSerializer.readTx(in);
 
                 break;
 
@@ -864,8 +1147,14 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         return res;
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
+    /**
+     * Write {@code rec} to {@code buf} without encryption.
+     *
+     * @param rec Record to serialize.
+     * @param buf Output buffer.
+     * @throws IgniteCheckedException If failed.
+     */
+    void writePlainRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
         switch (rec.type()) {
             case PAGE_RECORD:
                 PageSnapshot snap = (PageSnapshot)rec;
@@ -950,8 +1239,14 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 buf.putInt(dataRec.writeEntries().size());
 
-                for (DataEntry dataEntry : dataRec.writeEntries())
-                    putDataEntry(buf, dataEntry);
+                boolean encrypted = isDataRecordEncrypted(dataRec);
+
+                for (DataEntry dataEntry : dataRec.writeEntries()) {
+                    if (encrypted)
+                        putEncryptedDataEntry(buf, dataEntry);
+                    else
+                        putPlainDataEntry(buf, dataEntry);
+                }
 
                 break;
 
@@ -1032,6 +1327,41 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 buf.putLong(freeListRec.pageId());
 
                 buf.putLong(freeListRec.freeListPage());
+
+                break;
+
+            case MVCC_DATA_PAGE_MARK_UPDATED_RECORD:
+                DataPageMvccMarkUpdatedRecord rmvRec = (DataPageMvccMarkUpdatedRecord)rec;
+
+                buf.putInt(rmvRec.groupId());
+                buf.putLong(rmvRec.pageId());
+
+                buf.putInt(rmvRec.itemId());
+                buf.putLong(rmvRec.newMvccCrd());
+                buf.putLong(rmvRec.newMvccCntr());
+                buf.putInt(rmvRec.newMvccOpCntr());
+
+                break;
+
+            case MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD:
+                DataPageMvccUpdateTxStateHintRecord txStRec = (DataPageMvccUpdateTxStateHintRecord)rec;
+
+                buf.putInt(txStRec.groupId());
+                buf.putLong(txStRec.pageId());
+
+                buf.putInt(txStRec.itemId());
+                buf.put(txStRec.txState());
+
+                break;
+
+            case MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD:
+                DataPageMvccUpdateNewTxStateHintRecord newTxStRec = (DataPageMvccUpdateNewTxStateHintRecord)rec;
+
+                buf.putInt(newTxStRec.groupId());
+                buf.putLong(newTxStRec.pageId());
+
+                buf.putInt(newTxStRec.itemId());
+                buf.put(newTxStRec.txState());
 
                 break;
 
@@ -1400,8 +1730,36 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     /**
      * @param buf Buffer to write to.
      * @param entry Data entry.
+     * @throws IgniteCheckedException If failed.
      */
-    static void putDataEntry(ByteBuffer buf, DataEntry entry) throws IgniteCheckedException {
+    void putEncryptedDataEntry(ByteBuffer buf, DataEntry entry) throws IgniteCheckedException {
+        DynamicCacheDescriptor desc = cctx.cache().cacheDescriptor(entry.cacheId());
+
+        if (desc != null && needEncryption(desc.groupId())) {
+            int clSz = entrySize(entry);
+
+            ByteBuffer clData = ByteBuffer.allocate(clSz);
+
+            putPlainDataEntry(clData, entry);
+
+            clData.rewind();
+
+            buf.put(ENCRYPTED);
+
+            writeEncryptedData(desc.groupId(), null, clData, buf);
+        }
+        else {
+            buf.put(PLAIN);
+
+            putPlainDataEntry(buf, entry);
+        }
+    }
+
+    /**
+     * @param buf Buffer to write to.
+     * @param entry Data entry.
+     */
+    void putPlainDataEntry(ByteBuffer buf, DataEntry entry) throws IgniteCheckedException {
         buf.putInt(entry.cacheId());
 
         if (!entry.key().putValue(buf))
@@ -1450,7 +1808,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param ver Version to write.
      * @param allowNull Is {@code null}version allowed.
      */
-    private static void putVersion(ByteBuffer buf, GridCacheVersion ver, boolean allowNull) {
+    static void putVersion(ByteBuffer buf, GridCacheVersion ver, boolean allowNull) {
         CacheVersionIO.write(buf, ver, allowNull);
     }
 
@@ -1458,7 +1816,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param buf Buffer.
      * @param rowBytes Row bytes.
      */
-    @SuppressWarnings("unchecked")
     private static void putRow(ByteBuffer buf, byte[] rowBytes) {
         assert rowBytes.length > 0;
 
@@ -1468,8 +1825,35 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     /**
      * @param in Input to read from.
      * @return Read entry.
+     * @throws IOException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    DataEntry readDataEntry(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
+    DataEntry readEncryptedDataEntry(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
+        boolean needDecryption = in.readByte() == ENCRYPTED;
+
+        if (needDecryption) {
+            if (encSpi == null) {
+                skipEncryptedRecord(in, false);
+
+                return new EncryptedDataEntry();
+            }
+
+            T3<ByteBufferBackedDataInput, Integer, RecordType> clData = readEncryptedData(in, false);
+
+            if (clData.get1() == null)
+                return null;
+
+            return readPlainDataEntry(clData.get1());
+        }
+
+        return readPlainDataEntry(in);
+    }
+
+    /**
+     * @param in Input to read from.
+     * @return Read entry.
+     */
+    DataEntry readPlainDataEntry(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
         int cacheId = in.readInt();
 
         int keySize = in.readInt();
@@ -1540,6 +1924,39 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     }
 
     /**
+     * @param rec Record.
+     * @return Real record type.
+     */
+    RecordType recordType(WALRecord rec) {
+        if (encryptionDisabled)
+            return rec.type();
+
+        if (needEncryption(rec))
+            return ENCRYPTED_RECORD;
+
+        if (rec.type() != DATA_RECORD)
+            return rec.type();
+
+        return isDataRecordEncrypted((DataRecord)rec) ? ENCRYPTED_DATA_RECORD : DATA_RECORD;
+    }
+
+    /**
+     * @param rec Data record.
+     * @return {@code True} if this data record should be encrypted.
+     */
+    boolean isDataRecordEncrypted(DataRecord rec) {
+        if (encryptionDisabled)
+            return false;
+
+        for (DataEntry e : rec.writeEntries()) {
+            if (cctx.cacheContext(e.cacheId()) != null && needEncryption(cctx.cacheContext(e.cacheId()).groupId()))
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
      * @param buf Buffer to read from.
      * @return Read map.
      */
@@ -1579,7 +1996,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param allowNull Is {@code null}version allowed.
      * @return Read cache version.
      */
-    private GridCacheVersion readVersion(ByteBufferBackedDataInput in, boolean allowNull) throws IOException {
+    GridCacheVersion readVersion(ByteBufferBackedDataInput in, boolean allowNull) throws IOException {
         // To be able to read serialization protocol version.
         in.ensure(1);
 
@@ -1600,11 +2017,23 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @return Full data record size.
      * @throws IgniteCheckedException If failed to obtain the length of one of the entries.
      */
-    private int dataSize(DataRecord dataRec) throws IgniteCheckedException {
+    protected int dataSize(DataRecord dataRec) throws IgniteCheckedException {
+        boolean encrypted = isDataRecordEncrypted(dataRec);
+
         int sz = 0;
 
-        for (DataEntry entry : dataRec.writeEntries())
-            sz += entrySize(entry);
+        for (DataEntry entry : dataRec.writeEntries()) {
+            int clSz = entrySize(entry);
+
+            if (!encryptionDisabled && needEncryption(cctx.cacheContext(entry.cacheId()).groupId()))
+                sz += encSpi.encryptedSize(clSz) + 1 /* encrypted flag */ + 4 /* groupId */ + 4 /* data size */;
+            else {
+                sz += clSz;
+
+                if (encrypted)
+                    sz += 1 /* encrypted flag */;
+            }
+        }
 
         return sz;
     }
@@ -1614,7 +2043,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @return Entry size.
      * @throws IgniteCheckedException If failed to get key or value bytes length.
      */
-    private int entrySize(DataEntry entry) throws IgniteCheckedException {
+    protected int entrySize(DataEntry entry) throws IgniteCheckedException {
         GridCacheContext cctx = this.cctx.cacheContext(entry.cacheId());
         CacheObjectContext coCtx = cctx.cacheObjectContext();
 
@@ -1652,5 +2081,15 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         }
 
         return size;
+    }
+
+    /**
+     * Represents encrypted Data Entry ({@link #key}, {@link #val value}) pair.
+     */
+    public static class EncryptedDataEntry extends DataEntry {
+        /** Constructor. */
+        EncryptedDataEntry() {
+            super(0, null, null, READ, null, null, 0, 0, 0);
+        }
     }
 }

@@ -26,10 +26,10 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,7 +42,7 @@ import static org.junit.Assert.assertNotEquals;
  */
 public class BinaryArrayIdentityResolverSelfTest extends GridCommonAbstractTest {
     /** Pointers to release. */
-    private final Set<Long> ptrs = new ConcurrentHashSet<>();
+    private final Set<Long> ptrs = new GridConcurrentHashSet<>();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

@@ -25,20 +25,17 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.AbstractFailureHandler;
 import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -55,10 +52,6 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
 
 /**
  * Test handle of task canceling with PDS enabled.
@@ -80,8 +73,8 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setFailureHandler(new FailureHandler() {
-            @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+        cfg.setFailureHandler(new AbstractFailureHandler() {
+            @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
                 failure.set(true);
 
                 return true;
@@ -93,6 +86,9 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
         ));
 
         cfg.setDataStorageConfiguration(getDataStorageConfiguration());
+
+        // Set the thread pool size according to the NUM_TASKS.
+        cfg.setPublicThreadPoolSize(16);
 
         return cfg;
     }
@@ -200,11 +196,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
         DataStorageConfiguration dbCfg = getDataStorageConfiguration();
 
         FilePageStore pageStore = new FilePageStore(PageMemory.FLAG_DATA, file, factory, dbCfg,
-            new AllocatedPageTracker() {
-                @Override public void updateTotalAllocatedPages(long delta) {
-                    // No-op.
-                }
-            });
+            AllocatedPageTracker.NO_OP);
 
         int pageSize = dbCfg.getPageSize();
 
@@ -293,11 +285,6 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
 
         /** */
         private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();
-
-        /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            return create(file, CREATE, READ, WRITE);
-        }
 
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... openOption) throws IOException {

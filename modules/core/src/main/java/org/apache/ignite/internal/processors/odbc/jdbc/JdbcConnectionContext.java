@@ -29,8 +29,11 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
+import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * JDBC Connection Context.
@@ -51,8 +54,11 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Version 2.5.0: adds precision and scale for columns feature. */
     static final ClientListenerProtocolVersion VER_2_5_0 = ClientListenerProtocolVersion.create(2, 5, 0);
 
+    /** Version 2.7.0: adds maximum length for columns feature.*/
+    static final ClientListenerProtocolVersion VER_2_7_0 = ClientListenerProtocolVersion.create(2, 7, 0);
+
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_5_0;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_7_0;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
@@ -77,6 +83,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
+        SUPPORTED_VERS.add(VER_2_7_0);
         SUPPORTED_VERS.add(VER_2_5_0);
         SUPPORTED_VERS.add(VER_2_4_0);
         SUPPORTED_VERS.add(VER_2_3_0);
@@ -125,33 +132,50 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         boolean autoCloseCursors = reader.readBoolean();
 
         boolean lazyExec = false;
+        boolean skipReducerOnUpdate = false;
+
+        NestedTxMode nestedTxMode = NestedTxMode.DEFAULT;
+        AuthorizationContext actx = null;
 
         if (ver.compareTo(VER_2_1_5) >= 0)
             lazyExec = reader.readBoolean();
 
-        boolean skipReducerOnUpdate = false;
-
         if (ver.compareTo(VER_2_3_0) >= 0)
             skipReducerOnUpdate = reader.readBoolean();
 
-        String user = null;
-        String passwd = null;
+        if (ver.compareTo(VER_2_7_0) >= 0) {
+            String nestedTxModeName = reader.readString();
 
-        try {
-            if (reader.available() > 0) {
-                user = reader.readString();
-                passwd = reader.readString();
+            if (!F.isEmpty(nestedTxModeName)) {
+                try {
+                    nestedTxMode = NestedTxMode.valueOf(nestedTxModeName);
+                }
+                catch (IllegalArgumentException e) {
+                    throw new IgniteCheckedException("Invalid nested transactions handling mode: " + nestedTxModeName);
+                }
             }
         }
-        catch (Exception e) {
-            throw new IgniteCheckedException("Handshake error: " + e.getMessage(), e);
+
+        if (ver.compareTo(VER_2_5_0) >= 0) {
+            String user = null;
+            String passwd = null;
+
+            try {
+                if (reader.available() > 0) {
+                    user = reader.readString();
+                    passwd = reader.readString();
+                }
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException("Handshake error: " + e.getMessage(), e);
+            }
+
+            actx = authenticate(user, passwd);
         }
 
-        AuthorizationContext actx = authenticate(user, passwd);
+        parser = new JdbcMessageParser(ctx, ver);
 
-        parser = new JdbcMessageParser(ctx);
-
-        JdbcResponseSender sender = new JdbcResponseSender() {
+        ClientListenerResponseSender sender = new ClientListenerResponseSender() {
             @Override public void send(ClientListenerResponse resp) {
                 if (resp != null) {
                     if (log.isDebugEnabled())
@@ -165,7 +189,9 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         };
 
         handler = new JdbcRequestHandler(ctx, busyLock, sender, maxCursors, distributedJoins, enforceJoinOrder,
-            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, actx, ver);
+            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, nestedTxMode, actx, ver);
+
+        handler.start();
     }
 
     /** {@inheritDoc} */

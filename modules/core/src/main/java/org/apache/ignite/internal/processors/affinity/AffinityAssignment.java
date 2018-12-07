@@ -17,23 +17,16 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
-import org.apache.ignite.cluster.ClusterNode;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.cluster.ClusterNode;
 
 /**
  * Cached affinity calculations.
  */
 public interface AffinityAssignment {
-    /**
-     * @return {@code True} if related discovery event did not not cause affinity assignment change and
-     *    this assignment is just reference to the previous one.
-     */
-    public boolean clientEventChange();
-
     /**
      * @return Affinity assignment computed by affinity function.
      */

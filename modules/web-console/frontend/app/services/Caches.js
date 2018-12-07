@@ -31,7 +31,8 @@ export default class Caches {
     /** @type {ig.menu<ig.config.cache.AtomicityModes>} */
     atomicityModes = [
         {value: 'ATOMIC', label: 'ATOMIC'},
-        {value: 'TRANSACTIONAL', label: 'TRANSACTIONAL'}
+        {value: 'TRANSACTIONAL', label: 'TRANSACTIONAL'},
+        {value: 'TRANSACTIONAL_SNAPSHOT', label: 'TRANSACTIONAL_SNAPSHOT'}
     ];
 
     /**
@@ -108,6 +109,14 @@ export default class Caches {
         {value: 'ONHEAP_TIERED', label: 'ONHEAP_TIERED'},
         {value: 'OFFHEAP_TIERED', label: 'OFFHEAP_TIERED'},
         {value: 'OFFHEAP_VALUES', label: 'OFFHEAP_VALUES'}
+    ];
+
+    diskPageCompression = [
+        {value: 'SKIP_GARBAGE', label: 'SKIP_GARBAGE'},
+        {value: 'ZSTD', label: 'ZSTD'},
+        {value: 'LZ4', label: 'LZ4'},
+        {value: 'SNAPPY', label: 'SNAPPY'},
+        {value: null, label: 'Disabled'}
     ];
 
     offHeapMode = {

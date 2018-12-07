@@ -17,7 +17,7 @@
 mixin form-field__phone({ label, model, name, disabled, required, optional, placeholder, tip })
     -var errLbl = label.substring(0, label.length - 1)
 
-    .form-field
+    .form-field.ignite-form-field
         +form-field__label({ label, name, required, optional })
             +form-field__tooltip({ title: tip, options: tipOpts })
 
@@ -26,10 +26,12 @@ mixin form-field__phone({ label, model, name, disabled, required, optional, plac
             +form-field__input({ name, model, disabled, required, placeholder })(attributes=attributes)
 
         .form-field__errors(
-            ng-messages=`(${form}[${name}].$dirty || ${form}[${name}].$touched || ${form}[${name}].$submitted) && ${form}[${name}].$invalid ? ${form}[${name}].$error : {}`
+            ng-messages=`$input.$error`
+            ng-show=`($input.$dirty || $input.$touched || $input.$submitted) && $input.$invalid`
         )
+            if required
+                +form-field__error({ error: 'required', message: `${errLbl} could not be empty!` })
+
             if block
                 block
 
-            if required
-                +form-field__error({ name, error: 'required', message: `${errLbl} could not be empty!` })

@@ -94,6 +94,7 @@ import org.apache.ignite.internal.util.lang.gridfunc.TransformFilteringIterator;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformMapView;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformMapView2;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
@@ -298,13 +299,13 @@ public class GridFunc {
      * @param delim Delimiter (optional).
      * @return Concatenated string.
      */
-    public static String concat(Iterable<String> c, @Nullable String delim) {
+    public static String concat(Iterable<?> c, @Nullable String delim) {
         A.notNull(c, "c");
 
         IgniteReducer<? super String, String> f = new StringConcatReducer(delim);
 
-        for (String x : c)
-            if (!f.collect(x))
+        for (Object x : c)
+            if (!f.collect(x == null ? null : x.toString()))
                 break;
 
         return f.reduce();
@@ -351,7 +352,6 @@ public class GridFunc {
      * @param <T> Type of the collection.
      * @return Random value from the input collection.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public static <T> T rand(Collection<? extends T> c) {
         A.notNull(c, "c");
 
@@ -525,7 +525,6 @@ public class GridFunc {
      * @param iters Iterator over iterators.
      * @return Single iterator.
      */
-    @SuppressWarnings("unchecked")
     public static <T> Iterator<T> concat(final Iterator<Iterator<T>> iters) {
         if (!iters.hasNext())
             return Collections.<T>emptySet().iterator();
@@ -1130,7 +1129,6 @@ public class GridFunc {
      * @param <V> Value type.
      * @return Light-weight view on given map with provided predicates and mapping.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     public static <K0, K extends K0, V0, V extends V0> Map<K, V> viewAsMap(@Nullable final Set<K> c,
         final IgniteClosure<? super K, V> mapClo, @Nullable final IgnitePredicate<? super K>... p) {
         A.notNull(mapClo, "trans");
@@ -1415,7 +1413,7 @@ public class GridFunc {
      * @param <T> Type of the free variable, i.e. the element the predicate is called on.
      * @return Predicate that always returns {@code true}.
      */
-    @SuppressWarnings( {"unchecked", "RedundantCast"})
+    @SuppressWarnings( {"unchecked"})
     public static <T> IgnitePredicate<T> alwaysTrue() {
         return (IgnitePredicate<T>)ALWAYS_TRUE;
     }
@@ -1427,7 +1425,7 @@ public class GridFunc {
      * @param <T> Type of the free variable, i.e. the element the predicate is called on.
      * @return Predicate that always returns {@code false}.
      */
-    @SuppressWarnings( {"unchecked", "RedundantCast"})
+    @SuppressWarnings( {"unchecked"})
     public static <T> IgnitePredicate<T> alwaysFalse() {
         return (IgnitePredicate<T>)ALWAYS_FALSE;
     }
@@ -1649,7 +1647,7 @@ public class GridFunc {
      * @return Predicate that evaluates to {@code true} if each of its component predicates
      *      evaluates to {@code true}.
      */
-    @SuppressWarnings({"unchecked", "ConfusingArgumentToVarargsMethod"})
+    @SuppressWarnings({"unchecked"})
     public static <T> IgnitePredicate<T> and(@Nullable final IgnitePredicate<? super T>... ps) {
         if (isEmpty(ps))
             return F.alwaysTrue();
@@ -2172,6 +2170,7 @@ public class GridFunc {
      * @param t2 Second object in pair.
      * @param <T> Type of objects in pair.
      * @return Pair of objects.
+     * @deprecated Use {@link T2} instead.
      */
     @Deprecated
     public static <T> IgnitePair<T> pair(@Nullable T t1, @Nullable T t2) {

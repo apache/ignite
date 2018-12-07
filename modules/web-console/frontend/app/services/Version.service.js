@@ -49,8 +49,8 @@ const numberComparator = (a, b) => a > b ? 1 : a < b ? -1 : 0;
 
 /**
  * Compare to version.
- * @param a {Object} first compared version.
- * @param b {Object} second compared version.
+ * @param {Object} a first compared version.
+ * @param {Object} b second compared version.
  * @returns {Number} 1 if a > b, 0 if versions equals, -1 if a < b
  */
 const compare = (a, b) => {
@@ -74,9 +74,13 @@ const compare = (a, b) => {
 
 export default class IgniteVersion {
     constructor() {
-        this.webConsole = '2.7.0';
+        this.webConsole = '2.8.0';
 
         this.supportedVersions = [
+            {
+                label: 'Ignite 2.8',
+                ignite: '2.8.0'
+            },
             {
                 label: 'Ignite 2.7',
                 ignite: '2.7.0'

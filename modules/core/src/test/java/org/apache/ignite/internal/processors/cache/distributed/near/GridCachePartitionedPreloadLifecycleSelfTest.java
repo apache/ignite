@@ -36,7 +36,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests for replicated cache preloader.
  */
-@SuppressWarnings({"PublicInnerClass"})
 public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePreloadLifecycleAbstractTest {
     /** Grid count. */
     private int gridCnt = 5;
@@ -57,7 +56,6 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
         cc1.setRebalanceMode(preloadMode);
         cc1.setEvictionPolicy(null);
         cc1.setCacheStoreFactory(null);
-        cc1.setEvictionPolicy(null);
 
         // Identical configuration.
         CacheConfiguration cc2 = new CacheConfiguration(cc1);

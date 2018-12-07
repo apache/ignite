@@ -47,6 +47,9 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Moq, Version=4.0.10827.0, Culture=neutral, PublicKeyToken=69f491c39445e920, processorArchitecture=MSIL">
+      <HintPath>..\packages\Moq.4.0.10827\lib\NET40\Moq.dll</HintPath>
+    </Reference>
     <Reference Include="NLog">
       <HintPath>..\packages\NLog.4.3.7\lib\net40\NLog.dll</HintPath>
     </Reference>
@@ -91,6 +94,7 @@
     <Compile Include="ApiParity\QueryEntityConfigurationParityTest.cs" />
     <Compile Include="ApiParity\ServicesParityTest.cs" />
     <Compile Include="ApiParity\StreamerParityTest.cs" />
+    <Compile Include="ApiParity\TcpCommunicationSpiParityTest.cs" />
     <Compile Include="ApiParity\TransactionMetricsParityTest.cs" />
     <Compile Include="ApiParity\TransactionsParityTest.cs" />
     <Compile Include="AssertExtensions.cs" />
@@ -142,6 +146,7 @@
     <Compile Include="Client\Cache\SqlQueryTest.cs" />
     <Compile Include="Client\Cache\SqlQueryTestBase.cs" />
     <Compile Include="Client\ClientTestBase.cs" />
+    <Compile Include="Client\EndpointTest.cs" />
     <Compile Include="Client\RawSecureSocketTest.cs" />
     <Compile Include="Client\RawSocketTest.cs" />
     <Compile Include="Client\ClientConnectionTest.cs" />
@@ -195,6 +200,7 @@
     <Compile Include="Deployment\RuntimeDependencyFunc.cs" />
     <Compile Include="EventsTestLocalListeners.cs" />
     <Compile Include="FailureHandlerTest.cs" />
+    <Compile Include="Impl\Compute\ComputeImplTest.cs" />
     <Compile Include="Process\ListDataReader.cs" />
     <Compile Include="Log\ConcurrentMemoryTarget.cs" />
     <Compile Include="Log\DefaultLoggerTest.cs" />

@@ -61,7 +61,7 @@ public class ZookeeperDiscoverySpiTestSuite1 extends TestSuite {
 
         suite.addTestSuite(ZookeeperClientTest.class);
         suite.addTestSuite(ZookeeperDiscoverySpiTest.class);
-        //suite.addTestSuite(ZookeeperDiscoverySpiSaslFailedAuthTest.class);
+        suite.addTestSuite(ZookeeperDiscoverySpiSaslFailedAuthTest.class);
         suite.addTestSuite(ZookeeperDiscoverySpiSaslSuccessfulAuthTest.class);
 
         return suite;

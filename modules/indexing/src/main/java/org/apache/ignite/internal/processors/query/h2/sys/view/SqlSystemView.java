@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.sys.view;
 
+import java.util.Iterator;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
@@ -53,7 +54,7 @@ public interface SqlSystemView {
      * @param first First.
      * @param last Last.
      */
-    public Iterable<Row> getRows(Session ses, SearchRow first, SearchRow last);
+    public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last);
 
     /**
      * Gets row count for this view (or approximated row count, if real value can't be calculated quickly).

@@ -22,42 +22,73 @@ mixin discovery-multicast(modelAt = '$ctrl.clonedCluster')
 
     .pc-form-grid-row&attributes(attributes=attributes)
         .pc-form-grid-col-30
-            +text-ip-address('IP address:', `${model}.multicastGroup`, '"multicastGroup"', 'true', '228.1.2.4', 'IP address of multicast group')
+            +form-field__ip-address({
+                label: 'IP address:',
+                model: `${model}.multicastGroup`,
+                name: '"multicastGroup"',
+                enabled: 'true',
+                placeholder: '228.1.2.4',
+                tip: 'IP address of multicast group'
+            })
         .pc-form-grid-col-30
-            +number-min-max('Port number:', `${model}.multicastPort`, '"multicastPort"', 'true', '47400', '0', '65535', 'Port number which multicast messages are sent to')
+            +form-field__number({
+                label: 'Port number:',
+                model: `${model}.multicastPort`,
+                name: '"multicastPort"',
+                placeholder: '47400',
+                min: '0',
+                max: '65535',
+                tip: 'Port number which multicast messages are sent to'
+            })
         .pc-form-grid-col-20
-            +number('Waits for reply:', `${model}.responseWaitTime`, '"responseWaitTime"', 'true', '500', '0',
-                'Time in milliseconds IP finder waits for reply to multicast address request')
+            +form-field__number({
+                label: 'Waits for reply:',
+                model: `${model}.responseWaitTime`,
+                name: '"responseWaitTime"',
+                placeholder: '500',
+                min: '0',
+                tip: 'Time in milliseconds IP finder waits for reply to multicast address request'
+            })
         .pc-form-grid-col-20
-            +number('Attempts count:', `${model}.addressRequestAttempts`, '"addressRequestAttempts"', 'true', '2', '0',
-                'Number of attempts to send multicast address request<br/>\
-                IP finder re - sends request only in case if no reply for previous request is received')
+            +form-field__number({
+                label: 'Attempts count:',
+                model: `${model}.addressRequestAttempts`,
+                name: '"addressRequestAttempts"',
+                placeholder: '2',
+                min: '0',
+                tip: 'Number of attempts to send multicast address request<br/>\
+                     IP finder re - sends request only in case if no reply for previous request is received'
+            })
         .pc-form-grid-col-20.pc-form-grid-col-free
-            +text-ip-address('Local address:', `${model}.localAddress`, '"localAddress"', 'true', '0.0.0.0',
-                'Local host address used by this IP finder<br/>\
-                If provided address is non - loopback then multicast socket is bound to this interface<br/>\
-                If local address is not set or is any local address then IP finder creates multicast sockets for all found non - loopback addresses')
+            +form-field__ip-address({
+                label: 'Local address:',
+                model: `${model}.localAddress`,
+                name: '"localAddress"',
+                enabled: 'true',
+                placeholder: '0.0.0.0',
+                tip: 'Local host address used by this IP finder<br/>\
+                     If provided address is non - loopback then multicast socket is bound to this interface<br/>\
+                     If local address is not set or is any local address then IP finder creates multicast sockets for all found non - loopback addresses'
+            })
         .pc-form-grid-col-60
             .ignite-form-field
-                .ignite-form-field__control
-                    +list-addresses({
-                        items: addresses,
-                        name: 'multicastAddresses',
-                        tip: `Addresses may be represented as follows:
-                        <ul>
-                            <li>IP address (e.g. 127.0.0.1, 9.9.9.9, etc)</li>
-                            <li>IP address and port (e.g. 127.0.0.1:47500, 9.9.9.9:47501, etc)</li>
-                            <li>IP address and port range (e.g. 127.0.0.1:47500..47510, 9.9.9.9:47501..47504, etc)</li>
-                            <li>Hostname (e.g. host1.com, host2, etc)</li>
-                            <li>Hostname and port (e.g. host1.com:47500, host2:47502, etc)</li>
-                            <li>Hostname and port range (e.g. host1.com:47500..47510, host2:47502..47508, etc)</li>
-                        </ul>
-                        If port is 0 or not provided then default port will be used (depends on discovery SPI configuration)<br />
-                        If port range is provided (e.g. host:port1..port2) the following should be considered:
-                        </ul>
-                        <ul>
-                            <li> port1 &lt; port2 should be true</li>
-                            <li> Both port1 and port2 should be greater than 0</li>
-                        </ul>`
-                    })
-                    
+                +list-addresses({
+                    items: addresses,
+                    name: 'multicastAddresses',
+                    tip: `Addresses may be represented as follows:
+                    <ul>
+                        <li>IP address (e.g. 127.0.0.1, 9.9.9.9, etc)</li>
+                        <li>IP address and port (e.g. 127.0.0.1:47500, 9.9.9.9:47501, etc)</li>
+                        <li>IP address and port range (e.g. 127.0.0.1:47500..47510, 9.9.9.9:47501..47504, etc)</li>
+                        <li>Hostname (e.g. host1.com, host2, etc)</li>
+                        <li>Hostname and port (e.g. host1.com:47500, host2:47502, etc)</li>
+                        <li>Hostname and port range (e.g. host1.com:47500..47510, host2:47502..47508, etc)</li>
+                    </ul>
+                    If port is 0 or not provided then default port will be used (depends on discovery SPI configuration)<br />
+                    If port range is provided (e.g. host:port1..port2) the following should be considered:
+                    </ul>
+                    <ul>
+                        <li> port1 &lt; port2 should be true</li>
+                        <li> Both port1 and port2 should be greater than 0</li>
+                    </ul>`
+                })

@@ -27,7 +27,8 @@ export default function uiGridFilters(uiGridConstants) {
                     return;
 
                 const applyMultiselectFilter = (cd) => {
-                    cd.headerCellTemplate = template;
+                    if (!cd.headerCellTemplate)
+                        cd.headerCellTemplate = template;
 
                     cd.filter = {
                         type: uiGridConstants.filter.SELECT,

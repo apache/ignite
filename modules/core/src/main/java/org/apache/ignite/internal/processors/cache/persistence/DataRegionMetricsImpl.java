@@ -123,9 +123,6 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedPages() {
-        if (!metricsEnabled)
-            return 0;
-
         return totalAllocatedPages.longValue();
     }
 
@@ -171,7 +168,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
         long totalAllocated = getPageSize() * totalAllocatedPages.longValue();
 
-        return (float) (totalAllocated - freeSpace) / totalAllocated;
+        return totalAllocated != 0 ?
+            (float) (totalAllocated - freeSpace) / totalAllocated
+            : 0f;
     }
 
     /** {@inheritDoc} */
@@ -277,9 +276,6 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
     /** {@inheritDoc} */
     @Override public long getOffHeapSize() {
-        if (!metricsEnabled)
-            return 0;
-
         return offHeapSize.get();
     }
 
@@ -358,21 +354,12 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
             dirtyPages.reset();
     }
 
-    /**
-     * Increments totalAllocatedPages counter.
-     */
-    public void incrementTotalAllocatedPages() {
-        updateTotalAllocatedPages(1);
-    }
-
     /** {@inheritDoc} */
     @Override public void updateTotalAllocatedPages(long delta) {
-        if (metricsEnabled) {
-            totalAllocatedPages.add(delta);
+        totalAllocatedPages.add(delta);
 
-            if (delta > 0)
-                updateAllocationRateMetrics(delta);
-        }
+        if (metricsEnabled && delta > 0)
+            updateAllocationRateMetrics(delta);
     }
 
     /**

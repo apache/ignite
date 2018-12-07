@@ -25,16 +25,16 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6
             .ignite-form-field
-                +ignite-form-field__label('User attributes:', '"userAttributes"')
-                    +tooltip(`User-defined attributes to add to node`)
-                .ignite-form-field__control
-                    +list-pair-edit({
-                        items: `${model}.attributes`,
-                        keyLbl: 'Attribute name', 
-                        valLbl: 'Attribute value',
-                        itemName: 'attribute',
-                        itemsName: 'attributes'
-                    })
+                +form-field__label({ label: 'User attributes:', name: '"userAttributes"'})
+                    +form-field__tooltip({ title: `User-defined attributes to add to node` })
+
+                +list-pair-edit({
+                    items: `${model}.attributes`,
+                    keyLbl: 'Attribute name', 
+                    valLbl: 'Attribute value',
+                    itemName: 'attribute',
+                    itemsName: 'attributes'
+                })
 
         .pca-form-column-6
             +preview-xml-java(model, 'clusterUserAttributes')

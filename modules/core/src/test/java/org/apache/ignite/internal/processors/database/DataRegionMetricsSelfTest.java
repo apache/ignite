@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.database;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
@@ -75,9 +76,8 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
 
         joinAllThreads();
 
-        assertTrue(watcher.rateDropsCntr > 3);
-
-        assertTrue(watcher.rateDropsCntr < 6);
+        assertTrue("Expected rate drops count > 3 and < 6 but actual is " + watcher.rateDropsCntr.get(),
+            watcher.rateDropsCntr.get() > 3 && watcher.rateDropsCntr.get() < 6);
     }
 
     /**
@@ -100,7 +100,8 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
 
         joinAllocationThreads();
 
-        assertTrue("4 or 5 rate drops must be observed: " + watcher.rateDropsCntr, watcher.rateDropsCntr == 4 || watcher.rateDropsCntr == 5);
+        assertTrue("4 or 5 rate drops must be observed: " + watcher.rateDropsCntr,
+            watcher.rateDropsCntr.get() == 4 || watcher.rateDropsCntr.get() == 5);
 
         sleep(3);
 
@@ -114,7 +115,8 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
 
         joinAllThreads();
 
-        assertTrue(watcher.rateDropsCntr > 4);
+        assertTrue("Expected rate drops count > 4 but actual is " + watcher.rateDropsCntr.get(),
+            watcher.rateDropsCntr.get() > 4);
     }
 
     /**
@@ -143,7 +145,8 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
 
         joinAllThreads();
 
-        assertTrue(watcher.rateDropsCntr > 4);
+        assertTrue("Expected rate drops count > 4 but actual is " + watcher.rateDropsCntr.get(),
+            watcher.rateDropsCntr.get() > 4);
     }
 
     /**
@@ -172,7 +175,8 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
 
         joinAllThreads();
 
-        assertTrue(watcher.rateDropsCntr > 4);
+        assertTrue("Expected rate drops count > 4 but actual is " + watcher.rateDropsCntr.get(),
+            watcher.rateDropsCntr.get() > 4);
     }
 
     /**
@@ -280,7 +284,7 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
                 startLatch.await();
 
                 for (int i = 0; i < iterationsCnt; i++) {
-                    memMetrics.incrementTotalAllocatedPages();
+                    memMetrics.updateTotalAllocatedPages(1);
 
                     sleep(delay);
                 }
@@ -299,7 +303,7 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
      */
     private static class AllocationRateWatcher implements Runnable {
         /** */
-        private volatile int rateDropsCntr;
+        private final AtomicInteger rateDropsCntr = new AtomicInteger();
 
         /** */
         private final CountDownLatch startLatch;
@@ -330,7 +334,7 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
 
                 while (!Thread.currentThread().isInterrupted()) {
                     if (prevRate > memMetrics.getAllocationRate())
-                        rateDropsCntr++;
+                        rateDropsCntr.incrementAndGet();
 
                     prevRate = memMetrics.getAllocationRate();
 

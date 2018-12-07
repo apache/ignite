@@ -28,15 +28,17 @@ import java.util.UUID;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 
 /**
@@ -86,16 +88,6 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     }
 
     /**
-     *
-     */
-    private static class NoopAllocationTracker implements AllocatedPageTracker{
-        /** {@inheritDoc} */
-        @Override public void updateTotalAllocatedPages(long delta) {
-            // No-op.
-        }
-    }
-
-    /**
      * Creates Group metrics MBean.
      *
      * @param ctx Cache group context.
@@ -112,7 +104,7 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
             this.groupPageAllocationTracker = dataRegionMetrics.getOrAllocateGroupPageAllocationTracker(ctx.groupId());
         }
         else
-            this.groupPageAllocationTracker = new GroupAllocationTracker(new NoopAllocationTracker());
+            this.groupPageAllocationTracker = new GroupAllocationTracker(AllocatedPageTracker.NO_OP);
     }
 
     /** {@inheritDoc} */
@@ -368,5 +360,22 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedSize() {
         return getTotalAllocatedPages() * ctx.dataRegion().pageMemory().pageSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getStorageSize() {
+        return database().forGroupPageStores(ctx, PageStore::size);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSparseStorageSize() {
+        return database().forGroupPageStores(ctx, PageStore::getSparseSize);
+    }
+
+    /**
+     * @return Database.
+     */
+    private GridCacheDatabaseSharedManager database() {
+        return (GridCacheDatabaseSharedManager)ctx.shared().database();
     }
 }

@@ -61,6 +61,9 @@ public class IndexStorageImpl implements IndexStorage {
     /** Cache group ID. */
     private final int grpId;
 
+    /** Whether group is shared. */
+    private final boolean grpShared;
+
     /** */
     private final int allocPartId;
 
@@ -76,6 +79,7 @@ public class IndexStorageImpl implements IndexStorage {
         final IgniteWriteAheadLogManager wal,
         final AtomicLong globalRmvId,
         final int grpId,
+        boolean grpShared,
         final int allocPartId,
         final byte allocSpace,
         final ReuseList reuseList,
@@ -86,6 +90,7 @@ public class IndexStorageImpl implements IndexStorage {
         try {
             this.pageMem = pageMem;
             this.grpId = grpId;
+            this.grpShared = grpShared;
             this.allocPartId = allocPartId;
             this.allocSpace = allocSpace;
             this.reuseList = reuseList;
@@ -99,7 +104,15 @@ public class IndexStorageImpl implements IndexStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public RootPage getOrAllocateForTree(final String idxName) throws IgniteCheckedException {
+    @Override public RootPage allocateCacheIndex(Integer cacheId, String idxName, int segment)
+        throws IgniteCheckedException {
+        String maskedIdxName = maskCacheIndexName(cacheId, idxName, segment);
+
+        return allocateIndex(maskedIdxName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RootPage allocateIndex(String idxName) throws IgniteCheckedException {
         final MetaTree tree = metaTree;
 
         synchronized (this) {
@@ -132,8 +145,15 @@ public class IndexStorageImpl implements IndexStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public RootPage dropRootPage(final String idxName)
+    @Override public RootPage dropCacheIndex(Integer cacheId, String idxName, int segment)
         throws IgniteCheckedException {
+        String maskedIdxName = maskCacheIndexName(cacheId, idxName, segment);
+
+        return dropIndex(maskedIdxName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RootPage dropIndex(final String idxName) throws IgniteCheckedException {
         byte[] idxNameBytes = idxName.getBytes(StandardCharsets.UTF_8);
 
         final IndexItem row = metaTree.remove(new IndexItem(idxNameBytes, 0));
@@ -149,6 +169,19 @@ public class IndexStorageImpl implements IndexStorage {
     /** {@inheritDoc} */
     @Override public void destroy() throws IgniteCheckedException {
         metaTree.destroy();
+    }
+
+    /**
+     * Mask cache index name.
+     *
+     * @param idxName Index name.
+     * @return Masked name.
+     */
+    private String maskCacheIndexName(Integer cacheId, String idxName, int segment) {
+        if (grpShared)
+            idxName = Integer.toString(cacheId) + "_" + idxName;
+
+        return idxName + "%" + segment;
     }
 
     /**
@@ -220,7 +253,7 @@ public class IndexStorageImpl implements IndexStorage {
         }
 
         /** {@inheritDoc} */
-        @Override protected IndexItem getRow(final BPlusIO<IndexItem> io, final long pageAddr,
+        @Override public IndexItem getRow(final BPlusIO<IndexItem> io, final long pageAddr,
             final int idx, Object ignore) throws IgniteCheckedException {
             return readRow(pageAddr, ((IndexIO)io).getOffset(pageAddr, idx));
         }

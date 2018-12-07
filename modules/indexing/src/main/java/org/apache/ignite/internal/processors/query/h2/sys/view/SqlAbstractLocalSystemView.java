@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.sys.view;
 
+import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 import org.h2.engine.Session;
 import org.h2.result.Row;
@@ -25,16 +26,18 @@ import org.h2.table.Column;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
 import org.h2.value.ValueString;
+import org.h2.value.ValueTime;
+import org.h2.value.ValueTimestamp;
 
 /**
- * Local meta view base class (which uses only local node data).
+ * Local system view base class (which uses only local node data).
  */
 public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
     /**
      * @param tblName Table name.
      * @param desc Description.
      * @param ctx Context.
-     * @param indexes Indexed columns.
+     * @param indexes Indexes.
      * @param cols Columns.
      */
     public SqlAbstractLocalSystemView(String tblName, String desc, GridKernalContext ctx, String[] indexes,
@@ -42,9 +45,29 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
         super(tblName, desc, ctx, cols, indexes);
 
         assert tblName != null;
-        assert ctx != null;
         assert cols != null;
         assert indexes != null;
+    }
+
+    /**
+     * @param tblName Table name.
+     * @param desc Description.
+     * @param ctx Context.
+     * @param indexedCols Indexed columns.
+     * @param cols Columns.
+     */
+    public SqlAbstractLocalSystemView(String tblName, String desc, GridKernalContext ctx, String indexedCols, Column... cols) {
+        this(tblName, desc, ctx, new String[] {indexedCols}, cols);
+    }
+
+    /**
+     * @param tblName Table name.
+     * @param desc Description.
+     * @param ctx Context.
+     * @param cols Columns.
+     */
+    public SqlAbstractLocalSystemView(String tblName, String desc, GridKernalContext ctx, Column ... cols) {
+        this(tblName, desc, ctx, new String[] {}, cols);
     }
 
     /**
@@ -100,5 +123,44 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
      */
     protected SqlSystemViewColumnCondition conditionForColumn(String colName, SearchRow first, SearchRow last) {
         return SqlSystemViewColumnCondition.forColumn(getColumnIndex(colName), first, last);
+    }
+
+    /**
+     * Converts value to UUID safe (suppressing exceptions).
+     *
+     * @param val UUID.
+     */
+    protected static UUID uuidFromValue(Value val) {
+        try {
+            return UUID.fromString(val.getString());
+        }
+        catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Converts millis to ValueTime
+     *
+     * @param millis Millis.
+     */
+    protected static Value valueTimeFromMillis(long millis) {
+        if (millis == -1L || millis == Long.MAX_VALUE)
+            return ValueNull.INSTANCE;
+        else
+            // Note: ValueTime.fromMillis(long) method trying to convert time using timezone and return wrong result.
+            return ValueTime.fromNanos(millis * 1_000_000L);
+    }
+
+    /**
+     * Converts millis to ValueTimestamp
+     *
+     * @param millis Millis.
+     */
+    protected static Value valueTimestampFromMillis(long millis) {
+        if (millis <= 0L || millis == Long.MAX_VALUE)
+            return ValueNull.INSTANCE;
+        else
+            return ValueTimestamp.fromMillis(millis);
     }
 }

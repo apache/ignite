@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  * Tests the recovery after a dynamic cache start failure, with enabled persistence.
@@ -34,7 +35,8 @@ public class IgniteDynamicCacheStartFailWithPersistenceTest extends IgniteAbstra
         return 5 * 60 * 1000;
     }
 
-    protected boolean persistenceEnabled() {
+    /** {@inheritDoc} */
+    @Override protected boolean persistenceEnabled() {
         return true;
     }
 
@@ -56,6 +58,9 @@ public class IgniteDynamicCacheStartFailWithPersistenceTest extends IgniteAbstra
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
+
         cleanPersistenceDir();
 
         startGrids(gridCount());
@@ -75,7 +80,7 @@ public class IgniteDynamicCacheStartFailWithPersistenceTest extends IgniteAbstra
     }
 
     /** {@inheritDoc} */
-    protected void checkCacheOperations(IgniteCache<Integer, Value> cache) throws Exception {
+    @Override protected void checkCacheOperations(IgniteCache<Integer, Value> cache) throws Exception {
         super.checkCacheOperations(cache);
 
         // Disable write-ahead log.

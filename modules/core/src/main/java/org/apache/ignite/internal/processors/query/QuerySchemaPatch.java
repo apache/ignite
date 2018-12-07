@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.Collection;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryEntityPatch;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;

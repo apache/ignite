@@ -37,9 +37,11 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.testframework.MvccFeatureChecker.assertMvccWriteConflict;
 
 /**
  *
@@ -55,7 +57,7 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
     private boolean client;
 
     /** {@inheritDoc} */
-    protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
@@ -149,6 +151,7 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
 
         ignite0.createCache(cacheConfiguration("atomic-cache", ATOMIC));
         ignite0.createCache(cacheConfiguration("tx-cache", TRANSACTIONAL));
+        ignite0.createCache(cacheConfiguration("mvcc-tx-cache", TRANSACTIONAL_SNAPSHOT));
 
         final long stopTime = System.currentTimeMillis() + 60_000;
 
@@ -162,6 +165,7 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
 
                 IgniteCache cache1 = node.cache("atomic-cache");
                 IgniteCache cache2 = node.cache("tx-cache");
+                IgniteCache cache3 = node.cache("mvcc-tx-cache");
 
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -173,6 +177,13 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
                     cache1.put(key, key);
 
                     cache2.put(key, key);
+
+                    try {
+                        cache3.put(key, key);
+                    }
+                    catch (Exception e) {
+                        assertMvccWriteConflict(e); // Do not retry.
+                    }
 
                     if (iter++ % 1000 == 0)
                         log.info("Update iteration: " + iter);

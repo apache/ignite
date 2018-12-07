@@ -23,6 +23,7 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 
 /**
  * Distributed implementation of LSQR algorithm based on {@link AbstractLSQR} and {@link Dataset}.
@@ -35,12 +36,15 @@ public class LSQROnHeap<K, V> extends AbstractLSQR implements AutoCloseable {
      * Constructs a new instance of OnHeap LSQR algorithm implementation.
      *
      * @param datasetBuilder Dataset builder.
+     * @param envBuilder Learning environment builder.
      * @param partDataBuilder Partition data builder.
      */
     public LSQROnHeap(DatasetBuilder<K, V> datasetBuilder,
+        LearningEnvironmentBuilder envBuilder,
         PartitionDataBuilder<K, V, LSQRPartitionContext, SimpleLabeledDatasetData> partDataBuilder) {
         this.dataset = datasetBuilder.build(
-            (upstream, upstreamSize) -> new LSQRPartitionContext(),
+            envBuilder,
+            (env, upstream, upstreamSize) -> new LSQRPartitionContext(),
             partDataBuilder
         );
     }
@@ -100,10 +104,16 @@ public class LSQROnHeap<K, V> extends AbstractLSQR implements AutoCloseable {
      *
      * @return number of columns
      */
-    @Override protected int getColumns() {
+    @Override protected Integer getColumns() {
         return dataset.compute(
             data -> data.getFeatures() == null ? null : data.getFeatures().length / data.getRows(),
-            (a, b) -> a == null ? b : a
+            (a, b) -> {
+                if (a == null)
+                    return b == null ? 0 : b;
+                if (b == null)
+                    return a;
+                return b;
+            }
         );
     }
 

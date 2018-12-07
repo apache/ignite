@@ -58,6 +58,8 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
@@ -71,6 +73,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -137,6 +140,11 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(SRVS, CLIENTS);
 
         client = false;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /** {@inheritDoc} */
@@ -3529,9 +3537,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                     IgniteTransactions txs = ignite.transactions();
 
-                    final int KEYS = 100;
+                    final int KEYS = SF.apply(100);
 
-                    for (int i = 0; i < 1000; i++) {
+                    for (int i = 0; i < SF.apply(1000); i++) {
                         Integer key1 = rnd.nextInt(KEYS);
 
                         Integer key2;
@@ -3671,14 +3679,14 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
             final long stopTime = U.currentTimeMillis() + getTestTimeout() - 30_000;
 
-            for (int i = 0; i < 30; i++) {
+            for (int i = 0; i < SF.apply(30); i++) {
                 final AtomicInteger cntr = new AtomicInteger();
 
                 final Integer key = i;
 
                 final AtomicInteger threadIdx = new AtomicInteger();
 
-                final int THREADS = 10;
+                final int THREADS = SF.applyLB(10, 2);
 
                 final CyclicBarrier barrier = new CyclicBarrier(THREADS);
 
@@ -3696,7 +3704,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                         barrier.await();
 
-                        for (int i = 0; i < 1000; i++) {
+                        for (int i = 0; i < SF.apply(1000); i++) {
                             if (i % 100 == 0 && U.currentTimeMillis() > stopTime)
                                 break;
 
@@ -3911,7 +3919,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                     caches.add(client.<Integer, Integer>cache(cacheName));
             }
 
-            for (int i = 0; i < 100; i++) {
+            for (int i = 0; i < SF.apply(100); i++) {
                 if (U.currentTimeMillis() > stopTime)
                     break;
 
@@ -3921,7 +3929,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                 final AtomicInteger threadIdx = new AtomicInteger();
 
-                final int THREADS = 10;
+                final int THREADS = SF.applyLB(10, 2);
 
                 final CyclicBarrier barrier = new CyclicBarrier(THREADS);
 
@@ -3943,7 +3951,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                         barrier.await();
 
-                        for (int i = 0; i < 50; i++) {
+                        for (int i = 0; i < SF.apply(50); i++) {
                             while (true) {
                                 try {
                                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -3963,10 +3971,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                                         tx.commit();
 
                                         if (rmv) {
-                                            if (val != null) {
-                                                for (int j = 0; j < val; j++)
-                                                    cntr.decrementAndGet();
-                                            }
+                                            if (val != null)
+                                                cntr.getAndUpdate(x -> x - val);
                                         }
                                         else
                                             cntr.incrementAndGet();
@@ -4669,10 +4675,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         final boolean restart,
         final boolean nonSer
     ) throws Exception {
-        if (FAST)
-            return;
-
-        assert updateNodes.size() > 0;
+        assert !updateNodes.isEmpty();
 
         final Ignite srv = ignite(1);
 
@@ -4680,17 +4683,17 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             srv.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, false)).getName();
 
         try {
-            final int KEYS = 100;
+            final int KEYS = SF.apply(20);
 
             final AtomicBoolean finished = new AtomicBoolean();
 
             IgniteInternalFuture<?> fut = restart ? restartFuture(finished, null) : null;
 
             try {
-                for (int i = 0; i < 10; i++) {
+                for (int i = 0; i < SF.applyLB(10, 2); i++) {
                     log.info("Iteration: " + i);
 
-                    final long stopTime = U.currentTimeMillis() + 10_000;
+                    final long stopTime = U.currentTimeMillis() + SF.applyLB(10_000, 1_000);
 
                     final AtomicInteger idx = new AtomicInteger();
 

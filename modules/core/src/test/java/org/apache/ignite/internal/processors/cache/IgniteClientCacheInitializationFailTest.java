@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -34,15 +33,17 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
@@ -53,6 +54,7 @@ import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
+import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -77,11 +79,17 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     /** Tx cache name. */
     private static final String TX_CACHE_NAME = "tx-cache";
 
+    /** Mvcc tx cache name. */
+    private static final String MVCC_TX_CACHE_NAME = "mvcc-tx-cache";
+
     /** Near atomic cache name. */
     private static final String NEAR_ATOMIC_CACHE_NAME = "near-atomic-cache";
 
     /** Near tx cache name. */
     private static final String NEAR_TX_CACHE_NAME = "near-tx-cache";
+
+    /** Near mvcc tx cache name. */
+    private static final String NEAR_MVCC_TX_CACHE_NAME = "near-mvcc-tx-cache";
 
     /** Failed caches. */
     private static final Set<String> FAILED_CACHES;
@@ -93,6 +101,8 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         set.add(TX_CACHE_NAME);
         set.add(NEAR_ATOMIC_CACHE_NAME);
         set.add(NEAR_TX_CACHE_NAME);
+        set.add(MVCC_TX_CACHE_NAME);
+        set.add(NEAR_MVCC_TX_CACHE_NAME);
 
         FAILED_CACHES = Collections.unmodifiableSet(set);
     }
@@ -120,7 +130,13 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
             ccfg2.setName(TX_CACHE_NAME);
             ccfg2.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
-            cfg.setCacheConfiguration(ccfg1, ccfg2);
+            CacheConfiguration<Integer, String> ccfg3 = new CacheConfiguration<>();
+
+            ccfg3.setIndexedTypes(Integer.class, String.class);
+            ccfg3.setName(MVCC_TX_CACHE_NAME);
+            ccfg3.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+
+            cfg.setCacheConfiguration(ccfg1, ccfg2, ccfg3);
         }
         else {
             GridQueryProcessor.idxCls = FailedIndexing.class;
@@ -148,6 +164,13 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    public void testMvccTransactionalCacheInitialization() throws Exception {
+        checkCacheInitialization(MVCC_TX_CACHE_NAME);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testAtomicNearCacheInitialization() throws Exception {
         checkCacheInitialization(NEAR_ATOMIC_CACHE_NAME);
     }
@@ -157,6 +180,15 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
      */
     public void testTransactionalNearCacheInitialization() throws Exception {
         checkCacheInitialization(NEAR_TX_CACHE_NAME);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMvccTransactionalNearCacheInitialization() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+
+        checkCacheInitialization(NEAR_MVCC_TX_CACHE_NAME);
     }
 
     /**
@@ -190,19 +222,22 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     /**
      * @param client Client.
      */
-    @SuppressWarnings({"ThrowableNotThrown", "ThrowableResultOfMethodCallIgnored"})
+    @SuppressWarnings({"ThrowableNotThrown"})
     private void checkFailedCache(final Ignite client, final String cacheName) {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 IgniteCache<Integer, String> cache;
 
                 // Start cache with near enabled.
-                if (NEAR_ATOMIC_CACHE_NAME.equals(cacheName) || NEAR_TX_CACHE_NAME.equals(cacheName)) {
+                if (NEAR_ATOMIC_CACHE_NAME.equals(cacheName) || NEAR_TX_CACHE_NAME.equals(cacheName) ||
+                    NEAR_MVCC_TX_CACHE_NAME.equals(cacheName)) {
                     CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<Integer, String>(cacheName)
                         .setNearConfiguration(new NearCacheConfiguration<Integer, String>());
 
                     if (NEAR_TX_CACHE_NAME.equals(cacheName))
                         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+                    else if (NEAR_MVCC_TX_CACHE_NAME.equals(cacheName))
+                        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
 
                     cache = client.getOrCreateCache(ccfg);
                 }
@@ -223,6 +258,16 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
      */
     private static class FailedIndexing implements GridQueryIndexing {
         /** {@inheritDoc} */
+        @Override public void onClientDisconnect() throws IgniteCheckedException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public SqlFieldsQuery generateFieldsQuery(String cacheName, SqlQuery qry) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public void start(GridKernalContext ctx, GridSpinBusyLock busyLock) throws IgniteCheckedException {
             // No-op
         }
@@ -233,14 +278,8 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(String schemaName, String cacheName,
-            SqlQuery qry, boolean keepBinary) throws IgniteCheckedException {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-            SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, GridQueryCancel cancel) {
+            SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker, GridQueryCancel cancel) {
             return null;
         }
 
@@ -254,12 +293,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         @Override public long streamUpdateQuery(String schemaName, String qry, @Nullable Object[] params,
             IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException {
             return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryLocalSql(String schemaName, String cacheName,
-            SqlQuery qry, IndexingQueryFilter filter, boolean keepBinary) throws IgniteCheckedException {
-            return null;
         }
 
         /** {@inheritDoc} */
@@ -301,25 +334,33 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public void registerCache(String cacheName, String schemaName,
-            GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
-            if (FAILED_CACHES.contains(cctx.name()) && cctx.kernalContext().clientNode())
-                throw new IgniteCheckedException("Test query exception " + cctx.name() + " " + new Random().nextInt());
+            GridCacheContextInfo<?, ?> cacheInfo) throws IgniteCheckedException {
+            if (FAILED_CACHES.contains(cacheInfo.name()) && cacheInfo.gridCacheContext().kernalContext().clientNode())
+                throw new IgniteCheckedException("Test query exception " + cacheInfo.name() + " " + new Random().nextInt());
         }
 
         /** {@inheritDoc} */
-        @Override public void unregisterCache(GridCacheContext cctx, boolean rmvIdx) throws IgniteCheckedException {
+        @Override public void unregisterCache(GridCacheContextInfo cacheInfo,
+            boolean rmvIdx) throws IgniteCheckedException {
             // No-op
         }
 
         /** {@inheritDoc} */
-        @Override public boolean registerType(GridCacheContext cctx,
-            GridQueryTypeDescriptor desc) throws IgniteCheckedException {
+        @Override public UpdateSourceIterator<?> prepareDistributedUpdate(GridCacheContext<?, ?> cctx, int[] ids, int[] parts,
+            String schema, String qry, Object[] params, int flags, int pageSize, int timeout,
+            AffinityTopologyVersion topVer,
+            MvccSnapshot mvccVer, GridQueryCancel cancel) throws IgniteCheckedException {
+            return null;
+        }
+
+        @Override public boolean registerType(GridCacheContextInfo cacheInfo,
+            GridQueryTypeDescriptor desc, boolean isSql) throws IgniteCheckedException {
             return false;
         }
 
         /** {@inheritDoc} */
         @Override public void store(GridCacheContext cctx, GridQueryTypeDescriptor type, CacheDataRow row,
-            CacheDataRow prevRow, boolean prevRowAvailable) {
+            CacheDataRow prevRow, boolean prevRowAvailable) throws IgniteCheckedException {
             // No-op.
         }
 
@@ -329,13 +370,8 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public void rebuildIndexesFromHash(String cacheName) throws IgniteCheckedException {
-            // No-op
-        }
-
-        /** {@inheritDoc} */
-        @Override public void markForRebuildFromHash(String cacheName) {
-            // No-op
+        @Override public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
+            return null;
         }
 
         /** {@inheritDoc} */
@@ -364,7 +400,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public void cancelAllQueries() {
+        @Override public void onKernalStop() {
             // No-op
         }
 
@@ -381,6 +417,19 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public GridQueryRowCacheCleaner rowCacheCleaner(int cacheGroupId) {
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridCacheContextInfo registeredCacheInfo(String cacheName) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean initCacheContext(GridCacheContext ctx) throws IgniteCheckedException {
+            if (FAILED_CACHES.contains(ctx.name()) && ctx.kernalContext().clientNode())
+                throw new IgniteCheckedException("Test query exception " + ctx.name() + " " + new Random().nextInt());
+
+            return true;
         }
     }
 }

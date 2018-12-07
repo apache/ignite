@@ -38,138 +38,147 @@ import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
-import org.apache.ignite.thread.IgniteThread;
 
 /**
- * To choose the best hyperparameters the cross-validation will be used in this example.
- *
- * The purpose of cross-validation is model checking, not model building.
- *
- * We train k different models.
- *
- * They differ in that 1/(k-1)th of the training data is exchanged against other cases.
- *
+ * To choose the best hyperparameters the cross-validation with {@link ParamGrid} will be used in this example.
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with test data (based on Titanic passengers data).</p>
+ * <p>
+ * After that it defines how to split the data to train and test sets and configures preprocessors that extract
+ * features from an upstream data and perform other desired changes over the extracted data.</p>
+ * <p>
+ * Then, it tunes hyperparams with K-fold Cross-Validation on the split training set and trains the model based on
+ * the processed data using decision tree classification and the obtained hyperparams.</p>
+ * <p>
+ * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
+ * <p>
+ * The purpose of cross-validation is model checking, not model building.</p>
+ * <p>
+ * We train {@code k} different models.</p>
+ * <p>
+ * They differ in that {@code 1/(k-1)}th of the training data is exchanged against other cases.</p>
+ * <p>
  * These models are sometimes called surrogate models because the (average) performance measured for these models
- * is taken as a surrogate of the performance of the model trained on all cases.
- *
- * All scenarios are described there: https://sebastianraschka.com/faq/docs/evaluate-a-model.html
+ * is taken as a surrogate of the performance of the model trained on all cases.</p>
+ * <p>
+ * All scenarios are described there: https://sebastianraschka.com/faq/docs/evaluate-a-model.html</p>
  */
 public class Step_8_CV_with_Param_Grid {
     /** Run example. */
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
+        System.out.println();
+        System.out.println(">>> Tutorial step 8 (cross-validation with param grid) example started.");
+
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                Step_8_CV_with_Param_Grid.class.getSimpleName(), () -> {
-                try {
-                    IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
+            try {
+                IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
 
-                    // Defines first preprocessor that extracts features from an upstream data.
-                    // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare"
-                    IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
-                        = (k, v) -> new Object[]{v[0], v[3], v[4], v[5], v[6], v[8], v[10]};
+                // Defines first preprocessor that extracts features from an upstream data.
+                // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare" .
+                IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
+                    = (k, v) -> new Object[]{v[0], v[3], v[4], v[5], v[6], v[8], v[10]};
 
-                    IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
+                IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
 
-                    TrainTestSplit<Integer, Object[]> split = new TrainTestDatasetSplitter<Integer, Object[]>()
-                        .split(0.75);
+                TrainTestSplit<Integer, Object[]> split = new TrainTestDatasetSplitter<Integer, Object[]>()
+                    .split(0.75);
 
-                    IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
-                        .withEncoderType(EncoderType.STRING_ENCODER)
-                        .encodeFeature(1)
-                        .encodeFeature(6) // <--- Changed index here
-                        .fit(ignite,
-                            dataCache,
-                            featureExtractor
-                        );
+                IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
+                    .withEncoderType(EncoderType.STRING_ENCODER)
+                    .withEncodedFeature(1)
+                    .withEncodedFeature(6) // <--- Changed index here.
+                    .fit(ignite,
+                        dataCache,
+                        featureExtractor
+                    );
 
-                    IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
-                        .fit(ignite,
-                            dataCache,
-                            strEncoderPreprocessor
-                        );
+                IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
+                    .fit(ignite,
+                        dataCache,
+                        strEncoderPreprocessor
+                    );
 
-                    IgniteBiFunction<Integer, Object[], Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
-                        .fit(
-                            ignite,
-                            dataCache,
-                            imputingPreprocessor
-                        );
-
-                    IgniteBiFunction<Integer, Object[], Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
-                        .withP(2)
-                        .fit(
-                            ignite,
-                            dataCache,
-                            minMaxScalerPreprocessor
-                        );
-
-                    // Tune hyperparams with K-fold Cross-Validation on the splitted training set.
-
-                    DecisionTreeClassificationTrainer trainerCV = new DecisionTreeClassificationTrainer();
-
-                    CrossValidation<DecisionTreeNode, Double, Integer, Object[]> scoreCalculator
-                        = new CrossValidation<>();
-
-                    ParamGrid paramGrid = new ParamGrid()
-                        .addHyperParam("maxDeep", new Double[]{1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 10.0})
-                        .addHyperParam("minImpurityDecrease", new Double[]{0.0, 0.25, 0.5});
-
-                    CrossValidationResult crossValidationRes = scoreCalculator.score(
-                        trainerCV,
-                        new Accuracy<>(),
+                IgniteBiFunction<Integer, Object[], Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
+                    .fit(
                         ignite,
                         dataCache,
-                        split.getTrainFilter(),
-                        normalizationPreprocessor,
-                        lbExtractor,
-                        3,
-                        paramGrid
+                        imputingPreprocessor
                     );
 
-                    System.out.println("Train with maxDeep: " + crossValidationRes.getBest("maxDeep") + " and minImpurityDecrease: " + crossValidationRes.getBest("minImpurityDecrease"));
-
-                    DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer()
-                        .withMaxDeep(crossValidationRes.getBest("maxDeep"))
-                        .withMinImpurityDecrease(crossValidationRes.getBest("minImpurityDecrease"));
-
-                    System.out.println(crossValidationRes);
-
-                    System.out.println("Best score: " + Arrays.toString(crossValidationRes.getBestScore()));
-                    System.out.println("Best hyper params: " + crossValidationRes.getBestHyperParams());
-                    System.out.println("Best average score: " + crossValidationRes.getBestAvgScore());
-
-                    crossValidationRes.getScoringBoard().forEach((hyperParams, score) -> {
-                        System.out.println("Score " + Arrays.toString(score) + " for hyper params " + hyperParams);
-                    });
-
-                    // Train decision tree model.
-                    DecisionTreeNode bestMdl = trainer.fit(
+                IgniteBiFunction<Integer, Object[], Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
+                    .withP(2)
+                    .fit(
                         ignite,
                         dataCache,
-                        split.getTrainFilter(),
-                        normalizationPreprocessor,
-                        lbExtractor
+                        minMaxScalerPreprocessor
                     );
 
-                    double accuracy = Evaluator.evaluate(
-                        dataCache,
-                        split.getTestFilter(),
-                        bestMdl,
-                        normalizationPreprocessor,
-                        lbExtractor,
-                        new Accuracy<>()
-                    );
+                // Tune hyperparams with K-fold Cross-Validation on the split training set.
 
-                    System.out.println("\n>>> Accuracy " + accuracy);
-                    System.out.println("\n>>> Test Error " + (1 - accuracy));
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                }
-            });
+                DecisionTreeClassificationTrainer trainerCV = new DecisionTreeClassificationTrainer();
 
-            igniteThread.start();
+                CrossValidation<DecisionTreeNode, Double, Integer, Object[]> scoreCalculator
+                    = new CrossValidation<>();
 
-            igniteThread.join();
+                ParamGrid paramGrid = new ParamGrid()
+                    .addHyperParam("maxDeep", new Double[]{1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 10.0})
+                    .addHyperParam("minImpurityDecrease", new Double[]{0.0, 0.25, 0.5});
+
+                CrossValidationResult crossValidationRes = scoreCalculator.score(
+                    trainerCV,
+                    new Accuracy<>(),
+                    ignite,
+                    dataCache,
+                    split.getTrainFilter(),
+                    normalizationPreprocessor,
+                    lbExtractor,
+                    3,
+                    paramGrid
+                );
+
+                System.out.println("Train with maxDeep: " + crossValidationRes.getBest("maxDeep")
+                    + " and minImpurityDecrease: " + crossValidationRes.getBest("minImpurityDecrease"));
+
+                DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer()
+                    .withMaxDeep(crossValidationRes.getBest("maxDeep"))
+                    .withMinImpurityDecrease(crossValidationRes.getBest("minImpurityDecrease"));
+
+                System.out.println(crossValidationRes);
+
+                System.out.println("Best score: " + Arrays.toString(crossValidationRes.getBestScore()));
+                System.out.println("Best hyper params: " + crossValidationRes.getBestHyperParams());
+                System.out.println("Best average score: " + crossValidationRes.getBestAvgScore());
+
+                crossValidationRes.getScoringBoard().forEach((hyperParams, score)
+                    -> System.out.println("Score " + Arrays.toString(score) + " for hyper params " + hyperParams));
+
+                // Train decision tree model.
+                DecisionTreeNode bestMdl = trainer.fit(
+                    ignite,
+                    dataCache,
+                    split.getTrainFilter(),
+                    normalizationPreprocessor,
+                    lbExtractor
+                );
+
+                System.out.println("\n>>> Trained model: " + bestMdl);
+
+                double accuracy = Evaluator.evaluate(
+                    dataCache,
+                    split.getTestFilter(),
+                    bestMdl,
+                    normalizationPreprocessor,
+                    lbExtractor,
+                    new Accuracy<>()
+                );
+
+                System.out.println("\n>>> Accuracy " + accuracy);
+                System.out.println("\n>>> Test Error " + (1 - accuracy));
+
+                System.out.println(">>> Tutorial step 8 (cross-validation with param grid) example started.");
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
         }
     }
 }

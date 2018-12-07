@@ -21,7 +21,6 @@ import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
-import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -38,7 +37,7 @@ public class LogisticRegressionModelTest {
     /** */
     @Test
     public void testPredict() {
-        Vector weights = new DenseVector(new double[]{2.0, 3.0});
+        Vector weights = new DenseVector(new double[] {2.0, 3.0});
 
         assertFalse(new LogisticRegressionModel(weights, 1.0).isKeepingRawLabels());
 
@@ -57,35 +56,36 @@ public class LogisticRegressionModelTest {
     /** */
     @Test(expected = CardinalityException.class)
     public void testPredictOnAnObservationWithWrongCardinality() {
-        Vector weights = new DenseVector(new double[]{2.0, 3.0});
+        Vector weights = new DenseVector(new double[] {2.0, 3.0});
 
         LogisticRegressionModel mdl = new LogisticRegressionModel(weights, 1.0);
 
-        Vector observation = new DenseVector(new double[]{1.0});
+        Vector observation = new DenseVector(new double[] {1.0});
 
         mdl.apply(observation);
     }
 
     /** */
     private void verifyPredict(LogisticRegressionModel mdl) {
-        Vector observation = new DenseVector(new double[]{1.0, 1.0});
+        Vector observation = new DenseVector(new double[] {1.0, 1.0});
         TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 1.0 + 3.0 * 1.0), mdl.apply(observation), PRECISION);
 
-        observation = new DenseVector(new double[]{2.0, 1.0});
+        observation = new DenseVector(new double[] {2.0, 1.0});
         TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 2.0 + 3.0 * 1.0), mdl.apply(observation), PRECISION);
 
-        observation = new DenseVector(new double[]{1.0, 2.0});
+        observation = new DenseVector(new double[] {1.0, 2.0});
         TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 1.0 + 3.0 * 2.0), mdl.apply(observation), PRECISION);
 
-        observation = new DenseVector(new double[]{-2.0, 1.0});
+        observation = new DenseVector(new double[] {-2.0, 1.0});
         TestUtils.assertEquals(sigmoid(1.0 - 2.0 * 2.0 + 3.0 * 1.0), mdl.apply(observation), PRECISION);
 
-        observation = new DenseVector(new double[]{1.0, -2.0});
+        observation = new DenseVector(new double[] {1.0, -2.0});
         TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 1.0 - 3.0 * 2.0), mdl.apply(observation), PRECISION);
     }
 
     /**
      * Sigmoid function.
+     *
      * @param z The regression value.
      * @return The result.
      */

@@ -42,6 +42,6 @@ export default class {
             return;
         }
 
-        this.count = _.sumBy(this.gridApi.grid.rows, 'visible');
+        this.count = _.sumBy(this.gridApi.grid.rows, (row) => Number(row.visible));
     }
 }

@@ -310,7 +310,6 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ResultOfObjectAllocationIgnored")
     public void testEmptyWeakIterator() throws Exception {
         final IgniteCache<Integer, String> c = grid().cache(DEFAULT_CACHE_NAME);
 

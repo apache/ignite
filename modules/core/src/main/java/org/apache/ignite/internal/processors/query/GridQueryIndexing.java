@@ -21,16 +21,18 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
-import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -61,16 +63,20 @@ public interface GridQueryIndexing {
     public void stop() throws IgniteCheckedException;
 
     /**
-     * Parses SQL query into two step query and executes it.
+     * Performs necessary actions on disconnect of a stateful client (say, one associated with a transaction).
      *
-     * @param schemaName Schema name.
-     * @param cacheName Cache name.
-     * @param qry Query.
-     * @param keepBinary Keep binary flag.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(String schemaName, String cacheName, SqlQuery qry,
-        boolean keepBinary) throws IgniteCheckedException;
+    public void onClientDisconnect() throws IgniteCheckedException;
+
+    /**
+     * Generate SqlFieldsQuery from SqlQuery.
+     *
+     * @param cacheName Cache name.
+     * @param qry Query.
+     * @return Fields query.
+     */
+    public SqlFieldsQuery generateFieldsQuery(String cacheName, SqlQuery qry);
 
     /**
      * Detect whether SQL query should be executed in distributed or local manner and execute it.
@@ -79,10 +85,11 @@ public interface GridQueryIndexing {
      * @param cliCtx Client context.
      * @param keepBinary Keep binary flag.
      * @param failOnMultipleStmts Whether an exception should be thrown for multiple statements query.
-     * @param cancel Query cancel state handler.    @return Cursor.
+     * @param tracker Query tracker.
+     * @return Cursor.
      */
     public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-        SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, GridQueryCancel cancel);
+        SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker, GridQueryCancel cancel);
 
     /**
      * Execute an INSERT statement using data streamer as receiver.
@@ -109,18 +116,6 @@ public interface GridQueryIndexing {
      */
     public List<Long> streamBatchedUpdateQuery(String schemaName, String qry, List<Object[]> params,
         SqlClientContext cliCtx) throws IgniteCheckedException;
-
-    /**
-     * Executes regular query.
-     *
-     * @param schemaName Schema name.
-     * @param cacheName Cache name.
-     * @param qry Query.
-     * @param filter Cache name and key filter.
-     * @param keepBinary Keep binary flag.    @return Cursor.
-     */
-    public <K, V> QueryCursor<Cache.Entry<K,V>> queryLocalSql(String schemaName, String cacheName, SqlQuery qry,
-        IndexingQueryFilter filter, boolean keepBinary) throws IgniteCheckedException;
 
     /**
      * Queries individual fields (generally used by JDBC drivers).
@@ -169,7 +164,6 @@ public interface GridQueryIndexing {
      * @param ifExists Ignore operation if index does not exist (instead of throwing an error).
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public void dynamicIndexDrop(String schemaName, String idxName, boolean ifExists) throws IgniteCheckedException;
 
     /**
@@ -183,7 +177,6 @@ public interface GridQueryIndexing {
      *     for single column case.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public void dynamicAddColumn(String schemaName, String tblName, List<QueryField> cols, boolean ifTblExists,
         boolean ifColNotExists) throws IgniteCheckedException;
 
@@ -198,7 +191,6 @@ public interface GridQueryIndexing {
      *     for single column case.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public void dynamicDropColumn(String schemaName, String tblName, List<String> cols, boolean ifTblExists,
         boolean ifColExists) throws IgniteCheckedException;
 
@@ -207,30 +199,54 @@ public interface GridQueryIndexing {
      *
      * @param cacheName Cache name.
      * @param schemaName Schema name.
-     * @param cctx Cache context.
+     * @param cacheInfo Cache context info.
      * @throws IgniteCheckedException If failed.
      */
-    public void registerCache(String cacheName, String schemaName, GridCacheContext<?,?> cctx)
+    public void registerCache(String cacheName, String schemaName, GridCacheContextInfo<?, ?> cacheInfo)
         throws IgniteCheckedException;
 
     /**
      * Unregisters cache.
      *
-     * @param cctx Cache context.
+     * @param cacheInfo Cache context info.
      * @param rmvIdx If {@code true}, will remove index.
      * @throws IgniteCheckedException If failed to drop cache schema.
      */
-    public void unregisterCache(GridCacheContext cctx, boolean rmvIdx) throws IgniteCheckedException;
+    public void unregisterCache(GridCacheContextInfo cacheInfo, boolean rmvIdx) throws IgniteCheckedException;
+
+    /**
+     *
+     * @param cctx Cache context.
+     * @param ids Involved cache ids.
+     * @param parts Partitions.
+     * @param schema Schema name.
+     * @param qry Query string.
+     * @param params Query parameters.
+     * @param flags Flags.
+     * @param pageSize Fetch page size.
+     * @param timeout Timeout.
+     * @param topVer Topology version.
+     * @param mvccSnapshot MVCC snapshot.
+     * @param cancel Query cancel object.
+     * @return Cursor over entries which are going to be changed.
+     * @throws IgniteCheckedException If failed.
+     */
+    public UpdateSourceIterator<?> prepareDistributedUpdate(GridCacheContext<?, ?> cctx, int[] ids, int[] parts,
+        String schema, String qry, Object[] params, int flags,
+        int pageSize, int timeout, AffinityTopologyVersion topVer,
+        MvccSnapshot mvccSnapshot, GridQueryCancel cancel) throws IgniteCheckedException;
 
     /**
      * Registers type if it was not known before or updates it otherwise.
      *
-     * @param cctx Cache context.
+     * @param cacheInfo Cache context info.
      * @param desc Type descriptor.
+     * @param isSql {@code true} in case table has been created from SQL.
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if type was registered, {@code false} if for some reason it was rejected.
      */
-    public boolean registerType(GridCacheContext cctx, GridQueryTypeDescriptor desc) throws IgniteCheckedException;
+    public boolean registerType(GridCacheContextInfo cacheInfo, GridQueryTypeDescriptor desc,
+        boolean isSql) throws IgniteCheckedException;
 
     /**
      * Updates index. Note that key is unique for cache, so if cache contains multiple indexes
@@ -243,7 +259,10 @@ public interface GridQueryIndexing {
      * @param prevRowAvailable Whether previous row is available.
      * @throws IgniteCheckedException If failed.
      */
-    public void store(GridCacheContext cctx, GridQueryTypeDescriptor type, CacheDataRow row, CacheDataRow prevRow,
+    public void store(GridCacheContext cctx,
+        GridQueryTypeDescriptor type,
+        CacheDataRow row,
+        CacheDataRow prevRow,
         boolean prevRowAvailable) throws IgniteCheckedException;
 
     /**
@@ -258,19 +277,12 @@ public interface GridQueryIndexing {
         throws IgniteCheckedException;
 
     /**
-     * Rebuilds all indexes of given type from hash index.
+     * Rebuild indexes for the given cache if necessary.
      *
-     * @param cacheName Cache name.
-     * @throws IgniteCheckedException If failed.
+     * @param cctx Cache context.
+     * @return Future completed when index rebuild finished.
      */
-    public void rebuildIndexesFromHash(String cacheName) throws IgniteCheckedException;
-
-    /**
-     * Marks all indexes of given type for rebuild from hash index, making them unusable until rebuild finishes.
-     *
-     * @param cacheName Cache name.
-     */
-    public void markForRebuildFromHash(String cacheName);
+    public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx);
 
     /**
      * Returns backup filter.
@@ -315,7 +327,7 @@ public interface GridQueryIndexing {
     /**
      * Cancels all executing queries.
      */
-    public void cancelAllQueries();
+    public void onKernalStop();
 
     /**
      * Gets database schema from cache name.
@@ -339,4 +351,22 @@ public interface GridQueryIndexing {
      * @return Row cache cleaner.
      */
     public GridQueryRowCacheCleaner rowCacheCleaner(int cacheGroupId);
+
+    /**
+     * Return context for registered cache info.
+     *
+     * @param cacheName Cache name.
+     * @return Cache context for registered cache or {@code null} in case the cache has not been registered.
+     */
+    @Nullable public GridCacheContextInfo registeredCacheInfo(String cacheName);
+
+    /**
+     * Initialize table's cache context created for not started cache.
+     *
+     * @param ctx Cache context.
+     * @throws IgniteCheckedException If failed.
+     *
+     * @return {@code true} If context has been initialized.
+     */
+    public boolean initCacheContext(GridCacheContext ctx) throws IgniteCheckedException;
 }

@@ -32,7 +32,9 @@ import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.dataset.UpstreamTransformerBuilder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -178,17 +180,18 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
                     ignite,
                     upstreamCacheName,
                     (k, v) -> true,
+                    UpstreamTransformerBuilder.identity(),
                     datasetCacheName,
                     datasetId,
-                    0,
-                    (upstream, upstreamSize, ctx) -> {
+                    (env, upstream, upstreamSize, ctx) -> {
                         cnt.incrementAndGet();
 
                         assertEquals(1, upstreamSize);
 
                         UpstreamEntry<Integer, Integer> e = upstream.next();
                         return new TestPartitionData(e.getKey() + e.getValue());
-                    }
+                    },
+                    TestUtils.testEnvBuilder().buildForWorker(part)
                 ),
                 0
             );
@@ -227,14 +230,16 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
             ignite,
             upstreamCacheName,
             (k, v) -> true,
+            UpstreamTransformerBuilder.identity(),
             datasetCacheName,
-            (upstream, upstreamSize) -> {
+            (env, upstream, upstreamSize) -> {
 
                 assertEquals(1, upstreamSize);
 
                 UpstreamEntry<Integer, Integer> e = upstream.next();
                 return e.getKey() + e.getValue();
             },
+            TestUtils.testEnvBuilder(),
             0
         );
 

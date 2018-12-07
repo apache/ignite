@@ -52,8 +52,10 @@ import javax.management.ObjectName;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
-import org.apache.curator.test.TestingCluster;
-import org.apache.curator.test.TestingZooKeeperServer;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingZooKeeperServer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -445,6 +447,11 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         System.clearProperty(ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_TIMEOUT);
     }
 
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
+    }
+
     /**
      *
      */
@@ -774,7 +781,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testLocalAuthenticationFails() throws Exception {
+    public void testLocalAuthenticationFails() throws Exception {
         auth = ZkTestNodeAuthenticator.factory(getTestIgniteInstanceName(0));
 
         Throwable err = GridTestUtils.assertThrows(log, new Callable<Void>() {
@@ -788,7 +795,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         IgniteSpiException spiErr = X.cause(err, IgniteSpiException.class);
 
         assertNotNull(spiErr);
-        assertTrue(spiErr.getMessage().contains("Authentication failed for local node"));
+        assertTrue(spiErr.getMessage().contains("Failed to authenticate local node"));
 
         startGrid(1);
         startGrid(2);
