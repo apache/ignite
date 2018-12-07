@@ -28,13 +28,12 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -52,7 +51,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -83,6 +81,9 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
 
     /** */
     private static final long TEST_TIME = 3 * 60_000;
+
+    /** */
+    private CacheAtomicityMode atomicityMode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -118,7 +119,7 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
 
         ccfg.setName(name);
         ccfg.setCacheMode(cacheMode);
-        ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setAtomicityMode(atomicityMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         if (cacheMode == PARTITIONED)
@@ -130,13 +131,15 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return TEST_TIME + 60_000;
+    @Override protected void afterTest() throws Exception {
+        atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
+
+        super.afterTest();
     }
 
     /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
+    @Override protected long getTestTimeout() {
+        return TEST_TIME + 60_000;
     }
 
     /**
@@ -150,6 +153,25 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testCrossCachePessimisticTxFailoverDifferentAffinity() throws Exception {
+        crossCacheTxFailover(PARTITIONED, false, PESSIMISTIC, REPEATABLE_READ);
+    }
+
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCrossCacheMvccTxFailover() throws Exception {
+        atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+
+        crossCacheTxFailover(PARTITIONED, true, PESSIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCrossCacheMvccTxFailoverDifferentAffinity() throws Exception {
+        atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+
         crossCacheTxFailover(PARTITIONED, false, PESSIMISTIC, REPEATABLE_READ);
     }
 
@@ -184,6 +206,15 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    public void testCrossCacheMvccTxFailoverReplicated() throws Exception {
+        atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+
+        crossCacheTxFailover(REPLICATED, true, PESSIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testCrossCacheOptimisticTxFailoverReplicated() throws Exception {
         crossCacheTxFailover(REPLICATED, true, OPTIMISTIC, REPEATABLE_READ);
     }
@@ -192,6 +223,15 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testCrossCachePessimisticTxFailoverDifferentAffinityReplicated() throws Exception {
+        crossCacheTxFailover(PARTITIONED, false, PESSIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCrossCacheMvccTxFailoverDifferentAffinityReplicated() throws Exception {
+        atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+
         crossCacheTxFailover(PARTITIONED, false, PESSIMISTIC, REPEATABLE_READ);
     }
 

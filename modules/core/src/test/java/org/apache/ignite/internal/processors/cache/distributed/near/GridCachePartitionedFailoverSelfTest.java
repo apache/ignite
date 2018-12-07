@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFailoverTxSelfTest;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -29,5 +30,19 @@ public class GridCachePartitionedFailoverSelfTest extends GridCacheAbstractFailo
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;
+    }
+
+    @Override public void testMvccTxConstantTopologyChange() throws Exception {
+        if (MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE))
+            fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+
+        super.testMvccTxConstantTopologyChange();
+    }
+
+    @Override public void testMvccTxTopologyChange() throws Exception {
+        if (MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE))
+            fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+
+        super.testMvccTxTopologyChange();
     }
 }

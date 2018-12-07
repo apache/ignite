@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.Collection;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.CacheGetFromJobTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAsyncOperationsFailoverAtomicTest;
@@ -32,39 +33,47 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePar
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteChangingBaselineDownCachePutAllFailoverTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteChangingBaselineUpCachePutAllFailoverTest;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
- *
+ * Ignite Cache Failover Suite part 2.
  */
 public class IgniteCacheFailoverTestSuite2 {
     /**
-     * @return Suite.
-     * @throws Exception If failed.
+     * @return IgniteCache test suite.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
+        return suite(null);
+    }
+
+    /**
+     * @param ignoredTests Ignored tests.
+     * @return IgniteCache test suite.
+     */
+    public static TestSuite suite(Collection<Class> ignoredTests) {
         TestSuite suite = new TestSuite("Cache Failover Test Suite2");
 
-        suite.addTestSuite(GridCachePartitionedTxSalvageSelfTest.class);
-        suite.addTestSuite(CacheGetFromJobTest.class);
+        GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedTxSalvageSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheGetFromJobTest.class, ignoredTests);
 
-        suite.addTestSuite(GridCacheAtomicFailoverSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicReplicatedFailoverSelfTest.class);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicFailoverSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicReplicatedFailoverSelfTest.class, ignoredTests);
 
-        suite.addTestSuite(GridCachePartitionedFailoverSelfTest.class);
-        suite.addTestSuite(GridCacheColocatedFailoverSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedFailoverSelfTest.class);
+        GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedFailoverSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheColocatedFailoverSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheReplicatedFailoverSelfTest.class, ignoredTests);
 
-        suite.addTestSuite(IgniteCacheCrossCacheTxFailoverTest.class);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheCrossCacheTxFailoverTest.class, ignoredTests);
 
-        suite.addTestSuite(CacheAsyncOperationsFailoverAtomicTest.class);
-        suite.addTestSuite(CacheAsyncOperationsFailoverTxTest.class);
+        GridTestUtils.addTestIfNeeded(suite, CacheAsyncOperationsFailoverAtomicTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheAsyncOperationsFailoverTxTest.class, ignoredTests);
 
-        suite.addTestSuite(CachePutAllFailoverAtomicTest.class);
-        suite.addTestSuite(CachePutAllFailoverTxTest.class);
-        //suite.addTestSuite(IgniteStableBaselineCachePutAllFailoverTest.class);
-        //suite.addTestSuite(IgniteStableBaselineCacheRemoveFailoverTest.class);
-        suite.addTestSuite(IgniteChangingBaselineDownCachePutAllFailoverTest.class);
-        suite.addTestSuite(IgniteChangingBaselineUpCachePutAllFailoverTest.class);
+        GridTestUtils.addTestIfNeeded(suite, CachePutAllFailoverAtomicTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CachePutAllFailoverTxTest.class, ignoredTests);
+        //GridTestUtils.addTestIfNeeded(suite, IgniteStableBaselineCachePutAllFailoverTest.class, ignoredTests);
+        //GridTestUtils.addTestIfNeeded(suite, IgniteStableBaselineCacheRemoveFailoverTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteChangingBaselineDownCachePutAllFailoverTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteChangingBaselineUpCachePutAllFailoverTest.class, ignoredTests);
 
         return suite;
     }

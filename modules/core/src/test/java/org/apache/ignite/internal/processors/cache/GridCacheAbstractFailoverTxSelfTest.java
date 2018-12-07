@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.cache.CacheAtomicityMode;
+
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -27,6 +29,21 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
  *
  */
 public abstract class GridCacheAbstractFailoverTxSelfTest extends GridCacheAbstractFailoverSelfTest {
+    /** */
+    private CacheAtomicityMode atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return atomicityMode;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
+
+        super.afterTest();
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -72,6 +89,15 @@ public abstract class GridCacheAbstractFailoverTxSelfTest extends GridCacheAbstr
     /**
      * @throws Exception If failed.
      */
+    public void testMvccTxConstantTopologyChange() throws Exception {
+        atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+
+        testConstantTopologyChange(PESSIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testOptimisticReadCommittedTxTopologyChange() throws Exception {
         testTopologyChange(OPTIMISTIC, READ_COMMITTED);
     }
@@ -109,5 +135,14 @@ public abstract class GridCacheAbstractFailoverTxSelfTest extends GridCacheAbstr
      */
     public void testPessimisticSerializableTxTopologyChange() throws Exception {
         testTopologyChange(PESSIMISTIC, SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMvccTxTopologyChange() throws Exception {
+        atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+        
+        testTopologyChange(PESSIMISTIC, REPEATABLE_READ);
     }
 }

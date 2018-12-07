@@ -23,6 +23,7 @@ import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -69,6 +70,9 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
     /** Standard VM IP finder. */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
+    /** Cache atomicity mode. */
+    private CacheAtomicityMode atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
@@ -82,6 +86,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
+        cc.setAtomicityMode(atomicityMode);
         cc.setCacheMode(PARTITIONED);
         cc.setAffinity(new RendezvousAffinityFunction(false, 18));
         cc.setBackups(1);
@@ -117,7 +122,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        System.gc();
+        atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
     }
 
     /**
@@ -145,6 +150,15 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testPessimisticTxSalvageAfterTimeout() throws Exception {
+        checkSalvageAfterTimeout(PESSIMISTIC, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMvccTxSalvageAfterTimeout() throws Exception {
+        atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+
         checkSalvageAfterTimeout(PESSIMISTIC, false);
     }
 
