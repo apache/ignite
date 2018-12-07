@@ -97,6 +97,8 @@ public class LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest extends Grid
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
+        stopAllGrids();
+
         System.clearProperty(IGNITE_DISABLE_WAL_DURING_REBALANCING);
     }
 
