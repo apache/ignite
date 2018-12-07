@@ -1297,8 +1297,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     newAssignment = new ArrayList<>(idealAssignment);
 
+                    log.info("Current server nodes topology: " + U.toShortString(evts.discoveryCache().serverNodes()));
+
                     for (Map.Entry<Integer, GridLongList> e : diff.entrySet()) {
                         GridLongList assign = e.getValue();
+
+                        log.info("Cache/group " + aff.cacheOrGroupName() + " partition " + e.getKey() +
+                            " assignments difference, node orders: " + assign.toString());
 
                         newAssignment.set(e.getKey(), CacheGroupAffinityMessage.toNodes(assign,
                             nodesByOrder,

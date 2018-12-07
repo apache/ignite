@@ -85,15 +85,6 @@ public class GridAffinityAssignmentCache {
     /** Affinity calculation results cache: topology version => partition => nodes. */
     private final ConcurrentNavigableMap<AffinityTopologyVersion, HistoryAffinityAssignment> affCache;
 
-    /** */
-    private List<List<ClusterNode>> idealAssignment;
-
-    /** */
-    private BaselineTopology baselineTopology;
-
-    /** */
-    private List<List<ClusterNode>> baselineAssignment;
-
     /** Cache item corresponding to the head topology version. */
     private final AtomicReference<GridAffinityAssignment> head;
 
@@ -112,14 +103,23 @@ public class GridAffinityAssignmentCache {
     /** */
     private final boolean persistentCache;
 
-    /** Node stop flag. */
-    private volatile IgniteCheckedException stopErr;
-
     /** Full history size. */
     private final AtomicInteger fullHistSize = new AtomicInteger();
 
     /** */
     private final Object similarAffKey;
+
+    /** */
+    private List<List<ClusterNode>> idealAssignment;
+
+    /** */
+    private BaselineTopology baselineTopology;
+
+    /** */
+    private List<List<ClusterNode>> baselineAssignment;
+
+    /** Node stop flag. */
+    private volatile IgniteCheckedException stopErr;
 
     /**
      * Constructs affinity cached calculations.
@@ -140,8 +140,7 @@ public class GridAffinityAssignmentCache {
         IgnitePredicate<ClusterNode> nodeFilter,
         int backups,
         boolean locCache,
-        boolean persistentCache)
-    {
+        boolean persistentCache) {
         assert ctx != null;
         assert aff != null;
         assert nodeFilter != null;
@@ -165,6 +164,40 @@ public class GridAffinityAssignmentCache {
         similarAffKey = ctx.affinity().similaryAffinityKey(aff, nodeFilter, backups, partsCnt);
 
         assert similarAffKey != null;
+    }
+
+    /**
+     * @param affAssignment Affinity assignment.
+     * @return String representation of given {@code affAssignment}.
+     */
+    private static String fold(List<List<ClusterNode>> affAssignment) {
+        SB sb = new SB();
+
+        for (int p = 0; p < affAssignment.size(); p++) {
+            sb.a("Part [");
+            sb.a("id=" + p + ", ");
+
+            SB partOwners = new SB();
+
+            List<ClusterNode> affOwners = affAssignment.get(p);
+
+            for (ClusterNode node : affOwners) {
+                if (node != null)
+                    partOwners.a(node.consistentId());
+                else
+                    partOwners.a("null");
+
+                partOwners.a(' ');
+            }
+
+            sb.a("owners=[");
+            sb.a(partOwners);
+            sb.a(']');
+
+            sb.a("] ");
+        }
+
+        return sb.toString();
     }
 
     /**
@@ -199,6 +232,15 @@ public class GridAffinityAssignmentCache {
 
         assert idealAssignment != null;
 
+        // printed out on each topology assignment
+        log.info("Received new affinity assignment [grp=" + cacheOrGrpName
+            + ", topVer=" + topVer
+            + ", aff=" + fold(affAssignment) + "]");
+
+        log.info("Received new ideal affinity assignment [grp=" + cacheOrGrpName
+            + ", topVer=" + topVer
+            + ", aff=" + fold(idealAssignment) + "]");
+
         GridAffinityAssignment assignment = new GridAffinityAssignment(topVer, affAssignment, idealAssignment);
 
         HistoryAffinityAssignment hAff = affCache.put(topVer, new HistoryAffinityAssignment(assignment));
@@ -219,11 +261,13 @@ public class GridAffinityAssignmentCache {
         if (hAff == null)
             onHistoryAdded();
 
+        /*
+        move it back there
         if (log.isTraceEnabled()) {
             log.trace("New affinity assignment [grp=" + cacheOrGrpName
                 + ", topVer=" + topVer
                 + ", aff=" + fold(affAssignment) + "]");
-        }
+        }*/
     }
 
     /**
@@ -428,8 +472,8 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
-     * Copies previous affinity assignment when discovery event does not cause affinity assignment changes
-     * (e.g. client node joins on leaves).
+     * Copies previous affinity assignment when discovery event does not cause affinity assignment changes (e.g. client
+     * node joins on leaves).
      *
      * @param evt Event.
      * @param topVer Topology version.
@@ -480,6 +524,7 @@ public class GridAffinityAssignmentCache {
 
         return aff.assignment();
     }
+
     /**
      * @param topVer Topology version.
      * @return Affinity assignment.
@@ -712,7 +757,7 @@ public class GridAffinityAssignmentCache {
         try {
             if (log.isDebugEnabled())
                 log.debug("Will wait for topology version [locNodeId=" + ctx.localNodeId() +
-                ", topVer=" + topVer + ']');
+                    ", topVer=" + topVer + ']');
 
             IgniteInternalFuture<AffinityTopologyVersion> fut = readyFuture(topVer);
 
@@ -774,36 +819,6 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
-     * @param affAssignment Affinity assignment.
-     * @return String representation of given {@code affAssignment}.
-     */
-    private static String fold(List<List<ClusterNode>> affAssignment) {
-        SB sb = new SB();
-
-        for (int p = 0; p < affAssignment.size(); p++) {
-            sb.a("Part [");
-            sb.a("id=" + p + ", ");
-
-            SB partOwners = new SB();
-
-            List<ClusterNode> affOwners = affAssignment.get(p);
-
-            for (ClusterNode node : affOwners) {
-                partOwners.a(node.consistentId());
-                partOwners.a(' ');
-            }
-
-            sb.a("owners=[");
-            sb.a(partOwners);
-            sb.a(']');
-
-            sb.a("] ");
-        }
-
-        return sb.toString();
-    }
-
-    /**
      * Affinity ready future. Will remove itself from ready futures map.
      */
     private class AffinityReadyFuture extends GridFutureAdapter<AffinityTopologyVersion> {
@@ -811,7 +826,6 @@ public class GridAffinityAssignmentCache {
         private AffinityTopologyVersion reqTopVer;
 
         /**
-         *
          * @param reqTopVer Required topology version.
          */
         private AffinityReadyFuture(AffinityTopologyVersion reqTopVer) {
