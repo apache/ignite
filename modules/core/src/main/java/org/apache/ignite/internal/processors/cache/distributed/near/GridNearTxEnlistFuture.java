@@ -26,6 +26,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -68,6 +70,10 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
     /** SkipCntr field updater. */
     private static final AtomicIntegerFieldUpdater<GridNearTxEnlistFuture> SKIP_UPD =
         AtomicIntegerFieldUpdater.newUpdater(GridNearTxEnlistFuture.class, "skipCntr");
+
+    /** Res field updater. */
+    private static final AtomicReferenceFieldUpdater<GridNearTxEnlistFuture, GridCacheReturn> RES_UPD =
+        AtomicReferenceFieldUpdater.newUpdater(GridNearTxEnlistFuture.class, GridCacheReturn.class, "res");
 
     /** Marker object. */
     private static final Object FINISHED = new Object();
@@ -600,9 +606,10 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
 
         if (res.result().invokeResult()) {
             if(this.res == null)
-                this.res = new GridCacheReturn(true, true);
+                RES_UPD.compareAndSet(this, null, new GridCacheReturn(true, true));
 
-            this.res.success(this.res.success() && err == null && res.result().success());
+            if (err != null && res.result().success())
+                this.res.success(false);
 
             this.res.mergeEntryProcessResults(res.result());
         }
@@ -610,7 +617,6 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             this.res = res.result();
 
         assert this.res != null && (this.res.emptyResult() || needRes || this.res.invokeResult() || !this.res.success());
-
 
         tx.hasRemoteLocks(true);
 
