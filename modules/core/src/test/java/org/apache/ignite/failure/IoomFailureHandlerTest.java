@@ -134,7 +134,6 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
     /**
      * Test IOOME handling.
      */
-    @Test
     public void testIoomErrorHandling(boolean pds, boolean mvcc) throws Exception {
         this.pds = pds;
         this.mvcc = mvcc;
