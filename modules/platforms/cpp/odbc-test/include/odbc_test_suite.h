@@ -29,9 +29,6 @@
 
 #include "ignite/ignite.h"
 
-#include "test_type.h"
-#include "complex_type.h"
-
 namespace ignite
 {
     namespace odbc
@@ -42,11 +39,33 @@ namespace ignite
         struct OdbcTestSuite
         {
             /**
-             * Establish connection to node.
+             * Prepare environment.
+             */
+            void Prepare();
+
+            /**
+             * Establish connection to node using provided handles.
+             *
+             * @param conn Connection.
+             * @param statement Statement to allocate.
+             * @param connectStr Connection string.
+             */
+            void Connect(SQLHDBC& conn, SQLHSTMT& statement, const std::string& connectStr);
+
+            /**
+             * Establish connection to node using default handles.
              *
              * @param connectStr Connection string.
              */
             void Connect(const std::string& connectStr);
+
+            /**
+             * Expect connection to be rejected by the node.
+             *
+             * @param connectStr Connection string.
+             * @return SQL State.
+             */
+            std::string ExpectConnectionReject(const std::string& connectStr);
 
             /**
              * Disconnect.
@@ -54,8 +73,13 @@ namespace ignite
             void Disconnect();
 
             /**
+             * Clean up.
+             */
+            void CleanUp();
+
+            /**
              * Start additional with the specified name and config.
-             * 
+             *
              * @param cfg Config path.
              * @param name Instance name.
              */
@@ -106,7 +130,52 @@ namespace ignite
              */
             void InsertNonFullBatchSelect(int recordsNum, int splitAt);
 
+            /**
+             * Get test string.
+             *
+             * @param ind Index.
+             * @return Corresponding test string.
+             */
             static std::string getTestString(int64_t ind);
+
+            /**
+             * Check that SQL error has expected SQL state.
+             *
+             * @param handleType Handle type.
+             * @param handle Handle.
+             * @param expectSqlState Expected state.
+             */
+            void CheckSQLDiagnosticError(int16_t handleType, SQLHANDLE handle, const std::string& expectSqlState);
+
+            /**
+             * Check that statement SQL error has expected SQL state.
+             *
+             * @param expectSqlState Expected state.
+             */
+            void CheckSQLStatementDiagnosticError(const std::string& expectSqlState);
+
+            /**
+             * Check that connection SQL error has expected SQL state.
+             *
+             * @param expectSqlState Expected state.
+             */
+            void CheckSQLConnectionDiagnosticError(const std::string& expectSqlState);
+
+            /**
+             * Convert string to vector of SQLCHARs.
+             *
+             * @param qry Query.
+             * @return Corresponding vector.
+             */
+            static std::vector<SQLCHAR> MakeQuery(const std::string& qry);
+
+            /**
+             * Performs SQL query.
+             *
+             * @param qry Query.
+             * @return Result.
+             */
+            SQLRETURN ExecQuery(const std::string& qry);
 
             /** ODBC Environment. */
             SQLHENV env;

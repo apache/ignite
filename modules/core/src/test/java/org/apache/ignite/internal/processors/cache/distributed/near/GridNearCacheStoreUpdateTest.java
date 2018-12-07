@@ -39,6 +39,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -58,6 +59,14 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
 
     /** */
     private IgniteCache<String, String> cache;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        super.beforeTestsStarted();
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
@@ -150,8 +159,8 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
 
         boolean tx = txConc != null && txIsolation != null;
 
-        final IgniteCache<String, String> clientCache = this.cache;
-        final IgniteCache<String, String> srvCache = srv.<String, String>cache(CACHE_NAME);
+        final IgniteCache<String, String> clientCache = this.cache.withAllowAtomicOpsInTx();
+        final IgniteCache<String, String> srvCache = srv.<String, String>cache(CACHE_NAME).withAllowAtomicOpsInTx();
 
         if (tx) {
             doInTransaction(client, txConc, txIsolation, new Callable<Object>() {
@@ -278,8 +287,8 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
             data2.put(String.valueOf(i), "other");
         }
 
-        final IgniteCache<String, String> clientCache = this.cache;
-        final IgniteCache<String, String> srvCache = srv.cache(CACHE_NAME);
+        final IgniteCache<String, String> clientCache = this.cache.withAllowAtomicOpsInTx();
+        final IgniteCache<String, String> srvCache = srv.cache(CACHE_NAME).withAllowAtomicOpsInTx();
 
         boolean tx = txConc != null && txIsolation != null;
 

@@ -71,6 +71,12 @@ public class QueryBinaryProperty implements GridQueryProperty {
     /** */
     private final Object defaultValue;
 
+    /** */
+    private final int precision;
+
+    /** */
+    private final int scale;
+
     /**
      * Constructor.
      *
@@ -82,9 +88,12 @@ public class QueryBinaryProperty implements GridQueryProperty {
      * @param alias Field alias.
      * @param notNull {@code true} if null value is not allowed.
      * @param defaultValue Default value.
+     * @param precision Precision.
+     * @param scale Scale.
      */
     public QueryBinaryProperty(GridKernalContext ctx, String propName, QueryBinaryProperty parent,
-        Class<?> type, @Nullable Boolean key, String alias, boolean notNull, Object defaultValue) {
+        Class<?> type, @Nullable Boolean key, String alias, boolean notNull, Object defaultValue,
+        int precision, int scale) {
         this.ctx = ctx;
 
         log = ctx.log(QueryBinaryProperty.class);
@@ -99,6 +108,8 @@ public class QueryBinaryProperty implements GridQueryProperty {
             this.isKeyProp = key ? 1 : -1;
 
         this.defaultValue = defaultValue;
+        this.precision = precision;
+        this.scale = scale;
     }
 
     /** {@inheritDoc} */
@@ -120,11 +131,11 @@ public class QueryBinaryProperty implements GridQueryProperty {
 
             if (isKeyProp0 == 0) {
                 // Key is allowed to be a non-binary object here.
-                // We check key before value consistently with ClassProperty.
-                if (key instanceof BinaryObject && ((BinaryObject)key).hasField(propName))
-                    isKeyProp = isKeyProp0 = 1;
-                else if (val instanceof BinaryObject && ((BinaryObject)val).hasField(propName))
+                // We check value before key consistently with ClassProperty.
+                if (val instanceof BinaryObject && ((BinaryObject)val).hasField(propName))
                     isKeyProp = isKeyProp0 = -1;
+                else if (key instanceof BinaryObject && ((BinaryObject)key).hasField(propName))
+                    isKeyProp = isKeyProp0 = 1;
                 else {
                     if (!warned) {
                         U.warn(log, "Neither key nor value have property \"" + propName + "\" " +
@@ -285,5 +296,15 @@ public class QueryBinaryProperty implements GridQueryProperty {
     /** {@inheritDoc} */
     @Override public Object defaultValue() {
         return defaultValue;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int precision() {
+        return precision;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int scale() {
+        return scale;
     }
 }

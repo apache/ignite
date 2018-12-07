@@ -43,6 +43,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 
@@ -230,6 +231,14 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
         finally {
             leave();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String label() {
+        if (async)
+            save(tx.label());
+
+        return tx.label();
     }
 
     /** {@inheritDoc} */

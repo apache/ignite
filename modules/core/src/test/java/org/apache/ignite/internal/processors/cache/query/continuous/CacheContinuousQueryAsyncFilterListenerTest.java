@@ -57,6 +57,7 @@ import org.apache.ignite.transactions.Transaction;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -106,13 +107,6 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
         startGrid(NODES - 1);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     ///
     /// ASYNC FILTER AND LISTENER. TEST LISTENER.
     ///
@@ -129,6 +123,20 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
      */
     public void testNonDeadLockInListenerTxJCacheApi() throws Exception {
         testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL), true, true, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNonDeadLockInListenerMvccTx() throws Exception {
+        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL_SNAPSHOT), true, true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNonDeadLockInListenerMvccTxJCacheApi() throws Exception {
+        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL_SNAPSHOT), true, true, true);
     }
 
     /**
@@ -201,6 +209,27 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
         testNonDeadLockInListener(cacheConfiguration(REPLICATED, 2, TRANSACTIONAL), true, true, true);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNonDeadLockInListenerMvcc() throws Exception {
+        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL_SNAPSHOT), true, true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNonDeadLockInListenerReplicatedMvcc() throws Exception {
+        testNonDeadLockInListener(cacheConfiguration(REPLICATED, 2, TRANSACTIONAL_SNAPSHOT), true, true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNonDeadLockInListenerReplicatedJCacheApiMvcc() throws Exception {
+        testNonDeadLockInListener(cacheConfiguration(REPLICATED, 2, TRANSACTIONAL_SNAPSHOT), true, true, true);
+    }
+
     ///
     /// ASYNC FILTER AND LISTENER. TEST FILTER.
     ///
@@ -217,6 +246,20 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
      */
     public void testNonDeadLockInFilterTxJCacheApi() throws Exception {
         testNonDeadLockInFilter(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL), true, true, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNonDeadLockInFilterMvccTx() throws Exception {
+        testNonDeadLockInFilter(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL_SNAPSHOT), true, true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNonDeadLockInFilterMvccTxJCacheApi() throws Exception {
+        testNonDeadLockInFilter(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL_SNAPSHOT), true, true, true);
     }
 
     /**
@@ -268,6 +311,27 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
         testNonDeadLockInFilter(cacheConfiguration(REPLICATED, 2, TRANSACTIONAL), true, true, false);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNonDeadLockInFilterMvcc() throws Exception {
+        testNonDeadLockInFilter(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL_SNAPSHOT), true, true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNonDeadLockInFilterReplicatedMvcc() throws Exception {
+        testNonDeadLockInFilter(cacheConfiguration(REPLICATED, 2, TRANSACTIONAL_SNAPSHOT), true, true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNonDeadLockInFilterReplicatedJCacheApiMvcc() throws Exception {
+        testNonDeadLockInFilter(cacheConfiguration(REPLICATED, 2, TRANSACTIONAL_SNAPSHOT), true, true, false);
+    }
+
     ///
     /// ASYNC LISTENER. TEST LISTENER.
     ///
@@ -277,6 +341,13 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
      */
     public void testNonDeadLockInFilterTxSyncFilter() throws Exception {
         testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL), false, true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNonDeadLockInFilterMvccTxSyncFilter() throws Exception {
+        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL_SNAPSHOT), false, true, false);
     }
 
     /**
@@ -312,6 +383,20 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
      */
     public void testNonDeadLockInFilterReplicatedSyncFilter() throws Exception {
         testNonDeadLockInListener(cacheConfiguration(REPLICATED, 2, TRANSACTIONAL), false, true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNonDeadLockInFilterSyncFilterMvcc() throws Exception {
+        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL_SNAPSHOT), false, true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNonDeadLockInFilterReplicatedSyncFilterMvcc() throws Exception {
+        testNonDeadLockInListener(cacheConfiguration(REPLICATED, 2, TRANSACTIONAL_SNAPSHOT), false, true, false);
     }
 
     /**
@@ -378,18 +463,41 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
                             else if (!val.equals(val0))
                                 return;
 
-                            Transaction tx = null;
+                            // For MVCC mode we need to wait until updated value becomes visible. Usually this is
+                            // several ms to wait - mvcc coordinator need some time to register tx as finished.
+                            if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
+                                Object v = null;
+
+                                while (v == null && !Thread.currentThread().isInterrupted()) {
+                                    v = cache0.get(key);
+
+                                    if (v == null)
+                                        doSleep(50);
+                                }
+                            }
 
                             try {
-                                if (cache0.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL)
-                                    tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
-
                                 assertEquals(val, val0);
 
-                                cache0.put(key, newVal);
+                                if (cache0.getConfiguration(CacheConfiguration.class).getAtomicityMode() != ATOMIC) {
+                                    boolean committed = false;
 
-                                if (tx != null)
-                                    tx.commit();
+                                    while (!committed && !Thread.currentThread().isInterrupted()) {
+                                        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                            cache0.put(key, newVal);
+
+                                            tx.commit();
+
+                                            committed =true;
+                                        }
+                                        catch (Exception ex) {
+                                            assertTrue(ex.toString(),
+                                                ex.getMessage() != null && ex.getMessage().contains("Cannot serialize transaction due to write conflict"));
+                                        }
+                                    }
+                                }
+                                else
+                                    cache0.put(key, newVal);
 
                                 latch.countDown();
                             }
@@ -397,10 +505,6 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
                                 log.error("Failed: ", exp);
 
                                 throw new IgniteException(exp);
-                            }
-                            finally {
-                                if (tx != null)
-                                    tx.close();
                             }
                         }
                     };
@@ -528,19 +632,29 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
                             else if (!val.equals(val0))
                                 return;
 
-                            Transaction tx = null;
-
                             try {
-                                if (cache0.getConfiguration(CacheConfiguration.class)
-                                    .getAtomicityMode() == TRANSACTIONAL)
-                                    tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
-
                                 assertEquals(val, val0);
 
-                                cache0.put(key, newVal);
+                                if (cache0.getConfiguration(CacheConfiguration.class).getAtomicityMode() != ATOMIC) {
+                                    boolean committed = false;
 
-                                if (tx != null)
-                                    tx.commit();
+                                    while (!committed && !Thread.currentThread().isInterrupted()) {
+                                        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+
+                                            cache0.put(key, newVal);
+
+                                            tx.commit();
+
+                                            committed =true;
+                                        }
+                                        catch (Exception ex) {
+                                            assertTrue(ex.toString(),
+                                                ex.getMessage() != null && ex.getMessage().contains("Cannot serialize transaction due to write conflict"));
+                                        }
+                                    }
+                                }
+                                else
+                                    cache0.put(key, newVal);
 
                                 latch.countDown();
                             }
@@ -548,10 +662,6 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
                                 log.error("Failed: ", exp);
 
                                 throw new IgniteException(exp);
-                            }
-                            finally {
-                                if (tx != null)
-                                    tx.close();
                             }
                         }
                     };

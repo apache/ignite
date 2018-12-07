@@ -109,12 +109,6 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
         startGrid(2);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopGrid(1);
-        stopGrid(2);
-    }
-
     /**
      * @param prefix Prefix.
      * @param mtd Method.
@@ -201,7 +195,6 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
      * @param type Type.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void checkWaitAttributeMethod(WaitAttributeType type) throws Exception {
         assert type != null;
 

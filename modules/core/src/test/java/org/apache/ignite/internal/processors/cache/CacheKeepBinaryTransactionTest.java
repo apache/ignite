@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -40,8 +41,11 @@ public class CacheKeepBinaryTransactionTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         TransactionConfiguration txCfg = new TransactionConfiguration();
-        txCfg.setDefaultTxConcurrency(TransactionConcurrency.OPTIMISTIC);
-        txCfg.setDefaultTxIsolation(TransactionIsolation.REPEATABLE_READ);
+
+        if (!MvccFeatureChecker.forcedMvcc()) {
+            txCfg.setDefaultTxConcurrency(TransactionConcurrency.OPTIMISTIC);
+            txCfg.setDefaultTxIsolation(TransactionIsolation.REPEATABLE_READ);
+        }
 
         cfg.setTransactionConfiguration(txCfg);
 
@@ -60,13 +64,6 @@ public class CacheKeepBinaryTransactionTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         startGrid(0);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
     }
 
     /**

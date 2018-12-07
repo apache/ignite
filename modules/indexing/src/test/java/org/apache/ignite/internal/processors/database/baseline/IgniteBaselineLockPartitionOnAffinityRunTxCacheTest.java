@@ -20,7 +20,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLockPartitionOnAffinityRunTxCacheOpTest;
-import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  *
@@ -34,8 +33,8 @@ public class IgniteBaselineLockPartitionOnAffinityRunTxCacheTest extends IgniteC
             new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
-                        .setInitialSize(200 * 1024 * 1024)
-                        .setMaxSize(200 * 1024 * 1024)
+                        .setInitialSize(200L * 1024 * 1024)
+                        .setMaxSize(200L * 1024 * 1024)
                         .setPersistenceEnabled(true)
                 )
         );
@@ -45,12 +44,12 @@ public class IgniteBaselineLockPartitionOnAffinityRunTxCacheTest extends IgniteC
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         int gridCnt = gridCount();
 
@@ -75,13 +74,11 @@ public class IgniteBaselineLockPartitionOnAffinityRunTxCacheTest extends IgniteC
 
         stopAllGrids();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 }

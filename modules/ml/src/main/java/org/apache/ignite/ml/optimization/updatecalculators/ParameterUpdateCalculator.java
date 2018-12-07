@@ -17,10 +17,11 @@
 
 package org.apache.ignite.ml.optimization.updatecalculators;
 
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Vector;
+import java.io.Serializable;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Interface for classes encapsulating parameters updateCache logic.
@@ -28,7 +29,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
  * @param <M> Type of model to be updated.
  * @param <P> Type of parameters needed for this update calculator.
  */
-public interface ParameterUpdateCalculator<M, P> {
+public interface ParameterUpdateCalculator<M, P extends Serializable> extends Serializable {
     /**
      * Initializes the update calculator.
      *
@@ -36,7 +37,7 @@ public interface ParameterUpdateCalculator<M, P> {
      * @param loss Loss function.
      * @return Initialized parameters.
      */
-    P init(M mdl, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss);
+    public P init(M mdl, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss);
 
     /**
      * Calculate new update.
@@ -48,12 +49,12 @@ public interface ParameterUpdateCalculator<M, P> {
      * @param groundTruth True values.
      * @return Updated parameters.
      */
-    P calculateNewUpdate(M mdl, P updaterParameters, int iteration, Matrix inputs, Matrix groundTruth);
+    public P calculateNewUpdate(M mdl, P updaterParameters, int iteration, Matrix inputs, Matrix groundTruth);
 
     /**
      * Update given obj with this parameters.
      *
      * @param obj Object to be updated.
      */
-    <M1 extends M> M1 update(M1 obj, P update);
+    public <M1 extends M> M1 update(M1 obj, P update);
 }

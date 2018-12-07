@@ -97,8 +97,13 @@ class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public long getCheckpointBufferPages() {
-        return memMetrics.getCheckpointBufferPages();
+    @Override public long getUsedCheckpointBufferPages() {
+        return memMetrics.getUsedCheckpointBufferPages();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getUsedCheckpointBufferSize() {
+        return memMetrics.getUsedCheckpointBufferSize();
     }
 
     /** {@inheritDoc} */
@@ -157,5 +162,30 @@ class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {
     /** {@inheritDoc} */
     @Override public String getSwapPath() {
         return dataRegCfg.getSwapPath();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesRead() {
+        return memMetrics.getPagesRead();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesWritten() {
+        return memMetrics.getPagesWritten();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesReplaced() {
+        return memMetrics.getPagesReplaced();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffHeapSize() {
+        return memMetrics.getOffHeapSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffheapUsedSize() {
+        return memMetrics.getOffheapUsedSize();
     }
 }

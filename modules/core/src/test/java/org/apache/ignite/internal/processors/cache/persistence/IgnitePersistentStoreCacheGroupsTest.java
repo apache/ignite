@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
@@ -37,13 +39,14 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -69,14 +72,14 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -87,7 +90,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setMaxSize(100 * 1024 * 1024).setPersistenceEnabled(true))
+                new DataRegionConfiguration().setMaxSize(100L * 1024 * 1024).setPersistenceEnabled(true))
             .setPageSize(1024)
             .setWalMode(WALMode.LOG_ONLY);
 
@@ -110,7 +113,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         super.afterTest();
     }
@@ -215,8 +218,8 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
-    public void _testExpiryPolicy() throws Exception {
-        long ttl = 10000;
+    public void testExpiryPolicy() throws Exception {
+        long ttl = 10 * 60000;
 
         CacheConfiguration[] ccfgs1 = new CacheConfiguration[5];
 
@@ -232,20 +235,33 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         Ignite node = ignite(0);
 
-        node.active(true);
+        node.cluster().active(true);
 
         node.createCaches(Arrays.asList(ccfgs1));
 
         ExpiryPolicy plc = new PlatformExpiryPolicy(ttl, -2, -2);
 
+        Map<String, Map<Integer, Long>> expTimes = new HashMap<>();
+
         for (String cacheName : caches) {
+            Map<Integer, Long> cacheExpTimes = new HashMap<>();
+            expTimes.put(cacheName, cacheExpTimes);
+
             IgniteCache<Object, Object> cache = node.cache(cacheName).withExpiryPolicy(plc);
 
-            for (int i = 0; i < entriesCount(); i++)
-                cache.put(i, cacheName + i);
-        }
+            for (int i = 0; i < entriesCount(); i++) {
+                Integer key = i;
 
-        long deadline = System.currentTimeMillis() + (long)(ttl * 1.2);
+                cache.put(key, cacheName + i);
+
+                IgniteKernal primaryNode = (IgniteKernal)primaryCache(i, cacheName).unwrap(Ignite.class);
+                GridCacheEntryEx entry = primaryNode.internalCache(cacheName).entryEx(key);
+                entry.unswap();
+
+                assertTrue(entry.expireTime() > 0);
+                cacheExpTimes.put(key, entry.expireTime());
+            }
+        }
 
         stopAllGrids();
 
@@ -253,24 +269,22 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         node = ignite(0);
 
-        node.active(true);
+        node.cluster().active(true);
 
         for (String cacheName : caches) {
             IgniteCache<Object, Object> cache = node.cache(cacheName);
 
-            for (int i = 0; i < entriesCount(); i++)
+            for (int i = 0; i < entriesCount(); i++) {
+                Integer key = i;
+
                 assertEquals(cacheName + i, cache.get(i));
 
-            assertEquals(entriesCount(), cache.size());
-        }
+                IgniteKernal primaryNode = (IgniteKernal)primaryCache(i, cacheName).unwrap(Ignite.class);
+                GridCacheEntryEx entry = primaryNode.internalCache(cacheName).entryEx(key);
+                entry.unswap();
 
-        // Wait for expiration.
-        Thread.sleep(Math.max(deadline - System.currentTimeMillis(), 0));
-
-        for (String cacheName : caches) {
-            IgniteCache<Object, Object> cache = node.cache(cacheName);
-
-            assertEquals(0, cache.size());
+                assertEquals(expTimes.get(cacheName).get(key), (Long)entry.expireTime());
+            }
         }
     }
 

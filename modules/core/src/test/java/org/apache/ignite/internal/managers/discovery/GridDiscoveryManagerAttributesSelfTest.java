@@ -21,6 +21,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
@@ -34,7 +36,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SECURITY_COMPATIBILITY_MODE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
@@ -92,6 +93,11 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         stopAllGrids();
     }
 
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -123,11 +129,15 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
             Ignite g = startGrid(i);
 
             assert "true".equals(g.cluster().localNode().attribute(PREFER_IPV4));
+
+            checkIsClientFlag((IgniteEx) g);
         }
 
         System.setProperty(PREFER_IPV4, "false");
 
-        startGrid(2);
+        IgniteEx g = startGrid(2);
+
+        checkIsClientFlag(g);
     }
 
     /**
@@ -154,12 +164,18 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         try {
             System.setProperty(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, first);
 
-            startGrid(0);
+            {
+                IgniteEx g = startGrid(0);
+
+                checkIsClientFlag(g);
+            }
 
             System.setProperty(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, second);
 
             try {
-                startGrid(1);
+                IgniteEx g = startGrid(1);
+
+                checkIsClientFlag(g);
 
                 if (fail)
                     fail("Node should not join");
@@ -206,7 +222,11 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
             else
                 System.clearProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
 
-            startGrid(0);
+            {
+                IgniteEx g = startGrid(0);
+
+                checkIsClientFlag(g);
+            }
 
             if (second != null)
                 System.setProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, second);
@@ -214,7 +234,9 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
                 System.clearProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
 
             try {
-                startGrid(1);
+                IgniteEx g = startGrid(1);
+
+                checkIsClientFlag(g);
 
                 if (fail)
                     fail("Node should not join");
@@ -227,42 +249,6 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         finally {
             stopAllGrids();
         }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testServiceCompatibilityEnabled() throws Exception {
-        String backup = System.getProperty(IGNITE_SERVICES_COMPATIBILITY_MODE);
-
-        try {
-            doTestServiceCompatibilityEnabled(true, null, true);
-            doTestServiceCompatibilityEnabled(false, null, true);
-            doTestServiceCompatibilityEnabled(null, false, true);
-            doTestServiceCompatibilityEnabled(true, false, true);
-            doTestServiceCompatibilityEnabled(null, true, true);
-            doTestServiceCompatibilityEnabled(false, true, true);
-
-            doTestServiceCompatibilityEnabled(true, true, false);
-            doTestServiceCompatibilityEnabled(false, false, false);
-            doTestServiceCompatibilityEnabled(null, null, false);
-        }
-        finally {
-            if (backup != null)
-                System.setProperty(IGNITE_SERVICES_COMPATIBILITY_MODE, backup);
-            else
-                System.clearProperty(IGNITE_SERVICES_COMPATIBILITY_MODE);
-        }
-    }
-
-    /**
-     * @param first Service compatibility enabled flag for first node.
-     * @param second Service compatibility enabled flag for second node.
-     * @param fail Fail flag.
-     * @throws Exception If failed.
-     */
-    private void doTestServiceCompatibilityEnabled(Object first, Object second, boolean fail) throws Exception {
-        doTestCompatibilityEnabled(IGNITE_SERVICES_COMPATIBILITY_MODE, first, second, fail);
     }
 
     /**
@@ -317,6 +303,8 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
 
             IgniteEx ignite = startGrid(0);
 
+            checkIsClientFlag(ignite);
+
             // Ignore if disabled security plugin used.
             if (IGNITE_SECURITY_COMPATIBILITY_MODE.equals(prop) && !ignite.context().security().enabled())
                 return;
@@ -327,7 +315,9 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
                 System.clearProperty(prop);
 
             try {
-                startGrid(1);
+                IgniteEx g = startGrid(1);
+
+                checkIsClientFlag(g);
 
                 if (fail)
                     fail("Node must not join");
@@ -351,7 +341,9 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testDifferentDeploymentModes() throws Exception {
-        startGrid(0);
+        IgniteEx g = startGrid(0);
+
+        checkIsClientFlag(g);
 
         mode = CONTINUOUS;
 
@@ -370,7 +362,9 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testDifferentPeerClassLoadingEnabledFlag() throws Exception {
-        startGrid(0);
+        IgniteEx g = startGrid(0);
+
+        checkIsClientFlag(g);
 
         p2pEnabled = true;
 
@@ -398,7 +392,20 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
             Ignite g = startGrid(i);
 
             assert val.equals(g.cluster().localNode().attribute(PREFER_IPV4));
+
+            checkIsClientFlag((IgniteEx) g);
         }
+    }
+
+    /**
+     *
+     * @param g
+     */
+    protected void checkIsClientFlag(IgniteEx g) {
+        boolean isClientDiscovery = g.context().discovery().localNode().isClient();
+        boolean isClientConfig = g.configuration().isClientMode() == null ? false : g.configuration().isClientMode();
+
+        assertEquals(isClientConfig, isClientDiscovery);
     }
 
     /**

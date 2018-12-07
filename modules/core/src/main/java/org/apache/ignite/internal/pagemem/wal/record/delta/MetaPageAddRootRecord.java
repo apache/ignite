@@ -44,7 +44,7 @@ public class MetaPageAddRootRecord extends PageDeltaRecord {
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
         BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(pageAddr);
 
-        io.addRoot(pageAddr, rootId, pageMem.pageSize());
+        io.addRoot(pageAddr, rootId, pageMem.realPageSize(groupId()));
     }
 
     /** {@inheritDoc} */

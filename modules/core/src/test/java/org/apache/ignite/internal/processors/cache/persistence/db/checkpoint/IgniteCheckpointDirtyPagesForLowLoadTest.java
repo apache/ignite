@@ -68,8 +68,11 @@ public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstract
         cfg.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
-        dsCfg.setPageSize(1024); //smaller page to reduce overhead to short values
-        dsCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true));
+        dsCfg.setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration()
+                .setPersistenceEnabled(true)
+                .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
+        );
         dsCfg.setCheckpointFrequency(500);
         dsCfg.setWalMode(WALMode.LOG_ONLY);
         dsCfg.setWalHistorySize(1);
@@ -83,8 +86,8 @@ public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstract
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "temp", false));
+        cleanPersistenceDir();
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "temp", false));
     }
 
     /** {@inheritDoc} */
@@ -120,7 +123,7 @@ public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstract
 
             boolean checkpointWithLowNumOfPagesFound = false;
 
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 20; i++) {
                 Random random = new Random();
                 //touch some entry
                 int d = random.nextInt(PARTS) + PARTS;
@@ -134,18 +137,29 @@ public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstract
                 if (log.isInfoEnabled())
                     log.info("Put to cache [" + fullname + "] value " + d);
 
-                final int timeout = 5000;
+                long start = System.nanoTime();
                 try {
-                    db.wakeupForCheckpoint("").get(timeout, TimeUnit.MILLISECONDS);
+                    final int cpTimeout = 25000;
+
+                    db.wakeupForCheckpoint("").get(cpTimeout, TimeUnit.MILLISECONDS);
                 }
-                catch (IgniteFutureTimeoutCheckedException e) {
+                catch (IgniteFutureTimeoutCheckedException ignored) {
+                    long msPassed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+
+                    log.error("Timeout during waiting for checkpoint to start:" +
+                        " [" + msPassed + "] but checkpoint is not running");
+
                     continue;
                 }
 
+                final int timeout = 5000;
                 int currCpPages = waitForCurrentCheckpointPagesCounterUpdated(db, timeout);
 
-                if (currCpPages < 0)
+                if (currCpPages < 0) {
+                    log.error("Timeout during waiting for checkpoint counter to be updated");
+
                     continue;
+                }
 
                 pageCntObserved.add(currCpPages);
 

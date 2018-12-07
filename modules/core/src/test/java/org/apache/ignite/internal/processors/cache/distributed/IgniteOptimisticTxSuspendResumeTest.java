@@ -19,20 +19,25 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -55,13 +60,19 @@ import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
  */
 public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest {
     /** Transaction timeout. */
-    private static final long TX_TIMEOUT = 100;
+    private static final long TX_TIMEOUT = 200;
 
     /** Future timeout */
     private static final int FUT_TIMEOUT = 5000;
 
     /** */
-    private boolean client = false;
+    private static final int CLIENT_CNT = 2;
+
+    /** */
+    private static final int SERVER_CNT = 4;
+
+    /** */
+    private static final int GRID_CNT = CLIENT_CNT + SERVER_CNT;
 
     /**
      * List of closures to execute transaction operation that prohibited in suspended state.
@@ -108,6 +119,10 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        int idx = getTestIgniteInstanceIndex(igniteInstanceName);
+
+        boolean client = idx >= SERVER_CNT && idx < GRID_CNT;
+
         cfg.setClientMode(client);
 
         return cfg;
@@ -117,16 +132,21 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrids(serversNumber());
+        startGridsMultiThreaded(gridCount());
+    }
 
-        if (serversNumber() > 1) {
-            client = true;
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
-            startGrid(serversNumber());
+        Ignite client = ignite(gridCount() - 1);
 
-            startGrid(serversNumber() + 1);
+        assertTrue(client.cluster().localNode().isClient());
 
-            client = false;
+        for (CacheConfiguration<Integer, Integer> ccfg : cacheConfigurations()) {
+            grid(0).createCache(ccfg);
+
+            client.createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
         }
 
         awaitPartitionMapExchange();
@@ -134,16 +154,22 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         stopAllGrids(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        for (CacheConfiguration ccfg : cacheConfigurations())
+            ignite(0).destroyCache(ccfg.getName());
+
+        super.afterTest();
     }
 
     /**
      * @return Number of server nodes.
      */
-    protected int serversNumber() {
-        return 1;
+    protected int gridCount() {
+        return GRID_CNT;
     }
 
     /**
@@ -216,8 +242,8 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
         executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<Integer, Integer>>() {
             @Override public void applyx(Ignite ignite, final IgniteCache<Integer, Integer> cache) throws Exception {
                 for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                    final IgniteCache<Integer, Integer> otherCache =
-                        ignite.getOrCreateCache(cacheConfiguration(PARTITIONED, 0, false).setName("otherCache"));
+                    final IgniteCache<Integer, Integer> otherCache = ignite.getOrCreateCache(
+                        cacheConfiguration("otherCache", PARTITIONED, 0, false));
 
                     final Transaction tx = ignite.transactions().txStart(OPTIMISTIC, isolation);
 
@@ -339,7 +365,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
                     }
 
                     GridTestUtils.runMultiThreaded(new CI1Exc<Integer>() {
-                        public void applyx(Integer idx) throws Exception {
+                        @Override public void applyx(Integer idx) throws Exception {
                             Transaction tx = clientTxs.get(idx);
 
                             assertEquals(SUSPENDED, tx.state());
@@ -436,10 +462,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
                     tx.suspend();
 
-                    long start = U.currentTimeMillis();
-
-                    while(TX_TIMEOUT >= U.currentTimeMillis() - start)
-                        Thread.sleep(TX_TIMEOUT * 2);
+                    U.sleep(TX_TIMEOUT * 2);
 
                     GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
                         @Override public Object call() throws Exception {
@@ -476,10 +499,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
                     cache.put(1, 1);
 
-                    long start = U.currentTimeMillis();
-
-                    while(TX_TIMEOUT >= U.currentTimeMillis() - start)
-                        Thread.sleep(TX_TIMEOUT * 2);
+                    U.sleep(TX_TIMEOUT * 2);
 
                     GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
                         @Override public Object call() throws Exception {
@@ -600,30 +620,121 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testSuspendTxAndResumeAfterTopologyChange() throws Exception {
-        executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<Integer, Integer>>() {
-            @Override public void applyx(Ignite ignite, final IgniteCache<Integer, Integer> cache) throws Exception {
-                for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                    Transaction tx = ignite.transactions().txStart(OPTIMISTIC, isolation);
+        Ignite srv = ignite(ThreadLocalRandom.current().nextInt(SERVER_CNT));
+        Ignite client = ignite(SERVER_CNT);
+        Ignite clientNear = ignite(SERVER_CNT + 1);
 
-                    cache.put(1, 1);
+        Map<String, List<List<Integer>>> cacheKeys = generateKeys(srv, TransactionIsolation.values().length);
+
+        doCheckSuspendTxAndResume(srv, cacheKeys);
+        doCheckSuspendTxAndResume(client, cacheKeys);
+        doCheckSuspendTxAndResume(clientNear, cacheKeys);
+    }
+
+    /**
+     * @param node Ignite isntance.
+     * @param cacheKeys Different key types mapped to cache name.
+     * @throws Exception If failed.
+     */
+    private void doCheckSuspendTxAndResume(Ignite node, Map<String, List<List<Integer>>> cacheKeys) throws Exception {
+        ClusterNode locNode = node.cluster().localNode();
+
+        log.info("Run test for node [node=" + locNode.id() + ", client=" + locNode.isClient() + ']');
+
+        Map<IgniteCache<Integer, Integer>, Map<Transaction, Integer>> cacheTxMap = new IdentityHashMap<>();
+
+        for (Map.Entry<String, List<List<Integer>>> cacheKeysEntry : cacheKeys.entrySet()) {
+            String cacheName = cacheKeysEntry.getKey();
+
+            IgniteCache<Integer, Integer> cache = node.cache(cacheName);
+
+            Map<Transaction, Integer> suspendedTxs = new IdentityHashMap<>();
+
+            for (List<Integer> keysList : cacheKeysEntry.getValue()) {
+                for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                    Transaction tx = node.transactions().txStart(OPTIMISTIC, isolation);
+
+                    int key = keysList.get(isolation.ordinal());
+
+                    cache.put(key, key);
 
                     tx.suspend();
 
-                    assertEquals(SUSPENDED, tx.state());
+                    suspendedTxs.put(tx, key);
 
-                    try (IgniteEx g = startGrid(serversNumber() + 3)) {
+                    String msg = "node=" + node.cluster().localNode() +
+                        ", cache=" + cacheName + ", isolation=" + isolation + ", key=" + key;
+
+                    assertEquals(msg, SUSPENDED, tx.state());
+                }
+            }
+
+            cacheTxMap.put(cache, suspendedTxs);
+        }
+
+        int newNodeIdx = gridCount();
+
+        startGrid(newNodeIdx);
+
+        try {
+            for (Map.Entry<IgniteCache<Integer, Integer>, Map<Transaction, Integer>>  entry : cacheTxMap.entrySet()) {
+                IgniteCache<Integer, Integer> cache = entry.getKey();
+
+                for (Map.Entry<Transaction, Integer> suspendedTx : entry.getValue().entrySet()) {
+                    Transaction tx = suspendedTx.getKey();
+
+                    Integer key = suspendedTx.getValue();
+
+                    tx.resume();
+
+                    String msg = "node=" + node.cluster().localNode() +
+                        ", cache=" + cache.getName() + ", isolation=" + tx.isolation() + ", key=" + key;
+
+                    assertEquals(msg, ACTIVE, tx.state());
+
+                    assertEquals(msg, key, cache.get(key));
+
+                    tx.commit();
+
+                    assertEquals(msg, key, cache.get(key));
+                }
+            }
+        }
+        finally {
+            stopGrid(newNodeIdx);
+
+            for (IgniteCache<Integer, Integer> cache : cacheTxMap.keySet())
+                cache.removeAll();
+        }
+    }
+
+    /**
+     * Test for correct exception handling when misuse transaction API - resume active tx.
+     *
+     * @throws Exception If failed.
+     */
+    public void testResumeActiveTx() throws Exception {
+        executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<Integer, Integer>>() {
+            @Override public void applyx(Ignite ignite, final IgniteCache<Integer, Integer> cache) throws Exception {
+                for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                    final Transaction tx = ignite.transactions().txStart(OPTIMISTIC, isolation);
+
+                    cache.put(1, 1);
+
+                    try {
                         tx.resume();
 
-                        assertEquals(ACTIVE, tx.state());
+                        fail("Exception must be thrown");
+                    }
+                    catch (Throwable e) {
+                        assertTrue(X.hasCause(e, IgniteException.class));
 
-                        assertEquals(1, (int)cache.get(1));
-
-                        tx.commit();
-
-                        assertEquals(1, (int)cache.get(1));
+                        assertFalse(X.hasCause(e, AssertionError.class));
                     }
 
-                    cache.removeAll();
+                    tx.close();
+
+                    assertFalse(cache.containsKey(1));
                 }
             }
         });
@@ -635,10 +746,10 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
     private List<CacheConfiguration<Integer, Integer>> cacheConfigurations() {
         List<CacheConfiguration<Integer, Integer>> cfgs = new ArrayList<>();
 
-        cfgs.add(cacheConfiguration(PARTITIONED, 0, false));
-        cfgs.add(cacheConfiguration(PARTITIONED, 1, false));
-        cfgs.add(cacheConfiguration(PARTITIONED, 1, true));
-        cfgs.add(cacheConfiguration(REPLICATED, 0, false));
+        cfgs.add(cacheConfiguration("cache1", PARTITIONED, 0, false));
+        cfgs.add(cacheConfiguration("cache2", PARTITIONED, 1, false));
+        cfgs.add(cacheConfiguration("cache3", PARTITIONED, 1, true));
+        cfgs.add(cacheConfiguration("cache4", REPLICATED, 0, false));
 
         return cfgs;
     }
@@ -650,10 +761,11 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
      * @return Cache configuration.
      */
     private CacheConfiguration<Integer, Integer> cacheConfiguration(
+        String name,
         CacheMode cacheMode,
         int backups,
         boolean nearCache) {
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(name);
 
         ccfg.setCacheMode(cacheMode);
         ccfg.setAtomicityMode(TRANSACTIONAL);
@@ -670,35 +782,56 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
     /**
      * @param c Closure.
-     * @throws Exception If failed.
      */
-    private void executeTestForAllCaches(CI2<Ignite, IgniteCache<Integer, Integer>> c) throws Exception {
-        for (CacheConfiguration<Integer, Integer> ccfg : cacheConfigurations()) {
-            ignite(0).createCache(ccfg);
+    private void executeTestForAllCaches(CI2<Ignite, IgniteCache<Integer, Integer>> c) {
+        for (int i = 0; i < gridCount(); i++) {
+            Ignite ignite = ignite(i);
 
-            log.info("Run test for cache [cache=" + ccfg.getCacheMode() +
-                ", backups=" + ccfg.getBackups() +
-                ", near=" + (ccfg.getNearConfiguration() != null) + "]");
+            ClusterNode locNode = ignite.cluster().localNode();
 
-            int srvNum = serversNumber();
-            if (serversNumber() > 1) {
-                ignite(serversNumber() + 1).createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
-                srvNum += 2;
-            }
+            log.info("Run test for node [node=" + locNode.id() + ", client=" + locNode.isClient() + ']');
 
-            try {
-                for (int i = 0; i < srvNum; i++) {
-                    Ignite ignite = ignite(i);
-
-                    log.info("Run test for node [node=" + i + ", client=" + ignite.configuration().isClientMode() + ']');
-
-                    c.apply(ignite, ignite.<Integer, Integer>cache(ccfg.getName()));
-                }
-            }
-            finally {
-                ignite(0).destroyCache(ccfg.getName());
-            }
+            for (CacheConfiguration ccfg : cacheConfigurations())
+                c.apply(ignite, ignite.cache(ccfg.getName()));
         }
+    }
+
+    /**
+     * Generates list of keys (primary, backup and neither primary nor backup).
+     *
+     * @param ignite Ignite instance.
+     * @param keysCnt The number of keys generated for each type of key.
+     * @return List of different keys mapped to cache name.
+     */
+    private Map<String, List<List<Integer>>> generateKeys(Ignite ignite, int keysCnt) {
+        Map<String, List<List<Integer>>> cacheKeys = new HashMap<>();
+
+        for (CacheConfiguration cfg : cacheConfigurations()) {
+            String cacheName = cfg.getName();
+
+            IgniteCache cache = ignite.cache(cacheName);
+
+            List<List<Integer>> keys = new ArrayList<>();
+
+            // Generate different keys: 0 - primary, 1 - backup, 2 - neither primary nor backup.
+            for (int type = 0; type < 3; type++) {
+                if (type == 1 && cfg.getCacheMode() == PARTITIONED && cfg.getBackups() == 0)
+                    continue;
+
+                if (type == 2 && cfg.getCacheMode() == REPLICATED)
+                    continue;
+
+                List<Integer> keys0 = findKeys(cache, keysCnt, type * 100_000, type);
+
+                assertEquals(cacheName, keysCnt, keys0.size());
+
+                keys.add(keys0);
+            }
+
+            cacheKeys.put(cacheName, keys);
+        }
+
+        return cacheKeys;
     }
 
     /**
@@ -707,7 +840,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
      * @param <E1> Type of first closure parameter.
      * @param <E2> Type of second closure parameter.
      */
-    public static abstract class CI2Exc<E1, E2> implements CI2<E1, E2> {
+    public abstract static class CI2Exc<E1, E2> implements CI2<E1, E2> {
         /**
          * Closure body.
          *
@@ -717,7 +850,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
          */
         public abstract void applyx(E1 e1, E2 e2) throws Exception;
 
-        /** {@inheritdoc} */
+        /** {@inheritDoc} */
         @Override public void apply(E1 e1, E2 e2) {
             try {
                 applyx(e1, e2);
@@ -733,7 +866,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
      *
      * @param <T> Type of closure parameter.
      */
-    public static abstract class CI1Exc<T> implements CI1<T> {
+    public abstract static class CI1Exc<T> implements CI1<T> {
         /**
          * Closure body.
          *
@@ -742,7 +875,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
          */
         public abstract void applyx(T o) throws Exception;
 
-        /** {@inheritdoc} */
+        /** {@inheritDoc} */
         @Override public void apply(T o) {
             try {
                 applyx(o);
@@ -756,7 +889,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
     /**
      * Runnable that can throw any exception.
      */
-    public static abstract class RunnableX implements Runnable {
+    public abstract static class RunnableX implements Runnable {
         /**
          * Closure body.
          *
@@ -764,7 +897,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
          */
         public abstract void runx() throws Exception;
 
-        /** {@inheritdoc} */
+        /** {@inheritDoc} */
         @Override public void run() {
             try {
                 runx();

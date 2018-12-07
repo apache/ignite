@@ -42,6 +42,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -148,7 +150,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     private boolean longSockTimeouts;
 
     /** */
-    protected long clientFailureDetectionTimeout = 1000;
+    protected long clientFailureDetectionTimeout = 5000;
 
     /** */
     private IgniteInClosure2X<TcpDiscoveryAbstractMessage, Socket> afterWrite;
@@ -263,10 +265,15 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         clientIpFinder = null;
         joinTimeout = TcpDiscoverySpi.DFLT_JOIN_TIMEOUT;
         netTimeout = TcpDiscoverySpi.DFLT_NETWORK_TIMEOUT;
-        clientFailureDetectionTimeout = 1000;
+        clientFailureDetectionTimeout = 5000;
         longSockTimeouts = false;
 
         assert G.allGrids().isEmpty();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /**
@@ -538,6 +545,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         ((TestTcpDiscoverySpi)client.configuration().getDiscoverySpi()).resumeAll();
 
+        Thread.sleep(2000);
+
         assert ((IgniteEx)srv1).context().discovery().pingNode(client.cluster().localNode().id());
         assert ((IgniteEx)srv0).context().discovery().pingNode(client.cluster().localNode().id());
     }
@@ -583,6 +592,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientReconnectOnRouterSuspendTopologyChange() throws Exception {
+        clientFailureDetectionTimeout = 20_000;
+
         reconnectAfterSuspend(true);
     }
 
@@ -1050,8 +1061,6 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientNodeFailOneServer() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1776");
-
         startServerNodes(1);
         startClientNodes(1);
 
@@ -1267,6 +1276,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      */
     public void testTimeoutWaitingNodeAddedMessage() throws Exception {
         longSockTimeouts = true;
+
+        clientFailureDetectionTimeout = 20_000;
 
         startServerNodes(2);
 

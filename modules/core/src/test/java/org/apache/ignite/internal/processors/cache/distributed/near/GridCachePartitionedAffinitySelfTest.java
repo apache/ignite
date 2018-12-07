@@ -53,7 +53,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
 /**
  * Partitioned affinity test.
  */
-@SuppressWarnings({"PointlessArithmeticExpression"})
 public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest {
     /** Backup count. */
     private static final int BACKUPS = 1;
@@ -92,11 +91,6 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(GRIDS);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /**
@@ -163,7 +157,6 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     }
 
     /** @throws Exception If failed. */
-    @SuppressWarnings("BusyWait")
     private void waitTopologyUpdate() throws Exception {
         GridTestUtils.waitTopologyUpdate(DEFAULT_CACHE_NAME, BACKUPS, log());
     }

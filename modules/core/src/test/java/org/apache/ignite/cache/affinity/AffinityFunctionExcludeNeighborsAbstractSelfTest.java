@@ -32,7 +32,6 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -43,7 +42,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 /**
  * Partitioned affinity test.
  */
-@SuppressWarnings({"PointlessArithmeticExpression", "FieldCanBeLocal"})
 public abstract class AffinityFunctionExcludeNeighborsAbstractSelfTest extends GridCommonAbstractTest {
     /** Number of backups. */
     private int backups = 2;
@@ -124,12 +122,9 @@ public abstract class AffinityFunctionExcludeNeighborsAbstractSelfTest extends G
 
                 Affinity<Object> aff = g.affinity(DEFAULT_CACHE_NAME);
 
-                List<TcpDiscoveryNode> top = new ArrayList<>();
+                List<ClusterNode> top = new ArrayList<>(g.cluster().nodes());
 
-                for (ClusterNode node : g.cluster().nodes())
-                    top.add((TcpDiscoveryNode) node);
-
-                Collections.sort(top);
+                Collections.sort((List)top);
 
                 assertEquals(grids, top.size());
 

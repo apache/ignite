@@ -38,7 +38,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -64,7 +63,7 @@ public class IgniteErrorOnRebalanceTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setMaxSize(100 * 1024 * 1024).setPersistenceEnabled(true))
+                new DataRegionConfiguration().setMaxSize(100L * 1024 * 1024).setPersistenceEnabled(true))
             .setPageSize(1024)
             .setWalMode(WALMode.LOG_ONLY);
 
@@ -89,7 +88,7 @@ public class IgniteErrorOnRebalanceTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         super.afterTest();
     }
@@ -122,6 +121,10 @@ public class IgniteErrorOnRebalanceTest extends GridCommonAbstractTest {
         info("Restart node0.");
 
         srv0 = startGrid(0);
+
+        awaitPartitionMapExchange();
+
+        srv1.cluster().setBaselineTopology(srv1.cluster().topologyVersion());
 
         awaitPartitionMapExchange();
 

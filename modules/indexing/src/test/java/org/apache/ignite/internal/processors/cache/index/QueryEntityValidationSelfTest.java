@@ -33,7 +33,6 @@ import java.util.concurrent.Callable;
 /**
  * Tests for query entity validation.
  */
-@SuppressWarnings("ThrowableResultOfMethodCallIgnored")
 public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
@@ -41,11 +40,6 @@ public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid(0);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /**

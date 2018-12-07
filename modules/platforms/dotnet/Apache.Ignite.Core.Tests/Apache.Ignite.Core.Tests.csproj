@@ -47,6 +47,9 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Moq, Version=4.0.10827.0, Culture=neutral, PublicKeyToken=69f491c39445e920, processorArchitecture=MSIL">
+      <HintPath>..\packages\Moq.4.0.10827\lib\NET40\Moq.dll</HintPath>
+    </Reference>
     <Reference Include="NLog">
       <HintPath>..\packages\NLog.4.3.7\lib\net40\NLog.dll</HintPath>
     </Reference>
@@ -91,6 +94,7 @@
     <Compile Include="ApiParity\QueryEntityConfigurationParityTest.cs" />
     <Compile Include="ApiParity\ServicesParityTest.cs" />
     <Compile Include="ApiParity\StreamerParityTest.cs" />
+    <Compile Include="ApiParity\TcpCommunicationSpiParityTest.cs" />
     <Compile Include="ApiParity\TransactionMetricsParityTest.cs" />
     <Compile Include="ApiParity\TransactionsParityTest.cs" />
     <Compile Include="AssertExtensions.cs" />
@@ -106,6 +110,8 @@
     <Compile Include="Binary\Serializable\GenericCollectionsTest.cs" />
     <Compile Include="Cache\Affinity\AffinityAttributeTest.cs" />
     <Compile Include="Cache\CacheCreateTest.cs" />
+    <Compile Include="Cache\CacheQueryMetricsTest.cs" />
+    <Compile Include="Cache\CacheTimeoutOnPmeTransactionalTest.cs" />
     <Compile Include="Cache\DataRegionMetricsTest.cs" />
     <Compile Include="Cache\DataStorageMetricsTest.cs" />
     <Compile Include="Cache\PersistenceTest.cs" />
@@ -127,6 +133,7 @@
     <Compile Include="Client\Cache\BinaryBuilderTest.cs" />
     <Compile Include="Client\Cache\CacheClientAsyncWrapper.cs" />
     <Compile Include="Client\Cache\CacheTest.cs" />
+    <Compile Include="Client\Cache\CacheTestSsl.cs" />
     <Compile Include="Client\Cache\CacheTestAsync.cs" />
     <Compile Include="Client\Cache\CacheTestKeepBinary.cs" />
     <Compile Include="Client\Cache\CacheTestNoMeta.cs" />
@@ -139,6 +146,8 @@
     <Compile Include="Client\Cache\SqlQueryTest.cs" />
     <Compile Include="Client\Cache\SqlQueryTestBase.cs" />
     <Compile Include="Client\ClientTestBase.cs" />
+    <Compile Include="Client\EndpointTest.cs" />
+    <Compile Include="Client\RawSecureSocketTest.cs" />
     <Compile Include="Client\RawSocketTest.cs" />
     <Compile Include="Client\ClientConnectionTest.cs" />
     <Compile Include="Client\IgniteClientConfigurationTest.cs" />
@@ -190,6 +199,8 @@
     <Compile Include="Common\IgniteGuidTest.cs" />
     <Compile Include="Deployment\RuntimeDependencyFunc.cs" />
     <Compile Include="EventsTestLocalListeners.cs" />
+    <Compile Include="FailureHandlerTest.cs" />
+    <Compile Include="Impl\Compute\ComputeImplTest.cs" />
     <Compile Include="Process\ListDataReader.cs" />
     <Compile Include="Log\ConcurrentMemoryTarget.cs" />
     <Compile Include="Log\DefaultLoggerTest.cs" />
@@ -203,6 +214,7 @@
     <Compile Include="Plugin\TestIgnitePluginConfiguration.cs" />
     <Compile Include="Plugin\TestIgnitePluginException.cs" />
     <Compile Include="Plugin\TestIgnitePluginProvider.cs" />
+    <Compile Include="Ssl\SslConfigurationTest.cs" />
     <Compile Include="TaskExtensions.cs" />
     <Compile Include="TestAppConfig.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTestFullFooter.cs" />
@@ -386,6 +398,9 @@
     <Content Include="Config\Client\IgniteClientConfiguration.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Config\Client\server-with-ssl.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Config\Compute\compute-grid1.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -410,6 +425,8 @@
     <Content Include="Config\full-config.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Config\ignite-halthandler-dotnet-cfg.xml" />
+    <Content Include="Config\ignite-stophandler-dotnet-cfg.xml" />
     <Content Include="Config\Lifecycle\lifecycle-beans.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -455,13 +472,7 @@
     <Content Include="Config\reconnect-test.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Config\start-test-grid1.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Config\start-test-grid2.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Config\start-test-grid3.xml">
+    <Content Include="Config\ssl.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -473,6 +484,21 @@
   <ItemGroup>
     <None Include="Apache.Ignite.Core.Tests.nunit" />
     <None Include="Apache.Ignite.Core.Tests.snk" />
+    <None Include="Config\KeyStore\server.jks">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Config\KeyStore\trust.jks">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Config\Client\server.jks">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Config\Client\thin-client-cert.pfx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Config\Client\trust.jks">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Deployment\peer_assembly_app.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -492,6 +518,7 @@
     <None Include="packages.config" />
     <Compile Include="TestUtils.Windows.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="AfterBuild">
     <Copy SourceFiles="$(SolutionDir)Apache.Ignite\bin\$(ConfigurationName)\Apache.Ignite.exe;$(SolutionDir)Apache.Ignite\bin\$(ConfigurationName)\Apache.Ignite.exe.config" DestinationFolder="$(ProjectDir)$(OutDir)" SkipUnchangedFiles="false" />

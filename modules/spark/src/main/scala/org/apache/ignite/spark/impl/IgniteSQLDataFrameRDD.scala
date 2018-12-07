@@ -36,7 +36,8 @@ class IgniteSQLDataFrameRDD[K, V](
     schema: StructType,
     qryStr: String,
     args: List[_],
-    parts: Array[Partition]) extends
+    parts: Array[Partition],
+    distributedJoin: Boolean) extends
     IgniteSqlRDD[Row, JList[_], K, V](
         ic,
         cacheName,
@@ -56,13 +57,17 @@ class IgniteSQLDataFrameRDD[K, V](
     override def compute(partition: Partition, context: TaskContext): Iterator[Row] = {
         val qry0 = new SqlFieldsQuery(qryStr)
 
+        qry0.setDistributedJoins(distributedJoin)
+
         if (args.nonEmpty)
             qry0.setArgs(args.map(_.asInstanceOf[Object]): _*)
 
         val ccfg = ic.ignite().cache[K, V](cacheName).getConfiguration(classOf[CacheConfiguration[K, V]])
 
-        if (ccfg.getCacheMode != CacheMode.REPLICATED)
-            qry0.setPartitions(partition.asInstanceOf[IgniteDataFramePartition].igniteParts: _*)
+        val ignitePartition = partition.asInstanceOf[IgniteDataFramePartition]
+
+        if (ccfg.getCacheMode != CacheMode.REPLICATED && ignitePartition.igniteParts.nonEmpty && !distributedJoin)
+            qry0.setPartitions(ignitePartition.igniteParts: _*)
 
         qry = qry0
 
@@ -76,7 +81,8 @@ object IgniteSQLDataFrameRDD {
         schema: StructType,
         qryStr: String,
         args: List[_],
-        parts: Array[Partition] = Array(IgnitePartition(0))) = {
-        new IgniteSQLDataFrameRDD(ic, cacheName, schema, qryStr, args, parts)
+        parts: Array[Partition] = Array(IgnitePartition(0)),
+        distributedJoin: Boolean = false): IgniteSQLDataFrameRDD[K, V] = {
+        new IgniteSQLDataFrameRDD[K, V](ic, cacheName, schema, qryStr, args, parts, distributedJoin)
     }
 }

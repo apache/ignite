@@ -27,6 +27,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Tests cache puts in mixed mode.
+ *
+ * TODO IGNITE-10345: Remove test in ignite 3.0.
  */
 public class GridCacheMixedModeSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
@@ -58,11 +60,6 @@ public class GridCacheMixedModeSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(4);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /**

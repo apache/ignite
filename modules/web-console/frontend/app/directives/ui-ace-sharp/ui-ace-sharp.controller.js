@@ -18,7 +18,12 @@
 const SERVER_CFG = 'ServerConfigurationFactory';
 const CLIENT_CFG = 'ClientConfigurationFactory';
 
-export default ['$scope', 'IgniteSharpTransformer', function($scope, generator) {
+/**
+ * @param {ng.IScope} $scope
+ * @param {import('app/modules/configuration/generator/SharpTransformer.service').default} generator
+ */
+export default function controller($scope, generator) {
+    /** @type {ThisType} */
     const ctrl = this;
 
     this.$onInit = () => {
@@ -31,4 +36,6 @@ export default ['$scope', 'IgniteSharpTransformer', function($scope, generator) 
             return generator.cluster(cluster, 'config', type, $scope.cfg);
         };
     };
-}];
+}
+
+controller.$inject = ['$scope', 'IgniteSharpTransformer'];

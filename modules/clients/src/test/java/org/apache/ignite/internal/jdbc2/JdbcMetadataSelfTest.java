@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.jdbc2;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -25,8 +26,10 @@ import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -52,6 +55,8 @@ import org.jetbrains.annotations.NotNull;
 
 import static java.sql.Types.INTEGER;
 import static java.sql.Types.VARCHAR;
+import static java.sql.Types.DECIMAL;
+import static java.sql.Types.DATE;
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -89,7 +94,10 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                     .setNotNullFields(new HashSet<>(Arrays.asList("age", "name")))
             )),
             cacheConfiguration("org").setQueryEntities(Arrays.asList(
-                new QueryEntity(AffinityKey.class, Organization.class))));
+                new QueryEntity(AffinityKey.class, Organization.class))),
+
+            cacheConfiguration("metaTest").setQueryEntities(Arrays.asList(
+                new QueryEntity(AffinityKey.class, MetaTest.class))));
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -134,11 +142,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         personCache.put(new AffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -176,36 +179,126 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testDecimalAndDateTypeMetaData() throws Exception {
+        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+            Statement stmt = conn.createStatement();
+
+            ResultSet rs = stmt.executeQuery(
+                    "select t.decimal, t.date from \"metaTest\".MetaTest as t");
+
+            assert rs != null;
+
+            ResultSetMetaData meta = rs.getMetaData();
+
+            assert meta != null;
+
+            assert meta.getColumnCount() == 2;
+
+            assert "METATEST".equalsIgnoreCase(meta.getTableName(1));
+            assert "DECIMAL".equalsIgnoreCase(meta.getColumnName(1));
+            assert "DECIMAL".equalsIgnoreCase(meta.getColumnLabel(1));
+            assert meta.getColumnType(1) == DECIMAL;
+            assert "DECIMAL".equals(meta.getColumnTypeName(1));
+            assert "java.math.BigDecimal".equals(meta.getColumnClassName(1));
+
+            assert "METATEST".equalsIgnoreCase(meta.getTableName(2));
+            assert "DATE".equalsIgnoreCase(meta.getColumnName(2));
+            assert "DATE".equalsIgnoreCase(meta.getColumnLabel(2));
+            assert meta.getColumnType(2) == DATE;
+            assert "DATE".equals(meta.getColumnTypeName(2));
+            assert "java.sql.Date".equals(meta.getColumnClassName(2));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testGetTables() throws Exception {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             DatabaseMetaData meta = conn.getMetaData();
 
-            ResultSet rs = meta.getTables("", "pers", "%", new String[]{"TABLE"});
+            ResultSet rs = meta.getTables(null, "pers", "%", new String[]{"TABLE"});
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+            assertEquals(JdbcDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
-            rs = meta.getTables("", "org", "%", new String[]{"TABLE"});
+            rs = meta.getTables(null, "org", "%", new String[]{"TABLE"});
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+            assertEquals(JdbcDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
 
-            rs = meta.getTables("", "pers", "%", null);
+            rs = meta.getTables(null, "pers", "%", null);
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+            assertEquals(JdbcDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
-            rs = meta.getTables("", "org", "%", null);
+            rs = meta.getTables(null, "org", "%", null);
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+            assertEquals(JdbcDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
 
-            rs = meta.getTables("", "PUBLIC", "", new String[]{"WRONG"});
+            rs = meta.getTables(null, "PUBLIC", "", new String[]{"WRONG"});
             assertFalse(rs.next());
+        }
+    }
+
+    /**
+     * Negative scenarios for catalog name.
+     * Perform metadata lookups, that use incorrect catalog names.
+     */
+    public void testCatalogWithNotExistingName() throws SQLException {
+        checkNoEntitiesFoundForCatalog("");
+        checkNoEntitiesFoundForCatalog("NOT_EXISTING_CATALOG");
+    }
+
+    /**
+     * Check that lookup in the metadata have been performed using specified catalog name (that is neither {@code null}
+     * nor correct catalog name), empty result set is returned.
+     *
+     * @param invalidCat catalog name that is not either
+     */
+    private void checkNoEntitiesFoundForCatalog(String invalidCat) throws SQLException {
+        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            // Intention: we set the other arguments that way, the values to have as many results as possible.
+            assertIsEmpty(meta.getTables(invalidCat, null, "%", new String[] {"TABLE"}));
+            assertIsEmpty(meta.getColumns(invalidCat, null, "%", "%"));
+            assertIsEmpty(meta.getColumnPrivileges(invalidCat, "pers", "PERSON", "%"));
+            assertIsEmpty(meta.getTablePrivileges(invalidCat, null, "%"));
+            assertIsEmpty(meta.getPrimaryKeys(invalidCat, "pers", "PERSON"));
+            assertIsEmpty(meta.getImportedKeys(invalidCat, "pers", "PERSON"));
+            assertIsEmpty(meta.getExportedKeys(invalidCat, "pers", "PERSON"));
+            // meta.getCrossReference(...) doesn't make sense because we don't have FK constraint.
+            assertIsEmpty(meta.getIndexInfo(invalidCat, null, "%", false, true));
+            assertIsEmpty(meta.getSuperTables(invalidCat, "%", "%"));
+            assertIsEmpty(meta.getSchemas(invalidCat, null));
+            assertIsEmpty(meta.getPseudoColumns(invalidCat, null, "%", ""));
+        }
+    }
+
+    /**
+     * Assert that specified ResultSet contains no rows.
+     *
+     * @param rs result set to check.
+     * @throws SQLException on error.
+     */
+    private static void assertIsEmpty(ResultSet rs) throws SQLException {
+        try {
+            boolean empty = !rs.next();
+
+            assertTrue("Result should be empty because invalid catalog is specified.", empty);
+        }
+        finally {
+            rs.close();
         }
     }
 
@@ -216,7 +309,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             DatabaseMetaData meta = conn.getMetaData();
 
-            ResultSet rs = meta.getColumns("", "pers", "PERSON", "%");
+            ResultSet rs = meta.getColumns(null, "pers", "PERSON", "%");
 
             assertNotNull(rs);
 
@@ -261,7 +354,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             assertTrue(names.isEmpty());
             assertEquals(3, cnt);
 
-            rs = meta.getColumns("", "org", "ORGANIZATION", "%");
+            rs = meta.getColumns(null, "org", "ORGANIZATION", "%");
 
             assertNotNull(rs);
 
@@ -403,14 +496,15 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             ResultSet rs = conn.getMetaData().getSchemas();
 
-            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("pers", "org"));
+            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("pers", "org", "metaTest"));
 
             Set<String> schemas = new HashSet<>();
 
             while (rs.next()) {
                 schemas.add(rs.getString(1));
 
-                assertNull(rs.getString(2));
+                assertEquals("There is only one possible catalog.",
+                    JdbcDatabaseMetadata.CATALOG_NAME, rs.getString(2));
             }
 
             assertEquals(expectedSchemas, schemas);
@@ -438,7 +532,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * Person.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** Name. */
         @QuerySqlField(index = false)
@@ -471,7 +564,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * Organization.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Organization implements Serializable {
         /** ID. */
         @QuerySqlField
@@ -488,6 +580,33 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         private Organization(int id, String name) {
             this.id = id;
             this.name = name;
+        }
+    }
+
+    /**
+     * Meta Test.
+     */
+    private static class MetaTest implements Serializable {
+        /** ID. */
+        @QuerySqlField
+        private final int id;
+
+        /** Date. */
+        @QuerySqlField
+        private final Date date;
+
+        /** decimal. */
+        @QuerySqlField
+        private final BigDecimal decimal;
+
+        /**
+         * @param id ID.
+         * @param date Date.
+         */
+        private MetaTest(int id, Date date, BigDecimal decimal) {
+            this.id = id;
+            this.date = date;
+            this.decimal = decimal;
         }
     }
 }

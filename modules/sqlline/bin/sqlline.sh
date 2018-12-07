@@ -36,6 +36,11 @@ SCRIPTS_HOME="${IGNITE_HOME_TMP}/bin"
 source "${SCRIPTS_HOME}"/include/functions.sh
 
 #
+# Discover path to Java executable and check it's version.
+#
+checkJava
+
+#
 # Discover IGNITE_HOME environment variable.
 #
 setIgniteHome
@@ -51,4 +56,4 @@ CP="${IGNITE_LIBS}"
 
 CP="${CP}${SEP}${IGNITE_HOME_TMP}/bin/include/sqlline/*"
 
-java -cp ${CP} sqlline.SqlLine -d org.apache.ignite.IgniteJdbcThinDriver $@
+"$JAVA" -cp ${CP} sqlline.SqlLine -d org.apache.ignite.IgniteJdbcThinDriver $@

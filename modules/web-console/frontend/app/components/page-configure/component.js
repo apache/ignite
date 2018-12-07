@@ -21,5 +21,8 @@ import controller from './controller';
 
 export default {
     template,
-    controller
+    controller,
+    bindings: {
+        cluster$: '<'
+    }
 };

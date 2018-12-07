@@ -140,11 +140,6 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         conn = DriverManager.getConnection(URL);
 
@@ -986,7 +981,6 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     /**
      * Test object.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class TestObject implements Serializable {
         /** */
         @QuerySqlField

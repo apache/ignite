@@ -32,6 +32,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -41,25 +42,34 @@ public class IgniteCacheStoreCollectionTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
+    /** */
+    private static final String CACHE1 = "cache1";
+
+    /** */
+    private static final String CACHE2 = "cache2";
+
+    /** */
+    private static final String CACHE3 = "cache3";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        CacheConfiguration<Object, Object> ccfg1 = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        ccfg1.setName("cache1");
+        CacheConfiguration<Object, Object> ccfg1 = new CacheConfiguration<>(CACHE1);
         ccfg1.setAtomicityMode(ATOMIC);
         ccfg1.setWriteSynchronizationMode(FULL_SYNC);
 
-        CacheConfiguration<Object, Object> ccfg2 = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        ccfg2.setName("cache2");
+        CacheConfiguration<Object, Object> ccfg2 = new CacheConfiguration<>(CACHE2);
         ccfg2.setAtomicityMode(TRANSACTIONAL);
         ccfg2.setWriteSynchronizationMode(FULL_SYNC);
 
-        cfg.setCacheConfiguration(ccfg1, ccfg2);
+        CacheConfiguration<Object, Object> ccfg3 = new CacheConfiguration<>(CACHE3);
+        ccfg3.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
+        ccfg3.setWriteSynchronizationMode(FULL_SYNC);
 
-        cfg.setMarshaller(null);
+        cfg.setCacheConfiguration(ccfg1, ccfg2, ccfg3);
 
         return cfg;
     }
@@ -71,22 +81,17 @@ public class IgniteCacheStoreCollectionTest extends GridCommonAbstractTest {
         startGrid(0);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */
     public void testStoreMap() throws Exception {
-        IgniteCache<Object, Object> cache1 = ignite(0).cache("cache1");
-        IgniteCache<Object, Object> cache2 = ignite(0).cache("cache2");
+        IgniteCache<Object, Object> cache1 = ignite(0).cache(CACHE1);
+        IgniteCache<Object, Object> cache2 = ignite(0).cache(CACHE2);
+        IgniteCache<Object, Object> cache3 = ignite(0).cache(CACHE3);
 
         checkStoreMap(cache1);
         checkStoreMap(cache2);
+        checkStoreMap(cache3);
     }
 
     /**

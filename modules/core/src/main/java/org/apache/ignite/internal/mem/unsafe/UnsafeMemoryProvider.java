@@ -29,7 +29,9 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- *
+ * Memory provider implementation based on unsafe memory access.
+ * <p>
+ * Supports memory reuse semantics.
  */
 public class UnsafeMemoryProvider implements DirectMemoryProvider {
     /** */
@@ -41,6 +43,12 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
     /** */
     private IgniteLogger log;
 
+    /** Flag shows if current memory provider have been already initialized. */
+    private boolean isInit;
+
+    /** */
+    private int used = 0;
+
     /**
      * @param log Ignite logger to use.
      */
@@ -50,29 +58,42 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
 
     /** {@inheritDoc} */
     @Override public void initialize(long[] sizes) {
+        if (isInit)
+            return;
+
         this.sizes = sizes;
 
         regions = new ArrayList<>();
+
+        isInit = true;
     }
 
     /** {@inheritDoc} */
-    @Override public void shutdown() {
+    @Override public void shutdown(boolean deallocate) {
         if (regions != null) {
             for (Iterator<DirectMemoryRegion> it = regions.iterator(); it.hasNext(); ) {
                 DirectMemoryRegion chunk = it.next();
 
-                GridUnsafe.freeMemory(chunk.address());
+                if (deallocate) {
+                    GridUnsafe.freeMemory(chunk.address());
 
-                // Safety.
-                it.remove();
+                    // Safety.
+                    it.remove();
+                }
             }
+
+            if (!deallocate)
+                used = 0;
         }
     }
 
     /** {@inheritDoc} */
     @Override public DirectMemoryRegion nextRegion() {
-        if (regions.size() == sizes.length)
+        if (used == sizes.length)
             return null;
+
+        if (used < regions.size())
+            return regions.get(used++);
 
         long chunkSize = sizes[regions.size()];
 
@@ -85,7 +106,7 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
             String msg = "Failed to allocate next memory chunk: " + U.readableSize(chunkSize, true) +
                 ". Check if chunkSize is too large and 32-bit JVM is used.";
 
-            if (regions.size() == 0)
+            if (regions.isEmpty())
                 throw new IgniteException(msg, e);
 
             U.error(log, msg);
@@ -102,6 +123,8 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
         DirectMemoryRegion region = new UnsafeChunk(ptr, chunkSize);
 
         regions.add(region);
+
+        used++;
 
         return region;
     }

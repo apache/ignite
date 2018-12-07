@@ -43,6 +43,8 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -98,6 +100,9 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
     /** Atomicity mode. */
     private final CacheAtomicityMode atomicityMode;
 
+    /** No-Op failure handler. */
+    private boolean noOpFailureHnd;
+
     /**
      * Constructor.
      *
@@ -119,6 +124,8 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         super.beforeTest();
 
         GridQueryProcessor.idxCls = BlockingIndexing.class;
+
+        noOpFailureHnd = false;
     }
 
     /** {@inheritDoc} */
@@ -137,13 +144,25 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
     }
 
     /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        if (noOpFailureHnd)
+            return new NoOpFailureHandler();
+
+        return super.getFailureHandler(igniteInstanceName);
+    }
+
+    /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 5 * 60 * 1000L;
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
-        return super.commonConfiguration(idx).setDiscoverySpi(new TestTcpDiscoverySpi());
+        TestTcpDiscoverySpi spi = new TestTcpDiscoverySpi();
+        spi.setIpFinder(LOCAL_IP_FINDER);
+
+        return super.commonConfiguration(idx)
+            .setDiscoverySpi(spi);
     }
 
     /**
@@ -171,6 +190,8 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      * @throws Exception If failed.
      */
     public void checkCoordinatorChange(boolean addOrRemove) throws Exception {
+        noOpFailureHnd = true;
+
         CountDownLatch finishLatch = new CountDownLatch(2);
 
         // Start servers.
@@ -311,7 +332,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      * @throws Exception If failed.
      */
     private void checkNodeJoinOnPendingOperation(boolean addOrRemove) throws Exception {
-        CountDownLatch finishLatch = new CountDownLatch(4);
+        CountDownLatch finishLatch = new CountDownLatch(3);
 
         IgniteEx srv1 = ignitionStart(serverConfiguration(1), finishLatch);
 
@@ -330,7 +351,6 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         ignitionStart(serverConfiguration(2), finishLatch);
         ignitionStart(serverConfiguration(3, true), finishLatch);
-        ignitionStart(clientConfiguration(4), finishLatch);
 
         assertFalse(idxFut.isDone());
 
@@ -377,9 +397,9 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
                     IgniteCache<Object, BinaryObject> cache = node.cache(CACHE_NAME);
 
                     if (ThreadLocalRandom.current().nextBoolean())
-                        cache.put(key(node, key), val(node, val));
+                        cache.put(key(key), val(node, val));
                     else
-                        cache.remove(key(node, key));
+                        cache.remove(key(key));
                 }
 
                 return null;
@@ -413,7 +433,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         IgniteCache<Object, BinaryObject> cache = srv1.cache(CACHE_NAME).withKeepBinary();
 
         for (int i = 0; i < LARGE_CACHE_SIZE; i++) {
-            Object key = key(srv1, i);
+            Object key = key(i);
 
             BinaryObject val = cache.get(key);
 
@@ -427,7 +447,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
             }
         }
 
-        String valTypeName = ((IgniteEx)srv1).context().query().types(CACHE_NAME).iterator().next().valueTypeName();
+        String valTypeName = (srv1).context().query().types(CACHE_NAME).iterator().next().valueTypeName();
 
         // Validate query result.
         for (Ignite node : Ignition.allGrids()) {
@@ -466,11 +486,10 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
     }
 
     /**
-     * @param node Node.
      * @param id Key.
      * @return PERSON cache key (int or {@link BinaryObject}).
      */
-    private Object key(Ignite node, int id) {
+    private Object key(int id) {
         return id;
     }
 
@@ -547,7 +566,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      */
     private void put(Ignite node, int startIdx, int endIdx) {
         for (int i = startIdx; i < endIdx; i++)
-            node.cache(CACHE_NAME).put(key(node, i), val(node, i));
+            node.cache(CACHE_NAME).put(key(i), val(node, i));
     }
 
     /**
@@ -755,6 +774,8 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      * @throws Exception If failed.
      */
     private void checkClientReconnect(final boolean restartCache, boolean dynamicCache) throws Exception {
+        noOpFailureHnd = true;
+
         // Start complex topology.
         final IgniteEx srv = ignitionStart(serverConfiguration(1));
         ignitionStart(serverConfiguration(2));
@@ -841,6 +862,8 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      */
     @SuppressWarnings("StringConcatenationInLoop")
     public void testConcurrentOperationsAndNodeStartStopMultithreaded() throws Exception {
+        noOpFailureHnd = true;
+
         // Start several stable nodes.
         ignitionStart(serverConfiguration(1));
         ignitionStart(serverConfiguration(2));
@@ -1009,7 +1032,6 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      *
      * @param node Node.
      */
-    @SuppressWarnings("SuspiciousMethodCalls")
     private static CountDownLatch blockIndexing(Ignite node) {
         UUID nodeId = ((IgniteEx)node).localNode().id();
 

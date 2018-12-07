@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.util.Collections;
+import java.util.Map;
+import junit.framework.AssertionFailedError;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -26,16 +29,17 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-
-import java.util.Collections;
-import java.util.Map;
 
 import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi;
 import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.reconnectClientNode;
@@ -46,6 +50,9 @@ import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.recon
 public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
     /** Node on which filter should be applied (if any). */
     private static String filterNodeName;
+
+    /** */
+    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -167,11 +174,13 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
 
         assertTypes(node1, ValueClass.class);
         assertTypes(node2, ValueClass.class);
+        assertCacheStarted(CACHE_NAME, node1, node2);
 
-        assertTypes(node3);
+        assertTypes(node3, ValueClass.class);
+        assertCacheNotStarted(CACHE_NAME, node3);
 
         node3.cache(CACHE_NAME);
-        assertTypes(node3, ValueClass.class);
+        assertCacheStarted(CACHE_NAME, node3);
 
         // Check restarts from the first node.
         destroySqlCache(node1);
@@ -189,11 +198,14 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
 
         assertTypes(node1, ValueClass.class, ValueClass2.class);
         assertTypes(node2, ValueClass.class, ValueClass2.class);
+        assertTypes(node3, ValueClass.class, ValueClass2.class);
 
-        assertTypes(node3);
+        assertCacheStarted(CACHE_NAME, node1, node2);
+
+        assertCacheNotStarted(CACHE_NAME, node3);
 
         node3.cache(CACHE_NAME);
-        assertTypes(node3, ValueClass.class, ValueClass2.class);
+        assertCacheStarted(CACHE_NAME, node3);
 
         // Check restarts from the second node.
         node2.destroyCache(CACHE_NAME);
@@ -211,16 +223,20 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
 
         assertTypes(node1, ValueClass.class, ValueClass2.class);
         assertTypes(node2, ValueClass.class, ValueClass2.class);
+        assertTypes(node3, ValueClass.class, ValueClass2.class);
+        assertTypes(node4, ValueClass.class, ValueClass2.class);
 
-        assertTypes(node3);
+        assertCacheStarted(CACHE_NAME, node1, node2);
+
+        assertCacheNotStarted(CACHE_NAME, node3);
 
         node3.cache(CACHE_NAME);
-        assertTypes(node3, ValueClass.class, ValueClass2.class);
+        assertCacheStarted(CACHE_NAME, node3);
 
-        assertTypes(node4);
+        assertCacheNotStarted(CACHE_NAME, node4);
 
         node4.cache(CACHE_NAME);
-        assertTypes(node4, ValueClass.class, ValueClass2.class);
+        assertCacheStarted(CACHE_NAME, node4);
 
         // Make sure that joining node observes correct state.
         assertTypes(start(5), ValueClass.class, ValueClass2.class);
@@ -230,10 +246,13 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
 
         IgniteEx node8 = startClientNoCache(8);
 
-        assertTypes(node8);
+        assertTypes(node8, ValueClass.class, ValueClass2.class);
+
+        assertCacheNotStarted(CACHE_NAME, node8);
 
         node8.cache(CACHE_NAME);
-        assertTypes(node8, ValueClass.class, ValueClass2.class);
+
+        assertCacheStarted(CACHE_NAME, node8);
     }
 
     /**
@@ -288,10 +307,15 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         assertTypes(node2, ValueClass.class);
         assertTypes(node3, ValueClass.class);
 
-        assertTypes(node4);
+        assertTypes(node4, ValueClass.class);
+
+        assertCacheStarted(CACHE_NAME, node1, node2, node3);
+
+        assertCacheNotStarted(CACHE_NAME, node4);
 
         node4.cache(CACHE_NAME);
-        assertTypes(node4, ValueClass.class);
+
+        assertCacheStarted(CACHE_NAME, node4);
     }
 
     /**
@@ -341,40 +365,31 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         IgniteEx node7 = startClient(7,  KeyClass.class, ValueClass.class, KeyClass2.class, ValueClass2.class);
         IgniteEx node8 = startClientNoCache(8);
 
-        assertTypes(node1, ValueClass.class);
-        assertTypes(node2, ValueClass.class);
-        assertTypes(node3, ValueClass.class);
-        assertTypes(node4, ValueClass.class);
-        assertTypes(node5, ValueClass.class);
-        assertTypes(node6, ValueClass.class);
-        assertTypes(node7, ValueClass.class);
-
-        assertTypes(node8);
-        node8.cache(CACHE_NAME);
+        assertCacheStarted(CACHE_NAME, node1, node2, node3, node4, node5, node6, node7);
+        assertCacheNotStarted(CACHE_NAME, node8);
         assertTypes(node8, ValueClass.class);
+
+        node8.cache(CACHE_NAME);
+
+        assertCacheStarted(CACHE_NAME, node8);
 
         destroySqlCache(node2);
 
         node2.getOrCreateCache(
             cacheConfiguration(KeyClass.class, ValueClass.class, KeyClass2.class, ValueClass2.class));
 
-        assertTypes(node1, ValueClass.class, ValueClass2.class);
-        assertTypes(node2, ValueClass.class, ValueClass2.class);
-        assertTypes(node3, ValueClass.class, ValueClass2.class);
-        assertTypes(node4, ValueClass.class, ValueClass2.class);
-        assertTypes(node5, ValueClass.class, ValueClass2.class);
+        assertCacheStarted(CACHE_NAME, node1, node2, node3, node4, node5);
+        assertCacheNotStarted(CACHE_NAME, node6, node7, node8);
 
-        assertTypes(node6);
-        assertTypes(node7);
-        assertTypes(node8);
+        assertTypes(node6, ValueClass.class, ValueClass2.class);
+        assertTypes(node7, ValueClass.class, ValueClass2.class);
+        assertTypes(node8, ValueClass.class, ValueClass2.class);
 
         node6.cache(CACHE_NAME);
         node7.cache(CACHE_NAME);
         node8.cache(CACHE_NAME);
 
-        assertTypes(node6, ValueClass.class, ValueClass2.class);
-        assertTypes(node7, ValueClass.class, ValueClass2.class);
-        assertTypes(node8, ValueClass.class, ValueClass2.class);
+        assertCacheStarted(CACHE_NAME, node6, node7, node8);
     }
 
     /**
@@ -395,11 +410,14 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         IgniteEx node3 = startNoCache(3);
         assertTypes(node1, ValueClass.class);
         assertTypes(node2, ValueClass.class);
+        assertTypes(node3, ValueClass.class);
 
-        assertTypes(node3);
+        assertCacheStarted(CACHE_NAME, node1, node2);
+
+        assertCacheNotStarted(CACHE_NAME, node3);
 
         node3.cache(CACHE_NAME);
-        assertTypes(node3, ValueClass.class);
+        assertCacheStarted(CACHE_NAME, node1, node3);
     }
 
     /**
@@ -412,7 +430,12 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         assertTypes(node1, ValueClass.class);
 
         IgniteEx node2 = startClientNoCache(2);
-        assertTypes(node2);
+
+        GridCacheContext<Object, Object> context0 = node2.context().cache().context().cacheContext(CU.cacheId(CACHE_NAME));
+        node2.cache(CACHE_NAME);
+        GridCacheContext<Object, Object> context = node2.context().cache().context().cacheContext(CU.cacheId(CACHE_NAME));
+        GridCacheAdapter<Object, Object> entries = node2.context().cache().internalCache(CACHE_NAME);
+        assertTrue(entries.active());
 
         node2.cache(CACHE_NAME);
         assertTypes(node2, ValueClass.class);
@@ -427,7 +450,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
 
         IgniteFuture reconnFut = null;
 
-        try {   
+        try {
             node2.cache(CACHE_NAME);
 
             fail();
@@ -438,13 +461,17 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
 
         node1 = start(1, KeyClass.class, ValueClass.class, KeyClass2.class, ValueClass2.class);
         assertTypes(node1, ValueClass.class, ValueClass2.class);
+        assertTypes(node2, ValueClass.class);
+
+        assertCacheStarted(CACHE_NAME, node1);
 
         reconnFut.get();
 
-        assertTypes(node2);
+        assertTypes(node2, ValueClass.class, ValueClass2.class);
+        assertCacheNotStarted(CACHE_NAME, node2);
 
         node2.cache(CACHE_NAME);
-        assertTypes(node2, ValueClass.class, ValueClass2.class);
+        assertCacheStarted(CACHE_NAME, node2);
     }
 
     /**
@@ -458,10 +485,11 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         assertTypes(node1, ValueClass.class);
 
         final IgniteEx node2 = startClientNoCache(2);
-        assertTypes(node2);
+        assertTypes(node2, ValueClass.class);
+        assertCacheNotStarted(CACHE_NAME, node2);
 
         node2.cache(CACHE_NAME);
-        assertTypes(node2, ValueClass.class);
+        assertCacheStarted(CACHE_NAME, node2);
 
         reconnectClientNode(log, node2, node1, new Runnable() {
             @Override public void run() {
@@ -482,6 +510,45 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
             QueryUtils.normalizeObjectName(TBL_NAME, true),
             QueryUtils.normalizeObjectName(IDX_NAME_1, false), QueryIndex.DFLT_INLINE_SIZE,
             field(QueryUtils.normalizeObjectName(FIELD_NAME_1_ESCAPED, false)));
+    }
+
+    /**
+     * Check is cache started on the given node or not.
+     *
+     * @param cacheName Cache name.
+     * @param node Node to check cache.
+     * @return {@code true} in case cache is started.
+     */
+    private boolean isCacheStarted(String cacheName, IgniteEx node) {
+        GridCacheContext cacheCtx = node.context().cache().context().cacheContext(CU.cacheId(cacheName));
+
+        return cacheCtx != null;
+    }
+
+    /**
+     * Check is cache started on the given nodes.
+     *
+     * @param nodes Node to check cache.
+     * @param cacheName Cache name.
+     * @throws AssertionFailedError If failed.
+     */
+    private void assertCacheStarted(String cacheName, IgniteEx... nodes) throws AssertionFailedError {
+        for (IgniteEx node : nodes) {
+            assertTrue(isCacheStarted(cacheName, node));
+        }
+    }
+
+    /**
+     * Check is cache not started on the given nodes.
+     *
+     * @param nodes Node to check cache.
+     * @param cacheName Cache name.
+     * @throws AssertionFailedError If failed.
+     */
+    private void assertCacheNotStarted(String cacheName, IgniteEx... nodes) throws AssertionFailedError {
+        for (IgniteEx node : nodes) {
+            assertFalse(isCacheStarted(cacheName, node));
+        }
     }
 
     /**
@@ -541,7 +608,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
 
         cfg.setClientMode(client);
         cfg.setLocalHost("127.0.0.1");
-        cfg.setDiscoverySpi(new TestTcpDiscoverySpi());
+        cfg.setDiscoverySpi(new TestTcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         if (filterNodeName != null && F.eq(name, filterNodeName))
             cfg.setUserAttributes(Collections.singletonMap("AFF_NODE", true));
@@ -591,7 +658,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         cfg.setClientMode(client);
         cfg.setLocalHost("127.0.0.1");
 
-        cfg.setDiscoverySpi(new TestTcpDiscoverySpi());
+        cfg.setDiscoverySpi(new TestTcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         return (IgniteEx)Ignition.start(cfg);
     }

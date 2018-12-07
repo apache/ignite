@@ -152,10 +152,10 @@ public class PageMetaIO extends PageIO {
 
     /**
      * @param pageAddr Page address.
-     * @param nextSnapshotId Next snapshot id.
+     * @param nextSnapshotTag Next snapshot tag.
      */
-    public void setNextSnapshotTag(long pageAddr, long nextSnapshotId) {
-        PageUtils.putLong(pageAddr, NEXT_SNAPSHOT_TAG_OFF, nextSnapshotId);
+    public void setNextSnapshotTag(long pageAddr, long nextSnapshotTag) {
+        PageUtils.putLong(pageAddr, NEXT_SNAPSHOT_TAG_OFF, nextSnapshotTag);
     }
 
     /**

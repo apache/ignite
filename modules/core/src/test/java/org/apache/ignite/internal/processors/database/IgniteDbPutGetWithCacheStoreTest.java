@@ -31,7 +31,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.IgniteReflectionFactory;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -59,7 +58,7 @@ public class IgniteDbPutGetWithCacheStoreTest extends GridCommonAbstractTest {
         dbCfg
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
-                    .setMaxSize(512 * 1024 * 1024)
+                    .setMaxSize(512L * 1024 * 1024)
                     .setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY);
 
@@ -79,14 +78,14 @@ public class IgniteDbPutGetWithCacheStoreTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         storeMap.clear();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         storeMap.clear();
     }
@@ -124,7 +123,7 @@ public class IgniteDbPutGetWithCacheStoreTest extends GridCommonAbstractTest {
 
             assertEquals(2000, storeMap.size());
 
-            stopAllGrids();
+            stopAllGrids(false);
 
             storeMap.clear();
 
@@ -158,7 +157,7 @@ public class IgniteDbPutGetWithCacheStoreTest extends GridCommonAbstractTest {
             for (int i = 0; i < 2000; i++)
                 assertEquals(i, ig.cache(CACHE_NAME).get(i));
 
-            stopAllGrids();
+            stopAllGrids(false);
 
             storeMap.clear();
 

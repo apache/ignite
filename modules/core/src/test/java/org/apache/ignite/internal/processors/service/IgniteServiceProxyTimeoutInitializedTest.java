@@ -102,7 +102,7 @@ public class IgniteServiceProxyTimeoutInitializedTest extends GridCommonAbstract
      *
      * @throws Exception If fail.
      */
-    @SuppressWarnings({"Convert2Lambda", "ThrowableResultOfMethodCallIgnored"})
+    @SuppressWarnings({"Convert2Lambda"})
     public void testUnavailableService() throws Exception {
         srvc = new TestWaitServiceImpl();
 
@@ -142,7 +142,7 @@ public class IgniteServiceProxyTimeoutInitializedTest extends GridCommonAbstract
      *
      * @throws Exception If fail.
      */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "Convert2Lambda"})
+    @SuppressWarnings({"Convert2Lambda"})
     public void testServiceException() throws Exception {
         srvc = new HangServiceImpl();
 

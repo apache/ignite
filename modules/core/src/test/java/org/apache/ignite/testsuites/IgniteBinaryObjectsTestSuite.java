@@ -34,6 +34,7 @@ import org.apache.ignite.internal.binary.BinaryObjectBuilderDefaultMappersSelfTe
 import org.apache.ignite.internal.binary.BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectExceptionSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectToStringSelfTest;
+import org.apache.ignite.internal.binary.BinaryObjectTypeCompatibilityTest;
 import org.apache.ignite.internal.binary.BinarySerialiedFieldComparatorSelfTest;
 import org.apache.ignite.internal.binary.BinarySimpleNameTestPropertySelfTest;
 import org.apache.ignite.internal.binary.BinaryTreeSelfTest;
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.binary.noncompact.BinaryMarshallerNonCompactSe
 import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderAdditionalNonCompactSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderNonCompactDefaultMappersSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderNonCompactSimpleNameLowerCaseMappersSelfTest;
+import org.apache.ignite.internal.binary.streams.BinaryAbstractOutputStreamTest;
 import org.apache.ignite.internal.binary.streams.BinaryHeapStreamByteOrderSelfTest;
 import org.apache.ignite.internal.binary.streams.BinaryOffheapStreamByteOrderSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryAtomicCacheLocalEntriesSelfTest;
@@ -100,6 +102,7 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         suite.addTestSuite(BinaryObjectBuilderDefaultMappersSelfTest.class);
         suite.addTestSuite(BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest.class);
         suite.addTestSuite(BinaryObjectBuilderAdditionalSelfTest.class);
+        //suite.addTestSuite(BinaryFieldExtractionSelfTest.class);
         suite.addTestSuite(BinaryFieldsHeapSelfTest.class);
         suite.addTestSuite(BinaryFieldsOffheapSelfTest.class);
         suite.addTestSuite(BinaryFooterOffsetsHeapSelfTest.class);
@@ -110,6 +113,7 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         suite.addTestSuite(GridBinaryAffinityKeySelfTest.class);
         suite.addTestSuite(GridBinaryWildcardsSelfTest.class);
         suite.addTestSuite(BinaryObjectToStringSelfTest.class);
+        suite.addTestSuite(BinaryObjectTypeCompatibilityTest.class);
 
         // Tests for objects with non-compact footers.
         suite.addTestSuite(BinaryMarshallerNonCompactSelfTest.class);
@@ -122,12 +126,17 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         suite.addTestSuite(BinaryFooterOffsetsOffheapNonCompactSelfTest.class);
 
         suite.addTestSuite(GridCacheBinaryObjectsLocalSelfTest.class);
+        //suite.addTestSuite(GridCacheBinaryObjectsLocalOnheapSelfTest.class);
         suite.addTestSuite(GridCacheBinaryObjectsAtomicLocalSelfTest.class);
         suite.addTestSuite(GridCacheBinaryObjectsReplicatedSelfTest.class);
         suite.addTestSuite(GridCacheBinaryObjectsPartitionedSelfTest.class);
         suite.addTestSuite(GridCacheBinaryObjectsPartitionedNearDisabledSelfTest.class);
+        //suite.addTestSuite(GridCacheBinaryObjectsPartitionedNearDisabledOnheapSelfTest.class);
+        //suite.addTestSuite(GridCacheBinaryObjectsPartitionedOnheapSelfTest.class);
         suite.addTestSuite(GridCacheBinaryObjectsAtomicSelfTest.class);
+        //suite.addTestSuite(GridCacheBinaryObjectsAtomicOnheapSelfTest.class);
         suite.addTestSuite(GridCacheBinaryObjectsAtomicNearDisabledSelfTest.class);
+        //suite.addTestSuite(GridCacheBinaryObjectsAtomicNearDisabledOnheapSelfTest.class);
 
         suite.addTestSuite(GridCacheBinaryStoreObjectsSelfTest.class);
         suite.addTestSuite(GridCacheBinaryStoreBinariesDefaultMappersSelfTest.class);
@@ -144,6 +153,7 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
 
         // Byte order
         suite.addTestSuite(BinaryHeapStreamByteOrderSelfTest.class);
+        suite.addTestSuite(BinaryAbstractOutputStreamTest.class);
         suite.addTestSuite(BinaryOffheapStreamByteOrderSelfTest.class);
 
         suite.addTestSuite(GridCacheBinaryObjectUserClassloaderSelfTest.class);

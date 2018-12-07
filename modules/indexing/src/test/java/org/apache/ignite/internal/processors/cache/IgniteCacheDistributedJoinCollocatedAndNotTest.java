@@ -138,13 +138,6 @@ public class IgniteCacheDistributedJoinCollocatedAndNotTest extends GridCommonAb
         startGrid(2);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @param name Cache name.
      * @return Cache configuration.

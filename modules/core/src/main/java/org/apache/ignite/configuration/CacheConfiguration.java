@@ -33,6 +33,7 @@ import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheWriter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheInterceptor;
@@ -58,7 +59,11 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.CachePluginConfiguration;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_COMPRESSION;
 
 /**
  * This class defines grid cache configuration. This configuration is passed to
@@ -71,7 +76,6 @@ import org.jetbrains.annotations.Nullable;
  * can be configured from Spring XML files (or other DI frameworks). <p> Note that absolutely all configuration
  * properties are optional, so users should only change what they need.
  */
-@SuppressWarnings("RedundantFieldInitialization")
 public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -181,6 +185,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default query parallelism. */
     public static final int DFLT_QUERY_PARALLELISM = 1;
 
+    /** Default value for events disabled flag. */
+    public static final boolean DFLT_EVENTS_DISABLED = false;
+
+    /** Default SQL on-heap cache size. */
+    public static final int DFLT_SQL_ONHEAP_CACHE_MAX_SIZE = 0;
+
     /** Cache name. */
     private String name;
 
@@ -212,6 +222,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Use on-heap cache for rows for SQL queries. */
     private boolean sqlOnheapCache;
+
+    /** SQL on-heap cache max size. */
+    private int sqlOnheapCacheMaxSize = DFLT_SQL_ONHEAP_CACHE_MAX_SIZE;
 
     /** Eviction filter. */
     private EvictionFilter<?, ?> evictFilter;
@@ -307,7 +320,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private long rebalanceThrottle = DFLT_REBALANCE_THROTTLE;
 
     /** */
-    private CacheInterceptor<?, ?> interceptor;
+    private CacheInterceptor<K, V> interceptor;
 
     /** */
     private Class<?>[] sqlFuncCls;
@@ -361,6 +374,25 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Cache key configuration. */
     private CacheKeyConfiguration[] keyCfg;
 
+    /** Events disabled. */
+    private boolean evtsDisabled = DFLT_EVENTS_DISABLED;
+
+    /**
+     * Flag indicating whether data must be encrypted.
+     * If {@code true} data on the disk will be encrypted.
+     *
+     * @see EncryptionSpi
+     * @see KeystoreEncryptionSpi
+     */
+    private boolean encryptionEnabled;
+
+    /** */
+    private DiskPageCompression diskPageCompression = IgniteSystemProperties.getEnum(
+        DiskPageCompression.class, IGNITE_DEFAULT_DISK_PAGE_COMPRESSION);
+
+    /** */
+    private Integer diskPageCompressionLevel;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -400,6 +432,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         cpOnRead = cc.isCopyOnRead();
         dfltLockTimeout = cc.getDefaultLockTimeout();
         eagerTtl = cc.isEagerTtl();
+        encryptionEnabled = cc.isEncryptionEnabled();
         evictFilter = cc.getEvictionFilter();
         evictPlc = cc.getEvictionPolicy();
         evictPlcFactory = cc.getEvictionPolicyFactory();
@@ -420,6 +453,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         nearCfg = cc.getNearConfiguration();
         nodeFilter = cc.getNodeFilter();
         onheapCache = cc.isOnheapCacheEnabled();
+        diskPageCompression = cc.getDiskPageCompression();
+        diskPageCompressionLevel = cc.getDiskPageCompressionLevel();
         partLossPlc = cc.getPartitionLossPolicy();
         pluginCfgs = cc.getPluginConfigurations();
         qryDetailMetricsSz = cc.getQueryDetailMetricsSize();
@@ -453,6 +488,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         storeConcurrentLoadAllThreshold = cc.getStoreConcurrentLoadAllThreshold();
         maxQryIterCnt = cc.getMaxQueryIteratorsCount();
         sqlOnheapCache = cc.isSqlOnheapCacheEnabled();
+        sqlOnheapCacheMaxSize = cc.getSqlOnheapCacheMaxSize();
+        evtsDisabled = cc.isEventsDisabled();
     }
 
     /**
@@ -497,9 +534,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Cache name or {@code null} if not provided, then this will be considered a default
-     * cache which can be accessed via {@link Ignite#cache(String)} method. Otherwise, if name
-     * is provided, the cache will be accessed via {@link Ignite#cache(String)} method.
+     * Cache name. The cache will be accessed via {@link Ignite#cache(String)} method.
      *
      * @return Cache name.
      */
@@ -653,6 +688,36 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setSqlOnheapCacheEnabled(boolean sqlOnheapCache) {
         this.sqlOnheapCache = sqlOnheapCache;
+
+        return this;
+    }
+
+    /**
+     * Gets maximum SQL on-heap cache. Measured in number of rows. When maximum size is reached oldest cached rows
+     * will be evicted.
+     * <p>
+     * Zero or negative value stand for unlimited size.
+     * <p>
+     * Defaults to {@link #DFLT_SQL_ONHEAP_CACHE_MAX_SIZE}.
+     *
+     * @return SQL on-heap cache max size.
+     */
+    public int getSqlOnheapCacheMaxSize() {
+        return sqlOnheapCacheMaxSize;
+    }
+
+    /**
+     * Sets maximum SQL on-heap cache. Measured in number of rows. When maximum size is reached oldest cached rows
+     * will be evicted.
+     * <p>
+     * Zero or negative value stand for unlimited size.
+     * <p>
+     * Defaults to {@link #DFLT_SQL_ONHEAP_CACHE_MAX_SIZE}.
+     *
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setSqlOnheapCacheMaxSize(int sqlOnheapCacheMaxSize) {
+        this.sqlOnheapCacheMaxSize = sqlOnheapCacheMaxSize;
 
         return this;
     }
@@ -975,6 +1040,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param atomicityMode Cache atomicity mode.
      * @return {@code this} for chaining.
      */
+    @SuppressWarnings("unchecked")
     public CacheConfiguration<K, V> setAtomicityMode(CacheAtomicityMode atomicityMode) {
         this.atomicityMode = atomicityMode;
 
@@ -1573,9 +1639,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return Cache interceptor.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public CacheInterceptor<K, V> getInterceptor() {
-        return (CacheInterceptor<K, V>)interceptor;
+        return interceptor;
     }
 
     /**
@@ -2107,7 +2172,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         return cfg;
     }
 
-
     /**
      * @param cls Class.
      * @return Masked class.
@@ -2184,6 +2248,27 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * Checks whether events are disabled for this cache.
+     *
+     * @return Events disabled flag.
+     */
+    public Boolean isEventsDisabled() {
+        return evtsDisabled;
+    }
+
+    /**
+     * Sets events disabled flag.
+     *
+     * @param evtsDisabled Events disabled flag.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setEventsDisabled(boolean evtsDisabled) {
+        this.evtsDisabled = evtsDisabled;
+
+        return this;
+    }
+
+    /**
      * Gets cache key configuration.
      *
      * @return Cache key configuration.
@@ -2199,6 +2284,75 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setKeyConfiguration(CacheKeyConfiguration... cacheKeyCfg) {
         this.keyCfg = cacheKeyCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets flag indicating whether data must be encrypted.
+     *
+     * @return {@code True} if this cache persistent data is encrypted.
+     */
+    public boolean isEncryptionEnabled() {
+        return encryptionEnabled;
+    }
+
+    /**
+     * Sets encrypted flag.
+     *
+     * @param encryptionEnabled {@code True} if this cache persistent data should be encrypted.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setEncryptionEnabled(boolean encryptionEnabled) {
+        this.encryptionEnabled = encryptionEnabled;
+        
+        return this;
+    }
+
+    /**
+     * Gets disk page compression algorithm.
+     * Makes sense only with enabled {@link DataRegionConfiguration#setPersistenceEnabled persistence}.
+     *
+     * @return Disk page compression algorithm.
+     * @see #getDiskPageCompressionLevel
+     */
+    public DiskPageCompression getDiskPageCompression() {
+        return diskPageCompression;
+    }
+
+    /**
+     * Sets disk page compression algorithm.
+     * Makes sense only with enabled {@link DataRegionConfiguration#setPersistenceEnabled persistence}.
+     *
+     * @param diskPageCompression Disk page compression algorithm.
+     * @return {@code this} for chaining.
+     * @see #setDiskPageCompressionLevel
+     */
+    public CacheConfiguration<K,V> setDiskPageCompression(DiskPageCompression diskPageCompression) {
+        this.diskPageCompression = diskPageCompression;
+
+        return this;
+    }
+
+    /**
+     * Gets {@link #getDiskPageCompression algorithm} specific disk page compression level.
+     *
+     * @return Disk page compression level or {@code null} for default.
+     */
+    public Integer getDiskPageCompressionLevel() {
+        return diskPageCompressionLevel;
+    }
+
+    /**
+     * Sets {@link #setDiskPageCompression algorithm} specific disk page compression level.
+     *
+     * @param diskPageCompressionLevel Disk page compression level or {@code null} to use default.
+     *                             {@link DiskPageCompression#ZSTD Zstd}: from {@code -131072} to {@code 22} (default {@code 3}).
+     *                             {@link DiskPageCompression#LZ4 LZ4}: from {@code 0} to {@code 17} (default {@code 0}).
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K,V> setDiskPageCompressionLevel(Integer diskPageCompressionLevel) {
+        this.diskPageCompressionLevel = diskPageCompressionLevel;
 
         return this;
     }

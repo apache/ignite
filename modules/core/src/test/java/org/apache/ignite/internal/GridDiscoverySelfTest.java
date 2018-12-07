@@ -19,11 +19,9 @@ package org.apache.ignite.internal;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -49,6 +47,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.lang.IgniteProductVersion.fromString;
@@ -123,7 +122,6 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"SuspiciousMethodCalls"})
     public void testGetLocalNode() throws Exception {
         ClusterNode node = ignite.cluster().localNode();
 
@@ -158,10 +156,10 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
 
         final AtomicInteger cnt = new AtomicInteger();
 
-        /** Joined nodes counter. */
+        // Joined nodes counter.
         final CountDownLatch joinedCnt = new CountDownLatch(NODES_CNT);
 
-        /** Left nodes counter. */
+        // Left nodes counter.
         final CountDownLatch leftCnt = new CountDownLatch(NODES_CNT);
 
         IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
@@ -171,7 +169,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
 
                     joinedCnt.countDown();
                 }
-                else if (EVT_NODE_LEFT == evt.type()) {
+                else if (EVT_NODE_LEFT == evt.type() || EVT_NODE_FAILED == evt.type()) {
                     int i = cnt.decrementAndGet();
 
                     assert i >= 0;
@@ -185,7 +183,10 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
             }
         };
 
-        ignite.events().localListen(lsnr, EVT_NODE_LEFT, EVT_NODE_JOINED);
+        int[] evts = tcpDiscovery() ? new int[]{EVT_NODE_LEFT, EVT_NODE_JOINED} :
+            new int[]{EVT_NODE_LEFT, EVT_NODE_FAILED, EVT_NODE_JOINED};
+
+        ignite.events().localListen(lsnr, evts);
 
         try {
             for (int i = 0; i < NODES_CNT; i++)
@@ -241,6 +242,8 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
             // Stop nodes.
             for (int i = 0; i < NODES_CNT; i++)
                 stopGrid(i);
+
+            waitForTopology(1);
 
             final long topVer = discoMgr.topologyVersion();
 
@@ -347,7 +350,6 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Nullable @Override public <T> T attribute(String name) {
             return null;
         }

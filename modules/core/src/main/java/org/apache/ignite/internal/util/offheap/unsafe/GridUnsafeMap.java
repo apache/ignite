@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util.offheap.unsafe;
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
 import java.util.Queue;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
@@ -36,7 +37,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.internal.util.offheap.GridOffHeapEvent.REHASH;
 
@@ -116,7 +116,7 @@ public class GridUnsafeMap implements GridOffHeapMap {
     private final GridUnsafeLru lru;
 
     /** Total entry count. */
-    private final LongAdder8 totalCnt;
+    private final LongAdder totalCnt;
 
     /** Event listener. */
     private GridOffHeapEventListener evtLsnr;
@@ -138,7 +138,6 @@ public class GridUnsafeMap implements GridOffHeapMap {
      * @param lruStripes Number of LRU stripes.
      * @param evictLsnr Eviction listener.
      */
-    @SuppressWarnings("unchecked")
     public GridUnsafeMap(int concurrency, float load, long initCap, long totalMem, short lruStripes,
         @Nullable GridOffHeapEvictListener evictLsnr) {
         this.concurrency = concurrency;
@@ -155,7 +154,7 @@ public class GridUnsafeMap implements GridOffHeapMap {
         if (lru != null)
             this.evictLsnr = evictLsnr;
 
-        totalCnt = new LongAdder8();
+        totalCnt = new LongAdder();
 
         // Find power-of-two sizes best matching arguments
         int shift = 0;
@@ -214,8 +213,7 @@ public class GridUnsafeMap implements GridOffHeapMap {
      * @param evictLsnr Eviction closure.
      * @param lruPoller LRU poller.
      */
-    @SuppressWarnings("unchecked")
-    GridUnsafeMap(int part, int concurrency, float load, long initCap, LongAdder8 totalCnt, GridUnsafeMemory mem,
+    GridUnsafeMap(int part, int concurrency, float load, long initCap, LongAdder totalCnt, GridUnsafeMemory mem,
         GridUnsafeLru lru, @Nullable GridOffHeapEvictListener evictLsnr, GridUnsafeLruPoller lruPoller) {
         this.part = part;
         this.concurrency = concurrency > MAX_CONCURRENCY ? MAX_CONCURRENCY : concurrency;
@@ -1006,7 +1004,7 @@ public class GridUnsafeMap implements GridOffHeapMap {
          * @param qAddr Queue address.
          * @return Released size.
          */
-        @SuppressWarnings({"TooBroadScope", "AssertWithSideEffects"})
+        @SuppressWarnings({"AssertWithSideEffects"})
         private int freeSpace(int hash, short order, long qAddr) {
             assert lru != null;
 
@@ -1111,7 +1109,6 @@ public class GridUnsafeMap implements GridOffHeapMap {
          * @param keyBytes Key bytes.
          * @param valBytes Value bytes.
          */
-        @SuppressWarnings("TooBroadScope")
         void insert(int hash, byte[] keyBytes, byte[] valBytes) {
             if (cnt + 1 > threshold)
                 rehash();
@@ -1166,7 +1163,6 @@ public class GridUnsafeMap implements GridOffHeapMap {
          * @param valBytes Value bytes.
          * @return {@code True} if new entry was created, {@code false} if existing value was updated.
          */
-        @SuppressWarnings("TooBroadScope")
         boolean put(int hash, byte[] keyBytes, byte[] valBytes) {
             boolean isNew = true;
 
@@ -1287,7 +1283,6 @@ public class GridUnsafeMap implements GridOffHeapMap {
          * @param keyBytes Key bytes.
          * @return Removed value bytes.
          */
-        @SuppressWarnings("TooBroadScope")
         byte[] remove(int hash, byte[] keyBytes) {
             return remove(hash, keyBytes, true, null);
         }
@@ -1318,7 +1313,6 @@ public class GridUnsafeMap implements GridOffHeapMap {
          * @param p Value predicate.
          * @return Removed value bytes.
          */
-        @SuppressWarnings("TooBroadScope")
         byte[] remove(int hash, byte[] keyBytes, boolean retval, @Nullable IgniteBiPredicate<Long, Integer> p) {
             int relSize = 0;
             long relAddr = 0;

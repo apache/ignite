@@ -46,6 +46,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.testframework.MvccFeatureChecker.assertMvccWriteConflict;
 
 /**
  *
@@ -99,7 +100,7 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
         memCfg.setPageSize(1024);
-        memCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(50 * 1024 * 1024));
+        memCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(50L * 1024 * 1024));
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -110,7 +111,7 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 10 * 60 * 1000L;
+        return 10L * 60 * 1000;
     }
 
     /** {@inheritDoc} */
@@ -123,8 +124,6 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         System.clearProperty(IgniteSystemProperties.IGNITE_START_CACHES_ON_JOIN);
-
-        super.afterTestsStopped();
     }
 
     /**
@@ -186,7 +185,18 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
                     if (createCache) {
                         for (int c = 0; c < 5; c++) {
                             for (IgniteCache cache : node.getOrCreateCaches(cacheConfigurations())) {
-                                cache.put(c, c);
+                                boolean updated = false;
+
+                                while (!updated) {
+                                    try {
+                                        cache.put(c, c);
+
+                                        updated = true;
+                                    }
+                                    catch (Exception e) {
+                                        assertMvccWriteConflict(e);
+                                    }
+                                }
 
                                 assertEquals(c, cache.get(c));
                             }

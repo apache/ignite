@@ -15,10 +15,17 @@
  * limitations under the License.
  */
 
-// import _ from 'lodash';
+import _ from 'lodash';
+
+import {nonEmpty} from 'app/utils/lodashMixins';
 import { EmptyBean, Bean } from './Beans';
 
-export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatformDefaults', (JavaTypes, clusterDflts, cacheDflts) => {
+/**
+ * @param {import('app/services/JavaTypes.service').default} JavaTypes
+ * @param {import('./defaults/Cluster.service').default} clusterDflts
+ * @param {import('./defaults/Cache.service').default} cacheDflts
+ */
+export default function service(JavaTypes, clusterDflts, cacheDflts) {
     class PlatformGenerator {
         static igniteConfigurationBean(cluster) {
             return new Bean('Apache.Ignite.Core.IgniteConfiguration', 'cfg', cluster, clusterDflts);
@@ -219,7 +226,7 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
 
         // Generate events group.
         static clusterEvents(cluster, cfg = this.igniteConfigurationBean(cluster)) {
-            if (_.nonEmpty(cluster.includeEventTypes))
+            if (nonEmpty(cluster.includeEventTypes))
                 cfg.eventTypes('events', 'includeEventTypes', cluster.includeEventTypes);
 
             return cfg;
@@ -262,7 +269,7 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
         static clusterCaches(cluster, caches, igfss, isSrvCfg, cfg = this.igniteConfigurationBean(cluster)) {
             // const cfg = this.clusterGeneral(cluster, cfg);
             //
-            // if (_.nonEmpty(caches)) {
+            // if (nonEmpty(caches)) {
             //     const ccfgs = _.map(caches, (cache) => this.cacheConfiguration(cache));
             //
             //     cfg.collectionProperty('', '', ccfgs, );
@@ -285,7 +292,7 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
             ccfg.intProperty('copyOnRead');
 
             if (ccfg.valueOf('cacheMode') === 'PARTITIONED' && ccfg.valueOf('atomicityMode') === 'TRANSACTIONAL')
-                ccfg.intProperty('invalidate');
+                ccfg.intProperty('isInvalidate', 'invalidate');
 
             return ccfg;
         }
@@ -519,4 +526,6 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
     }
 
     return PlatformGenerator;
-}];
+}
+
+service.$inject = ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatformDefaults'];

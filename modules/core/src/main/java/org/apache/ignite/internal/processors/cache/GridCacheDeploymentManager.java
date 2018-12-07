@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -51,7 +52,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
@@ -71,10 +71,10 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     private final Map<String, List<CA>> undeploys = new HashMap<>();
 
     /** Per-thread deployment context. */
-    private ConcurrentMap<IgniteUuid, CachedDeploymentInfo<K, V>> deps = new ConcurrentHashMap8<>();
+    private ConcurrentMap<IgniteUuid, CachedDeploymentInfo<K, V>> deps = new ConcurrentHashMap<>();
 
     /** Collection of all known participants (Node ID -> Loader ID). */
-    private Map<UUID, IgniteUuid> allParticipants = new ConcurrentHashMap8<>();
+    private Map<UUID, IgniteUuid> allParticipants = new ConcurrentHashMap<>();
 
     /** Discovery listener. */
     private GridLocalEventListener discoLsnr;
@@ -760,7 +760,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     /**
      * Cache class loader.
      */
-    private class CacheClassLoader extends ClassLoader {
+    private class CacheClassLoader extends ClassLoader implements CacheClassLoaderMarker {
         /** */
         private final String[] p2pExclude;
 
@@ -790,7 +790,6 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
         @Override protected Class<?> findClass(String name) throws ClassNotFoundException {
             // Try local deployment first.
             if (!isLocallyExcluded(name)) {

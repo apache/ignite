@@ -24,9 +24,9 @@ import java.nio.MappedByteBuffer;
 /**
  * Decorator class for File I/O
  */
-public class FileIODecorator implements FileIO {
+public class FileIODecorator extends AbstractFileIO {
     /** File I/O delegate */
-    private final FileIO delegate;
+    protected final FileIO delegate;
 
     /**
      *
@@ -34,6 +34,21 @@ public class FileIODecorator implements FileIO {
      */
     public FileIODecorator(FileIO delegate) {
         this.delegate = delegate;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getFileSystemBlockSize() {
+        return delegate.getFileSystemBlockSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSparseSize() {
+        return delegate.getSparseSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int punchHole(long pos, int len) {
+        return delegate.punchHole(pos, len);
     }
 
     /** {@inheritDoc} */
@@ -72,18 +87,23 @@ public class FileIODecorator implements FileIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void write(byte[] buf, int off, int len) throws IOException {
-        delegate.write(buf, off, len);
+    @Override public int write(byte[] buf, int off, int len) throws IOException {
+        return delegate.write(buf, off, len);
     }
 
     /** {@inheritDoc} */
-    @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
-        return delegate.map(maxWalSegmentSize);
+    @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
+        return delegate.map(sizeBytes);
     }
 
     /** {@inheritDoc} */
     @Override public void force() throws IOException {
         delegate.force();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void force(boolean withMetadata) throws IOException {
+        delegate.force(withMetadata);
     }
 
     /** {@inheritDoc} */

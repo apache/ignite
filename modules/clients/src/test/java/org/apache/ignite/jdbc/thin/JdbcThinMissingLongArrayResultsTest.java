@@ -158,17 +158,13 @@ public class JdbcThinMissingLongArrayResultsTest extends JdbcThinAbstractSelfTes
             }
             streamer.flush();
         }
-        ignite.active(true);    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
+        ignite.active(true);
     }
 
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"EmptyTryBlock", "unused"})
+    @SuppressWarnings({"unused"})
     public void testDefaults() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setSchema('"' + CACHE_NAME + '"');

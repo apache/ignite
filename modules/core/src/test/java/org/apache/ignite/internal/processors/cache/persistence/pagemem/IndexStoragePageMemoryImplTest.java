@@ -18,21 +18,26 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.io.File;
-import java.nio.ByteBuffer;
+import java.util.Collections;
 import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
+import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
+import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
-import org.apache.ignite.internal.util.typedef.CIX3;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
+import org.mockito.Mockito;
 
 /**
  *
@@ -62,8 +67,18 @@ public class IndexStoragePageMemoryImplTest extends IndexStorageSelfTest {
 
         DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), allocationPath);
 
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setEncryptionSpi(new NoopEncryptionSpi());
+
+        GridTestKernalContext cctx = new GridTestKernalContext(log, cfg);
+
+        cctx.add(new IgnitePluginProcessor(cctx, cfg, Collections.emptyList()));
+        cctx.add(new GridInternalSubscriptionProcessor(cctx));
+        cctx.add(new GridEncryptionManager(cctx));
+
         GridCacheSharedContext<Object, Object> sharedCtx = new GridCacheSharedContext<>(
-            new GridTestKernalContext(log),
+            cctx,
             null,
             null,
             null,
@@ -78,6 +93,8 @@ public class IndexStoragePageMemoryImplTest extends IndexStorageSelfTest {
             null,
             null,
             null,
+            null,
+            null,
             null
         );
 
@@ -85,21 +102,17 @@ public class IndexStoragePageMemoryImplTest extends IndexStorageSelfTest {
             provider, sizes,
             sharedCtx,
             PAGE_SIZE,
-            new CIX3<FullPageId, ByteBuffer, Integer>() {
-                @Override public void applyx(FullPageId fullPageId, ByteBuffer byteBuf, Integer tag) {
-                    assert false : "No evictions should happen during the test";
-                }
+            (fullPageId, byteBuf, tag) -> {
+                assert false : "No page replacement (rotation with disk) should happen during the test";
             },
             new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
                 @Override public void applyx(Long page, FullPageId fullId, PageMemoryEx pageMem) {
                 }
-            }, new CheckpointLockStateChecker() {
-                @Override public boolean checkpointLockIsHeldByThread() {
-                    return true;
-                }
             },
+            () -> true,
             new DataRegionMetricsImpl(new DataRegionConfiguration()),
-            false
+            PageMemoryImpl.ThrottlingPolicy.DISABLED,
+            Mockito.mock(CheckpointWriteProgressSupplier.class)
         );
     }
 }

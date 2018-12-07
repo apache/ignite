@@ -82,9 +82,6 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_IGFS = ATTR_PREFIX + ".igfs";
 
     /** Internal attribute name constant. */
-    public static final String ATTR_MONGO = ATTR_PREFIX + ".mongo";
-
-    /** Internal attribute name constant. */
     public static final String ATTR_DAEMON = ATTR_PREFIX + ".daemon";
 
     /** Internal attribute name constant. */
@@ -119,6 +116,9 @@ public final class IgniteNodeAttributes {
 
     /** Internal attribute name constant. */
     public static final String ATTR_MACS = ATTR_PREFIX + ".macs";
+
+    /** Allows to override {@link #ATTR_MACS} by adding this attribute in the user attributes. */
+    public static final String ATTR_MACS_OVERRIDE = "override." + ATTR_MACS;
 
     /** Internal attribute name constant. */
     public static final String ATTR_PHY_RAM = ATTR_PREFIX + ".phy.ram";
@@ -174,9 +174,6 @@ public final class IgniteNodeAttributes {
     /** Late affinity assignment mode. */
     public static final String ATTR_LATE_AFFINITY_ASSIGNMENT = ATTR_PREFIX + ".cache.lateAffinity";
 
-    /** Ignite services compatibility mode (can be {@code null}). */
-    public static final String ATTR_SERVICES_COMPATIBILITY_MODE = ATTR_PREFIX + ".services.compatibility.enabled";
-
     /** Late affinity assignment mode. */
     public static final String ATTR_ACTIVE_ON_START = ATTR_PREFIX + ".active.on.start";
 
@@ -192,6 +189,21 @@ public final class IgniteNodeAttributes {
 
     /** Data storage configuration. */
     public static final String ATTR_DATA_STORAGE_CONFIG = ATTR_PREFIX + ".data.storage.config";
+
+    /** User authentication enabled flag. */
+    public static final String ATTR_AUTHENTICATION_ENABLED = ATTR_PREFIX + ".authentication.enabled";
+
+    /** Encryption master key digest. */
+    public static final String ATTR_ENCRYPTION_MASTER_KEY_DIGEST = ATTR_PREFIX + ".master.key.digest";
+
+    /** Rebalance thread pool size. */
+    public static final String ATTR_REBALANCE_POOL_SIZE = ATTR_PREFIX + ".rebalance.pool.size";
+
+    /** Internal attribute name constant. */
+    public static final String ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED = ATTR_PREFIX + ".dynamic.cache.start.rollback.supported";
+
+    /** Internal attribute indicates that incoming cache requests should be validated on primary node as well. */
+    public static final String ATTR_VALIDATE_CACHE_REQUESTS = ATTR_CACHE + ".validate.cache.requests";
 
     /**
      * Enforces singleton.

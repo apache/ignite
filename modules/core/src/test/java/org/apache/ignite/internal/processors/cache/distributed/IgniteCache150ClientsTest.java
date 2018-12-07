@@ -21,12 +21,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -35,10 +39,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ThreadLocalRandom8;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
@@ -51,6 +52,9 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
 
     /** */
     private static final int CACHES = 10;
+
+    /** */
+    private static final int CLIENTS = 150;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -80,7 +84,7 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
             CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setCacheMode(PARTITIONED);
-            ccfg.setAtomicityMode(i % 2 == 0 ? ATOMIC : TRANSACTIONAL);
+            ccfg.setAtomicityMode(CacheAtomicityMode.values()[i % 3]);
             ccfg.setWriteSynchronizationMode(PRIMARY_SYNC);
             ccfg.setBackups(1);
 
@@ -106,6 +110,12 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        // Test can be too slow because of a lot of clients.
+        return new NoOpFailureHandler();
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -113,8 +123,6 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
         Ignite srv = startGrid(0);
 
         assertFalse(srv.configuration().isClientMode());
-
-        final int CLIENTS = 150;
 
         final AtomicInteger idx = new AtomicInteger(1);
 
@@ -141,7 +149,7 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
 
                     log.info("Started [node=" + ignite.name() + ", left=" + latch.getCount() + ']');
 
-                    ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                     while (latch.getCount() > 0) {
                         Thread.sleep(1000);
@@ -164,9 +172,11 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
             }
         }, CLIENTS, "start-client");
 
-        fut.get();
+        fut.get(getTestTimeout());
 
         log.info("Started all clients.");
+
+        waitForTopology(CLIENTS + 1);
 
         checkNodes(CLIENTS + 1);
     }

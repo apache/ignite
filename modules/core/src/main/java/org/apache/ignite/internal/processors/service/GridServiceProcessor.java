@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -70,12 +72,12 @@ import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposed
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
+import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.SerializableTransient;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -103,16 +105,13 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.ignite.thread.IgniteThreadFactory;
+import org.apache.ignite.thread.OomExceptionHandler;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
-import static org.apache.ignite.IgniteSystemProperties.getString;
+import static javax.cache.event.EventType.REMOVED;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SERVICES_COMPATIBILITY_MODE;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -122,9 +121,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions"})
 public class GridServiceProcessor extends GridProcessorAdapter implements IgniteChangeGlobalStateSupport {
-    /** */
-    private final Boolean srvcCompatibilitySysProp;
-
     /** Time to wait before reassignment retries. */
     private static final long RETRY_TIMEOUT = 1000;
 
@@ -140,10 +136,10 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     private final Map<String, Collection<ServiceContextImpl>> locSvcs = new HashMap<>();
 
     /** Deployment futures. */
-    private final ConcurrentMap<String, GridServiceDeploymentFuture> depFuts = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<String, GridServiceDeploymentFuture> depFuts = new ConcurrentHashMap<>();
 
     /** Deployment futures. */
-    private final ConcurrentMap<String, GridFutureAdapter<?>> undepFuts = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<String, GridFutureAdapter<?>> undepFuts = new ConcurrentHashMap<>();
 
     /** Pending compute job contexts that waiting for utility cache initialization. */
     private final List<ComputeJobContext> pendingJobCtxs = new ArrayList<>(0);
@@ -154,8 +150,12 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     /** Busy lock. */
     private volatile GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
+    /** Uncaught exception handler for thread pools. */
+    private final UncaughtExceptionHandler oomeHnd = new OomExceptionHandler(ctx);
+
     /** Thread factory. */
-    private ThreadFactory threadFactory = new IgniteThreadFactory(ctx.igniteInstanceName(), "service");
+    private ThreadFactory threadFactory = new IgniteThreadFactory(ctx.igniteInstanceName(), "service",
+        oomeHnd);
 
     /** Thread local for service name. */
     private ThreadLocal<String> svcName = new ThreadLocal<>();
@@ -175,11 +175,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     public GridServiceProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        depExe = Executors.newSingleThreadExecutor(new IgniteThreadFactory(ctx.igniteInstanceName(), "srvc-deploy"));
-
-        String servicesCompatibilityMode = getString(IGNITE_SERVICES_COMPATIBILITY_MODE);
-
-        srvcCompatibilitySysProp = servicesCompatibilityMode == null ? null : Boolean.valueOf(servicesCompatibilityMode);
+        depExe = Executors.newSingleThreadExecutor(new IgniteThreadFactory(ctx.igniteInstanceName(),
+            "srvc-deploy", oomeHnd));
     }
 
     /**
@@ -198,8 +195,6 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        ctx.addNodeAttribute(ATTR_SERVICES_COMPATIBILITY_MODE, srvcCompatibilitySysProp);
-
         if (ctx.isDaemon())
             return;
 
@@ -238,12 +233,20 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             if (ctx.deploy().enabled())
                 ctx.cache().context().deploy().ignoreOwnership(true);
 
-            if (!ctx.clientNode() && serviceCache.context().affinityNode()) {
+            if (!ctx.clientNode()) {
+                DiscoveryDataClusterState clusterState = ctx.state().clusterState();
+
+                boolean isLocLsnr = !clusterState.hasBaselineTopology() ||
+                    CU.baselineNode(ctx.cluster().get().localNode(), clusterState);
+
+                // Register query listener and run it for local entries, if data is available locally.
+                // It is also invoked on rebalancing.
+                // Otherwise remote listener is registered.
                 serviceCache.context().continuousQueries().executeInternalQuery(
-                    new ServiceEntriesListener(), null, true, true, false
+                    new ServiceEntriesListener(), null, isLocLsnr, true, false, false
                 );
             }
-            else {
+            else { // Listener for client nodes is registered in onContinuousProcessorStarted method.
                 assert !ctx.isDaemon();
 
                 ctx.closure().runLocalSafe(new Runnable() {
@@ -318,6 +321,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         synchronized (locSvcs) {
             for (Collection<ServiceContextImpl> ctxs0 : locSvcs.values())
                 ctxs.addAll(ctxs0);
+
+            locSvcs.clear();
         }
 
         for (ServiceContextImpl ctx : ctxs) {
@@ -373,7 +378,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
         busyLock = new GridSpinBusyLock();
 
-        depExe = Executors.newSingleThreadExecutor(new IgniteThreadFactory(ctx.igniteInstanceName(), "srvc-deploy"));
+        depExe = Executors.newSingleThreadExecutor(new IgniteThreadFactory(ctx.igniteInstanceName(),
+            "srvc-deploy", oomeHnd));
 
         start();
 
@@ -1508,9 +1514,11 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
             CacheQuery<Map.Entry<Object, Object>> qry = qryMgr.createScanQuery(p, null, false);
 
-            qry.keepAll(false);
+            DiscoveryDataClusterState clusterState = ctx.state().clusterState();
 
-            if (!cache.context().affinityNode()) {
+            if ((clusterState.hasBaselineTopology()
+                && !CU.baselineNode(ctx.cluster().get().localNode(), clusterState))
+                || !cache.context().affinityNode()) {
                 ClusterNode oldestSrvNode =
                     ctx.discovery().oldestAliveServerNode(AffinityTopologyVersion.NONE);
 
@@ -1547,7 +1555,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      */
     public void onUtilityCacheStarted() {
         synchronized (pendingJobCtxs) {
-            if (pendingJobCtxs.size() == 0)
+            if (pendingJobCtxs.isEmpty())
                 return;
 
             Iterator<ComputeJobContext> iter = pendingJobCtxs.iterator();
@@ -1612,7 +1620,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 throw ex;
         }
 
-        if (dep != null) {
+        if (e.getEventType() != REMOVED) {
             svcName.set(dep.configuration().getName());
 
             // Ignore other utility cache events.
@@ -1620,6 +1628,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
             ClusterNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
 
+            // Process deployment on coordinator only.
             if (oldest.isLocal())
                 onDeployment(dep, topVer);
         }
@@ -1716,6 +1725,48 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         /** */
         private volatile AffinityTopologyVersion currTopVer = null;
 
+        /**
+         * Check that listening-in topology version is the latest and wait until exchange is finished.
+         *
+         * @param initTopVer listening-in topology version.
+         * @return {@code True} if current event is not last and should be skipped.
+         */
+        private boolean skipExchange(final AffinityTopologyVersion initTopVer) {
+            AffinityTopologyVersion pendingTopVer = null;
+            AffinityTopologyVersion newTopVer;
+
+            if (!initTopVer.equals(newTopVer = currTopVer))
+                pendingTopVer = newTopVer;
+            else {
+                IgniteInternalFuture<?> affReadyFut = ctx.cache().context().exchange().affinityReadyFuture(initTopVer);
+
+                if (affReadyFut != null) {
+                    try {
+                        affReadyFut.get();
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.warn(log, "Failed to wait for affinity ready future " +
+                            "(the assignment will be recalculated anyway):" + e.toString());
+                    }
+                }
+
+                // If exchange already moved forward - skip current version.
+                if (!initTopVer.equals(newTopVer = currTopVer))
+                    pendingTopVer = newTopVer;
+            }
+
+            boolean skipExchange = pendingTopVer != null;
+
+            if (skipExchange && log.isInfoEnabled()) {
+                log.info("Service processor detected a topology change during " +
+                    "assignments calculation (will abort current iteration and " +
+                    "re-calculate on the newer version): " +
+                    "[topVer=" + initTopVer + ", newTopVer=" + pendingTopVer + ']');
+            }
+
+            return skipExchange;
+        }
+
         /** {@inheritDoc} */
         @Override public void onEvent(final DiscoveryEvent evt, final DiscoCache discoCache) {
             GridSpinBusyLock busyLock = GridServiceProcessor.this.busyLock;
@@ -1769,17 +1820,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
                                 while (it.hasNext()) {
                                     // If topology changed again, let next event handle it.
-                                    AffinityTopologyVersion currTopVer0 = currTopVer;
-
-                                    if (currTopVer0 != topVer) {
-                                        if (log.isInfoEnabled())
-                                            log.info("Service processor detected a topology change during " +
-                                                "assignments calculation (will abort current iteration and " +
-                                                "re-calculate on the newer version): " +
-                                                "[topVer=" + topVer + ", newTopVer=" + currTopVer0 + ']');
-
+                                    if (skipExchange(topVer))
                                         return;
-                                    }
 
                                     Cache.Entry<Object, Object> e = it.next();
 
@@ -1788,12 +1830,10 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                                     try {
                                         svcName.set(dep.configuration().getName());
 
-                                        ctx.cache().context().exchange().affinityReadyFuture(topVer).get();
-
                                         reassign(dep, topVer);
                                     }
                                     catch (IgniteCheckedException ex) {
-                                        if (!(e instanceof ClusterTopologyCheckedException))
+                                        if (!(ex instanceof ClusterTopologyCheckedException))
                                             LT.error(log, ex, "Failed to do service reassignment (will retry): " +
                                                 dep.configuration().getName());
 
@@ -1816,6 +1856,10 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                         IgniteInternalCache<Object, Object> cache = serviceCache();
 
                         while (it.hasNext()) {
+                            // If topology changed again, let next event handle it.
+                            if (skipExchange(topVer))
+                                return;
+
                             Cache.Entry<Object, Object> e = it.next();
 
                             if (cache.context().affinity().primaryByKey(ctx.grid().localNode(), e.getKey(), topVer)) {
@@ -1893,7 +1937,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
                         @Override public void onTimeout() {
                             depExe.execute(new Runnable() {
-                                public void run() {
+                                @Override public void run() {
                                     onReassignmentFailed(topVer, retries);
                                 }
                             });
@@ -1923,7 +1967,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 throw ex;
         }
 
-        if (assigns != null) {
+        if (e.getEventType() != REMOVED) {
             svcName.set(assigns.name());
 
             Throwable t = null;
@@ -2069,7 +2113,6 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     /**
      */
     @GridInternal
-    @SerializableTransient(methodName = "serializableTransient")
     private static class ServiceTopologyCallable implements IgniteCallable<Map<UUID, Integer>> {
         /** */
         private static final long serialVersionUID = 0L;

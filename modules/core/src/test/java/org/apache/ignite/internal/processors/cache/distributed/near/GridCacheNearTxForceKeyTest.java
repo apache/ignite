@@ -79,11 +79,4 @@ public class GridCacheNearTxForceKeyTest extends GridCommonAbstractTest {
 
         assertTrue(ignite0.affinity(DEFAULT_CACHE_NAME).isPrimary(ignite1.cluster().localNode(), key));
     }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
 }

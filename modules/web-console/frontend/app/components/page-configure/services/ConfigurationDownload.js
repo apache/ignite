@@ -25,19 +25,24 @@ export default class ConfigurationDownload {
         'IgniteSummaryZipper',
         'IgniteVersion',
         '$q',
-        '$rootScope'
+        '$rootScope',
+        'PageConfigure'
     ];
 
-    constructor(messages, activitiesData, configuration, summaryZipper, Version, $q, $rootScope) {
-        Object.assign(this, {messages, activitiesData, configuration, summaryZipper, Version, $q, $rootScope});
+    constructor(messages, activitiesData, configuration, summaryZipper, Version, $q, $rootScope, PageConfigure) {
+        Object.assign(this, {messages, activitiesData, configuration, summaryZipper, Version, $q, $rootScope, PageConfigure});
 
         this.saver = saver;
     }
 
+    /**
+     * @param {{_id: string, name: string}} cluster
+     * @returns {Promise}
+     */
     downloadClusterConfiguration(cluster) {
         this.activitiesData.post({action: '/configuration/download'});
 
-        return this.configuration.read()
+        return this.PageConfigure.getClusterConfiguration({clusterID: cluster._id, isDemo: !!this.$rootScope.IgniteDemoMode})
             .then((data) => this.configuration.populate(data))
             .then(({clusters}) => {
                 return clusters.find(({_id}) => _id === cluster._id)
@@ -51,14 +56,14 @@ export default class ConfigurationDownload {
                     targetVer: this.Version.currentSbj.getValue()
                 });
             })
-            .then((data) => {
-                const fileName = `${this.escapeFileName(cluster.name)}-project.zip`;
-
-                this.saver.saveAs(data, fileName);
-            })
+            .then((data) => this.saver.saveAs(data, this.nameFile(cluster)))
             .catch((e) => (
                 this.messages.showError(`Failed to generate project files. ${e.message}`)
             ));
+    }
+
+    nameFile(cluster) {
+        return `${this.escapeFileName(cluster.name)}-project.zip`;
     }
 
     escapeFileName(name) {

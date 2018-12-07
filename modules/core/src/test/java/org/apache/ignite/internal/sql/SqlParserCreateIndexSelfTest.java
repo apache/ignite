@@ -33,7 +33,7 @@ import static org.apache.ignite.internal.sql.SqlKeyword.PARALLEL;
 /**
  * Tests for SQL parser: CREATE INDEX.
  */
-@SuppressWarnings({"UnusedReturnValue", "ThrowableNotThrown"})
+@SuppressWarnings({"UnusedReturnValue"})
 public class SqlParserCreateIndexSelfTest extends SqlParserAbstractSelfTest {
     /** Default properties */
     private static final Map<String, Object> DEFAULT_PROPS = getProps(null, null);
@@ -46,8 +46,10 @@ public class SqlParserCreateIndexSelfTest extends SqlParserAbstractSelfTest {
     public void testCreateIndex() throws Exception {
         // Base.
         parseValidate(null, "CREATE INDEX idx ON tbl(a)", null, "TBL", "IDX", DEFAULT_PROPS, "A", false);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a);", null, "TBL", "IDX", DEFAULT_PROPS, "A", false);
         parseValidate(null, "CREATE INDEX idx ON tbl(a ASC)", null, "TBL", "IDX", DEFAULT_PROPS, "A", false);
         parseValidate(null, "CREATE INDEX idx ON tbl(a DESC)", null, "TBL", "IDX", DEFAULT_PROPS, "A", true);
+        assertParseError(null, "CREATE INDEX idx ON tbl(a) ,", "Unexpected token: \",\"");
 
         // Case (in)sensitivity.
         parseValidate(null, "CREATE INDEX IDX ON TBL(COL)", null, "TBL", "IDX", DEFAULT_PROPS, "COL", false);

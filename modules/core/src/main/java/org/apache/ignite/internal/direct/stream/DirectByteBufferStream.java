@@ -22,6 +22,7 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -116,6 +117,12 @@ public interface DirectByteBufferStream {
 
     /**
      * @param val Value.
+     * @param len Length.
+     */
+    public void writeLongArray(long[] val, int len);
+
+    /**
+     * @param val Value.
      */
     public void writeFloatArray(float[] val);
 
@@ -153,6 +160,11 @@ public interface DirectByteBufferStream {
      * @param val Value.
      */
     public void writeIgniteUuid(IgniteUuid val);
+
+    /**
+     * @param val Value.
+     */
+    public void writeAffinityTopologyVersion(AffinityTopologyVersion val);
 
     /**
      * @param msg Message.
@@ -282,6 +294,11 @@ public interface DirectByteBufferStream {
      * @return Value.
      */
     public IgniteUuid readIgniteUuid();
+
+    /**
+     * @return Value.
+     */
+    public AffinityTopologyVersion readAffinityTopologyVersion();
 
     /**
      * @param reader Reader.

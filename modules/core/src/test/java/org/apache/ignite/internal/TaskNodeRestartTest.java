@@ -72,13 +72,6 @@ public class TaskNodeRestartTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(NODES);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -187,7 +180,7 @@ public class TaskNodeRestartTest extends GridCommonAbstractTest {
      */
     private static class TestTask2 implements ComputeTask<Void, Void> {
         /** {@inheritDoc} */
-        @Nullable public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Void arg)
+        @Override @Nullable public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Void arg)
             throws IgniteException {
             Map<TestJob, ClusterNode> jobs = new HashMap<>();
 

@@ -126,17 +126,11 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         startGrids(NODES_CNT);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * Test properties management in meta-cache.
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("NullableProblems")
     public void testUpdateProperties() throws Exception {
         assertEmpty(mgr.directoryListing(ROOT_ID));
 

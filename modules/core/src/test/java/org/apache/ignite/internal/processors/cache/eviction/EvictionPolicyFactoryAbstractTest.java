@@ -156,8 +156,6 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         filter = null;
-
-        super.afterTestsStopped();
     }
 
     /**
@@ -930,7 +928,6 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     /**
      *
      */
-    @SuppressWarnings({"PublicConstructorInNonPublicClass"})
     protected static class MockEntry extends GridCacheMockEntry<String, String> {
         /** Key size. */
         public static final int KEY_SIZE = 1;

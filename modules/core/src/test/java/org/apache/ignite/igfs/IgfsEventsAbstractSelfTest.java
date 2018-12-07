@@ -179,11 +179,6 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
             igfs.clear();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopGrid(1);
-    }
-
     /**
      * Checks events on CRUD operations on a single file in nested directories.
      *

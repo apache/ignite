@@ -47,6 +47,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -59,10 +60,12 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
@@ -86,6 +89,9 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** Client reconnect future. */
     private IgniteFuture<?> reconnecFut;
+
+    /** Minimal IgniteProductVersion supporting BaselineTopology */
+    private static final IgniteProductVersion MIN_BLT_SUPPORTING_VER = IgniteProductVersion.fromString("2.4.0");
 
     /**
      * Required by {@link Externalizable}.
@@ -365,9 +371,37 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /**
+     * Verifies all nodes in current cluster topology support BaselineTopology feature
+     * so compatibilityMode flag is enabled to reset.
+     *
+     * @param discoCache
+     */
+    private void verifyBaselineTopologySupport(DiscoCache discoCache) {
+        if (discoCache.minimumServerNodeVersion().compareTo(MIN_BLT_SUPPORTING_VER) < 0) {
+            SB sb = new SB("Cluster contains nodes that don't support BaselineTopology: [");
+
+            for (ClusterNode cn : discoCache.serverNodes()) {
+                if (cn.version().compareTo(MIN_BLT_SUPPORTING_VER) < 0)
+                    sb
+                        .a("[")
+                        .a(cn.consistentId())
+                        .a(":")
+                        .a(cn.version())
+                        .a("], ");
+            }
+
+            sb.d(sb.length() - 2, sb.length());
+
+            throw new IgniteException(sb.a("]").toString());
+        }
+    }
+
+    /**
      * Executes validation checks of cluster state and BaselineTopology before changing BaselineTopology to new one.
      */
     private void validateBeforeBaselineChange(Collection<? extends BaselineNode> baselineTop) {
+        verifyBaselineTopologySupport(ctx.discovery().discoCache());
+
         if (!ctx.state().clusterState().active())
             throw new IgniteException("Changing BaselineTopology on inactive cluster is not allowed.");
 
@@ -381,9 +415,6 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
                 if (!onlineNodes.isEmpty())
                     throw new IgniteException("Removing online nodes from BaselineTopology is not supported: " + onlineNodes);
             }
-            else
-                //should never happen, actually: if cluster was activated, we expect it to have a BaselineTopology.
-                throw new IgniteException("Previous BaselineTopology was not found.");
         }
     }
 
@@ -461,6 +492,36 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
         try {
             ctx.cache().enableStatistics(caches, enabled);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clearStatistics(Collection<String> caches) {
+        guard();
+
+        try {
+            ctx.cache().clearStatistics(caches);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setTxTimeoutOnPartitionMapExchange(long timeout) {
+        guard();
+
+        try {
+            ctx.cache().setTxTimeoutOnPartitionMapExchange(timeout);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -764,7 +825,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return "IgniteCluster [igniteInstanceName=" + ctx.igniteInstanceName() + ']';
     }
 }

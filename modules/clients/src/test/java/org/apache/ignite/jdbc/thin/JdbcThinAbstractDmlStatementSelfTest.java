@@ -57,7 +57,7 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTestsStopped() {
         stopAllGrids();
     }
 
@@ -191,7 +191,6 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
     /**
      * Person.
      */
-    @SuppressWarnings("UnusedDeclaration")
     static class Person implements Serializable {
         /** ID. */
         @QuerySqlField

@@ -38,6 +38,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestThread;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -64,6 +65,13 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
     /** Ip-finder. */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /** {@inheritDoc} */
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+
+        super.setUp();
+    }
 
     /**
      *
@@ -113,11 +121,6 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
         cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
         cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -234,7 +237,6 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
-    @SuppressWarnings({"TooBroadScope"})
     public void testLock() throws Exception {
         final int kv = 1;
 
@@ -410,7 +412,6 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
-    @SuppressWarnings({"TooBroadScope"})
     public void testLockTimeoutTwoThreads() throws Exception {
         int keyCnt = 1;
 

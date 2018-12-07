@@ -96,14 +96,24 @@ public class IndexStorageSelfTest extends GridCommonAbstractTest {
                 IndexStorageImpl metaStore = storeMap.get(cacheId);
 
                 if (metaStore == null) {
-                    metaStore = new IndexStorageImpl(mem, null, new AtomicLong(), cacheId,
-                        PageIdAllocator.INDEX_PARTITION, PageMemory.FLAG_IDX,
-                        null, mem.allocatePage(cacheId, PageIdAllocator.INDEX_PARTITION, PageMemory.FLAG_IDX), true);
+                    metaStore = new IndexStorageImpl(
+                        mem,
+                        null,
+                        new AtomicLong(),
+                        cacheId,
+                        false,
+                        PageIdAllocator.INDEX_PARTITION,
+                        PageMemory.FLAG_IDX,
+                        null,
+                        mem.allocatePage(cacheId, PageIdAllocator.INDEX_PARTITION, PageMemory.FLAG_IDX),
+                        true,
+                        null
+                    );
 
                     storeMap.put(cacheId, metaStore);
                 }
 
-                final RootPage rootPage = metaStore.getOrAllocateForTree(idxName);
+                final RootPage rootPage = metaStore.allocateIndex(idxName);
 
                 assertTrue(rootPage.isAllocated());
 
@@ -117,7 +127,7 @@ public class IndexStorageSelfTest extends GridCommonAbstractTest {
                     String idxName = entry.getKey();
                     FullPageId rootPageId = entry.getValue().pageId();
 
-                    final RootPage rootPage = storeMap.get(cacheId).getOrAllocateForTree(idxName);
+                    final RootPage rootPage = storeMap.get(cacheId).allocateIndex(idxName);
 
                     assertEquals("Invalid root page ID restored [cacheId=" + cacheId + ", idxName=" + idxName + ']',
                         rootPageId, rootPage.pageId());
@@ -128,7 +138,7 @@ public class IndexStorageSelfTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            mem.stop();
+            mem.stop(true);
         }
     }
 
@@ -157,7 +167,7 @@ public class IndexStorageSelfTest extends GridCommonAbstractTest {
         DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), allocationPath);
 
         DataRegionConfiguration plcCfg = new DataRegionConfiguration()
-            .setMaxSize(30 * 1024 * 1024).setInitialSize(30 * 1024 * 1024);
+            .setMaxSize(30L * 1024 * 1024).setInitialSize(30L * 1024 * 1024);
 
         return new PageMemoryNoStoreImpl(
             log,

@@ -34,13 +34,14 @@ ul.bs-select-menu(
             type='button'
             role='menuitem'
             tabindex='-1'
-            ng-click='$select($index, $event)'
+            ng-click='$select($index, $event); $event.stopPropagation();'
             ng-class=`{ 'bssm-item-button__active': $isActive($index) }`
             data-placement='right auto'
-            title='{{ ::match.label }}'
+            title='{{ ::match.label | bsSelectStrip }}'
         )
             img.bssm-active-indicator.icon-left(
                 ng-src='{{ $isActive($index) ? "/images/checkbox-active.svg" : "/images/checkbox.svg" }}'
             )
             span.bssm-item-text(ng-bind-html='match.label')
-    .bssm-click-overlay(ng-click='$hide()')
+    bssm-transclude-to-body(ng-if='$isShown')
+        .bssm-click-overlay(ng-click='$hide()')

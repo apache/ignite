@@ -128,7 +128,6 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of any exception.
      */
-    @SuppressWarnings("NullableProblems")
     public void testAppendPrepend() throws Exception {
         assertEquals("as" + "df", testAppend("as", "df", true));
         assertEquals("df" + "as", testAppend("as", "df", false));
@@ -277,10 +276,15 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
 
                             return fut;
                         }
+
                         // Rewriting flagOn result to keep intercepting invocations after it.
-                        else if ("setSkipStore".equals(mtd.getName()))
+                        if ("setSkipStore".equals(mtd.getName()))
                             return proxy;
-                        else if ("forSubjectId".equals(mtd.getName()))
+
+                        if ("forSubjectId".equals(mtd.getName()))
+                            return proxy;
+
+                        if ("keepBinary".equals(mtd.getName()))
                             return proxy;
 
                         return mtd.invoke(cache, args);

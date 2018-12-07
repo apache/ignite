@@ -108,12 +108,6 @@ public abstract class GridUnsafe {
             ? new ReflectiveDirectBufferCleaner()
             : new UnsafeDirectBufferCleaner();
 
-    /** */
-    private static final Base64Encoder BASE64_ENC =
-        majorJavaVersion(jdkVersion()) < 8
-            ? new LegacyBase64Encoder()
-            : new Base64EncoderImpl();
-
     /** JavaNioAccess object. */
     private static final Object JAVA_NIO_ACCESS_OBJ = javaNioAccessObject();
 
@@ -1345,6 +1339,7 @@ public abstract class GridUnsafe {
      * @return Buffer memory address.
      */
     public static long bufferAddress(ByteBuffer buf) {
+        assert buf.isDirect();
         return UNSAFE.getLong(buf, DIRECT_BUF_ADDR_OFF);
     }
 
@@ -1792,15 +1787,5 @@ public abstract class GridUnsafe {
             UNSAFE.putByte(addr + 1, (byte)(val >> 8));
             UNSAFE.putByte(addr, (byte)(val));
         }
-    }
-
-    /**
-     * Encodes bytes into Base64 string.
-     *
-     * @param msg Message to encode.
-     * @return Encoded message.
-     */
-    public static String encodeBase64(byte[] msg) {
-        return BASE64_ENC.encode(msg);
     }
 }

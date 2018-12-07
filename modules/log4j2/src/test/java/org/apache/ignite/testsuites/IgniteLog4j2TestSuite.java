@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.logger.log4j2.Log4j2ConfigUpdateTest;
 import org.apache.ignite.logger.log4j2.Log4j2LoggerMarkerTest;
 import org.apache.ignite.logger.log4j2.Log4j2LoggerSelfTest;
 import org.apache.ignite.logger.log4j2.Log4j2LoggerVerboseModeSelfTest;
@@ -36,6 +37,7 @@ public class IgniteLog4j2TestSuite extends TestSuite {
         suite.addTestSuite(Log4j2LoggerSelfTest.class);
         suite.addTestSuite(Log4j2LoggerVerboseModeSelfTest.class);
         suite.addTestSuite(Log4j2LoggerMarkerTest.class);
+        suite.addTestSuite(Log4j2ConfigUpdateTest.class);
 
         return suite;
     }

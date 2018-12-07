@@ -23,6 +23,7 @@ ul.tabs {
     $offset-vertical: 11px;
     $offset-horizontal: 25px;
     $font-size: 14px;
+    $border-width: 5px;
 
     list-style: none;
 
@@ -34,10 +35,13 @@ ul.tabs {
     li {
         position: relative;
         top: 1px;
+        height: $height + $border-width;
 
         display: inline-block;
 
-        border-bottom: 5px solid transparent;
+        border-bottom: 0px solid transparent;
+        transition-property: border-bottom;
+        transition-duration: 0.2s;
 
         a {
             display: inline-block;
@@ -59,6 +63,10 @@ ul.tabs {
             .badge {
               margin-left: $offset-vertical;
             }
+        }
+
+        &.active, &:hover {
+            border-bottom-width: $border-width;
         }
 
         &.active {

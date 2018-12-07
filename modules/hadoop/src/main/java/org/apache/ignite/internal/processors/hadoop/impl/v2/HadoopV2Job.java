@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.hadoop.impl.v2;
 
 import java.security.PrivilegedExceptionAction;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -57,7 +58,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -116,7 +116,7 @@ public class HadoopV2Job extends HadoopJobEx {
 
     /** */
     private final ConcurrentMap<T2<HadoopTaskType, Integer>, GridFutureAdapter<HadoopTaskContext>> ctxs =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /** Pooling task context class and thus class loading environment. */
     private final Queue<Class<? extends HadoopTaskContext>> taskCtxClsPool = new ConcurrentLinkedQueue<>();
@@ -257,7 +257,7 @@ public class HadoopV2Job extends HadoopJobEx {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked", "MismatchedQueryAndUpdateOfCollection" })
+    @SuppressWarnings({"unchecked"})
     @Override public HadoopTaskContext getTaskContext(HadoopTaskInfo info) throws IgniteCheckedException {
         T2<HadoopTaskType, Integer> locTaskId = new T2<>(info.type(),  info.taskNumber());
 

@@ -272,7 +272,8 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
 
                 /** {@inheritDoc} */
                 @Override protected void process(Row row) {
-                    data.put((K)controller.buildKeyObject(row), (V)controller.buildValueObject(row));
+                    if (row != null)
+                        data.put((K)controller.buildKeyObject(row), (V)controller.buildValueObject(row));
                 }
             }, keys);
         }

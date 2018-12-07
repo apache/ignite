@@ -91,7 +91,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     }
 
     /** {@inheritDoc} */
-    protected AtomicConfiguration atomicConfiguration() {
+    @Override protected AtomicConfiguration atomicConfiguration() {
         AtomicConfiguration atomicCfg = super.atomicConfiguration();
 
         atomicCfg.setAtomicSequenceReserveSize(BATCH_SIZE);
@@ -125,25 +125,20 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        try {
-            // Remove mandatory sequences from cache.
-            for (String seqName : seqNames) {
-                IgniteAtomicSequence seq = grid().atomicSequence(seqName, 0, false);
+        // Remove mandatory sequences from cache.
+        for (String seqName : seqNames) {
+            IgniteAtomicSequence seq = grid().atomicSequence(seqName, 0, false);
 
-                assertNotNull(seq);
+            assertNotNull(seq);
 
-                seq.close();
+            seq.close();
 
-                assertNull(grid().atomicSequence(seqName, 0, false));
-            }
-        }
-        finally {
-            super.afterTestsStopped();
+            assertNull(grid().atomicSequence(seqName, 0, false));
         }
     }
 
     /** {@inheritDoc} */
-    protected IgniteEx grid() {
+    @Override protected IgniteEx grid() {
         return grid(0);
     }
 

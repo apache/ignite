@@ -17,9 +17,17 @@
 
 import _ from 'lodash';
 
-_.mixin({
-    nonNil: _.negate(_.isNil),
-    nonEmpty: _.negate(_.isEmpty)
+import negate from 'lodash/negate';
+import isNil from 'lodash/isNil';
+import isEmpty from 'lodash/isEmpty';
+import mixin from 'lodash/mixin';
+
+const nonNil = negate(isNil);
+const nonEmpty = negate(isEmpty);
+
+mixin({
+    nonNil,
+    nonEmpty
 });
 
 export class EmptyBean {
@@ -42,7 +50,7 @@ export class EmptyBean {
     }
 
     isComplex() {
-        return _.nonEmpty(this.properties) || !!_.find(this.arguments, (arg) => arg.clsName === 'MAP');
+        return nonEmpty(this.properties) || !!_.find(this.arguments, (arg) => arg.clsName === 'MAP');
     }
 
     nonComplex() {
@@ -99,7 +107,7 @@ export class Bean extends EmptyBean {
     }
 
     isEmpty() {
-        return _.isEmpty(this.arguments) && _.isEmpty(this.properties);
+        return isEmpty(this.arguments) && isEmpty(this.properties);
     }
 
     constructorArgument(clsName, value) {
@@ -109,23 +117,23 @@ export class Bean extends EmptyBean {
     }
 
     stringConstructorArgument(model) {
-        return this._property(this.arguments, 'java.lang.String', model, null, _.nonEmpty);
+        return this._property(this.arguments, 'java.lang.String', model, null, nonEmpty);
     }
 
     intConstructorArgument(model) {
-        return this._property(this.arguments, 'int', model, null, _.nonNil);
+        return this._property(this.arguments, 'int', model, null, nonNil);
     }
 
     boolConstructorArgument(model) {
-        return this._property(this.arguments, 'boolean', model, null, _.nonNil);
+        return this._property(this.arguments, 'boolean', model, null, nonNil);
     }
 
     classConstructorArgument(model) {
-        return this._property(this.arguments, 'java.lang.Class', model, null, _.nonEmpty);
+        return this._property(this.arguments, 'java.lang.Class', model, null, nonEmpty);
     }
 
     pathConstructorArgument(model) {
-        return this._property(this.arguments, 'PATH', model, null, _.nonEmpty);
+        return this._property(this.arguments, 'PATH', model, null, nonEmpty);
     }
 
     constantConstructorArgument(model) {
@@ -135,7 +143,7 @@ export class Bean extends EmptyBean {
         const value = _.get(this.src, model);
         const dflt = _.get(this.dflts, model);
 
-        if (_.nonNil(value) && _.nonNil(dflt) && value !== dflt.value)
+        if (nonNil(value) && nonNil(dflt) && value !== dflt.value)
             this.arguments.push({clsName: dflt.clsName, constant: true, value});
 
         return this;
@@ -170,7 +178,7 @@ export class Bean extends EmptyBean {
 
         const dflt = _.get(this.dflts, model);
 
-        if (_.nonEmpty(entries) && _.nonNil(dflt) && entries !== dflt.entries) {
+        if (nonEmpty(entries) && nonNil(dflt) && entries !== dflt.entries) {
             this.arguments.push({
                 clsName: 'MAP',
                 id,
@@ -194,7 +202,7 @@ export class Bean extends EmptyBean {
             const value = _.get(this.src, path);
             const dflt = _.get(this.dflts, path);
 
-            return _.nonNil(value) && value !== dflt;
+            return nonNil(value) && value !== dflt;
         });
     }
 
@@ -203,27 +211,27 @@ export class Bean extends EmptyBean {
     }
 
     boolProperty(model, name = model) {
-        return this._property(this.properties, 'boolean', model, name, _.nonNil);
+        return this._property(this.properties, 'boolean', model, name, nonNil);
     }
 
     byteProperty(model, name = model) {
-        return this._property(this.properties, 'byte', model, name, _.nonNil);
+        return this._property(this.properties, 'byte', model, name, nonNil);
     }
 
     intProperty(model, name = model) {
-        return this._property(this.properties, 'int', model, name, _.nonNil);
+        return this._property(this.properties, 'int', model, name, nonNil);
     }
 
     longProperty(model, name = model) {
-        return this._property(this.properties, 'long', model, name, _.nonNil);
+        return this._property(this.properties, 'long', model, name, nonNil);
     }
 
     floatProperty(model, name = model) {
-        return this._property(this.properties, 'float', model, name, _.nonNil);
+        return this._property(this.properties, 'float', model, name, nonNil);
     }
 
     doubleProperty(model, name = model) {
-        return this._property(this.properties, 'double', model, name, _.nonNil);
+        return this._property(this.properties, 'double', model, name, nonNil);
     }
 
     property(name, value, hint) {
@@ -245,15 +253,15 @@ export class Bean extends EmptyBean {
     }
 
     stringProperty(model, name = model, mapper) {
-        return this._property(this.properties, 'java.lang.String', model, name, _.nonEmpty, mapper);
+        return this._property(this.properties, 'java.lang.String', model, name, nonEmpty, mapper);
     }
 
     pathProperty(model, name = model) {
-        return this._property(this.properties, 'PATH', model, name, _.nonEmpty);
+        return this._property(this.properties, 'PATH', model, name, nonEmpty);
     }
 
     classProperty(model, name = model) {
-        return this._property(this.properties, 'java.lang.Class', model, name, _.nonEmpty);
+        return this._property(this.properties, 'java.lang.Class', model, name, nonEmpty);
     }
 
     enumProperty(model, name = model) {
@@ -263,7 +271,7 @@ export class Bean extends EmptyBean {
         const value = _.get(this.src, model);
         const dflt = _.get(this.dflts, model);
 
-        if (_.nonNil(value) && _.nonNil(dflt) && value !== dflt.value)
+        if (nonNil(value) && nonNil(dflt) && value !== dflt.value)
             this.properties.push({clsName: dflt.clsName, name, value: dflt.mapper ? dflt.mapper(value) : value});
 
         return this;
@@ -276,7 +284,7 @@ export class Bean extends EmptyBean {
         const cls = _.get(this.src, model);
         const dflt = _.get(this.dflts, model);
 
-        if (_.nonEmpty(cls) && cls !== dflt)
+        if (nonEmpty(cls) && cls !== dflt)
             this.properties.push({clsName: 'BEAN', name, value: new EmptyBean(cls)});
 
         return this;
@@ -350,7 +358,7 @@ export class Bean extends EmptyBean {
         const entries = _.isString(model) ? _.get(this.src, model) : model;
         const dflt = _.isString(model) ? _.get(this.dflts, model) : _.get(this.dflts, name);
 
-        if (_.nonEmpty(entries) && _.nonNil(dflt) && entries !== dflt.entries) {
+        if (nonEmpty(entries) && nonNil(dflt) && entries !== dflt.entries) {
             this.properties.push({
                 clsName: 'MAP',
                 id,
@@ -373,7 +381,7 @@ export class Bean extends EmptyBean {
 
         const entries = _.get(this.src, model);
 
-        if (_.nonEmpty(entries))
+        if (nonEmpty(entries))
             this.properties.push({clsName: 'java.util.Properties', id, name, entries});
 
         return this;

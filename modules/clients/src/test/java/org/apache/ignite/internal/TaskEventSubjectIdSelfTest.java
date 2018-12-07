@@ -26,7 +26,6 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
@@ -107,8 +106,6 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         GridClientFactory.stop(client.id());
-
-        stopGrid();
     }
 
     /** {@inheritDoc} */
@@ -175,7 +172,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
                     return null;
                 }
             },
-            IgniteCheckedException.class,
+            IgniteException.class,
             null
         );
 
@@ -310,6 +307,9 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Events for class tasks that was started from external clients should contain
+     * client subject id instead of the node where it was started. This test checks it.
+     *
      * @throws Exception If failed.
      */
     public void testClient() throws Exception {

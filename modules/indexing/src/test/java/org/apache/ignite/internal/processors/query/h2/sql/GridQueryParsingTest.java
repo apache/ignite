@@ -75,7 +75,6 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private static Ignite ignite;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
@@ -129,11 +128,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         ignite = null;
-
-        super.afterTestsStopped();
     }
 
     /**
@@ -209,6 +204,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("select * from Person");
         checkQuery("select distinct * from Person");
         checkQuery("select p.name, date from Person p");
+        checkQuery("select p.name, date from Person p for update");
 
         checkQuery("select * from Person p, sch2.Address a");
         checkQuery("select * from Person, sch2.Address");
@@ -701,7 +697,6 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      * @param exCls Exception class.
      * @param msg Expected message.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void assertParseThrows(final String sql, Class<? extends Exception> exCls, String msg) {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1013,7 +1008,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         String schemaName = idx.schema(DEFAULT_CACHE_NAME);
 
-        return (JdbcConnection)idx.connectionForSchema(schemaName);
+        return (JdbcConnection)idx.connections().connectionForThread(schemaName);
     }
 
     /**

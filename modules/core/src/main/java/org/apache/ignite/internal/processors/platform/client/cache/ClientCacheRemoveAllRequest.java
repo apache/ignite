@@ -35,7 +35,6 @@ public class ClientCacheRemoveAllRequest extends ClientCacheRequest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         cache(ctx).removeAll();
 

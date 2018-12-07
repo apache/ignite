@@ -149,6 +149,87 @@ module.exports.factory = (mongo, spacesService, cachesService, errors) => {
     };
 
     class DomainsService {
+        static shortList(userId, demo, clusterId) {
+            return spacesService.spaceIds(userId, demo)
+                .then((spaceIds) => {
+                    const sIds = _.map(spaceIds, (spaceId) => mongo.ObjectId(spaceId));
+
+                    return mongo.DomainModel.aggregate([
+                        {$match: {space: {$in: sIds}, clusters: mongo.ObjectId(clusterId)}},
+                        {$project: {
+                            keyType: 1,
+                            valueType: 1,
+                            queryMetadata: 1,
+                            hasIndex: {
+                                $or: [
+                                    {
+                                        $and: [
+                                            {$eq: ['$queryMetadata', 'Annotations']},
+                                            {
+                                                $or: [
+                                                    {$eq: ['$generatePojo', false]},
+                                                    {
+                                                        $and: [
+                                                            {$eq: ['$databaseSchema', '']},
+                                                            {$eq: ['$databaseTable', '']}
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {$gt: [{$size: {$ifNull: ['$keyFields', []]}}, 0]}
+                                ]
+                            }
+                        }}
+                    ]).exec();
+                });
+        }
+
+        static get(userId, demo, _id) {
+            return spacesService.spaceIds(userId, demo)
+                .then((spaceIds) => mongo.DomainModel.findOne({space: {$in: spaceIds}, _id}).lean().exec());
+        }
+
+        static upsert(model) {
+            if (_.isNil(model._id))
+                return Promise.reject(new errors.IllegalArgumentException('Model id can not be undefined or null'));
+
+            const query = _.pick(model, ['space', '_id']);
+
+            return mongo.DomainModel.update(query, {$set: model}, {upsert: true}).exec()
+                .then(() => mongo.Cache.update({_id: {$in: model.caches}}, {$addToSet: {domains: model._id}}, {multi: true}).exec())
+                .then(() => mongo.Cache.update({_id: {$nin: model.caches}}, {$pull: {domains: model._id}}, {multi: true}).exec())
+                .then(() => _updateCacheStore(model.cacheStoreChanges))
+                .catch((err) => {
+                    if (err.code === mongo.errCodes.DUPLICATE_KEY_ERROR)
+                        throw new errors.DuplicateKeyException(`Model with value type: "${model.valueType}" already exist.`);
+
+                    throw err;
+                });
+        }
+
+        /**
+         * Remove model.
+         *
+         * @param {mongo.ObjectId|String} ids - The model id for remove.
+         * @returns {Promise.<{rowsAffected}>} - The number of affected rows.
+         */
+        static remove(ids) {
+            if (_.isNil(ids))
+                return Promise.reject(new errors.IllegalArgumentException('Model id can not be undefined or null'));
+
+            ids = _.castArray(ids);
+
+            if (_.isEmpty(ids))
+                return Promise.resolve({rowsAffected: 0});
+
+            return mongo.Cache.update({domains: {$in: ids}}, {$pull: {domains: ids}}, {multi: true}).exec()
+                .then(() => mongo.Cluster.update({models: {$in: ids}}, {$pull: {models: ids}}, {multi: true}).exec())
+                .then(() => mongo.DomainModel.remove({_id: {$in: ids}}).exec())
+                .then(convertRemoveStatus);
+        }
+
         /**
          * Batch merging domains.
          *
@@ -166,21 +247,6 @@ module.exports.factory = (mongo, spacesService, cachesService, errors) => {
          */
         static listBySpaces(spaceIds) {
             return mongo.DomainModel.find({space: {$in: spaceIds}}).sort('valueType').lean().exec();
-        }
-
-        /**
-         * Remove domain.
-         *
-         * @param {mongo.ObjectId|String} domainId - The domain id for remove.
-         * @returns {Promise.<{rowsAffected}>} - The number of affected rows.
-         */
-        static remove(domainId) {
-            if (_.isNil(domainId))
-                return Promise.reject(new errors.IllegalArgumentException('Domain id can not be undefined or null'));
-
-            return mongo.Cache.update({domains: {$in: [domainId]}}, {$pull: {domains: domainId}}, {multi: true}).exec()
-                .then(() => mongo.DomainModel.remove({_id: domainId}).exec())
-                .then(convertRemoveStatus);
         }
 
         /**

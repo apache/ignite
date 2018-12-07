@@ -546,6 +546,30 @@ namespace ignite
 #ifdef SQL_ALTER_TABLE
                     DBG_STR_CASE(SQL_ALTER_TABLE);
 #endif // SQL_ALTER_TABLE
+#ifdef SQL_FETCH_DIRECTION
+                    DBG_STR_CASE(SQL_FETCH_DIRECTION);
+#endif // SQL_FETCH_DIRECTION
+#ifdef SQL_LOCK_TYPES
+                    DBG_STR_CASE(SQL_LOCK_TYPES);
+#endif // SQL_LOCK_TYPES
+#ifdef SQL_ODBC_API_CONFORMANCE
+                    DBG_STR_CASE(SQL_ODBC_API_CONFORMANCE);
+#endif // SQL_ODBC_API_CONFORMANCE
+#ifdef SQL_ODBC_SQL_CONFORMANCE
+                    DBG_STR_CASE(SQL_ODBC_SQL_CONFORMANCE);
+#endif // SQL_ODBC_SQL_CONFORMANCE
+#ifdef SQL_POSITIONED_STATEMENTS
+                    DBG_STR_CASE(SQL_POSITIONED_STATEMENTS);
+#endif // SQL_POSITIONED_STATEMENTS
+#ifdef SQL_SCROLL_CONCURRENCY
+                    DBG_STR_CASE(SQL_SCROLL_CONCURRENCY);
+#endif // SQL_SCROLL_CONCURRENCY
+#ifdef SQL_STATIC_SENSITIVITY
+                    DBG_STR_CASE(SQL_STATIC_SENSITIVITY);
+#endif // SQL_STATIC_SENSITIVITY
+#ifdef SQL_DTC_TRANSITION_COST
+                    DBG_STR_CASE(SQL_DTC_TRANSITION_COST);
+#endif // SQL_DTC_TRANSITION_COST
                     default:
                         break;
                 }
@@ -742,7 +766,7 @@ namespace ignite
 #ifdef SQL_MULTIPLE_ACTIVE_TXN
                 // A character string: "Y" if the driver supports more than one active transaction at the same time,
                 // "N" if only one transaction can be active at any time.
-                strParams[SQL_MULTIPLE_ACTIVE_TXN] = "N";
+                strParams[SQL_MULTIPLE_ACTIVE_TXN] = "Y";
 #endif // SQL_MULTIPLE_ACTIVE_TXN
 
 #ifdef SQL_ORDER_BY_COLUMNS_IN_SELECT
@@ -890,6 +914,18 @@ namespace ignite
 
 #ifdef SQL_GETDATA_EXTENSIONS
                 // Bitmask enumerating extensions to SQLGetData.
+                // SQL_GD_ANY_COLUMN = SQLGetData can be called for any unbound column, including those before the last
+                //     bound column. Note that the columns must be called in order of ascending column number unless
+                //     SQL_GD_ANY_ORDER is also returned.
+                // SQL_GD_ANY_ORDER = SQLGetData can be called for unbound columns in any order. Note that SQLGetData
+                //     can be called only for columns after the last bound column unless SQL_GD_ANY_COLUMN is also
+                //     returned.
+                // SQL_GD_BLOCK = SQLGetData can be called for an unbound column in any row in a block (where the rowset
+                //     size is greater than 1) of data after positioning to that row with SQLSetPos.
+                // SQL_GD_BOUND = SQLGetData can be called for bound columns in addition to unbound columns. A driver
+                //     cannot return this value unless it also returns SQL_GD_ANY_COLUMN.
+                // SQL_GD_OUTPUT_PARAMS = SQLGetData can be called to return output parameter values. For more
+                //     information, see Retrieving Output.
                 intParams[SQL_GETDATA_EXTENSIONS] = SQL_GD_ANY_COLUMN | SQL_GD_ANY_ORDER | SQL_GD_BOUND;
 #endif // SQL_GETDATA_EXTENSIONS
 
@@ -1004,7 +1040,14 @@ namespace ignite
 #endif // SQL_OJ_CAPABILITIES
 
 #ifdef SQL_POS_OPERATIONS
-                // Bitmask enumerating the support operations in SQLSetPos.
+                // DEPRECATED. Included for backward-compatibility.
+                // A bitmask enumerating the supported operations in SQLSetPos.
+                //
+                // SQL_POS_POSITION (ODBC 2.0)
+                // SQL_POS_REFRESH (ODBC 2.0)
+                // SQL_POS_UPDATE (ODBC 2.0)
+                // SQL_POS_DELETE (ODBC 2.0)
+                // SQL_POS_ADD (ODBC 2.0)
                 intParams[SQL_POS_OPERATIONS] = 0;
 #endif // SQL_POS_OPERATIONS
 
@@ -1060,7 +1103,7 @@ namespace ignite
                 // Bitmask that describes the attributes of a static cursor that are supported by the driver. This
                 // bitmask contains the first subset of attributes; for the second subset, see
                 // SQL_STATIC_CURSOR_ATTRIBUTES2.
-                intParams[SQL_STATIC_CURSOR_ATTRIBUTES1] = SQL_CA1_NEXT;
+                intParams[SQL_STATIC_CURSOR_ATTRIBUTES1] = SQL_CA1_NEXT | SQL_CA1_ABSOLUTE;
 #endif // SQL_STATIC_CURSOR_ATTRIBUTES1
 
 #ifdef SQL_STATIC_CURSOR_ATTRIBUTES2
@@ -1273,7 +1316,7 @@ namespace ignite
                 //     resulting from the execution of the statement for the entire array of parameters. This is
                 //     conceptually equivalent to treating the statement together with the complete parameter array as
                 //     one atomic unit. Errors are handled the same as if one statement were executed.
-                intParams[SQL_PARAM_ARRAY_ROW_COUNTS] = SQL_PARC_NO_BATCH;
+                intParams[SQL_PARAM_ARRAY_ROW_COUNTS] = SQL_PARC_BATCH;
 #endif // SQL_PARAM_ARRAY_ROW_COUNTS
 
 #ifdef SQL_PARAM_ARRAY_SELECTS
@@ -1553,7 +1596,7 @@ namespace ignite
                 // SQL_TXN_REPEATABLE_READ = Dirty reads and nonrepeatable reads are not possible. Phantoms are possible
                 // SQL_TXN_SERIALIZABLE = Transactions are serializable. Serializable transactions do not allow dirty
                 //     reads, nonrepeatable reads, or phantoms.
-                intParams[SQL_DEFAULT_TXN_ISOLATION] = 0;
+                intParams[SQL_DEFAULT_TXN_ISOLATION] = SQL_TXN_REPEATABLE_READ;
 #endif // SQL_DEFAULT_TXN_ISOLATION
 
 #ifdef SQL_DROP_ASSERTION
@@ -2127,7 +2170,7 @@ namespace ignite
                 // SQL_ATTR_TXN_ISOLATION attribute. For more information, see SQLSetConnectAttr Function.
                 // An SQL-92 Entry level-conformant driver will always return SQL_TXN_SERIALIZABLE as supported.
                 // A FIPS Transitional level-conformant driver will always return all of these options as supported.
-                intParams[SQL_TXN_ISOLATION_OPTION] = 0;
+                intParams[SQL_TXN_ISOLATION_OPTION] = SQL_TXN_REPEATABLE_READ;
 #endif // SQL_TXN_ISOLATION_OPTION
 
 #ifdef SQL_UNION
@@ -2139,6 +2182,94 @@ namespace ignite
                 intParams[SQL_UNION] = SQL_U_UNION | SQL_U_UNION_ALL;
 #endif // SQL_UNION
 
+#ifdef SQL_FETCH_DIRECTION
+                // DEPRECATED. Included for backward-compatibility.
+                // The information type was introduced in ODBC 1.0; each bitmask is labeled with the version in which
+                // it was introduced.
+                // A bitmask enumerating the supported fetch direction options:
+                // SQL_FD_FETCH_NEXT (ODBC 1.0)
+                // SQL_FD_FETCH_FIRST (ODBC 1.0)
+                // SQL_FD_FETCH_LAST (ODBC 1.0)
+                // SQL_FD_FETCH_PRIOR (ODBC 1.0)
+                // SQL_FD_FETCH_ABSOLUTE (ODBC 1.0)
+                // SQL_FD_FETCH_RELATIVE (ODBC 1.0)
+                // SQL_FD_FETCH_BOOKMARK (ODBC 2.0)
+                intParams[SQL_FETCH_DIRECTION] = SQL_FD_FETCH_NEXT | SQL_FD_FETCH_PRIOR;
+#endif // SQL_FETCH_DIRECTION
+
+#ifdef SQL_LOCK_TYPES
+                // DEPRECATED. Included for backward-compatibility.
+                // A bitmask enumerating the supported lock types for the fLock argument in SQLSetPos:
+                // SQL_LCK_NO_CHANGE
+                // SQL_LCK_EXCLUSIVE
+                // SQL_LCK_UNLOCK
+                intParams[SQL_LOCK_TYPES] = SQL_LCK_NO_CHANGE;
+#endif // SQL_LOCK_TYPES
+
+#ifdef SQL_ODBC_API_CONFORMANCE
+                // DEPRECATED. Included for backward-compatibility.
+                // A value indicating the level of ODBC conformance.
+                // SQL_OAC_NONE = None
+                // SQL_OAC_LEVEL1 = Level 1 supported
+                // SQL_OAC_LEVEL2 = Level 2 supported
+                intParams[SQL_ODBC_API_CONFORMANCE] = SQL_OAC_LEVEL1;
+#endif // SQL_ODBC_API_CONFORMANCE
+
+#ifdef SQL_ODBC_SQL_CONFORMANCE
+                // DEPRECATED. Included for backward-compatibility.
+                // A value indicating SQL grammar supported by the driver.
+                // See the following link for a definition of SQL conformance levels:
+                // https://docs.microsoft.com/en-us/sql/odbc/reference/appendixes/appendix-c-sql-grammar
+                //
+                // SQL_OSC_MINIMUM = Minimum grammar supported
+                // SQL_OSC_CORE = Core grammar supported
+                // SQL_OSC_EXTENDED = Extended grammar supported
+                intParams[SQL_ODBC_SQL_CONFORMANCE] = SQL_OSC_CORE;
+#endif // SQL_ODBC_SQL_CONFORMANCE
+
+#ifdef SQL_POSITIONED_STATEMENTS
+                // DEPRECATED. Included for backward-compatibility.
+                // A bitmask enumerating the supported positioned SQL statements.
+                // The following bitmasks are used to determine which options are supported:
+                // SQL_PS_POSITIONED_DELETE
+                // SQL_PS_POSITIONED_UPDATE
+                // SQL_PS_SELECT_FOR_UPDATE
+                intParams[SQL_POSITIONED_STATEMENTS] = SQL_PS_SELECT_FOR_UPDATE;
+#endif // SQL_POSITIONED_STATEMENTS
+
+#ifdef SQL_SCROLL_CONCURRENCY
+                // DEPRECATED. Included for backward-compatibility.
+                // A bitmask enumerating the concurrency control options supported for the cursor.
+                // The following bitmasks are used to determine which options are supported:
+                // SQL_SCCO_READ_ONLY = Cursor is read-only. No updates are allowed.
+                // SQL_SCCO_LOCK = Cursor uses the lowest level of locking sufficient to ensure that the row can be
+                //    updated.
+                // SQL_SCCO_OPT_ROWVER = Cursor uses optimistic concurrency control, comparing row versions, such as
+                //    SQLBase ROWID or Sybase TIMESTAMP.
+                // SQL_SCCO_OPT_VALUES = Cursor uses optimistic concurrency control, comparing values.
+                intParams[SQL_SCROLL_CONCURRENCY] = SQL_SCCO_READ_ONLY;
+#endif // SQL_SCROLL_CONCURRENCY
+
+#ifdef SQL_STATIC_SENSITIVITY
+                // DEPRECATED. Included for backward-compatibility.
+                // A bitmask enumerating whether changes made by an application to a static or keyset-driven cursor
+                // through SQLSetPos or positioned update or delete statements can be detected by that application.
+                //
+                // Whether an application can detect changes made to the result set by other users, including other
+                // cursors in the same application, depends on the cursor type.
+                //
+                // SQL_SS_ADDITIONS = Added rows are visible to the cursor; the cursor can scroll to these rows.
+                //    Where these rows are added to the cursor is driver-dependent.
+                // SQL_SS_DELETIONS = Deleted rows are no longer available to the cursor and do not leave a "hole" in
+                //   the result set; after the cursor scrolls from a deleted row, it cannot return to that row.
+                // SQL_SS_UPDATES = Updates to rows are visible to the cursor; if the cursor scrolls from and returns to
+                //    an updated row, the data returned by the cursor is the updated data, not the original data. This
+                //    option applies only to static cursors or updates on keyset - driven cursors that do not update the
+                //    key. This option does not apply for a dynamic cursor or in the case in which a key is changed in a
+                //    mixed cursor.
+                intParams[SQL_STATIC_SENSITIVITY] = 0;
+#endif // SQL_STATIC_SENSITIVITY
+
                 //
                 //======================= Short Params ========================
                 //
@@ -2146,7 +2277,7 @@ namespace ignite
 #ifdef SQL_MAX_CONCURRENT_ACTIVITIES
                 // The maximum number of active statements that the driver can  support for a connection. Zero mean no
                 // limit.
-                shortParams[SQL_MAX_CONCURRENT_ACTIVITIES] = 32;
+                shortParams[SQL_MAX_CONCURRENT_ACTIVITIES] = 0;
 #endif // SQL_MAX_CONCURRENT_ACTIVITIES
 
 #ifdef SQL_CURSOR_COMMIT_BEHAVIOR
@@ -2181,7 +2312,7 @@ namespace ignite
 
 #ifdef SQL_TXN_CAPABLE
                 // Describs the transaction support in the driver or data source.
-                shortParams[SQL_TXN_CAPABLE] = SQL_TC_NONE;
+                shortParams[SQL_TXN_CAPABLE] = SQL_TC_DDL_COMMIT;
 #endif // SQL_TXN_CAPABLE
 
 #ifdef SQL_QUOTED_IDENTIFIER_CASE
@@ -2341,7 +2472,7 @@ namespace ignite
                 // names.
                 // An FIPS Entry level-conformant driver will return at least 18. An FIPS Intermediate level-conformant
                 // driver will return at least 128.
-                shortParams[SQL_MAX_IDENTIFIER_LEN] = 128;
+                shortParams[SQL_MAX_IDENTIFIER_LEN] = 0;
 #endif // SQL_MAX_IDENTIFIER_LEN
 
 #ifdef SQL_MAX_PROCEDURE_NAME_LEN

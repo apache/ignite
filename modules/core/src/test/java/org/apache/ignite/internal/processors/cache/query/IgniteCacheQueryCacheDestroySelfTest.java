@@ -48,6 +48,10 @@ public class IgniteCacheQueryCacheDestroySelfTest extends GridCommonAbstractTest
     /** */
     public static final int GRID_CNT = 3;
 
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
     /**
      * The main test code.
      */

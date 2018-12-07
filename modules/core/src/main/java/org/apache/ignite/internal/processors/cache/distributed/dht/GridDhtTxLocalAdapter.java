@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -36,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -46,7 +49,9 @@ import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -56,10 +61,8 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
@@ -75,11 +78,18 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Asynchronous rollback marker for lock futures. */
+    public static final IgniteInternalFuture<Boolean> ROLLBACK_FUT = new GridFutureAdapter<>();
+
+    /** Lock future updater. */
+    private static final AtomicReferenceFieldUpdater<GridDhtTxLocalAdapter, IgniteInternalFuture> LOCK_FUT_UPD =
+        AtomicReferenceFieldUpdater.newUpdater(GridDhtTxLocalAdapter.class, IgniteInternalFuture.class, "lockFut");
+
     /** Near mappings. */
-    protected Map<UUID, GridDistributedTxMapping> nearMap = new ConcurrentHashMap8<>();
+    protected Map<UUID, GridDistributedTxMapping> nearMap = new ConcurrentHashMap<>();
 
     /** DHT mappings. */
-    protected Map<UUID, GridDistributedTxMapping> dhtMap = new ConcurrentHashMap8<>();
+    protected Map<UUID, GridDistributedTxMapping> dhtMap = new ConcurrentHashMap<>();
 
     /** Mapped flag. */
     protected volatile boolean mapped;
@@ -95,6 +105,10 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
     /** Nodes where transactions were started on lock step. */
     private Set<ClusterNode> lockTxNodes;
+
+    /** Enlist or lock future what is currently in progress. */
+    @GridToStringExclude
+    protected volatile IgniteInternalFuture<?> lockFut;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -561,68 +575,78 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         onePhaseCommit(onePhaseCommit);
 
         try {
+            GridFutureAdapter<GridCacheReturn> enlistFut = new GridFutureAdapter<>();
+
+            if (!updateLockFuture(null, enlistFut))
+                return finishFuture(enlistFut, timedOut() ? timeoutException() : rollbackException(), false);
+
             Set<KeyCacheObject> skipped = null;
 
-            AffinityTopologyVersion topVer = topologyVersion();
+            try {
+                AffinityTopologyVersion topVer = topologyVersion();
 
-            GridDhtCacheAdapter dhtCache = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
+                GridDhtCacheAdapter dhtCache = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
 
-            // Enlist locks into transaction.
-            for (int i = 0; i < entries.size(); i++) {
-                GridCacheEntryEx entry = entries.get(i);
+                // Enlist locks into transaction.
+                for (int i = 0; i < entries.size(); i++) {
+                    GridCacheEntryEx entry = entries.get(i);
 
-                KeyCacheObject key = entry.key();
+                    KeyCacheObject key = entry.key();
 
-                IgniteTxEntry txEntry = entry(entry.txKey());
+                    IgniteTxEntry txEntry = entry(entry.txKey());
 
-                // First time access.
-                if (txEntry == null) {
-                    GridDhtCacheEntry cached;
+                    // First time access.
+                    if (txEntry == null) {
+                        GridDhtCacheEntry cached;
 
-                    while (true) {
-                        try {
-                            cached = dhtCache.entryExx(key, topVer);
+                        while (true) {
+                            try {
+                                cached = dhtCache.entryExx(key, topVer);
 
-                            cached.unswap(read);
+                                cached.unswap(read);
 
-                            break;
+                                break;
+                            }
+                            catch (GridCacheEntryRemovedException ignore) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Get removed entry: " + key);
+                            }
                         }
-                        catch (GridCacheEntryRemovedException ignore) {
-                            if (log.isDebugEnabled())
-                                log.debug("Get removed entry: " + key);
-                        }
+
+                        addActiveCache(dhtCache.context(), false);
+
+                        txEntry = addEntry(NOOP,
+                            null,
+                            null,
+                            null,
+                            cached,
+                            null,
+                            CU.empty0(),
+                            false,
+                            -1L,
+                            -1L,
+                            null,
+                            skipStore,
+                            keepBinary,
+                            nearCache);
+
+                        if (read)
+                            txEntry.ttl(accessTtl);
+
+                        txEntry.cached(cached);
+
+                        addReader(msgId, cached, txEntry, topVer);
                     }
+                    else {
+                        if (skipped == null)
+                            skipped = new GridLeanSet<>();
 
-                    addActiveCache(dhtCache.context(), false);
-
-                    txEntry = addEntry(NOOP,
-                        null,
-                        null,
-                        null,
-                        cached,
-                        null,
-                        CU.empty0(),
-                        false,
-                        -1L,
-                        -1L,
-                        null,
-                        skipStore,
-                        keepBinary,
-                        nearCache);
-
-                    if (read)
-                        txEntry.ttl(accessTtl);
-
-                    txEntry.cached(cached);
-
-                    addReader(msgId, cached, txEntry, topVer);
+                        skipped.add(key);
+                    }
                 }
-                else {
-                    if (skipped == null)
-                        skipped = new GridLeanSet<>();
-
-                    skipped.add(key);
-                }
+            }
+            finally {
+                finishFuture(enlistFut, null, true);
             }
 
             assert pessimistic();
@@ -690,6 +714,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         if (timeout == -1)
             return new GridFinishedFuture<>(timeoutException());
 
+        if (isRollbackOnly())
+            return new GridFinishedFuture<>(rollbackException());
+
         IgniteInternalFuture<Boolean> fut = dhtCache.lockAllAsyncInternal(passedKeys,
             timeout,
             this,
@@ -727,7 +754,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CatchGenericClass", "ThrowableInstanceNeverThrown"})
     @Override public boolean localFinish(boolean commit, boolean clearThreadMap) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Finishing dht local tx [tx=" + this + ", commit=" + commit + "]");
@@ -826,17 +852,81 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     }
 
     /**
+     * @return Lock future.
+     */
+    public IgniteInternalFuture<?> lockFuture() {
+        return lockFut;
+    }
+
+    /**
+     * Atomically updates lock future.
+     *
+     * @param oldFut Old future.
+     * @param newFut New future.
+     * @return {@code true} If future was changed.
+     */
+    public boolean updateLockFuture(IgniteInternalFuture<?> oldFut, IgniteInternalFuture<?> newFut) {
+        return LOCK_FUT_UPD.compareAndSet(this, oldFut, newFut);
+    }
+
+    /**
+     * Clears lock future.
+     *
+     * @param cond Clear lock condition.
+     */
+    public void clearLockFuture(@Nullable IgniteInternalFuture cond) {
+        while (true) {
+            IgniteInternalFuture f = lockFut;
+
+            if (f == null
+                || f == ROLLBACK_FUT
+                || (cond != null && f != cond)
+                || updateLockFuture(f, null))
+                return;
+        }
+    }
+
+    /**
+     * @param f Future to finish.
+     * @param err Error.
+     * @param clearLockFut {@code True} if need to clear lock future.
+     * @return Finished future.
+     */
+    public <T> GridFutureAdapter<T> finishFuture(GridFutureAdapter<T> f, Throwable err, boolean clearLockFut) {
+        if (clearLockFut)
+            clearLockFuture(null);
+
+        f.onDone(err);
+
+        return f;
+    }
+
+    /**
+     * Prepare async rollback.
+     *
+     * @return Current lock future or null if it's safe to roll back.
+     */
+    @Nullable public IgniteInternalFuture<?> tryRollbackAsync() {
+        while (true) {
+            final IgniteInternalFuture fut = lockFut;
+
+            if (fut == ROLLBACK_FUT)
+                return null;
+            else if (updateLockFuture(fut, ROLLBACK_FUT))
+                return fut;
+        }
+    }
+
+    /**
      * @param prepFut Prepare future.
      * @return If transaction if finished on prepare step returns future which is completed after transaction finish.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     protected final IgniteInternalFuture<GridNearTxPrepareResponse> chainOnePhasePrepare(
         final GridDhtTxPrepareFuture prepFut) {
         if (commitOnPrepare()) {
             return finishFuture().chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, GridNearTxPrepareResponse>() {
                 @Override public GridNearTxPrepareResponse applyx(IgniteInternalFuture<IgniteInternalTx> finishFut)
-                    throws IgniteCheckedException
-                {
+                    throws IgniteCheckedException {
                     return prepFut.get();
                 }
             });

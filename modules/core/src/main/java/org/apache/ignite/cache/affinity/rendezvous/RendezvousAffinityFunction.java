@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -240,7 +241,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
      * from all nodes that pass this filter. First node passed to this filter is a node being tested,
      * and the second parameter is a list of nodes that are already assigned for a given partition (primary node is the first in the list).
      * <p>
-     * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}. 
      *
      * @return Optional backup filter.
      */
@@ -253,7 +254,9 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
      * nodes that pass this filter. First node being passed to this filter is a node being tested,
      * and the second parameter is a list of nodes that are already assigned for a given partition (primary node is the first in the list).
      * <p>
-     * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.     
+     * <p>
+     * For an example filter, see {@link ClusterNodeAttributeAffinityBackupFilter }.  
      *
      * @param affinityBackupFilter Optional backup filter.
      * @return {@code this} for chaining.
@@ -388,9 +391,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
 
             if (!exclNeighborsWarn) {
                 LT.warn(log, "Affinity function excludeNeighbors property is ignored " +
-                        "because topology has no enough nodes to assign backups.",
-                    "Affinity function excludeNeighbors property is ignored " +
-                        "because topology has no enough nodes to assign backups.");
+                    "because topology has no enough nodes to assign backups.");
 
                 exclNeighborsWarn = true;
             }
@@ -587,5 +588,10 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
                 throw new UnsupportedOperationException("Remove doesn't supported");
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(RendezvousAffinityFunction.class, this);
     }
 }

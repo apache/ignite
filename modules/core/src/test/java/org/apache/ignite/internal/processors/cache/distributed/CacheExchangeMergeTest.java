@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -42,6 +43,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -57,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -73,11 +77,11 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -92,7 +96,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final long WAIT_SECONDS = 15;
+    private static final long WAIT_SECONDS = 45;
 
     /** */
     private ThreadLocal<Boolean> client = new ThreadLocal<>();
@@ -148,7 +152,12 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
                 cacheConfiguration("c7", TRANSACTIONAL, PARTITIONED, 1),
                 cacheConfiguration("c8", TRANSACTIONAL, PARTITIONED, 2),
                 cacheConfiguration("c9", TRANSACTIONAL, PARTITIONED, 10),
-                cacheConfiguration("c10", TRANSACTIONAL, REPLICATED, 0)
+                cacheConfiguration("c10", TRANSACTIONAL, REPLICATED, 0),
+                cacheConfiguration("c11", TRANSACTIONAL_SNAPSHOT, PARTITIONED, 0),
+                cacheConfiguration("c12", TRANSACTIONAL_SNAPSHOT, PARTITIONED, 1),
+                cacheConfiguration("c13", TRANSACTIONAL_SNAPSHOT, PARTITIONED, 2),
+                cacheConfiguration("c14", TRANSACTIONAL_SNAPSHOT, PARTITIONED, 10),
+                cacheConfiguration("c15", TRANSACTIONAL_SNAPSHOT, REPLICATED, 0)
             );
         }
 
@@ -166,8 +175,6 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         if (executor != null)
             executor.shutdown();
-
-        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
@@ -175,6 +182,11 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         super.afterTest();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /**
@@ -355,7 +367,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
 
             final AtomicInteger idx = new AtomicInteger(initNodes);
 
-            final ConcurrentHashSet<Integer> stopNodes = new ConcurrentHashSet<>();
+            final GridConcurrentHashSet<Integer> stopNodes = new GridConcurrentHashSet<>();
 
             IgniteInternalFuture fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -420,7 +432,9 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void concurrentStart(final boolean withClients) throws Exception {
-        for (int i = 0; i < 5; i++) {
+        int iterations = GridTestUtils.SF.applyLB(5, 1);
+
+        for (int i = 0; i < iterations; i++) {
             log.info("Iteration: " + i);
 
             startGrid(0);
@@ -458,6 +472,8 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMergeServerAndClientJoin1() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10186");
+
         final IgniteEx srv0 = startGrid(0);
 
         mergeExchangeWaitVersion(srv0, 3);
@@ -596,13 +612,13 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     private void checkHistorySize(int histSize) {
         List<Ignite> nodes = G.allGrids();
 
-        assertTrue(nodes.size() > 0);
+        assertTrue(!nodes.isEmpty());
 
         for (Ignite node : nodes) {
             List<GridDhtPartitionsExchangeFuture> exchFuts =
                     ((IgniteEx)node).context().cache().context().exchange().exchangeFutures();
 
-            assertTrue("Unexpected size: " + exchFuts.size(), exchFuts.size() > 0 && exchFuts.size() <= histSize);
+            assertTrue("Unexpected size: " + exchFuts.size(), !exchFuts.isEmpty() && exchFuts.size() <= histSize);
         }
     }
 
@@ -775,17 +791,37 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void mergeServersFail1(boolean waitRebalance) throws Exception {
-        final Ignite srv0 = startGrids(4);
+        final Ignite srv0 = startGrids(5);
 
         if (waitRebalance)
             awaitPartitionMapExchange();
 
-        mergeExchangeWaitVersion(srv0, 6);
+        final List<DiscoveryEvent> mergedEvts = new ArrayList<>();
 
+        mergeExchangeWaitVersion(srv0, 8, mergedEvts);
+
+        UUID grid3Id = grid(3).localNode().id();
+        UUID grid2Id = grid(2).localNode().id();
+
+        stopGrid(getTestIgniteInstanceName(4), true, false);
         stopGrid(getTestIgniteInstanceName(3), true, false);
         stopGrid(getTestIgniteInstanceName(2), true, false);
 
         checkCaches();
+
+        awaitPartitionMapExchange();
+
+        assertTrue("Unexpected number of merged disco events: " + mergedEvts.size(), mergedEvts.size() == 2);
+
+        for (DiscoveryEvent discoEvt : mergedEvts) {
+            ClusterNode evtNode = discoEvt.eventNode();
+
+            assertTrue("eventNode is null for DiscoEvent " + discoEvt, evtNode != null);
+
+            assertTrue("Unexpected eventNode ID: "
+                    + evtNode.id() + " while expecting " + grid2Id + " or " + grid3Id,
+                evtNode.id().equals(grid2Id) || evtNode.id().equals(grid3Id));
+        }
     }
 
     /**
@@ -801,7 +837,6 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     public void testMergeServersAndClientsFail2() throws Exception {
         mergeServersAndClientsFail(true);
     }
-
 
     /**
      * @param waitRebalance Wait for rebalance end before start tested topology change.
@@ -916,8 +951,6 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
         testSpi = true;
 
         Ignite srv0 = startGrids(srvs);
-
-        mergeExchangeWaitVersion(srv0, 6);
 
         CountDownLatch latch = blockExchangeFinish(srvs, mode);
 
@@ -1190,6 +1223,8 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
+        checkTopologiesConsistency();
+
         checkCaches0();
     }
 
@@ -1199,10 +1234,46 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     private void checkCaches0() throws Exception {
         List<Ignite> nodes = G.allGrids();
 
-        assertTrue(nodes.size() > 0);
+        assertTrue(!nodes.isEmpty());
 
         for (Ignite node : nodes)
             checkNodeCaches(node);
+    }
+
+    /**
+     * Checks that after exchange all nodes have consistent state about partition owners.
+     *
+     * @throws Exception If failed.
+     */
+    private void checkTopologiesConsistency() throws Exception {
+        List<Ignite> nodes = G.allGrids();
+
+        IgniteEx crdNode = null;
+
+        for (Ignite node : nodes) {
+            ClusterNode locNode = node.cluster().localNode();
+
+            if (crdNode == null || locNode.order() < crdNode.localNode().order())
+                crdNode = (IgniteEx) node;
+        }
+
+        for (Ignite node : nodes) {
+            IgniteEx node0 = (IgniteEx) node;
+
+            if (node0.localNode().id().equals(crdNode.localNode().id()))
+                continue;
+
+            for (IgniteInternalCache cache : node0.context().cache().caches()) {
+                int partitions = cache.context().affinity().partitions();
+                for (int p = 0; p < partitions; p++) {
+                    List<ClusterNode> crdOwners = crdNode.cachex(cache.name()).cache().context().topology().owners(p);
+
+                    List<ClusterNode> owners = cache.context().topology().owners(p);
+
+                    assertEquals(crdOwners, owners);
+                }
+            }
+        }
     }
 
     /**
@@ -1369,8 +1440,10 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
                 tx.commit();
             }
         }
-        catch (ClusterTopologyException ignore) {
-            // No-op.
+        catch (ClusterTopologyException e) {
+            info("Tx failed, ignore: " + e);
+
+            return;
         }
 
         for (Map.Entry<Object, Object> e : map.entrySet())

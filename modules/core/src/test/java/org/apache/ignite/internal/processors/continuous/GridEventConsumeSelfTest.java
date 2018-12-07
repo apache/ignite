@@ -38,6 +38,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.JobEvent;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -156,6 +158,11 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         finally {
             stopAllGrids();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /**
@@ -447,7 +454,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(10, SECONDS) : latch;
 
             assertEquals(GRID_CNT, nodeIds.size());
             assertEquals(GRID_CNT, cnt.get());
@@ -488,7 +495,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(10, SECONDS) : latch;
 
             assertEquals(GRID_CNT, nodeIds.size());
             assertEquals(GRID_CNT, cnt.get());
@@ -532,7 +539,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(10, SECONDS) : latch;
 
             assertEquals(GRID_CNT, nodeIds.size());
             assertEquals(GRID_CNT, cnt.get());
@@ -578,7 +585,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             grid(0).compute().broadcast(F.noop());
             grid(0).compute().withName("exclude").run(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(10, SECONDS) : latch;
 
             assertEquals(GRID_CNT, nodeIds.size());
             assertEquals(GRID_CNT, cnt.get());
@@ -619,7 +626,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(10, SECONDS) : latch;
 
             assertEquals(GRID_CNT - 1, nodeIds.size());
             assertEquals(GRID_CNT - 1, cnt.get());
@@ -660,7 +667,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(10, SECONDS) : latch;
 
             assertEquals(GRID_CNT - 1, nodeIds.size());
             assertEquals(GRID_CNT - 1, cnt.get());
@@ -701,7 +708,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(10, SECONDS) : latch;
 
             assertEquals(1, nodeIds.size());
             assertEquals(1, cnt.get());
@@ -744,7 +751,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(10, SECONDS) : latch;
 
             assertEquals(1, nodeIds.size());
             assertEquals(1, cnt.get());
@@ -785,7 +792,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().run(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(10, SECONDS) : latch;
 
             assertEquals(1, nodeIds.size());
             assertEquals(1, cnt.get());
@@ -828,7 +835,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
         compute(grid(0).cluster().forLocal()).run(F.noop());
 
-        assert latch.await(2, SECONDS);
+        assert latch.await(10, SECONDS) : latch;
 
         assertEquals(1, cnt.get());
 
@@ -878,7 +885,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(10, SECONDS) : latch;
 
             assertEquals(GRID_CNT + 1, nodeIds.size());
             assertEquals(GRID_CNT + 1, cnt.get());
@@ -929,7 +936,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(10, SECONDS) : latch;
 
             assertEquals(GRID_CNT, nodeIds.size());
             assertEquals(GRID_CNT, cnt.get());
@@ -980,7 +987,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(10, SECONDS) : latch;
 
             assertEquals(GRID_CNT + 1, nodeIds.size());
             assertEquals(GRID_CNT + 1, cnt.get());
@@ -1036,7 +1043,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(10, SECONDS) : latch;
 
             assertEquals(GRID_CNT, nodeIds.size());
             assertEquals(GRID_CNT, cnt.get());
@@ -1153,9 +1160,11 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
         final Random rnd = new Random();
 
+        final int consumeCnt = tcpDiscovery() ? CONSUME_CNT : CONSUME_CNT / 2;
+
         IgniteInternalFuture<?> starterFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                for (int i = 0; i < CONSUME_CNT; i++) {
+                for (int i = 0; i < consumeCnt; i++) {
                     int idx = rnd.nextInt(GRID_CNT);
 
                     try {

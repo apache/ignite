@@ -46,7 +46,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 /**
  * Near cache entry.
  */
-@SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext", "TooBroadScope"})
+@SuppressWarnings({"TooBroadScope"})
 public class GridNearCacheEntry extends GridDistributedCacheEntry {
     /** */
     private static final int NEAR_SIZE_OVERHEAD = 36 + 16;
@@ -55,7 +55,6 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     private volatile AffinityTopologyVersion topVer = AffinityTopologyVersion.NONE;
 
     /** DHT version which caused the last update. */
-    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private GridCacheVersion dhtVer;
 
     /** Partition. */
@@ -380,7 +379,6 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      * @throws IgniteCheckedException In case of error.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @SuppressWarnings({"RedundantTypeArguments"})
     public boolean loadedValue(@Nullable IgniteInternalTx tx,
         UUID primaryNodeId,
         CacheObject val,
@@ -458,7 +456,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected void storeValue(CacheObject val, long expireTime, GridCacheVersion ver, CacheDataRow oldRow) {
+    @Override protected boolean storeValue(CacheObject val, long expireTime, GridCacheVersion ver) {
+        return false;
         // No-op: queries are disabled for near cache.
     }
 

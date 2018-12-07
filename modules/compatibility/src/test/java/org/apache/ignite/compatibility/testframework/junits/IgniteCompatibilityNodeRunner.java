@@ -30,12 +30,13 @@ import java.util.Arrays;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.compatibility.testframework.util.CompatibilityTestsUtils;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.GridJavaProcess;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.multijvm.IgniteNodeRunner;
 import org.jetbrains.annotations.NotNull;
@@ -59,7 +60,8 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
      * args[2] - required - id of the starting node;
      * args[3] - required - sync-id of a node for synchronization of startup. Must be equals
      * to arg[2] in case of starting the first node in the Ignite cluster;
-     * args[4] - optional - path to closure for actions after node startup.
+     * args[4] - required - expected Ignite's version to check at startup;
+     * args[5] - optional - path to closure for actions after node startup.
      * </pre>
      *
      * @param args Command-line arguments.
@@ -73,7 +75,7 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
 
             if (args.length < 3) {
                 throw new IllegalArgumentException("At least four arguments expected:" +
-                    " [path/to/closure/file] [ignite-instance-name] [node-id] [sync-node-id] [optional/path/to/closure/file]");
+                    " [path/to/closure/file] [ignite-instance-name] [node-id] [sync-node-id] [node-ver] [optional/path/to/closure/file]");
             }
 
             final Thread watchdog = delayedDumpClasspath();
@@ -86,6 +88,7 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
 
             final UUID nodeId = UUID.fromString(args[2]);
             final UUID syncNodeId = UUID.fromString(args[3]);
+            final IgniteProductVersion expNodeVer = IgniteProductVersion.fromString(args[4]);
 
             // Ignite instance name and id must be set according to arguments
             // it's used for nodes managing: start, stop etc.
@@ -96,21 +99,29 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
 
             assert ignite.cluster().node(syncNodeId) != null : "Node has not joined [id=" + nodeId + "]";
 
+            assert ignite.cluster().localNode().version().compareToIgnoreTimestamp(expNodeVer) == 0 : "Node is of unexpected " +
+                "version: [act=" + ignite.cluster().localNode().version() + ", exp=" + expNodeVer + ']';
+
             // It needs to set private static field 'ignite' of the IgniteNodeRunner class via reflection
             GridTestUtils.setFieldValue(new IgniteNodeRunner(), "ignite", ignite);
 
-            if (args.length == 5) {
-                IgniteInClosure<Ignite> clo = readClosureFromFileAndDelete(args[4]);
+            if (args.length == 6) {
+                IgniteInClosure<Ignite> clo = readClosureFromFileAndDelete(args[5]);
 
                 clo.apply(ignite);
             }
 
             X.println(IgniteCompatibilityAbstractTest.SYNCHRONIZATION_LOG_MESSAGE + nodeId);
+
             watchdog.interrupt();
         }
         catch (Throwable e) {
+            e.printStackTrace();
+
             X.println("Dumping classpath, error occurred: " + e);
+
             dumpClasspath();
+
             throw e;
         }
     }
@@ -146,6 +157,7 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
         };
 
         final Thread thread = new Thread(target);
+
         thread.setDaemon(true);
         thread.start();
 
@@ -158,7 +170,7 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
     private static void dumpClasspath() {
         ClassLoader clsLdr = IgniteCompatibilityNodeRunner.class.getClassLoader();
 
-        for (URL url : IgniteUtils.classLoaderUrls(clsLdr))
+        for (URL url : CompatibilityTestsUtils.classLoaderUrls(clsLdr))
             X.println("Classpath url: [" + url.getPath() + ']');
     }
 

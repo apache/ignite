@@ -61,7 +61,7 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
 
         nodes.clear();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), testName(), true));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), testName(), true));
 
         startPrimaryNodes(primaryNodes());
 
@@ -84,7 +84,7 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
 
         nodes.clear();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), testName(), true));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), testName(), true));
     }
 
     /**
@@ -151,7 +151,7 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
      * @param cnt Count.
      * @throws Exception If failed.
      */
-    private void startPrimaryNodes(int cnt) throws Exception {
+    void startPrimaryNodes(int cnt) throws Exception {
         for (int i = 0; i < cnt; i++)
             startPrimary(i);
 
@@ -181,7 +181,7 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
      * @param cnt Count.
      * @throws Exception If failed.
      */
-    private void startBackUpNodes(int cnt) throws Exception {
+    void startBackUpNodes(int cnt) throws Exception {
         for (int i = 0; i < cnt; i++)
             startBackUp(i);
     }
@@ -353,7 +353,7 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
         pCfg.setWalMode(WALMode.LOG_ONLY);
 
         pCfg.setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024).setPersistenceEnabled(true));
+            new DataRegionConfiguration().setMaxSize(200L * 1024 * 1024).setPersistenceEnabled(true));
 
         cfg.setDataStorageConfiguration(pCfg);
 

@@ -23,11 +23,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import javax.cache.Cache;
+
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -36,10 +38,12 @@ import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jsr166.ConcurrentLinkedHashMap;
 
 /**
  * Tests H2RowCacheRegistry.
  */
+@SuppressWarnings({"unchecked", "ConstantConditions"})
 public class H2RowCacheSelfTest extends GridCommonAbstractTest {
     /** Keys count. */
     private static final int ENTRIES = 1_000;
@@ -138,6 +142,67 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
         grid().getOrCreateCache(cacheConfiguration("cacheWithoutOnheapCache", false));
 
         checkUpdateEntry();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFixedSize() throws Exception {
+        int maxSize = 100;
+        String cacheName = "cacheWithLimitedSize";
+
+        CacheConfiguration ccfg = cacheConfiguration(cacheName, true).setSqlOnheapCacheMaxSize(maxSize);
+
+        IgniteCache cache = grid().getOrCreateCache(ccfg);
+
+        int grpId = grid().cachex(cacheName).context().groupId();
+
+        // Fill half.
+        for (int i = 0; i < maxSize / 2; i++)
+            cache.put(i, new Value(1));
+
+        H2RowCache rowCache = rowCache(grid(), grpId);
+
+        assertEquals(0, rowCache.size());
+
+        // Warmup cache.
+        cache.query(new SqlFieldsQuery("SELECT * FROM Value")).getAll();
+
+        assertEquals(maxSize / 2, rowCache.size());
+
+        // Query again - are there any leaks?
+        cache.query(new SqlFieldsQuery("SELECT * FROM Value")).getAll();
+
+        assertEquals(maxSize / 2, rowCache.size());
+
+        // Fill up to limit.
+        for (int i = maxSize / 2; i < maxSize; i++)
+            cache.put(i, new Value(1));
+
+        assertEquals(maxSize / 2, rowCache.size());
+
+        cache.query(new SqlFieldsQuery("SELECT * FROM Value")).getAll();
+
+        assertEquals(maxSize, rowCache.size());
+
+        // Out of limit.
+        for (int i = maxSize; i < maxSize * 2; i++)
+            cache.put(i, new Value(1));
+
+        assertEquals(maxSize, rowCache.size());
+
+        cache.query(new SqlFieldsQuery("SELECT * FROM Value")).getAll();
+
+        assertEquals(maxSize, rowCache.size());
+
+        // Delete all.
+        cache.query(new SqlFieldsQuery("DELETE FROM Value")).getAll();
+
+        assertEquals(0, rowCache.size());
+
+        cache.query(new SqlFieldsQuery("SELECT * FROM Value")).getAll();
+
+        assertEquals(0, rowCache.size());
     }
 
     /**
@@ -287,7 +352,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
         grid().cache(cacheName)
             .query(new SqlQuery(Value.class, "_key = " + key)).getAll().size();
 
-        ConcurrentHashMap<Long, GridH2KeyValueRowOnheap> rowsMap = GridTestUtils.getFieldValue(rowCache, "rows");
+        ConcurrentLinkedHashMap<Long, GridH2KeyValueRowOnheap> rowsMap = GridTestUtils.getFieldValue(rowCache, "rows");
 
         for (Map.Entry<Long, GridH2KeyValueRowOnheap> e : rowsMap.entrySet()) {
             GridH2KeyValueRowOnheap val = e.getValue();

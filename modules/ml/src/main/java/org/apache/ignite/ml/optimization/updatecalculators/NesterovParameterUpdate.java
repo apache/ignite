@@ -20,13 +20,16 @@ package org.apache.ignite.ml.optimization.updatecalculators;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 
 /**
  * Data needed for Nesterov parameters updater.
  */
 public class NesterovParameterUpdate implements Serializable {
+    /** */
+    private static final long serialVersionUID = -6370106062737202385L;
+
     /**
      * Previous step weights updates.
      */
@@ -38,7 +41,7 @@ public class NesterovParameterUpdate implements Serializable {
      * @param paramsCnt Count of parameters on which updateCache happens.
      */
     public NesterovParameterUpdate(int paramsCnt) {
-        prevIterationUpdates = new DenseLocalOnHeapVector(paramsCnt).assign(0);
+        prevIterationUpdates = new DenseVector(paramsCnt).assign(0);
     }
 
     /**
@@ -77,8 +80,13 @@ public class NesterovParameterUpdate implements Serializable {
      * @return Sum of parameters updates.
      */
     public static NesterovParameterUpdate sum(List<NesterovParameterUpdate> parameters) {
-        return parameters.stream().filter(Objects::nonNull).map(NesterovParameterUpdate::prevIterationUpdates)
-            .reduce(Vector::plus).map(NesterovParameterUpdate::new).orElse(null);
+        return parameters
+            .stream()
+            .filter(Objects::nonNull)
+            .map(NesterovParameterUpdate::prevIterationUpdates)
+            .reduce(Vector::plus)
+            .map(NesterovParameterUpdate::new)
+            .orElse(null);
     }
 
     /**
@@ -89,6 +97,8 @@ public class NesterovParameterUpdate implements Serializable {
      */
     public static NesterovParameterUpdate avg(List<NesterovParameterUpdate> parameters) {
         NesterovParameterUpdate sum = sum(parameters);
-        return sum != null ? sum.setPreviousUpdates(sum.prevIterationUpdates().divide(parameters.size())) : null;
+        return sum != null ? sum.setPreviousUpdates(sum.prevIterationUpdates()
+            .divide(parameters.stream()
+                .filter(Objects::nonNull).count())) : null;
     }
 }

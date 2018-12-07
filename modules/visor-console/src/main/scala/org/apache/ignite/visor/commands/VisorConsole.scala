@@ -170,13 +170,21 @@ class VisorConsole {
         }
 
         // Workaround for IDEA terminal.
-        val term = try {
-            Class.forName("com.intellij.rt.execution.application.AppMain")
+        val idea = Seq(
+            "com.intellij.rt.execution.application.AppMain",
+            "com.intellij.rt.execution.application.AppMainV2"
+        ).exists(cls =>
+            try {
+                Class.forName(cls)
 
-            new TerminalSupport(false) {}
-        } catch {
-            case _: ClassNotFoundException => null
-        }
+                true
+            }
+            catch {
+                case _: ClassNotFoundException => false
+            }
+        )
+
+        val term = if (idea) new TerminalSupport(false) {} else null
 
         val reader = new ConsoleReader(inputStream, System.out, term)
 

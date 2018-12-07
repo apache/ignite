@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.h2.command.ddl.CreateTableData;
@@ -43,7 +44,6 @@ import org.h2.table.TableFilter;
 import org.h2.table.TableType;
 import org.h2.value.Value;
 import org.h2.value.ValueInt;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Meta table.
@@ -60,7 +60,7 @@ public class GridH2MetaTable extends TableBase {
 
     /** */
     private final Set<Session> fakeExclusiveSet = Collections.newSetFromMap(
-        new ConcurrentHashMap8<Session,Boolean>());
+        new ConcurrentHashMap<Session,Boolean>());
 
     /**
      * @param data Data.
@@ -284,6 +284,11 @@ public class GridH2MetaTable extends TableBase {
                     throw new IllegalStateException("Index: " + idx);
             }
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean indexSearchRow() {
+            return false;
+        }
     }
 
     /**
@@ -291,7 +296,7 @@ public class GridH2MetaTable extends TableBase {
      */
     private static class MetaIndex extends BaseIndex {
         /** */
-        private final ConcurrentMap<ValueInt, Row> rows = new ConcurrentHashMap8<>();
+        private final ConcurrentMap<ValueInt, Row> rows = new ConcurrentHashMap<>();
 
         /** {@inheritDoc} */
         @Override public void checkRename() {

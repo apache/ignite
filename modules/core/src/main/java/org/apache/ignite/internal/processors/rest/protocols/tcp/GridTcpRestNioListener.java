@@ -72,8 +72,8 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.NODE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.NOOP;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.TOPOLOGY;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVE;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_INACTIVE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVATE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_DEACTIVATE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_CURRENT_STATE;
 import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.APPEND;
 import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.CAS;
@@ -99,9 +99,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
     /** Supported protocol versions. */
     private static final Collection<Short> SUPP_VERS = new HashSet<>();
 
-    /**
-     * Fills {@code cacheCmdMap}.
-     */
+    // Fills {@code cacheCmdMap}.
     static {
         cacheCmdMap.put(PUT, CACHE_PUT);
         cacheCmdMap.put(PUT_ALL, CACHE_PUT_ALL);
@@ -185,7 +183,6 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
     @Override public void onMessage(final GridNioSession ses, final GridClientMessage msg) {
         if (msg instanceof GridMemcachedMessage)
             memcachedLsnr.onMessage(ses, (GridMemcachedMessage)msg);
@@ -356,7 +353,8 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                 restTopReq.command(TOPOLOGY);
 
             restReq = restTopReq;
-        }else if (msg instanceof GridClientStateRequest) {
+        }
+        else if (msg instanceof GridClientStateRequest) {
             GridClientStateRequest req = (GridClientStateRequest)msg;
 
             GridRestChangeStateRequest restChangeReq = new GridRestChangeStateRequest();
@@ -367,7 +365,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
             }
             else {
                 restChangeReq.active(req.active());
-                restChangeReq.command(req.active() ? CLUSTER_ACTIVE : CLUSTER_INACTIVE);
+                restChangeReq.command(req.active() ? CLUSTER_ACTIVATE : CLUSTER_DEACTIVATE);
             }
 
             restReq = restChangeReq;

@@ -55,11 +55,6 @@ public abstract class GridCacheAbstractByteArrayValuesSelfTest extends GridCommo
         return c;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * Wrap provided values into byte array.
      *

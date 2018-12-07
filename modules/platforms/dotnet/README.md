@@ -6,7 +6,7 @@
 
 <a href="https://www.myget.org/gallery/apache-ignite-net-nightly"><img src="https://img.shields.io/myget/apache-ignite-net-nightly/vpre/Apache.Ignite.svg" /></a>
 
-<a href="http://ci.ignite.apache.org/viewType.html?buildTypeId=Ignite20Tests_IgnitePlatformNet&branch_IgniteTests=%3Cdefault%3E"><img src="http://ci.ignite.apache.org/app/rest/builds/buildType:(id:Ignite20Tests_IgnitePlatformNet)/statusIcon" /></a>
+<a href="https://ci.ignite.apache.org/viewType.html?buildTypeId=IgniteTests24Java8_IgnitePlatformNet&branch_IgniteTests24Java8=<default>"><img src="http://ci.ignite.apache.org/app/rest/builds/buildType:(id:IgniteTests24Java8_IgnitePlatformNet)/statusIcon" /></a>
 
 ## Getting Started
 
@@ -75,10 +75,12 @@ Ignite is an elastic, horizontally scalable distributed system that supports add
 ## Ignite and Ignite.NET
 
 * Ignite.NET is built on top of Ignite.
-* .NET starts the JVM in the same process and communicates with it via JNI & C++.
+* .NET starts the JVM in the same process and communicates with it via JNI.
 * .NET, C++ and Java nodes can join the same cluster, use the same caches, and interoperate using common binary protocol.
 * Java compute jobs can execute on any node (Java, .NET, C++).
 * .NET compute jobs can only execute on .NET nodes.
+
+Ignite.NET also has Thin Client mode (see `Ignition.StartClient()`), which does not start JVM and does not require Java on machine.
 
 ## Ignite Components
 

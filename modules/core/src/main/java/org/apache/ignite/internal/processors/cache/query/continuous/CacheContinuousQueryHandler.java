@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,6 +40,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
+import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.EventListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
@@ -52,7 +54,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeploymentManager;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager.JCacheQueryLocalListener;
@@ -69,6 +71,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -90,6 +93,19 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     /** */
     static final int LSNR_MAX_BUF_SIZE =
         IgniteSystemProperties.getInteger("IGNITE_CONTINUOUS_QUERY_LISTENER_MAX_BUFFER_SIZE", 10_000);
+
+    /**
+     * Transformer implementation for processing received remote events.
+     * They are already transformed so we simply return transformed value for event.
+     */
+    private transient IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> returnValTrans =
+        new IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, Object>() {
+            @Override public Object apply(CacheEntryEvent<? extends K, ? extends V> evt) {
+                assert evt.getKey() == null;
+
+                return evt.getValue();
+            }
+        };
 
     /** Cache name. */
     private String cacheName;
@@ -128,7 +144,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private transient boolean skipPrimaryCheck;
 
     /** */
-    private boolean locCache;
+    private transient boolean locOnly;
 
     /** */
     private boolean keepBinary;
@@ -161,7 +177,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private transient boolean ignoreClsNotFound;
 
     /** */
-    private transient boolean asyncCb;
+    transient boolean asyncCb;
 
     /** */
     private transient UUID nodeId;
@@ -196,14 +212,13 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     public CacheContinuousQueryHandler(
         String cacheName,
         Object topic,
-        CacheEntryUpdatedListener<K, V> locLsnr,
-        CacheEntryEventSerializableFilter<K, V> rmtFilter,
+        @Nullable CacheEntryUpdatedListener<K, V> locLsnr,
+        @Nullable CacheEntryEventSerializableFilter<K, V> rmtFilter,
         boolean oldValRequired,
         boolean sync,
         boolean ignoreExpired,
         boolean ignoreClsNotFound) {
         assert topic != null;
-        assert locLsnr != null;
 
         this.cacheName = cacheName;
         this.topic = topic;
@@ -232,10 +247,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     }
 
     /**
-     * @param locCache Local cache.
+     * @param locOnly Local only.
      */
-    public void localCache(boolean locCache) {
-        this.locCache = locCache;
+    public void localOnly(boolean locOnly) {
+        this.locOnly = locOnly;
     }
 
     /**
@@ -350,7 +365,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         CacheContinuousQueryListener<K, V> lsnr = new CacheContinuousQueryListener<K, V>() {
             @Override public void onExecution() {
-                if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+                GridCacheContext<K, V> cctx = cacheContext(ctx);
+
+                if (cctx != null && cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                     ctx.event().record(new CacheQueryExecutedEvent<>(
                         ctx.discovery().localNode(),
                         "Continuous query executed.",
@@ -497,7 +514,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                     skipCtx = new CounterSkipContext(part, cntr, topVer);
 
                 if (loc) {
-                    assert !locCache;
+                    assert !locOnly;
 
                     final Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, skipCtx.entry());
 
@@ -505,14 +522,14 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         if (asyncCb) {
                             ctx.asyncCallbackPool().execute(new Runnable() {
                                 @Override public void run() {
-                                    locLsnr.onUpdated(evts);
+                                    notifyLocalListener(evts, getTransformer());
                                 }
                             }, part);
                         }
                         else
                             skipCtx.addProcessClosure(new Runnable() {
                                 @Override public void run() {
-                                    locLsnr.onUpdated(evts);
+                                    notifyLocalListener(evts, getTransformer());
                                 }
                             });
                     }
@@ -566,6 +583,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             private String taskName() {
                 return ctx.security().enabled() ? ctx.task().resolveTaskName(taskHash) : null;
             }
+
+            @Override public boolean isPrimaryOnly() {
+                return locOnly && !skipPrimaryCheck;
+            }
         };
 
         CacheContinuousQueryManager mgr = manager(ctx);
@@ -581,6 +602,20 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      */
     public CacheEntryEventFilter getEventFilter() {
         return rmtFilter;
+    }
+
+    /**
+     * @return Cache entry event transformer.
+     */
+    @Nullable protected IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> getTransformer() {
+        return null;
+    }
+
+    /**
+     * @return Local listener of transformed events.
+     */
+    @Nullable protected EventListener<?> localTransformedEventListener() {
+        return null;
     }
 
     /**
@@ -610,7 +645,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         if (!cctx.isLocal()) {
             AffinityTopologyVersion topVer = initTopVer;
 
-            cacheContext(ctx).affinity().affinityReadyFuture(topVer).get();
+            cacheContext(ctx).shared().exchange().affinityReadyFuture(topVer).get();
 
             for (int partId = 0; partId < cacheContext(ctx).affinity().partitions(); partId++)
                 getOrCreatePartitionRecovery(ctx, partId, topVer);
@@ -752,8 +787,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }
         }
 
-        if (!entries0.isEmpty())
-            locLsnr.onUpdated(entries0);
+        notifyLocalListener(entries0, returnValTrans);
     }
 
     /**
@@ -825,26 +859,31 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             if (cctx == null)
                 return;
 
-            final CacheContinuousQueryEntry entry = evt.entry();
+            CacheContinuousQueryEntry entry = evt.entry();
+
+            IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> trans = getTransformer();
 
             if (loc) {
-                if (!locCache) {
+                if (!locOnly) {
                     Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, entry);
 
-                    if (!evts.isEmpty())
-                        locLsnr.onUpdated(evts);
+                    notifyLocalListener(evts, trans);
 
                     if (!internal && !skipPrimaryCheck)
                         sendBackupAcknowledge(ackBuf.onAcknowledged(entry), routineId, ctx);
                 }
                 else {
                     if (!entry.isFiltered())
-                        locLsnr.onUpdated(F.<CacheEntryEvent<? extends K, ? extends V>>asList(evt));
+                        notifyLocalListener(F.<CacheEntryEvent<? extends K, ? extends V>>asList(evt), trans);
                 }
             }
             else {
-                if (!entry.isFiltered())
+                if (!entry.isFiltered()) {
+                    if (trans != null)
+                        entry = transformToEntry(trans, evt);
+
                     prepareEntry(cctx, nodeId, entry);
+                }
 
                 Object entryOrList = handleEntry(cctx, entry);
 
@@ -886,6 +925,28 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 null
             ));
         }
+    }
+
+    /**
+     * Notifies local listener.
+     *
+     * @param evts Events.
+     * @param trans Transformer
+     */
+    private void notifyLocalListener(Collection<CacheEntryEvent<? extends K, ? extends V>> evts,
+        @Nullable IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> trans) {
+        EventListener locTransLsnr = localTransformedEventListener();
+
+        assert (locLsnr != null && locTransLsnr == null) || (locLsnr == null && locTransLsnr != null);
+
+        if (F.isEmpty(evts))
+            return;
+
+        if (locLsnr != null)
+            locLsnr.onUpdated(evts);
+
+        if (locTransLsnr != null)
+            locTransLsnr.onUpdated(transform(trans, evts));
     }
 
     /**
@@ -1253,9 +1314,77 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return S.toString(ContinuousQueryAsyncClosure.class, this);
         }
     }
 
+    /**
+     * @param trans Transformer.
+     * @param evts Source events.
+     * @return Collection of transformed values.
+     */
+    private Iterable transform(final IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> trans,
+        Collection<CacheEntryEvent<? extends K, ? extends V>> evts) {
+        final Iterator<CacheEntryEvent<? extends K, ? extends V>> iter = evts.iterator();
+
+        return new Iterable() {
+            @NotNull @Override public Iterator iterator() {
+                return new Iterator() {
+                    @Override public boolean hasNext() {
+                        return iter.hasNext();
+                    }
+
+                    @Override public Object next() {
+                        return transform(trans, iter.next());
+                    }
+                };
+            }
+        };
+    }
+
+    /**
+     * Transform event data with {@link #getTransformer()} if exists.
+     *
+     * @param trans Transformer.
+     * @param evt Event to transform.
+     * @return Entry contains only transformed data if transformer exists. Unchanged event if transformer is not set.
+     * @see #getTransformer()
+     */
+    private CacheContinuousQueryEntry transformToEntry(IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> trans,
+        CacheContinuousQueryEvent<? extends K, ? extends V> evt) {
+        Object transVal = transform(trans, evt);
+
+        return new CacheContinuousQueryEntry(evt.entry().cacheId(),
+            evt.entry().eventType(),
+            null,
+            transVal == null ? null : cacheContext(ctx).toCacheObject(transVal),
+            null,
+            evt.entry().isKeepBinary(),
+            evt.entry().partition(),
+            evt.entry().updateCounter(),
+            evt.entry().topologyVersion(),
+            evt.entry().flags());
+    }
+
+    /**
+     * @param trans Transformer.
+     * @param evt Event.
+     * @return Transformed value.
+     */
+    private Object transform(IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> trans,
+        CacheEntryEvent<? extends K, ? extends V> evt) {
+        assert trans != null;
+
+        Object transVal = null;
+
+        try {
+            transVal = trans.apply(evt);
+        }
+        catch (Exception e) {
+            U.error(log, e);
+        }
+
+        return transVal;
+    }
 }

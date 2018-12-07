@@ -87,8 +87,11 @@ public class DiscoCache {
     /** Alive nodes. */
     final Set<UUID> alives = new GridConcurrentHashSet<>();
 
-    /** */
+    /** Minimum {@link IgniteProductVersion} across all nodes including client nodes. */
     private final IgniteProductVersion minNodeVer;
+
+    /** Minimum {@link IgniteProductVersion} across alive server nodes. */
+    private final IgniteProductVersion minSrvNodeVer;
 
     /** */
     private final AffinityTopologyVersion topVer;
@@ -139,7 +142,8 @@ public class DiscoCache {
         Set<UUID> alives0,
         @Nullable Map<UUID, Short> nodeIdToConsIdx,
         @Nullable  Map<Short, UUID> consIdxToNodeId,
-        IgniteProductVersion minNodeVer
+        IgniteProductVersion minNodeVer,
+        IgniteProductVersion minSrvNodeVer
     ) {
         this.topVer = topVer;
         this.state = state;
@@ -153,16 +157,15 @@ public class DiscoCache {
         this.allCacheNodes = allCacheNodes;
         this.cacheGrpAffNodes = cacheGrpAffNodes;
         this.nodeMap = nodeMap;
-        alives.addAll(alives0);
+        this.alives.addAll(alives0);
         this.minNodeVer = minNodeVer;
+        this.minSrvNodeVer = minSrvNodeVer;
         this.nodeIdToConsIdx = nodeIdToConsIdx;
         this.consIdxToNodeId = consIdxToNodeId;
 
         aliveBaselineNodePred = new P1<BaselineNode>() {
-            @Override
-            public boolean apply(BaselineNode node) {
+            @Override public boolean apply(BaselineNode node) {
                 return node instanceof ClusterNode && alives.contains(((ClusterNode)node).id());
-
             }
         };
 
@@ -185,6 +188,13 @@ public class DiscoCache {
      */
     public IgniteProductVersion minimumNodeVersion() {
         return minNodeVer;
+    }
+
+    /**
+     * @return Minimum server node version.
+     */
+    public IgniteProductVersion minimumServerNodeVersion() {
+        return minSrvNodeVer;
     }
 
     /**
@@ -211,6 +221,14 @@ public class DiscoCache {
      */
     @Nullable public List<? extends BaselineNode> baselineNodes() {
         return baselineNodes;
+    }
+
+    /**
+     * @param nodeId Node ID to check.
+     * @return {@code True} if baseline is not set or the node is in the baseline topology.
+     */
+    public boolean baselineNode(UUID nodeId) {
+        return nodeIdToConsIdx == null || nodeIdToConsIdx.containsKey(nodeId);
     }
 
     /** @return All nodes. */
@@ -268,6 +286,14 @@ public class DiscoCache {
     }
 
     /**
+     * @param node Node to check.
+     * @return {@code True} if the node is in baseline or if baseline is not set.
+     */
+    public boolean baselineNode(ClusterNode node) {
+        return nodeIdToConsIdx == null || nodeIdToConsIdx.get(node.id()) != null;
+    }
+
+    /**
      * @return Oldest alive server node.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
@@ -281,6 +307,24 @@ public class DiscoCache {
         }
 
         return null;
+    }
+
+    /**
+     * @return Oldest server node.
+     */
+    @Nullable public ClusterNode oldestServerNode(){
+        if (!srvNodes.isEmpty())
+            return srvNodes.get(0);
+
+        return null;
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @return {@code True} if node is in alives list.
+     */
+    public boolean alive(UUID nodeId) {
+        return alives.contains(nodeId);
     }
 
     /**
@@ -380,6 +424,26 @@ public class DiscoCache {
     }
 
     /**
+     *
+     * Returns {@code True} if all nodes has the given attribute and its value equals to {@code expVal}.
+     *
+     * @param <T> Attribute Type.
+     * @param name Attribute name.
+     * @param expVal Expected value.
+     * @return {@code True} if all the given nodes has the given attribute and its value equals to {@code expVal}.
+     */
+    public <T> boolean checkAttribute(String name, T expVal) {
+        for (ClusterNode node : allNodes) {
+            T attr = node.attribute(name);
+
+            if (attr == null || !expVal.equals(attr))
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
      * @param nodes Cluster nodes.
      * @return Empty collection if nodes list is {@code null}
      */
@@ -409,7 +473,8 @@ public class DiscoCache {
             alives,
             nodeIdToConsIdx,
             consIdxToNodeId,
-            minNodeVer);
+            minNodeVer,
+            minSrvNodeVer);
     }
 
     /** {@inheritDoc} */

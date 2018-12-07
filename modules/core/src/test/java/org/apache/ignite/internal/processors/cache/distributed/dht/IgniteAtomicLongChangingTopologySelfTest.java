@@ -37,6 +37,8 @@ import org.apache.ignite.IgniteSet;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -103,6 +105,11 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
         stopAllGrids();
 
         queue.clear();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /**
@@ -173,11 +180,29 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testClientSetCreateCloseFailover() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9015");
+
+        checkClientSetCreateCloseFailover(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientCollocatedSetCreateCloseFailover() throws Exception {
+        checkClientSetCreateCloseFailover(true);
+    }
+
+    /**
+     * @param collocated Collocated flag.
+     * @throws Exception If failed.
+     */
+    private void checkClientSetCreateCloseFailover(boolean collocated) throws Exception {
         testFailoverWithClient(new IgniteInClosure<Ignite>() {
             @Override public void apply(Ignite ignite) {
                 for (int i = 0; i < 100; i++) {
                     CollectionConfiguration colCfg = new CollectionConfiguration();
 
+                    colCfg.setCollocated(collocated);
                     colCfg.setBackups(1);
                     colCfg.setCacheMode(PARTITIONED);
                     colCfg.setAtomicityMode(i % 2 == 0 ? TRANSACTIONAL : ATOMIC);

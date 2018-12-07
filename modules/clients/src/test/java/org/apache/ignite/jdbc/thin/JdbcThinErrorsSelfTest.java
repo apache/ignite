@@ -48,7 +48,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
 
                 return null;
             }
-        }, "08001", "Failed to connect to Ignite cluster [host=unknown.host");
+        }, "08001", "Failed to connect to server [host=unknown.host");
     }
 
     /**
@@ -63,7 +63,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
 
                 return null;
             }
-        }, "08001", "Property cannot be upper than 65535");
+        }, "08001", "port range contains invalid port 1000000");
     }
 
     /**
@@ -83,7 +83,6 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
      * Test error code for the case when error is caused on batch execution.
      * @throws SQLException if failed.
      */
-    @SuppressWarnings("MagicConstant")
     public void testBatchUpdateException() throws SQLException {
         try (final Connection conn = getConnection()) {
             try (Statement stmt = conn.createStatement()) {
@@ -108,5 +107,19 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
                     e.getMessage().contains("Failed to parse query. Column \"ID1\" not found"));
             }
         }
+    }
+
+    /**
+     * Check that unsupported explain of update operation causes Exception on the driver side with correct code and
+     * message.
+     */
+    public void testExplainUpdatesUnsupported() throws Exception{
+        checkErrorState((conn) -> {
+            try (Statement statement = conn.createStatement()) {
+                statement.executeUpdate("CREATE TABLE TEST_EXPLAIN (ID LONG PRIMARY KEY, VAL LONG)");
+
+                statement.executeUpdate("EXPLAIN INSERT INTO TEST_EXPLAIN VALUES (1, 2)");
+            }
+        }, "0A000", "Explains of update queries are not supported.");
     }
 }

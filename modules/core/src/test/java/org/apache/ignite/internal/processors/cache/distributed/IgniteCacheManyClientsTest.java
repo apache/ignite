@@ -107,13 +107,6 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 10 * 60_000;
     }
@@ -178,12 +171,36 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
         log.info("All clients started.");
 
         try {
-            checkNodes(SRVS + CLIENTS);
+            checkNodes0(SRVS + CLIENTS);
         }
         finally {
             for (Ignite client : clients)
                 client.close();
         }
+    }
+
+    /**
+     * @param expCnt Expected number of nodes.
+     * @throws Exception If failed.
+     */
+    private void checkNodes0(final int expCnt) throws Exception {
+        boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                try {
+                    checkNodes(expCnt);
+
+                    return true;
+                }
+                catch (AssertionFailedError e) {
+                    log.info("Check failed, will retry: " + e);
+                }
+
+                return false;
+            }
+        }, 10_000);
+
+        if (!wait)
+            checkNodes(expCnt);
     }
 
     /**
@@ -297,23 +314,7 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
             if (err0 != null)
                 throw err0;
 
-            boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                @Override public boolean apply() {
-                    try {
-                        checkNodes(SRVS + THREADS);
-
-                        return true;
-                    }
-                    catch (AssertionFailedError e) {
-                        log.info("Check failed, will retry: " + e);
-                    }
-
-                    return false;
-                }
-            }, 10_000);
-
-            if (!wait)
-                checkNodes(SRVS + THREADS);
+            checkNodes0(SRVS + THREADS);
 
             log.info("Stop clients.");
 

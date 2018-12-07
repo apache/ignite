@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.cache.persistence.db.file;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -26,13 +25,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
@@ -42,7 +38,7 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Client mode. */
-    private boolean set2kPageSize = true;
+    private boolean set16kPageSize = true;
 
     /** Entries count. */
     public static final int ENTRIES_COUNT = 300;
@@ -59,16 +55,18 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
-        if (set2kPageSize)
-            memCfg.setPageSize(2048);
+        if (set16kPageSize)
+            memCfg.setPageSize(16 * 1024);
+        else
+            memCfg.setPageSize(0); // Enforce default.
 
         DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
-        memPlcCfg.setMaxSize(100 * 1000 * 1000);
+        memPlcCfg.setMaxSize(100L * 1000 * 1000);
         memPlcCfg.setName("dfltDataRegion");
         memPlcCfg.setPersistenceEnabled(true);
 
         memCfg.setDefaultDataRegionConfiguration(memPlcCfg);
-        memCfg.setCheckpointFrequency(3_000);
+        memCfg.setCheckpointFrequency(500);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -78,6 +76,9 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
         ccfg1.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg1.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg1.setAffinity(new RendezvousAffinityFunction(false, 32));
+
+        if (!set16kPageSize)
+            ccfg1.setDiskPageCompression(null);
 
         cfg.setCacheConfiguration(ccfg1);
 
@@ -90,20 +91,20 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testStartFrom2kDefaultStore() throws Exception {
+    public void testStartFrom16kDefaultStore() throws Exception {
         startGrids(2);
 
         Ignite ig = ignite(0);
@@ -117,11 +118,11 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
         for (int i = 0; i < ENTRIES_COUNT; i++)
             cache.put(i, i);
 
-        Thread.sleep(5_000); // Await for checkpoint to happen.
+        Thread.sleep(1500); // Await for checkpoint to happen.
 
         stopAllGrids();
 
-        set2kPageSize = false;
+        set16kPageSize = false;
 
         startGrids(2);
 
@@ -135,12 +136,5 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
 
         for (int i = 0; i < ENTRIES_COUNT; i++)
             assertEquals((Integer)i, cache.get(i));
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 }

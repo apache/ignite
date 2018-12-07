@@ -16,9 +16,13 @@
  */
 
 import saver from 'file-saver';
+import _ from 'lodash';
 
 // TODO: Refactor this service for legacy tables with more than one input field.
-export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
+/**
+ * @param {import('./ErrorPopover.service').default} ErrorPopover
+ */
+export default function service(ErrorPopover) {
     function isDefined(v) {
         return !_.isNil(v);
     }
@@ -183,7 +187,7 @@ export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
         'volatile',
         'while'
     ];
-    /*eslint-enable */
+    /* eslint-enable */
 
     const VALID_JAVA_IDENTIFIER = new RegExp('^[a-zA-Z_$][a-zA-Z\\d_$]*$');
 
@@ -295,6 +299,8 @@ export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
     }
 
     return {
+        VALID_JAVA_IDENTIFIER,
+        JAVA_KEYWORDS,
         mkOptions(options) {
             return _.map(options, (option) => {
                 return {value: option, label: isDefined(option) ? option : 'Not set'};
@@ -545,4 +551,6 @@ export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
             return true;
         }
     };
-}]];
+}
+
+service.$inject = ['IgniteErrorPopover'];

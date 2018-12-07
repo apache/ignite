@@ -17,16 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import java.util.concurrent.Callable;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -56,7 +57,7 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        deleteWorkFiles();
+        cleanPersistenceDir();
 
         startGrid(config(SRV_1, false, filterOnCrd));
         startGrid(config(SRV_2, false, false));
@@ -65,13 +66,6 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
         Ignite cli = startGrid(config(CLI, true, false));
 
         cli.cluster().active(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        deleteWorkFiles();
     }
 
     /**
@@ -194,6 +188,8 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
             // Doesn't make sense for JDBC.
             return;
 
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         forAllNodes(new IgniteInClosureX<Ignite>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
                 createCache(ignite, cacheConfig(LOCAL).setDataRegionName(REGION_VOLATILE));
@@ -276,6 +272,47 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
                     assertWalDisable(ignite, CACHE_NAME, false);
                     assertWalEnable(ignite, CACHE_NAME, true);
                 }
+            }
+        });
+    }
+
+    /**
+     * Test {@link WalStateManager#prohibitWALDisabling(boolean)} feature.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDisablingProhibition() throws Exception {
+        forAllNodes(new IgniteInClosureX<Ignite>() {
+            @Override public void applyx(Ignite ig) throws IgniteCheckedException {
+                assert ig instanceof IgniteEx;
+
+                IgniteEx ignite = (IgniteEx)ig;
+
+                createCache(ignite, cacheConfig(CACHE_NAME, PARTITIONED, TRANSACTIONAL));
+
+                WalStateManager stateMgr = ignite.context().cache().context().walState();
+
+                assertFalse(stateMgr.prohibitWALDisabling());
+
+                stateMgr.prohibitWALDisabling(true);
+                assertTrue(stateMgr.prohibitWALDisabling());
+
+                try {
+                    walDisable(ignite, CACHE_NAME);
+
+                    fail();
+                }
+                catch (Exception e) {
+                    // No-op.
+                }
+
+                stateMgr.prohibitWALDisabling(false);
+                assertFalse(stateMgr.prohibitWALDisabling());
+
+                createCache(ignite, cacheConfig(CACHE_NAME, PARTITIONED, TRANSACTIONAL));
+
+                assertWalDisable(ignite, CACHE_NAME, true);
+                assertWalEnable(ignite, CACHE_NAME, true);
             }
         });
     }

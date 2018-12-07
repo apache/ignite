@@ -190,7 +190,7 @@ public class IgniteNativeIoLib {
      * <li>and <tt>-1</tt> if failed to determine block size.</li>
      * <li>and <tt>-1</tt> if JNA is not available or init failed.</li> </ul>
      */
-    public static int getFsBlockSize(final String storageDir, final IgniteLogger log) {
+    public static int getDirectIOBlockSize(final String storageDir, final IgniteLogger log) {
         if (ex != null) {
             U.warn(log, "Failed to initialize O_DIRECT support at current OS: " + ex.getMessage(), ex);
 
@@ -314,6 +314,16 @@ public class IgniteNativeIoLib {
      * @return On success return zero. On error, -1 is returned, and errno is set appropriately.
      */
     public static native int fsync(int fd);
+
+    /**
+     * Synchronize a file's in-core state with storage device. See "man 2 fsync".
+     *
+     * Similar to {@link #fsync(int)}, but does not flush modified metadata unless that metadata is needed in order to allow a subsequent data retrieval to be correctly handled
+     *
+     * @param fd file descriptor.
+     * @return On success return zero. On error, -1 is returned, and errno is set appropriately.
+     */
+    public static native int fdatasync(int fd);
 
     /**
      * Allocates size bytes and places the address of the allocated memory in {@code memptr}.

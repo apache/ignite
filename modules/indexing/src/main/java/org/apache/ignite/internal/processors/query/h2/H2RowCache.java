@@ -19,22 +19,25 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jsr166.ConcurrentLinkedHashMap;
+
+import static org.jsr166.ConcurrentLinkedHashMap.DFLT_INIT_CAP;
+import static org.jsr166.ConcurrentLinkedHashMap.DFLT_LOAD_FACTOR;
 
 /**
  * H2 row cache.
  */
 public class H2RowCache implements GridQueryRowCacheCleaner {
     /** Cached rows. */
-    private ConcurrentHashMap<Long, GridH2KeyValueRowOnheap> rows = new ConcurrentHashMap<>();
+    private final ConcurrentLinkedHashMap<Long, GridH2KeyValueRowOnheap> rows;
 
     /** Cache group ID. */
     private final CacheGroupContext grpCtx;
@@ -45,8 +48,15 @@ public class H2RowCache implements GridQueryRowCacheCleaner {
     /**
      * @param grpCtx Cache group context.
      */
-    public H2RowCache(CacheGroupContext grpCtx) {
+    public H2RowCache(CacheGroupContext grpCtx, int maxSize) {
         this.grpCtx = grpCtx;
+
+        rows = new ConcurrentLinkedHashMap<Long, GridH2KeyValueRowOnheap>(
+            DFLT_INIT_CAP,
+            DFLT_LOAD_FACTOR,
+            Runtime.getRuntime().availableProcessors(),
+            maxSize
+        );
     }
 
     /**
@@ -89,13 +99,13 @@ public class H2RowCache implements GridQueryRowCacheCleaner {
     /**
      * Cache un-registration callback.
      *
-     * @param cctx Cache context.
+     * @param cacheInfo Cache context info.
      * @return {@code True} if there are no more usages for the given cache group.
      */
-    public boolean onCacheUnregistered(GridCacheContext cctx) {
+    public boolean onCacheUnregistered(GridCacheContextInfo cacheInfo) {
         boolean res = --usageCnt == 0;
 
-        clearForCache(cctx);
+        clearForCache(cacheInfo);
 
         return res;
     }
@@ -110,10 +120,10 @@ public class H2RowCache implements GridQueryRowCacheCleaner {
     /**
      * Clear entries belonging to the given cache.
      *
-     * @param cctx Cache context.
+     * @param cacheInfo Cache context info.
      */
-    private void clearForCache(GridCacheContext cctx) {
-        int cacheId = cctx.cacheId();
+    private void clearForCache(GridCacheContextInfo cacheInfo) {
+        int cacheId = cacheInfo.cacheId();
 
         Iterator<Map.Entry<Long, GridH2KeyValueRowOnheap>> iter = rows.entrySet().iterator();
 

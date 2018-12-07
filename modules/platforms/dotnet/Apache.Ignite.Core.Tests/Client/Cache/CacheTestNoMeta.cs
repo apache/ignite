@@ -46,13 +46,13 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 {
                     CompactFooter = false
                 },
-                Host = IPAddress.Loopback.ToString()
+                Endpoints = new[] {IPAddress.Loopback.ToString()}
             };
 
             using (var client = Ignition.StartClient(cfg))
             {
                 var serverCache = Ignition.GetIgnite().GetOrCreateCache<int?, Person>(
-                    new CacheConfiguration("person", typeof(Person)));
+                    new CacheConfiguration("person", new QueryEntity(typeof(int?), typeof(Person))));
 
                 var clientCache = client.GetCache<int?, Person>(serverCache.Name);
 

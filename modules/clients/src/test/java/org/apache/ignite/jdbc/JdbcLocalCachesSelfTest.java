@@ -92,11 +92,6 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
         cache2.put("key2", 4);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */

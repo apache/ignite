@@ -1,0 +1,38 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+
+-var model = `${modelAt}.discovery.ZooKeeper.retryPolicy.UntilElapsed`
+
+.pc-form-grid-col-30(ng-if-start=`${modelRetryPolicyKind} === 'UntilElapsed'`)
+    +form-field__number({
+        label: 'Total time:',
+        model: `${model}.maxElapsedTimeMs`,
+        name: '"ueMaxElapsedTimeMs"',
+        placeholder: '60000',
+        min: '0',
+        tip: 'Total time in ms for execution of retry attempt'
+    })
+.pc-form-grid-col-30(ng-if-end)
+    +form-field__number({
+        label: 'Interval:',
+        model: `${model}.sleepMsBetweenRetries`,
+        name: '"ueSleepMsBetweenRetries"',
+        placeholder: '1000',
+        min: '0',
+        tip: 'Time in ms between retry attempts'
+    })

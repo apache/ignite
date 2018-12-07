@@ -17,33 +17,32 @@
 
 package org.apache.ignite.spark.impl
 
-import org.apache.ignite.{Ignite, IgniteException}
-import org.apache.ignite.cache.{CacheMode, QueryEntity}
-import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite.configuration.CacheConfiguration
-import org.apache.ignite.spark.{IgniteContext, IgniteRDD}
+import org.apache.ignite.IgniteException
+import org.apache.ignite.cache.QueryEntity
+import org.apache.ignite.spark.{IgniteContext, IgniteRDD, impl}
 import org.apache.spark.Partition
+import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SQLContext}
 
 import scala.collection.JavaConversions._
-import scala.collection.mutable.ArrayBuffer
 
 /**
   * Apache Ignite implementation of Spark BaseRelation with PrunedFilteredScan for Ignite SQL Tables
   */
 class IgniteSQLRelation[K, V](
-    private[spark] val ic: IgniteContext,
-    private[spark] val tableName: String)
-    (@transient val sqlContext: SQLContext) extends BaseRelation with PrunedFilteredScan {
+    private[apache] val ic: IgniteContext,
+    private[apache] val tableName: String,
+    private[apache] val schemaName: Option[String])
+    (@transient val sqlContext: SQLContext) extends BaseRelation with PrunedFilteredScan with Logging {
 
     /**
       * @return Schema of Ignite SQL table.
       */
     override def schema: StructType =
-        igniteSQLTable(ic.ignite(), tableName)
+        igniteSQLTable(ic.ignite(), tableName, schemaName)
             .map(IgniteSQLRelation.schema)
             .getOrElse(throw new IgniteException(s"Unknown table $tableName"))
 
@@ -55,6 +54,19 @@ class IgniteSQLRelation[K, V](
       * @return Apache Ignite RDD implementation.
       */
     override def buildScan(columns: Array[String], filters: Array[Filter]): RDD[Row] = {
+        val qryAndArgs = queryAndArgs(columns, filters)
+
+        IgniteSQLDataFrameRDD[K, V](ic, cacheName, schema, qryAndArgs._1, qryAndArgs._2, calcPartitions(filters))
+    }
+
+    override def toString = s"IgniteSQLRelation[table=$tableName]"
+
+    /**
+      * @param columns Columns to select.
+      * @param filters Filters to apply.
+      * @return SQL query string and arguments for it.
+      */
+    private def queryAndArgs(columns: Array[String], filters: Array[Filter]): (String, List[Any]) = {
         val columnsStr =
             if (columns.isEmpty)
                 "*"
@@ -65,140 +77,33 @@ class IgniteSQLRelation[K, V](
         //Query will be executed by Ignite SQL Engine.
         val qryAndArgs = filters match {
             case Array(_, _*) ⇒
-                val where = compileWhere(filters)
+                val where = QueryUtils.compileWhere(filters)
+
                 (s"SELECT $columnsStr FROM $tableName WHERE ${where._1}", where._2)
+
             case _ ⇒
                 (s"SELECT $columnsStr FROM $tableName", List.empty)
         }
 
-        IgniteSQLDataFrameRDD[K, V](ic, cacheName, schema, qryAndArgs._1, qryAndArgs._2, calcPartitions(filters))
-    }
+        logInfo(qryAndArgs._1)
 
-    override def toString = s"IgniteSQLRelation[table=$tableName]"
+        qryAndArgs
+    }
 
     /**
-      * Builds `where` part of SQL query.
+      * Computes spark partitions for this relation.
       *
-      * @param filters Filter to apply.
-      * @return Tuple contains `where` string and `List[Any]` of query parameters.
+      * @return Array of IgniteDataFramPartition.
       */
-    private def compileWhere(filters: Array[Filter]): (String, List[Any]) =
-        filters.foldLeft(("", List[Any]()))(buildSingleClause)
-
-    /**
-      * Adds single where clause to `state` and returns new state.
-      *
-      * @param state Current `where` state.
-      * @param clause Clause to add.
-      * @return `where` with given clause.
-      */
-    private def buildSingleClause(state: (String, List[Any]), clause: Filter): (String, List[Any]) = {
-        val filterStr = state._1
-        val params = state._2
-
-        clause match {
-            case EqualTo(attr, value) ⇒ (addStrClause(filterStr, s"$attr = ?"), params :+ value)
-
-            case EqualNullSafe(attr, value) ⇒ (addStrClause(filterStr, s"($attr IS NULL OR $attr = ?)"), params :+ value)
-
-            case GreaterThan(attr, value) ⇒ (addStrClause(filterStr, s"$attr > ?"), params :+ value)
-
-            case GreaterThanOrEqual(attr, value) ⇒ (addStrClause(filterStr, s"$attr >= ?"), params :+ value)
-
-            case LessThan(attr, value) ⇒ (addStrClause(filterStr, s"$attr < ?"), params :+ value)
-
-            case LessThanOrEqual(attr, value) ⇒ (addStrClause(filterStr, s"$attr <= ?"), params :+ value)
-
-            case In(attr, values) ⇒ (addStrClause(filterStr, s"$attr IN (${values.map(_ ⇒ "?").mkString(",")})"), params ++ values)
-
-            case IsNull(attr) ⇒ (addStrClause(filterStr, s"$attr IS NULL"), params)
-
-            case IsNotNull(attr) ⇒ (addStrClause(filterStr, s"$attr IS NOT NULL"), params)
-
-            case And(left, right) ⇒
-                val leftClause = buildSingleClause(("", params), left)
-                val rightClause = buildSingleClause(("", leftClause._2), right)
-
-                (addStrClause(filterStr, s"${leftClause._1} AND ${rightClause._1}"), rightClause._2)
-
-            case Or(left, right) ⇒
-                val leftClause = buildSingleClause(("", params), left)
-                val rightClause = buildSingleClause(("", leftClause._2), right)
-
-                (addStrClause(filterStr, s"${leftClause._1} OR ${rightClause._1}"), rightClause._2)
-
-            case Not(child) ⇒
-                val innerClause = buildSingleClause(("", params), child)
-
-                (addStrClause(filterStr, s"NOT ${innerClause._1}"), innerClause._2)
-
-            case StringStartsWith(attr, value) ⇒
-                (addStrClause(filterStr, s"$attr LIKE ?"), params :+ (value + "%"))
-
-            case StringEndsWith(attr, value) ⇒
-                (addStrClause(filterStr, s"$attr LIKE ?"), params :+ ("%" + value))
-
-            case StringContains(attr, value) ⇒
-                (addStrClause(filterStr, s"$attr LIKE ?"), params :+ ("%" + value + "%"))
-        }
-    }
-
-    private def calcPartitions(filters: Array[Filter]): Array[Partition] = {
-        val cache = ic.ignite().cache[K, V](cacheName)
-
-        val ccfg = cache.getConfiguration(classOf[CacheConfiguration[K, V]])
-
-        if (ccfg.getCacheMode == CacheMode.REPLICATED) {
-            val serverNodes = ic.ignite().cluster().forCacheNodes(cacheName).forServers().nodes()
-
-            Array(IgniteDataFramePartition(0, serverNodes.head, Stream.from(0).take(1024).toList))
-        }
-        else {
-            val aff = ic.ignite().affinity(cacheName)
-
-            val parts = aff.partitions()
-
-            val nodesToParts = (0 until parts).foldLeft(Map[ClusterNode, ArrayBuffer[Int]]()) {
-                case (nodeToParts, ignitePartIdx) ⇒
-                    val primary = aff.mapPartitionToPrimaryAndBackups(ignitePartIdx).head
-
-                    if (nodeToParts.contains(primary)) {
-                        nodeToParts(primary) += ignitePartIdx
-
-                        nodeToParts
-                    }
-                    else
-                        nodeToParts + (primary → ArrayBuffer[Int](ignitePartIdx))
-            }
-
-            val partitions = nodesToParts.zipWithIndex.map { case ((node, nodesParts), i) ⇒
-                IgniteDataFramePartition(i, node, nodesParts.toList)
-            }
-
-            partitions.toArray
-        }
-    }
+    private def calcPartitions(filters: Array[Filter]): Array[Partition] =
+        impl.calcPartitions(ic, cacheName)
 
     /**
       * Cache name for a table name.
       */
     private lazy val cacheName: String =
-        sqlCacheName(ic.ignite(), tableName)
+        sqlCacheName(ic.ignite(), tableName, schemaName)
             .getOrElse(throw new IgniteException(s"Unknown table $tableName"))
-
-    /**
-      * Utility method to add clause to sql WHERE string.
-      *
-      * @param filterStr Current filter string
-      * @param clause Clause to add.
-      * @return Filter string.
-      */
-    private def addStrClause(filterStr: String, clause: String) =
-        if (filterStr.isEmpty)
-            clause
-        else
-            filterStr + " AND " + clause
-
 }
 
 object IgniteSQLRelation {
@@ -215,13 +120,14 @@ object IgniteSQLRelation {
 
         StructType(columns.map { case (name, dataType) ⇒
             StructField(
-                name = name,
+                name = table.getAliases.getOrDefault(name, name),
                 dataType = IgniteRDD.dataType(dataType, name),
                 nullable = !isKeyColumn(table, name),
                 metadata = Metadata.empty)
         })
     }
 
-    def apply[K, V](ic: IgniteContext, tableName: String, sqlContext: SQLContext): IgniteSQLRelation[K, V] =
-        new IgniteSQLRelation[K, V](ic,tableName)(sqlContext)
+    def apply[K, V](ic: IgniteContext, tableName: String, schemaName: Option[String],
+        sqlContext: SQLContext): IgniteSQLRelation[K, V] =
+        new IgniteSQLRelation[K, V](ic, tableName, schemaName)(sqlContext)
 }

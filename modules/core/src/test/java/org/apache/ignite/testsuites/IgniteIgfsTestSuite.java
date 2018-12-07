@@ -55,7 +55,6 @@ import org.apache.ignite.internal.processors.igfs.IgfsProxySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsLocalSecondaryFileSystemProxySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemInjectionSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest;
-import org.apache.ignite.internal.processors.igfs.IgfsSizeSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsStartCacheTest;
 import org.apache.ignite.internal.processors.igfs.IgfsStreamsSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsTaskSelfTest;
@@ -122,6 +121,7 @@ public class IgniteIgfsTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(IgfsModeResolverSelfTest.class));
 
+        //suite.addTestSuite(IgfsPathSelfTest.class);
         suite.addTestSuite(IgfsFragmentizerSelfTest.class);
         suite.addTestSuite(IgfsFragmentizerTopologySelfTest.class);
         suite.addTestSuite(IgfsFileMapSelfTest.class);

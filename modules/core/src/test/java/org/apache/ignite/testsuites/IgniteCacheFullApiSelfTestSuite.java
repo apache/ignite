@@ -170,6 +170,8 @@ public class IgniteCacheFullApiSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCachePartitionedMultiNodeWithGroupFullApiSelfTest.class);
         suite.addTestSuite(GridCachePartitionedNearDisabledMultiNodeWithGroupFullApiSelfTest.class);
 
+        //suite.addTestSuite(GridActivateExtensionTest.class);
+
         return suite;
     }
 }

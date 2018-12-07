@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestNoId;
 
 /**
@@ -60,6 +61,11 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     /** Get schemas metadata request. */
     static final byte META_SCHEMAS = 12;
 
+    /** Send a batch of a data from client to server. */
+    static final byte BULK_LOAD_BATCH = 13;
+
+    /** Ordered batch request. */
+    static final byte BATCH_EXEC_ORDERED = 14;
 
     /** Request type. */
     private byte type;
@@ -72,12 +78,14 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
+    @Override public void writeBinary(BinaryWriterExImpl writer,
+        ClientListenerProtocolVersion ver) throws BinaryObjectException {
         writer.writeByte(type);
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
+    @Override public void readBinary(BinaryReaderExImpl reader,
+        ClientListenerProtocolVersion ver) throws BinaryObjectException {
         // No-op.
     }
 
@@ -90,10 +98,12 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
     /**
      * @param reader Binary reader.
+     * @param ver Protocol version.
      * @return Request object.
      * @throws BinaryObjectException On error.
      */
-    public static JdbcRequest readRequest(BinaryReaderExImpl reader) throws BinaryObjectException {
+    public static JdbcRequest readRequest(BinaryReaderExImpl reader,
+        ClientListenerProtocolVersion ver) throws BinaryObjectException {
         int reqType = reader.readByte();
 
         JdbcRequest req;
@@ -154,11 +164,21 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
                 break;
 
+            case BULK_LOAD_BATCH:
+                req = new JdbcBulkLoadBatchRequest();
+
+                break;
+
+            case BATCH_EXEC_ORDERED:
+                req = new JdbcOrderedBatchExecuteRequest();
+
+                break;
+
             default:
                 throw new IgniteException("Unknown SQL listener request ID: [request ID=" + reqType + ']');
         }
 
-        req.readBinary(reader);
+        req.readBinary(reader, ver);
 
         return req;
     }

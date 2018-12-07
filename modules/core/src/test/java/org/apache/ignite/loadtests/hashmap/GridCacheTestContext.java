@@ -22,6 +22,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager;
+import org.apache.ignite.internal.processors.cache.CacheCompressionManager;
 import org.apache.ignite.internal.processors.cache.CacheOsConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
@@ -37,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedTtlCleanupMana
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManager;
 import org.apache.ignite.internal.processors.cache.WalStateManager;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.dr.GridOsCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheNoopJtaManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -59,7 +61,6 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
      * @param ctx Context.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("NullableProblems")
     public GridCacheTestContext(GridTestKernalContext ctx) throws Exception {
         super(
             ctx,
@@ -78,7 +79,9 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
                 new CacheAffinitySharedManager<K, V>(),
                 new GridCacheIoManager(),
                 new GridCacheSharedTtlCleanupManager(),
+                new PartitionsEvictManager(),
                 new CacheNoopJtaManager(),
+                null,
                 null
             ),
             defaultCacheConfiguration(),
@@ -87,6 +90,8 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             AffinityTopologyVersion.ZERO,
             true,
             true,
+            false,
+            new CacheCompressionManager(),
             new GridCacheEventManager(),
             new CacheOsStoreManager(null, new CacheConfiguration()),
             new GridCacheEvictionManager(),

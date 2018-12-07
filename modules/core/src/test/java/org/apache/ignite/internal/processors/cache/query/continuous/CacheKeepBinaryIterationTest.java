@@ -40,6 +40,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -77,13 +78,6 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(getServerNodeCount());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -101,6 +95,18 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
      */
     public void testTxOnHeap() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,1, TRANSACTIONAL);
+
+        doTestScanQuery(ccfg, true, true);
+        doTestScanQuery(ccfg, true, false);
+        doTestScanQuery(ccfg, false, true);
+        doTestScanQuery(ccfg, false, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMvccTxOnHeap() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,1, TRANSACTIONAL_SNAPSHOT);
 
         doTestScanQuery(ccfg, true, true);
         doTestScanQuery(ccfg, true, false);
@@ -131,6 +137,19 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
         doTestLocalEntries(ccfg, false, true);
         doTestLocalEntries(ccfg, false, false);
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMvccTxOnHeapLocalEntries() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL_SNAPSHOT);
+
+        doTestLocalEntries(ccfg, true, true);
+        doTestLocalEntries(ccfg, true, false);
+        doTestLocalEntries(ccfg, false, true);
+        doTestLocalEntries(ccfg, false, false);
+    }
+
 
     /**
      * @param ccfg Cache configuration.

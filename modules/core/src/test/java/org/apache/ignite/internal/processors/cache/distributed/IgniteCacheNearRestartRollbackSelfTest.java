@@ -102,8 +102,6 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
     }
 
@@ -130,7 +128,6 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public void testRestarts() throws Exception {
         startGrids(4);
 

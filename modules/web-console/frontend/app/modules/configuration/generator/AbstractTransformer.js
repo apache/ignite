@@ -89,8 +89,8 @@ export default class AbstractTransformer {
     }
 
     // Generate communication group.
-    static clusterCommunication(cluster) {
-        return this.toSection(this.generator.clusterCommunication(cluster));
+    static clusterCommunication(cluster, available) {
+        return this.toSection(this.generator.clusterCommunication(cluster, available));
     }
 
     // Generate REST access configuration.
@@ -151,6 +151,11 @@ export default class AbstractTransformer {
     // Generate marshaller group.
     static clusterMisc(cluster, available) {
         return this.toSection(this.generator.clusterMisc(cluster, available));
+    }
+
+    // Generate marshaller group.
+    static clusterMvcc(cluster, available) {
+        return this.toSection(this.generator.clusterMvcc(cluster, available));
     }
 
     // Generate marshaller group.
@@ -304,8 +309,8 @@ export default class AbstractTransformer {
     }
 
     // Generate caches configs.
-    static clusterCheckpoint(cluster, caches) {
-        return this.toSection(this.generator.clusterCheckpoint(cluster, caches));
+    static clusterCheckpoint(cluster, available, caches) {
+        return this.toSection(this.generator.clusterCheckpoint(cluster, available, caches));
     }
 
     // Generate domain model for general group.

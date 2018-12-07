@@ -23,16 +23,19 @@ const _ = require('lodash');
 
 module.exports = {
     implements: 'services/clusters',
-    inject: ['mongo', 'services/spaces', 'errors']
+    inject: ['mongo', 'services/spaces', 'services/caches', 'services/domains', 'services/igfss', 'errors']
 };
 
 /**
  * @param mongo
  * @param {SpacesService} spacesService
+ * @param {CachesService} cachesService
+ * @param {DomainsService} modelsService
+ * @param {IgfssService} igfssService
  * @param errors
  * @returns {ClustersService}
  */
-module.exports.factory = (mongo, spacesService, errors) => {
+module.exports.factory = (mongo, spacesService, cachesService, modelsService, igfssService, errors) => {
     /**
      * Convert remove status operation to own presentation.
      *
@@ -71,17 +74,17 @@ module.exports.factory = (mongo, spacesService, errors) => {
      */
     const create = (cluster) => {
         return mongo.Cluster.create(cluster)
+            .catch((err) => {
+                if (err.code === mongo.errCodes.DUPLICATE_KEY_ERROR)
+                    throw new errors.DuplicateKeyException(`Cluster with name: "${cluster.name}" already exist.`);
+                else
+                    throw err;
+            })
             .then((savedCluster) =>
                 mongo.Cache.update({_id: {$in: savedCluster.caches}}, {$addToSet: {clusters: savedCluster._id}}, {multi: true}).exec()
                     .then(() => mongo.Igfs.update({_id: {$in: savedCluster.igfss}}, {$addToSet: {clusters: savedCluster._id}}, {multi: true}).exec())
                     .then(() => savedCluster)
-            )
-            .catch((err) => {
-                if (err.code === mongo.errCodes.DUPLICATE_KEY_ERROR)
-                    throw new errors.DuplicateKeyException('Cluster with name: "' + cluster.name + '" already exist.');
-                else
-                    throw err;
-            });
+            );
     };
 
     /**
@@ -91,12 +94,119 @@ module.exports.factory = (mongo, spacesService, errors) => {
      * @returns {Promise.<RemoveResult>} - that resolves results of remove operation.
      */
     const removeAllBySpaces = (spaceIds) => {
-        return mongo.Cache.update({space: {$in: spaceIds}}, {clusters: []}, {multi: true}).exec()
-            .then(() => mongo.Igfs.update({space: {$in: spaceIds}}, {clusters: []}, {multi: true}).exec())
+        return Promise.all([
+            mongo.DomainModel.remove({space: {$in: spaceIds}}).exec(),
+            mongo.Cache.remove({space: {$in: spaceIds}}).exec(),
+            mongo.Igfs.remove({space: {$in: spaceIds}}).exec()
+        ])
             .then(() => mongo.Cluster.remove({space: {$in: spaceIds}}).exec());
     };
 
     class ClustersService {
+        static shortList(userId, demo) {
+            return spacesService.spaceIds(userId, demo)
+                .then((spaceIds) => mongo.Cluster.find({space: {$in: spaceIds}}).select('name discovery.kind caches models igfss').lean().exec())
+                .then((clusters) => _.map(clusters, (cluster) => ({
+                    _id: cluster._id,
+                    name: cluster.name,
+                    discovery: cluster.discovery.kind,
+                    cachesCount: _.size(cluster.caches),
+                    modelsCount: _.size(cluster.models),
+                    igfsCount: _.size(cluster.igfss)
+                })));
+        }
+
+        static get(userId, demo, _id) {
+            return spacesService.spaceIds(userId, demo)
+                .then((spaceIds) => mongo.Cluster.findOne({space: {$in: spaceIds}, _id}).lean().exec());
+        }
+
+        static normalize(spaceId, cluster, ...models) {
+            cluster.space = spaceId;
+
+            _.forEach(models, (model) => {
+                _.forEach(model, (item) => {
+                    item.space = spaceId;
+                    item.clusters = [cluster._id];
+                });
+            });
+        }
+
+        static removedInCluster(oldCluster, newCluster, field) {
+            return _.difference(_.invokeMap(_.get(oldCluster, field), 'toString'), _.get(newCluster, field));
+        }
+
+        static upsertBasic(userId, demo, {cluster, caches}) {
+            if (_.isNil(cluster._id))
+                return Promise.reject(new errors.IllegalArgumentException('Cluster id can not be undefined or null'));
+
+            return spacesService.spaceIds(userId, demo)
+                .then((spaceIds) => {
+                    this.normalize(_.head(spaceIds), cluster, caches);
+
+                    const query = _.pick(cluster, ['space', '_id']);
+                    const basicCluster = _.pick(cluster, [
+                        'space',
+                        '_id',
+                        'name',
+                        'discovery',
+                        'caches',
+                        'memoryConfiguration.memoryPolicies',
+                        'dataStorageConfiguration.defaultDataRegionConfiguration.maxSize'
+                    ]);
+
+                    return mongo.Cluster.findOneAndUpdate(query, {$set: basicCluster}, {projection: 'caches', upsert: true}).lean().exec()
+                        .catch((err) => {
+                            if (err.code === mongo.errCodes.DUPLICATE_KEY_ERROR)
+                                throw new errors.DuplicateKeyException(`Cluster with name: "${cluster.name}" already exist.`);
+
+                            throw err;
+                        })
+                        .then((oldCluster) => {
+                            if (oldCluster) {
+                                const ids = this.removedInCluster(oldCluster, cluster, 'caches');
+
+                                return cachesService.remove(ids);
+                            }
+
+                            cluster.caches = _.map(caches, '_id');
+
+                            return mongo.Cluster.update(query, {$set: cluster, new: true}, {upsert: true}).exec();
+                        });
+                })
+                .then(() => _.map(caches, cachesService.upsertBasic))
+                .then(() => ({rowsAffected: 1}));
+        }
+
+        static upsert(userId, demo, {cluster, caches, models, igfss}) {
+            if (_.isNil(cluster._id))
+                return Promise.reject(new errors.IllegalArgumentException('Cluster id can not be undefined or null'));
+
+            return spacesService.spaceIds(userId, demo)
+                .then((spaceIds) => {
+                    this.normalize(_.head(spaceIds), cluster, caches, models, igfss);
+
+                    const query = _.pick(cluster, ['space', '_id']);
+
+                    return mongo.Cluster.findOneAndUpdate(query, {$set: cluster}, {projection: {models: 1, caches: 1, igfss: 1}, upsert: true}).lean().exec()
+                        .catch((err) => {
+                            if (err.code === mongo.errCodes.DUPLICATE_KEY_ERROR)
+                                throw new errors.DuplicateKeyException(`Cluster with name: "${cluster.name}" already exist.`);
+
+                            throw err;
+                        })
+                        .then((oldCluster) => {
+                            const modelIds = this.removedInCluster(oldCluster, cluster, 'models');
+                            const cacheIds = this.removedInCluster(oldCluster, cluster, 'caches');
+                            const igfsIds = this.removedInCluster(oldCluster, cluster, 'igfss');
+
+                            return Promise.all([modelsService.remove(modelIds), cachesService.remove(cacheIds), igfssService.remove(igfsIds)]);
+                        });
+                })
+                .then(() => Promise.all(_.concat(_.map(models, modelsService.upsert), _.map(caches, cachesService.upsert), _.map(igfss, igfssService.upsert))))
+                .then(() => ({rowsAffected: 1}));
+        }
+
         /**
          * Create or update cluster.
          *
@@ -121,19 +231,35 @@ module.exports.factory = (mongo, spacesService, errors) => {
         }
 
         /**
-         * Remove cluster.
+         * Remove clusters.
          *
-         * @param {mongo.ObjectId|String} clusterId - The cluster id for remove.
+         * @param {Array.<String>|String} ids - The cluster ids for remove.
          * @returns {Promise.<{rowsAffected}>} - The number of affected rows.
          */
-        static remove(clusterId) {
-            if (_.isNil(clusterId))
+        static remove(ids) {
+            if (_.isNil(ids))
                 return Promise.reject(new errors.IllegalArgumentException('Cluster id can not be undefined or null'));
 
-            return mongo.Cache.update({clusters: {$in: [clusterId]}}, {$pull: {clusters: clusterId}}, {multi: true}).exec()
-                .then(() => mongo.Igfs.update({clusters: {$in: [clusterId]}}, {$pull: {clusters: clusterId}}, {multi: true}).exec())
-                .then(() => mongo.Cluster.remove({_id: clusterId}).exec())
-                .then(convertRemoveStatus);
+            if (_.isEmpty(ids))
+                return Promise.resolve({rowsAffected: 0});
+
+            ids = _.castArray(ids);
+
+            return Promise.all(_.map(ids, (id) => {
+                return mongo.Cluster.findByIdAndRemove(id).exec()
+                    .then((cluster) => {
+                        if (_.isNil(cluster))
+                            return 0;
+
+                        return Promise.all([
+                            mongo.DomainModel.remove({_id: {$in: cluster.models}}).exec(),
+                            mongo.Cache.remove({_id: {$in: cluster.caches}}).exec(),
+                            mongo.Igfs.remove({_id: {$in: cluster.igfss}}).exec()
+                        ])
+                            .then(() => 1);
+                    });
+            }))
+                .then((res) => ({rowsAffected: _.sum(res)}));
         }
 
         /**

@@ -30,15 +30,9 @@
         <relativePath>parent</relativePath>
     </parent>
 
-    <groupId>org.apache.ignite</groupId>
     <artifactId>apache-ignite</artifactId>
-    <version>2.4.0-SNAPSHOT</version>
+    <version>2.7.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-
-    <properties>
-        <!--fix <attachartifact>...< /> at apache-release profile if changed-->
-        <ignite.zip.pattern>${project.artifactId}-${ignite.edition}-${project.version}-bin</ignite.zip.pattern>
-    </properties>
 
     <scm>
         <url>https://git-wip-us.apache.org/repos/asf/ignite</url>
@@ -51,6 +45,7 @@
         <module>modules/apache-license-gen</module>
         <module>modules/tools</module>
         <module>modules/core</module>
+        <module>modules/compress</module>
         <module>modules/dev-utils</module>
         <module>modules/direct-io</module>
         <module>modules/hadoop</module>
@@ -60,6 +55,7 @@
         <module>modules/clients</module>
         <module>modules/spring</module>
         <module>modules/spring-data</module>
+        <module>modules/spring-data-2.0</module>
         <module>modules/web</module>
         <module>modules/aop</module>
         <module>modules/urideploy</module>
@@ -98,6 +94,7 @@
         <module>modules/rocketmq</module>
         <module>modules/sqlline</module>
         <module>modules/ml</module>
+        <module>modules/tensorflow</module>
     </modules>
 
     <profiles>
@@ -121,7 +118,6 @@
             <modules><!-- sorted alphabetically -->
                 <module>modules/scalar-2.10</module>
                 <module>modules/scalar</module>
-                <module>modules/spark-2.10</module>
                 <module>modules/spark</module>
                 <module>modules/visor-console-2.10</module>
                 <module>modules/visor-console</module>
@@ -193,7 +189,7 @@
                                     <reportOutputDirectory>${basedir}/target/javadoc</reportOutputDirectory>
                                     <destDir>core</destDir>
                                     <stylesheetfile>${basedir}/assembly/docfiles/javadoc.css</stylesheetfile>
-                                    <subpackages>org.apache.ignite -exclude org.apache.ignite.client:org.apache.ignite.codegen:org.apache.ignite.examples:org.apache.ignite.internal:org.apache.ignite.schema:org.apache.ignite.tests:org.apache.ignite.tools:org.apache.ignite.util:org.apache.ignite.spi.discovery.tcp.messages:org.apache.ignite.spi.discovery.tcp.internal:org.apache.ignite.spi.deployment.uri.scanners:org.apache.ignite.spi.deployment.uri.tasks:org.apache.ignite.yardstick:org.apache.ignite.webtest</subpackages>
+                                    <subpackages>org.apache.ignite -exclude org.apache.ignite.client:org.apache.ignite.codegen:org.apache.ignite.examples:org.apache.ignite.internal:org.apache.ignite.schema:org.apache.ignite.tests:org.apache.ignite.tools:org.apache.ignite.util:org.apache.ignite.spi.discovery.tcp.messages:org.apache.ignite.spi.discovery.tcp.internal:org.apache.ignite.spi.communication.tcp.internal:org.apache.ignite.spi.discovery.zk.internal:org.apache.ignite.spi.deployment.uri.scanners:org.apache.ignite.spi.deployment.uri.tasks:org.apache.ignite.yardstick:org.apache.ignite.webtest</subpackages>
                                 </configuration>
                             </execution>
                         </executions>
@@ -396,15 +392,15 @@
                                             <include name="**/*.sh" />
                                         </fixcrlf>
 
-                                        <zip destfile="${basedir}/target/bin/${ignite.zip.pattern}.zip" encoding="UTF-8">
-                                            <zipfileset dir="${basedir}/target/release-package-${ignite.edition}" prefix="${ignite.zip.pattern}" filemode="755">
+                                        <zip destfile="${basedir}/target/bin/${ignite.edition}-${project.version}-bin.zip" encoding="UTF-8">
+                                            <zipfileset dir="${basedir}/target/release-package-${ignite.edition}" prefix="${ignite.edition}-${project.version}-bin" filemode="755">
                                                 <include name="**/*.sh" />
                                                 <include name="**/configure" />
                                                 <include name="**/install-sh" />
                                                 <include name="**/compile" />
                                                 <include name="**/missing" />
                                             </zipfileset>
-                                            <zipfileset dir="${basedir}/target/release-package-${ignite.edition}" prefix="${ignite.zip.pattern}">
+                                            <zipfileset dir="${basedir}/target/release-package-${ignite.edition}" prefix="${ignite.edition}-${project.version}-bin">
                                                 <exclude name="**/*.sh" />
                                                 <exclude name="**/configure" />
                                                 <exclude name="**/install-sh" />
@@ -554,7 +550,6 @@
 
             <modules>
                 <module>modules/scalar-2.10</module>
-                <module>modules/spark-2.10</module>
                 <module>modules/visor-console-2.10</module>
                 <module>modules/visor-plugins</module>
             </modules>
@@ -572,35 +567,6 @@
             <modules>
                 <module>examples</module>
             </modules>
-        </profile>
-
-        <profile>
-            <id>release-sources</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>source-release-assembly-ignite</id>
-                                <phase>validate</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
-                                    <descriptors>
-                                        <descriptor>assembly/release-sources.xml</descriptor>
-                                    </descriptors>
-                                    <tarLongFileMode>gnu</tarLongFileMode>
-                                    <finalName>${project.artifactId}-${project.version}-src</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
 
         <profile>
@@ -661,7 +627,7 @@
                                             setClientVersion('new.ignite.version.fixed', 'new.client.version');
                                         </script>
 
-                                        <echo message="Update ignite.version in dotnet client" />
+                                        <echo message="Update ignite.version in .NET" />
                                         <echo message="${new.client.version}" />
 
                                         <replaceregexp byline="true" encoding="UTF-8">
@@ -682,7 +648,7 @@
                                             </fileset>
                                         </replaceregexp>
 
-                                        <echo message="Update ignite.version in cpp client" />
+                                        <echo message="Update ignite.version in C++" />
                                         <replaceregexp byline="true" encoding="UTF-8">
                                             <regexp pattern="(AC_INIT.+\[)\d+\.\d+\.\d+.*?(\].+)" />
                                             <substitution expression="\1${new.client.version}\2" />

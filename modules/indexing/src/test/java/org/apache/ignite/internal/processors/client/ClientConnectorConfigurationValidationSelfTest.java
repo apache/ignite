@@ -277,7 +277,6 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testDisabled() throws Exception {
         IgniteConfiguration cfg = baseConfiguration();
 
@@ -317,7 +316,6 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testJdbcConnectionDisabled() throws Exception {
         IgniteConfiguration cfg = baseConfiguration();
 
@@ -334,7 +332,29 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
 
                 return null;
             }
-        }, SQLException.class, "Failed to connect to Ignite cluster");
+        }, SQLException.class, "JDBC connection is not allowed, see ClientConnectorConfiguration.jdbcEnabled");
+    }
+
+    /**
+     *  Checks if JDBC connection disabled for daemon node.
+     *
+     * @throws Exception If failed.
+     */
+    public void testJdbcConnectionDisabledForDaemon() throws Exception {
+        final IgniteConfiguration cfg = baseConfiguration().setDaemon(true);
+
+        cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
+            .setJdbcEnabled(true)
+            .setThinClientEnabled(true));
+
+        Ignition.start(cfg);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                checkJdbc(null, ClientConnectorConfiguration.DFLT_PORT);
+                return null;
+            }
+        }, SQLException.class, "Failed to connect");
     }
 
     /**
@@ -372,7 +392,6 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      * @param cliConnCfg Client connector configuration.
      * @param success Success flag. * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void check(ClientConnectorConfiguration cliConnCfg, boolean success) throws Exception {
         final IgniteConfiguration cfg = baseConfiguration();
 

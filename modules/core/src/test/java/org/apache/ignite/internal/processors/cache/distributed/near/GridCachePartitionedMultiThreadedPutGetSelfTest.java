@@ -103,11 +103,6 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
@@ -180,13 +175,11 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      * @param isolation Isolation.
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"TooBroadScope", "PointlessBooleanExpression"})
     private void doTest(final TransactionConcurrency concurrency, final TransactionIsolation isolation)
         throws Exception {
         final AtomicInteger cntr = new AtomicInteger();
 
         multithreaded(new CAX() {
-            @SuppressWarnings({"BusyWait"})
             @Override public void applyx() {
                 IgniteCache<Integer, Integer> c = grid(0).cache(DEFAULT_CACHE_NAME);
 

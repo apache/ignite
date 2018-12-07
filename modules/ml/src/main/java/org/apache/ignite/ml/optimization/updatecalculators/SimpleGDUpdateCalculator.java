@@ -17,25 +17,32 @@
 
 package org.apache.ignite.ml.optimization.updatecalculators;
 
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.optimization.SmoothParametrized;
 
 /**
  * Simple gradient descent parameters updater.
  */
-public class SimpleGDUpdateCalculator<M extends SmoothParametrized> implements ParameterUpdateCalculator<M, SimpleGDParameter> {
-    /**
-     * Learning rate.
-     */
+public class SimpleGDUpdateCalculator implements ParameterUpdateCalculator<SmoothParametrized, SimpleGDParameterUpdate> {
+    /** */
+    private static final long serialVersionUID = -4237332083320879334L;
+
+    /** Learning rate. */
     private double learningRate;
 
-    /**
-     * Loss function.
-     */
+    /** Loss function. */
     protected IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
+
+    /** Default learning rate. */
+    private static final double DEFAULT_LEARNING_RATE = 0.1;
+
+    /** Construct instance of this class with default parameters. */
+    public SimpleGDUpdateCalculator() {
+        this(DEFAULT_LEARNING_RATE);
+    }
 
     /**
      * Construct SimpleGDUpdateCalculator.
@@ -47,21 +54,31 @@ public class SimpleGDUpdateCalculator<M extends SmoothParametrized> implements P
     }
 
     /** {@inheritDoc} */
-    @Override public SimpleGDParameter init(M mdl,
+    @Override public SimpleGDParameterUpdate init(SmoothParametrized mdl,
         IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
         this.loss = loss;
-        return new SimpleGDParameter(mdl.parametersCount(), learningRate);
+        return new SimpleGDParameterUpdate(mdl.parametersCount());
     }
 
     /** {@inheritDoc} */
-    @Override public SimpleGDParameter calculateNewUpdate(SmoothParametrized mlp, SimpleGDParameter updaterParameters,
+    @Override public SimpleGDParameterUpdate calculateNewUpdate(SmoothParametrized mlp, SimpleGDParameterUpdate updaterParameters,
         int iteration, Matrix inputs, Matrix groundTruth) {
-        return new SimpleGDParameter(mlp.differentiateByParameters(loss, inputs, groundTruth), learningRate);
+        return new SimpleGDParameterUpdate(mlp.differentiateByParameters(loss, inputs, groundTruth));
     }
 
     /** {@inheritDoc} */
-    @Override public <M1 extends M> M1 update(M1 obj, SimpleGDParameter update) {
+    @Override public <M1 extends SmoothParametrized> M1 update(M1 obj, SimpleGDParameterUpdate update) {
         Vector params = obj.parameters();
         return (M1)obj.setParameters(params.minus(update.gradient().times(learningRate)));
+    }
+
+    /**
+     * Create new instance of this class with same parameters as this one, but with new learning rate.
+     *
+     * @param learningRate Learning rate.
+     * @return New instance of this class with same parameters as this one, but with new learning rate.
+     */
+    public SimpleGDUpdateCalculator withLearningRate(double learningRate) {
+        return new SimpleGDUpdateCalculator(learningRate);
     }
 }

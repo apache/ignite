@@ -153,7 +153,13 @@ public abstract class WALRecord {
         /** Page list meta reset count record. */
         PAGE_LIST_META_RESET_COUNT_RECORD,
 
-        /** Switch segment record. */
+        /** Switch segment record.
+         *  Marker record for indicate end of segment.
+         *  If the next one record is written down exactly at the end of segment,
+         *  SWITCH_SEGMENT_RECORD will not be written, if not then it means that we have more
+         *  that one byte in the end,then we write SWITCH_SEGMENT_RECORD as marker end of segment.
+         *  No need write CRC or WAL pointer for this record. It is byte marker record.
+         *  */
         SWITCH_SEGMENT_RECORD,
 
         /** */
@@ -174,8 +180,32 @@ public abstract class WALRecord {
         /** Exchange record. */
         EXCHANGE,
 
-        /** Baseline topology record. */
-        BASELINE_TOP_RECORD;
+        /** Reserved for future record. */
+        RESERVED,
+
+        /** Rotated id part record. */
+        ROTATED_ID_PART_RECORD,
+
+        /** */
+        MVCC_DATA_PAGE_MARK_UPDATED_RECORD,
+
+        /** */
+        MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD,
+
+        /** */
+        MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD,
+
+        /** Encrypted WAL-record. */
+        ENCRYPTED_RECORD,
+
+        /** Ecnrypted data record. */
+        ENCRYPTED_DATA_RECORD,
+
+        /** Mvcc data record. */
+        MVCC_DATA_RECORD,
+
+        /** Mvcc Tx state change record. */
+        MVCC_TX_RECORD;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();
@@ -188,7 +218,7 @@ public abstract class WALRecord {
         /**
          * Fake record type, causes stop iterating and indicates segment EOF
          * <b>Note:</b> regular record type is incremented by 1 and minimal value written to file is also 1
-         * For {@link WALMode#DEFAULT} this value is at least came from padding
+         * For {@link WALMode#FSYNC} this value is at least came from padding
          */
         public static final int STOP_ITERATION_RECORD_TYPE = 0;
     }
@@ -197,11 +227,28 @@ public abstract class WALRecord {
     private int size;
 
     /** */
+    private int chainSize;
+
+    /** */
     @GridToStringExclude
     private WALRecord prev;
 
     /** */
     private WALPointer pos;
+
+    /**
+     * @param chainSize Chain size in bytes.
+     */
+    public void chainSize(int chainSize) {
+        this.chainSize = chainSize;
+    }
+
+    /**
+     * @return Get chain size in bytes.
+     */
+    public int chainSize() {
+        return chainSize;
+    }
 
     /**
      * @return Previous record in chain.
@@ -247,13 +294,6 @@ public abstract class WALRecord {
         assert size >= 0: size;
 
         this.size = size;
-    }
-
-    /**
-     * @return Need wal rollOver.
-     */
-    public boolean rollOver(){
-        return false;
     }
 
     /**

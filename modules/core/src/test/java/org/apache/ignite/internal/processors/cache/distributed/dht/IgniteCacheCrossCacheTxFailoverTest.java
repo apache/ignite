@@ -33,6 +33,8 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -103,13 +105,6 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
         startGrids(4);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @param name Cache name.
      * @param cacheMode Cache mode.
@@ -137,6 +132,11 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return TEST_TIME + 60_000;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /**

@@ -26,7 +26,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.CIX1;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
@@ -60,14 +59,6 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
         startGrid(2);
 
         assertEquals(2, grid(1).cluster().nodes().size());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopGrid(1);
-        stopGrid(2);
-
-        assertEquals(0, G.allGrids().size());
     }
 
     /** {@inheritDoc} */

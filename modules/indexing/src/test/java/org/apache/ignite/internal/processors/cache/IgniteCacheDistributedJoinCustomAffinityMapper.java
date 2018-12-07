@@ -153,13 +153,6 @@ public class IgniteCacheDistributedJoinCustomAffinityMapper extends GridCommonAb
         startGridsMultiThreaded(3);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */

@@ -46,7 +46,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Test of integration with Hadoop client via command line interface.
@@ -214,8 +213,6 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         U.delete(testWorkDir);
     }
 
@@ -246,19 +243,40 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
         String sep = ":";
 
         String ggClsPath = HadoopJobEx.class.getProtectionDomain().getCodeSource().getLocation().getPath() + sep +
-            HadoopJobTracker.class.getProtectionDomain().getCodeSource().getLocation().getPath() + sep +
-            ConcurrentHashMap8.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+            HadoopJobTracker.class.getProtectionDomain().getCodeSource().getLocation().getPath();
 
         ProcessBuilder res = new ProcessBuilder();
 
         res.environment().put("HADOOP_HOME", hadoopHome);
         res.environment().put("HADOOP_CLASSPATH", ggClsPath);
         res.environment().put("HADOOP_CONF_DIR", testWorkDir.getAbsolutePath());
+        res.environment().put("HADOOP_OPTS", filteredJvmArgs());
 
         res.redirectErrorStream(true);
 
         return res;
     }
+
+    /**
+     * Creates list of JVM arguments to be used to start hadoop process.
+     *
+     * @return JVM arguments.
+     */
+    private String filteredJvmArgs() {
+        StringBuilder filteredJvmArgs = new StringBuilder();
+
+        filteredJvmArgs.append("-ea");
+
+        for (String arg : U.jvmArgs()) {
+            if (arg.startsWith("--add-opens") || arg.startsWith("--add-exports") || arg.startsWith("--add-modules") ||
+                arg.startsWith("--patch-module") || arg.startsWith("--add-reads") ||
+                arg.startsWith("-XX:+IgnoreUnrecognizedVMOptions"))
+                filteredJvmArgs.append(' ').append(arg);
+        }
+
+        return filteredJvmArgs.toString();
+    }
+
 
     /**
      * Waits for process exit and prints the its output.

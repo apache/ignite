@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -41,7 +42,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -91,7 +91,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
 
         final AtomicBoolean stop = new AtomicBoolean();
 
-        final ConcurrentHashSet<String> allTypes = new ConcurrentHashSet<>();
+        final GridConcurrentHashSet<String> allTypes = new GridConcurrentHashSet<>();
 
         IgniteInternalFuture<?> fut;
 
@@ -242,7 +242,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
                 @Override public boolean apply() {
                     Collection<BinaryType> metaCol = p0.types();
 
-                    return metaCol.size() == 1000;
+                    return metaCol.size() >= 1000;
                 }
             }, getTestTimeout());
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.jdbc.thin;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
@@ -26,6 +27,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.sql.Statement;
 
 /**
@@ -40,11 +42,11 @@ public class JdbcThinWalModeChangeSelfTest extends WalModeChangeAbstractSelfTest
     }
 
     /** {@inheritDoc} */
-    @Override protected void createCache(Ignite node, CacheConfiguration ccfg) {
+    @Override protected void createCache(Ignite node, CacheConfiguration ccfg) throws IgniteCheckedException {
         String template = ccfg.getCacheMode() == CacheMode.PARTITIONED ?
             QueryUtils.TEMPLATE_PARTITIONED : QueryUtils.TEMPLATE_REPLICATED;
 
-        String cmd = "CREATE TABLE " + ccfg.getName() + " (k BIGINT PRIMARY KEY, v BIGINT) WITH \"" +
+        String cmd = "CREATE TABLE IF NOT EXISTS " + ccfg.getName() + " (k BIGINT PRIMARY KEY, v BIGINT) WITH \"" +
             "TEMPLATE=" + template + ", " +
             "CACHE_NAME=" + ccfg.getName() + ", " +
             "ATOMICITY=" + ccfg.getAtomicityMode() +
@@ -53,31 +55,59 @@ public class JdbcThinWalModeChangeSelfTest extends WalModeChangeAbstractSelfTest
             "\"";
 
         execute(node, cmd);
+
+        alignCacheTopologyVersion(node);
     }
 
     /** {@inheritDoc} */
-    @Override protected void destroyCache(Ignite node, String cacheName) {
+    @Override protected void destroyCache(Ignite node, String cacheName) throws IgniteCheckedException {
         String cmd = "DROP TABLE IF EXISTS " + cacheName;
 
         execute(node, cmd);
+
+        alignCacheTopologyVersion(node);
     }
 
     /** {@inheritDoc} */
     @Override protected boolean walEnable(Ignite node, String cacheName) {
-        String cmd = "ALTER TABLE " + cacheName + " LOGGING";
+        try {
+            String cmd = "ALTER TABLE " + cacheName + " LOGGING";
 
-        execute(node, cmd);
+            execute(node, cmd);
 
-        return false;
+            return true;
+        }
+        catch (RuntimeException e) {
+            if (e.getCause() != null && e.getCause() instanceof SQLException) {
+                SQLException e0 = (SQLException)e.getCause();
+
+                if (e0.getMessage().startsWith("Logging already enabled"))
+                    return false;
+            }
+
+            throw e;
+        }
     }
 
     /** {@inheritDoc} */
     @Override protected boolean walDisable(Ignite node, String cacheName) {
-        String cmd = "ALTER TABLE " + cacheName + " NOLOGGING";
+        try {
+            String cmd = "ALTER TABLE " + cacheName + " NOLOGGING";
 
-        execute(node, cmd);
+            execute(node, cmd);
 
-        return false;
+            return true;
+        }
+        catch (RuntimeException e) {
+            if (e.getCause() != null && e.getCause() instanceof SQLException) {
+                SQLException e0 = (SQLException)e.getCause();
+
+                if (e0.getMessage().startsWith("Logging already disabled"))
+                    return false;
+            }
+
+            throw e;
+        }
     }
 
     /**

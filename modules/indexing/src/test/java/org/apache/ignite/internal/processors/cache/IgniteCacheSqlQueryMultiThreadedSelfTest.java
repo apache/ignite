@@ -83,13 +83,6 @@ public class IgniteCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstract
         awaitPartitionMapExchange();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */

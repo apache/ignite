@@ -18,6 +18,7 @@
 .datepicker.dropdown-menu {
     width: 250px;
     height: 270px;
+    z-index: 2000;
 
     button {
         outline: none;
@@ -37,58 +38,5 @@
         tbody button {
             height: 65px;
         }
-    }
-}
-
-.datepicker--ignite {
-    $height: 36px;
-
-    display: inline-block;
-    width: auto;
-
-    font-size: 14px;
-
-    label.ignite-form-field__label {
-        width: auto;
-        max-width: initial;
-
-        font-size: inherit;
-        line-height: $height;
-    }
-
-    .ignite-form-field__control {
-        width: auto;
-
-        input {
-            width: auto;
-            height: $height;
-            min-width: 70px;
-            max-width: 70px;
-            padding: 0;
-            padding-left: 5px;
-
-            cursor: pointer;
-            color: transparent;
-            font-size: inherit;
-            line-height: $height;
-            text-align: left;
-            text-shadow: 0 0 0 #ee2b27;
-
-            border: none;
-            box-shadow: none;
-
-            &:hover, &:focus {
-                text-shadow: 0 0 0 #a8110f;
-            }
-        }
-    }
-}
-
-.theme--ignite {
-    .datepicker--ignite {
-        display: block;
-        width: 100%;
-
-        font-size: 14px;
     }
 }

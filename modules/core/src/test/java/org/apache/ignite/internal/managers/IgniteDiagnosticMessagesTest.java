@@ -48,6 +48,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
@@ -56,6 +58,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -78,6 +81,9 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /** */
     private GridStringLogger strLog;
 
+    /** */
+    private ListeningTestLogger testLog;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -98,16 +104,19 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
             strLog = null;
         }
 
+        if (testLog != null) {
+            cfg.setGridLogger(testLog);
+
+            testLog = null;
+        }
+
         return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-
-        super.afterTestsStopped();
     }
-
 
     /**
      * @throws Exception If failed.
@@ -298,16 +307,12 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLongRunningTx() throws Exception {
-        System.setProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, "3500");
+        final int longOpDumpTimeout = 1000;
+
+        System.setProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, String.valueOf(longOpDumpTimeout));
 
         try {
-            startGrid(0);
-
-            GridStringLogger strLog = this.strLog = new GridStringLogger();
-
-            startGrid(1);
-
-            awaitPartitionMapExchange();
+            final Ignite node0 = startGrid(0);
 
             CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -315,12 +320,24 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
             ccfg.setCacheMode(PARTITIONED);
             ccfg.setAtomicityMode(TRANSACTIONAL);
 
-            final Ignite node0 = ignite(0);
-            final Ignite node1 = ignite(1);
-
             node0.createCache(ccfg);
 
             UUID id0 = node0.cluster().localNode().id();
+
+            ListeningTestLogger testLog = this.testLog = new ListeningTestLogger(false, log);
+
+            String msg1 = "Cache entries [cacheId=" + CU.cacheId(DEFAULT_CACHE_NAME) +
+                ", cacheName=" + DEFAULT_CACHE_NAME + "]:";
+
+            String msg2 = "General node info [id=" + id0;
+
+            LogListener lsnr = LogListener.matches(msg1).andMatches(msg2).build();
+
+            testLog.registerListener(lsnr);
+
+            final Ignite node1 = startGrid(1);
+
+            awaitPartitionMapExchange();
 
             final CountDownLatch l1 = new CountDownLatch(1);
             final CountDownLatch l2 = new CountDownLatch(1);
@@ -366,18 +383,17 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
             fut.markInitialized();
 
-            U.sleep(10_000);
+            U.sleep(longOpDumpTimeout);
 
             assertFalse(fut.isDone());
+
+            boolean wait = waitForCondition(lsnr::check, longOpDumpTimeout * 2);
 
             l2.countDown();
 
             fut.get();
 
-            String log = strLog.toString();
-
-            assertTrue(log.contains("Cache entries [cacheId=" + CU.cacheId(DEFAULT_CACHE_NAME) + ", cacheName=" + DEFAULT_CACHE_NAME + "]:"));
-            assertTrue(log.contains("General node info [id=" + id0));
+            assertTrue("Unable to found diagnostic messages.", wait);
         }
         finally {
             System.clearProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT);

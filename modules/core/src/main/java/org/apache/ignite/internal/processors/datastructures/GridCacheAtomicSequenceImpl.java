@@ -26,18 +26,15 @@ import java.io.ObjectStreamException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -184,7 +181,6 @@ public final class GridCacheAtomicSequenceImpl extends AtomicDataStructureProxy<
      * @return Sequence value.
      * @throws IgniteCheckedException If update failed.
      */
-    @SuppressWarnings("SignalWithoutCorrespondingAwait")
     private long internalUpdate(long l, @Nullable Callable<Long> updateCall, boolean updated) throws IgniteCheckedException {
         checkRemoved();
 
@@ -223,7 +219,7 @@ public final class GridCacheAtomicSequenceImpl extends AtomicDataStructureProxy<
                 updateCall = internalUpdate(l, updated);
 
             try {
-                return updateCall.call();
+                return CU.retryTopologySafe(updateCall);
             }
             catch (IgniteCheckedException | IgniteException | IllegalStateException e) {
                 throw e;
@@ -359,7 +355,8 @@ public final class GridCacheAtomicSequenceImpl extends AtomicDataStructureProxy<
                     return curLocVal;
                 }
                 catch (Error | Exception e) {
-                    U.error(log, "Failed to get and add: " + this, e);
+                    if(!X.hasCause(e, ClusterTopologyCheckedException.class))
+                        U.error(log, "Failed to get and add: " + this, e);
 
                     throw e;
                 }

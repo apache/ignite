@@ -28,7 +28,6 @@ import java.util.UUID;
 /**
  * Entry processor that locks web session data.
  */
-@SuppressWarnings("AssignmentToDateFieldFromParameter")
 public class PlatformDotNetSessionLockProcessor implements CacheEntryProcessor<String, PlatformDotNetSessionData, Object> {
     /** */
     private static final long serialVersionUID = 0L;

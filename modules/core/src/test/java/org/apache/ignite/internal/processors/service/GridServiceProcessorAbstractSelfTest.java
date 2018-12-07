@@ -105,17 +105,11 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
     @Override protected void beforeTestsStarted() throws Exception {
         assert nodeCount() >= 1;
 
         for (int i = 0; i < nodeCount(); i++)
             startGrid(i);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -795,7 +789,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
             @Override public boolean applyx() {
                 return actualCount(srvcName, g.services().serviceDescriptors())  == expectedDeps;
             }
-        }, 1500);
+        }, 12_000);
     }
 
     /**

@@ -63,7 +63,7 @@ public class BinaryBuilderEnum implements BinaryBuilderSerializationAware {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
             }
 
-            this.typeId = reader.binaryContext().descriptorForClass(cls, false).typeId();
+            this.typeId = reader.binaryContext().descriptorForClass(cls, false, false).typeId();
         }
         else {
             this.typeId = typeId;

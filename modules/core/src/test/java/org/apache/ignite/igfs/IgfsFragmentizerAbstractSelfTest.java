@@ -150,11 +150,6 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         grid(0).fileSystem("igfs").clear();
     }

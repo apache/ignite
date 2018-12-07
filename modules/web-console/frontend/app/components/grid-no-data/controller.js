@@ -15,9 +15,7 @@
  * limitations under the License.
  */
 
-import filter from 'lodash/fp/filter';
-
-const rowsFiltered = filter(({ visible }) => visible);
+import _ from 'lodash';
 
 export default class {
     static $inject = ['$scope', 'uiGridConstants'];
@@ -30,6 +28,8 @@ export default class {
 
     $onChanges(changes) {
         if (changes && 'gridApi' in changes && changes.gridApi.currentValue) {
+            this.applyValues();
+
             this.gridApi.core.on.rowsVisibleChanged(this.$scope, () => {
                 this.applyValues();
             });
@@ -39,12 +39,12 @@ export default class {
     applyValues() {
         if (!this.gridApi.grid.rows.length) {
             this.noData = true;
+
             return;
         }
 
         this.noData = false;
 
-        const filtered = rowsFiltered(this.gridApi.grid.rows);
-        this.noDataFiltered = !filtered.length;
+        this.noDataFiltered = _.sumBy(this.gridApi.grid.rows, 'visible') === 0;
     }
 }

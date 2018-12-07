@@ -50,7 +50,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 
 /**
@@ -69,7 +68,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(true)
-                .setMaxSize(100 * 1024 * 1024)));
+                .setMaxSize(100L * 1024 * 1024)));
 
         return cfg;
     }
@@ -265,7 +264,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
                 p = p0;
         }
 
-        wal.fsync(null);
+        wal.flush(null, false);
 
         Iterator<Long> itToCheck = checker.getTimeStamps().iterator();
 
@@ -288,7 +287,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
 
         System.clearProperty(IGNITE_WAL_SERIALIZER_VERSION);
     }
@@ -299,7 +298,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
 
         System.clearProperty(IGNITE_WAL_SERIALIZER_VERSION);
     }
@@ -307,13 +306,6 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         System.clearProperty(IGNITE_WAL_SERIALIZER_VERSION);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
     /**

@@ -33,6 +33,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
@@ -40,6 +41,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -51,7 +53,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 /**
  * Tests for dynamic index creation.
  */
-@SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
+@SuppressWarnings({"unchecked"})
 public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -138,12 +140,14 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
     protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(getTestIgniteInstanceName(idx));
 
+        cfg.setFailureHandler(new StopNodeFailureHandler());
+
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         cfg.setMarshaller(new BinaryMarshaller());
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration().setMaxSize(128 * 1024 * 1024));
+            new DataRegionConfiguration().setMaxSize(128L * 1024 * 1024));
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -178,6 +182,8 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
 
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg.setBackups(1);
+
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 128));
 
         return ccfg;
     }

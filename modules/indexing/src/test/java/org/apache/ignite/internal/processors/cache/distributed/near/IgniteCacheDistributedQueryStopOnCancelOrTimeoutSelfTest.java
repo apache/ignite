@@ -98,13 +98,6 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
             g.cache(DEFAULT_CACHE_NAME).removeAll();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /** */
     public void testRemoteQueryExecutionTimeout() throws Exception {
         testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_1, 500, TimeUnit.MILLISECONDS, true);
@@ -240,7 +233,6 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
     /**
      * Validates clean state on all participating nodes after query cancellation.
      */
-    @SuppressWarnings("unchecked")
     private void checkCleanState() throws IgniteCheckedException {
         for (int i = 0; i < GRIDS_CNT; i++) {
             IgniteEx grid = grid(i);

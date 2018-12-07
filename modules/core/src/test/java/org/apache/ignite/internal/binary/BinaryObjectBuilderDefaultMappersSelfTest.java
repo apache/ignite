@@ -52,7 +52,6 @@ import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 /**
  * Binary builder test.
  */
-@SuppressWarnings("ResultOfMethodCallIgnored")
 public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstractTest {
     /** */
     private static IgniteConfiguration cfg;
@@ -99,11 +98,6 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(1);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /**
@@ -1030,7 +1024,6 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      *
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class CustomIdMapper {
         /** */
         private String str = "a";
@@ -1041,7 +1034,6 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
     /**
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Key {
         /** */
         private int i;
@@ -1080,7 +1072,6 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
     /**
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Value {
         /** */
         private int i;

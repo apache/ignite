@@ -61,6 +61,8 @@ public class IgniteCacheFailoverTestSuite2 {
 
         suite.addTestSuite(CachePutAllFailoverAtomicTest.class);
         suite.addTestSuite(CachePutAllFailoverTxTest.class);
+        //suite.addTestSuite(IgniteStableBaselineCachePutAllFailoverTest.class);
+        //suite.addTestSuite(IgniteStableBaselineCacheRemoveFailoverTest.class);
         suite.addTestSuite(IgniteChangingBaselineDownCachePutAllFailoverTest.class);
         suite.addTestSuite(IgniteChangingBaselineUpCachePutAllFailoverTest.class);
 

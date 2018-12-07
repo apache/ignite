@@ -17,11 +17,9 @@
 
 package org.apache.ignite.spark
 
-import java.lang.{Integer ⇒ JInteger, String ⇒ JString}
-
 import org.apache.ignite.spark.AbstractDataFrameSpec.TEST_CONFIG_FILE
 import org.apache.ignite.spark.IgniteDataFrameSettings._
-import org.apache.ignite.{IgniteException, IgniteIllegalStateException}
+import org.apache.ignite.IgniteException
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 

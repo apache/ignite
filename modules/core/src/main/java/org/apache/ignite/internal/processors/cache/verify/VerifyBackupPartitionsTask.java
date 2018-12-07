@@ -19,13 +19,22 @@ package org.apache.ignite.internal.processors.cache.verify;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
@@ -36,8 +45,8 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.GridIterator;
@@ -58,8 +67,11 @@ import org.jetbrains.annotations.Nullable;
  * <br>
  * Works properly only on idle cluster - there may be false positive conflict reports if data in cluster is being
  * concurrently updated.
+ *
+ * @deprecated Legacy version of {@link VerifyBackupPartitionsTaskV2}.
  */
 @GridInternal
+@Deprecated
 public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
     Map<PartitionKey, List<PartitionHashRecord>>> {
     /** */
@@ -145,9 +157,10 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
     }
 
     /**
-     *
+     * Legacy version of {@link VerifyBackupPartitionsTaskV2} internal job, kept for compatibility.
      */
-    public static class VerifyBackupPartitionsJob extends ComputeJobAdapter {
+    @Deprecated
+    private static class VerifyBackupPartitionsJob extends ComputeJobAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -162,10 +175,13 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
         /** Cache names. */
         private Set<String> cacheNames;
 
+        /** Counter of processed partitions. */
+        private final AtomicInteger completionCntr = new AtomicInteger(0);
+
         /**
          * @param names Names.
          */
-        private VerifyBackupPartitionsJob(Set<String> names) {
+        public VerifyBackupPartitionsJob(Set<String> names) {
             cacheNames = names;
         }
 
@@ -208,7 +224,9 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
                 }
             }
 
-            Map<PartitionKey, PartitionHashRecord> res = new HashMap<>();
+            List<Future<Map<PartitionKey, PartitionHashRecord>>> partHashCalcFutures = new ArrayList<>();
+
+            completionCntr.set(0);
 
             for (Integer grpId : grpIds) {
                 CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(grpId);
@@ -218,63 +236,126 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
 
                 List<GridDhtLocalPartition> parts = grpCtx.topology().localPartitions();
 
-                for (GridDhtLocalPartition part : parts) {
-                    if (!part.reserve())
-                        continue;
+                for (GridDhtLocalPartition part : parts)
+                    partHashCalcFutures.add(calculatePartitionHashAsync(grpCtx, part));
+            }
 
-                    int partHash = 0;
-                    long partSize;
-                    long updateCntrBefore;
+            Map<PartitionKey, PartitionHashRecord> res = new HashMap<>();
 
-                    try {
-                        if (part.state() != GridDhtPartitionState.OWNING)
-                            continue;
+            long lastProgressLogTs = U.currentTimeMillis();
 
-                        updateCntrBefore = part.updateCounter();
+            for (int i = 0; i < partHashCalcFutures.size(); ) {
+                Future<Map<PartitionKey, PartitionHashRecord>> fut = partHashCalcFutures.get(i);
 
-                        partSize = part.dataStore().fullSize();
+                try {
+                    Map<PartitionKey, PartitionHashRecord> partHash = fut.get(100, TimeUnit.MILLISECONDS);
 
-                        GridIterator<CacheDataRow> it = grpCtx.offheap().partitionIterator(part.id());
+                    res.putAll(partHash);
 
-                        while (it.hasNextX()) {
-                            CacheDataRow row = it.nextX();
+                    i++;
+                }
+                catch (InterruptedException | ExecutionException e) {
+                    for (int j = i + 1; j < partHashCalcFutures.size(); j++)
+                        partHashCalcFutures.get(j).cancel(false);
 
-                            partHash += row.key().hashCode();
+                    if (e instanceof InterruptedException)
+                        throw new IgniteInterruptedException((InterruptedException)e);
+                    else if (e.getCause() instanceof IgniteException)
+                        throw (IgniteException)e.getCause();
+                    else
+                        throw new IgniteException(e.getCause());
+                }
+                catch (TimeoutException ignored) {
+                    if (U.currentTimeMillis() - lastProgressLogTs > 3 * 60 * 1000L) {
+                        lastProgressLogTs = U.currentTimeMillis();
 
-                            partHash += Arrays.hashCode(row.value().valueBytes(grpCtx.cacheObjectContext()));
-                        }
-
-                        long updateCntrAfter = part.updateCounter();
-
-                        if (updateCntrBefore != updateCntrAfter) {
-                            throw new IgniteException("Cluster is not idle: update counter of partition [grpId=" +
-                                grpId + ", partId=" + part.id() + "] changed during hash calculation [before=" +
-                                updateCntrBefore + ", after=" + updateCntrAfter + "]");
-                        }
+                        log.warning("idle_verify is still running, processed " + completionCntr.get() + " of " +
+                            partHashCalcFutures.size() + " local partitions");
                     }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Can't calculate partition hash [grpId=" + grpId +
-                            ", partId=" + part.id() + "]", e);
-
-                        continue;
-                    }
-                    finally {
-                        part.release();
-                    }
-
-                    Object consId = ignite.context().discovery().localNode().consistentId();
-
-                    boolean isPrimary = part.primary(grpCtx.topology().readyTopologyVersion());
-
-                    PartitionKey partKey = new PartitionKey(grpId, part.id(), grpCtx.cacheOrGroupName());
-
-                    res.put(partKey, new PartitionHashRecord(
-                        partKey, isPrimary, consId, partHash, updateCntrBefore, partSize));
                 }
             }
 
             return res;
         }
-    }
 
+        /**
+         * @param grpCtx Group context.
+         * @param part Local partition.
+         */
+        private Future<Map<PartitionKey, PartitionHashRecord>> calculatePartitionHashAsync(
+            final CacheGroupContext grpCtx,
+            final GridDhtLocalPartition part
+        ) {
+            return ForkJoinPool.commonPool().submit(new Callable<Map<PartitionKey, PartitionHashRecord>>() {
+                @Override public Map<PartitionKey, PartitionHashRecord> call() throws Exception {
+                    return calculatePartitionHash(grpCtx, part);
+                }
+            });
+        }
+
+        /**
+         * @param grpCtx Group context.
+         * @param part Local partition.
+         */
+        private Map<PartitionKey, PartitionHashRecord> calculatePartitionHash(
+            CacheGroupContext grpCtx,
+            GridDhtLocalPartition part
+        ) {
+            if (!part.reserve())
+                return Collections.emptyMap();
+
+            int partHash = 0;
+            long partSize;
+            long updateCntrBefore;
+
+            try {
+                if (part.state() != GridDhtPartitionState.OWNING)
+                    return Collections.emptyMap();
+
+                updateCntrBefore = part.updateCounter();
+
+                partSize = part.dataStore().fullSize();
+
+                GridIterator<CacheDataRow> it = grpCtx.offheap().partitionIterator(part.id());
+
+                while (it.hasNextX()) {
+                    CacheDataRow row = it.nextX();
+
+                    partHash += row.key().hashCode();
+
+                    partHash += Arrays.hashCode(row.value().valueBytes(grpCtx.cacheObjectContext()));
+                }
+
+                long updateCntrAfter = part.updateCounter();
+
+                if (updateCntrBefore != updateCntrAfter) {
+                    throw new IgniteException("Cluster is not idle: update counter of partition [grpId=" +
+                        grpCtx.groupId() + ", partId=" + part.id() + "] changed during hash calculation [before=" +
+                        updateCntrBefore + ", after=" + updateCntrAfter + "]");
+                }
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Can't calculate partition hash [grpId=" + grpCtx.groupId() +
+                    ", partId=" + part.id() + "]", e);
+
+                return Collections.emptyMap();
+            }
+            finally {
+                part.release();
+            }
+
+            Object consId = ignite.context().discovery().localNode().consistentId();
+
+            boolean isPrimary = part.primary(grpCtx.topology().readyTopologyVersion());
+
+            PartitionKey partKey = new PartitionKey(grpCtx.groupId(), part.id(), grpCtx.cacheOrGroupName());
+
+            PartitionHashRecord partRec = new PartitionHashRecord(
+                partKey, isPrimary, consId, partHash, updateCntrBefore, partSize);
+
+            completionCntr.incrementAndGet();
+
+            return Collections.singletonMap(partKey, partRec);
+        }
+    }
 }

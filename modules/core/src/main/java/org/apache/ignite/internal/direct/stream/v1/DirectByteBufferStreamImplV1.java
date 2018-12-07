@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -435,6 +436,14 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
+    @Override public void writeLongArray(long[] val, int len) {
+        if (val != null)
+            lastFinished = writeArray(val, GridUnsafe.LONG_ARR_OFF, len, len << 3);
+        else
+            writeInt(-1);
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeFloatArray(float[] val) {
         if (val != null)
             lastFinished = writeArray(val, GridUnsafe.FLOAT_ARR_OFF, val.length, val.length << 2);
@@ -484,6 +493,11 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     /** {@inheritDoc} */
     @Override public void writeIgniteUuid(IgniteUuid val) {
         writeByteArray(val != null ? U.igniteUuidToBytes(val) : null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeAffinityTopologyVersion(AffinityTopologyVersion val) {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /** {@inheritDoc} */
@@ -801,6 +815,11 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
         byte[] arr = readByteArray();
 
         return arr != null ? U.bytesToIgniteUuid(arr, 0) : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public AffinityTopologyVersion readAffinityTopologyVersion() {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /** {@inheritDoc} */
@@ -1204,6 +1223,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
                 break;
 
+            case AFFINITY_TOPOLOGY_VERSION:
             case MSG:
                 try {
                     if (val != null)
@@ -1290,6 +1310,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
             case IGNITE_UUID:
                 return readIgniteUuid();
 
+            case AFFINITY_TOPOLOGY_VERSION:
             case MSG:
                 return readMessage(reader);
 
@@ -1324,7 +1345,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(DirectByteBufferStreamImplV1.class, this);
     }
 

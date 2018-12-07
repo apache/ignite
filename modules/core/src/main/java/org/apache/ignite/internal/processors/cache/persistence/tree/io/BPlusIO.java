@@ -17,16 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
+import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.lang.IgniteInClosure;
 
 /**
  * Abstract IO routines for B+Tree pages.
  */
-public abstract class BPlusIO<L> extends PageIO {
+public abstract class BPlusIO<L> extends PageIO implements CompactablePageIO {
     /** */
     private static final int CNT_OFF = COMMON_HEADER_END;
 
@@ -159,7 +161,7 @@ public abstract class BPlusIO<L> extends PageIO {
 
     /**
      * @param pageAddr Page address.
-     * @param pageSize Page size.
+     * @param pageSize Page size without encryption overhead.
      * @return Max items count.
      */
     public abstract int getMaxCount(long pageAddr, int pageSize);
@@ -331,7 +333,7 @@ public abstract class BPlusIO<L> extends PageIO {
      * @param leftPageAddr Left page address.
      * @param rightPageAddr Right page address.
      * @param emptyBranch We are merging an empty branch.
-     * @param pageSize Page size.
+     * @param pageSize Page size without encryption overhead.
      * @return {@code false} If we were not able to merge.
      * @throws IgniteCheckedException If failed.
      */
@@ -411,5 +413,33 @@ public abstract class BPlusIO<L> extends PageIO {
             .a(",\n\tforward=").appendHex(getForward(addr))
             .a(",\n\tremoveId=").appendHex(getRemoveId(addr))
             .a("\n]");
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @return Offset after the last item.
+     */
+    public int getItemsEnd(long pageAddr) {
+        int cnt = getCount(pageAddr);
+        return offset(cnt);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void compactPage(ByteBuffer page, ByteBuffer out, int pageSize) {
+        copyPage(page, out, pageSize);
+
+        long pageAddr = GridUnsafe.bufferAddress(out);
+
+        // Just drop all the extra garbage at the end.
+        out.limit(getItemsEnd(pageAddr));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void restorePage(ByteBuffer compactPage, int pageSize) {
+        assert compactPage.isDirect();
+        assert compactPage.position() == 0;
+        assert compactPage.limit() <= pageSize;
+
+        compactPage.limit(pageSize); // Just add garbage to the end.
     }
 }

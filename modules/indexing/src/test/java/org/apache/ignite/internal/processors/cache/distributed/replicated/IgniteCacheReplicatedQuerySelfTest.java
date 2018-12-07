@@ -38,9 +38,9 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractQuerySelfTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -101,8 +101,8 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
         ignite1 = grid(0);
         ignite2 = grid(1);
@@ -111,19 +111,6 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
         cache1 = jcache(ignite1, CacheKey.class, CacheValue.class);
         cache2 = jcache(ignite2, CacheKey.class, CacheValue.class);
         cache3 = jcache(ignite3, CacheKey.class, CacheValue.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        ignite1 = null;
-        ignite2 = null;
-        ignite3 = null;
-
-        cache1 = null;
-        cache2 = null;
-        cache3 = null;
     }
 
     /**
@@ -241,20 +228,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
      * @throws Exception If test failed.
      */
     public void testDistributedQuery() throws Exception {
-        int keyCnt = 4;
-
-        final CountDownLatch latch = new CountDownLatch(keyCnt * 2);
-
-        IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event evt) {
-                latch.countDown();
-
-                return true;
-            }
-        };
-
-        ignite2.events().localListen(lsnr, EventType.EVT_CACHE_OBJECT_PUT);
-        ignite3.events().localListen(lsnr, EventType.EVT_CACHE_OBJECT_PUT);
+        final int keyCnt = 4;
 
         Transaction tx = ignite1.transactions().txStart();
 
@@ -272,7 +246,11 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
             throw e;
         }
 
-        latch.await();
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return cache2.size() == keyCnt && cache3.size() == keyCnt;
+            }
+        }, 5000);
 
         QueryCursor<Cache.Entry<CacheKey, CacheValue>> qry =
             cache1.query(new SqlQuery<CacheKey, CacheValue>(CacheValue.class, "val > 1 and val < 4"));

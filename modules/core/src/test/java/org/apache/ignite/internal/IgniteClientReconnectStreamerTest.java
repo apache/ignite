@@ -71,7 +71,7 @@ public class IgniteClientReconnectStreamerTest extends IgniteClientReconnectAbst
 
         assertTrue(client.cluster().localNode().isClient());
 
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
         final IgniteCache<Object, Object> srvCache = srv.cache(CACHE_NAME);
 
@@ -135,7 +135,7 @@ public class IgniteClientReconnectStreamerTest extends IgniteClientReconnectAbst
 
         assertTrue(client.cluster().localNode().isClient());
 
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
         final IgniteCache<Object, Object> srvCache = srv.cache(CACHE_NAME);
 

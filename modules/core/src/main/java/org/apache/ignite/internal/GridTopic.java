@@ -81,7 +81,10 @@ public enum GridTopic {
     /** */
     TOPIC_CONTINUOUS,
 
-    /** */
+    /**
+     * @deprecated Should be removed in Apache Ignite 3.0.
+     */
+    @Deprecated
     TOPIC_MONGO,
 
     /** */
@@ -118,7 +121,22 @@ public enum GridTopic {
     TOPIC_INTERNAL_DIAGNOSTIC,
 
     /** */
-    TOPIC_WAL;
+    TOPIC_WAL,
+
+    /** */
+    TOPIC_METRICS,
+
+    /** */
+    TOPIC_AUTH,
+
+    /** */
+    TOPIC_EXCHANGE,
+
+    /** */
+    TOPIC_CACHE_COORDINATOR,
+
+    /** */
+    TOPIC_GEN_ENC_KEY;
 
     /** Enum values. */
     private static final GridTopic[] VALS = values();

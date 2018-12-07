@@ -77,8 +77,4 @@ public abstract class IgniteAtomicsAbstractTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(gridCount());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
 }

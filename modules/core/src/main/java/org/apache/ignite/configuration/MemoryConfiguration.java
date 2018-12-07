@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -42,14 +43,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *     {@code
  *     <property name="memoryConfiguration">
  *         <bean class="org.apache.ignite.configuration.MemoryConfiguration">
- *             <property name="systemCacheInitialSize" value="#{100 * 1024 * 1024}"/>
+ *             <property name="systemCacheInitialSize" value="#{100L * 1024 * 1024}"/>
  *             <property name="defaultMemoryPolicyName" value="default_mem_plc"/>
  *
  *             <property name="memoryPolicies">
  *                 <list>
  *                     <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
  *                         <property name="name" value="default_mem_plc"/>
- *                         <property name="initialSize" value="#{5 * 1024 * 1024 * 1024}"/>
+ *                         <property name="initialSize" value="#{5L * 1024 * 1024 * 1024}"/>
  *                     </bean>
  *                 </list>
  *             </property>
@@ -66,7 +67,6 @@ public class MemoryConfiguration implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Default memory policy start size (256 MB). */
-    @SuppressWarnings("UnnecessaryBoxing")
     public static final long DFLT_MEMORY_POLICY_INITIAL_SIZE = 256L * 1024 * 1024;
 
     /** Fraction of available memory to allocate for default DataRegion. */
@@ -78,10 +78,10 @@ public class MemoryConfiguration implements Serializable {
         DFLT_MEMORY_POLICY_INITIAL_SIZE);
 
     /** Default initial size of a memory chunk for the system cache (40 MB). */
-    private static final long DFLT_SYS_CACHE_INIT_SIZE = 40 * 1024 * 1024;
+    private static final long DFLT_SYS_CACHE_INIT_SIZE = 40L * 1024 * 1024;
 
     /** Default max size of a memory chunk for the system cache (100 MB). */
-    private static final long DFLT_SYS_CACHE_MAX_SIZE = 100 * 1024 * 1024;
+    private static final long DFLT_SYS_CACHE_MAX_SIZE = 100L * 1024 * 1024;
 
     /** Default memory page size. */
     public static final int DFLT_PAGE_SIZE = 4 * 1024;
@@ -129,7 +129,7 @@ public class MemoryConfiguration implements Serializable {
      * @return {@code this} for chaining.
      */
     public MemoryConfiguration setSystemCacheInitialSize(long sysCacheInitSize) {
-        A.ensure(sysCacheMaxSize > 0, "System cache initial size can not be less zero.");
+        A.ensure(sysCacheInitSize > 0, "System cache initial size can not be less zero.");
 
         this.sysCacheInitSize = sysCacheInitSize;
 
@@ -304,5 +304,10 @@ public class MemoryConfiguration implements Serializable {
         this.dfltMemPlcName = dfltMemPlcName;
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MemoryConfiguration.class, this);
     }
 }

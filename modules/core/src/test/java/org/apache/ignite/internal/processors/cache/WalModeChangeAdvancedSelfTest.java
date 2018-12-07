@@ -17,18 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
-import org.apache.ignite.internal.util.typedef.X;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
+import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -47,7 +51,12 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        deleteWorkFiles();
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /** {@inheritDoc} */
@@ -56,7 +65,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /**
@@ -133,6 +142,9 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      * @throws Exception If failed.
      */
     public void testJoin() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
+
         checkJoin(false);
     }
 
@@ -167,12 +179,11 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         // Start other nodes.
         startGrid(config(SRV_2, false, false));
-        assertForAllNodes(CACHE_NAME, false);
 
-        if (crdFiltered) {
+        if (crdFiltered)
             srv.cluster().disableWal(CACHE_NAME);
-            assertForAllNodes(CACHE_NAME, false);
-        }
+
+        assertForAllNodes(CACHE_NAME, false);
 
         startGrid(config(SRV_3, false, !crdFiltered));
         assertForAllNodes(CACHE_NAME, false);
@@ -192,12 +203,11 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         // Start other nodes again.
         startGrid(config(SRV_2, false, false));
-        assertForAllNodes(CACHE_NAME, true);
 
-        if (crdFiltered) {
+        if (crdFiltered)
             srv.cluster().enableWal(CACHE_NAME);
-            assertForAllNodes(CACHE_NAME, true);
-        }
+
+        assertForAllNodes(CACHE_NAME, true);
 
         startGrid(config(SRV_3, false, !crdFiltered));
         assertForAllNodes(CACHE_NAME, true);
@@ -244,7 +254,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         final AtomicInteger restartCnt = new AtomicInteger();
 
-        final int restarts = 10;
+        final int restarts = SF.applyLB(10, 3);
 
         Thread t = new Thread(new Runnable() {
             @Override public void run() {
@@ -273,7 +283,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
                     restartCnt.incrementAndGet();
 
-                    X.println(">>> Finished restart: " + restartCnt.get());
+                    log.info(">>> Finished restart: " + restartCnt.get());
                 }
             }
         });
@@ -291,7 +301,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
                 state = !state;
             }
-            catch (IgniteException e) {
+            catch (IgniteException ignore) {
                 // Possible disconnect, re-try.
             }
         }
@@ -312,55 +322,47 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         final AtomicBoolean done = new AtomicBoolean();
 
-        final CountDownLatch latch = new CountDownLatch(1);
-
         // Start load.
-        Thread t = new Thread(new Runnable() {
-            @Override public void run() {
-                boolean state = false;
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            boolean state = false;
 
-                while (!done.get()) {
-                    try {
-                        if (state)
-                            cli.cluster().enableWal(CACHE_NAME);
-                        else
-                            cli.cluster().disableWal(CACHE_NAME);
-                    }
-                    catch (IgniteException e) {
-                        String msg = e.getMessage();
-
-                        assert msg.startsWith("Client node disconnected") ||
-                            msg.startsWith("Client node was disconnected") : e.getMessage();
-                    }
-                    finally {
-                        state = !state;
-                    }
+            while (!done.get()) {
+                try {
+                    if (state)
+                        cli.cluster().enableWal(CACHE_NAME);
+                    else
+                        cli.cluster().disableWal(CACHE_NAME);
                 }
+                catch (IgniteException e) {
+                    String msg = e.getMessage();
 
-                latch.countDown();
+                    assert msg.startsWith("Client node disconnected") ||
+                        msg.startsWith("Client node was disconnected") : e.getMessage();
+                }
+                finally {
+                    state = !state;
+                }
             }
-        });
-
-        t.setName("wal-load-" + cli.name());
-
-        t.start();
+        }, "wal-load-" + cli.name());
 
         // Now perform multiple client reconnects.
-        for (int i = 1; i <= 10; i++) {
-            Thread.sleep(ThreadLocalRandom.current().nextLong(200, 1000));
+        try {
+            for (int i = 1; i <= 10; i++) {
+                Thread.sleep(ThreadLocalRandom.current().nextLong(200, 1000));
 
-            IgniteClientReconnectAbstractTest.reconnectClientNode(log, cli, srv, new Runnable() {
-                @Override public void run() {
-                    // No-op.
-                }
-            });
+                IgniteClientReconnectAbstractTest.reconnectClientNode(log, cli, srv, new Runnable() {
+                    @Override public void run() {
+                        // No-op.
+                    }
+                });
 
-            X.println(">>> Finished iteration: " + i);
+                log.info(">>> Finished iteration: " + i);
+            }
+        } finally {
+            done.set(true);
         }
 
-        done.set(true);
-
-        latch.await();
+        fut.get();
     }
 
     /**
@@ -378,56 +380,49 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         final AtomicBoolean done = new AtomicBoolean();
 
-        final CountDownLatch latch = new CountDownLatch(1);
-
         // Start load.
-        Thread t = new Thread(new Runnable() {
-            @Override public void run() {
-                boolean state = false;
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            boolean state = false;
 
-                while (!done.get()) {
-                    try {
-                        if (state)
-                            cli.cluster().enableWal(CACHE_NAME);
-                        else
-                            cli.cluster().disableWal(CACHE_NAME);
-                    }
-                    catch (IgniteException e) {
-                        String msg = e.getMessage();
-
-                        assert msg.startsWith("Cache doesn't exist") ||
-                            msg.startsWith("Failed to change WAL mode because some caches no longer exist") :
-                            e.getMessage();
-                    }
-                    finally {
-                        state = !state;
-                    }
+            while (!done.get()) {
+                try {
+                    if (state)
+                        cli.cluster().enableWal(CACHE_NAME);
+                    else
+                        cli.cluster().disableWal(CACHE_NAME);
                 }
+                catch (IgniteException e) {
+                    String msg = e.getMessage();
 
-                latch.countDown();
+                    assert msg.startsWith("Cache doesn't exist") ||
+                        msg.startsWith("Failed to change WAL mode because some caches no longer exist") :
+                        e.getMessage();
+                }
+                finally {
+                    state = !state;
+                }
             }
-        });
+        }, "wal-load-" + cli.name());
 
-        t.setName("wal-load-" + cli.name());
+        try {
+            // Now perform multiple client reconnects.
+            for (int i = 1; i <= 20; i++) {
+                Thread.sleep(ThreadLocalRandom.current().nextLong(200, 1000));
 
-        t.start();
+                srv.destroyCache(CACHE_NAME);
 
-        // Now perform multiple client reconnects.
-        for (int i = 1; i <= 20; i++) {
-            Thread.sleep(ThreadLocalRandom.current().nextLong(200, 1000));
+                Thread.sleep(100);
 
-            srv.destroyCache(CACHE_NAME);
+                srv.createCache(cacheConfig(PARTITIONED));
 
-            Thread.sleep(100);
-
-            srv.createCache(cacheConfig(PARTITIONED));
-
-            X.println(">>> Finished iteration: " + i);
+                log.info(">>> Finished iteration: " + i);
+            }
+        }
+        finally {
+            done.set(true);
         }
 
-        done.set(true);
-
-        latch.await();
+        fut.get();
     }
 
     /**
@@ -448,7 +443,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         final IgniteCache cache = cacheCli.getOrCreateCache(cacheConfig(PARTITIONED));
 
-        for (int i = 1; i <= 3; i++) {
+        for (int i = 1; i <= SF.applyLB(3, 2); i++) {
             // Start pushing requests.
             Collection<Ignite> walNodes = new ArrayList<>();
 
@@ -459,7 +454,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
             final AtomicBoolean done = new AtomicBoolean();
 
-            final CountDownLatch latch = new CountDownLatch(5);
+            final CountDownLatch latch = new CountDownLatch(walNodes.size() + 1);
 
             for (Ignite node : walNodes) {
                 final Ignite node0 = node;
@@ -493,15 +488,15 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
             t.start();
 
-            Thread.sleep(20_000);
+            Thread.sleep(SF.applyLB(20_000, 2_000));
 
             done.set(true);
 
-            X.println(">>> Stopping iteration: " + i);
+            log.info(">>> Stopping iteration: " + i);
 
             latch.await();
 
-            X.println(">>> Iteration finished: " + i);
+            log.info(">>> Iteration finished: " + i);
         }
     }
 

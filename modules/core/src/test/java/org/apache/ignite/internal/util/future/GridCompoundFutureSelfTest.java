@@ -20,11 +20,11 @@ package org.apache.ignite.internal.util.future;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
  * Tests compound future contracts.
@@ -120,8 +120,7 @@ public class GridCompoundFutureSelfTest extends GridCommonAbstractTest {
     public void testConcurrentCompletion() throws Exception {
         GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(CU.boolReducer());
 
-        final ConcurrentLinkedDeque8<GridFutureAdapter<Boolean>> futs =
-            new ConcurrentLinkedDeque8<>();
+        final ConcurrentLinkedDeque<GridFutureAdapter<Boolean>> futs = new ConcurrentLinkedDeque<>();
 
         for (int i = 0; i < 1000; i++) {
             GridFutureAdapter<Boolean> part = new GridFutureAdapter<>();
@@ -153,8 +152,7 @@ public class GridCompoundFutureSelfTest extends GridCommonAbstractTest {
     public void testConcurrentRandomCompletion() throws Exception {
         GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(CU.boolReducer());
 
-        final ConcurrentLinkedDeque8<GridFutureAdapter<Boolean>> futs =
-            new ConcurrentLinkedDeque8<>();
+        final ConcurrentLinkedDeque<GridFutureAdapter<Boolean>> futs = new ConcurrentLinkedDeque<>();
 
         for (int i = 0; i < 1000; i++) {
             GridFutureAdapter<Boolean> part = new GridFutureAdapter<>();

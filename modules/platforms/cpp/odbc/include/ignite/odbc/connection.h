@@ -23,16 +23,18 @@
 #include <vector>
 
 #include "ignite/odbc/parser.h"
-#include "ignite/odbc/system/socket_client.h"
+#include "ignite/odbc/socket_client.h"
 #include "ignite/odbc/config/connection_info.h"
 #include "ignite/odbc/config/configuration.h"
 #include "ignite/odbc/diagnostic/diagnosable_adapter.h"
+#include "ignite/odbc/streaming/streaming_context.h"
 #include "ignite/odbc/odbc_error.h"
 
 namespace ignite
 {
     namespace odbc
     {
+        class Environment;
         class Statement;
 
         /**
@@ -99,11 +101,30 @@ namespace ignite
             void Release();
 
             /**
+             * Deregister self from the parent.
+             */
+            void Deregister();
+
+            /**
              * Create statement associated with the connection.
              *
              * @return Pointer to valid instance on success and NULL on failure.
              */
             Statement* CreateStatement();
+
+            /**
+             * Send data by established connection.
+             * Uses connection timeout.
+             *
+             * @param data Data buffer.
+             * @param len Data length.
+             * @return @c true on success, @c false on timeout.
+             * @throw OdbcError on error.
+             */
+            bool Send(const int8_t* data, size_t len)
+            {
+                return Send(data, len, timeout);
+            }
 
             /**
              * Send data by established connection.
@@ -141,6 +162,23 @@ namespace ignite
             const config::Configuration& GetConfiguration() const;
 
             /**
+             * Is auto commit.
+             *
+             * @return @c true if the auto commit is enabled.
+             */
+            bool IsAutoCommit() const;
+
+            /**
+             * Get streaming context.
+             *
+             * @return Streaming context.
+             */
+            streaming::StreamingContext& GetStreamingContext()
+            {
+                return streamingContext;
+            }
+
+            /**
              * Create diagnostic record associated with the Connection instance.
              *
              * @param sqlState SQL state.
@@ -165,6 +203,8 @@ namespace ignite
             template<typename ReqT, typename RspT>
             bool SyncMessage(const ReqT& req, RspT& rsp, int32_t timeout)
             {
+                EnsureConnected();
+
                 std::vector<int8_t> tempBuffer;
 
                 parser.Encode(req, tempBuffer);
@@ -195,6 +235,8 @@ namespace ignite
             template<typename ReqT, typename RspT>
             void SyncMessage(const ReqT& req, RspT& rsp)
             {
+                EnsureConnected();
+
                 std::vector<int8_t> tempBuffer;
 
                 parser.Encode(req, tempBuffer);
@@ -210,6 +252,28 @@ namespace ignite
                     throw OdbcError(SqlState::SHYT01_CONNECTION_TIMEOUT, "Receive operation timed out");
 
                 parser.Decode(rsp, tempBuffer);
+            }
+
+            /**
+             * Send request message.
+             * Uses connection timeout.
+             *
+             * @param req Request message.
+             * @throw OdbcError on error.
+             */
+            template<typename ReqT>
+            void SendRequest(const ReqT& req)
+            {
+                EnsureConnected();
+
+                std::vector<int8_t> tempBuffer;
+
+                parser.Encode(req, tempBuffer);
+
+                bool success = Send(tempBuffer.data(), tempBuffer.size(), timeout);
+
+                if (!success)
+                    throw OdbcError(SqlState::SHYT01_CONNECTION_TIMEOUT, "Send operation timed out");
             }
 
             /**
@@ -245,6 +309,39 @@ namespace ignite
             IGNITE_NO_COPY_ASSIGNMENT(Connection);
 
             /**
+             * Synchronously send request message and receive response.
+             * Uses provided timeout. Does not try to restore connection on
+             * fail.
+             *
+             * @param req Request message.
+             * @param rsp Response message.
+             * @param timeout Timeout.
+             * @return @c true on success, @c false on timeout.
+             * @throw OdbcError on error.
+             */
+            template<typename ReqT, typename RspT>
+            bool InternalSyncMessage(const ReqT& req, RspT& rsp, int32_t timeout)
+            {
+                std::vector<int8_t> tempBuffer;
+
+                parser.Encode(req, tempBuffer);
+
+                bool success = Send(tempBuffer.data(), tempBuffer.size(), timeout);
+
+                if (!success)
+                    return false;
+
+                success = Receive(tempBuffer, timeout);
+
+                if (!success)
+                    return false;
+
+                parser.Decode(rsp, tempBuffer);
+
+                return true;
+            }
+
+            /**
              * Establish connection to ODBC server.
              * Internal call.
              *
@@ -260,7 +357,7 @@ namespace ignite
              * @param cfg Configuration.
              * @return Operation result.
              */
-            SqlResult::Type InternalEstablish(const config::Configuration cfg);
+            SqlResult::Type InternalEstablish(const config::Configuration& cfg);
 
             /**
              * Release established connection.
@@ -363,18 +460,54 @@ namespace ignite
             SqlResult::Type MakeRequestHandshake();
 
             /**
+             * Ensure there is a connection to the cluster.
+             *
+             * @throw OdbcError on failure.
+             */
+            void EnsureConnected();
+
+            /**
+             * Try to restore connection to the cluster.
+             *
+             * @return @c true on success and @c false otherwise.
+             */
+            bool TryRestoreConnection();
+
+            /**
+             * Collect all addresses from config.
+             *
+             * @param cfg Configuration.
+             * @param endPoints End points.
+             */
+            static void CollectAddresses(const config::Configuration& cfg, std::vector<EndPoint>& endPoints);
+
+            /**
+             * Retrieve timeout from parameter.
+             *
+             * @param value Parameter.
+             * @return Timeout.
+             */
+            int32_t RetrieveTimeout(void* value);
+
+            /**
              * Constructor.
              */
-            Connection();
+            Connection(Environment* env);
 
-            /** Socket. */
-            tcp::SocketClient socket;
+            /** Parent. */
+            Environment* env;
 
-            /** State flag. */
-            bool connected;
+            /** Client Socket. */
+            std::auto_ptr<SocketClient> socket;
 
             /** Connection timeout in seconds. */
             int32_t timeout;
+
+            /** Login timeout in seconds. */
+            int32_t loginTimeout;
+
+            /** Autocommit flag. */
+            bool autoCommit;
 
             /** Message parser. */
             Parser parser;
@@ -384,6 +517,9 @@ namespace ignite
 
             /** Connection info. */
             config::ConnectionInfo info;
+
+            /** Streaming context. */
+            streaming::StreamingContext streamingContext;
         };
     }
 }

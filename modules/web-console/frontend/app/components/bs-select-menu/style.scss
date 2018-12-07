@@ -48,9 +48,8 @@
     }
 
     .bssm-item-text {
-        overflow: hidden;
+        overflow: visible;
         white-space: nowrap;
-        text-overflow: ellipsis;
     }
 
     &>li {
@@ -63,34 +62,26 @@
             padding-bottom: 9px;
             background-color: transparent;
             border-radius: 0;
+            padding-right: 30px;
 
             &:hover {
                 background-color: #eeeeee;
             }
         }
 
-        &:last-child > .bssm-item-button {
+        &:last-of-type > .bssm-item-button {
             border-bottom: none;
             padding-bottom: 10px;
         }
     }
 
-    .bssm-click-overlay {
-        position: fixed;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        left: 0;
-        z-index: -1;
-    }
-    
-    &.bssm-multiple {
+    [class*='bssm-multiple'] {
         .bssm-active-indicator {
             display: initial;
         }
     }
 
-    &:not(.bssm-multiple) {
+    &:not([class*='bssm-multiple']) {
         .bssm-active-indicator {
             display: none;
         }
@@ -99,4 +90,13 @@
             background-color: #e5f2f9;
         }
     }
+}
+
+.bssm-click-overlay {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1999;
 }

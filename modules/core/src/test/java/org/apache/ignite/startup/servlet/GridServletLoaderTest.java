@@ -68,7 +68,6 @@ public class GridServletLoaderTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"unchecked"})
     public void testLoader() throws Exception {
         JMXConnector jmx = null;
 

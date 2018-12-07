@@ -17,10 +17,27 @@
 
 #include <cassert>
 
+#include <ignite/common/platform_utils.h>
+
 #include "test_utils.h"
 
 namespace ignite_test
 {
+    OdbcClientError GetOdbcError(SQLSMALLINT handleType, SQLHANDLE handle)
+    {
+        SQLCHAR sqlstate[7] = {};
+        SQLINTEGER nativeCode;
+
+        SQLCHAR message[ODBC_BUFFER_SIZE];
+        SQLSMALLINT reallen = 0;
+
+        SQLGetDiagRec(handleType, handle, 1, sqlstate, &nativeCode, message, ODBC_BUFFER_SIZE, &reallen);
+
+        return OdbcClientError(
+            std::string(reinterpret_cast<char*>(sqlstate)),
+            std::string(reinterpret_cast<char*>(message), reallen));
+    }
+
     std::string GetOdbcErrorState(SQLSMALLINT handleType, SQLHANDLE handle)
     {
         SQLCHAR sqlstate[7] = {};
@@ -54,6 +71,11 @@ namespace ignite_test
         return res;
     }
 
+    std::string GetTestConfigDir()
+    {
+        return ignite::common::GetEnv("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH");
+    }
+
     void InitConfig(ignite::IgniteConfiguration& cfg, const char* cfgFile)
     {
         using namespace ignite;
@@ -70,6 +92,8 @@ namespace ignite_test
         cfg.jvmOpts.push_back("-DIGNITE_CONSOLE_APPENDER=false");
         cfg.jvmOpts.push_back("-DIGNITE_UPDATE_NOTIFIER=false");
         cfg.jvmOpts.push_back("-Duser.language=en");
+        // Un-comment to debug SSL
+        //cfg.jvmOpts.push_back("-Djavax.net.debug=ssl");
 
         cfg.igniteHome = jni::ResolveIgniteHome();
         cfg.jvmClassPath = jni::CreateIgniteHomeClasspath(cfg.igniteHome, true);
@@ -111,5 +135,35 @@ namespace ignite_test
         InitConfig(cfg, cfgFile);
 
         return Ignition::Start(cfg, name);
+    }
+
+    ignite::Ignite StartPlatformNode(const char* cfg, const char* name)
+    {
+        std::string config(cfg);
+
+#ifdef IGNITE_TESTS_32
+        // Cutting off the ".xml" part.
+        config.resize(config.size() - 4);
+        config += "-32.xml";
+#endif //IGNITE_TESTS_32
+
+        return StartNode(config.c_str(), name);
+    }
+
+    std::string AppendPath(const std::string& base, const std::string& toAdd)
+    {
+        std::stringstream stream;
+
+        stream << base << ignite::common::Fs << toAdd;
+
+        return stream.str();
+    }
+
+    void ClearLfs()
+    {
+        std::string home = ignite::jni::ResolveIgniteHome();
+        std::string workDir = AppendPath(home, "work");
+
+        ignite::common::DeletePath(workDir);
     }
 }

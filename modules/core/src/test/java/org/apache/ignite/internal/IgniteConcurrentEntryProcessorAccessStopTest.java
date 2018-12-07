@@ -33,13 +33,6 @@ public class IgniteConcurrentEntryProcessorAccessStopTest extends GridCommonAbst
         startGrid();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * Tests concurrent instance shutdown.
      *

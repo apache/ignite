@@ -1309,6 +1309,12 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         }
 
         /** <inheritdoc /> */
+        public bool CanGetArray
+        {
+            get { return true; }
+        }
+
+        /** <inheritdoc /> */
         public byte[] GetArrayCopy()
         {
             byte[] copy = new byte[_pos];

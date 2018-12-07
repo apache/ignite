@@ -59,6 +59,39 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
     /** */
     private long physicalMemoryPages;
 
+    /** */
+    private long totalAllocatedSz;
+
+    /** */
+    private long physicalMemSz;
+
+    /** */
+    private int pageSize;
+
+    /** */
+    private long cpBufSz;
+
+    /** */
+    private long cpUsedBufPages;
+
+    /** */
+    private long cpUsedBufSz;
+
+    /** */
+    private long pagesRead;
+
+    /** */
+    private long pagesWritten;
+
+    /** */
+    private long pagesReplaced;
+
+    /** */
+    private long offHeapSz;
+
+    /** */
+    private long offHeapUsedSz;
+
     /**
      * Default constructor.
      */
@@ -79,6 +112,21 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
         dirtyPages = m.getDirtyPages();
         pagesReplaceRate = m.getPagesReplaceRate();
         physicalMemoryPages = m.getPhysicalMemoryPages();
+        totalAllocatedSz = m.getTotalAllocatedSize();
+        physicalMemSz = m.getPhysicalMemorySize();
+
+        pageSize = m.getPageSize();
+
+        cpBufSz = m.getCheckpointBufferSize();
+        cpUsedBufPages = m.getUsedCheckpointBufferPages();
+        cpUsedBufSz = m.getUsedCheckpointBufferSize();
+
+        pagesRead = m.getPagesRead();
+        pagesWritten = m.getPagesWritten();
+        pagesReplaced = m.getPagesReplaced();
+
+        offHeapSz = m.getOffHeapSize();
+        offHeapUsedSz = m.getOffheapUsedSize();
     }
 
     /**
@@ -144,6 +192,98 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
         return physicalMemoryPages;
     }
 
+
+    /**
+     * @return Total size of memory allocated, in bytes.
+     */
+    public long getTotalAllocatedSize() {
+        return totalAllocatedSz;
+    }
+
+    /**
+     * @return Total size of pages loaded to RAM in bytes.
+     */
+    public long getPhysicalMemorySize() {
+        return physicalMemSz;
+    }
+
+    /**
+     * This method needed for compatibility with V2.
+     *
+     * @return Used checkpoint buffer size in pages.
+     */
+    public long getCheckpointBufferPages() {
+        return cpUsedBufPages;
+    }
+
+    /**
+     * @return @return Checkpoint buffer size in bytes.
+     */
+    public long getCheckpointBufferSize() {
+        return cpBufSz;
+    }
+
+    /**
+     * @return Used checkpoint buffer size in pages.
+     */
+    public long getUsedCheckpointBufferPages() {
+        return cpUsedBufPages;
+    }
+
+    /**
+     * @return Used checkpoint buffer size in bytes.
+     */
+    public long getUsedCheckpointBufferSize() {
+        return cpUsedBufSz;
+    }
+
+    /**
+     * @return Page size in bytes.
+     */
+    public int getPageSize() {
+        return pageSize;
+    }
+
+    /**
+     * @return The number of read pages from last restart.
+     */
+    public long getPagesRead() {
+        return pagesRead;
+    }
+
+    /**
+     * @return The number of written pages from last restart.
+     */
+    public long getPagesWritten() {
+        return pagesWritten;
+    }
+
+    /**
+     * @return The number of replaced pages from last restart .
+     */
+    public long getPagesReplaced() {
+        return pagesReplaced;
+    }
+
+    /**
+     * @return Total offheap size in bytes.
+     */
+    public long getOffHeapSize() {
+        return offHeapSz;
+    }
+
+    /**
+     * @return Total used offheap size in bytes.
+     */
+    public long getOffheapUsedSize() {
+        return offHeapUsedSz;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V3;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
@@ -155,6 +295,23 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
         out.writeLong(dirtyPages);
         out.writeFloat(pagesReplaceRate);
         out.writeLong(physicalMemoryPages);
+
+        // V2
+        out.writeLong(totalAllocatedSz);
+        out.writeLong(physicalMemSz);
+        out.writeLong(cpUsedBufPages);
+        out.writeLong(cpBufSz);
+        out.writeInt(pageSize);
+
+        // V3
+        out.writeLong(cpUsedBufSz);
+
+        out.writeLong(pagesRead);
+        out.writeLong(pagesWritten);
+        out.writeLong(pagesReplaced);
+
+        out.writeLong(offHeapSz);
+        out.writeLong(offHeapUsedSz);
     }
 
     /** {@inheritDoc} */
@@ -168,6 +325,25 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
         dirtyPages = in.readLong();
         pagesReplaceRate = in.readFloat();
         physicalMemoryPages = in.readLong();
+
+        if (protoVer > V1) {
+            totalAllocatedSz = in.readLong();
+            physicalMemSz = in.readLong();
+            cpUsedBufPages = in.readLong();
+            cpBufSz = in.readLong();
+            pageSize = in.readInt();
+        }
+
+        if (protoVer > V2) {
+            cpUsedBufSz = in.readLong();
+
+            pagesRead = in.readLong();
+            pagesWritten = in.readLong();
+            pagesReplaced = in.readLong();
+
+            offHeapSz = in.readLong();
+            offHeapUsedSz = in.readLong();
+        }
     }
 
     /** {@inheritDoc} */

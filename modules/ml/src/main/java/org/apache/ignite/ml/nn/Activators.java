@@ -58,4 +58,24 @@ public class Activators {
             return Math.max(val, 0);
         }
     };
+
+    /**
+     * Linear unit activation function.
+     */
+    public static IgniteDifferentiableDoubleToDoubleFunction LINEAR = new IgniteDifferentiableDoubleToDoubleFunction() {
+        /** {@inheritDoc} */
+        @Override public double differential(double pnt) {
+            return 1.0;
+        }
+
+        /**
+         * Differential of linear at pnt.
+         *
+         * @param pnt Point to differentiate at.
+         * @return Differential at pnt.
+         */
+        @Override public Double apply(double pnt) {
+            return pnt;
+        }
+    };
 }

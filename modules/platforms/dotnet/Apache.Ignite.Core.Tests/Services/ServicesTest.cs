@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Tests.Services
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
     using NUnit.Framework;
@@ -318,7 +319,68 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Tests the duck typing: proxy interface can be different from actual service interface, 
+        /// Tests dynamic service proxies.
+        /// </summary>
+        [Test]
+        public void TestGetDynamicServiceProxy()
+        {
+            // Deploy to remotes.
+            var svc = new TestIgniteServiceSerializable { TestProperty = 37 };
+            Grid1.GetCluster().ForRemotes().GetServices().DeployNodeSingleton(SvcName, svc);
+
+            // Make sure there is no local instance on grid3
+            Assert.IsNull(Grid3.GetServices().GetService<ITestIgniteService>(SvcName));
+
+            // Get proxy.
+            dynamic prx = Grid3.GetServices().GetDynamicServiceProxy(SvcName, false);
+
+            // Property getter.
+            Assert.AreEqual(37, prx.TestProperty);
+            Assert.IsTrue(prx.Initialized);
+            Assert.IsTrue(prx.Executed);
+            Assert.IsFalse(prx.Cancelled);
+            Assert.AreEqual(SvcName, prx.LastCallContextName);
+
+            // Property setter.
+            prx.TestProperty = 42;
+            Assert.AreEqual(42, prx.TestProperty);
+
+            // Method invoke.
+            Assert.AreEqual(prx.ToString(), svc.ToString());
+            Assert.AreEqual("baz", prx.Method("baz"));
+
+            // Non-existent member.
+            var ex = Assert.Throws<ServiceInvocationException>(() => prx.FooBar(1));
+            Assert.AreEqual(
+                string.Format("Failed to invoke proxy: there is no method 'FooBar' in type '{0}' with 1 arguments",
+                    typeof(TestIgniteServiceSerializable)), (ex.InnerException ?? ex).Message);
+
+            // Exception in service.
+            ex = Assert.Throws<ServiceInvocationException>(() => prx.ErrMethod(123));
+            Assert.AreEqual("ExpectedException", (ex.InnerException ?? ex).Message.Substring(0, 17));
+        }
+
+        /// <summary>
+        /// Tests dynamic service proxies with local service instance.
+        /// </summary>
+        [Test]
+        public void TestGetDynamicServiceProxyLocal()
+        {
+            // Deploy to all nodes.
+            var svc = new TestIgniteServiceSerializable { TestProperty = 37 };
+            Grid1.GetServices().DeployNodeSingleton(SvcName, svc);
+
+            // Make sure there is an instance on grid1.
+            var svcInst = Grid1.GetServices().GetService<ITestIgniteService>(SvcName);
+            Assert.IsNotNull(svcInst);
+
+            // Get dynamic proxy that simply wraps the service instance.
+            var prx = Grid1.GetServices().GetDynamicServiceProxy(SvcName);
+            Assert.AreSame(prx, svcInst);
+        }
+
+        /// <summary>
+        /// Tests the duck typing: proxy interface can be different from actual service interface,
         /// only called method signature should be compatible.
         /// </summary>
         [Test]
@@ -328,7 +390,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             // Deploy locally or to the remote node
             var nodeId = (local ? Grid1 : Grid2).GetCluster().GetLocalNode().Id;
-            
+
             var cluster = Grid1.GetCluster().ForNodeIds(nodeId);
 
             cluster.GetServices().DeployNodeSingleton(SvcName, svc);
@@ -338,7 +400,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             // NodeId signature is the same as in service
             Assert.AreEqual(nodeId, prx.NodeId);
-            
+
             // Method signature is different from service signature (object -> object), but is compatible.
             Assert.AreEqual(15, prx.Method(15));
 
@@ -373,7 +435,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var top = desc.TopologySnapshot;
             var prx = Services.GetServiceProxy<ITestIgniteService>(SvcName);
-            
+
             Assert.AreEqual(1, top.Count);
             Assert.AreEqual(prx.NodeId, top.Keys.Single());
             Assert.AreEqual(1, top.Values.Single());
@@ -402,7 +464,7 @@ namespace Apache.Ignite.Core.Tests.Services
             res = (IBinaryObject) prx.Method(Grid1.GetBinary().ToBinary<IBinaryObject>(obj));
             Assert.AreEqual(11, res.Deserialize<BinarizableObject>().Val);
         }
-        
+
         /// <summary>
         /// Tests the server binary flag.
         /// </summary>
@@ -497,10 +559,10 @@ namespace Apache.Ignite.Core.Tests.Services
                     MaxPerNodeCount = 2,
                     TotalCount = 2,
                     NodeFilter = new NodeFilter { NodeId = Grid1.GetCluster().GetLocalNode().Id },
-                    Service = binarizable ? new TestIgniteServiceBinarizable { TestProperty = i, ThrowInit = throwInit } 
+                    Service = binarizable ? new TestIgniteServiceBinarizable { TestProperty = i, ThrowInit = throwInit }
                         : new TestIgniteServiceSerializable { TestProperty = i, ThrowInit = throwInit }
                 });
-            } 
+            }
 
             var deploymentException = Assert.Throws<ServiceDeploymentException>(() => Services.DeployAll(cfgs));
 
@@ -508,9 +570,9 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNotNull(failedCfgs);
             Assert.AreEqual(2, failedCfgs.Count);
 
-            var firstFailedSvc = binarizable ? failedCfgs.ElementAt(0).Service as TestIgniteServiceBinarizable : 
+            var firstFailedSvc = binarizable ? failedCfgs.ElementAt(0).Service as TestIgniteServiceBinarizable :
                 failedCfgs.ElementAt(0).Service as TestIgniteServiceSerializable;
-            var secondFailedSvc = binarizable ? failedCfgs.ElementAt(1).Service as TestIgniteServiceBinarizable : 
+            var secondFailedSvc = binarizable ? failedCfgs.ElementAt(1).Service as TestIgniteServiceBinarizable :
                 failedCfgs.ElementAt(1).Service as TestIgniteServiceSerializable;
 
             Assert.IsNotNull(firstFailedSvc);
@@ -619,7 +681,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var deploymentException = Assert.Throws<ServiceDeploymentException>(() => deploy(services, svc));
 
-            var text = keepBinary 
+            var text = keepBinary
                 ? "Service deployment failed with a binary error. Examine BinaryCause for details."
                 : "Service deployment failed with an exception. Examine InnerException for details.";
 
@@ -698,7 +760,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var ex = Assert.Throws<ServiceDeploymentException>(() =>
                 Services.DeployMultiple(SvcName, svc, Grids.Length, 1));
-            
+
             Assert.IsNotNull(ex.InnerException);
             Assert.AreEqual("Expected exception", ex.InnerException.Message);
 
@@ -729,13 +791,9 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaService()
         {
-            const string javaSvcName = "javaService";
-
             // Deploy Java service
-            Grid1.GetCompute()
-                .ExecuteJavaTask<object>("org.apache.ignite.platform.PlatformDeployServiceTask", javaSvcName);
-
-            TestUtils.WaitForCondition(() => Services.GetServiceDescriptors().Any(x => x.Name == javaSvcName), 1000);
+            const string javaSvcName = "javaService";
+            DeployJavaService(javaSvcName);
 
             // Verify decriptor
             var descriptor = Services.GetServiceDescriptors().Single(x => x.Name == javaSvcName);
@@ -801,7 +859,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var arr = new [] {10, 11, 12}.Select(x => new PlatformComputeBinarizable {Field = x}).ToArray<object>();
             Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableCollection(arr)
                 .OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
-            Assert.AreEqual(new[] {11, 12, 13}, 
+            Assert.AreEqual(new[] {11, 12, 13},
                 svc.testBinarizableArray(arr).OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
 
             // Binary object
@@ -814,6 +872,85 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
+        /// Tests Java service invocation with dynamic proxy.
+        /// </summary>
+        [Test]
+        public void TestCallJavaServiceDynamicProxy()
+        {
+            const string javaSvcName = "javaService";
+            DeployJavaService(javaSvcName);
+
+            var svc = Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true);
+
+            // Basics
+            Assert.IsTrue(svc.isInitialized());
+            Assert.IsTrue(TestUtils.WaitForCondition(() => svc.isExecuted(), 500));
+            Assert.IsFalse(svc.isCancelled());
+
+            // Primitives
+            Assert.AreEqual(4, svc.test((byte)3));
+            Assert.AreEqual(5, svc.test((short)4));
+            Assert.AreEqual(6, svc.test(5));
+            Assert.AreEqual(6, svc.test((long)5));
+            Assert.AreEqual(3.8f, svc.test(2.3f));
+            Assert.AreEqual(5.8, svc.test(3.3));
+            Assert.IsFalse(svc.test(true));
+            Assert.AreEqual('b', svc.test('a'));
+            Assert.AreEqual("Foo!", svc.test("Foo"));
+
+            // Nullables (Java wrapper types)
+            Assert.AreEqual(4, svc.testWrapper(3));
+            Assert.AreEqual(5, svc.testWrapper((short?)4));
+            Assert.AreEqual(6, svc.testWrapper((int?)5));
+            Assert.AreEqual(6, svc.testWrapper((long?)5));
+            Assert.AreEqual(3.8f, svc.testWrapper(2.3f));
+            Assert.AreEqual(5.8, svc.testWrapper(3.3));
+            Assert.AreEqual(false, svc.testWrapper(true));
+            Assert.AreEqual('b', svc.testWrapper('a'));
+
+            // Arrays
+            Assert.AreEqual(new byte[] { 2, 3, 4 }, svc.testArray(new byte[] { 1, 2, 3 }));
+            Assert.AreEqual(new short[] { 2, 3, 4 }, svc.testArray(new short[] { 1, 2, 3 }));
+            Assert.AreEqual(new[] { 2, 3, 4 }, svc.testArray(new[] { 1, 2, 3 }));
+            Assert.AreEqual(new long[] { 2, 3, 4 }, svc.testArray(new long[] { 1, 2, 3 }));
+            Assert.AreEqual(new float[] { 2, 3, 4 }, svc.testArray(new float[] { 1, 2, 3 }));
+            Assert.AreEqual(new double[] { 2, 3, 4 }, svc.testArray(new double[] { 1, 2, 3 }));
+            Assert.AreEqual(new[] { "a1", "b1" }, svc.testArray(new[] { "a", "b" }));
+            Assert.AreEqual(new[] { 'c', 'd' }, svc.testArray(new[] { 'b', 'c' }));
+            Assert.AreEqual(new[] { false, true, false }, svc.testArray(new[] { true, false, true }));
+
+            // Nulls
+            Assert.AreEqual(9, svc.testNull(8));
+            Assert.IsNull(svc.testNull(null));
+
+            // Overloads
+            Assert.AreEqual(3, svc.test(2, "1"));
+            Assert.AreEqual(3, svc.test("1", 2));
+
+            // Binary
+            Assert.AreEqual(7, svc.testBinarizable(new PlatformComputeBinarizable { Field = 6 }).Field);
+
+            // Binary object
+            var binSvc = Services.WithKeepBinary().WithServerKeepBinary().GetDynamicServiceProxy(javaSvcName);
+
+            Assert.AreEqual(15,
+                binSvc.testBinaryObject(
+                    Grid1.GetBinary().ToBinary<IBinaryObject>(new PlatformComputeBinarizable { Field = 6 }))
+                    .GetField<int>("Field"));
+        }
+
+        /// <summary>
+        /// Deploys the java service.
+        /// </summary>
+        private void DeployJavaService(string javaSvcName)
+        {
+            Grid1.GetCompute()
+                .ExecuteJavaTask<object>("org.apache.ignite.platform.PlatformDeployServiceTask", javaSvcName);
+
+            TestUtils.WaitForCondition(() => Services.GetServiceDescriptors().Any(x => x.Name == javaSvcName), 1000);
+        }
+
+        /// <summary>
         /// Tests the footer setting.
         /// </summary>
         [Test]
@@ -821,7 +958,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             foreach (var grid in Grids)
             {
-                Assert.AreEqual(CompactFooter, ((Impl.Ignite) grid).Marshaller.CompactFooter);
+                Assert.AreEqual(CompactFooter, ((Ignite) grid).Marshaller.CompactFooter);
                 Assert.AreEqual(CompactFooter, grid.GetConfiguration().BinaryConfiguration.CompactFooter);
             }
         }
@@ -881,7 +1018,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         private IgniteConfiguration GetConfiguration(string springConfigUrl)
         {
-#if !NETCOREAPP2_0
+#if !NETCOREAPP2_0 && !NETCOREAPP2_1
             if (!CompactFooter)
             {
                 springConfigUrl = Compute.ComputeApiTestFullFooter.ReplaceFooterSetting(springConfigUrl);
@@ -938,12 +1075,22 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Test service interface for proxying.
+        /// Test base service.
         /// </summary>
-        public interface ITestIgniteService
+        public interface ITestIgniteServiceBase
         {
+            /** */
             int TestProperty { get; set; }
 
+            /** */
+            object Method(object arg);
+        }
+
+        /// <summary>
+        /// Test service interface for proxying.
+        /// </summary>
+        public interface ITestIgniteService : IService, ITestIgniteServiceBase
+        {
             /** */
             bool Initialized { get; }
 
@@ -958,9 +1105,6 @@ namespace Apache.Ignite.Core.Tests.Services
 
             /** */
             string LastCallContextName { get; }
-
-            /** */
-            object Method(object arg);
 
             /** */
             object ErrMethod(object arg);
@@ -988,7 +1132,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Test serializable service.
         /// </summary>
         [Serializable]
-        private class TestIgniteServiceSerializable : IService, ITestIgniteService
+        private class TestIgniteServiceSerializable : ITestIgniteService
         {
             /** */
             [InstanceResource]
@@ -1096,7 +1240,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 if (context.AffinityKey != null && !(context.AffinityKey is int))
                 {
                     var binaryObj = context.AffinityKey as IBinaryObject;
-                    
+
                     var key = binaryObj != null
                         ? binaryObj.Deserialize<BinarizableObject>()
                         : (BinarizableObject) context.AffinityKey;
@@ -1143,7 +1287,7 @@ namespace Apache.Ignite.Core.Tests.Services
             public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteInt("TestProp", TestProperty);
-                
+
                 if (ThrowOnWrite)
                     throw new Exception("Expected exception");
             }
@@ -1152,7 +1296,7 @@ namespace Apache.Ignite.Core.Tests.Services
             public void ReadBinary(IBinaryReader reader)
             {
                 TestProperty = reader.ReadInt("TestProp");
-                
+
                 throw new Exception("Expected exception");
             }
         }

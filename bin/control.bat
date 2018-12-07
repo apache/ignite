@@ -28,7 +28,7 @@ if "%OS%" == "Windows_NT"  setlocal
 if defined JAVA_HOME  goto checkJdk
     echo %0, ERROR:
     echo JAVA_HOME environment variable is not found.
-    echo Please point JAVA_HOME variable to location of JDK 1.7 or JDK 1.8.
+    echo Please point JAVA_HOME variable to location of JDK 1.8 or later.
     echo You can also download latest JDK at http://java.com/download.
 goto error_finish
 
@@ -37,18 +37,38 @@ goto error_finish
 if exist "%JAVA_HOME%\bin\java.exe" goto checkJdkVersion
     echo %0, ERROR:
     echo JAVA is not found in JAVA_HOME=%JAVA_HOME%.
-    echo Please point JAVA_HOME variable to installation of JDK 1.7 or JDK 1.8.
+    echo Please point JAVA_HOME variable to installation of JDK 1.8 or later.
     echo You can also download latest JDK at http://java.com/download.
 goto error_finish
 
 :checkJdkVersion
-"%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr "1\.[78]\." > nul
-if %ERRORLEVEL% equ 0 goto checkIgniteHome1
+set cmd="%JAVA_HOME%\bin\java.exe"
+for /f "tokens=* USEBACKQ" %%f in (`%cmd% -version 2^>^&1`) do (
+    set var=%%f
+    goto :LoopEscape
+)
+:LoopEscape
+
+set var=%var:~14%
+set var=%var:"=%
+for /f "tokens=1,2 delims=." %%a in ("%var%") do set MAJOR_JAVA_VER=%%a & set MINOR_JAVA_VER=%%b
+
+if %MAJOR_JAVA_VER% == 1 set MAJOR_JAVA_VER=%MINOR_JAVA_VER%
+
+if %MAJOR_JAVA_VER% LSS 8 (
     echo %0, ERROR:
     echo The version of JAVA installed in %JAVA_HOME% is incorrect.
-    echo Please point JAVA_HOME variable to installation of JDK 1.7 or JDK 1.8.
+    echo Please point JAVA_HOME variable to installation of JDK 1.8 or later.
     echo You can also download latest JDK at http://java.com/download.
-goto error_finish
+	goto error_finish
+)
+
+if %MAJOR_JAVA_VER% GTR 9 (
+	echo %0, WARNING:
+    echo The version of JAVA installed in %JAVA_HOME% was not tested with Apache Ignite.
+    echo Run it on your own risk or point JAVA_HOME variable to installation of JDK 1.8 or JDK 9.
+    echo You can also download latest JDK at http://java.com/download.
+)
 
 :: Check IGNITE_HOME.
 :checkIgniteHome1
@@ -104,7 +124,7 @@ if "%OS%" == "Windows_NT" set PROG_NAME=%~nx0%
 ::
 call "%SCRIPTS_HOME%\include\setenv.bat"
 call "%SCRIPTS_HOME%\include\build-classpath.bat"
-set CP=%IGNITE_LIBS%
+set CP=%IGNITE_LIBS%;%IGNITE_HOME%\libs\optional\ignite-zookeeper\*
 
 ::
 :: Process 'restart'.
@@ -159,8 +179,7 @@ if %ERRORLEVEL% equ 0 (
 ::
 :: Uncomment the following GC settings if you see spikes in your throughput due to Garbage Collection.
 ::
-:: set JVM_OPTS=%JVM_OPTS% -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:+UseTLAB -XX:NewSize=128m -XX:MaxNewSize=128m
-:: set JVM_OPTS=%JVM_OPTS% -XX:MaxTenuringThreshold=0 -XX:SurvivorRatio=1024 -XX:+UseCMSInitiatingOccupancyOnly -XX:CMSInitiatingOccupancyFraction=60
+:: set JVM_OPTS=%JVM_OPTS% -XX:+UseG1GC
 
 ::
 :: Uncomment if you get StackOverflowError.
@@ -197,6 +216,11 @@ if "%MAIN_CLASS%" == "" set MAIN_CLASS=org.apache.ignite.internal.commandline.Co
 :: Uncomment and change if remote debugging is required.
 :: set JVM_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 %JVM_OPTS%
 ::
+
+::
+:: Final JVM_OPTS for Java 9+ compatibility
+::
+if %MAJOR_JAVA_VER% GEQ 9 set JVM_OPTS=--add-exports java.base/jdk.internal.misc=ALL-UNNAMED --add-exports java.base/sun.nio.ch=ALL-UNNAMED --add-exports java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-modules java.xml.bind %JVM_OPTS%
 
 if "%INTERACTIVE%" == "1" (
     "%JAVA_HOME%\bin\java.exe" %JVM_OPTS% %QUIET% %RESTART_SUCCESS_OPT% %JMX_MON% ^

@@ -25,7 +25,6 @@ import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
@@ -97,7 +96,6 @@ import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.INSTANCE;
@@ -107,7 +105,7 @@ import static org.junit.Assert.assertNotEquals;
 /**
  * Binary marshaller tests.
  */
-@SuppressWarnings({"OverlyStrongTypeCast", "ArrayHashCode", "ConstantConditions"})
+@SuppressWarnings({"OverlyStrongTypeCast", "ConstantConditions"})
 public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
@@ -498,7 +496,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         testMap(new HashMap<Integer, String>());
         testMap(new LinkedHashMap<Integer, String>());
         testMap(new TreeMap<Integer, String>());
-        testMap(new ConcurrentHashMap8<Integer, String>());
+        testMap(new ConcurrentHashMap<Integer, String>());
         testMap(new ConcurrentHashMap<Integer, String>());
     }
 
@@ -1510,24 +1508,13 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testDefaultMapping() throws Exception {
+    public void testDefaultMapping() throws Exception {
         BinaryTypeConfiguration customMappingType =
             new BinaryTypeConfiguration(TestBinary.class.getName());
 
         customMappingType.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
-                String typeName;
-
-                try {
-                    Method mtd = BinaryContext.class.getDeclaredMethod("typeName", String.class);
-
-                    mtd.setAccessible(true);
-
-                    typeName = (String)mtd.invoke(null, clsName);
-                }
-                catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                }
+                String typeName = BinaryContext.SIMPLE_NAME_LOWER_CASE_MAPPER.typeName(clsName);
 
                 return typeName.toLowerCase().hashCode();
             }
@@ -1938,7 +1925,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         Map<Integer, BinaryClassDescriptor> map = (Map<Integer, BinaryClassDescriptor>)field.get(ctx);
 
-        assertTrue(map.size() > 0);
+        assertTrue(!map.isEmpty());
 
         assertNotNull(map.get(typeId));
 
@@ -1949,7 +1936,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         Map<String, Integer> map2 = (Map<String, Integer>)field.get(ctx);
 
-        assertTrue(map2.size() > 0);
+        assertTrue(!map2.isEmpty());
 
         assertNull(map2.get(ctx.userTypeName(Value.class.getName())));
     }
@@ -2909,7 +2896,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         Map<String, Integer> map = (Map<String, Integer>)field.get(bCtx);
 
-        assertTrue(map.size() > 0);
+        assertTrue(!map.isEmpty());
 
         for (Map.Entry<String, Integer> entry : map.entrySet()) {
             int id = entry.getValue();
@@ -3060,6 +3047,33 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         ClassFieldObject res = m.unmarshal(m.marshal(new ClassFieldObject(Value.class)), null);
 
         assertEquals(Value.class, res.cls);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMixedRawCollections() throws Exception {
+        Collection<String> excludedClasses = Arrays.asList(
+            ObjectRaw.class.getName(),
+            ObjectWithRaw.class.getName(),
+            Value.class.getName());
+
+        BinaryMarshaller m0 = binaryMarshaller(null, excludedClasses);
+        BinaryMarshaller m1 = binaryMarshaller();
+
+        Value obj = new Value(27);
+        ObjectWithRaw objectWithRaw = new ObjectWithRaw(27, 13);
+        ObjectRaw objectRaw = new ObjectRaw(27, 13);
+
+        Value objOther = new Value(26);
+        ObjectWithRaw objectWithRawOther = new ObjectWithRaw(26, 13);
+        ObjectRaw objectRawOther = new ObjectRaw(26, 13);
+
+        ArrayList collection = new ArrayList(Arrays.asList(
+            obj, objectWithRawOther, objectRaw, objectWithRaw, objectRawOther, objOther));
+
+        marshalUnmarshal(collection, m0);
+        marshalUnmarshal(collection, m1);
     }
 
     /**
@@ -3376,7 +3390,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
          * @param strArr Array.
          * @param shortVal Short value.
          */
-        @SuppressWarnings({"UnusedDeclaration"})
         private NonSerializableA(@Nullable String[] strArr, @Nullable Short shortVal) {
             // No-op.
         }
@@ -3473,7 +3486,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
          *
          * @param aVal Unused.
          */
-        @SuppressWarnings({"UnusedDeclaration"})
         private NonSerializable(NonSerializableA aVal) {
         }
 
@@ -4143,7 +4155,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         private SimpleObject inner;
 
         /** {@inheritDoc} */
-        @SuppressWarnings("FloatingPointEquality")
         @Override public boolean equals(Object other) {
             if (this == other)
                 return true;
@@ -4499,7 +4510,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("FloatingPointEquality")
         @Override public boolean equals(Object other) {
             if (this == other)
                 return true;
@@ -4890,7 +4900,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
     /**
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class CollectionFieldsObject {
         /** */
         private Object[] arr;
@@ -5474,8 +5483,10 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-            val0 = reader.rawReader().readInt();
-            val1 = reader.rawReader().readInt();
+            BinaryRawReader rawReader = reader.rawReader();
+
+            val0 = rawReader.readInt();
+            val1 = rawReader.readInt();
         }
     }
 

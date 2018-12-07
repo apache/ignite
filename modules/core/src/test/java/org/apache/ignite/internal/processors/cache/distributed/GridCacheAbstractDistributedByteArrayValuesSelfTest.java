@@ -17,14 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.util.Arrays;
-import java.util.Collections;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractByteArrayValuesSelfTest;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
@@ -104,8 +102,6 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         caches = null;
 
         ignites = null;
@@ -174,6 +170,9 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      */
     private void testTransactionMixed0(IgniteCache<Integer, Object>[] caches, TransactionConcurrency concurrency,
         Integer key1, byte[] val1, @Nullable Integer key2, @Nullable Object val2) throws Exception {
+        if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, REPEATABLE_READ))
+            return;
+
         for (IgniteCache<Integer, Object> cache : caches) {
             info("Checking cache: " + cache.getName());
 

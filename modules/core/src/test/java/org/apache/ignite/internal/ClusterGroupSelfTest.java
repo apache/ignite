@@ -68,16 +68,12 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
                 if (i == 0)
                     ignite = g;
             }
+
+            waitForTopology(NODES_CNT);
         }
         finally {
             Ignition.setClientMode(false);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        for (int i = 0; i < NODES_CNT; i++)
-            stopGrid(i);
     }
 
     /** {@inheritDoc} */

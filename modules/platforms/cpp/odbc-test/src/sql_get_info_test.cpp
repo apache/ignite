@@ -19,8 +19,7 @@
 #   include <windows.h>
 #endif
 
-#include <sql.h>
-#include <sqlext.h>
+#include "ignite/odbc/system/odbc_constants.h"
 
 #include <vector>
 #include <string>
@@ -37,6 +36,7 @@
 
 #include "test_type.h"
 #include "test_utils.h"
+#include "odbc_test_suite.h"
 
 using namespace ignite;
 using namespace ignite_test;
@@ -48,62 +48,8 @@ using ignite::impl::binary::BinaryUtils;
 /**
  * Test setup fixture.
  */
-struct SqlGetInfoTestSuiteFixture
+struct SqlGetInfoTestSuiteFixture : odbc::OdbcTestSuite
 {
-    /**
-     * Establish connection to node.
-     *
-     * @param connectStr Connection string.
-     */
-    void Connect(const std::string& connectStr)
-    {
-        // Allocate an environment handle
-        SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env);
-
-        BOOST_REQUIRE(env != NULL);
-
-        // We want ODBC 3 support
-        SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<void*>(SQL_OV_ODBC3), 0);
-
-        // Allocate a connection handle
-        SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
-
-        BOOST_REQUIRE(dbc != NULL);
-
-        // Connect string
-        std::vector<SQLCHAR> connectStr0;
-
-        connectStr0.reserve(connectStr.size() + 1);
-        std::copy(connectStr.begin(), connectStr.end(), std::back_inserter(connectStr0));
-
-        SQLCHAR outstr[ODBC_BUFFER_SIZE];
-        SQLSMALLINT outstrlen;
-
-        // Connecting to ODBC server.
-        SQLRETURN ret = SQLDriverConnect(dbc, NULL, &connectStr0[0], static_cast<SQLSMALLINT>(connectStr0.size()),
-            outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
-
-        ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
-
-        // Allocate a statement handle
-        SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
-
-        BOOST_REQUIRE(stmt != NULL);
-    }
-
-    void Disconnect()
-    {
-        // Releasing statement handle.
-        SQLFreeHandle(SQL_HANDLE_STMT, stmt);
-
-        // Disconneting from the server.
-        SQLDisconnect(dbc);
-
-        // Releasing allocated handles.
-        SQLFreeHandle(SQL_HANDLE_DBC, dbc);
-        SQLFreeHandle(SQL_HANDLE_ENV, env);
-    }
-
     void CheckStrInfo(SQLSMALLINT type, const std::string& expectedValue)
     {
         SQLCHAR val[ODBC_BUFFER_SIZE];
@@ -139,18 +85,9 @@ struct SqlGetInfoTestSuiteFixture
     /**
      * Constructor.
      */
-    SqlGetInfoTestSuiteFixture() :
-        env(NULL),
-        dbc(NULL),
-        stmt(NULL)
+    SqlGetInfoTestSuiteFixture()
     {
-#ifdef IGNITE_TESTS_32
-        const char* config = "queries-test-32.xml";
-#else
-        const char* config = "queries-test.xml";
-#endif
-
-        grid = StartNode(config, "NodeMain");
+        grid = StartPlatformNode("queries-test.xml", "NodeMain");
     }
 
     /**
@@ -158,22 +95,11 @@ struct SqlGetInfoTestSuiteFixture
      */
     ~SqlGetInfoTestSuiteFixture()
     {
-        Disconnect();
-
         Ignition::StopAll(true);
     }
 
     /** Node started during the test. */
     Ignite grid;
-
-    /** ODBC Environment. */
-    SQLHENV env;
-
-    /** ODBC Connect. */
-    SQLHDBC dbc;
-
-    /** ODBC Statement. */
-    SQLHSTMT stmt;
 };
 
 BOOST_FIXTURE_TEST_SUITE(SqlGetInfoTestSuite, SqlGetInfoTestSuiteFixture)
@@ -210,7 +136,7 @@ BOOST_AUTO_TEST_CASE(TestValues)
     CheckStrInfo(SQL_LIKE_ESCAPE_CLAUSE, "N");
     CheckStrInfo(SQL_MAX_ROW_SIZE_INCLUDES_LONG, "Y");
     CheckStrInfo(SQL_MULT_RESULT_SETS, "N");
-    CheckStrInfo(SQL_MULTIPLE_ACTIVE_TXN, "N");
+    CheckStrInfo(SQL_MULTIPLE_ACTIVE_TXN, "Y");
     CheckStrInfo(SQL_ORDER_BY_COLUMNS_IN_SELECT, "N");
     CheckStrInfo(SQL_PROCEDURE_TERM, "stored procedure");
     CheckStrInfo(SQL_PROCEDURES, "N");
@@ -239,9 +165,9 @@ BOOST_AUTO_TEST_CASE(TestValues)
     CheckIntInfo(SQL_POS_OPERATIONS, 0);
     CheckIntInfo(SQL_SQL92_DATETIME_FUNCTIONS, SQL_SDF_CURRENT_DATE | SQL_SDF_CURRENT_TIMESTAMP);
     CheckIntInfo(SQL_SQL92_VALUE_EXPRESSIONS, SQL_SVE_CASE | SQL_SVE_CAST | SQL_SVE_COALESCE | SQL_SVE_NULLIF);
-    CheckIntInfo(SQL_STATIC_CURSOR_ATTRIBUTES1, SQL_CA1_NEXT);
+    CheckIntInfo(SQL_STATIC_CURSOR_ATTRIBUTES1, SQL_CA1_NEXT | SQL_CA1_ABSOLUTE);
     CheckIntInfo(SQL_STATIC_CURSOR_ATTRIBUTES2, 0);
-    CheckIntInfo(SQL_PARAM_ARRAY_ROW_COUNTS, SQL_PARC_NO_BATCH);
+    CheckIntInfo(SQL_PARAM_ARRAY_ROW_COUNTS, SQL_PARC_BATCH);
     CheckIntInfo(SQL_PARAM_ARRAY_SELECTS, SQL_PAS_NO_SELECT);
     CheckIntInfo(SQL_SCROLL_OPTIONS, SQL_SO_FORWARD_ONLY | SQL_SO_STATIC);
     CheckIntInfo(SQL_ALTER_DOMAIN, 0);
@@ -256,7 +182,7 @@ BOOST_AUTO_TEST_CASE(TestValues)
     CheckIntInfo(SQL_CREATE_VIEW, 0);
     CheckIntInfo(SQL_CURSOR_SENSITIVITY, SQL_INSENSITIVE);
     CheckIntInfo(SQL_DDL_INDEX, SQL_DI_CREATE_INDEX | SQL_DI_DROP_INDEX);
-    CheckIntInfo(SQL_DEFAULT_TXN_ISOLATION, 0);
+    CheckIntInfo(SQL_DEFAULT_TXN_ISOLATION, SQL_TXN_REPEATABLE_READ);
     CheckIntInfo(SQL_DROP_ASSERTION, 0);
     CheckIntInfo(SQL_DROP_CHARACTER_SET, 0);
     CheckIntInfo(SQL_DROP_COLLATION, 0);
@@ -286,7 +212,7 @@ BOOST_AUTO_TEST_CASE(TestValues)
     CheckIntInfo(SQL_SQL92_GRANT, 0);
     CheckIntInfo(SQL_SQL92_REVOKE, 0);
     CheckIntInfo(SQL_STANDARD_CLI_CONFORMANCE, 0);
-    CheckIntInfo(SQL_TXN_ISOLATION_OPTION, 0);
+    CheckIntInfo(SQL_TXN_ISOLATION_OPTION, SQL_TXN_REPEATABLE_READ);
     CheckIntInfo(SQL_UNION, SQL_U_UNION | SQL_U_UNION_ALL);
 
     CheckIntInfo(SQL_SCHEMA_USAGE, SQL_SU_DML_STATEMENTS | SQL_SU_TABLE_DEFINITION | SQL_SU_PRIVILEGE_DEFINITION |
@@ -453,10 +379,12 @@ BOOST_AUTO_TEST_CASE(TestValues)
     CheckIntInfo(SQL_SUBQUERIES, SQL_SQ_CORRELATED_SUBQUERIES | SQL_SQ_COMPARISON | SQL_SQ_EXISTS | SQL_SQ_IN |
         SQL_SQ_QUANTIFIED);
 
-    CheckShortInfo(SQL_MAX_CONCURRENT_ACTIVITIES, 32);
+    CheckIntInfo(SQL_FETCH_DIRECTION, SQL_FD_FETCH_NEXT | SQL_FD_FETCH_PRIOR);
+
+    CheckShortInfo(SQL_MAX_CONCURRENT_ACTIVITIES, 0);
     CheckShortInfo(SQL_CURSOR_COMMIT_BEHAVIOR, SQL_CB_PRESERVE);
     CheckShortInfo(SQL_CURSOR_ROLLBACK_BEHAVIOR, SQL_CB_PRESERVE);
-    CheckShortInfo(SQL_TXN_CAPABLE, SQL_TC_NONE);
+    CheckShortInfo(SQL_TXN_CAPABLE, SQL_TC_DDL_COMMIT);
     CheckShortInfo(SQL_QUOTED_IDENTIFIER_CASE, SQL_IC_SENSITIVE);
     CheckShortInfo(SQL_ACTIVE_ENVIRONMENTS, 0);
     CheckShortInfo(SQL_CONCAT_NULL_BEHAVIOR, SQL_CB_NULL);
@@ -472,7 +400,7 @@ BOOST_AUTO_TEST_CASE(TestValues)
     CheckShortInfo(SQL_MAX_COLUMNS_IN_TABLE, 0);
     CheckShortInfo(SQL_MAX_CURSOR_NAME_LEN, 0);
     CheckShortInfo(SQL_MAX_DRIVER_CONNECTIONS, 0);
-    CheckShortInfo(SQL_MAX_IDENTIFIER_LEN, 128);
+    CheckShortInfo(SQL_MAX_IDENTIFIER_LEN, 0);
     CheckShortInfo(SQL_MAX_PROCEDURE_NAME_LEN, 0);
     CheckShortInfo(SQL_MAX_SCHEMA_NAME_LEN, 0);
     CheckShortInfo(SQL_MAX_TABLE_NAME_LEN, 0);

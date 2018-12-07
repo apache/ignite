@@ -28,6 +28,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -133,6 +135,11 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
         stopAllGrids();
     }
 
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -178,16 +185,20 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
      * Waits while topology on all nodes became equals to the expected size.
      *
      * @param nodesCnt Expected nodes count.
-     * @throws InterruptedException If interrupted.
+     * @throws Exception If interrupted.
      */
     @SuppressWarnings("BusyWait")
-    private void awaitDiscovery(long nodesCnt) throws InterruptedException {
-        for (Ignite g : alive) {
-            ((TcpDiscoverySpi)g.configuration().getDiscoverySpi()).waitForClientMessagePrecessed();
+    private void awaitDiscovery(int nodesCnt) throws Exception {
+        if (tcpDiscovery()) {
+            for (Ignite g : alive) {
+                ((TcpDiscoverySpi)g.configuration().getDiscoverySpi()).waitForClientMessagePrecessed();
 
-            while (g.cluster().nodes().size() != nodesCnt)
-                Thread.sleep(10);
+                while (g.cluster().nodes().size() != nodesCnt)
+                    Thread.sleep(10);
+            }
         }
+        else
+            waitForTopology(nodesCnt);
     }
 
     /**

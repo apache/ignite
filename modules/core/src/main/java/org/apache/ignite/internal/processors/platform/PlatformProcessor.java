@@ -21,12 +21,11 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Platform processor.
  */
-@SuppressWarnings({"UnusedDeclaration", "UnnecessaryInterfaceModifier"})
+@SuppressWarnings({"UnnecessaryInterfaceModifier"})
 public interface PlatformProcessor extends GridProcessor {
     /**
      * Gets owning Ignite instance.

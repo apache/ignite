@@ -1,0 +1,10 @@
+.git
+*Dockerfile*
+*docker-compose*
+**/build/
+**/node_modules/
+**/target/
+!web-agent/target/*.zip
+**/backend/agent_dists/*.zip
+**/backend/config/*.json
+**/backend/test

@@ -139,17 +139,18 @@ public class IgniteQueryGenerator {
      * @return type of options
      */
     public static IgniteQuery.Option getOptions(Method mtd) {
-        IgniteQuery.Option option;
+        IgniteQuery.Option option = IgniteQuery.Option.NONE;
 
         Class<?>[] types = mtd.getParameterTypes();
-        Class<?> type = types[types.length - 1];
 
-        if (Sort.class.isAssignableFrom(type))
-            option = IgniteQuery.Option.SORTING;
-        else if (Pageable.class.isAssignableFrom(type))
-            option = IgniteQuery.Option.PAGINATION;
-        else
-            option = IgniteQuery.Option.NONE;
+        if (types.length > 0) {
+            Class<?> type = types[types.length - 1];
+
+            if (Sort.class.isAssignableFrom(type))
+                option = IgniteQuery.Option.SORTING;
+            else if (Pageable.class.isAssignableFrom(type))
+                option = IgniteQuery.Option.PAGINATION;
+        }
 
         for (int i = 0; i < types.length - 1; i++) {
             Class<?> tp = types[i];

@@ -40,11 +40,12 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -60,7 +61,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Test node restart.
  */
-@SuppressWarnings({"PointlessArithmeticExpression"})
 public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbstractTest {
     /** Cache name. */
     protected static final String CACHE_NAME = "TEST_CACHE";
@@ -169,8 +169,6 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
     }
 
@@ -190,6 +188,11 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         keyCnt = DFLT_KEY_CNT;
         retries = DFLT_RETRIES;
         idx = -1;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /**
@@ -686,7 +689,12 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
             }
 
             for (Thread t : threads)
-                t.join();
+                t.join(2 * duration);
+
+            for (Thread t : threads) {
+                if (t.isAlive())
+                    t.interrupt();
+            }
 
             if (err.get() != null)
                 throw err.get();
@@ -739,7 +747,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                             UUID locNodeId = ignite.cluster().localNode().id();
 
-                            IgniteCache<Integer, String> cache = ignite.cache(CACHE_NAME);
+                            IgniteCache<Integer, String> cache = ignite.cache(CACHE_NAME).withAllowAtomicOpsInTx();
 
                             List<Integer> keys = new ArrayList<>(txKeys);
 
@@ -896,7 +904,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                             UUID locNodeId = ignite.cluster().localNode().id();
 
-                            IgniteCache<Integer, String> cache = ignite.cache(CACHE_NAME);
+                            IgniteCache<Integer, String> cache = ignite.cache(CACHE_NAME).withAllowAtomicOpsInTx();
 
                             List<Integer> keys = new ArrayList<>(txKeys);
 

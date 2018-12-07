@@ -16,7 +16,13 @@
  */
 
 // Override AngularStrap "bsSelect" in order to dynamically change placeholder and class.
-export default ['bsSelect', [() => {
+export default () => {
+    /**
+     * @param {ng.IScope} scope
+     * @param {JQLite} $element
+     * @param {ng.IAttributes} attrs
+     * @param {[ng.INgModelController]} [ngModel]
+     */
     const link = (scope, $element, attrs, [ngModel]) => {
         if (!ngModel)
             return;
@@ -24,17 +30,21 @@ export default ['bsSelect', [() => {
         const $render = ngModel.$render;
 
         ngModel.$render = () => {
-            $render();
+            if (scope.$destroyed)
+                return;
 
-            const value = ngModel.$viewValue;
+            scope.$applyAsync(() => {
+                $render();
+                const value = ngModel.$viewValue;
 
-            if (_.isNil(value) || (attrs.multiple && !value.length)) {
-                $element.html(attrs.placeholder);
+                if (_.isNil(value) || (attrs.multiple && !value.length)) {
+                    $element.html(attrs.placeholder);
 
-                $element.addClass('placeholder');
-            }
-            else
-                $element.removeClass('placeholder');
+                    $element.addClass('placeholder');
+                }
+                else
+                    $element.removeClass('placeholder');
+            });
         };
     };
 
@@ -44,4 +54,4 @@ export default ['bsSelect', [() => {
         link,
         require: ['?ngModel']
     };
-}]];
+};

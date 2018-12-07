@@ -29,6 +29,12 @@
 
 #include "ignite/ignition.h"
 
+#define ODBC_THROW_ON_ERROR(ret, type, handle)          \
+    if (!SQL_SUCCEEDED(ret))                            \
+    {                                                   \
+        throw ignite_test::GetOdbcError(type, handle);  \
+    }
+
 #define ODBC_FAIL_ON_ERROR(ret, type, handle)                       \
     if (!SQL_SUCCEEDED(ret))                                        \
     {                                                               \
@@ -43,11 +49,64 @@
         BOOST_FAIL(ignite_test::GetOdbcErrorMessage(type, handle) + ", msg = " + msg); \
     }
 
+/**
+ * Client ODBC erorr.
+ */
+class OdbcClientError : public std::exception
+{
+public:
+    /**
+     * Constructor
+     *
+     * @param sqlstate SQL state.
+     * @param message Error message.
+     */
+    OdbcClientError(const std::string& sqlstate, const std::string& message) :
+        sqlstate(sqlstate),
+        message(message)
+    {
+        // No-op.
+    }
+
+    /**
+     * Destructor.
+     */
+    virtual ~OdbcClientError() IGNITE_NO_THROW
+    {
+         // No-op.
+    }
+
+    /**
+     * Implementation of the standard std::exception::what() method.
+     * Synonym for GetText() method.
+     *
+     * @return Error message string.
+     */
+    virtual const char* what() const IGNITE_NO_THROW
+    {
+        return message.c_str();
+    }
+
+    /** SQL state. */
+    std::string sqlstate;
+
+    /** Error message. */
+    std::string message;
+};
 
 namespace ignite_test
 {
     /** Read buffer size. */
     enum { ODBC_BUFFER_SIZE = 1024 };
+
+    /**
+     * Extract error.
+     *
+     * @param handleType Type of the handle.
+     * @param handle Handle.
+     * @return Error.
+     */
+    OdbcClientError GetOdbcError(SQLSMALLINT handleType, SQLHANDLE handle);
 
     /**
      * Extract error state.
@@ -66,6 +125,11 @@ namespace ignite_test
      * @return Error message.
      */
     std::string GetOdbcErrorMessage(SQLSMALLINT handleType, SQLHANDLE handle);
+
+    /**
+     * @return Test config directory path.
+     */
+    std::string GetTestConfigDir();
 
     /**
      * Initialize configuration for a node.
@@ -103,6 +167,19 @@ namespace ignite_test
      * @return New node.
      */
     ignite::Ignite StartNode(const char* cfgFile, const char* name);
+
+    /**
+     * Start node with the config for the current platform.
+     *
+     * @param cfg Basic config path. Changed to platform config if needed.
+     * @param name Instance name.
+     */
+    ignite::Ignite StartPlatformNode(const char* cfg, const char* name);
+
+    /**
+     * Remove all the LFS artifacts.
+     */
+    void ClearLfs();
 }
 
 #endif // _IGNITE_ODBC_TEST_TEST_UTILS

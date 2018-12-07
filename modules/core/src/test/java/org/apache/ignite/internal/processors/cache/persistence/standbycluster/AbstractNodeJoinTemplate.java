@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -42,7 +41,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.util.IgniteUtils.field;
 
 /**
@@ -214,7 +212,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -223,7 +221,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 
     /**
@@ -303,8 +301,12 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
         return super.getConfiguration(name)
             .setDiscoverySpi(
                 new TcpDiscoverySpi()
-                    .setIpFinder(ipFinder)
-            );
+                    .setIpFinder(ipFinder))
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration()
+                    .setDefaultDataRegionConfiguration(
+                        new DataRegionConfiguration()
+                            .setMaxSize(100 * 1024 * 1024)));
     }
 
     /** {@inheritDoc} */
@@ -608,6 +610,9 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
 
                 nodes.add(nodeCfg.getIgniteInstanceName());
 
+                if (state)
+                    awaitPartitionMapExchange();
+
                 System.out.println(">>> Check after new node join in cluster");
 
                 afterNodeJoin.run();
@@ -781,7 +786,9 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
 
                     Map<String, GridCacheAdapter> caches = caches(ig);
 
-                    Assert.assertEquals(0, caches.size());
+                    for (GridCacheAdapter cacheAdapter : caches.values())
+                        Assert.assertTrue("Cache should be in recovery mode: " + cacheAdapter.context(),
+                            cacheAdapter.context().isRecoveryMode());
                 }
             });
         }

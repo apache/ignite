@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.store.jdbc.dialect.H2Dialect;
 import org.apache.ignite.cache.store.jdbc.dialect.JdbcDialect;
@@ -69,15 +69,16 @@ public class CacheJdbcPojoStoreFactorySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testIncorrectBeanConfiguration() throws Exception {
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1094");
+
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                try(Ignite ignite = Ignition.start("modules/spring/src/test/config/pojo-incorrect-store-cache.xml")) {
-                    ignite.cache(CACHE_NAME).getConfiguration(CacheConfiguration.class).
-                        getCacheStoreFactory().create();
+                try (Ignite ignored = Ignition.start("modules/spring/src/test/config/pojo-incorrect-store-cache.xml")) {
+                    // No-op.
                 }
                 return null;
             }
-        }, IgniteException.class, "Spring bean with provided name doesn't exist");
+        }, IgniteCheckedException.class, "Spring bean with provided name doesn't exist");
     }
 
     /**

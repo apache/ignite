@@ -45,12 +45,15 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -67,6 +70,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -84,11 +88,11 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -139,10 +143,22 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     }
 
     /** {@inheritDoc} */
+    @Override public void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
         stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /**
@@ -504,6 +520,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         checkData(map, null, cache, 4);
     }
+
     /**
      * @throws Exception If failed.
      */
@@ -925,6 +942,87 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         }
 
         checkData(map, null, cache, 5);
+    }
+
+    /**
+     * @return Cache configuration.
+     */
+    private CacheConfiguration testPessimisticTx3Cfg() {
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setBackups(0);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setRebalanceMode(SYNC);
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 16));
+
+        return ccfg;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPessimisticTx3() throws Exception {
+        for (int iter = 0; iter < 5; iter++) {
+            info("Iteration: " + iter);
+
+            ccfg = testPessimisticTx3Cfg();
+
+            IgniteEx ignite0 = startGrid(0);
+
+            Map<Integer, Integer> map = new HashMap<>();
+
+            final IgniteCache<Integer, Integer> cache0 = ignite0.cache(DEFAULT_CACHE_NAME);
+
+            for (int i = 0; i < 10000; i++) {
+                cache0.put(i, i);
+                map.put(i, i + 1);
+            }
+
+            client = true;
+
+            ccfg = testPessimisticTx3Cfg();
+
+            final Ignite ignite3 = startGrid(3);
+
+            final IgniteCache<Integer, Integer> cache = ignite3.cache(DEFAULT_CACHE_NAME);
+
+            TestCommunicationSpi spi = (TestCommunicationSpi)ignite3.configuration().getCommunicationSpi();
+            spi.blockMessages(GridNearLockRequest.class, ignite0.localNode().id());
+
+            IgniteInternalFuture putFut = GridTestUtils.runAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    Thread.currentThread().setName("put-thread");
+
+                    try (Transaction tx = ignite3.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        cache.putAll(map);
+
+                        tx.commit();
+                    }
+
+                    return null;
+                }
+            });
+
+            spi.waitForBlocked();
+
+            client = false;
+
+            ccfg = testPessimisticTx3Cfg();
+
+            startGrid(1);
+
+            // Want provoke case when client req is processed when target partition is RENTING,
+            // there is no easy way to do it, so just try sleep.
+            U.sleep(ThreadLocalRandom.current().nextInt(1000) + 100);
+
+            spi.stopBlock();
+
+            putFut.get();
+
+            stopAllGrids();
+        }
     }
 
     /**
@@ -1620,8 +1718,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                                     }
                                 }
                                 finally {
-                                    cache0.context().evicts().touch(entry,
-                                        cache0.context().affinity().affinityTopologyVersion());
+                                    entry.touch(entry.context().affinity().affinityTopologyVersion());
                                 }
                             }
                             else
@@ -1720,7 +1817,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         final int THREADS = CLIENT_CNT * 3;
 
-        final ConcurrentHashSet<Integer> putKeys = new ConcurrentHashSet<>();
+        final GridConcurrentHashSet<Integer> putKeys = new GridConcurrentHashSet<>();
 
         IgniteInternalFuture<?> fut;
 
@@ -2004,6 +2101,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
                         blockedMsgs.add(new T2<>(node, (GridIoMessage)msg));
 
+                        notifyAll();
+
                         return;
                     }
                 }
@@ -2070,6 +2169,16 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                 }
 
                 blockedMsgs.clear();
+            }
+        }
+
+        /**
+         * @throws InterruptedException If interrupted.
+         */
+        public void waitForBlocked() throws InterruptedException {
+            synchronized (this) {
+                while (blockedMsgs.isEmpty())
+                    wait();
             }
         }
     }

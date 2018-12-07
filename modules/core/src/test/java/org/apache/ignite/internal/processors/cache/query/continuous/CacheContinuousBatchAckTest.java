@@ -44,6 +44,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -103,13 +104,6 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
         startGrid(SERVER2);
         startGrid("1" + CLIENT);
         startGrid("2" + CLIENT);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -197,6 +191,56 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
         filterOn.set(true);
 
         checkBackupAcknowledgeMessage(cacheConfiguration(REPLICATED, 1, TRANSACTIONAL, true));
+    }
+
+    // MVCC tests.
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPartitionMvccTx() throws Exception {
+        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL_SNAPSHOT, false));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPartitionMvccTxWithFilter() throws Exception {
+        filterOn.set(true);
+
+        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL_SNAPSHOT, true));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPartitionMvccTxNoBackup() throws Exception {
+        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL_SNAPSHOT, false));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPartitionMvccTxNoBackupWithFilter() throws Exception {
+        filterOn.set(true);
+
+        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL_SNAPSHOT, true));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReplicatedMvccTx() throws Exception {
+        checkBackupAcknowledgeMessage(cacheConfiguration(REPLICATED, 1, TRANSACTIONAL_SNAPSHOT, false));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReplicatedMvccTxWithFilter() throws Exception {
+        filterOn.set(true);
+
+        checkBackupAcknowledgeMessage(cacheConfiguration(REPLICATED, 1, TRANSACTIONAL_SNAPSHOT, true));
     }
 
     /**

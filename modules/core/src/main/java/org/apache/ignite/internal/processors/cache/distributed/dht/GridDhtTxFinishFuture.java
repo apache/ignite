@@ -35,9 +35,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFutu
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -87,7 +91,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     private boolean commit;
 
     /** Error. */
-    @SuppressWarnings("UnusedDeclaration")
     @GridToStringExclude
     private volatile Throwable err;
 
@@ -168,10 +171,13 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         if (ERR_UPD.compareAndSet(this, null, e)) {
             tx.setRollbackOnly();
 
-            if (X.hasCause(e, NodeStoppingException.class))
+            if (X.hasCause(e, NodeStoppingException.class) || cctx.kernalContext().failure().nodeStopping())
                 onComplete();
-            else
+            else {
+                // Rolling back a remote transaction may result in partial commit.
+                // This is only acceptable in tests with no-op failure handler.
                 finish(false);
+            }
         }
     }
 
@@ -225,9 +231,9 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
             if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING)) {
                 try {
-                    boolean nodeStop = err != null && X.hasCause(err, NodeStoppingException.class);
+                    boolean nodeStopping = X.hasCause(err, NodeStoppingException.class);
 
-                    this.tx.tmFinish(err == null, nodeStop, false);
+                    this.tx.tmFinish(err == null, nodeStopping || cctx.kernalContext().failure().nodeStopping(), false);
                 }
                 catch (IgniteCheckedException finishErr) {
                     U.error(log, "Failed to finish tx: " + tx, e);
@@ -240,7 +246,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
             if (commit && e == null)
                 e = this.tx.commitError();
 
-            Throwable finishErr = e != null ? e : err;
+            Throwable finishErr = mvccFinish(e != null ? e : err);
 
             if (super.onDone(tx, finishErr)) {
                 if (finishErr == null)
@@ -279,9 +285,11 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
      *
      * @param commit Commit flag.
      */
-    @SuppressWarnings({"SimplifiableIfStatement", "IfMayBeConditional"})
+    @SuppressWarnings({"SimplifiableIfStatement"})
     public void finish(boolean commit) {
         boolean sync;
+
+        assert !tx.queryEnlisted() || tx.mvccSnapshot() != null;
 
         if (!F.isEmpty(dhtMap) || !F.isEmpty(nearMap))
             sync = finish(commit, dhtMap, nearMap);
@@ -290,6 +298,22 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         else
             // No backup or near nodes to send commit message to (just complete then).
             sync = false;
+
+        GridLongList waitTxs = tx.mvccWaitTransactions();
+
+        if (waitTxs != null) {
+            MvccSnapshot snapshot = tx.mvccSnapshot();
+
+            assert snapshot != null;
+
+            MvccCoordinator crd = cctx.coordinators().currentCoordinator();
+
+            if (crd != null && crd.coordinatorVersion() == snapshot.coordinatorVersion()) {
+                add((IgniteInternalFuture)cctx.coordinators().waitTxsFuture(crd.nodeId(), waitTxs));
+
+                sync = true;
+            }
+        }
 
         markInitialized();
 
@@ -309,7 +333,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
         boolean sync = tx.syncMode() == FULL_SYNC;
 
-        if (tx.explicitLock())
+        if (tx.explicitLock() || tx.queryEnlisted())
             sync = true;
 
         boolean res = false;
@@ -347,7 +371,9 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.taskNameHash(),
                 tx.activeCachesDeploymentEnabled(),
                 false,
-                false);
+                false,
+                tx.mvccSnapshot(),
+                cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
 
             try {
                 cctx.io().send(n, req, tx.ioPolicy());
@@ -395,14 +421,22 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         if (tx.onePhaseCommit())
             return false;
 
+        assert !commit || !tx.txState().mvccEnabled() || tx.mvccSnapshot() != null || F.isEmpty(tx.writeEntries());
+
         boolean sync = tx.syncMode() == FULL_SYNC;
 
-        if (tx.explicitLock())
+        if (tx.explicitLock() || tx.queryEnlisted())
             sync = true;
 
         boolean res = false;
 
         int miniId = 0;
+
+        // Do not need process active transactions on backups.
+        MvccSnapshot mvccSnapshot = tx.mvccSnapshot();
+
+        if (mvccSnapshot != null)
+            mvccSnapshot = mvccSnapshot.withoutActiveTransactions();
 
         // Create mini futures.
         for (GridDistributedTxMapping dhtMapping : dhtMap.values()) {
@@ -412,7 +446,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
             GridDistributedTxMapping nearMapping = nearMap.get(n.id());
 
-            if (dhtMapping.empty() && nearMapping != null && nearMapping.empty())
+            if (!dhtMapping.queryUpdate() && dhtMapping.empty() && nearMapping != null && nearMapping.empty())
                 // Nothing to send.
                 continue;
 
@@ -450,7 +484,9 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.activeCachesDeploymentEnabled(),
                 updCntrs,
                 false,
-                false);
+                false,
+                mvccSnapshot,
+                commit ? null : cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
 
             req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
 
@@ -519,7 +555,9 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     tx.taskNameHash(),
                     tx.activeCachesDeploymentEnabled(),
                     false,
-                    false);
+                    false,
+                    mvccSnapshot,
+                    null);
 
                 req.writeVersion(tx.writeVersion());
 
@@ -558,28 +596,58 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         return res;
     }
 
+    /**
+     * Finishes MVCC transaction on the local node.
+     */
+    private Throwable mvccFinish(Throwable commitError) {
+        try {
+            cctx.tm().mvccFinish(tx, commit && commitError == null);
+        }
+        catch (IgniteCheckedException ex) {
+            if (commitError == null)
+                tx.commitError(commitError = ex);
+            else
+                commitError.addSuppressed(ex);
+        }
+
+        return commitError;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void addDiagnosticRequest(IgniteDiagnosticPrepareContext ctx) {
         if (!isDone()) {
             for (IgniteInternalFuture fut : futures()) {
                 if (!fut.isDone()) {
-                    MiniFuture f = (MiniFuture)fut;
+                    if (MiniFuture.class.isInstance(fut)) {
+                        MiniFuture f = (MiniFuture)fut;
 
-                    if (!f.node().isLocal()) {
-                        GridCacheVersion dhtVer = tx.xidVersion();
-                        GridCacheVersion nearVer = tx.nearXidVersion();
+                        if (!f.node().isLocal()) {
+                            GridCacheVersion dhtVer = tx.xidVersion();
+                            GridCacheVersion nearVer = tx.nearXidVersion();
 
-                        ctx.remoteTxInfo(f.node().id(), dhtVer, nearVer, "GridDhtTxFinishFuture " +
-                            "waiting for response [node=" + f.node().id() +
-                            ", topVer=" + tx.topologyVersion() +
-                            ", dhtVer=" + dhtVer +
-                            ", nearVer=" + nearVer +
-                            ", futId=" + futId +
-                            ", miniId=" + f.futId +
-                            ", tx=" + tx + ']');
+                            ctx.remoteTxInfo(f.node().id(), dhtVer, nearVer, "GridDhtTxFinishFuture " +
+                                "waiting for response [node=" + f.node().id() +
+                                ", topVer=" + tx.topologyVersion() +
+                                ", dhtVer=" + dhtVer +
+                                ", nearVer=" + nearVer +
+                                ", futId=" + futId +
+                                ", miniId=" + f.futId +
+                                ", tx=" + tx + ']');
 
-                        return;
+                            return;
+                        }
+                    }
+                    else if (fut instanceof MvccFuture) {
+                        MvccFuture f = (MvccFuture)fut;
+
+                        if (!cctx.localNodeId().equals(f.coordinatorNodeId())) {
+                            ctx.basicInfo(f.coordinatorNodeId(), "GridDhtTxFinishFuture " +
+                                "waiting for mvcc coordinator reply [mvccCrdNode=" + f.coordinatorNodeId() +
+                                ", loc=" + f.coordinatorNodeId().equals(cctx.localNodeId()) + ']');
+
+                            return;
+                        }
                     }
                 }
             }
@@ -591,9 +659,20 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
             @SuppressWarnings("unchecked")
             @Override public String apply(IgniteInternalFuture<?> f) {
-                return "[node=" + ((MiniFuture)f).node().id() +
-                    ", loc=" + ((MiniFuture)f).node().isLocal() +
-                    ", done=" + f.isDone() + "]";
+                if (f.getClass() == MiniFuture.class) {
+                    return "[node=" + ((MiniFuture)f).node().id() +
+                        ", loc=" + ((MiniFuture)f).node().isLocal() +
+                        ", done=" + f.isDone() + "]";
+                }
+                else if (f instanceof MvccFuture) {
+                    MvccFuture crdFut = (MvccFuture)f;
+
+                    return "[mvccCrdNode=" + crdFut.coordinatorNodeId() +
+                        ", loc=" + crdFut.coordinatorNodeId().equals(cctx.localNodeId()) +
+                        ", done=" + f.isDone() + "]";
+                }
+                else
+                    return f.toString();
             }
         });
 

@@ -17,8 +17,8 @@
 package org.apache.ignite.ml.math.distances;
 
 import java.io.Externalizable;
-import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * This class is based on the corresponding class from Apache Common Math lib.
@@ -36,4 +36,16 @@ public interface DistanceMeasure extends Externalizable {
      * @throws CardinalityException if the array lengths differ.
      */
     public double compute(Vector a, Vector b) throws CardinalityException;
+
+    /**
+     * Compute the distance between n-dimensional vector and n-dimensional array.
+     * <p>
+     * The two data structures are required to have the same dimension.
+     *
+     * @param a The vector.
+     * @param b The array.
+     * @return The distance between vector and array.
+     * @throws CardinalityException if the data structures lengths differ.
+     */
+    public double compute(Vector a, double[] b) throws CardinalityException;
 }

@@ -396,16 +396,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isMongoDataCache() {
-        return dht().isMongoDataCache();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMongoMetaCache() {
-        return dht().isMongoMetaCache();
-    }
-
-    /** {@inheritDoc} */
     @Override public List<GridCacheClearAllRunnable<K, V>> splitClearLocally(boolean srv, boolean near,
         boolean readers) {
         assert configuration().getNearConfiguration() != null;

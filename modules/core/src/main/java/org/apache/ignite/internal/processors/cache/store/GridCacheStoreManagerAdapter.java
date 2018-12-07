@@ -459,7 +459,6 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
             try {
                 IgniteBiInClosure<Object, Object> c = new CI2<Object, Object>() {
-                    @SuppressWarnings("ConstantConditions")
                     @Override public void apply(Object k, Object val) {
                         if (convert) {
                             Object v = convert(val);
@@ -1340,7 +1339,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             if (!S.INCLUDE_SENSITIVE)
                 return "[size=" + size() + "]";
 
@@ -1428,6 +1427,11 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         /** {@inheritDoc} */
         @Override public void suspend() throws IgniteException {
             throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public String label() {
+            return null;
         }
 
         /** {@inheritDoc} */

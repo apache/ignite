@@ -19,6 +19,7 @@ package org.apache.ignite.loadtests.dsi;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.Cache;
@@ -40,7 +41,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  *
@@ -48,7 +48,7 @@ import org.jsr166.ConcurrentHashMap8;
 public class GridDsiPerfJob extends ComputeJobAdapter {
     /** */
     private static final ConcurrentMap<Thread, ConcurrentMap<String, T3<Long, Long, Long>>> timers =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /** */
     @AffinityKeyMapped
@@ -146,7 +146,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
 
         if (m == null) {
             ConcurrentMap<String, T3<Long, Long, Long>> old = timers.putIfAbsent(Thread.currentThread(),
-                m = new ConcurrentHashMap8<>());
+                m = new ConcurrentHashMap<>());
 
             if (old != null)
                 m = old;

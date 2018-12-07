@@ -24,8 +24,8 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
@@ -50,6 +50,30 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** Number of reads. */
     private AtomicLong reads = new AtomicLong();
+
+    /** Number of invocations caused update. */
+    private AtomicLong entryProcessorPuts = new AtomicLong();
+
+    /** Number of invocations caused removal. */
+    private AtomicLong entryProcessorRemovals = new AtomicLong();
+
+    /** Number of invocations caused update. */
+    private AtomicLong entryProcessorReadOnlyInvocations = new AtomicLong();
+
+    /** Entry processor invoke time taken nanos. */
+    private AtomicLong entryProcessorInvokeTimeNanos = new AtomicLong();
+
+    /** So far, the minimum time to execute cache invokes. */
+    private AtomicLong entryProcessorMinInvocationTime = new AtomicLong();
+
+    /** So far, the maximum time to execute cache invokes. */
+    private AtomicLong entryProcessorMaxInvocationTime = new AtomicLong();
+
+    /** Number of entry processor invokes on keys, which exist in cache. */
+    private AtomicLong entryProcessorHits = new AtomicLong();
+
+    /** Number of entry processor invokes on keys, which don't exist in cache. */
+    private AtomicLong entryProcessorMisses = new AtomicLong();
 
     /** Number of writes. */
     private AtomicLong writes = new AtomicLong();
@@ -122,6 +146,9 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** Rebalancing rate in bytes. */
     private HitRateMetrics rebalancingBytesRate = new HitRateMetrics(REBALANCE_RATE_INTERVAL, 20);
+
+    /** Number of currently clearing partitions for rebalancing. */
+    private AtomicLong rebalanceClearingPartitions = new AtomicLong();
 
     /** Cache metrics. */
     @GridToStringExclude
@@ -249,6 +276,11 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** {@inheritDoc} */
     @Override public int getSize() {
         return getEntriesStat().size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCacheSize() {
+        return getEntriesStat().cacheSize();
     }
 
     /** {@inheritDoc} */
@@ -431,6 +463,15 @@ public class CacheMetricsImpl implements CacheMetrics {
         commitTimeNanos.set(0);
         rollbackTimeNanos.set(0);
 
+        entryProcessorPuts.set(0);
+        entryProcessorRemovals.set(0);
+        entryProcessorReadOnlyInvocations.set(0);
+        entryProcessorMisses.set(0);
+        entryProcessorHits.set(0);
+        entryProcessorInvokeTimeNanos.set(0);
+        entryProcessorMaxInvocationTime.set(0);
+        entryProcessorMinInvocationTime.set(0);
+
         offHeapGets.set(0);
         offHeapPuts.set(0);
         offHeapRemoves.set(0);
@@ -484,6 +525,79 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** {@inheritDoc} */
     @Override public long getCachePuts() {
         return writes.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorPuts() {
+        return entryProcessorPuts.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorRemovals() {
+        return entryProcessorRemovals.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorReadOnlyInvocations() {
+        return entryProcessorReadOnlyInvocations.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorInvocations() {
+        return entryProcessorReadOnlyInvocations.get() + entryProcessorPuts.get() + entryProcessorRemovals.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorHits() {
+        return entryProcessorHits.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getEntryProcessorHitPercentage() {
+        long hits = entryProcessorHits.get();
+        long totalInvocations = getEntryProcessorInvocations();
+
+        if (hits == 0)
+            return 0;
+
+        return (float) hits / totalInvocations * 100.0f;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorMisses() {
+        return entryProcessorMisses.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getEntryProcessorMissPercentage() {
+        long misses = entryProcessorMisses.get();
+        long totalInvocations = getEntryProcessorInvocations();
+
+        if (misses == 0)
+            return 0;
+
+        return (float) misses / totalInvocations * 100.0f;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getEntryProcessorAverageInvocationTime() {
+        long totalInvokes = getEntryProcessorInvocations();
+        long timeNanos = entryProcessorInvokeTimeNanos.get();
+
+        if (timeNanos == 0 || totalInvokes == 0)
+            return 0;
+
+        return (1f * timeNanos) / totalInvokes / NANOS_IN_MICROSECOND;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getEntryProcessorMinInvocationTime() {
+        return (1f * entryProcessorMinInvocationTime.get()) / NANOS_IN_MICROSECOND;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getEntryProcessorMaxInvocationTime() {
+        return (1f * entryProcessorMaxInvocationTime.get()) / NANOS_IN_MICROSECOND;
     }
 
     /** {@inheritDoc} */
@@ -543,6 +657,106 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         if (delegate != null)
             delegate.onRead(isHit);
+    }
+
+    /**
+     * Cache invocations caused update callback.
+     *
+     * @param isHit Hit or miss flag.
+     */
+    public void onInvokeUpdate(boolean isHit) {
+        entryProcessorPuts.incrementAndGet();
+
+        if (isHit)
+            entryProcessorHits.incrementAndGet();
+        else
+            entryProcessorMisses.incrementAndGet();
+
+        if (delegate != null)
+            delegate.onInvokeUpdate(isHit);
+    }
+
+    /**
+     * Cache invocations caused removal callback.
+     *
+     * @param isHit Hit or miss flag.
+     */
+    public void onInvokeRemove(boolean isHit) {
+        entryProcessorRemovals.incrementAndGet();
+
+        if (isHit)
+            entryProcessorHits.incrementAndGet();
+        else
+            entryProcessorMisses.incrementAndGet();
+
+        if (delegate != null)
+            delegate.onInvokeRemove(isHit);
+    }
+
+    /**
+     * Read-only cache invocations.
+     *
+     * @param isHit Hit or miss flag.
+     */
+    public void onReadOnlyInvoke(boolean isHit) {
+        entryProcessorReadOnlyInvocations.incrementAndGet();
+
+        if (isHit)
+            entryProcessorHits.incrementAndGet();
+        else
+            entryProcessorMisses.incrementAndGet();
+
+        if (delegate != null)
+            delegate.onReadOnlyInvoke(isHit);
+    }
+
+    /**
+     * Increments invoke operation time nanos.
+     *
+     * @param duration Duration.
+     */
+    public void addInvokeTimeNanos(long duration) {
+        entryProcessorInvokeTimeNanos.addAndGet(duration);
+
+        recalculateInvokeMinTimeNanos(duration);
+
+        recalculateInvokeMaxTimeNanos(duration);
+
+        if (delegate != null)
+            delegate.addInvokeTimeNanos(duration);
+
+    }
+
+    /**
+     * Recalculates invoke operation minimum time nanos.
+     *
+     * @param duration Duration.
+     */
+    private void recalculateInvokeMinTimeNanos(long duration){
+        long minTime = entryProcessorMinInvocationTime.longValue();
+
+        while (minTime > duration || minTime == 0) {
+            if (entryProcessorMinInvocationTime.compareAndSet(minTime, duration))
+                break;
+            else
+                minTime = entryProcessorMinInvocationTime.longValue();
+        }
+    }
+
+    /**
+     * Recalculates invoke operation maximum time nanos.
+     *
+     * @param duration Duration.
+     */
+    private void recalculateInvokeMaxTimeNanos(long duration){
+        long maxTime = entryProcessorMaxInvocationTime.longValue();
+
+        while (maxTime < duration) {
+            if (entryProcessorMaxInvocationTime.compareAndSet(maxTime, duration))
+                break;
+            else
+                maxTime = entryProcessorMaxInvocationTime.longValue();
+        }
     }
 
     /**
@@ -751,6 +965,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         long offHeapBackupEntriesCnt = 0L;
         long heapEntriesCnt = 0L;
         int size = 0;
+        long sizeLong = 0L;
         boolean isEmpty;
 
         try {
@@ -762,8 +977,9 @@ public class CacheMetricsImpl implements CacheMetrics {
                     offHeapBackupEntriesCnt = offHeapEntriesCnt;
 
                     size = cctx.cache().size();
+                    sizeLong = cctx.cache().sizeLong();
 
-                    heapEntriesCnt = size;
+                    heapEntriesCnt = sizeLong;
                 }
             }
             else {
@@ -789,7 +1005,7 @@ public class CacheMetricsImpl implements CacheMetrics {
                     if (cctx.cache() == null)
                         continue;
 
-                    int cacheSize = part.dataStore().cacheSize(cctx.cacheId());
+                    long cacheSize = part.dataStore().cacheSize(cctx.cacheId());
 
                     offHeapEntriesCnt += cacheSize;
 
@@ -803,6 +1019,8 @@ public class CacheMetricsImpl implements CacheMetrics {
 
                     heapEntriesCnt += part.publicSize(cctx.cacheId());
                 }
+
+                sizeLong = offHeapEntriesCnt;
             }
         }
         catch (Exception e) {
@@ -813,6 +1031,7 @@ public class CacheMetricsImpl implements CacheMetrics {
             offHeapBackupEntriesCnt = -1L;
             heapEntriesCnt = -1L;
             size = -1;
+            sizeLong = -1L;
         }
 
         isEmpty = (offHeapEntriesCnt == 0);
@@ -824,6 +1043,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         stat.offHeapBackupEntriesCount(offHeapBackupEntriesCnt);
         stat.heapEntriesCount(heapEntriesCnt);
         stat.size(size);
+        stat.cacheSize(sizeLong);
         stat.keySize(size);
         stat.isEmpty(isEmpty);
         stat.totalPartitionsCount(owningPartCnt + movingPartCnt);
@@ -840,6 +1060,16 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** {@inheritDoc} */
     @Override public int getRebalancingPartitionsCount() {
         return getEntriesStat().rebalancingPartitionsCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalancedKeys() {
+        return rebalancedKeys.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEstimatedRebalancingKeys() {
+        return estimatedRebalancingKeys.get();
     }
 
     /** {@inheritDoc} */
@@ -904,11 +1134,27 @@ public class CacheMetricsImpl implements CacheMetrics {
         return rebalanceStartTime.get();
     }
 
+    /** {@inheritDoc} */
+    @Override public long getRebalanceClearingPartitionsLeft() {
+        return rebalanceClearingPartitions.get();
+    }
+
+    /**
+     * Sets clearing partitions number.
+     * @param partitions Partitions number.
+     */
+    public void rebalanceClearingPartitions(int partitions) {
+        rebalanceClearingPartitions.set(partitions);
+    }
+
     /**
      * First rebalance supply message callback.
      * @param keysCnt Estimated number of keys.
      */
-    public void onRebalancingKeysCountEstimateReceived(long keysCnt) {
+    public void onRebalancingKeysCountEstimateReceived(Long keysCnt) {
+        if (keysCnt == null)
+            return;
+
         estimatedRebalancingKeys.addAndGet(keysCnt);
     }
 
@@ -1022,6 +1268,9 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         /** Size. */
         private int size;
+
+        /** Long size. */
+        private long cacheSize;
 
         /** Key size. */
         private int keySize;
@@ -1139,6 +1388,20 @@ public class CacheMetricsImpl implements CacheMetrics {
          */
         public void keySize(int keySize) {
             this.keySize = keySize;
+        }
+
+        /**
+         * @return Long size.
+         */
+        public long cacheSize() {
+            return cacheSize;
+        }
+
+        /**
+         * @param cacheSize Size long.
+         */
+        public void cacheSize(long cacheSize) {
+            this.cacheSize = cacheSize;
         }
 
         /**

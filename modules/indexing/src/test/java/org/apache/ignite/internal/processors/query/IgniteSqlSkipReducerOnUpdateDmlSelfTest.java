@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -53,7 +54,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ThreadLocalRandom8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
@@ -61,7 +61,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 /**
  * Tests for distributed DML.
  */
-@SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
+@SuppressWarnings({"unchecked"})
 public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -181,10 +181,6 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends GridCommonAbstractT
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         checkNoLeaks();
-
-        super.afterTestsStopped();
-
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -552,7 +548,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends GridCommonAbstractT
         for (String s1 : a) {
             for (String s2 : b) {
                 if (!s1.equals(s2)) {
-                    String end = ends[ThreadLocalRandom8.current().nextInt(ends.length)];
+                    String end = ends[ThreadLocalRandom.current().nextInt(ends.length)];
 
                     res.add(s1 + " " + s2 + end);
                 }

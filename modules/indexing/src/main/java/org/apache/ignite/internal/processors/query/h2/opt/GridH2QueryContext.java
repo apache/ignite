@@ -21,15 +21,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
@@ -42,7 +44,7 @@ public class GridH2QueryContext {
     private static final ThreadLocal<GridH2QueryContext> qctx = new ThreadLocal<>();
 
     /** */
-    private static final ConcurrentMap<Key, GridH2QueryContext> qctxs = new ConcurrentHashMap8<>();
+    private static final ConcurrentMap<Key, GridH2QueryContext> qctxs = new ConcurrentHashMap<>();
 
     /** */
     private final Key key;
@@ -83,6 +85,12 @@ public class GridH2QueryContext {
     /** */
     private GridH2CollocationModel qryCollocationMdl;
 
+    /** */
+    private MvccSnapshot mvccSnapshot;
+
+    /** */
+    private MapQueryLazyWorker lazyWorker;
+
     /**
      * @param locNodeId Local node ID.
      * @param nodeId The node who initiated the query.
@@ -102,10 +110,31 @@ public class GridH2QueryContext {
      * @param segmentId Index segment ID.
      * @param type Query type.
      */
-    public GridH2QueryContext(UUID locNodeId, UUID nodeId, long qryId, int segmentId, GridH2QueryType type) {
+    public GridH2QueryContext(UUID locNodeId,
+        UUID nodeId,
+        long qryId,
+        int segmentId,
+        GridH2QueryType type) {
         assert segmentId == 0 || type == MAP;
 
         key = new Key(locNodeId, nodeId, qryId, segmentId, type);
+    }
+
+    /**
+     * @return Mvcc snapshot.
+     */
+    @Nullable public MvccSnapshot mvccSnapshot() {
+        return mvccSnapshot;
+    }
+
+    /**
+     * @param mvccSnapshot Mvcc snapshot.
+     * @return {@code this}.
+     */
+    public GridH2QueryContext mvccSnapshot(MvccSnapshot mvccSnapshot) {
+        this.mvccSnapshot = mvccSnapshot;
+
+        return this;
     }
 
     /**
@@ -351,7 +380,7 @@ public class GridH2QueryContext {
 
         for (Key key : qctxs.keySet()) {
             if (key.locNodeId.equals(locNodeId) && key.nodeId.equals(nodeId) && key.qryId == qryId && key.type == type)
-                res |= doClear(new Key(locNodeId, nodeId, qryId, key.segmentId, type), false);
+                res |= doClear(key, false);
         }
 
         return res;
@@ -372,7 +401,10 @@ public class GridH2QueryContext {
 
         assert x.key.equals(key);
 
-        x.clearContext(nodeStop);
+        if (x.lazyWorker() != null)
+            x.lazyWorker().stop(nodeStop);
+        else
+            x.clearContext(nodeStop);
 
         return true;
     }
@@ -479,6 +511,23 @@ public class GridH2QueryContext {
      */
     public GridH2QueryContext pageSize(int pageSize) {
         this.pageSize = pageSize;
+
+        return this;
+    }
+
+    /**
+     * @return Lazy worker, if any, or {@code null} if none.
+     */
+    public MapQueryLazyWorker lazyWorker() {
+        return lazyWorker;
+    }
+
+    /**
+     * @param lazyWorker Lazy worker, if any, or {@code null} if none.
+     * @return {@code this}.
+     */
+    public GridH2QueryContext lazyWorker(MapQueryLazyWorker lazyWorker) {
+        this.lazyWorker = lazyWorker;
 
         return this;
     }

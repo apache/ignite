@@ -115,11 +115,6 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
         startGridsMultiThreaded(gridCount());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @param queue Ignite queue.
      * @return Cache configuration.
@@ -149,5 +144,16 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
             return GridTestUtils.getFieldValue(set, GridCacheSetProxy.class, "cctx");
         else
             return GridTestUtils.getFieldValue(set, GridCacheSetImpl.class, "ctx");
+    }
+
+    /**
+     * @param set Ignite set.
+     * @return {@code True} If a separated cache is used to store items.
+     */
+    protected boolean separated(IgniteSet set) {
+        if (set instanceof GridCacheSetProxy)
+            set = ((GridCacheSetProxy)set).delegate();
+
+        return GridTestUtils.getFieldValue(set, "separated");
     }
 }

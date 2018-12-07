@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache.query;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+
+import org.apache.ignite.internal.processors.query.h2.affinity.PartitionInfo;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -63,7 +65,13 @@ public class GridCacheTwoStepQuery {
     private boolean local;
 
     /** */
-    private CacheQueryPartitionInfo[] derivedPartitions;
+    private PartitionInfo[] derivedPartitions;
+
+    /** */
+    private boolean mvccEnabled;
+
+    /** {@code FOR UPDATE} flag. */
+    private boolean forUpdate;
 
     /**
      * @param originalSql Original query SQL.
@@ -215,14 +223,14 @@ public class GridCacheTwoStepQuery {
     /**
      * @return Query derived partitions info.
      */
-    public CacheQueryPartitionInfo[] derivedPartitions() {
+    public PartitionInfo[] derivedPartitions() {
         return this.derivedPartitions;
     }
 
     /**
      * @param derivedPartitions Query derived partitions info.
      */
-    public void derivedPartitions(CacheQueryPartitionInfo[] derivedPartitions) {
+    public void derivedPartitions(PartitionInfo[] derivedPartitions) {
         this.derivedPartitions = derivedPartitions;
     }
 
@@ -241,6 +249,8 @@ public class GridCacheTwoStepQuery {
         cp.distributedJoins = distributedJoins;
         cp.derivedPartitions = derivedPartitions;
         cp.local = local;
+        cp.mvccEnabled = mvccEnabled;
+        cp.forUpdate = forUpdate;
 
         for (int i = 0; i < mapQrys.size(); i++)
             cp.mapQrys.add(mapQrys.get(i).copy());
@@ -260,6 +270,34 @@ public class GridCacheTwoStepQuery {
      */
     public Set<QueryTable> tables() {
         return tbls;
+    }
+
+    /**
+     * @return Mvcc flag.
+     */
+    public boolean mvccEnabled() {
+        return mvccEnabled;
+    }
+
+    /**
+     * @param mvccEnabled Mvcc flag.
+     */
+    public void mvccEnabled(boolean mvccEnabled) {
+        this.mvccEnabled = mvccEnabled;
+    }
+
+    /**
+     * @return {@code FOR UPDATE} flag.
+     */
+    public boolean forUpdate() {
+        return forUpdate;
+    }
+
+    /**
+     * @param forUpdate {@code FOR UPDATE} flag.
+     */
+    public void forUpdate(boolean forUpdate) {
+        this.forUpdate = forUpdate;
     }
 
     /** {@inheritDoc} */

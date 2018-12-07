@@ -22,7 +22,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
@@ -89,7 +88,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
                 return null;
             }
-        }, IgniteException.class, "Test exception");
+        }, ErrorServiceException.class, "Test exception");
 
     }
 
@@ -450,9 +449,15 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
         /** {@inheritDoc} */
         @Override public void go() throws Exception {
-            throw new Exception("Test exception");
+            throw new ErrorServiceException("Test exception");
         }
     }
 
-
+    /** */
+    private static class ErrorServiceException extends Exception {
+        /** */
+        ErrorServiceException(String msg) {
+            super(msg);
+        }
+    }
 }

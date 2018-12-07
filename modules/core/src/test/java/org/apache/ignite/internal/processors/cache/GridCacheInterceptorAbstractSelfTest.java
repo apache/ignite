@@ -40,11 +40,12 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -68,6 +69,14 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.INTERCEPTOR);
+
+        if (nearEnabled())
+            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
+        if (storeEnabled())
+            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         interceptor = new Interceptor();
 
         super.beforeTestsStarted();
@@ -1511,19 +1520,19 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      */
     private static class Interceptor implements CacheInterceptor {
         /** */
-        private final Map<Object, Object> getMap = new ConcurrentHashMap8<>();
+        private final Map<Object, Object> getMap = new ConcurrentHashMap<>();
 
         /** */
-        private final Map<Object, Object> afterPutMap = new ConcurrentHashMap8<>();
+        private final Map<Object, Object> afterPutMap = new ConcurrentHashMap<>();
 
         /** */
-        private final Map<Object, IgniteBiTuple> beforePutMap = new ConcurrentHashMap8<>();
+        private final Map<Object, IgniteBiTuple> beforePutMap = new ConcurrentHashMap<>();
 
         /** */
-        private final Map<Object, Object> beforeRmvMap = new ConcurrentHashMap8<>();
+        private final Map<Object, Object> beforeRmvMap = new ConcurrentHashMap<>();
 
         /** */
-        private final Map<Object, Object> afterRmvMap = new ConcurrentHashMap8<>();
+        private final Map<Object, Object> afterRmvMap = new ConcurrentHashMap<>();
 
         /** */
         private final AtomicInteger invokeCnt = new AtomicInteger();

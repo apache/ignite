@@ -40,7 +40,7 @@ namespace ignite
 {
     namespace odbc
     {
-        void OdbcTestSuite::Connect(const std::string& connectStr)
+        void OdbcTestSuite::Prepare()
         {
             // Allocate an environment handle
             SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env);
@@ -54,19 +54,49 @@ namespace ignite
             SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
 
             BOOST_REQUIRE(dbc != NULL);
+        }
+
+        void OdbcTestSuite::Connect(SQLHDBC& conn, SQLHSTMT& statement, const std::string& connectStr)
+        {
+            // Allocate a connection handle
+            SQLAllocHandle(SQL_HANDLE_DBC, env, &conn);
+
+            BOOST_REQUIRE(conn != NULL);
 
             // Connect string
-            std::vector<SQLCHAR> connectStr0;
+            std::vector<SQLCHAR> connectStr0(connectStr.begin(), connectStr.end());
 
-            connectStr0.reserve(connectStr.size() + 1);
-            std::copy(connectStr.begin(), connectStr.end(), std::back_inserter(connectStr0));
+            SQLCHAR outstr[ODBC_BUFFER_SIZE];
+            SQLSMALLINT outstrlen;
+
+            // Connecting to ODBC server.
+            SQLRETURN ret = SQLDriverConnect(conn, NULL, &connectStr0[0], static_cast<SQLSMALLINT>(connectStr0.size()),
+                outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
+
+            if (!SQL_SUCCEEDED(ret))
+            {
+                BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_DBC, conn));
+            }
+
+            // Allocate a statement handle
+            SQLAllocHandle(SQL_HANDLE_STMT, conn, &statement);
+
+            BOOST_REQUIRE(statement != NULL);
+        }
+
+        void OdbcTestSuite::Connect(const std::string& connectStr)
+        {
+            Prepare();
+
+            // Connect string
+            std::vector<SQLCHAR> connectStr0(connectStr.begin(), connectStr.end());
 
             SQLCHAR outstr[ODBC_BUFFER_SIZE];
             SQLSMALLINT outstrlen;
 
             // Connecting to ODBC server.
             SQLRETURN ret = SQLDriverConnect(dbc, NULL, &connectStr0[0], static_cast<SQLSMALLINT>(connectStr0.size()),
-                                             outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
+                outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
 
             if (!SQL_SUCCEEDED(ret))
             {
@@ -79,17 +109,55 @@ namespace ignite
             BOOST_REQUIRE(stmt != NULL);
         }
 
+        std::string OdbcTestSuite::ExpectConnectionReject(const std::string& connectStr)
+        {
+            Prepare();
+
+            // Connect string
+            std::vector<SQLCHAR> connectStr0(connectStr.begin(), connectStr.end());
+
+            SQLCHAR outstr[ODBC_BUFFER_SIZE];
+            SQLSMALLINT outstrlen;
+
+            // Connecting to ODBC server.
+            SQLRETURN ret = SQLDriverConnect(dbc, NULL, &connectStr0[0], static_cast<SQLSMALLINT>(connectStr0.size()),
+                outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
+
+            BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
+
+            return GetOdbcErrorState(SQL_HANDLE_DBC, dbc);
+        }
+
         void OdbcTestSuite::Disconnect()
         {
-            // Releasing statement handle.
-            SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+            if (stmt)
+            {
+                // Releasing statement handle.
+                SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+                stmt = NULL;
+            }
 
-            // Disconneting from the server.
-            SQLDisconnect(dbc);
+            if (dbc)
+            {
+                // Disconneting from the server.
+                SQLDisconnect(dbc);
 
-            // Releasing allocated handles.
-            SQLFreeHandle(SQL_HANDLE_DBC, dbc);
-            SQLFreeHandle(SQL_HANDLE_ENV, env);
+                // Releasing allocated handles.
+                SQLFreeHandle(SQL_HANDLE_DBC, dbc);
+                dbc = NULL;
+            }
+        }
+
+        void OdbcTestSuite::CleanUp()
+        {
+            Disconnect();
+
+            if (env)
+            {
+                // Releasing allocated handles.
+                SQLFreeHandle(SQL_HANDLE_ENV, env);
+                env = NULL;
+            }
         }
 
         Ignite OdbcTestSuite::StartTestNode(const char* cfg, const char* name)
@@ -115,7 +183,7 @@ namespace ignite
 
         OdbcTestSuite::~OdbcTestSuite()
         {
-            Disconnect();
+            CleanUp();
 
             Ignition::StopAll(true);
         }
@@ -129,14 +197,49 @@ namespace ignite
             return builder.str();
         }
 
+        void OdbcTestSuite::CheckSQLDiagnosticError(int16_t handleType, SQLHANDLE handle, const std::string& expectSqlState)
+        {
+            SQLCHAR state[ODBC_BUFFER_SIZE];
+            SQLINTEGER nativeError = 0;
+            SQLCHAR message[ODBC_BUFFER_SIZE];
+            SQLSMALLINT messageLen = 0;
+
+            SQLRETURN ret = SQLGetDiagRec(handleType, handle, 1, state, &nativeError, message, sizeof(message), &messageLen);
+
+            const std::string sqlState = reinterpret_cast<char*>(state);
+            BOOST_REQUIRE_EQUAL(ret, SQL_SUCCESS);
+            BOOST_REQUIRE_EQUAL(sqlState, expectSqlState);
+            BOOST_REQUIRE(messageLen > 0);
+        }
+
+        void OdbcTestSuite::CheckSQLStatementDiagnosticError(const std::string& expectSqlState)
+        {
+            CheckSQLDiagnosticError(SQL_HANDLE_STMT, stmt, expectSqlState);
+        }
+
+        void OdbcTestSuite::CheckSQLConnectionDiagnosticError(const std::string& expectSqlState)
+        {
+            CheckSQLDiagnosticError(SQL_HANDLE_DBC, dbc, expectSqlState);
+        }
+
+        std::vector<SQLCHAR> OdbcTestSuite::MakeQuery(const std::string& qry)
+        {
+            return std::vector<SQLCHAR>(qry.begin(), qry.end());
+        }
+
+        SQLRETURN OdbcTestSuite::ExecQuery(const std::string& qry)
+        {
+            std::vector<SQLCHAR> sql = MakeQuery(qry);
+
+            return SQLExecDirect(stmt, &sql[0], static_cast<SQLINTEGER>(sql.size()));
+        }
+
         void OdbcTestSuite::InsertTestStrings(int recordsNum, bool merge)
         {
             SQLCHAR insertReq[] = "INSERT INTO TestType(_key, strField) VALUES(?, ?)";
             SQLCHAR mergeReq[] = "MERGE INTO TestType(_key, strField) VALUES(?, ?)";
 
-            SQLRETURN ret;
-
-            ret = SQLPrepare(stmt, merge ? mergeReq : insertReq, SQL_NTS);
+            SQLRETURN ret = SQLPrepare(stmt, merge ? mergeReq : insertReq, SQL_NTS);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
@@ -262,7 +365,7 @@ namespace ignite
                 timestampFields[i].hour = timeFields[i].hour;
                 timestampFields[i].minute = timeFields[i].minute;
                 timestampFields[i].second = timeFields[i].second;
-                timestampFields[i].fraction = std::abs(seed * 914873) % 1000000000;
+                timestampFields[i].fraction = static_cast<uint64_t>(std::abs(seed * 914873)) % 1000000000;
 
                 for (int j = 0; j < 42; ++j)
                     i8ArrayFields[i * 42 + j] = seed * 42 + j;
@@ -463,21 +566,38 @@ namespace ignite
         {
             Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
+            std::vector<SQLUSMALLINT> statuses(recordsNum, 42);
+
+            // Binding statuses array.
+            SQLRETURN ret = SQLSetStmtAttr(stmt, SQL_ATTR_PARAM_STATUS_PTR, &statuses[0], 0);
+
+            if (!SQL_SUCCEEDED(ret))
+                BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
             // Inserting values.
-            int inserted = InsertTestBatch(splitAt, recordsNum, recordsNum - splitAt);
+            int setsProcessed = InsertTestBatch(splitAt, recordsNum, recordsNum - splitAt);
 
-            BOOST_REQUIRE_EQUAL(inserted, recordsNum - splitAt);
+            BOOST_REQUIRE_EQUAL(setsProcessed, recordsNum - splitAt);
 
-            inserted = InsertTestBatch(0, recordsNum, splitAt);
+            for (int i = 0; i < recordsNum - splitAt; ++i)
+                BOOST_REQUIRE_EQUAL(statuses[i], SQL_PARAM_SUCCESS);
 
-            BOOST_REQUIRE_EQUAL(inserted, splitAt);
+            setsProcessed = InsertTestBatch(0, recordsNum, splitAt);
+
+            BOOST_REQUIRE_EQUAL(setsProcessed, recordsNum);
+
+            for (int i = 0; i < splitAt; ++i)
+                BOOST_REQUIRE_EQUAL(statuses[i], SQL_PARAM_SUCCESS);
+
+            for (int i = splitAt; i < recordsNum; ++i)
+                BOOST_REQUIRE_EQUAL(statuses[i], SQL_PARAM_ERROR);
 
             int64_t key = 0;
             char strField[1024] = {0};
             SQLLEN strFieldLen = 0;
 
             // Binding columns.
-            SQLRETURN ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &key, 0, 0);
+            ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &key, 0, 0);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));

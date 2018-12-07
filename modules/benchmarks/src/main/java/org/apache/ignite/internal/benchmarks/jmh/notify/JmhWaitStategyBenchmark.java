@@ -33,7 +33,6 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.cache.JmhCacheAbstractBenchmark;
 import org.apache.ignite.internal.benchmarks.model.IntValue;
-import org.jsr166.ThreadLocalRandom8;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -79,21 +78,21 @@ public class JmhWaitStategyBenchmark extends JmhCacheAbstractBenchmark {
 
         /** {@inheritDoc} */
         @Override public Duration getExpiryForCreation() {
-            boolean generateEvt = ThreadLocalRandom8.current().nextDouble() < rate;
+            boolean generateEvt = ThreadLocalRandom.current().nextDouble() < rate;
             return generateEvt ? new Duration(TimeUnit.MILLISECONDS, duration.decrementAndGet()) :
                 new Duration(TimeUnit.MILLISECONDS, duration.get());
         }
 
         /** {@inheritDoc} */
         @Override public Duration getExpiryForAccess() {
-            boolean generateEvt = ThreadLocalRandom8.current().nextDouble() < rate;
+            boolean generateEvt = ThreadLocalRandom.current().nextDouble() < rate;
             return generateEvt ? new Duration(TimeUnit.MILLISECONDS, duration.decrementAndGet()) :
                 new Duration(TimeUnit.MILLISECONDS, duration.get());
         }
 
         /** {@inheritDoc} */
         @Override public Duration getExpiryForUpdate() {
-            boolean generateEvt = ThreadLocalRandom8.current().nextDouble() < rate;
+            boolean generateEvt = ThreadLocalRandom.current().nextDouble() < rate;
             return generateEvt ? new Duration(TimeUnit.MILLISECONDS, duration.decrementAndGet()) :
                 new Duration(TimeUnit.MILLISECONDS, duration.get());
         }
@@ -143,14 +142,14 @@ public class JmhWaitStategyBenchmark extends JmhCacheAbstractBenchmark {
     };
 
     /** Decreasing policy factory. */
-    private final static Factory<ExpiryPolicy> DECREASING_POLICY_FACTORY = new Factory<ExpiryPolicy>() {
+    private static final Factory<ExpiryPolicy> DECREASING_POLICY_FACTORY = new Factory<ExpiryPolicy>() {
         @Override public ExpiryPolicy create() {
             return DECREASING_EXPIRY_POLICY;
         }
     };
 
     /** Increasing policy factory. */
-    private final static Factory<ExpiryPolicy> INCREASING_POLICY_FACTORY = new Factory<ExpiryPolicy>() {
+    private static final Factory<ExpiryPolicy> INCREASING_POLICY_FACTORY = new Factory<ExpiryPolicy>() {
         @Override public ExpiryPolicy create() {
             return INCREASING_EXPIRY_POLICY;
         }

@@ -87,15 +87,10 @@ public class JdbcThinSchemaCaseTest extends JdbcThinAbstractSelfTest {
         startGridsMultiThreaded(GRID_CNT);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"EmptyTryBlock", "unused"})
+    @SuppressWarnings({"unused"})
     public void testSchemaName() throws Exception {
         checkSchemaConnection("test0");
         checkSchemaConnection("test1");

@@ -55,16 +55,19 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String GROUP1 = "grp1";
 
+    /** */
+    private static final String NO_PERSISTENCE = "no-persistence";
+
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -73,19 +76,20 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
         cfg.setConsistentId(gridName);
 
+        long maxRegionSize = 20L * 1024 * 1024;
+
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setMaxSize(10 * 1024 * 1024)
+                .setMaxSize(maxRegionSize)
                 .setPersistenceEnabled(true)
                 .setMetricsEnabled(true)
                 .setName("dflt-plc"))
             .setDataRegionConfigurations(new DataRegionConfiguration()
-                .setMaxSize(10 * 1024 * 1024)
+                .setMaxSize(maxRegionSize)
                 .setPersistenceEnabled(false)
                 .setMetricsEnabled(true)
-                .setName("no-persistence"))
+                .setName(NO_PERSISTENCE))
             .setWalMode(WALMode.LOG_ONLY)
-            .setPageSize(4 * 1024)
             .setMetricsEnabled(true);
 
         cfg.setDataStorageConfiguration(memCfg);
@@ -95,7 +99,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         cfg.setCacheConfiguration(cacheConfiguration(GROUP1, "cache", PARTITIONED, ATOMIC, 1, null),
-            cacheConfiguration(null, "cache-np", PARTITIONED, ATOMIC, 1, "no-persistence"));
+            cacheConfiguration(null, "cache-np", PARTITIONED, ATOMIC, 1, NO_PERSISTENCE));
 
         return cfg;
     }
@@ -104,7 +108,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         super.afterTest();
     }
@@ -134,6 +138,9 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         ccfg.setCacheMode(cacheMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setDataRegionName(dataRegName);
+
+        if (NO_PERSISTENCE.equals(dataRegName))
+            ccfg.setDiskPageCompression(null);
 
         return ccfg;
     }

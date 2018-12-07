@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Configuration;
+    using Apache.Ignite.Core.Failure;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Tests.Process;
@@ -79,6 +80,7 @@ namespace Apache.Ignite.Core.Tests
                             : 256 * 1024 * 1024
                     }
                 },
+                FailureHandler = new NoOpFailureHandler(),
                 WorkDirectory = WorkDir
             };
         }

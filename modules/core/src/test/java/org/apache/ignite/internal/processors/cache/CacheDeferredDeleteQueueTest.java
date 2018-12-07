@@ -23,8 +23,8 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -60,10 +60,6 @@ public class CacheDeferredDeleteQueueTest extends GridCommonAbstractTest {
             System.setProperty(IGNITE_CACHE_REMOVED_ENTRIES_TTL, ttlProp);
         else
             System.clearProperty(IGNITE_CACHE_REMOVED_ENTRIES_TTL);
-
-        stopAllGrids();
-
-        super.afterTestsStopped();
     }
 
     /**

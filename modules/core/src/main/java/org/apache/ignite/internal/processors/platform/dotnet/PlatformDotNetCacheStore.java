@@ -228,7 +228,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(final IgniteBiInClosure<K, V> clo, final @Nullable Object... args) {
+    @Override public void loadCache(final IgniteBiInClosure<K, V> clo, @Nullable final Object... args) {
         try {
             doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
                 @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
@@ -270,7 +270,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"NullableProblems", "unchecked"})
+    @SuppressWarnings({"unchecked"})
     @Override public void writeAll(final Collection<Cache.Entry<? extends K, ? extends V>> entries) {
         assert entries != null;
         try {
@@ -400,7 +400,14 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
             out.synchronize();
 
-            ptr = platformCtx.gateway().cacheStoreCreate(mem.pointer());
+            try {
+                ptr = platformCtx.gateway().cacheStoreCreate(mem.pointer());
+            }
+            catch (IgniteException e) {
+                // throw a IgniteCheckedException to correctly finish
+                // CacheAffinitySharedManager.processClientCacheStartRequests()
+                throw new IgniteCheckedException("Could not create .NET CacheStore", e);
+            }
         }
     }
 

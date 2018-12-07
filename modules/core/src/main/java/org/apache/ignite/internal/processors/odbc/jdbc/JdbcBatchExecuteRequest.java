@@ -22,10 +22,14 @@ import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_4_0;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_7_0;
 
 /**
  * JDBC batch execute request.
@@ -38,6 +42,15 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
     @GridToStringInclude(sensitive = true)
     private List<JdbcQuery> queries;
 
+    /** Client auto commit flag state. */
+    private boolean autoCommit;
+
+    /**
+     * Last stream batch flag - whether open streamers on current connection
+     * must be flushed and closed after this batch.
+     */
+    private boolean lastStreamBatch;
+
     /**
      * Default constructor.
      */
@@ -46,16 +59,48 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
     }
 
     /**
+     * Constructor for child requests.
+     * @param type Request type/
+     */
+    protected JdbcBatchExecuteRequest(byte type) {
+        super(type);
+    }
+
+    /**
      * @param schemaName Schema name.
      * @param queries Queries.
+     * @param autoCommit Client auto commit flag state.
+     * @param lastStreamBatch {@code true} in case the request is the last batch at the stream.
      */
-    public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries) {
+    public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries, boolean autoCommit, boolean lastStreamBatch) {
         super(BATCH_EXEC);
 
-        assert !F.isEmpty(queries);
+        assert lastStreamBatch || !F.isEmpty(queries);
 
         this.schemaName = schemaName;
         this.queries = queries;
+        this.autoCommit = autoCommit;
+        this.lastStreamBatch = lastStreamBatch;
+    }
+
+    /**
+     * Constructor for child requests.
+     *
+     * @param type Request type.
+     * @param schemaName Schema name.
+     * @param queries Queries.
+     * @param autoCommit Client auto commit flag state.
+     * @param lastStreamBatch {@code true} in case the request is the last batch at the stream.
+     */
+    protected JdbcBatchExecuteRequest(byte type, String schemaName, List<JdbcQuery> queries, boolean autoCommit, boolean lastStreamBatch) {
+        super(type);
+
+        assert lastStreamBatch || !F.isEmpty(queries);
+
+        this.schemaName = schemaName;
+        this.queries = queries;
+        this.autoCommit = autoCommit;
+        this.lastStreamBatch = lastStreamBatch;
     }
 
     /**
@@ -72,20 +117,46 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
         return queries;
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
-        super.writeBinary(writer);
+    /**
+     * @return Auto commit flag.
+     */
+    boolean autoCommit() {
+        return autoCommit;
+    }
 
-        writer.writeString(schemaName);
-        writer.writeInt(queries.size());
-
-        for (JdbcQuery q : queries)
-            q.writeBinary(writer);
+    /**
+     * @return Last stream batch flag.
+     */
+    public boolean isLastStreamBatch() {
+        return lastStreamBatch;
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
-        super.readBinary(reader);
+    @Override public void writeBinary(BinaryWriterExImpl writer, ClientListenerProtocolVersion ver) throws BinaryObjectException {
+        super.writeBinary(writer, ver);
+
+        writer.writeString(schemaName);
+
+        if (!F.isEmpty(queries)) {
+            writer.writeInt(queries.size());
+
+            for (JdbcQuery q : queries)
+                q.writeBinary(writer, ver);
+
+        }
+        else
+            writer.writeInt(0);
+
+        if (ver.compareTo(VER_2_4_0) >= 0)
+            writer.writeBoolean(lastStreamBatch);
+
+        if (ver.compareTo(VER_2_7_0) >= 0)
+            writer.writeBoolean(autoCommit);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver) throws BinaryObjectException {
+        super.readBinary(reader, ver);
 
         schemaName = reader.readString();
 
@@ -96,10 +167,16 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
         for (int i = 0; i < n; ++i) {
             JdbcQuery qry = new JdbcQuery();
 
-            qry.readBinary(reader);
+            qry.readBinary(reader, ver);
 
             queries.add(qry);
         }
+
+        if (ver.compareTo(VER_2_4_0) >= 0)
+            lastStreamBatch = reader.readBoolean();
+
+        if (ver.compareTo(VER_2_7_0) >= 0)
+            autoCommit = reader.readBoolean();
     }
 
     /** {@inheritDoc} */

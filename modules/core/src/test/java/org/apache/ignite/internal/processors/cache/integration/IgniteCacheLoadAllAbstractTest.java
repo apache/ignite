@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoader;
@@ -34,7 +35,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
-import org.jsr166.ConcurrentHashMap8;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  * Test for {@link Cache#loadAll(Set, boolean, CompletionListener)}.
@@ -44,7 +45,14 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
     private volatile boolean writeThrough = true;
 
     /** */
-    private static ConcurrentHashMap8<Object, Object> storeMap;
+    private static ConcurrentHashMap<Object, Object> storeMap;
+
+    /** {@inheritDoc} */
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        super.setUp();
+    }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -64,7 +72,7 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        storeMap = new ConcurrentHashMap8<>();
+        storeMap = new ConcurrentHashMap<>();
     }
 
     /** {@inheritDoc} */

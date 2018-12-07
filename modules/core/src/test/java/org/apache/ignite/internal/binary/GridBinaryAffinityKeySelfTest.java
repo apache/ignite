@@ -95,11 +95,6 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(GRID_CNT);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -230,7 +225,6 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
      */
     private static class TestObject {
         /** */
-        @SuppressWarnings("UnusedDeclaration")
         private int affKey;
 
         /**

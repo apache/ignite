@@ -41,7 +41,7 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
     private static final long serialVersionUID = 0L;
 
     /** Remote filter factory. */
-    private Factory<? extends CacheEntryEventFilter> rmtFilterFactory;
+    Factory<? extends CacheEntryEventFilter> rmtFilterFactory;
 
     /** Deployable object for filter factory. */
     private CacheContinuousQueryDeployableObject rmtFilterFactoryDep;
@@ -74,8 +74,8 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
     public CacheContinuousQueryHandlerV2(
         String cacheName,
         Object topic,
-        CacheEntryUpdatedListener<K, V> locLsnr,
-        Factory<? extends CacheEntryEventFilter<K, V>> rmtFilterFactory,
+        @Nullable CacheEntryUpdatedListener<K, V> locLsnr,
+        @Nullable Factory<? extends CacheEntryEventFilter<K, V>> rmtFilterFactory,
         boolean oldValRequired,
         boolean sync,
         boolean ignoreExpired,
@@ -89,9 +89,6 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
             sync,
             ignoreExpired,
             ignoreClsNotFound);
-
-        assert rmtFilterFactory != null;
-
         this.rmtFilterFactory = rmtFilterFactory;
 
         if (types != null) {

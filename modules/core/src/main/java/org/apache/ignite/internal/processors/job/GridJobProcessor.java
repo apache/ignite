@@ -26,10 +26,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -64,7 +66,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsSnapshot;
 import org.apache.ignite.internal.util.GridAtomicLong;
@@ -84,9 +86,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedHashMap;
-import org.jsr166.LongAdder8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JOBS_HISTORY_SIZE;
@@ -101,7 +101,7 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_JOB_SIBLINGS;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TASK;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
 /**
@@ -126,13 +126,13 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
     /** */
     private final ConcurrentMap<IgniteUuid, GridJobWorker> cancelledJobs =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /** */
     private final Collection<IgniteUuid> heldJobs = new GridConcurrentHashSet<>();
 
     /** If value is {@code true}, job was cancelled from future. */
-    private final GridBoundedConcurrentLinkedHashMap<IgniteUuid, Boolean> cancelReqs =
+    private volatile GridBoundedConcurrentLinkedHashMap<IgniteUuid, Boolean> cancelReqs =
         new GridBoundedConcurrentLinkedHashMap<>(FINISHED_JOBS_COUNT,
             FINISHED_JOBS_COUNT < 128 ? FINISHED_JOBS_COUNT : 128,
             0.75f, 16);
@@ -156,19 +156,19 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private final GridLocalEventListener discoLsnr;
 
     /** Needed for statistics. */
-    private final LongAdder8 canceledJobsCnt = new LongAdder8();
+    private final LongAdder canceledJobsCnt = new LongAdder();
 
     /** Needed for statistics. */
-    private final LongAdder8 finishedJobsCnt = new LongAdder8();
+    private final LongAdder finishedJobsCnt = new LongAdder();
 
     /** Needed for statistics. */
-    private final LongAdder8 startedJobsCnt = new LongAdder8();
+    private final LongAdder startedJobsCnt = new LongAdder();
 
     /** Needed for statistics. */
-    private final LongAdder8 rejectedJobsCnt = new LongAdder8();
+    private final LongAdder rejectedJobsCnt = new LongAdder();
 
     /** Total job execution time (unaccounted for in metrics). */
-    private final LongAdder8 finishedJobsTime = new LongAdder8();
+    private final LongAdder finishedJobsTime = new LongAdder();
 
     /** Maximum job execution time for finished jobs. */
     private final GridAtomicLong maxFinishedJobsTime = new GridAtomicLong();
@@ -224,7 +224,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         metricsUpdateFreq = ctx.config().getMetricsUpdateFrequency();
 
-        activeJobs = jobAlwaysActivate ? new ConcurrentHashMap8<IgniteUuid, GridJobWorker>() :
+        activeJobs = jobAlwaysActivate ? new ConcurrentHashMap<IgniteUuid, GridJobWorker>() :
             new JobsMap(1024, 0.75f, 256);
 
         passiveJobs = jobAlwaysActivate ? null : new JobsMap(1024, 0.75f, 256);
@@ -263,7 +263,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
         // Clear collections.
         activeJobs.clear();
         cancelledJobs.clear();
-        cancelReqs.clear();
+        cancelReqs = new GridBoundedConcurrentLinkedHashMap<>(FINISHED_JOBS_COUNT,
+            FINISHED_JOBS_COUNT < 128 ? FINISHED_JOBS_COUNT : 128,
+            0.75f, 16);
 
         if (log.isDebugEnabled())
             log.debug("Job processor stopped.");
@@ -1439,7 +1441,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @param nodeId Node ID.
      * @param req Request.
      */
-    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "RedundantCast"})
+    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
     private void processTaskSessionRequest(UUID nodeId, GridTaskSessionRequest req) {
         if (!rwLock.tryReadLock()) {
             if (log.isDebugEnabled())
@@ -1933,7 +1935,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
         private int metricsUpdateCntr;
 
         /** {@inheritDoc} */
-        @SuppressWarnings("fallthrough")
         @Override public void onEvent(Event evt) {
             assert evt instanceof DiscoveryEvent;
 

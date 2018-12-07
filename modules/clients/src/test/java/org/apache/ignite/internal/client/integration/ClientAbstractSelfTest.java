@@ -136,11 +136,6 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopGrid();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         exec = Executors.newCachedThreadPool();
 
@@ -650,7 +645,6 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         private final TestTask delegate = new TestTask();
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) {
             if (arg.endsWith("intercepted"))
                 arg = arg.substring(0, arg.length() - 11);
@@ -688,7 +682,6 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         private final SleepTestTask delegate = new SleepTestTask();
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) {
             try {
                 JsonNode json = JSON_MAPPER.readTree(arg);

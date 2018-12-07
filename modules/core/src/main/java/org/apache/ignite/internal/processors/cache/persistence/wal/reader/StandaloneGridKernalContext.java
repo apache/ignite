@@ -41,22 +41,27 @@ import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
+import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
+import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
 import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.igfs.IgfsHelper;
@@ -84,6 +89,7 @@ import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
@@ -125,9 +131,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
      * {@code null} means no specific folder is configured.
      * Providing {@code null} will disable unmarshall for non primitive objects, BinaryObjects will be provided <br>
      */
-    StandaloneGridKernalContext(IgniteLogger log,
+    public StandaloneGridKernalContext(
+        IgniteLogger log,
         @Nullable File binaryMetadataFileStoreDir,
-        @Nullable File marshallerMappingFileStoreDir) throws IgniteCheckedException {
+        @Nullable File marshallerMappingFileStoreDir
+    ) throws IgniteCheckedException {
         this.log = log;
 
         try {
@@ -137,7 +145,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
             throw new IllegalStateException("Must not fail on empty providers list.", e);
         }
 
-        this.marshallerCtx = new MarshallerContextImpl(null);
+        this.marshallerCtx = new MarshallerContextImpl(null, null);
         this.cfg = prepareIgniteConfiguration();
 
         // Fake folder provided to perform processor startup on empty folder.
@@ -176,7 +184,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /**
      * @return Ignite configuration which allows to start requied processors for WAL reader
      */
-    private IgniteConfiguration prepareIgniteConfiguration() {
+    protected IgniteConfiguration prepareIgniteConfiguration() {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setDiscoverySpi(new StandaloneNoopDiscoverySpi());
@@ -332,6 +340,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteAuthenticationProcessor authentication() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public IgfsProcessorAdapter igfs() {
         return null;
     }
@@ -447,17 +460,38 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
+    @Override public GridEncryptionManager encryption() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public WorkersRegistry workersRegistry() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public DataStructuresProcessor dataStructures() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void markSegmented() {
+    @Override public MvccProcessor coordinators() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean invalid() {
+        return false;
     }
 
     /** {@inheritDoc} */
     @Override public boolean segmented() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public FailureProcessor failure() {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -615,6 +649,16 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
+    @Override public Thread.UncaughtExceptionHandler uncaughtExceptionHandler() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean recoveryMode() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public PdsFoldersResolver pdsFolderResolver() {
         return new PdsFoldersResolver() {
             /** {@inheritDoc} */
@@ -626,6 +670,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<GridComponent> iterator() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CompressionProcessor compress() {
         return null;
     }
 }

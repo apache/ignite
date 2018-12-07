@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -84,11 +83,6 @@ public class CacheManualRebalancingTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 400_000;
     }
@@ -109,11 +103,9 @@ public class CacheManualRebalancingTest extends GridCommonAbstractTest {
         int newNodeCacheSize;
 
         // Start manual rebalancing.
-        IgniteCompute compute = newNode.compute().withAsync();
+        IgniteCompute compute = newNode.compute();
 
-        compute.broadcast(new MyCallable());
-
-        final ComputeTaskFuture<Object> rebalanceTaskFuture = compute.future();
+        final IgniteFuture<?> rebalanceTaskFuture =  compute.broadcastAsync(new MyCallable());
 
         boolean rebalanceFinished = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {

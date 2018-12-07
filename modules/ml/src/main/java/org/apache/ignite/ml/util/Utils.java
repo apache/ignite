@@ -22,7 +22,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Iterator;
 import java.util.Random;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.apache.ignite.IgniteException;
 
 /**
@@ -53,7 +58,7 @@ public class Utils {
             obj = in.readObject();
         }
         catch (IOException | ClassNotFoundException e) {
-            throw new IgniteException("Couldn't copy the object.");
+            throw new IgniteException("Couldn't copy the object.", e);
         }
 
         return (T)obj;
@@ -97,5 +102,32 @@ public class Utils {
      */
     public static int[] selectKDistinct(int n, int k) {
         return selectKDistinct(n, k, new Random());
+    }
+
+    /**
+     * Convert given iterator to a stream with known count of entries.
+     *
+     * @param iter Iterator.
+     * @param cnt Count.
+     * @param <T> Type of entries.
+     * @return Stream constructed from iterator.
+     */
+    public static <T> Stream<T> asStream(Iterator<T> iter, long cnt) {
+        return StreamSupport.stream(
+                Spliterators.spliterator(iter, cnt, Spliterator.ORDERED),
+                false);
+    }
+
+    /**
+     * Convert given iterator to a stream.
+     *
+     * @param iter Iterator.
+     * @param <T> Iterator content type.
+     * @return Stream constructed from iterator.
+     */
+    public static <T> Stream<T> asStream(Iterator<T> iter) {
+        return StreamSupport.stream(
+                Spliterators.spliteratorUnknownSize(iter, Spliterator.ORDERED),
+                false);
     }
 }

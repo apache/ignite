@@ -44,7 +44,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Statement test.
  */
-@SuppressWarnings({"ThrowableNotThrown", "ThrowableResultOfMethodCallIgnored"})
+@SuppressWarnings({"ThrowableNotThrown"})
 public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -93,11 +93,6 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         startGridsMultiThreaded(3);
 
         fillCache();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -926,6 +921,8 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * Verifies that emty batch can be performed.
+     *
      * @throws Exception If failed.
      */
     public void testBatchEmpty() throws Exception {
@@ -934,17 +931,8 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         stmt.addBatch("");
         stmt.clearBatch();
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    stmt.executeBatch();
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Batch is empty"
-        );
+        // Just verify that no exception have been thrown.
+        stmt.executeBatch();
     }
 
     /**
@@ -1194,7 +1182,6 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * Person.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** ID. */
         @QuerySqlField

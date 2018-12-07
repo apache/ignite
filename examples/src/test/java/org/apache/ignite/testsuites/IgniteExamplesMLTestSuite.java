@@ -30,6 +30,7 @@ import javassist.CtClass;
 import javassist.CtNewMethod;
 import javassist.NotFoundException;
 import junit.framework.TestSuite;
+import org.apache.ignite.examples.ml.util.MLExamplesCommonArgs;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
@@ -85,8 +86,8 @@ public class IgniteExamplesMLTestSuite extends TestSuite {
         cl.addMethod(CtNewMethod.make("public void testExample() { "
             + exampleCls.getCanonicalName()
             + ".main("
-            + GridAbstractExamplesTest.class.getName()
-            + ".EMPTY_ARGS); }", cl));
+            + MLExamplesCommonArgs.class.getName()
+            + ".EMPTY_ARGS_ML); }", cl));
 
         return cl.toClass();
     }

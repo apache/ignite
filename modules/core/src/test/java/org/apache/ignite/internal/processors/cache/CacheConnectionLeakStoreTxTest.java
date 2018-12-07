@@ -98,11 +98,6 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
         TestStore.sessions.clear();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -172,6 +167,26 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
         isLoadFromStore = true;
 
         checkConnectionLeak(CacheAtomicityMode.TRANSACTIONAL, PESSIMISTIC, READ_COMMITTED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConnectionLeakOneBackupMvccPessimisticRepeatableRead() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
+
+        checkConnectionLeak(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, PESSIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConnectionLeakOneBackupMvccPessimisticRepeatableReadLoadFromStore() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
+
+        isLoadFromStore = true;
+
+        checkConnectionLeak(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, PESSIMISTIC, REPEATABLE_READ);
     }
 
     /**

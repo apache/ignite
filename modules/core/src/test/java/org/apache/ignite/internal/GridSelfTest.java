@@ -45,11 +45,8 @@ public class GridSelfTest extends ClusterGroupAbstractTest {
 
         for (int i = 0; i < NODES_CNT; i++)
             startGrid(i);
-    }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
+        waitForTopology(NODES_CNT);
     }
 
     /** {@inheritDoc} */
@@ -112,7 +109,6 @@ public class GridSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"TooBroadScope"})
     public void testAsyncListen() throws Exception {
         final String hello = "HELLO!";
 

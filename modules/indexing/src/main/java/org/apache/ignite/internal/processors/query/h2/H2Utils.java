@@ -17,8 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.lang.reflect.Constructor;
+import java.sql.Connection;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
@@ -26,6 +35,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.result.SortOrder;
@@ -33,12 +43,7 @@ import org.h2.table.IndexColumn;
 import org.h2.value.DataType;
 import org.h2.value.Value;
 
-import java.lang.reflect.Constructor;
-import java.sql.Connection;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
+import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
 
 /**
  * H2 utility methods.
@@ -208,11 +213,13 @@ public class H2Utils {
             String typeName = rsMeta.getTableName(i);
             String name = rsMeta.getColumnLabel(i);
             String type = rsMeta.getColumnClassName(i);
+            int precision = rsMeta.getPrecision(i);
+            int scale = rsMeta.getScale(i);
 
             if (type == null) // Expression always returns NULL.
                 type = Void.class.getName();
 
-            meta.add(new H2SqlFieldMetadata(schemaName, typeName, name, type));
+            meta.add(new H2SqlFieldMetadata(schemaName, typeName, name, type, precision, scale));
         }
 
         return meta;
@@ -266,5 +273,56 @@ public class H2Utils {
      */
     private H2Utils() {
         // No-op.
+    }
+
+    /**
+     * @return Single-column, single-row cursor with 0 as number of updated records.
+     */
+    @SuppressWarnings("unchecked")
+    public static QueryCursorImpl<List<?>> zeroCursor() {
+        QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
+            (Collections.singletonList(0L)), null, false);
+
+        resCur.fieldsMeta(UPDATE_RESULT_META);
+
+        return resCur;
+    }
+
+    /**
+     * Add only new columns to destination list.
+     *
+     * @param dest List of index columns to add new elements from src list.
+     * @param src List of IndexColumns to add to dest list.
+     */
+    public static void addUniqueColumns(List<IndexColumn> dest, List<IndexColumn> src) {
+        for (IndexColumn col : src) {
+            if (!containsColumn(dest, col))
+                dest.add(col);
+        }
+    }
+
+    /**
+     * Check that given table has not started cache and start it for such case.
+     *
+     * @param tbl Table to check on not started cache.
+     * @return {@code true} in case not started and has been started.
+     */
+    public static boolean checkAndStartNotStartedCache(GridH2Table tbl) {
+        if (tbl != null && tbl.isCacheLazy()) {
+            String cacheName = tbl.cacheInfo().config().getName();
+
+            GridKernalContext ctx = tbl.cacheInfo().context();
+
+            try {
+                Boolean res = ctx.cache().dynamicStartCache(null, cacheName, null, false, true, true).get();
+
+                return U.firstNotNull(res, Boolean.FALSE);
+            }
+            catch (IgniteCheckedException ex) {
+                throw U.convertException(ex);
+            }
+        }
+
+        return false;
     }
 }

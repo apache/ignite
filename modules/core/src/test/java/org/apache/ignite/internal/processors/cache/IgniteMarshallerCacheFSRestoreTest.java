@@ -36,7 +36,9 @@ import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.marshaller.MappingProposedMessage;
+import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -110,7 +112,7 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
     private void cleanUpWorkDir() throws Exception {
         String workDir = U.defaultWorkDirectory();
 
-        deleteRecursively(U.resolveWorkDirectory(workDir, "marshaller", false));
+        U.delete(U.resolveWorkDirectory(workDir, "marshaller", false));
     }
 
     /**
@@ -243,7 +245,7 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
             }
 
             /** {@inheritDoc} */
-            @Override public void onDiscovery(
+            @Override public IgniteFuture<?> onDiscovery(
                 int type,
                 long topVer,
                 ClusterNode node,
@@ -267,7 +269,9 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
                 }
 
                 if (delegate != null)
-                    delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+                    return delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+
+                return new IgniteFinishedFutureImpl<>();
             }
 
             /** {@inheritDoc} */

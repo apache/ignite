@@ -60,10 +60,11 @@ namespace Apache.Ignite.Examples.Sql
                 Console.WriteLine(">>> Cache LINQ example started.");
 
                 var employeeCache = ignite.GetOrCreateCache<int, Employee>(
-                    new CacheConfiguration(EmployeeCacheName, typeof(Employee)));
+                    new CacheConfiguration(EmployeeCacheName, new QueryEntity(typeof(int), typeof(Employee))));
 
                 var employeeCacheColocated = ignite.GetOrCreateCache<AffinityKey, Employee>(
-                    new CacheConfiguration(EmployeeCacheNameColocated, typeof(Employee)));
+                    new CacheConfiguration(EmployeeCacheNameColocated, 
+                        new QueryEntity(typeof(AffinityKey), typeof(Employee))));
 
                 var organizationCache = ignite.GetOrCreateCache<int, Organization>(
                     new CacheConfiguration(OrganizationCacheName, new QueryEntity(typeof(int), typeof(Organization))));
@@ -172,7 +173,11 @@ namespace Apache.Ignite.Examples.Sql
         {
             const string orgName = "Apache";
 
-            var queryOptions = new QueryOptions {EnableDistributedJoins = true};
+            var queryOptions = new QueryOptions
+            {
+                EnableDistributedJoins = true,
+                Timeout = new TimeSpan(0, 1, 0)
+            };
 
             IQueryable<ICacheEntry<int, Employee>> employees = employeeCache.AsCacheQueryable(queryOptions);
             IQueryable<ICacheEntry<int, Organization>> organizations = organizationCache.AsCacheQueryable(queryOptions);

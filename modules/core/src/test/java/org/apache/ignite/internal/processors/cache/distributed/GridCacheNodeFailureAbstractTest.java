@@ -37,6 +37,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -45,6 +46,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import static org.apache.ignite.IgniteState.STOPPED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_SALVAGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -74,6 +76,13 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
     /** Grid instances. */
     private static final List<Ignite> IGNITEs = new ArrayList<>();
 
+    /** {@inheritDoc} */
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+
+        super.setUp();
+    }
+
     /**
      * Start grid by default.
      */
@@ -89,7 +98,6 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         disco.setIpFinder(ipFinder);
 
-        c.setFailureDetectionTimeout(Integer.MAX_VALUE);
         c.setDiscoverySpi(disco);
 
         c.setDeploymentMode(DeploymentMode.SHARED);
@@ -109,8 +117,6 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         IGNITEs.clear();
     }
 
@@ -188,7 +194,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
                     return true;
                 }
-            }, EVT_NODE_LEFT);
+            }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
             stopGrid(idx);
 
@@ -268,7 +274,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
                 return true;
             }
-        }, EVT_NODE_LEFT);
+        }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         stopGrid(idx);
 

@@ -38,10 +38,10 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
     private static final String CUSTOM_NON_DEFAULT_MEM_PLC_NAME = "custom_mem_plc";
 
     /** */
-    private static final long USER_CUSTOM_MEM_PLC_SIZE = 89 * 1024 * 1024;
+    private static final long USER_CUSTOM_MEM_PLC_SIZE = 89L * 1024 * 1024;
 
     /** */
-    private static final long USER_DEFAULT_MEM_PLC_SIZE = 99 * 1024 * 1024;
+    private static final long USER_DEFAULT_MEM_PLC_SIZE = 99L * 1024 * 1024;
 
     /** */
     private MemoryConfiguration memCfg;
@@ -75,7 +75,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         Collection<DataRegion> allMemPlcs = ignite.context().cache().context().database().dataRegions();
 
-        assertTrue(allMemPlcs.size() == 2);
+        assertEquals(3, allMemPlcs.size());
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
     }
@@ -91,7 +91,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         Collection<DataRegion> allMemPlcs = ignite.context().cache().context().database().dataRegions();
 
-        assertTrue(allMemPlcs.size() == 3);
+        assertEquals(4, allMemPlcs.size());
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
 
@@ -112,13 +112,13 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         Collection<DataRegion> allMemPlcs = dbMgr.dataRegions();
 
-        assertTrue(allMemPlcs.size() == 2);
+        assertEquals(3, allMemPlcs.size());
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
 
         DataRegion dfltMemPlc = U.field(dbMgr, "dfltDataRegion");
 
-        assertTrue(dfltMemPlc.config().getMaxSize() == USER_DEFAULT_MEM_PLC_SIZE);
+        assertEquals(dfltMemPlc.config().getMaxSize(), USER_DEFAULT_MEM_PLC_SIZE);
     }
 
     /**
@@ -136,13 +136,13 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         Collection<DataRegion> allMemPlcs = dbMgr.dataRegions();
 
-        assertTrue(allMemPlcs.size() == 3);
+        assertEquals(4, allMemPlcs.size());
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
 
         DataRegion dfltMemPlc = U.field(dbMgr, "dfltDataRegion");
 
-        assertTrue(dfltMemPlc.config().getMaxSize() == USER_CUSTOM_MEM_PLC_SIZE);
+        assertEquals(dfltMemPlc.config().getMaxSize(), USER_CUSTOM_MEM_PLC_SIZE);
     }
 
     /**

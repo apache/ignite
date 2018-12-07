@@ -17,10 +17,10 @@
 mixin ignite-form-field-bsdropdown({label, model, name, disabled, required, options, tip})
     .dropdown--ignite.ignite-form-field
         .btn-ignite.btn-ignite--primary-outline(
-            data-ng-model=model
+            ng-model=model
 
-            data-ng-required=required && `${required}`
-            data-ng-disabled=disabled && `${disabled}` || `!${options}.length`
+            ng-required=required && `${required}`
+            ng-disabled=disabled && `${disabled}` || `!${options}.length`
 
             bs-dropdown=''
 
@@ -37,5 +37,6 @@ mixin ignite-form-field-bsdropdown({label, model, name, disabled, required, opti
 
         ul.dropdown-menu(role='menu')
             li(ng-repeat=`item in ${options}` ng-if='item.available')
-                a(ng-click='item.click()') {{ item.action }}
+                a(ng-if='item.click' ng-click='item.click()') {{ item.action }}
+                a(ng-if='item.sref' ui-sref='{{:: item.sref}}') {{ item.action }}
 
