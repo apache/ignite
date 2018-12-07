@@ -70,6 +70,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
@@ -269,23 +271,22 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             info("Grid " + i + ": " + grid(i).localNode().id());
     }
 
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
+    }
+
     /**
      * Checks that any invoke returns result.
      *
      * @throws Exception if something goes bad.
-     *
-     * TODO https://issues.apache.org/jira/browse/IGNITE-4380.
      */
-    public void _testInvokeAllMultithreaded() throws Exception {
+    public void testInvokeAllMultithreaded() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-4380");
+
         final IgniteCache<String, Integer> cache = jcache();
         final int threadCnt = 4;
         final int cnt = 5000;
-
-        // Concurrent invoke can not be used for ATOMIC cache in CLOCK mode.
-        if (atomicityMode() == ATOMIC &&
-            cacheMode() != LOCAL &&
-            false)
-            return;
 
         final Set<String> keys = Collections.singleton("myKey");
 
@@ -5031,7 +5032,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 // If AssertionFailedError is in the chain, assume we need to wait and retry.
                 if (!X.hasCause(t, AssertionFailedError.class))
                     throw t;
-                
+
                 if (i == 9) {
                     for (int j = 0; j < gridCount(); j++)
                         executeOnLocalOrRemoteJvm(j, new PrintIteratorStateTask());
@@ -6012,6 +6013,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             doTransformResourceInjectionInTx(ignite, cache, true, false);
             doTransformResourceInjectionInTx(ignite, cache, true, true);
         }
+
+        grid(0).services( grid(0).cluster()).cancel(SERVICE_NAME1);
     }
 
     /**

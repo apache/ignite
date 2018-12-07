@@ -26,6 +26,7 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -38,8 +39,11 @@ import org.jetbrains.annotations.NotNull;
  * @param <L> Type of a label.
  */
 public abstract class DatasetTrainer<M extends Model, L> {
+    /** Learning environment builder. */
+    protected LearningEnvironmentBuilder envBuilder = LearningEnvironmentBuilder.defaultBuilder();
+
     /** Learning Environment. */
-    protected LearningEnvironment environment = LearningEnvironment.DEFAULT;
+    protected LearningEnvironment environment = envBuilder.buildForTrainer();
 
     /**
      * Trains model based on the specified data.
@@ -289,11 +293,25 @@ public abstract class DatasetTrainer<M extends Model, L> {
     }
 
     /**
-     * Sets learning Environment
-     * @param environment Environment.
+     * Changes learning Environment.
+     *
+     * @param envBuilder Learning environment builder.
      */
-    public void setEnvironment(LearningEnvironment environment) {
-        this.environment = environment;
+    // TODO: IGNITE-10441 Think about more elegant ways to perform fluent API.
+    public DatasetTrainer<M, L> withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        this.envBuilder  = envBuilder;
+        this.environment = envBuilder.buildForTrainer();
+
+        return this;
+    }
+
+    /**
+     * Get learning environment.
+     *
+     * @return Learning environment.
+     */
+    public LearningEnvironment learningEnvironment() {
+        return environment;
     }
 
     /**
@@ -310,4 +328,5 @@ public abstract class DatasetTrainer<M extends Model, L> {
             super("Cannot train model on empty dataset");
         }
     }
+
 }

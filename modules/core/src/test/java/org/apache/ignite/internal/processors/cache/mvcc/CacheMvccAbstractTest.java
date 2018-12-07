@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -62,6 +61,8 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
@@ -248,6 +249,11 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         }
 
         super.afterTest();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /**
@@ -687,19 +693,19 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                                 }
 
                                 case SQL_SUM: {
-                                    BigDecimal sum;
+                                    Long sum;
 
                                     if (rnd.nextBoolean()) {
                                         List<List<?>> res =  cache.cache.query(sumQry).getAll();
 
                                         assertEquals(1, res.size());
 
-                                        sum = (BigDecimal)res.get(0).get(0);
+                                        sum = (Long)res.get(0).get(0);
                                     }
                                     else {
                                         Map res = readAllByMode(cache.cache, keys, readMode, ACCOUNT_CODEC);
 
-                                        sum = (BigDecimal)((Map.Entry)res.entrySet().iterator().next()).getValue();
+                                        sum = (Long)((Map.Entry)res.entrySet().iterator().next()).getValue();
                                     }
 
                                     assertEquals(ACCOUNT_START_VAL * ACCOUNTS, sum.intValue());
@@ -945,6 +951,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
                                 tx.commit();
 
+                                v++;
+
                                 first = false;
                             }
 
@@ -952,10 +960,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                                 Map<Integer, Integer> res = readAllByMode(cache.cache, keys, readMode, INTEGER_CODEC);
 
                                 for (Integer k : keys)
-                                    assertEquals("key=" + k, v, (Object)res.get(k));
+                                    assertEquals("key=" + k, v - 1, (Object)res.get(k));
                             }
-
-                            v++;
                         }
                         catch (Exception e) {
                             handleTxException(e);
@@ -1367,6 +1373,13 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                 }
             }, readers, "reader");
 
+            GridTestUtils.runAsync(() -> {
+                while (System.currentTimeMillis() < stopTime)
+                    doSleep(1000);
+
+                stop.set(true);
+            });
+
             while (System.currentTimeMillis() < stopTime && !stop.get()) {
                 Thread.sleep(1000);
 
@@ -1408,8 +1421,10 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
                             Ignite srv = startGrid(idx);
 
+                            cache0 = new TestCache(srv.cache(DEFAULT_CACHE_NAME));
+
                             synchronized (caches) {
-                                caches.set(idx, new TestCache(srv.cache(DEFAULT_CACHE_NAME)));
+                                caches.set(idx, cache0);
                             }
 
                             awaitPartitionMapExchange();
@@ -1422,8 +1437,6 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                     }
                 }
             }
-
-            stop.set(true);
 
             Exception ex = null;
 

@@ -21,6 +21,7 @@ import java.io.FilenameFilter;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
 import java.util.Comparator;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -30,6 +31,8 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
@@ -40,8 +43,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 
 /**
  *
@@ -82,7 +83,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
 
         CacheConfiguration ccfg = new CacheConfiguration();
 
-        ccfg.setName("cache");
+        ccfg.setName(CACHE_NAME);
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 16));
@@ -112,6 +113,11 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
     }
 
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
+    }
+
     /**
      * Tests applying updates from compacted WAL archive.
      *
@@ -138,7 +144,9 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         IgniteEx ig = (IgniteEx)startGrids(3);
         ig.cluster().active(true);
 
-        IgniteCache<Integer, byte[]> cache = ig.cache("cache");
+        IgniteCache<Integer, byte[]> cache = ig.cache(CACHE_NAME);
+
+        final int pageSize = ig.cachex(CACHE_NAME).context().dataRegion().pageMemory().pageSize();
 
         for (int i = 0; i < ENTRIES; i++) { // At least 20MB of raw data in total.
             final byte[] val = new byte[20000];
@@ -149,9 +157,9 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         }
 
         // Spam WAL to move all data records to compressible WAL zone.
-        for (int i = 0; i < WAL_SEGMENT_SIZE / DFLT_PAGE_SIZE * 2; i++) {
-            ig.context().cache().context().wal().log(new PageSnapshot(new FullPageId(-1, -1), new byte[DFLT_PAGE_SIZE],
-                DFLT_PAGE_SIZE));
+        for (int i = 0; i < WAL_SEGMENT_SIZE / pageSize * 2; i++) {
+            ig.context().cache().context().wal().log(new PageSnapshot(new FullPageId(-1, -1), new byte[pageSize],
+                pageSize));
         }
 
         // WAL archive segment is allowed to be compressed when it's at least one checkpoint away from current WAL head.
@@ -221,6 +229,20 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         }
 
         assertFalse(fail);
+
+        // Check compation successfully reset on blt changed.
+        stopAllGrids();
+
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().active(true);
+
+        resetBaselineTopology();
+
+        // This node will join to different blt.
+        startGrid(2);
+
+        awaitPartitionMapExchange();
     }
 
     /**
@@ -247,7 +269,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         IgniteEx ig = startGrid(0);
         ig.cluster().active(true);
 
-        IgniteCache<Integer, byte[]> cache = ig.cache("cache");
+        IgniteCache<Integer, byte[]> cache = ig.cache(CACHE_NAME);
 
         for (int i = 0; i < 2500; i++) { // At least 50MB of raw data in total.
             final byte[] val = new byte[20000];
@@ -310,7 +332,9 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         IgniteEx ig = (IgniteEx)startGrids(3);
         ig.cluster().active(true);
 
-        IgniteCache<Integer, byte[]> cache = ig.cache("cache");
+        IgniteCache<Integer, byte[]> cache = ig.cache(CACHE_NAME);
+
+        final int pageSize = ig.cachex(CACHE_NAME).context().dataRegion().pageMemory().pageSize();
 
         for (int i = 0; i < 100; i++) {
             final byte[] val = new byte[20000];
@@ -349,9 +373,9 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         }
 
         // Spam WAL to move all data records to compressible WAL zone.
-        for (int i = 0; i < WAL_SEGMENT_SIZE / DFLT_PAGE_SIZE * 2; i++) {
-            ig.context().cache().context().wal().log(new PageSnapshot(new FullPageId(-1, -1), new byte[DFLT_PAGE_SIZE],
-                DFLT_PAGE_SIZE));
+        for (int i = 0; i < WAL_SEGMENT_SIZE / pageSize * 2; i++) {
+            ig.context().cache().context().wal().log(new PageSnapshot(new FullPageId(-1, -1), new byte[pageSize],
+                pageSize));
         }
 
         // WAL archive segment is allowed to be compressed when it's at least one checkpoint away from current WAL head.
@@ -372,13 +396,12 @@ public class WalCompactionTest extends GridCommonAbstractTest {
 
         File[] cpMarkers = cpMarkersDir.listFiles(new FilenameFilter() {
             @Override public boolean accept(File dir, String name) {
-                return !(
-                    name.equals(cpMarkersToSave[0].getName()) ||
-                    name.equals(cpMarkersToSave[1].getName()) ||
-                    name.equals(cpMarkersToSave[2].getName()) ||
-                    name.equals(cpMarkersToSave[3].getName()) ||
-                    name.equals(cpMarkersToSave[4].getName())
-                );
+                for (File cpMarker : cpMarkersToSave) {
+                    if (cpMarker.getName().equals(name))
+                        return false;
+                }
+
+                return true;
             }
         });
 

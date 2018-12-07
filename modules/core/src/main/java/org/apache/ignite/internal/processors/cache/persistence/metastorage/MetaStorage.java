@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -62,6 +63,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.NotNull;
 
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 
@@ -136,12 +138,9 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     }
 
     /** */
-    public MetaStorage(GridCacheSharedContext cctx, DataRegion memPlc, DataRegionMetricsImpl memMetrics) {
-        this(cctx, memPlc, memMetrics, false);
-    }
-
-    /** */
     public void init(IgniteCacheDatabaseSharedManager db) throws IgniteCheckedException {
+        regionMetrics.clear();
+
         getOrAllocateMetas();
 
         if (!empty) {
@@ -510,6 +509,11 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         /** {@inheritDoc} */
         @Override public IOVersions<? extends AbstractDataPageIO<MetastorageDataRow>> ioVersions() {
             return SimpleDataPageIO.VERSIONS;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
+            return pageMem.allocatePage(grpId, PageIdAllocator.METASTORE_PARTITION, FLAG_DATA);
         }
 
         /**

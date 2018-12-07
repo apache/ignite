@@ -21,11 +21,12 @@ import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compatibility.testframework.junits.logger.ListenedGridTestLog4jLogger;
@@ -152,7 +153,8 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
             @Override protected String params(IgniteConfiguration cfg, boolean resetDiscovery) throws Exception {
                 return cfgCloPath + " " + igniteInstanceName + " "
                     + getId() + " "
-                    + (rmJvmInstance == null ? getId() : ((IgniteProcessProxy)rmJvmInstance).getId())
+                    + (rmJvmInstance == null ? getId() : ((IgniteProcessProxy)rmJvmInstance).getId()) + " "
+                    + ver
                     + (cloPath == null ? "" : " " + cloPath);
             }
 
@@ -168,7 +170,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
                 final Collection<Dependency> dependencies = getDependencies(ver);
 
-                Set<String> excluded = dependencies.stream().map(Dependency::localPathTemplate).collect(Collectors.toSet());
+                Set<String> excluded = getExcluded(ver, dependencies);
 
                 StringBuilder pathBuilder = new StringBuilder();
 
@@ -180,11 +182,10 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
                 }
 
                 for (Dependency dependency : dependencies) {
-                    final String artifactVer = dependency.version() != null ? dependency.version() : ver;
-                    final String grpName = dependency.groupName() != null ? dependency.groupName() : "org.apache.ignite";
+                    final String artifactVer = Optional.ofNullable(dependency.version()).orElse(ver);
 
-                    String pathToArtifact = MavenUtils.getPathToIgniteArtifact(grpName, dependency.artifactName(),
-                        artifactVer, dependency.classifier());
+                    String pathToArtifact = MavenUtils.getPathToIgniteArtifact(dependency.groupId(),
+                        dependency.artifactId(), artifactVer, dependency.classifier());
 
                     pathBuilder.append(pathToArtifact).append(File.pathSeparator);
                 }
@@ -240,10 +241,33 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
     @NotNull protected Collection<Dependency> getDependencies(String igniteVer) {
         final Collection<Dependency> dependencies = new ArrayList<>();
 
-        dependencies.add(new Dependency("core", "ignite-core"));
+        dependencies.add(new Dependency("core", "ignite-core", false));
         dependencies.add(new Dependency("core", "ignite-core", true));
 
         return dependencies;
+    }
+
+    /**
+     * These dependencies will not be translated from current code dependencies into separate node's classpath.
+     *
+     * Include here all dependencies which will be set up manually, leave all version independent dependencies.
+     *
+     * @param ver Ignite version.
+     * @param dependencies Dependencies to filter.
+     * @return Set of paths to exclude.
+     */
+    protected Set<String> getExcluded(String ver, Collection<Dependency> dependencies) {
+        Set<String> excluded = new HashSet<>();
+
+        for (Dependency dependency : dependencies) {
+            excluded.add(dependency.sourcePathTemplate());
+            excluded.add(dependency.artifactPathTemplate());
+        }
+
+        // Just to exclude indexing module
+        excluded.add("indexing");
+
+        return excluded;
     }
 
     /**

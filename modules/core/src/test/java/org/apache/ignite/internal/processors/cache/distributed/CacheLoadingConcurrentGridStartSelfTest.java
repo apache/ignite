@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import javax.cache.Cache;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.integration.CacheLoaderException;
@@ -36,6 +37,8 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
@@ -48,6 +51,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -77,6 +81,13 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
     /** Restarts. */
     protected volatile boolean restarts;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        super.beforeTestsStarted();
+    }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -130,6 +141,11 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /**
@@ -261,8 +277,11 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
             }
         });
 
+        CountDownLatch startNodesLatch = new CountDownLatch(1);
         IgniteInternalFuture<Object> fut = runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
+                startNodesLatch.await();
+
                 for (int i = 2; i < GRIDS_CNT; i++)
                     startGrid(i);
 
@@ -272,24 +291,35 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
         final HashSet<IgniteFuture> set = new HashSet<>();
 
-        IgniteInClosure<Ignite> f = new IgniteInClosure<Ignite>() {
-            @Override public void apply(Ignite grid) {
-                try (IgniteDataStreamer<Integer, String> dataStreamer = grid.dataStreamer(DEFAULT_CACHE_NAME)) {
-                    dataStreamer.allowOverwrite(allowOverwrite);
+        boolean stop = false;
+        int insertedKeys = 0;
 
-                    ((DataStreamerImpl)dataStreamer).maxRemapCount(Integer.MAX_VALUE);
+        startNodesLatch.countDown();
 
-                    for (int i = 0; i < KEYS_CNT; i++) {
-                        set.add(dataStreamer.addData(i, "Data"));
+        try (IgniteDataStreamer<Integer, String> dataStreamer = g0.dataStreamer(DEFAULT_CACHE_NAME)) {
+            dataStreamer.allowOverwrite(allowOverwrite);
+            ((DataStreamerImpl)dataStreamer).maxRemapCount(Integer.MAX_VALUE);
 
-                        if (i % 100000 == 0)
-                            log.info("Streaming " + i + "'th entry.");
-                    }
-                }
+            long startingEndTs = -1L;
+
+            while (!stop) {
+                set.add(dataStreamer.addData(insertedKeys, "Data"));
+                insertedKeys = insertedKeys + 1;
+
+                if (insertedKeys % 100000 == 0)
+                    log.info("Streaming " + insertedKeys + "'th entry.");
+
+                //When all nodes started we continue restart nodes during 1 second and stop it after this timeout.
+                if (fut.isDone() && startingEndTs == -1)
+                    startingEndTs = System.currentTimeMillis();
+
+                if (startingEndTs != -1) //Nodes starting was ended and we check restarts duration after it.
+                    restarts = (System.currentTimeMillis() - startingEndTs) < 1000;
+
+                //Stop test when all keys were inserted or restarts timeout was exceeded.
+                stop = insertedKeys >= KEYS_CNT || (fut.isDone() && !restarts);
             }
-        };
-
-        f.apply(g0);
+        }
 
         log.info("Data loaded.");
 
@@ -305,10 +335,10 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
         long size = cache.size(CachePeekMode.PRIMARY);
 
-        if (size != KEYS_CNT) {
+        if (size != insertedKeys) {
             Set<Integer> failedKeys = new LinkedHashSet<>();
 
-            for (int i = 0; i < KEYS_CNT; i++)
+            for (int i = 0; i < insertedKeys; i++)
                 if (!cache.containsKey(i)) {
                     log.info("Actual cache size: " + size);
 
@@ -336,7 +366,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
             assert failedKeys.isEmpty() : "Some failed keys: " + failedKeys.toString();
         }
 
-        assertCacheSize();
+        assertCacheSize(insertedKeys);
     }
 
     /**
@@ -361,20 +391,20 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
             fut.get();
         }
 
-        assertCacheSize();
+        assertCacheSize(KEYS_CNT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    private void assertCacheSize() throws Exception {
+    private void assertCacheSize(int expectedCacheSize) throws Exception {
         final IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         boolean consistentCache = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 int size = cache.size(CachePeekMode.PRIMARY);
 
-                if (size != KEYS_CNT)
+                if (size != expectedCacheSize)
                     log.info("Cache size: " + size);
 
                 int total = 0;
@@ -382,10 +412,10 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
                 for (int i = 0; i < GRIDS_CNT; i++)
                     total += grid(i).cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY);
 
-                if (total != KEYS_CNT)
+                if (total != expectedCacheSize)
                     log.info("Total size: " + size);
 
-                return size == KEYS_CNT && KEYS_CNT == total;
+                return size == expectedCacheSize && expectedCacheSize == total;
             }
         }, 2 * 60_000);
 

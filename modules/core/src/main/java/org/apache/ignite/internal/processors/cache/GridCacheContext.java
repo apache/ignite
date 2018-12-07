@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -177,6 +178,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Store manager. */
     private CacheStoreManager storeMgr;
 
+    /** Compression manager. */
+    private CacheCompressionManager compressMgr;
+
     /** Replication manager. */
     private GridCacheDrManager drMgr;
 
@@ -226,7 +230,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private CacheWeakQueryIteratorsHolder<Map.Entry<K, V>> itHolder;
 
     /** Affinity node. */
-    private boolean affNode;
+    private volatile boolean affNode;
 
     /** Conflict resolver. */
     private CacheVersionConflictResolver conflictRslvr;
@@ -238,7 +242,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private CountDownLatch startLatch = new CountDownLatch(1);
 
     /** Topology version when cache was started on local node. */
-    private AffinityTopologyVersion locStartTopVer;
+    private volatile AffinityTopologyVersion locStartTopVer;
 
     /** Dynamic cache deployment ID. */
     private IgniteUuid dynamicDeploymentId;
@@ -271,7 +275,10 @@ public class GridCacheContext<K, V> implements Externalizable {
     private boolean readFromBackup = CacheConfiguration.DFLT_READ_FROM_BACKUP;
 
     /** Local node's MAC address. */
-    private String locMacs;
+    private volatile String locMacs;
+
+    /** Recovery mode flag. */
+    private volatile boolean recoveryMode;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -311,12 +318,14 @@ public class GridCacheContext<K, V> implements Externalizable {
         AffinityTopologyVersion locStartTopVer,
         boolean affNode,
         boolean updatesAllowed,
+        boolean recoveryMode,
 
         /*
          * Managers in starting order!
          * ===========================
          */
 
+        CacheCompressionManager compressMgr,
         GridCacheEventManager evtMgr,
         CacheStoreManager storeMgr,
         CacheEvictionManager evictMgr,
@@ -334,6 +343,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert cacheCfg != null;
         assert locStartTopVer != null : cacheCfg.getName();
 
+        assert compressMgr != null;
         assert grp != null;
         assert evtMgr != null;
         assert storeMgr != null;
@@ -360,6 +370,7 @@ public class GridCacheContext<K, V> implements Externalizable {
          * Managers in starting order!
          * ===========================
          */
+        this.compressMgr = add(compressMgr);
         this.evtMgr = add(evtMgr);
         this.storeMgr = add(storeMgr);
         this.evictMgr = add(evictMgr);
@@ -395,9 +406,43 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         readFromBackup = cacheCfg.isReadFromBackup();
 
+        this.recoveryMode = recoveryMode;
+
+        assert kernalContext().recoveryMode() == recoveryMode;
+
+        if (!recoveryMode) {
+            locMacs = localNode().attribute(ATTR_MACS);
+
+            assert locMacs != null;
+        }
+    }
+
+    /**
+     * Called when cache was restored during recovery and node has joined to topology.
+     *
+     * @param topVer Cache topology join version.
+     * @param statisticsEnabled Flag indicates is statistics enabled or not for that cache.
+     *                          Value may be changed after node joined to topology.
+     */
+    public void finishRecovery(AffinityTopologyVersion topVer, boolean statisticsEnabled) {
+        assert recoveryMode : this;
+
+        recoveryMode = false;
+
+        locStartTopVer = topVer;
+
         locMacs = localNode().attribute(ATTR_MACS);
 
+        this.statisticsEnabled = statisticsEnabled;
+
         assert locMacs != null;
+    }
+
+    /**
+     * @return {@code True} if cache is in recovery mode.
+     */
+    public boolean isRecoveryMode() {
+        return recoveryMode;
     }
 
     /**
@@ -1192,6 +1237,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return Compression manager.
+     */
+    public CacheCompressionManager compress() {
+        return compressMgr;
+    }
+
+    /**
      * Sets cache object context.
      *
      * @param cacheObjCtx Cache object context.
@@ -1216,26 +1268,10 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @param e Element.
      * @param p Predicates.
-     * @return {@code True} if predicates passed.
-     * @throws IgniteCheckedException If failed.
-     */
-    public <K1, V1> boolean isAll(
-        GridCacheEntryEx e,
-        @Nullable IgnitePredicate<Cache.Entry<K1, V1>>[] p
-    ) throws IgniteCheckedException {
-        return F.isEmpty(p) || isAll(e.<K1, V1>wrapLazyValue(keepBinary()), p);
-    }
-
-    /**
-     * Same as {@link GridFunc#isAll(Object, IgnitePredicate[])}, but safely unwraps exceptions.
-     *
-     * @param e Element.
-     * @param p Predicates.
      * @param <E> Element type.
      * @return {@code True} if predicates passed.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings({"ErrorNotRethrown"})
     public <E> boolean isAll(E e, @Nullable IgnitePredicate<? super E>[] p) throws IgniteCheckedException {
         if (F.isEmpty(p))
             return true;
@@ -2204,24 +2240,37 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @param affNodes All affinity nodes.
      * @param canRemap Flag indicating that 'get' should be done on a locked topology version.
+     * @param partitionId Partition ID.
      * @return Affinity node to get key from or {@code null} if there is no suitable alive node.
      */
-    @Nullable public ClusterNode selectAffinityNodeBalanced(List<ClusterNode> affNodes, boolean canRemap) {
+    @Nullable public ClusterNode selectAffinityNodeBalanced(
+        List<ClusterNode> affNodes,
+        Set<ClusterNode> invalidNodes,
+        int partitionId,
+        boolean canRemap
+    ) {
         if (!readLoadBalancingEnabled) {
             if (!canRemap) {
+                // Find next available node if we can not wait next topology version.
                 for (ClusterNode node : affNodes) {
-                    if (ctx.discovery().alive(node))
+                    if (ctx.discovery().alive(node) && !invalidNodes.contains(node))
                         return node;
                 }
 
                 return null;
             }
-            else
-                return affNodes.get(0);
+            else {
+                ClusterNode first = affNodes.get(0);
+
+                return !invalidNodes.contains(first) ? first : null;
+            }
         }
 
-        if (!readFromBackup)
-            return affNodes.get(0);
+        if (!readFromBackup){
+            ClusterNode first = affNodes.get(0);
+
+            return !invalidNodes.contains(first) ? first : null;
+        }
 
         assert locMacs != null;
 
@@ -2230,7 +2279,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         ClusterNode n0 = null;
 
         for (ClusterNode node : affNodes) {
-            if (canRemap || discovery().alive(node)) {
+            if ((canRemap || discovery().alive(node)) && !invalidNodes.contains(node)) {
                 if (locMacs.equals(node.attribute(ATTR_MACS)))
                     return node;
 
@@ -2293,7 +2342,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         IgniteBiTuple<String, String> t = stash.get();
 

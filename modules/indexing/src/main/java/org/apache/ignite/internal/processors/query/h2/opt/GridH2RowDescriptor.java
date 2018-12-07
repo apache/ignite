@@ -29,6 +29,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -57,6 +58,7 @@ import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
@@ -171,12 +173,22 @@ public class GridH2RowDescriptor {
         return type;
     }
 
+
+    /**
+     * Gets cache context info for this row descriptor.
+     *
+     * @return Cache context info.
+     */
+    public GridCacheContextInfo<?, ?> cacheInfo() {
+        return tbl.cacheInfo();
+    }
+
     /**
      * Gets cache context for this row descriptor.
      *
      * @return Cache context.
      */
-    public GridCacheContext<?, ?> context() {
+    @Nullable public GridCacheContext<?, ?> context() {
         return tbl.cache();
     }
 

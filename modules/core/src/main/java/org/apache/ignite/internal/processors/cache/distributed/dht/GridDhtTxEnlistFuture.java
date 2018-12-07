@@ -119,23 +119,20 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
 
         res.success(txRes.success());
 
-        if(txRes.invokeResult() != null)
+        if(txRes.invokeResult() != null) {
             res.invokeResult(true);
 
-        if (needRes && txRes.success()) {
             CacheInvokeResult invokeRes = txRes.invokeResult();
 
-            if (invokeRes != null) {
-                if(invokeRes.result() != null || invokeRes.error() != null)
-                    res.addEntryProcessResult(cctx, key, null, invokeRes.result(), invokeRes.error(), cctx.keepBinary());
-            }
-            else
-                res.set(cctx, txRes.prevValue(), txRes.success(), true);
+            if (invokeRes.result() != null || invokeRes.error() != null)
+                res.addEntryProcessResult(cctx, key, null, invokeRes.result(), invokeRes.error(), cctx.keepBinary());
         }
+        else if (needRes)
+            res.set(cctx, txRes.prevValue(), txRes.success(), true);
     }
 
     /** {@inheritDoc} */
-    public boolean needResult() {
+    @Override public boolean needResult() {
         return needRes;
     }
 
@@ -145,12 +142,12 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
     }
 
     /** {@inheritDoc} */
-    public boolean hasNextX() {
+    @Override public boolean hasNextX() {
         return it.hasNext();
     }
 
     /** {@inheritDoc} */
-    public Object nextX() {
+    @Override public Object nextX() {
         return it.next();
     }
 

@@ -34,6 +34,8 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -92,10 +94,15 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
         return 5 * 60 * 1000;
     }
 
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
+    }
+
     /**
      * @throws Exception If any error occurs.
      */
-    public void _testMassiveServersShutdown1() throws Exception {
+    public void testMassiveServersShutdown1() throws Exception {
         massiveServersShutdown(StopType.FAIL_EVENT);
     }
 
@@ -109,7 +116,7 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
     /**
      * @throws Exception If any error occurs.
      */
-    public void _testMassiveServersShutdown3() throws Exception {
+    public void testMassiveServersShutdown3() throws Exception {
         massiveServersShutdown(StopType.CLOSE);
     }
 

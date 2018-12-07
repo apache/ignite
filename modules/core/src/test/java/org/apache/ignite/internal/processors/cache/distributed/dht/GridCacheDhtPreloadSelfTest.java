@@ -212,7 +212,6 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
      */
     private void checkActivePartitionTransfer(int keyCnt, int nodeCnt, boolean sameCoord, boolean shuffle)
         throws Exception {
-
         try {
             Ignite ignite1 = startGrid(0);
 
@@ -456,7 +455,6 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
      */
     private void checkNodes(int keyCnt, int nodeCnt, boolean sameCoord, boolean shuffle)
         throws Exception {
-
         try {
             Ignite ignite1 = startGrid(0);
 
@@ -611,7 +609,6 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
      * @param grids Grids
      * @return String representation of all partitions and their state.
      */
-    @SuppressWarnings({"ConstantConditions"})
     private String top2string(Iterable<Ignite> grids) {
         Map<String, String> map = new HashMap<>();
 

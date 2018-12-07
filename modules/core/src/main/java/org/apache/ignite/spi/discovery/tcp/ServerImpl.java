@@ -150,7 +150,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -164,7 +163,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.AUTH_FAILED;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.CHECK_FAILED;
@@ -262,6 +260,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Map with proceeding ping requests. */
     private final ConcurrentMap<InetSocketAddress, GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>>> pingMap =
         new ConcurrentHashMap<>();
+
+    /** Last listener future. */
+    private IgniteFuture<?> lastCustomEvtLsnrFut;
 
     /**
      * @param adapter Adapter.
@@ -952,10 +953,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         timeout = threshold - U.currentTimeMillis();
                     }
-                    catch (InterruptedException ignored) {
+                    catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
 
-                        throw new IgniteSpiException("Thread has been interrupted.");
+                        throw new IgniteSpiException("Thread has been interrupted.", e);
                     }
                 }
 
@@ -1038,7 +1039,6 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @return {@code true} if send succeeded.
      * @throws IgniteSpiException If any error occurs.
      */
-    @SuppressWarnings({"BusyWait"})
     private boolean sendJoinRequestMessage(DiscoveryDataPacket discoveryData) throws IgniteSpiException {
         TcpDiscoveryAbstractMessage joinReq = new TcpDiscoveryJoinRequestMessage(locNode, discoveryData);
 
@@ -2160,6 +2160,20 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
+     * Wait for all the listeners from previous discovery message to be completed.
+     */
+    private void waitForLastCustomEventListenerFuture() {
+        if (lastCustomEvtLsnrFut != null) {
+            try {
+                lastCustomEvtLsnrFut.get();
+            }
+            finally {
+                lastCustomEvtLsnrFut = null;
+            }
+        }
+    }
+
+    /**
      * Discovery messages history used for client reconnect.
      */
     private class EnsuredMessageHistory {
@@ -2693,7 +2707,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /** */
-        protected void body() throws InterruptedException {
+        @Override protected void body() throws InterruptedException {
             Throwable err = null;
 
             try {
@@ -4031,45 +4045,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                final Boolean locSrvcCompatibilityEnabled = locNode.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
-
-                final Boolean rmtSrvcCompatibilityEnabled = node.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
-
-                if (!F.eq(locSrvcCompatibilityEnabled, rmtSrvcCompatibilityEnabled)) {
-                    utilityPool.execute(
-                        new Runnable() {
-                            @Override public void run() {
-                                String errMsg = "Local node's " + IGNITE_SERVICES_COMPATIBILITY_MODE +
-                                    " property value differs from remote node's value " +
-                                    "(to make sure all nodes in topology have identical IgniteServices compatibility mode, " +
-                                    "configure system property explicitly) " +
-                                    "[locSrvcCompatibilityEnabled=" + locSrvcCompatibilityEnabled +
-                                    ", rmtSrvcCompatibilityEnabled=" + rmtSrvcCompatibilityEnabled +
-                                    ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                                    ", rmtNodeAddrs=" + U.addressesAsString(node) +
-                                    ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
-
-                                String sndMsg = "Local node's " + IGNITE_SERVICES_COMPATIBILITY_MODE +
-                                    " property value differs from remote node's value " +
-                                    "(to make sure all nodes in topology have identical IgniteServices compatibility mode, " +
-                                    "configure system property explicitly) " +
-                                    "[locSrvcCompatibilityEnabled=" + rmtSrvcCompatibilityEnabled +
-                                    ", rmtSrvcCompatibilityEnabled=" + locSrvcCompatibilityEnabled +
-                                    ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
-                                    ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
-                                    ", rmtNodeId=" + locNode.id() + ']';
-
-                                nodeCheckError(
-                                    node,
-                                    errMsg,
-                                    sndMsg);
-                            }
-                        });
-
-                    // Ignore join request.
-                    return;
-                }
-
                 // Handle join.
                 node.internalOrder(ring.nextNodeOrder());
 
@@ -4201,6 +4176,15 @@ class ServerImpl extends TcpDiscoveryImpl {
         @Deprecated
         private void processNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
             assert msg != null;
+
+            blockingSectionBegin();
+
+            try {
+                waitForLastCustomEventListenerFuture();
+            }
+            finally {
+                blockingSectionEnd();
+            }
 
             TcpDiscoveryNode node = msg.node();
 
@@ -5274,6 +5258,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (clientNodeIds.contains(clientNode.id()))
                                 clientNode.clientAliveTime(spi.clientFailureDetectionTimeout());
                             else {
+                                if (clientNode.clientAliveTime() == 0L)
+                                    clientNode.clientAliveTime(spi.clientFailureDetectionTimeout());
+
                                 boolean aliveCheck = clientNode.isClientAlive();
 
                                 if (!aliveCheck && isLocalNodeCoordinator()) {
@@ -5351,7 +5338,6 @@ class ServerImpl extends TcpDiscoveryImpl {
          *
          * @param msg Discard message.
          */
-        @SuppressWarnings("StatementWithEmptyBody")
         private void processDiscardMessage(TcpDiscoveryDiscardMessage msg) {
             assert msg != null;
 
@@ -5646,8 +5632,19 @@ class ServerImpl extends TcpDiscoveryImpl {
                     hist,
                     msgObj);
 
-                if (waitForNotification || msgObj.isMutable())
-                    fut.get();
+                if (waitForNotification || msgObj.isMutable()) {
+                    blockingSectionBegin();
+
+                    try {
+                        fut.get();
+                    }
+                    finally {
+                        blockingSectionEnd();
+                    }
+                }
+                else {
+                    lastCustomEvtLsnrFut = fut;
+                }
 
                 if (msgObj.isMutable()) {
                     try {
@@ -6871,7 +6868,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msgBytes Optional message bytes.
          */
         void addMessage(TcpDiscoveryAbstractMessage msg, @Nullable byte[] msgBytes) {
-            T2 t = new T2<>(msg, msgBytes);
+            T2<TcpDiscoveryAbstractMessage, byte[]> t = new T2<>(msg, msgBytes);
 
             if (msg.highPriority())
                 queue.addFirst(t);

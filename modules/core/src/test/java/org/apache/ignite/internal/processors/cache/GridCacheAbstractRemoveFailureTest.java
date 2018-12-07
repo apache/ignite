@@ -38,6 +38,8 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -124,6 +126,11 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return DUR + 60_000;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /**
@@ -441,7 +448,6 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
     /**
      * @param expVals Expected values in cache.
      */
-    @SuppressWarnings({"TooBroadScope", "ConstantIfStatement"})
     private void assertCacheContent(Map<Integer, GridTuple<Integer>> expVals) {
         assert !expVals.isEmpty();
 

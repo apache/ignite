@@ -32,13 +32,17 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -64,6 +68,11 @@ public class GridCacheVersionTopologyChangeTest extends GridCommonAbstractTest {
         super.afterTest();
     }
 
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -76,6 +85,13 @@ public class GridCacheVersionTopologyChangeTest extends GridCommonAbstractTest {
      */
     public void testVersionIncreaseTx() throws Exception {
         checkVersionIncrease(cacheConfigurations(TRANSACTIONAL));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testVersionIncreaseMvccTx() throws Exception {
+        checkVersionIncrease(cacheConfigurations(TRANSACTIONAL_SNAPSHOT));
     }
 
     /**
@@ -142,7 +158,7 @@ public class GridCacheVersionTopologyChangeTest extends GridCommonAbstractTest {
 
             int nodeIdx = 1;
 
-            for (int n = 0; n < 10; n++) {
+            for (int n = 0; n < SF.applyLB(10, 2); n++) {
                 startGrid(nodeIdx++);
 
                 for (int i = 0; i < caches.size(); i++)

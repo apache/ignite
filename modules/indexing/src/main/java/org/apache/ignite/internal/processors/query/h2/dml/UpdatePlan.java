@@ -535,7 +535,7 @@ public final class UpdatePlan {
      * @return Cache context.
      */
     public GridCacheContext cacheContext() {
-        return tbl.cache();
+        return tbl.cacheContext();
     }
 
     /**
@@ -647,7 +647,7 @@ public final class UpdatePlan {
 
         /** {@inheritDoc} */
         @Override public void beforeDetach() {
-            ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> conn0 = conn = idx.detach();
+            ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> conn0 = conn = idx.connections().detachThreadConnection();
 
             if (isClosed())
                 conn0.recycle();

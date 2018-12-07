@@ -56,7 +56,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Multi-threaded tests for cache queries.
  */
-@SuppressWarnings("StatementWithEmptyBody")
 public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest {
     /** */
     private static final boolean TEST_INFO = true;
@@ -361,9 +360,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope"})
-    public void _testMultiThreadedSwapUnswapLongString() throws Exception {
-        fail("http://atlassian.gridgain.com/jira/browse/GG-11216");
-
+    public void testMultiThreadedSwapUnswapLongString() throws Exception {
         int threadCnt = 50;
         final int keyCnt = 2000;
         final int valCnt = 10000;

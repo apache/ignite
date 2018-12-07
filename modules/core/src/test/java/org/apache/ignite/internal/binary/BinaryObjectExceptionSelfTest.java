@@ -86,7 +86,6 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("WhileLoopReplaceableByForEach")
     public void testUnexpectedFieldType() throws Exception {
         IgniteEx grid = grid(0);
 

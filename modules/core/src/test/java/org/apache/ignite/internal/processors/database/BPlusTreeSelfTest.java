@@ -252,6 +252,29 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception if failed.
+     */
+    public void testIsEmpty() throws Exception {
+        TestTree tree = createTestTree(true);
+
+        assertTrue(tree.isEmpty());
+
+        for (long i = 1; i <= 500; i++) {
+            tree.put(i);
+
+            assertFalse(tree.isEmpty());
+        }
+
+        for (long i = 1; i <= 500; i++) {
+            assertFalse(tree.isEmpty());
+
+            tree.remove(i);
+        }
+
+        assertTrue(tree.isEmpty());
+    }
+
+    /**
      * @throws IgniteCheckedException If failed.
      */
     public void testFindWithClosure() throws IgniteCheckedException {
@@ -296,40 +319,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
             checkCursor(tree.find(null, size, new TestTreeFindFilteredClosure(exp), null), exp.iterator());
         }
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    public void _testBenchInvoke() throws IgniteCheckedException {
-        MAX_PER_PAGE = 10;
-
-        TestTree tree = createTestTree(true);
-
-        long start = System.nanoTime();
-
-        for (int i = 0; i < 10_000_000; i++) {
-            final long key = BPlusTree.randomInt(1000);
-
-//            tree.findOne(key); // 39
-//            tree.putx(key); // 22
-
-            tree.invoke(key, null, new IgniteTree.InvokeClosure<Long>() { // 25
-                @Override public void call(@Nullable Long row) throws IgniteCheckedException {
-                    // No-op.
-                }
-
-                @Override public Long newRow() {
-                    return key;
-                }
-
-                @Override public IgniteTree.OperationType operationType() {
-                    return PUT;
-                }
-            });
-        }
-
-        X.println("   __ time: " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
     }
 
     /**

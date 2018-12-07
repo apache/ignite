@@ -17,6 +17,7 @@
 
 package org.apache.ignite.examples.ml.naivebayes;
 
+import java.io.FileNotFoundException;
 import java.util.Arrays;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
@@ -24,13 +25,11 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.examples.ml.util.TestCache;
+import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
+import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesTrainer;
-
-import static org.apache.ignite.examples.util.IrisDataset.irisDatasetFirstAndSecondClasses;
 
 /**
  * Run naive Bayes classification model based on <a href="https://en.wikipedia.org/wiki/Naive_Bayes_classifier"> naive
@@ -49,14 +48,15 @@ import static org.apache.ignite.examples.util.IrisDataset.irisDatasetFirstAndSec
  */
 public class GaussianNaiveBayesTrainerExample {
     /** Run example. */
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws FileNotFoundException {
         System.out.println();
         System.out.println(">>> Naive Bayes classification model over partitioned dataset usage example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(irisDatasetFirstAndSecondClasses);
+            IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
+                .fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
             System.out.println(">>> Create new naive Bayes classification trainer object.");
             GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer();
@@ -65,8 +65,8 @@ public class GaussianNaiveBayesTrainerExample {
             GaussianNaiveBayesModel mdl = trainer.fit(
                 ignite,
                 dataCache,
-                (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-                (k, v) -> v[0]
+                (k, v) -> v.copyOfRange(1, v.size()),
+                (k, v) -> v.get(0)
             );
 
             System.out.println(">>> Naive Bayes model: " + mdl);
@@ -77,11 +77,11 @@ public class GaussianNaiveBayesTrainerExample {
             // Build confusion matrix. See https://en.wikipedia.org/wiki/Confusion_matrix
             int[][] confusionMtx = {{0, 0}, {0, 0}};
 
-            try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(new ScanQuery<>())) {
-                for (Cache.Entry<Integer, double[]> observation : observations) {
-                    double[] val = observation.getValue();
-                    Vector inputs = VectorUtils.of(Arrays.copyOfRange(val, 1, val.length));
-                    double groundTruth = val[0];
+            try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(new ScanQuery<>())) {
+                for (Cache.Entry<Integer, Vector> observation : observations) {
+                    Vector val = observation.getValue();
+                    Vector inputs = val.copyOfRange(1, val.size());
+                    double groundTruth = val.get(0);
 
                     double prediction = mdl.apply(inputs);
 
