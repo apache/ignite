@@ -17,7 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.Set;
+import java.util.Collection;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.GridCacheIncrementTransformTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheAtomicNodeJoinTest;
@@ -47,50 +47,48 @@ import org.apache.ignite.testframework.GridTestUtils;
 public class IgniteCacheFailoverTestSuite extends TestSuite {
     /**
      * @return Ignite Cache Failover test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         return suite(null);
     }
 
     /**
      * @param ignoredTests Tests don't include in the execution.
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
+    public static TestSuite suite(Collection<Class> ignoredTests) {
         TestSuite suite = new TestSuite("Cache Failover Test Suite");
 
-        suite.addTestSuite(GridCacheAtomicInvalidPartitionHandlingSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicClientInvalidPartitionHandlingSelfTest.class);
-        suite.addTestSuite(GridCacheRebalancingPartitionDistributionTest.class);
+       GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicInvalidPartitionHandlingSelfTest.class, ignoredTests);
+       GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicClientInvalidPartitionHandlingSelfTest.class, ignoredTests);
+       GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingPartitionDistributionTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, GridCacheIncrementTransformTest.class, ignoredTests);
 
         // Failure consistency tests.
-        suite.addTestSuite(GridCacheAtomicRemoveFailureTest.class);
-        suite.addTestSuite(GridCacheAtomicClientRemoveFailureTest.class);
+       GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicRemoveFailureTest.class, ignoredTests);
+       GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicClientRemoveFailureTest.class, ignoredTests);
 
-        suite.addTestSuite(GridCacheDhtAtomicRemoveFailureTest.class);
-        suite.addTestSuite(GridCacheDhtRemoveFailureTest.class);
-        suite.addTestSuite(GridCacheDhtClientRemoveFailureTest.class);
-        suite.addTestSuite(GridCacheNearRemoveFailureTest.class);
-        suite.addTestSuite(GridCacheAtomicNearRemoveFailureTest.class);
-        suite.addTestSuite(IgniteChangingBaselineUpCacheRemoveFailoverTest.class);
-        suite.addTestSuite(IgniteChangingBaselineDownCacheRemoveFailoverTest.class);
+       GridTestUtils.addTestIfNeeded(suite, GridCacheDhtAtomicRemoveFailureTest.class, ignoredTests);
+       GridTestUtils.addTestIfNeeded(suite, GridCacheDhtRemoveFailureTest.class, ignoredTests);
+       GridTestUtils.addTestIfNeeded(suite, GridCacheDhtClientRemoveFailureTest.class, ignoredTests);
+       GridTestUtils.addTestIfNeeded(suite, GridCacheNearRemoveFailureTest.class, ignoredTests);
+       GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicNearRemoveFailureTest.class, ignoredTests);
+       GridTestUtils.addTestIfNeeded(suite, IgniteChangingBaselineUpCacheRemoveFailoverTest.class, ignoredTests);
+       GridTestUtils.addTestIfNeeded(suite, IgniteChangingBaselineDownCacheRemoveFailoverTest.class, ignoredTests);
 
-        suite.addTestSuite(IgniteCacheAtomicNodeJoinTest.class);
-        suite.addTestSuite(IgniteCacheTxNodeJoinTest.class);
+       GridTestUtils.addTestIfNeeded(suite, IgniteCacheAtomicNodeJoinTest.class, ignoredTests);
+       GridTestUtils.addTestIfNeeded(suite, IgniteCacheTxNodeJoinTest.class, ignoredTests);
 
-        suite.addTestSuite(IgniteCacheTxNearDisabledPutGetRestartTest.class);
+       GridTestUtils.addTestIfNeeded(suite, IgniteCacheTxNearDisabledPutGetRestartTest.class, ignoredTests);
 
-        suite.addTestSuite(IgniteCacheSizeFailoverTest.class);
+       GridTestUtils.addTestIfNeeded(suite, IgniteCacheSizeFailoverTest.class, ignoredTests);
 
-        suite.addTestSuite(IgniteAtomicLongChangingTopologySelfTest.class);
+       GridTestUtils.addTestIfNeeded(suite, IgniteAtomicLongChangingTopologySelfTest.class, ignoredTests);
 
-        suite.addTestSuite(GridCacheTxNodeFailureSelfTest.class);
+       GridTestUtils.addTestIfNeeded(suite, GridCacheTxNodeFailureSelfTest.class, ignoredTests);
 
-        suite.addTestSuite(AtomicPutAllChangingTopologyTest.class);
+       GridTestUtils.addTestIfNeeded(suite, AtomicPutAllChangingTopologyTest.class, ignoredTests);
 
         return suite;
     }

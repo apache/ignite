@@ -25,6 +25,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -50,6 +51,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionRollbackException;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -63,6 +65,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    private CacheAtomicityMode atomicityMode = TRANSACTIONAL;
 
     /**
      * @return Grid count.
@@ -96,17 +101,33 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
-        ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setAtomicityMode(atomicityMode);
         ccfg.setBackups(1);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         return ccfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        atomicityMode = TRANSACTIONAL;
+
+        super.afterTest();
+    }
+
     /**
      * @throws Exception If failed.
      */
     public void testPrimaryNodeFailureBackupCommitPessimistic() throws Exception {
+        checkPrimaryNodeFailureBackupCommit(PESSIMISTIC, false, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPrimaryNodeFailureBackupCommitMvcc() throws Exception {
+        atomicityMode = TRANSACTIONAL_SNAPSHOT;
+
         checkPrimaryNodeFailureBackupCommit(PESSIMISTIC, false, true);
     }
 
@@ -127,6 +148,16 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testPrimaryNodeFailureBackupCommitMvccOnBackup() throws Exception {
+        atomicityMode = TRANSACTIONAL_SNAPSHOT;
+
+        checkPrimaryNodeFailureBackupCommit(PESSIMISTIC, true, true);
+    }
+
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testPrimaryNodeFailureBackupCommitOptimisticOnBackup() throws Exception {
         checkPrimaryNodeFailureBackupCommit(OPTIMISTIC, true, true);
     }
@@ -135,6 +166,15 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPrimaryNodeFailureBackupRollbackPessimistic() throws Exception {
+        checkPrimaryNodeFailureBackupCommit(PESSIMISTIC, false, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPrimaryNodeFailureBackupRollbackMvcc() throws Exception {
+        atomicityMode = TRANSACTIONAL_SNAPSHOT;
+
         checkPrimaryNodeFailureBackupCommit(PESSIMISTIC, false, false);
     }
 
@@ -153,6 +193,16 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     public void testPrimaryNodeFailureBackupRollbackPessimisticOnBackup() throws Exception {
         checkPrimaryNodeFailureBackupCommit(PESSIMISTIC, true, false);
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPrimaryNodeFailureBackupRollbackMvccOnBackup() throws Exception {
+        atomicityMode = TRANSACTIONAL_SNAPSHOT;
+
+        checkPrimaryNodeFailureBackupCommit(PESSIMISTIC, true, false);
+    }
+
 
     /**
      * @throws Exception If failed.
@@ -186,6 +236,42 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPrimaryNodeFailureBackupRollbackImplicitOnBackup() throws Exception {
+        checkPrimaryNodeFailureBackupCommit(null, true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPrimaryNodeFailureBackupCommitImplicitMvcc() throws Exception {
+        atomicityMode = TRANSACTIONAL_SNAPSHOT;
+
+        checkPrimaryNodeFailureBackupCommit(null, false, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPrimaryNodeFailureBackupCommitImplicitMvccOnBackup() throws Exception {
+        atomicityMode = TRANSACTIONAL_SNAPSHOT;
+
+        checkPrimaryNodeFailureBackupCommit(null, true, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPrimaryNodeFailureBackupRollbackImplicitMvcc() throws Exception {
+        atomicityMode = TRANSACTIONAL_SNAPSHOT;
+
+        checkPrimaryNodeFailureBackupCommit(null, false, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPrimaryNodeFailureBackupRollbackImplicitMvccOnBackup() throws Exception {
+        atomicityMode = TRANSACTIONAL_SNAPSHOT;
+
         checkPrimaryNodeFailureBackupCommit(null, true, false);
     }
 
