@@ -54,6 +54,7 @@ import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSet;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.Ignition;
@@ -265,7 +266,8 @@ public class IgniteProcessProxy implements IgniteEx {
                 (marsh != null && arg.startsWith("-D" + IgniteTestResources.MARSH_CLASS_NAME)) ||
                 arg.startsWith("--add-opens") || arg.startsWith("--add-exports") || arg.startsWith("--add-modules") ||
                 arg.startsWith("--patch-module") || arg.startsWith("--add-reads") ||
-                arg.startsWith("-XX:+IgnoreUnrecognizedVMOptions"))
+                arg.startsWith("-XX:+IgnoreUnrecognizedVMOptions") ||
+                arg.startsWith(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS))
                 filteredJvmArgs.add(arg);
         }
 
