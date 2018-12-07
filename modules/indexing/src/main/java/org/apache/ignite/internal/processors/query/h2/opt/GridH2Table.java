@@ -314,11 +314,13 @@ public class GridH2Table extends TableBase {
      * @param ses H2 session.
      */
     private void readLockInternal(Session ses) {
+        if (destroyed)
+            return;
+
         Object res = sessions.get(ses);
 
         assert res != null && Boolean.TRUE != res : "Invalid table lock [lock=" + res + ']';
 
-        // Acquire the lock.
         lock(false);
     }
 
