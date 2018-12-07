@@ -142,6 +142,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             ctx.wal(),
             globalRemoveId(),
             grp.groupId(),
+            grp.sharedGroup(),
             PageIdAllocator.INDEX_PARTITION,
             PageIdAllocator.FLAG_IDX,
             reuseList,
@@ -835,19 +836,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
-    @Override public RootPage rootPageForIndex(int cacheId, String idxName) throws IgniteCheckedException {
-        if (grp.sharedGroup())
-            idxName = Integer.toString(cacheId) + "_" + idxName;
-
-        return indexStorage.getOrAllocateForTree(idxName);
+    @Override public RootPage rootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException {
+        return indexStorage.allocateCacheIndex(cacheId, idxName, segment);
     }
 
     /** {@inheritDoc} */
-    @Override public void dropRootPageForIndex(int cacheId, String idxName) throws IgniteCheckedException {
-        if (grp.sharedGroup())
-            idxName = Integer.toString(cacheId) + "_" + idxName;
-
-        indexStorage.dropRootPage(idxName);
+    @Override public void dropRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException {
+        indexStorage.dropCacheIndex(cacheId, idxName, segment);
     }
 
     /** {@inheritDoc} */
@@ -1463,7 +1458,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          * @return Store delegate.
          * @throws IgniteCheckedException If failed.
          */
-        @SuppressWarnings("SizeReplaceableByIsEmpty")
         private CacheDataStore init0(boolean checkExists) throws IgniteCheckedException {
             CacheDataStore delegate0 = delegate;
 
@@ -1574,8 +1568,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     pendingTree = pendingTree0;
 
-                    // TODO IGNITE-10390 replace size() > 0 with isEmpty()
-                    if (!hasPendingEntries && pendingTree0.size() > 0)
+                    if (!hasPendingEntries && !pendingTree0.isEmpty())
                         hasPendingEntries = true;
 
                     int grpId = grp.groupId();

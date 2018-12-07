@@ -107,6 +107,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheTxInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxLocalInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxNearEnabledInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteClientAffinityAssignmentSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteGetNonPlainKeyReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteIncompleteCacheObjectSelfTest;
 import org.apache.ignite.internal.processors.cache.IgnitePutAllLargeBatchSelfTest;
 import org.apache.ignite.internal.processors.cache.IgnitePutAllUpdateNonPreloadedPartitionSelfTest;
@@ -144,6 +145,7 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCa
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxExceptionSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheEntryProcessorExternalizableFailedTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheEntryProcessorNonSerializableTest;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorPersistenceSelfTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorSelfTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerClientReconnectAfterClusterRestartTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImplSelfTest;
@@ -250,6 +252,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheBalancingStoreSelfTest.class);
         suite.addTestSuite(GridCacheAffinityApiSelfTest.class);
         suite.addTestSuite(GridCacheStoreValueBytesSelfTest.class);
+        GridTestUtils.addTestIfNeeded(suite, DataStreamProcessorPersistenceSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, DataStreamProcessorSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, DataStreamerUpdateAfterLoadTest.class, ignoredTests);
         suite.addTestSuite(DataStreamerMultiThreadedSelfTest.class);
@@ -363,6 +366,8 @@ public class IgniteCacheTestSuite extends TestSuite {
         //suite.addTestSuite(InterceptorWithKeepBinaryCacheFullApiTest.class);
 
         suite.addTestSuite(BinaryMetadataRegistrationInsideEntryProcessorTest.class);
+
+        suite.addTestSuite(IgniteGetNonPlainKeyReadThroughSelfTest.class);
 
         return suite;
     }

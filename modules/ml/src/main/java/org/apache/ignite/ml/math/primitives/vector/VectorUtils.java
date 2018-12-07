@@ -40,6 +40,17 @@ public class VectorUtils {
     }
 
     /**
+     * Create new vector of specified size n with specified value.
+     *
+     * @param val Value.
+     * @param n Size;
+     * @return New vector of specified size n with specified value.
+     */
+    public static DenseVector fill(double val, int n) {
+        return (DenseVector)new DenseVector(n).assign(val);
+    }
+
+    /**
      * Turn number into a local Vector of given size with one-hot encoding.
      *
      * @param num Number to turn into vector.

@@ -725,6 +725,28 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * Test that {@code DROP TABLE} executed at client node actually removes specified cache and type descriptor on all nodes.
+     * @throws Exception if failed.
+     */
+    public void testDropTableFromClient() throws Exception {
+        execute(grid(0),"CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
+            " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
+            "\"template=cache\"");
+
+        execute(client(), "DROP TABLE \"Person\"");
+
+        for (int i = 0; i < 4; i++) {
+            IgniteEx node = grid(i);
+
+            assertNull(node.cache("Person"));
+
+            QueryTypeDescriptorImpl desc = type(node, "Person", "Person");
+
+            assertNull(desc);
+        }
+    }
+
+    /**
      * Test that {@code DROP TABLE} actually removes specified cache and type descriptor on all nodes.
      * @throws Exception if failed.
      */
