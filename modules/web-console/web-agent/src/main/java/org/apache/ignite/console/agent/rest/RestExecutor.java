@@ -22,7 +22,6 @@ import java.io.StringWriter;
 import java.net.ConnectException;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -70,9 +69,6 @@ public class RestExecutor implements AutoCloseable {
 
     /** Index of alive node URI. */
     private Map<List<String>, Integer> startIdxs = U.newHashMap(2);
-
-    /** Cache for parsed URLs. */
-    private Map<String, HttpUrl> urlCache = new ConcurrentHashMap<>();
 
     /**
      * Default constructor.
@@ -145,13 +141,11 @@ public class RestExecutor implements AutoCloseable {
 
     /** */
     private RestResult sendRequest(String url, Map<String, Object> params, Map<String, Object> headers) throws IOException {
-        HttpUrl httpUrl = urlCache.computeIfAbsent(url, (s) -> {
-            HttpUrl u = HttpUrl.parse(url);
-
-            HttpUrl.Builder urlBuilder = u.newBuilder().addPathSegment("ignite");
-
-            return urlBuilder.build();
-        });
+        HttpUrl httpUrl = HttpUrl
+            .parse(url)
+            .newBuilder()
+            .addPathSegment("ignite")
+            .build();
 
         final Request.Builder reqBuilder = new Request.Builder();
 

@@ -20,12 +20,11 @@ package org.apache.ignite.console.agent.handlers;
 import io.socket.client.Socket;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -199,7 +198,7 @@ public class ClusterListener implements AutoCloseable {
         private String clusterName;
 
         /** */
-        private Set<UUID> nids;
+        private Collection<UUID> nids;
 
         /** */
         private Map<UUID, String> addrs;
@@ -236,7 +235,7 @@ public class ClusterListener implements AutoCloseable {
         TopologySnapshot(Collection<GridClientNodeBean> nodes) {
             int sz = nodes.size();
 
-            nids = new LinkedHashSet<>(sz);
+            nids = new ArrayList<>(sz);
             addrs = U.newHashMap(sz);
             clients = U.newHashMap(sz);
             active = false;
@@ -330,7 +329,7 @@ public class ClusterListener implements AutoCloseable {
         /**
          * @return Cluster nodes IDs.
          */
-        public Set<UUID> getNids() {
+        public Collection<UUID> getNids() {
             return nids;
         }
 
