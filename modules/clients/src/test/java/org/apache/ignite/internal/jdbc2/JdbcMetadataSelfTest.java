@@ -57,6 +57,7 @@ import static java.sql.Types.INTEGER;
 import static java.sql.Types.VARCHAR;
 import static java.sql.Types.DECIMAL;
 import static java.sql.Types.DATE;
+import static java.sql.Types.REAL;
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -179,12 +180,12 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testDecimalAndDateTypeMetaData() throws Exception {
+    public void testColumnMetaData() throws Exception {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             Statement stmt = conn.createStatement();
 
             ResultSet rs = stmt.executeQuery(
-                    "select t.decimal, t.date from \"metaTest\".MetaTest as t");
+                    "select t.decimal, t.date, t.float_col from \"metaTest\".MetaTest as t");
 
             assert rs != null;
 
@@ -192,7 +193,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
 
             assert meta != null;
 
-            assert meta.getColumnCount() == 2;
+            assert meta.getColumnCount() == 3;
 
             assert "METATEST".equalsIgnoreCase(meta.getTableName(1));
             assert "DECIMAL".equalsIgnoreCase(meta.getColumnName(1));
@@ -207,6 +208,13 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             assert meta.getColumnType(2) == DATE;
             assert "DATE".equals(meta.getColumnTypeName(2));
             assert "java.sql.Date".equals(meta.getColumnClassName(2));
+
+            assert "METATEST".equalsIgnoreCase(meta.getTableName(3));
+            assert "FLOAT_COL".equalsIgnoreCase(meta.getColumnName(3));
+            assert "FLOAT_COL".equalsIgnoreCase(meta.getColumnLabel(3));
+            assert meta.getColumnType(3) == REAL;
+            assert "FLOAT".equals(meta.getColumnTypeName(3));
+            assert "java.lang.Float".equals(meta.getColumnClassName(3));
         }
     }
 
@@ -599,14 +607,19 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         @QuerySqlField
         private final BigDecimal decimal;
 
+        /** float. */
+        @QuerySqlField
+        private final Float float_col;
+
         /**
          * @param id ID.
          * @param date Date.
          */
-        private MetaTest(int id, Date date, BigDecimal decimal) {
+        private MetaTest(int id, Date date, BigDecimal decimal, Float float_col) {
             this.id = id;
             this.date = date;
             this.decimal = decimal;
+            this.float_col = float_col;
         }
     }
 }
