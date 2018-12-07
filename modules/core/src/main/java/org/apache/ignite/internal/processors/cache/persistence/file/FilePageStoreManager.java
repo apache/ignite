@@ -341,7 +341,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             CacheStoreHolder holder = initDir(
                 new File(storeWorkDir, META_STORAGE_NAME),
                 grpId,
-                1,
+                PageIdAllocator.METASTORE_PARTITION + 1,
                 delta -> {/* No-op */} );
 
             CacheStoreHolder old = idxCacheStores.put(grpId, holder);
