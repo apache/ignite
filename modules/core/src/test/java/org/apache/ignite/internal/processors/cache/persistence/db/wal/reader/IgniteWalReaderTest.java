@@ -1306,6 +1306,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                 //noinspection EnumSwitchStatementWhichMissesCases
                 switch (type) {
                     case DATA_RECORD:
+                        // Fallthrough.
                     case MVCC_DATA_RECORD: {
                         assert walRecord instanceof DataRecord;
 
@@ -1357,8 +1358,11 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                             entriesUnderTxFound.put(globalTxId, entriesUnderTx == null ? 1 : entriesUnderTx + 1);
                         }
                     }
+
                     break;
+
                     case TX_RECORD:
+                        // Fallthrough
                     case MVCC_TX_RECORD: {
                         assert walRecord instanceof TxRecord;
 
