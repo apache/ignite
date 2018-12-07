@@ -160,7 +160,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             boolean first = (nodeId != null);
 
             // Need to unlock topology to avoid deadlock with binary descriptors registration.
-            if(!topLocked && cctx.topology().holdsLock())
+            if (!topLocked && cctx.topology().holdsLock())
                 cctx.topology().readUnlock();
 
             for (Batch batch : next) {

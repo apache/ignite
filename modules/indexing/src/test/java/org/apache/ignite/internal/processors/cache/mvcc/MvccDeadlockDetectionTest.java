@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
@@ -243,6 +245,85 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
 
         fut1.get();
         fut2.get();
+    }
+
+    @Test
+    public void detectDeadlockLocalEntriesEnlistFuture() throws Exception {
+        // t0d0 ensure test will not hang
+        setUpGrids(1, false);
+
+        List<Integer> keys = primaryKeys(grid(0).cache(DEFAULT_CACHE_NAME), 2);
+
+        IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
+
+        assert client.configuration().isClientMode();
+
+        CyclicBarrier b = new CyclicBarrier(2);
+
+        IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(() -> {
+            try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                cache.put(keys.get(0), 11);
+                b.await();
+                cache.put(keys.get(1), 11);
+
+                tx.commit();
+            }
+            return null;
+        });
+
+        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            cache.put(keys.get(1), 22);
+            b.await();
+            TimeUnit.SECONDS.sleep(2);
+            cache.put(keys.get(0), 22);
+
+            tx.commit();
+        }
+
+        fut.get();
+    }
+
+    @Test
+    public void detectDeadlockLocalQueryEnlistFuture() throws Exception {
+        // t0d0 ensure test will not hang
+        setUpGrids(1, true);
+
+        List<Integer> keys = primaryKeys(grid(0).cache(DEFAULT_CACHE_NAME), 2);
+
+        Collections.sort(keys);
+
+        Integer key0 = keys.get(0), key1 = keys.get(1);
+
+        IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
+
+        assert client.configuration().isClientMode();
+
+        cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, ?)").setArgs(key0, -1));
+        cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, ?)").setArgs(key1, -1));
+
+        CyclicBarrier b = new CyclicBarrier(2);
+
+        IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(() -> {
+            try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                cache.query(new SqlFieldsQuery("update Integer set _val = 0 where _key <= ?").setArgs(key0));
+                b.await();
+                cache.query(new SqlFieldsQuery("update Integer set _val = 0 where _key >= ?").setArgs(key1));
+
+                tx.commit();
+            }
+            return null;
+        });
+
+        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            cache.query(new SqlFieldsQuery("update Integer set _val = 1 where _key >= ?").setArgs(key1));
+            b.await();
+            TimeUnit.SECONDS.sleep(2);
+            cache.query(new SqlFieldsQuery("update Integer set _val = 1 where _key <= ?").setArgs(key0));
+
+            tx.commit();
+        }
+
+        fut.get();
     }
 }
 
