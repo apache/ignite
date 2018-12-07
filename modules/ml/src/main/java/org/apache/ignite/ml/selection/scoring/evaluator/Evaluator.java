@@ -17,6 +17,10 @@
 
 package org.apache.ignite.ml.selection.scoring.evaluator;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.apache.commons.math3.util.Pair;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.Model;
@@ -24,7 +28,7 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.selection.scoring.cursor.CacheBasedLabelPairCursor;
 import org.apache.ignite.ml.selection.scoring.cursor.LabelPairCursor;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.Metric;
 
 /**
  * Binary classification evaluator that compute metrics from predictions.
@@ -47,22 +51,9 @@ public class Evaluator {
         Model<Vector, L> mdl,
         IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor,
-        Accuracy<L> metric) {
-        double metricRes;
+        Metric<L> metric) {
 
-        try (LabelPairCursor<L> cursor = new CacheBasedLabelPairCursor<L, K, V>(
-            dataCache,
-            featureExtractor,
-            lbExtractor,
-            mdl
-        )) {
-            metricRes = metric.score(cursor.iterator());
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        return metricRes;
+        return calculateMetric(dataCache, null, mdl, featureExtractor, lbExtractor, metric);
     }
 
     /**
@@ -83,10 +74,44 @@ public class Evaluator {
         Model<Vector, L> mdl,
         IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor,
-        Accuracy<L> metric) {
+        Metric<L> metric) {
+
+        return calculateMetric(dataCache, filter, mdl, featureExtractor, lbExtractor, metric);
+    }
+
+    public static <L, K, V> Map<String, Double> evaluate(IgniteCache<K, V> dataCache,
+        Model<Vector, L> mdl,
+        IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, L> lbExtractor,
+        List<Metric<L>> metrics) {
+
+        return calculateMultipleMetrics(dataCache, null, mdl, featureExtractor, lbExtractor, metrics);
+    }
+
+    public static <L, K, V> Map<String, Double> evaluate(IgniteCache<K, V> dataCache, IgniteBiPredicate<K, V> filter,
+        Model<Vector, L> mdl,
+        IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, L> lbExtractor,
+        List<Metric<L>> metrics) {
+
+        return calculateMultipleMetrics(dataCache, filter, mdl, featureExtractor, lbExtractor, metrics);
+    }
+
+    private static <L, K, V> Map<String, Double> calculateMultipleMetrics(IgniteCache<K, V> dataCache,
+        IgniteBiPredicate<K, V> filter, Model<Vector, L> mdl, IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, L> lbExtractor, List<Metric<L>> metrics) {
+        return metrics.stream().map(metric -> {
+            double score = calculateMetric(dataCache, filter, mdl, featureExtractor, lbExtractor, metric);
+            return new Pair<>(metric.name(), score);
+        }).collect(Collectors.toMap(Pair::getFirst, Pair::getSecond, (p1, p2) -> p1));
+    }
+
+    private static <L, K, V> double calculateMetric(IgniteCache<K, V> dataCache, IgniteBiPredicate<K, V> filter,
+        Model<Vector, L> mdl, IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
+        Metric<L> metric) {
         double metricRes;
 
-        try (LabelPairCursor<L> cursor = new CacheBasedLabelPairCursor<L, K, V>(
+        try (LabelPairCursor<L> cursor = new CacheBasedLabelPairCursor<>(
             dataCache,
             filter,
             featureExtractor,

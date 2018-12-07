@@ -98,12 +98,14 @@ public class CacheBasedLabelPairCursor<L, K, V> implements LabelPairCursor<L> {
      * Queries the specified cache using the specified filter.
      *
      * @param upstreamCache Ignite cache with {@code upstream} data.
-     * @param filter Filter for {@code upstream} data.
+     * @param filter Filter for {@code upstream} data. If {@code null} then all entries will be returned.
      * @return Query cursor.
      */
     private QueryCursor<Cache.Entry<K, V>> query(IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> filter) {
         ScanQuery<K, V> qry = new ScanQuery<>();
-        qry.setFilter(filter);
+
+        if (filter != null) // This section was added to keep code correct of qry.setFilter(null) behaviour will changed.
+            qry.setFilter(filter);
 
         return upstreamCache.query(qry);
     }

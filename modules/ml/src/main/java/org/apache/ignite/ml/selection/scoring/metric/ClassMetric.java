@@ -17,29 +17,21 @@
 
 package org.apache.ignite.ml.selection.scoring.metric;
 
-import java.util.Iterator;
-import org.apache.ignite.ml.selection.scoring.LabelPair;
-
 /**
- * Base interface for score calculators.
+ * F-measure calculator.
  *
  * @param <L> Type of a label (truth or prediction).
  */
-public interface Metric<L> {
-    /**
-     * Calculates score.
-     *
-     * @param iter Iterator that supplies pairs of truth values and predicated.
-     * @return Score.
-     */
-    public double score(Iterator<LabelPair<L>> iter);
+public abstract class ClassMetric<L> implements Metric<L> {
+    /** Class label. */
+    protected L clsLb;
 
     /**
-     * Returns the metric's name.
+     * The class of interest or positive class.
      *
-     * NOTE: Should be unique to calculate multiple metrics correctly.
-     *
-     * @return String name representation.
+     * @param clsLb The label.
      */
-    public String name();
+    public ClassMetric(L clsLb) {
+        this.clsLb = clsLb;
+    }
 }
