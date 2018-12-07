@@ -149,7 +149,6 @@ public class IgniteTxConcurrentRemoveObjectsTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
-    @Test
     public void checkTxLeavesObjectsInLocalPartition(CacheConfiguration<Integer, String> ccfg,
         TransactionConcurrency optimistic, TransactionIsolation isolation) throws Exception {
         IgniteEx igniteEx = grid(0);
