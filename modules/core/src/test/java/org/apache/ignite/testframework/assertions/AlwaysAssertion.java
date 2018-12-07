@@ -23,8 +23,7 @@ public class AlwaysAssertion implements Assertion {
     public static final Assertion INSTANCE = new AlwaysAssertion();
 
     /** {@inheritDoc} */
-    @Override
-    public void test() throws AssertionError {
+    @Override public void test() throws AssertionError {
         // No-op.
     }
 }

@@ -134,6 +134,7 @@ public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvok
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeReadThroughMvccTxReplicated() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-8582");
 
@@ -143,6 +144,7 @@ public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvok
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeReadThroughMvccTxLocal() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-8582");
 

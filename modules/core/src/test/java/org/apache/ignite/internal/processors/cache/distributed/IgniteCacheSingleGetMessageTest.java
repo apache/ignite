@@ -100,6 +100,7 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccSingleGetMessage() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-7371");
 

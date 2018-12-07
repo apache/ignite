@@ -101,6 +101,7 @@ import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTask;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
+import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
 import org.apache.ignite.internal.visor.verify.IndexIntegrityCheckIssue;
 import org.apache.ignite.internal.visor.verify.IndexValidationIssue;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesPartitionResult;
@@ -194,6 +195,9 @@ public class CommandHandler {
 
     /** */
     private static final String CMD_SKIP_ZEROS = "--skipZeros";
+
+    /** Cache filter. */
+    private static final String CACHE_FILTER = "--cacheFilter";
 
     /** */
     private static final String CMD_USER_ATTRIBUTES = "--user-attributes";
@@ -809,10 +813,14 @@ public class CommandHandler {
         nl();
         log(i("Subcommands:"));
 
-        usageCache(LIST, "regexPattern", "[groups|seq]", "[nodeId]", op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE.text()));
-        usageCache(CONTENTION, "minQueueSize", "[nodeId]", "[maxPrint]");
-        usageCache(IDLE_VERIFY, op(CMD_DUMP), op(CMD_SKIP_ZEROS), "[cache1,...,cacheN]");
-        usageCache(VALIDATE_INDEXES, "[cache1,...,cacheN]", "[nodeId]", op(or(VI_CHECK_FIRST + " N", VI_CHECK_THROUGH + " K")));
+        usageCache(LIST, "regexPattern", op(or("groups","seq")), op("nodeId"), op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE
+            .text()));
+        usageCache(CONTENTION, "minQueueSize", op("nodeId"), op("maxPrint"));
+        usageCache(IDLE_VERIFY, op(CMD_DUMP), op(CMD_SKIP_ZEROS), "[cache1,...,cacheN]",
+            op(CACHE_FILTER, or(CacheFilterEnum.ALL.toString(), CacheFilterEnum.SYSTEM.toString(), CacheFilterEnum.PERSISTENT.toString(),
+                CacheFilterEnum.NOT_PERSISTENT.toString())));
+        usageCache(VALIDATE_INDEXES, "[cache1,...,cacheN]", op("nodeId"), op(or(VI_CHECK_FIRST + " N",
+            VI_CHECK_THROUGH + " K")));
         usageCache(DISTRIBUTION, or("nodeId", NULL), "[cacheName1,...,cacheNameN]", op(CMD_USER_ATTRIBUTES, "attName1,...,attrNameN"));
         usageCache(RESET_LOST_PARTITIONS, "cacheName1,...,cacheNameN");
         nl();
@@ -1133,7 +1141,7 @@ public class CommandHandler {
         String path = executeTask(
             client,
             VisorIdleVerifyDumpTask.class,
-            new VisorIdleVerifyDumpTaskArg(cacheArgs.caches(), cacheArgs.isSkipZeros())
+            new VisorIdleVerifyDumpTaskArg(cacheArgs.caches(), cacheArgs.isSkipZeros(), cacheArgs.getCacheFilterEnum())
         );
 
         log("VisorIdleVerifyDumpTask successfully written output to '" + path + "'");
@@ -2049,6 +2057,12 @@ public class CommandHandler {
                         cacheArgs.dump(true);
                     else if (CMD_SKIP_ZEROS.equals(nextArg))
                         cacheArgs.skipZeros(true);
+                    else if (CACHE_FILTER.equals(nextArg)) {
+                        String filter = nextArg("The cache filter should be specified. The following values can be " +
+                            "used: " + Arrays.toString(CacheFilterEnum.values()) + '.').toUpperCase();
+
+                        cacheArgs.setCacheFilterEnum(CacheFilterEnum.valueOf(filter));
+                    }
                     else
                         parseCacheNames(nextArg, cacheArgs);
                 }

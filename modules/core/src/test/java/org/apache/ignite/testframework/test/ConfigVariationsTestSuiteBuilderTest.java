@@ -112,8 +112,7 @@ public class ConfigVariationsTestSuiteBuilderTest extends TestCase {
         /**
          * @throws Exception If failed.
          */
-        @Test
-    public void test1() throws Exception {
+        public void test1() throws Exception {
             // No-op.
         }
     }

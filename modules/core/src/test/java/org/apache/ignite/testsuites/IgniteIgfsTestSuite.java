@@ -76,9 +76,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public class IgniteIgfsTestSuite extends TestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite FS Test Suite For Platform Independent Tests");
 
         suite.addTest(new JUnit4TestAdapter(IgfsPrimarySelfTest.class));
@@ -122,39 +121,39 @@ public class IgniteIgfsTestSuite extends TestSuite {
 
         suite.addTest(new JUnit4TestAdapter(IgfsModeResolverSelfTest.class));
 
-        //suite.addTestSuite(IgfsPathSelfTest.class);
-        suite.addTestSuite(IgfsFragmentizerSelfTest.class);
-        suite.addTestSuite(IgfsFragmentizerTopologySelfTest.class);
-        suite.addTestSuite(IgfsFileMapSelfTest.class);
+        //suite.addTest(new JUnit4TestAdapter(IgfsPathSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsFragmentizerSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsFragmentizerTopologySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsFileMapSelfTest.class));
 
-        suite.addTestSuite(IgfsByteDelimiterRecordResolverSelfTest.class);
-        suite.addTestSuite(IgfsStringDelimiterRecordResolverSelfTest.class);
-        suite.addTestSuite(IgfsFixedLengthRecordResolverSelfTest.class);
-        suite.addTestSuite(IgfsNewLineDelimiterRecordResolverSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgfsByteDelimiterRecordResolverSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsStringDelimiterRecordResolverSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsFixedLengthRecordResolverSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsNewLineDelimiterRecordResolverSelfTest.class));
 
-        suite.addTestSuite(IgfsTaskSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgfsTaskSelfTest.class));
 
-        suite.addTestSuite(IgfsGroupDataBlockKeyMapperHashSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgfsGroupDataBlockKeyMapperHashSelfTest.class));
 
-        suite.addTestSuite(IgfsStartCacheTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgfsStartCacheTest.class));
 
-        suite.addTestSuite(IgfsBackupsPrimarySelfTest.class);
-        suite.addTestSuite(IgfsBackupsDualSyncSelfTest.class);
-        suite.addTestSuite(IgfsBackupsDualAsyncSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgfsBackupsPrimarySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsBackupsDualSyncSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsBackupsDualAsyncSelfTest.class));
 
-        suite.addTestSuite(IgfsBlockMessageSystemPoolStarvationSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgfsBlockMessageSystemPoolStarvationSelfTest.class));
 
         // TODO: Enable when IGFS failover is fixed.
-        //suite.addTestSuite(IgfsBackupFailoverSelfTest.class);
+        //suite.addTest(new JUnit4TestAdapter(IgfsBackupFailoverSelfTest.class));
 
-        suite.addTestSuite(IgfsProxySelfTest.class);
-        suite.addTestSuite(IgfsLocalSecondaryFileSystemProxySelfTest.class);
-        suite.addTestSuite(IgfsLocalSecondaryFileSystemProxyClientSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgfsProxySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsLocalSecondaryFileSystemProxySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsLocalSecondaryFileSystemProxyClientSelfTest.class));
 
-        suite.addTestSuite(IgfsAtomicPrimarySelfTest.class);
-        suite.addTestSuite(IgfsAtomicPrimaryMultiNodeSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgfsAtomicPrimarySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsAtomicPrimaryMultiNodeSelfTest.class));
 
-        suite.addTestSuite(IgfsSecondaryFileSystemInjectionSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgfsSecondaryFileSystemInjectionSelfTest.class));
 
         return suite;
     }

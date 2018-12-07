@@ -153,6 +153,7 @@ public class IgniteCacheInvokeReadThroughTest extends IgniteCacheInvokeReadThrou
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeReadThroughMvccTx2() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-8582");
 
@@ -162,6 +163,7 @@ public class IgniteCacheInvokeReadThroughTest extends IgniteCacheInvokeReadThrou
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeReadThroughMvccTxNearCache() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-8582");
 
@@ -171,6 +173,7 @@ public class IgniteCacheInvokeReadThroughTest extends IgniteCacheInvokeReadThrou
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeReadThroughMvccTxReplicated() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-8582");
 

@@ -675,6 +675,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartFromClientNode() throws Exception {
         try {
             testAttribute = false;

@@ -15,31 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration;
+package org.apache.ignite.internal.visor.verify;
 
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Disk page compression options.
- *
- * @see CacheConfiguration#setDiskPageCompression
- * @see CacheConfiguration#setDiskPageCompressionLevel
+ * Represents a type of cache(s) that can be used for comparing update counters and checksums between primary and backup partitions.
+ * <br>
+ * @see org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2
  */
-public enum DiskPageCompression {
-    /** Retain only useful data from half-filled pages, but do not apply any compression. */
-    SKIP_GARBAGE,
+public enum CacheFilterEnum {
+    /** All. */
+    ALL,
 
-    /** Zstd compression. */
-    ZSTD,
+    /** System. */
+    SYSTEM,
 
-    /** LZ4 compression. */
-    LZ4,
+    /** Persistent. */
+    PERSISTENT,
 
-    /** Snappy compression. */
-    SNAPPY;
+    /** Not persistent. */
+    NOT_PERSISTENT;
 
     /** Enumerated values. */
-    private static final DiskPageCompression[] VALS = values();
+    private static final CacheFilterEnum[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -47,7 +46,7 @@ public enum DiskPageCompression {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static DiskPageCompression fromOrdinal(int ord) {
+    public static @Nullable CacheFilterEnum fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

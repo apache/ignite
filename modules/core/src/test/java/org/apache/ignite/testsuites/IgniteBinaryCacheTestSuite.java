@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import java.util.HashSet;
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityRoutingSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryMemorySizeSelfTest;
@@ -63,22 +64,22 @@ public class IgniteBinaryCacheTestSuite extends TestSuite {
         suite.addTest(IgniteCacheTestSuite.suite(ignoredTests));
 
         // TODO GG-11148
-        // suite.addTestSuite(GridCacheMemoryModeBinarySelfTest.class);
+        // suite.addTest(new JUnit4TestAdapter(GridCacheMemoryModeBinarySelfTest.class);
 
-        suite.addTestSuite(GridCacheBinariesPartitionedOnlyByteArrayValuesSelfTest.class);
-        suite.addTestSuite(GridCacheBinariesNearPartitionedByteArrayValuesSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridCacheBinariesPartitionedOnlyByteArrayValuesSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheBinariesNearPartitionedByteArrayValuesSelfTest.class));
 
-        suite.addTestSuite(GridDataStreamerImplSelfTest.class);
-        suite.addTestSuite(DataStreamProcessorBinarySelfTest.class);
-        suite.addTestSuite(GridCacheAtomicPartitionedOnlyBinaryDataStreamerMultiNodeSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicPartitionedOnlyBinaryDataStreamerMultithreadedSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridDataStreamerImplSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(DataStreamProcessorBinarySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicPartitionedOnlyBinaryDataStreamerMultiNodeSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicPartitionedOnlyBinaryDataStreamerMultithreadedSelfTest.class));
 
-        suite.addTestSuite(GridCacheAtomicPartitionedOnlyBinaryMultiNodeSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicPartitionedOnlyBinaryMultithreadedSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicPartitionedOnlyBinaryMultiNodeSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicPartitionedOnlyBinaryMultithreadedSelfTest.class));
 
-        suite.addTestSuite(GridCacheAffinityRoutingBinarySelfTest.class);
-        suite.addTestSuite(GridBinaryCacheEntryMemorySizeSelfTest.class);
-        suite.addTestSuite(CacheKeepBinaryWithInterceptorTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridCacheAffinityRoutingBinarySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridBinaryCacheEntryMemorySizeSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheKeepBinaryWithInterceptorTest.class));
 
         return suite;
     }

@@ -162,6 +162,7 @@ public class IgniteCacheFailedUpdateResponseTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeMvccTx() throws Exception {
         testInvoke(mvccTxCache);
         testInvokeAll(mvccTxCache);
