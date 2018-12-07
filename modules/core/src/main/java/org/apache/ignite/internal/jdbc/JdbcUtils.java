@@ -37,7 +37,7 @@ import static java.sql.Types.BINARY;
 import static java.sql.Types.BOOLEAN;
 import static java.sql.Types.DATE;
 import static java.sql.Types.DOUBLE;
-import static java.sql.Types.FLOAT;
+import static java.sql.Types.REAL;
 import static java.sql.Types.INTEGER;
 import static java.sql.Types.OTHER;
 import static java.sql.Types.SMALLINT;
@@ -179,7 +179,7 @@ class JdbcUtils {
         else if (Long.class.getName().equals(cls) || long.class.getName().equals(cls))
             return BIGINT;
         else if (Float.class.getName().equals(cls) || float.class.getName().equals(cls))
-            return FLOAT;
+            return REAL;
         else if (Double.class.getName().equals(cls) || double.class.getName().equals(cls))
             return DOUBLE;
         else if (String.class.getName().equals(cls))
