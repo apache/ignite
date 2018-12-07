@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -50,13 +51,13 @@ public class IgfsEventsTestSuite extends TestSuite {
 
         TestSuite suite = new TestSuite("Ignite FS Events Test Suite");
 
-        suite.addTest(new TestSuite(ldr.loadClass(ShmemPrimary.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(ShmemDualSync.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(ShmemDualAsync.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(ShmemPrimary.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(ShmemDualSync.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(ShmemDualAsync.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(LoopbackPrimary.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(LoopbackDualSync.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(LoopbackDualAsync.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(LoopbackPrimary.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(LoopbackDualSync.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(LoopbackDualAsync.class.getName())));
 
         return suite;
     }
@@ -70,9 +71,9 @@ public class IgfsEventsTestSuite extends TestSuite {
 
         TestSuite suite = new TestSuite("Ignite IGFS Events Test Suite Noarch Only");
 
-        suite.addTest(new TestSuite(ldr.loadClass(LoopbackPrimary.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(LoopbackDualSync.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(LoopbackDualAsync.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(LoopbackPrimary.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(LoopbackDualSync.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(LoopbackDualAsync.class.getName())));
 
         return suite;
     }

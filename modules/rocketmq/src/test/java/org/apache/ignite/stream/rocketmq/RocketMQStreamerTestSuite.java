@@ -17,6 +17,7 @@
 
 package org.apache.ignite.stream.rocketmq;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 
 /**
@@ -25,12 +26,11 @@ import junit.framework.TestSuite;
 public class RocketMQStreamerTestSuite extends TestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Apache RocketMQ streamer Test Suite");
 
-        suite.addTest(new TestSuite(RocketMQStreamerTest.class));
+        suite.addTest(new JUnit4TestAdapter(RocketMQStreamerTest.class));
 
         return suite;
     }

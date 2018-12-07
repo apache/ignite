@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.AffinityKeyNameAndValueFieldNameConflictTest;
 import org.apache.ignite.internal.processors.cache.BigEntryQueryTest;
@@ -241,9 +242,8 @@ import org.apache.ignite.testframework.IgniteTestSuite;
 public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
     /**
      * @return Test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         IgniteTestSuite suite = new IgniteTestSuite("Ignite Cache Queries Test Suite");
 
         suite.addTestSuite(AffinityKeyNameAndValueFieldNameConflictTest.class);
@@ -274,23 +274,23 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
         suite.addTestSuite(BasicIndexTest.class);
 
         // Misc tests.
-        suite.addTest(new TestSuite(QueryEntityValidationSelfTest.class));
-        suite.addTest(new TestSuite(DuplicateKeyValueClassesSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheLazyQueryPartitionsReleaseTest.class));
+        suite.addTest(new JUnit4TestAdapter(QueryEntityValidationSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(DuplicateKeyValueClassesSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheLazyQueryPartitionsReleaseTest.class));
 
         // Dynamic index create/drop tests.
-        suite.addTest(new TestSuite(SchemaExchangeSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(SchemaExchangeSelfTest.class));
 
-        suite.addTest(new TestSuite(DynamicIndexServerCoordinatorBasicSelfTest.class));
-        suite.addTest(new TestSuite(DynamicIndexServerBasicSelfTest.class));
-        suite.addTest(new TestSuite(DynamicIndexServerNodeFilterCoordinatorBasicSelfTest.class));
-        suite.addTest(new TestSuite(DynamicIndexServerNodeFIlterBasicSelfTest.class));
-        suite.addTest(new TestSuite(DynamicIndexClientBasicSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(DynamicIndexServerCoordinatorBasicSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(DynamicIndexServerBasicSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(DynamicIndexServerNodeFilterCoordinatorBasicSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(DynamicIndexServerNodeFIlterBasicSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(DynamicIndexClientBasicSelfTest.class));
 
         // H2 tests.
 
-        suite.addTest(new TestSuite(GridH2IndexingInMemSelfTest.class));
-        suite.addTest(new TestSuite(GridH2IndexingOffheapSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridH2IndexingInMemSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridH2IndexingOffheapSelfTest.class));
 
         // Parsing
         suite.addTestSuite(GridQueryParsingTest.class);
