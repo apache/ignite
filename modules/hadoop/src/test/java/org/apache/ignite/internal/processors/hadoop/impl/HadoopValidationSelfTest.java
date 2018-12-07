@@ -18,10 +18,14 @@
 package org.apache.ignite.internal.processors.hadoop.impl;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Configuration validation tests.
  */
+@RunWith(JUnit4.class)
 public class HadoopValidationSelfTest extends HadoopAbstractSelfTest {
     /** Peer class loading enabled flag. */
     public boolean peerClassLoading;
@@ -47,6 +51,7 @@ public class HadoopValidationSelfTest extends HadoopAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testValid() throws Exception {
         startGrids(1);
     }

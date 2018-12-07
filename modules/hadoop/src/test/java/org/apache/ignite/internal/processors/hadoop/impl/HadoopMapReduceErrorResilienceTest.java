@@ -21,6 +21,9 @@ import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCount2;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test of error resiliency after an error in a map-reduce job execution.
@@ -29,6 +32,7 @@ import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCoun
  *   x { unchecked exception, checked exception, error }
  *   x { phase where the error happens }.
  */
+@RunWith(JUnit4.class)
 public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceTest {
     /** {@inheritDoc} */
     @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
@@ -40,6 +44,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryAfterAnError0_Runtime() throws Exception {
         doTestRecoveryAfterAnError(0, HadoopErrorSimulator.Kind.Runtime);
     }
@@ -49,6 +54,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryAfterAnError0_IOException() throws Exception {
         doTestRecoveryAfterAnError(0, HadoopErrorSimulator.Kind.IOException);
     }
@@ -58,6 +64,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryAfterAnError0_Error() throws Exception {
         doTestRecoveryAfterAnError(0, HadoopErrorSimulator.Kind.Error);
     }
@@ -67,6 +74,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryAfterAnError7_Runtime() throws Exception {
         doTestRecoveryAfterAnError(7, HadoopErrorSimulator.Kind.Runtime);
     }
@@ -75,6 +83,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryAfterAnError7_IOException() throws Exception {
         doTestRecoveryAfterAnError(7, HadoopErrorSimulator.Kind.IOException);
     }
@@ -83,6 +92,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryAfterAnError7_Error() throws Exception {
         doTestRecoveryAfterAnError(7, HadoopErrorSimulator.Kind.Error);
     }

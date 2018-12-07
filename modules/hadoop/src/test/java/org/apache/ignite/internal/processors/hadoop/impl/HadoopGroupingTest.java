@@ -47,12 +47,16 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
 
 /**
  * Grouping test.
  */
+@RunWith(JUnit4.class)
 public class HadoopGroupingTest extends HadoopAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -60,7 +64,7 @@ public class HadoopGroupingTest extends HadoopAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    protected boolean igfsEnabled() {
+    @Override protected boolean igfsEnabled() {
         return false;
     }
 
@@ -87,6 +91,7 @@ public class HadoopGroupingTest extends HadoopAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGroupingReducer() throws Exception {
         doTestGrouping(false);
     }
@@ -94,6 +99,7 @@ public class HadoopGroupingTest extends HadoopAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGroupingCombiner() throws Exception {
         doTestGrouping(true);
     }

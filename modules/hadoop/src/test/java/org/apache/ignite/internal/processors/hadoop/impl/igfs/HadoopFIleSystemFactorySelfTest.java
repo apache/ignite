@@ -53,6 +53,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -61,6 +64,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * Tests for Hadoop file system factory.
  */
+@RunWith(JUnit4.class)
 public class HadoopFIleSystemFactorySelfTest extends IgfsCommonAbstractTest {
     /** Amount of "start" invocations */
     private static final AtomicInteger START_CNT = new AtomicInteger();
@@ -115,6 +119,7 @@ public class HadoopFIleSystemFactorySelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCustomFactory() throws Exception {
         assert START_CNT.get() == 1;
         assert STOP_CNT.get() == 0;

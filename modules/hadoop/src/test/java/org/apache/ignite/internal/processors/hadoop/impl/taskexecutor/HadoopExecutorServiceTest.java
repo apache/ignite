@@ -25,10 +25,14 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.LongAdder;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class HadoopExecutorServiceTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
@@ -38,6 +42,7 @@ public class HadoopExecutorServiceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExecutesAll() throws Exception {
         final HadoopExecutorService exec = new HadoopExecutorService(log, "_GRID_NAME_", 10, 5);
 
