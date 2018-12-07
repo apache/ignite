@@ -53,6 +53,9 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -62,6 +65,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 @SuppressWarnings({"unchecked", "PackageVisibleField", "serial"})
+@RunWith(JUnit4.class)
 public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -324,6 +328,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedJoins1() throws Exception {
         distributedJoins = true;
 
@@ -333,6 +338,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedJoins2() throws Exception {
         distributedJoins = true;
 
@@ -342,6 +348,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedJoins3() throws Exception {
         distributedJoins = true;
 
@@ -351,6 +358,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollocatedJoins1() throws Exception {
         distributedJoins = false;
 
@@ -360,6 +368,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollocatedJoins2() throws Exception {
         distributedJoins = false;
 
@@ -369,6 +378,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollocatedJoins3() throws Exception {
         distributedJoins = false;
 

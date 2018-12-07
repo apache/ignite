@@ -54,6 +54,9 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -69,6 +72,7 @@ import static org.apache.ignite.transactions.TransactionState.PREPARING;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 
 /** */
+@RunWith(JUnit4.class)
 public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /** */
     public enum TxEndResult {
@@ -99,6 +103,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRecoveryCommitNearFailure1() throws Exception {
         checkRecoveryNearFailure(COMMIT, CLIENT);
     }
@@ -106,6 +111,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRecoveryCommitNearFailure2() throws Exception {
         checkRecoveryNearFailure(COMMIT, SERVER);
     }
@@ -113,6 +119,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRecoveryRollbackNearFailure1() throws Exception {
         checkRecoveryNearFailure(ROLLBAK, CLIENT);
     }
@@ -120,6 +127,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRecoveryRollbackNearFailure2() throws Exception {
         checkRecoveryNearFailure(ROLLBAK, SERVER);
     }
@@ -127,6 +135,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRecoveryCommitPrimaryFailure1() throws Exception {
         checkRecoveryPrimaryFailure(COMMIT, false);
     }
@@ -134,6 +143,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRecoveryRollbackPrimaryFailure1() throws Exception {
         checkRecoveryPrimaryFailure(ROLLBAK, false);
     }
@@ -141,6 +151,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRecoveryCommitPrimaryFailure2() throws Exception {
         checkRecoveryPrimaryFailure(COMMIT, true);
     }
@@ -148,6 +159,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRecoveryRollbackPrimaryFailure2() throws Exception {
         checkRecoveryPrimaryFailure(ROLLBAK, true);
     }
@@ -344,6 +356,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRecoveryCommit() throws Exception {
         startGridsMultiThreaded(2);
 
@@ -387,6 +400,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testCountersNeighborcastServerFailed() throws Exception {
         int srvCnt = 4;
 
@@ -493,6 +507,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testUpdateCountersGapIsClosed() throws Exception {
         int srvCnt = 3;
 

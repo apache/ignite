@@ -37,10 +37,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests that server nodes do not need class definitions to execute queries.
  */
+@RunWith(JUnit4.class)
 public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTest {
     /** */
     public static final String PERSON_KEY_CLS_NAME = "org.apache.ignite.tests.p2p.cache.PersonKey";
@@ -121,6 +125,7 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryPartitionedAtomic() throws Exception {
         checkQuery(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC);
     }
@@ -128,6 +133,7 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryReplicatedAtomic() throws Exception {
         checkQuery(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC);
     }
@@ -135,6 +141,7 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryPartitionedTransactional() throws Exception {
         checkQuery(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -142,6 +149,7 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryReplicatedTransactional() throws Exception {
         checkQuery(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -149,6 +157,7 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFieldsQueryPartitionedAtomic() throws Exception {
         checkFieldsQuery(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC);
     }
@@ -156,6 +165,7 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFieldsQueryReplicatedAtomic() throws Exception {
         checkFieldsQuery(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC);
     }
@@ -163,6 +173,7 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFieldsQueryPartitionedTransactional() throws Exception {
         checkFieldsQuery(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -170,6 +181,7 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFieldsQueryReplicatedTransactional() throws Exception {
         checkFieldsQuery(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL);
     }

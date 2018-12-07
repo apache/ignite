@@ -40,10 +40,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests distributed SQL queries cancel by user or timeout.
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends GridCommonAbstractTest {
     /** Grids count. */
     private static final int GRIDS_CNT = 3;
@@ -99,76 +103,91 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
     }
 
     /** */
+    @Test
     public void testRemoteQueryExecutionTimeout() throws Exception {
         testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_1, 500, TimeUnit.MILLISECONDS, true);
     }
 
     /** */
+    @Test
     public void testRemoteQueryWithMergeTableTimeout() throws Exception {
         testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_2, 500, TimeUnit.MILLISECONDS, true);
     }
 
     /** */
+    @Test
     public void testRemoteQueryExecutionCancel0() throws Exception {
         testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_1, 1, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
+    @Test
     public void testRemoteQueryExecutionCancel1() throws Exception {
         testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_1, 500, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
+    @Test
     public void testRemoteQueryExecutionCancel2() throws Exception {
         testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_1, 1, TimeUnit.SECONDS, false);
     }
 
     /** */
+    @Test
     public void testRemoteQueryExecutionCancel3() throws Exception {
         testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_1, 3, TimeUnit.SECONDS, false);
     }
 
     /** */
+    @Test
     public void testRemoteQueryWithMergeTableCancel0() throws Exception {
         testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_2, 1, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
+    @Test
     public void testRemoteQueryWithMergeTableCancel1() throws Exception {
         testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_2, 500, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
+    @Test
     public void testRemoteQueryWithMergeTableCancel2() throws Exception {
         testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_2, 1_500, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
+    @Test
     public void testRemoteQueryWithMergeTableCancel3() throws Exception {
         testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_2, 3, TimeUnit.SECONDS, false);
     }
 
     /** */
+    @Test
     public void testRemoteQueryWithoutMergeTableCancel0() throws Exception {
         testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_3, 1, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
+    @Test
     public void testRemoteQueryWithoutMergeTableCancel1() throws Exception {
         testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_3, 500, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
+    @Test
     public void testRemoteQueryWithoutMergeTableCancel2() throws Exception {
         testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_3, 1_000, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
+    @Test
     public void testRemoteQueryWithoutMergeTableCancel3() throws Exception {
         testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_3, 3, TimeUnit.SECONDS, false);
     }
 
     /** */
+    @Test
     public void testRemoteQueryAlreadyFinishedStop() throws Exception {
         testQueryCancel(100, VAL_SIZE, QRY_3, 3, TimeUnit.SECONDS, false);
     }

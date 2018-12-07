@@ -40,6 +40,9 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi;
 import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.reconnectClientNode;
@@ -47,6 +50,7 @@ import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.recon
 /**
  * Tests for schema exchange between nodes.
  */
+@RunWith(JUnit4.class)
 public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
     /** Node on which filter should be applied (if any). */
     private static String filterNodeName;
@@ -68,6 +72,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEmptyStatic() throws Exception {
         checkEmpty(false);
     }
@@ -77,6 +82,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEmptyDynamic() throws Exception {
         checkEmpty(true);
     }
@@ -117,6 +123,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNonEmptyStatic() throws Exception {
         checkNonEmpty(false);
     }
@@ -126,6 +133,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNonEmptyDynamic() throws Exception {
         checkNonEmpty(true);
     }
@@ -166,6 +174,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDynamicRestarts() throws Exception {
         IgniteEx node1 = start(1, KeyClass.class, ValueClass.class);
         IgniteEx node2 = startNoCache(2);
@@ -260,6 +269,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientJoinStatic() throws Exception {
         checkClientJoin(false);
     }
@@ -269,6 +279,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientJoinDynamic() throws Exception {
         checkClientJoin(true);
     }
@@ -323,6 +334,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientCacheStartStatic() throws Exception {
         checkClientCacheStart(false);
     }
@@ -332,6 +344,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientCacheStartDynamic() throws Exception {
         checkClientCacheStart(true);
     }
@@ -397,6 +410,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeFilter() throws Exception {
         filterNodeName = getTestIgniteInstanceName(1);
 
@@ -425,6 +439,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testServerRestartWithNewTypes() throws Exception {
         IgniteEx node1 = start(1, KeyClass.class, ValueClass.class);
         assertTypes(node1, ValueClass.class);
@@ -480,6 +495,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testClientReconnect() throws Exception {
         final IgniteEx node1 = start(1, KeyClass.class, ValueClass.class);
         assertTypes(node1, ValueClass.class);

@@ -26,12 +26,16 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.h2.sql.AbstractH2CompareQueryTest;
 import org.apache.ignite.internal.processors.query.h2.sql.BaseH2CompareQueryTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheUnionDuplicatesTest extends AbstractH2CompareQueryTest {
     /** */
     private static IgniteCache<Integer, Organization> pCache;
@@ -73,6 +77,7 @@ public class IgniteCacheUnionDuplicatesTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUnionDuplicateFilter() throws Exception {
         compareQueryRes0(pCache, "select name from \"part\".Organization " +
             "union " +

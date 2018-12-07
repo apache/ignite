@@ -29,10 +29,14 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.Callable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for query entity validation.
  */
+@RunWith(JUnit4.class)
 public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
@@ -47,6 +51,7 @@ public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testValueTypeNull() throws Exception {
         final CacheConfiguration ccfg = new CacheConfiguration().setName(CACHE_NAME);
 
@@ -70,6 +75,7 @@ public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIndexTypeNull() throws Exception {
         final CacheConfiguration ccfg = new CacheConfiguration().setName(CACHE_NAME);
 
@@ -112,6 +118,7 @@ public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIndexNameDuplicate() throws Exception {
         final CacheConfiguration ccfg = new CacheConfiguration().setName(CACHE_NAME);
 

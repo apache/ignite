@@ -41,9 +41,13 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  */
+@RunWith(JUnit4.class)
 public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTest {
     /** Server id. */
     private static final int SERVER_ID = 0;
@@ -120,6 +124,7 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
     }
 
     /** */
+    @Test
     public void testReconnectClient() throws Exception {
         try {
             startGrid(SERVER_ID);

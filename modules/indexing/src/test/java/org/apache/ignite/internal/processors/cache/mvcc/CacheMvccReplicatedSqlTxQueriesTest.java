@@ -28,6 +28,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -36,9 +39,10 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /** */
+@RunWith(JUnit4.class)
 public class CacheMvccReplicatedSqlTxQueriesTest extends CacheMvccSqlTxQueriesAbstractTest {
     /** {@inheritDoc} */
-    protected CacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return REPLICATED;
     }
 
@@ -53,6 +57,7 @@ public class CacheMvccReplicatedSqlTxQueriesTest extends CacheMvccSqlTxQueriesAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedJoinPartitionedClient() throws Exception {
         checkReplicatedJoinPartitioned(true);
     }
@@ -60,6 +65,7 @@ public class CacheMvccReplicatedSqlTxQueriesTest extends CacheMvccSqlTxQueriesAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedJoinPartitionedServer() throws Exception {
         checkReplicatedJoinPartitioned(false);
     }
@@ -144,6 +150,7 @@ public class CacheMvccReplicatedSqlTxQueriesTest extends CacheMvccSqlTxQueriesAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedAndPartitionedUpdateSingleTransaction() throws Exception {
         ccfgs = new CacheConfiguration[] {
             cacheConfiguration(REPLICATED, FULL_SYNC, 0, DFLT_PARTITION_COUNT)

@@ -48,6 +48,9 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testsuites.IgniteIgnore;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
@@ -56,6 +59,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 /**
  * Tests replicated query.
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuerySelfTest {
     /** */
     private static final boolean TEST_DEBUG = false;
@@ -116,6 +120,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientOnlyNode() throws Exception {
         try {
             Ignite g = startGrid("client");
@@ -152,6 +157,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIterator() throws Exception {
         int keyCnt = 100;
 
@@ -183,6 +189,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testLocalQueryWithExplicitFlag() throws Exception {
         doTestLocalQuery(true);
     }
@@ -190,6 +197,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testLocalQueryWithoutExplicitFlag() throws Exception {
         doTestLocalQuery(false);
     }
@@ -227,6 +235,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDistributedQuery() throws Exception {
         final int keyCnt = 4;
 
@@ -279,6 +288,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testToString() throws Exception {
         int keyCnt = 4;
 
@@ -296,6 +306,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLostIterator() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
 
@@ -334,6 +345,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
      * @throws Exception If failed.
      */
     @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-613", forceFailure = true)
+    @Test
     public void testNodeLeft() throws Exception {
         Ignite g = startGrid("client");
 

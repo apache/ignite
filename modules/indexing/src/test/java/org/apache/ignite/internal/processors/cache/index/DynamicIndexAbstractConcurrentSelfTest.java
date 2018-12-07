@@ -51,6 +51,9 @@ import org.apache.ignite.internal.processors.query.schema.SchemaOperationExcepti
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi;
 
@@ -58,6 +61,7 @@ import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestT
  * Concurrency tests for dynamic index create/drop.
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicIndexAbstractSelfTest {
     /** Test duration. */
     private static final long TEST_DUR = 10_000L;
@@ -136,6 +140,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCoordinatorChange() throws Exception {
         // Start servers.
         Ignite srv1 = ignitionStart(serverConfiguration(1));
@@ -201,6 +206,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOperationChaining() throws Exception {
         Ignite srv1 = ignitionStart(serverConfiguration(1));
 
@@ -253,6 +259,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeJoinOnPendingOperation() throws Exception {
         Ignite srv1 = ignitionStart(serverConfiguration(1));
 
@@ -290,6 +297,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
      *
      * @throws Exception If failed,
      */
+    @Test
     public void testConcurrentPutRemove() throws Exception {
         // Start several nodes.
         Ignite srv1 = ignitionStart(serverConfiguration(1));
@@ -387,6 +395,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentRebalance() throws Exception {
         // Start cache and populate it with data.
         Ignite srv1 = ignitionStart(serverConfiguration(1));
@@ -434,6 +443,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentCacheDestroy() throws Exception {
         // Start complex topology.
         Ignite srv1 = ignitionStart(serverConfiguration(1));
@@ -479,6 +489,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentOperationsMultithreaded() throws Exception {
         // Start complex topology.
         ignitionStart(serverConfiguration(1));
@@ -553,6 +564,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryConsistencyMultithreaded() throws Exception {
         // Start complex topology.
         ignitionStart(serverConfiguration(1));
@@ -631,6 +643,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnect() throws Exception {
         checkClientReconnect(false);
     }
@@ -640,6 +653,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnectWithCacheRestart() throws Exception {
         checkClientReconnect(true);
     }
@@ -753,6 +767,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentOperationsAndNodeStartStopMultithreaded() throws Exception {
         // Start several stable nodes.
         ignitionStart(serverConfiguration(1));
@@ -878,6 +893,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentOperationsAndCacheStartStopMultithreaded() throws Exception {
         // Start complex topology.
         ignitionStart(serverConfiguration(1));
@@ -1096,7 +1112,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
     /**
      * Start a node.
-     * 
+     *
      * @param cfg Configuration.
      * @return Ignite instance.
      */

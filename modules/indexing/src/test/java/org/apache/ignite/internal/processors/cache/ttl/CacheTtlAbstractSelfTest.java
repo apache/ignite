@@ -42,6 +42,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -56,6 +59,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * TTL test.
  */
+@RunWith(JUnit4.class)
 public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -145,6 +149,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultTimeToLiveLoadCache() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(0);
 
@@ -160,6 +165,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultTimeToLiveLoadAll() throws Exception {
         defaultTimeToLiveLoadAll(false);
 
@@ -194,6 +200,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultTimeToLiveStreamerAdd() throws Exception {
         try (IgniteDataStreamer<Integer, Integer> streamer = ignite(0).dataStreamer(DEFAULT_CACHE_NAME)) {
             for (int i = 0; i < SIZE; i++)
@@ -223,6 +230,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultTimeToLivePut() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(0);
 
@@ -240,6 +248,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultTimeToLivePutAll() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(0);
 
@@ -260,6 +269,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultTimeToLivePreload() throws Exception {
         if (cacheMode() == LOCAL)
             return;
@@ -285,6 +295,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTimeToLiveTtl() throws Exception {
         long time = DEFAULT_TIME_TO_LIVE + 2000;
 

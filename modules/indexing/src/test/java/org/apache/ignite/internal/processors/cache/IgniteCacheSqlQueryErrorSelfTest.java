@@ -21,10 +21,14 @@ import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Java API query error messages test.
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheSqlQueryErrorSelfTest  extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -36,6 +40,7 @@ public class IgniteCacheSqlQueryErrorSelfTest  extends GridCacheAbstractSelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSelectWrongTable() throws Exception {
         checkSqlErrorMessage("select from wrong",
             "Failed to parse query. Table \"WRONG\" not found");
@@ -46,6 +51,7 @@ public class IgniteCacheSqlQueryErrorSelfTest  extends GridCacheAbstractSelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSelectWrongColumnName() throws Exception {
         checkSqlErrorMessage("select wrong from test",
             "Failed to parse query. Column \"WRONG\" not found");
@@ -56,6 +62,7 @@ public class IgniteCacheSqlQueryErrorSelfTest  extends GridCacheAbstractSelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSelectWrongSyntax() throws Exception {
         checkSqlErrorMessage("select from test where",
             "Failed to parse query. Syntax error in SQL statement \"SELECT FROM TEST WHERE[*]");
@@ -66,6 +73,7 @@ public class IgniteCacheSqlQueryErrorSelfTest  extends GridCacheAbstractSelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDmlWrongTable() throws Exception {
         checkSqlErrorMessage("insert into wrong (id, val) values (3, 'val3')",
             "Failed to parse query. Table \"WRONG\" not found");
@@ -85,6 +93,7 @@ public class IgniteCacheSqlQueryErrorSelfTest  extends GridCacheAbstractSelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDmlWrongColumnName() throws Exception {
         checkSqlErrorMessage("insert into test (id, wrong) values (3, 'val3')",
             "Failed to parse query. Column \"WRONG\" not found");
@@ -104,6 +113,7 @@ public class IgniteCacheSqlQueryErrorSelfTest  extends GridCacheAbstractSelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDmlWrongSyntax() throws Exception {
         checkSqlErrorMessage("insert test (id, val) values (3, 'val3')",
             "Failed to parse query. Syntax error in SQL statement \"INSERT TEST[*] (ID, VAL)");
@@ -123,6 +133,7 @@ public class IgniteCacheSqlQueryErrorSelfTest  extends GridCacheAbstractSelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDdlWrongTable() throws Exception {
         checkSqlErrorMessage("create table test (id int primary key, val varchar)",
             "Table already exists: TEST");
@@ -145,6 +156,7 @@ public class IgniteCacheSqlQueryErrorSelfTest  extends GridCacheAbstractSelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDdlWrongColumnName() throws Exception {
         checkSqlErrorMessage("create index idx1 on test (wrong)",
             "Column doesn't exist: WRONG");
@@ -158,6 +170,7 @@ public class IgniteCacheSqlQueryErrorSelfTest  extends GridCacheAbstractSelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDdlWrongSyntax() throws Exception {
         checkSqlErrorMessage("create table wrong (id int wrong key, val varchar)",
             "Failed to parse query. Syntax error in SQL statement \"CREATE TABLE WRONG (ID INT WRONG[*]");

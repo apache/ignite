@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import org.apache.ignite.cache.CacheMode;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SCAN;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
@@ -28,6 +31,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * SQL Mvcc coordinator failover test for partitioned caches.
  */
+@RunWith(JUnit4.class)
 public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbstractSqlCoordinatorFailoverTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
@@ -37,6 +41,7 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxSql_ClientServer_Backups2_CoordinatorFails() throws Exception {
         accountsTxReadAll(4, 2, 2, DFLT_PARTITION_COUNT,
             new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL, DML, DFLT_TEST_TIME, RestartMode.RESTART_CRD);
@@ -45,6 +50,7 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxSql_Server_Backups1_CoordinatorFails_Persistence() throws Exception {
         persistence = true;
 
@@ -55,6 +61,7 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllGetAll_ClientServer_Backups3_RestartCoordinator_ScanDml() throws Exception {
         putAllGetAll(RestartMode.RESTART_CRD  , 5, 2, 3, DFLT_PARTITION_COUNT,
             new InitIndexing(Integer.class, Integer.class), SCAN, DML);
@@ -63,6 +70,7 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllGetAll_ClientServer_Backups1_RestartCoordinator_ScanDml_Persistence() throws Exception {
         persistence = true;
 
@@ -73,6 +81,7 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllGetAll_ClientServer_Backups2_RestartCoordinator_SqlDml_Persistence() throws Exception {
         persistence = true;
 
@@ -83,6 +92,7 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllGetAll_ClientServer_Backups1_RestartCoordinator_SqlDml() throws Exception {
         putAllGetAll(RestartMode.RESTART_CRD, 2, 1, 1, 64,
             new InitIndexing(Integer.class, Integer.class), SQL, DML);
@@ -91,6 +101,7 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllGetAll_ClientServer_Backups1_RestartRandomSrv_SqlDml() throws Exception {
         putAllGetAll(RestartMode.RESTART_RND_SRV, 3, 1, 1, DFLT_PARTITION_COUNT,
             new InitIndexing(Integer.class, Integer.class), SQL, DML);
@@ -99,6 +110,7 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllGetAll_ClientServer_Backups2_RestartRandomSrv_SqlDml() throws Exception {
         putAllGetAll(RestartMode.RESTART_RND_SRV, 4, 1, 2, DFLT_PARTITION_COUNT,
             new InitIndexing(Integer.class, Integer.class), SQL, DML);
@@ -107,6 +119,7 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllGetAll_Server_Backups2_RestartRandomSrv_SqlDml() throws Exception {
         putAllGetAll(RestartMode.RESTART_RND_SRV, 4, 0, 2, DFLT_PARTITION_COUNT,
             new InitIndexing(Integer.class, Integer.class), SQL, DML);
@@ -115,6 +128,7 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllGetAll_Server_Backups1_SinglePartition_RestartRandomSrv_SqlDml() throws Exception {
         putAllGetAll(RestartMode.RESTART_RND_SRV, 4, 0, 1, 1,
             new InitIndexing(Integer.class, Integer.class), SQL, DML);
@@ -123,6 +137,7 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllGetAll_ClientServer_Backups1_SinglePartition_RestartRandomSrv_SqlDml() throws Exception {
         putAllGetAll(RestartMode.RESTART_RND_SRV, 3, 1, 1, 1,
             new InitIndexing(Integer.class, Integer.class), SQL, DML);
@@ -131,6 +146,7 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdate_N_Objects_ClientServer_Backups2_Sql() throws Exception {
         updateNObjectsTest(7, 3, 2, 2, DFLT_PARTITION_COUNT, DFLT_TEST_TIME,
             new InitIndexing(Integer.class, Integer.class), SQL, DML, RestartMode.RESTART_CRD);
@@ -139,6 +155,7 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdate_N_Objects_ClientServer_Backups1_Sql_Persistence() throws Exception {
         persistence = true;
 
@@ -149,6 +166,7 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSqlReadInProgressCoordinatorFails() throws Exception {
         readInProgressCoordinatorFails(false, false, PESSIMISTIC, REPEATABLE_READ, SQL, DML, new InitIndexing(Integer.class, Integer.class));
     }
@@ -156,6 +174,7 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSqlReadInsideTxInProgressCoordinatorFails() throws Exception {
         readInProgressCoordinatorFails(false, true, PESSIMISTIC, REPEATABLE_READ, SQL, DML, new InitIndexing(Integer.class, Integer.class));
     }
@@ -163,6 +182,7 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSqlReadInProgressCoordinatorFails_ReadDelay() throws Exception {
         readInProgressCoordinatorFails(true, false, PESSIMISTIC, REPEATABLE_READ, SQL, DML, new InitIndexing(Integer.class, Integer.class));
     }
@@ -170,6 +190,7 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSqlReadInsideTxInProgressCoordinatorFails_ReadDelay() throws Exception {
         readInProgressCoordinatorFails(true, true, PESSIMISTIC, REPEATABLE_READ, SQL, DML, new InitIndexing(Integer.class, Integer.class));
     }
@@ -177,6 +198,7 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadInProgressCoordinatorFailsSimple_FromServer() throws Exception {
         readInProgressCoordinatorFailsSimple(false, new InitIndexing(Integer.class, Integer.class), SQL, DML);
     }

@@ -43,10 +43,14 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionState;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests to check behavior regarding transactions started via SQL.
  */
+@RunWith(JUnit4.class)
 public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -68,6 +72,7 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that BEGIN opens a transaction.
      */
+    @Test
     public void testBegin() {
         execute(node(), "BEGIN");
 
@@ -79,6 +84,7 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that COMMIT commits a transaction.
      */
+    @Test
     public void testCommit() {
         execute(node(), "BEGIN WORK");
 
@@ -98,6 +104,7 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that COMMIT without a transaction yields nothing.
      */
+    @Test
     public void testCommitNoTransaction() {
         execute(node(), "COMMIT");
     }
@@ -105,6 +112,7 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that ROLLBACK without a transaction yields nothing.
      */
+    @Test
     public void testRollbackNoTransaction() {
         execute(node(), "ROLLBACK");
     }
@@ -112,6 +120,7 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that ROLLBACK rolls back a transaction.
      */
+    @Test
     public void testRollback() {
         execute(node(), "BEGIN TRANSACTION");
 
@@ -131,6 +140,7 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that attempting to perform various SQL operations within non SQL transaction yields an exception.
      */
+    @Test
     public void testSqlOperationsWithinNonSqlTransaction() {
         assertSqlOperationWithinNonSqlTransactionThrows("COMMIT");
 
@@ -263,6 +273,7 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that attempting to perform a cache PUT operation from within an SQL transaction fails.
      */
+    @Test
     public void testCacheOperationsFromSqlTransaction() {
         checkCacheOperationThrows("get", 1);
 

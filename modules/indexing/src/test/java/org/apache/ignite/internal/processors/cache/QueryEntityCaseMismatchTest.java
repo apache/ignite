@@ -34,12 +34,16 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.concurrent.Callable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test reveals issue of null values in SQL query resultset columns that correspond to compound key.
  * That happens when QueryEntity.keyFields has wrong register compared to QueryEntity.fields.
  * Issue only manifests for BinaryMarshaller case. Otherwise the keyFields aren't taken into account.
  */
+@RunWith(JUnit4.class)
 public class QueryEntityCaseMismatchTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -101,6 +105,7 @@ public class QueryEntityCaseMismatchTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheInitializationFailure() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {

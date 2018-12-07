@@ -33,10 +33,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for leaks JdbcConnection on SqlFieldsQuery execute.
  */
+@RunWith(JUnit4.class)
 public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -101,6 +105,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateUpdateDropUser() throws Exception {
         AuthorizationContext.context(actxDflt);
 
@@ -128,6 +133,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateWithAlreadyExistUser() throws Exception {
         AuthorizationContext.context(actxDflt);
         userSql(0, "CREATE USER test WITH PASSWORD 'test'");
@@ -148,6 +154,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAlterDropNotExistUser() throws Exception {
         AuthorizationContext.context(actxDflt);
 
@@ -175,6 +182,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotAuthenticateOperation() throws Exception {
         for (int i = 0; i < NODES_COUNT; ++i) {
             final int idx = i;
@@ -208,6 +216,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotAuthorizedOperation() throws Exception {
         AuthorizationContext.context(actxDflt);
 
@@ -250,6 +259,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDropDefaultUser() throws Exception {
         AuthorizationContext.context(actxDflt);
 
@@ -269,6 +279,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQuotedUsername() throws Exception {
         AuthorizationContext.context(actxDflt);
 

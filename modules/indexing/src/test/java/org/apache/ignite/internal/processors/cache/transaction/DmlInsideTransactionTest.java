@@ -30,12 +30,16 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils.SystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  * Tests DML allow/disallow operation inside transaction.
  */
+@RunWith(JUnit4.class)
 public class DmlInsideTransactionTest extends GridCommonAbstractTest {
     /** Person cache name. */
     private static final String CACHE_PERSON = "PersonCache";
@@ -61,6 +65,7 @@ public class DmlInsideTransactionTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case failure.
      */
+    @Test
     public void testDmlInTransactionByDefault() throws Exception {
         prepareIgnite();
 
@@ -76,6 +81,7 @@ public class DmlInsideTransactionTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case failure.
      */
+    @Test
     public void testDmlInTransactionInDisabledCompatibilityMode() throws Exception {
         try (SystemProperty ignored = new SystemProperty(IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION, "false")) {
             prepareIgnite();
@@ -93,6 +99,7 @@ public class DmlInsideTransactionTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case failure.
      */
+    @Test
     public void testDmlInTransactionInCompatibilityMode() throws Exception {
         try (SystemProperty ignored = new SystemProperty(IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION, "true")) {
             prepareIgnite();
@@ -110,6 +117,7 @@ public class DmlInsideTransactionTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case failure.
      */
+    @Test
     public void testDmlNotInTransaction() throws Exception {
         prepareIgnite();
 

@@ -26,10 +26,14 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheConfigurationPrimitiveTypesSelfTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -55,6 +59,7 @@ public class IgniteCacheConfigurationPrimitiveTypesSelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimitiveTypes() throws Exception {
         Ignite ignite = startGrid(1);
 

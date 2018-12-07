@@ -28,12 +28,16 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteCheckClusterStateBeforeExecuteQueryTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -73,6 +77,7 @@ public class IgniteCheckClusterStateBeforeExecuteQueryTest extends GridCommonAbs
     /**
      * @throws Exception On failed.
      */
+    @Test
     public void testDynamicSchemaChangesPersistence() throws Exception {
         final IgniteEx ig = startGrid(0);
 
