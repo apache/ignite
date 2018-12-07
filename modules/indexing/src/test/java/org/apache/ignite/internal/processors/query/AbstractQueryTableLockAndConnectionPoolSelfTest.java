@@ -41,7 +41,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Tests for lazy query execution.
  */
-public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTest {
+public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends GridCommonAbstractTest {
     /** Keys count. */
     private static final int KEY_CNT = 500;
 

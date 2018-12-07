@@ -176,7 +176,7 @@ import org.apache.ignite.internal.processors.client.ClientConnectorConfiguration
 import org.apache.ignite.internal.processors.database.baseline.IgniteStableBaselineBinObjFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.query.IgniteCachelessQueriesSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteQueryDedicatedPoolTest;
-import org.apache.ignite.internal.processors.query.IgniteQueryLazyModeOffSelfTest;
+import org.apache.ignite.internal.processors.query.IgniteQueryTableLockAndConnectionPoolLazyModeOffTest;
 import org.apache.ignite.internal.processors.query.IgniteQueryLazyModeOnSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlDefaultValueTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlDistributedJoinSelfTest;
@@ -304,7 +304,7 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
 
         // Queries tests.
         suite.addTestSuite(IgniteQueryLazyModeOnSelfTest.class);
-        suite.addTestSuite(IgniteQueryLazyModeOffSelfTest.class);
+        suite.addTestSuite(IgniteQueryTableLockAndConnectionPoolLazyModeOffTest.class);
         suite.addTestSuite(IgniteSqlSplitterSelfTest.class);
         suite.addTestSuite(SqlPushDownFunctionTest.class);
         suite.addTestSuite(IgniteSqlSegmentedIndexSelfTest.class);

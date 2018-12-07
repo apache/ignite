@@ -20,7 +20,8 @@ package org.apache.ignite.internal.processors.query;
 /**
  * Tests for lazy query execution.
  */
-public class IgniteQueryLazyModeOnSelfTest extends AbstractQueryLazyModeSelfTest {
+public class IgniteQueryTableLockAndConnectionPoolLazyModeOnTest
+    extends AbstractQueryTableLockAndConnectionPoolSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean lazy() {
         return true;
