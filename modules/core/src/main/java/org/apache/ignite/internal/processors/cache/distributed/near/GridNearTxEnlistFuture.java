@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -28,6 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -620,8 +620,10 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
     }
 
     @Override public Set<UUID> pendingResponseNodes() {
-        // t0d0 not all batches are in flight!
-        return Collections.unmodifiableSet(batches.keySet());
+        return batches.entrySet().stream()
+            .filter(e -> e.getValue().ready())
+            .map(e -> e.getKey())
+            .collect(Collectors.toSet());
     }
 
     /** {@inheritDoc} */
