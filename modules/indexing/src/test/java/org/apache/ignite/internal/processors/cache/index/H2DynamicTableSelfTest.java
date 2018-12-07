@@ -1454,7 +1454,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         assertEquals(affKeyFieldName, type.affinityKey());
 
         GridH2Table tbl =
-            ((IgniteH2Indexing)queryProcessor(client()).getIndexing()).schema().dataTable("PUBLIC", cacheName);
+            ((IgniteH2Indexing)queryProcessor(client()).getIndexing()).schemaManager().dataTable("PUBLIC", cacheName);
 
         assertNotNull(tbl);
 

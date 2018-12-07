@@ -1216,7 +1216,7 @@ public class DmlStatementsProcessor {
         if (cmd.packetSize() == null)
             cmd.packetSize(BulkLoadAckClientParameters.DFLT_PACKET_SIZE);
 
-        GridH2Table tbl = idx.schema().dataTable(cmd.schemaName(), cmd.tableName());
+        GridH2Table tbl = idx.schemaManager().dataTable(cmd.schemaName(), cmd.tableName());
 
         if (tbl == null) {
             throw new IgniteSQLException("Table does not exist: " + cmd.tableName(),
