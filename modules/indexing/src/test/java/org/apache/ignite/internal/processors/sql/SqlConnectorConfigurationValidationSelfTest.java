@@ -36,11 +36,15 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * SQL connector configuration validation tests.
  */
 @SuppressWarnings("deprecation")
+@RunWith(JUnit4.class)
 public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstractTest {
     /** Node index generator. */
     private static final AtomicInteger NODE_IDX_GEN = new AtomicInteger();
@@ -58,6 +62,7 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDefault() throws Exception {
         check(new SqlConnectorConfiguration(), true);
         assertJdbc(null, SqlConnectorConfiguration.DFLT_PORT);
@@ -68,6 +73,7 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testHost() throws Exception {
         check(new SqlConnectorConfiguration().setHost("126.0.0.1"), false);
 
@@ -84,6 +90,7 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPort() throws Exception {
         check(new SqlConnectorConfiguration().setPort(-1), false);
         check(new SqlConnectorConfiguration().setPort(0), false);
@@ -103,6 +110,7 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPortRange() throws Exception {
         check(new SqlConnectorConfiguration().setPortRange(-1), false);
 
@@ -118,6 +126,7 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSocketBuffers() throws Exception {
         check(new SqlConnectorConfiguration().setSocketSendBufferSize(-4 * 1024), false);
         check(new SqlConnectorConfiguration().setSocketReceiveBufferSize(-4 * 1024), false);
@@ -134,6 +143,7 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxOpenCusrorsPerConnection() throws Exception {
         check(new SqlConnectorConfiguration().setMaxOpenCursorsPerConnection(-1), false);
 
@@ -149,6 +159,7 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testThreadPoolSize() throws Exception {
         check(new SqlConnectorConfiguration().setThreadPoolSize(0), false);
         check(new SqlConnectorConfiguration().setThreadPoolSize(-1), false);

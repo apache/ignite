@@ -24,12 +24,16 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.odbc.SqlStateCode.CONSTRAINT_VIOLATION;
 import static org.apache.ignite.internal.processors.odbc.SqlStateCode.INTERNAL_ERROR;
 
 /**
  */
+@RunWith(JUnit4.class)
 public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -71,6 +75,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateTableWithTooLongCharDefault() throws Exception {
         checkSQLThrows("CREATE TABLE too_long_default(id INT PRIMARY KEY, str CHAR(5) DEFAULT '123456')",
             INTERNAL_ERROR);
@@ -79,11 +84,13 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateTableWithTooLongScaleDecimalDefault() throws Exception {
         checkSQLThrows("CREATE TABLE too_long_decimal_default_scale(id INT PRIMARY KEY, val DECIMAL(4, 2)" +
             " DEFAULT 1.345)", INTERNAL_ERROR);
     }
 
+    @Test
     public void testCreateTableWithTooLongDecimalDefault() throws Exception {
         checkSQLThrows("CREATE TABLE too_long_decimal_default(id INT PRIMARY KEY, val DECIMAL(4, 2)" +
             " DEFAULT 123.45)", INTERNAL_ERROR);
@@ -92,6 +99,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInsertTooLongDecimal() throws Exception {
         checkSQLThrows("INSERT INTO decimal_table VALUES(?, ?)", CONSTRAINT_VIOLATION, 2, 123.45);
 
@@ -109,6 +117,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInsertTooLongScaleDecimal() throws Exception {
         checkSQLThrows("INSERT INTO decimal_table VALUES(?, ?)", CONSTRAINT_VIOLATION, 3, 1.234);
 
@@ -126,6 +135,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInsertTooLongVarchar() throws Exception {
         checkSQLThrows("INSERT INTO varchar_table VALUES(?, ?)", CONSTRAINT_VIOLATION, 2, "123456");
 
@@ -143,6 +153,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInsertTooLongChar() throws Exception {
         checkSQLThrows("INSERT INTO char_table VALUES(?, ?)", CONSTRAINT_VIOLATION, 2, "123456");
 
@@ -160,9 +171,10 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCharConstraintsAfterAlterTable() throws Exception {
         execSQL("ALTER TABLE char_table_2 ADD COLUMN str CHAR(5) NOT NULL");
-        
+
         execSQL("INSERT INTO char_table_2(id, str) VALUES(?, ?)", 1, "1");
 
         checkSQLResults("SELECT * FROM char_table_2 WHERE id = 1", 1, null, "1");
@@ -183,6 +195,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDecimalConstraintsAfterAlterTable() throws Exception {
         execSQL("ALTER TABLE decimal_table_2 ADD COLUMN val DECIMAL(4, 2) NOT NULL");
 
@@ -218,6 +231,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCharDropColumnWithConstraint() throws Exception {
         execSQL("INSERT INTO char_table_3(id, field, field2) VALUES(?, ?, ?)", 1, "12345", 1);
 
@@ -238,6 +252,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDecimalDropColumnWithConstraint() throws Exception {
         execSQL("INSERT INTO decimal_table_3(id, field, field2) VALUES(?, ?, ?)", 1, 12.34, 1);
 
@@ -258,6 +273,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCharSqlState() throws Exception {
         checkSQLThrows("INSERT INTO char_table_4(id, field) VALUES(?, ?)", CONSTRAINT_VIOLATION, 1, "123456");
 
@@ -279,6 +295,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDecimalSqlState() throws Exception {
         checkSQLThrows("INSERT INTO decimal_table_4 VALUES(?, ?)", CONSTRAINT_VIOLATION,
             1, BigDecimal.valueOf(1234.56));
