@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -43,9 +44,6 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
     /** */
     private MetastorageRowStore rowStore;
 
-    /** Partition id. */
-    private final int partId;
-
     /**
      * @param pageMem Page memory instance.
      * @param wal WAL manager.
@@ -65,14 +63,11 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
         MetastorageRowStore rowStore,
         long metaPageId,
         boolean initNew,
-        @Nullable FailureProcessor failureProcessor,
-        int partId) throws IgniteCheckedException {
+        @Nullable FailureProcessor failureProcessor) throws IgniteCheckedException {
         super("Metastorage", cacheId, pageMem, wal,
             globalRmvId, metaPageId, reuseList, MetastorageInnerIO.VERSIONS, MetastoreLeafIO.VERSIONS, failureProcessor);
 
         this.rowStore = rowStore;
-
-        this.partId = partId;
 
         initTree(initNew);
     }
@@ -104,7 +99,7 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
 
     /** {@inheritDoc} */
     @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
-        return pageMem.allocatePage(grpId, partId, FLAG_DATA);
+        return pageMem.allocatePage(grpId, PageIdAllocator.METASTORE_PARTITION, FLAG_DATA);
     }
 
     /**
