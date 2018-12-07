@@ -1132,6 +1132,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheIdleVerifyDumpForCorruptedDataOnSystemCache() throws Exception {
         int parts = 32;
 
@@ -1192,6 +1193,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheIdleVerifyDumpForCorruptedDataOnPersistenceClientCache() throws Exception {
         int parts = 32;
 
@@ -1222,6 +1224,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheIdleVerifyDumpForCorruptedDataOnNonePersistenceClientCache() throws Exception {
         int parts = 32;
 

@@ -757,6 +757,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReentrantLockFailsWhenServersLeft(final boolean fair) throws Exception {
         client = true;
 

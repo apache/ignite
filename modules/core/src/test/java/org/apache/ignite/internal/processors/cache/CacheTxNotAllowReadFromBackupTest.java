@@ -199,6 +199,7 @@ public class CacheTxNotAllowReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupConsistencyReplicatedMvcc() throws Exception {
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>("test-cache");
 
@@ -215,6 +216,7 @@ public class CacheTxNotAllowReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupConsistencyReplicatedFullSyncMvcc() throws Exception {
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>("test-cache");
 
@@ -231,6 +233,7 @@ public class CacheTxNotAllowReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupConsistencyPartitionedMvcc() throws Exception {
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>("test-cache");
 
@@ -248,6 +251,7 @@ public class CacheTxNotAllowReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupConsistencyPartitionedFullSyncMvcc() throws Exception {
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>("test-cache");
 

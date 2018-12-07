@@ -91,6 +91,7 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
      * @param jobCls Job class.
      * @throws Exception If test failed.
      */
+    @Test
     public void testContinuousJobAnnotation(Class<?> jobCls) throws Exception {
         try {
             Ignite ignite = startGrid(0);

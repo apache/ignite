@@ -128,6 +128,7 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionMvccTxNearEnabled() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-7187");
 
