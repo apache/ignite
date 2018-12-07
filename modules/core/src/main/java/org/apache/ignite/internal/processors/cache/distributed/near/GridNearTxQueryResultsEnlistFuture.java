@@ -19,9 +19,11 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -583,6 +585,11 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
         return true;
     }
 
+    @Override public Set<UUID> pendingResponseNodes() {
+        // t0d0 not all batches are in flight!
+        return Collections.unmodifiableSet(batches.keySet());
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNearTxQueryResultsEnlistFuture.class, this, super.toString());
@@ -673,5 +680,4 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
             this.ready = ready;
         }
     }
-
 }

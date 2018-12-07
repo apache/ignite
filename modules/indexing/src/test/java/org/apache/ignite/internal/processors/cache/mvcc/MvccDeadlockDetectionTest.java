@@ -42,10 +42,14 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
     private IgniteEx client;
 
-    private void setUpGrids(int n) throws Exception {
+    private void setUpGrids(int n, boolean indexed) throws Exception {
         Ignite ign = startGridsMultiThreaded(n);
-        ign.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
+        if (indexed)
+            ccfg.setIndexedTypes(Integer.class, Integer.class);
+
+        ign.getOrCreateCache(ccfg);
 
         G.setClientMode(true);
 
@@ -60,7 +64,7 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
     @Test
     public void detectSimpleDeadlock() throws Exception {
         // t0d0 ensure test will not hang
-        setUpGrids(2);
+        setUpGrids(2, false);
 
         Integer key0 = primaryKey(grid(0).cache(DEFAULT_CACHE_NAME));
         Integer key1 = primaryKey(grid(1).cache(DEFAULT_CACHE_NAME));
@@ -95,9 +99,49 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
     }
 
     @Test
+    public void detectSimpleDeadlockFastUpdate() throws Exception {
+        // t0d0 ensure test will not hang
+        setUpGrids(2, true);
+
+        IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
+
+        Integer key0 = primaryKey(grid(0).cache(DEFAULT_CACHE_NAME));
+        Integer key1 = primaryKey(grid(1).cache(DEFAULT_CACHE_NAME));
+
+        cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, ?)").setArgs(key0, -1));
+        cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, ?)").setArgs(key1, -1));
+
+        assert client.configuration().isClientMode();
+
+        CyclicBarrier b = new CyclicBarrier(2);
+
+        IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(() -> {
+            try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                cache.query(new SqlFieldsQuery("update Integer set _val = 0 where _key = ?").setArgs(key0));
+                b.await();
+                cache.query(new SqlFieldsQuery("update Integer set _val = 0 where _key = ?").setArgs(key1));
+
+                tx.commit();
+            }
+            return null;
+        });
+
+        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            cache.query(new SqlFieldsQuery("update Integer set _val = 1 where _key = ?").setArgs(key1));
+            b.await();
+            TimeUnit.SECONDS.sleep(2);
+            cache.query(new SqlFieldsQuery("update Integer set _val = 1 where _key = ?").setArgs(key0));
+
+            tx.commit();
+        }
+
+        fut.get();
+    }
+
+    @Test
     public void detect3Deadlock() throws Exception {
         // t0d0 ensure test will not hang
-        setUpGrids(3);
+        setUpGrids(3, false);
 
         Integer key0 = primaryKey(grid(0).cache(DEFAULT_CACHE_NAME));
         Integer key1 = primaryKey(grid(1).cache(DEFAULT_CACHE_NAME));
@@ -148,11 +192,9 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
         // T0 -> T1
         //  \-> T2 -> T0
         // t0d0 ensure test will not hang
-        setUpGrids(3);
+        setUpGrids(3, true);
 
-        IgniteCache<Object, Object> cache = client.getOrCreateCache(new CacheConfiguration<>("test")
-            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
-            .setIndexedTypes(Integer.class, Integer.class));
+        IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
         Integer key0 = primaryKey(grid(0).cache(DEFAULT_CACHE_NAME));
         Integer key1 = primaryKey(grid(1).cache(DEFAULT_CACHE_NAME));
