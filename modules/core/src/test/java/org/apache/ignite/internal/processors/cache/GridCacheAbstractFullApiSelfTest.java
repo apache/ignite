@@ -107,6 +107,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -131,9 +132,6 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTED;
  */
 @SuppressWarnings("TransientFieldInNonSerializableClass")
 public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstractSelfTest {
-    /** Test timeout */
-    private static final long TEST_TIMEOUT = 60 * 1000;
-
     /** Service name. */
     private static final String SERVICE_NAME1 = "testService1";
 
@@ -192,7 +190,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return TEST_TIMEOUT;
+        if (isMultiJvm())
+            return MINUTES.toMillis(2);
+        else
+            return super.getTestTimeout();
     }
 
     /** {@inheritDoc} */
