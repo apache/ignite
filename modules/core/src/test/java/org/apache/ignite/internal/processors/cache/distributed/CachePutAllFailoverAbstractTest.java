@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -161,16 +162,21 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
                                 for (int k = 0; k < 100; k++)
                                     map.put(new TestKey(rnd.nextInt(200)), new TestValue(iter));
 
-                                cache.putAll(map);
+                                try {
+                                    cache.putAll(map);
+                                }
+                                catch (Exception e) {
+                                    MvccFeatureChecker.assertMvccWriteConflict(e);
+                                }
 
                                 break;
                             }
 
                             case PUT_ALL_ASYNC: {
-                                Collection<IgniteFuture<?>> futs = new ArrayList<>();
+                                Map<Map, IgniteFuture<?>> futs = new IdentityHashMap<>();
 
                                 for (int i = 0 ; i < 10; i++) {
-                                    TreeMap<TestKey, TestValue> map = new TreeMap<>();
+                                    Map<TestKey, TestValue> map = new TreeMap<>();
 
                                     for (int k = 0; k < 100; k++)
                                         map.put(new TestKey(rnd.nextInt(200)), new TestValue(iter));
@@ -179,11 +185,23 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
 
                                     assertNotNull(fut);
 
-                                    futs.add(fut);
+                                    futs.put(map, fut);
                                 }
 
-                                for (IgniteFuture<?> fut : futs)
-                                    fut.get();
+                                while (!futs.isEmpty()) {
+                                    for (Map.Entry<Map, IgniteFuture<?>> e : futs.entrySet()) {
+                                        try {
+                                            e.getValue().get();
+
+                                            futs.remove(e.getKey());
+                                        }
+                                        catch (Exception ex) {
+                                            MvccFeatureChecker.assertMvccWriteConflict(ex);
+
+                                            futs.put(e.getKey(), cache.putAllAsync(e.getKey()));
+                                        }
+                                    }
+                                }
 
                                 break;
                             }
@@ -199,7 +217,16 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
                                         for (TestKey key : map.keySet())
                                             cache.get(key);
 
-                                        cache.putAll(map);
+                                        while (true) {
+                                            try {
+                                                cache.putAll(map);
+
+                                                break;
+                                            }
+                                            catch (Exception e) {
+                                                MvccFeatureChecker.assertMvccWriteConflict(e);
+                                            }
+                                        }
 
                                         return null;
                                     }
