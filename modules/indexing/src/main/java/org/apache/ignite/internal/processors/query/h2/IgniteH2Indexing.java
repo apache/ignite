@@ -2125,7 +2125,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         // TODO: Could be simplified: H2TableDescriptor do not need schema!
         H2Schema schema = schemaMgr.schema(schemaName);
 
-        H2TableDescriptor tbl = new H2TableDescriptor(this, schema, type, cacheInfo, isSql);
+        H2TableDescriptor tbl = new H2TableDescriptor(this, schemaName, type, cacheInfo, isSql);
 
         GridH2Table h2Tbl = schemaMgr.onCacheTypeCreated(schema, tbl);
 
