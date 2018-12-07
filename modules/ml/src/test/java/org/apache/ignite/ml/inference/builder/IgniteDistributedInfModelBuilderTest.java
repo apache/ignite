@@ -23,10 +23,14 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.inference.InfModel;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link IgniteDistributedInfModelBuilder} class.
  */
+@RunWith(JUnit4.class)
 public class IgniteDistributedInfModelBuilderTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 3;
@@ -56,6 +60,7 @@ public class IgniteDistributedInfModelBuilderTest extends GridCommonAbstractTest
     }
 
     /** */
+    @Test
     public void testBuild() throws ExecutionException, InterruptedException {
         AsyncInfModelBuilder mdlBuilder = new IgniteDistributedInfModelBuilder(ignite, 1, 1);
 

@@ -39,10 +39,14 @@ import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link MLPTrainer} that require to start the whole Ignite infrastructure.
  */
+@RunWith(JUnit4.class)
 public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 3;
@@ -74,6 +78,7 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
     /**
      * Test 'XOR' operation training with {@link SimpleGDUpdateCalculator}.
      */
+    @Test
     public void testXORSimpleGD() {
         xorTest(new UpdatesStrategy<>(
             new SimpleGDUpdateCalculator(0.3),
