@@ -18,12 +18,15 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxAbstractEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -94,9 +97,19 @@ public class DdCollaborator {
     }
 
     private Collection<IgniteInternalFuture<NearTxLocator>> collectBlockers(GridNearTxLocal tx) {
-        return tx.getPendingResponseNodes().stream()
+        return getPendingResponseNodes(tx).stream()
             .map(nodeId -> cctx.coordinators().checkWaiting(nodeId, tx.mvccSnapshot()))
             .collect(Collectors.toList());
+    }
+
+    private Set<UUID> getPendingResponseNodes(GridNearTxLocal tx) {
+        // t0d0 handle primaries local to near node
+        IgniteInternalFuture lockFut = tx.lockFuture();
+
+        if (lockFut instanceof GridNearTxAbstractEnlistFuture)
+            return ((GridNearTxAbstractEnlistFuture)lockFut).pendingResponseNodes();
+
+        return Collections.emptySet();
     }
 
     private void sendProbe(
