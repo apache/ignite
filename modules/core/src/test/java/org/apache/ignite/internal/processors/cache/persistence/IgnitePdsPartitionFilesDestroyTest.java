@@ -59,6 +59,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
     /** Set if I/O exception should be thrown on partition file truncation. */
     private boolean failFileIo;
 
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-10421");

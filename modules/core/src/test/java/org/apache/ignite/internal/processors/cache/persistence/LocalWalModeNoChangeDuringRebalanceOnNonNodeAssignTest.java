@@ -37,6 +37,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static java.lang.String.valueOf;
@@ -106,6 +107,9 @@ public class LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest extends Grid
      * @throws Exception If failed.
      */
     public void test() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
+
         Ignite ig = startGrids(NODES);
 
         ig.cluster().active(true);

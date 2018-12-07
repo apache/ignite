@@ -54,6 +54,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
@@ -223,6 +224,9 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testWalDisabledDuringRebalancing() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
+
         doTestSimple();
     }
 
@@ -230,6 +234,9 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testWalNotDisabledIfParameterSetToFalse() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
+
         disableWalDuringRebalancing = false;
 
         doTestSimple();
@@ -367,6 +374,9 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testLocalAndGlobalWalStateInterdependence() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
+
         Ignite ignite = startGrids(3);
 
         ignite.cluster().active(true);
@@ -459,6 +469,9 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testParallelExchangeDuringRebalance() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
+
         doTestParallelExchange(supplyMessageLatch);
     }
 
@@ -466,6 +479,9 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testParallelExchangeDuringCheckpoint() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
+
         doTestParallelExchange(fileIOLatch);
     }
 
@@ -521,6 +537,9 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testDataClearedAfterRestartWithDisabledWal() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
+
         Ignite ignite = startGrid(0);
 
         ignite.cluster().active(true);
@@ -628,7 +647,12 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
             do {
-                cache.put(rnd.nextInt(keysCnt), rnd.nextInt());
+                try {
+                    cache.put(rnd.nextInt(keysCnt), rnd.nextInt());
+                }
+                catch (Exception ex) {
+                    MvccFeatureChecker.assertMvccWriteConflict(ex);
+                }
             }
             while (U.currentTimeMillis() < stopTs);
         }, threadCnt, "load-cache");
