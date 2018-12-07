@@ -15,31 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration;
+package org.apache.ignite.internal.visor.node;
 
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Disk page compression options.
- *
- * @see CacheConfiguration#setDiskPageCompression
- * @see CacheConfiguration#setDiskPageCompressionLevel
+ * Node baseline status.
  */
-public enum DiskPageCompression {
-    /** Retain only useful data from half-filled pages, but do not apply any compression. */
-    SKIP_GARBAGE,
-
-    /** Zstd compression. */
-    ZSTD,
-
-    /** LZ4 compression. */
-    LZ4,
-
-    /** Snappy compression. */
-    SNAPPY;
+public enum VisorNodeBaselineStatus {
+    /** */
+    NODE_IN_BASELINE,
+    /** */
+    NODE_NOT_IN_BASELINE,
+    /** */
+    BASELINE_NOT_AVAILABLE;
 
     /** Enumerated values. */
-    private static final DiskPageCompression[] VALS = values();
+    private static final VisorNodeBaselineStatus[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -47,7 +39,7 @@ public enum DiskPageCompression {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static DiskPageCompression fromOrdinal(int ord) {
+    @Nullable public static VisorNodeBaselineStatus fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }
