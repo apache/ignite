@@ -24,6 +24,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
@@ -74,6 +75,9 @@ public class SchemaManager {
 
     /** Cache name -> schema name */
     private final Map<String, String> cacheName2schema = new ConcurrentHashMap<>();
+
+    /** Data tables. */
+    private final ConcurrentMap<QueryTable, GridH2Table> dataTables = new ConcurrentHashMap<>();
 
     /** Mutex to synchronize schema operations. */
     private final Object schemaMux = new Object();
@@ -217,10 +221,9 @@ public class SchemaManager {
      * @param idx Indexing.
      * @param type Type descriptor.
      * @param isSql Whether SQL enabled.
-     * @return Table.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2Table onCacheTypeCreated(GridCacheContextInfo cacheInfo, IgniteH2Indexing idx,
+    public void onCacheTypeCreated(GridCacheContextInfo cacheInfo, IgniteH2Indexing idx,
         GridQueryTypeDescriptor type, boolean isSql) throws IgniteCheckedException {
         String schemaName = schemaName(cacheInfo.name());
 
@@ -231,11 +234,12 @@ public class SchemaManager {
         try {
             Connection conn = connMgr.connectionForThread(schema.schemaName());
 
-            GridH2Table tbl0 = createTable(schema.schemaName(), schema, tblDesc, conn);
+            GridH2Table h2tbl = createTable(schema.schemaName(), schema, tblDesc, conn);
 
             schema.add(tblDesc);
 
-            return tbl0;
+            if (dataTables.putIfAbsent(h2tbl.identifier(), h2tbl) != null)
+                throw new IllegalStateException("Table already exists: " + h2tbl.identifierString());
         }
         catch (SQLException e) {
             connMgr.onSqlException();
@@ -673,5 +677,36 @@ public class SchemaManager {
         }
 
         return tbls;
+    }
+
+    /**
+     * Find table by it's identifier.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @return Table or {@code null} if none found.
+     */
+    public GridH2Table dataTable(String schemaName, String tblName) {
+        return dataTables.get(new QueryTable(schemaName, tblName));
+    }
+
+    /**
+     * Find table for index.
+     *
+     * @param schemaName Schema name.
+     * @param idxName Index name.
+     * @return Table or {@code null} if index is not found.
+     */
+    public GridH2Table dataTableForIndex(String schemaName, String idxName) {
+        for (Map.Entry<QueryTable, GridH2Table> dataTableEntry : dataTables.entrySet()) {
+            if (F.eq(dataTableEntry.getKey().schema(), schemaName)) {
+                GridH2Table h2Tbl = dataTableEntry.getValue();
+
+                if (h2Tbl.containsUserIndex(idxName))
+                    return h2Tbl;
+            }
+        }
+
+        return null;
     }
 }

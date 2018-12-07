@@ -221,7 +221,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
                 if (!F.isEmpty(types)) {
                     for (GridQueryTypeDescriptor type : types) {
-                        GridH2Table gridH2Tbl = indexing.dataTable(ctx.name(), type.tableName());
+                        GridH2Table gridH2Tbl = indexing.schema().dataTable(ctx.name(), type.tableName());
 
                         if (gridH2Tbl == null)
                             continue;
@@ -505,7 +505,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
                     IgniteH2Indexing indexing = (IgniteH2Indexing)qryProcessor.getIndexing();
 
-                    GridH2Table gridH2Tbl = indexing.dataTable(cacheCtx.name(), res.tableName());
+                    GridH2Table gridH2Tbl = indexing.schema().dataTable(cacheCtx.name(), res.tableName());
 
                     if (gridH2Tbl == null)
                         continue; // Tolerate - (k, v) is just not indexed.

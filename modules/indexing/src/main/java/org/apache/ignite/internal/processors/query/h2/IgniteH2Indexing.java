@@ -2075,67 +2075,24 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public boolean registerType(GridCacheContextInfo cacheInfo, GridQueryTypeDescriptor type, boolean isSql)
         throws IgniteCheckedException {
         H2Utils.validateTypeDescriptor(type);
-        GridH2Table h2Tbl = schemaMgr.onCacheTypeCreated(cacheInfo, this, type, isSql);
-
-        if (dataTables.putIfAbsent(h2Tbl.identifier(), h2Tbl) != null)
-            throw new IllegalStateException("Table already exists: " + h2Tbl.identifierString());
+        schemaMgr.onCacheTypeCreated(cacheInfo, this, type, isSql);
 
         return true;
     }
 
     /**
-     * Find table by name in given schema.
-     *
-     * @param schemaName Schema name.
-     * @param tblName Table name.
-     * @return Table or {@code null} if none found.
-     */
-    public GridH2Table dataTable(String schemaName, String tblName) {
-        return dataTable(new QueryTable(schemaName, tblName));
-    }
-
-    /**
-     * Find table by it's identifier.
-     *
-     * @param tbl Identifier.
-     * @return Table or {@code null} if none found.
-     */
-    public GridH2Table dataTable(QueryTable tbl) {
-        return dataTables.get(tbl);
-    }
-
-    /**
      * @param h2Tbl Remove data table.
      */
+    // TODO
     public void removeDataTable(GridH2Table h2Tbl) {
         dataTables.remove(h2Tbl.identifier(), h2Tbl);
     }
 
     /** {@inheritDoc} */
-    public GridCacheContextInfo registeredCacheInfo(String cacheName) {
-        for (GridH2Table value : dataTables.values()) {
-            if (value.cacheName().equals(cacheName))
-                return value.cacheInfo();
-        }
-
-        return null;
-    }
-
-    /**
-     * Find table for index.
-     *
-     * @param schemaName Schema name.
-     * @param idxName Index name.
-     * @return Table or {@code null} if index is not found.
-     */
-    public GridH2Table dataTableForIndex(String schemaName, String idxName) {
-        for (Map.Entry<QueryTable, GridH2Table> dataTableEntry : dataTables.entrySet()) {
-            if (F.eq(dataTableEntry.getKey().schema(), schemaName)) {
-                GridH2Table h2Tbl = dataTableEntry.getValue();
-
-                if (h2Tbl.containsUserIndex(idxName))
-                    return h2Tbl;
-            }
+    @Override public GridCacheContextInfo registeredCacheInfo(String cacheName) {
+        for (H2TableDescriptor tbl : schemaMgr.tablesForCache(cacheName)) {
+            if (F.eq(tbl.cacheName(), cacheName))
+                return tbl.cacheInfo();
         }
 
         return null;
@@ -2311,7 +2268,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         ddlProc = new DdlStatementsProcessor();
 
         dmlProc.start(ctx, this);
-        ddlProc.start(ctx, this);
+        ddlProc.start(ctx, schemaMgr);
 
         if (JdbcUtils.serializer != null)
             U.warn(log, "Custom H2 serialization is already configured, will override.");
@@ -2625,7 +2582,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         assert partInfo != null;
         assert partInfo.partition() < 0;
 
-        GridH2RowDescriptor desc = dataTable(schema(partInfo.cacheName()), partInfo.tableName()).rowDescriptor();
+        GridH2RowDescriptor desc =
+            schemaMgr.dataTable(schema(partInfo.cacheName()), partInfo.tableName()).rowDescriptor();
 
         Object param = H2Utils.convert(params[partInfo.paramIdx()],
                 desc, partInfo.dataType());
@@ -2665,10 +2623,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * @return Query executor.
+     * @return Connection manager.
      */
     public ConnectionManager connections() {
         return connMgr;
+    }
+
+    /**
+     * @return Schema manager.
+     */
+    public SchemaManager schema() {
+        return schemaMgr;
     }
 
     /**
@@ -2688,7 +2653,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (tblCnt > 0) {
             for (QueryTable tblKey : twoStepQry.tables()) {
-                GridH2Table tbl = dataTable(tblKey);
+                GridH2Table tbl = schemaMgr.dataTable(tblKey.schema(), tblKey.table());
 
                 if (tbl != null) {
                     H2Utils.checkAndStartNotStartedCache(tbl);

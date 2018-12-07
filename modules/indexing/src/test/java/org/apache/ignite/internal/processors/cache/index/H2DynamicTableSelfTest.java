@@ -1453,7 +1453,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         assertEquals(cacheName, type.tableName());
         assertEquals(affKeyFieldName, type.affinityKey());
 
-        GridH2Table tbl = ((IgniteH2Indexing)queryProcessor(client()).getIndexing()).dataTable("PUBLIC", cacheName);
+        GridH2Table tbl =
+            ((IgniteH2Indexing)queryProcessor(client()).getIndexing()).schema().dataTable("PUBLIC", cacheName);
 
         assertNotNull(tbl);
 
@@ -1503,8 +1504,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Test that {@link IgniteH2Indexing#tables(String)} method
-     * only returns tables belonging to given cache.
+     * Test that tables method only returns tables belonging to given cache.
      *
      * @throws Exception if failed.
      */
