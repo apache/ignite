@@ -153,13 +153,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         isEnabled = ctx.config().isAuthenticationEnabled();
 
-        if (isEnabled && !GridCacheUtils.isPersistenceEnabled(ctx.config())) {
-            isEnabled = false;
-
-            throw new IgniteCheckedException("Authentication can be enabled only for cluster with enabled persistence."
-                + " Check the DataRegionConfiguration");
-        }
-
         ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
 
         ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_AUTHENTICATION_ENABLED, isEnabled);
