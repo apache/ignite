@@ -16,64 +16,47 @@ import org.apache.ignite.plugin.security.SecuritySubject;
 public interface GridSecurityManager {
     /**
      * Create {@link GridSecuritySession}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
-     * #authorize(SecurityPermission)} will be processed into the context of passed {@link SecurityContext} until session
-     * {@link GridSecuritySession} will be closed.
+     * #authorize(SecurityPermission)} will be processed into the context of passed {@link SecurityContext} until
+     * session {@link GridSecuritySession} will be closed.
      *
      * @param secCtx Security Context.
      * @return Grid security Session.
      */
-    public GridSecuritySession context(SecurityContext secCtx);
+    public GridSecuritySession startSession(SecurityContext secCtx);
 
     /**
      * Create {@link GridSecuritySession}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
-     * #authorize(SecurityPermission)} will be processed into the context of {@link SecurityContext} that is owned by node
-     * with given noddeId until session {@link GridSecuritySession} will be closed.
+     * #authorize(SecurityPermission)} will be processed into the context of {@link SecurityContext} that is owned by
+     * node with given noddeId until session {@link GridSecuritySession} will be closed.
      *
      * @param nodeId Node id.
      * @return Grid security Session.
      */
-    public GridSecuritySession context(UUID nodeId);
+    public GridSecuritySession startSession(UUID nodeId);
 
     /**
-     * Authenticates grid node with it's attributes via underlying Authenticator.
-     *
-     * @param node Node id to authenticate.
-     * @param cred Security credentials.
-     * @return {@code True} if succeeded, {@code false} otherwise.
-     * @throws IgniteCheckedException If error occurred.
+     * Delegate call to {@link GridSecurityProcessor#authenticateNode(org.apache.ignite.cluster.ClusterNode,
+     * org.apache.ignite.plugin.security.SecurityCredentials)}
      */
     public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) throws IgniteCheckedException;
 
     /**
-     * Gets flag indicating whether all nodes or coordinator only should run the authentication for joining node.
-     *
-     * @return {@code True} if all nodes should run authentication process, {@code false} otherwise.
+     * Delegate call to {@link GridSecurityProcessor#isGlobalNodeAuthentication()}
      */
     public boolean isGlobalNodeAuthentication();
 
     /**
-     * Authenticates subject via underlying Authenticator.
-     *
-     * @param ctx Authentication context.
-     * @return {@code True} if succeeded, {@code false} otherwise.
-     * @throws IgniteCheckedException If error occurred.
+     * Delegate call to {@link GridSecurityProcessor#authenticate(AuthenticationContext)}
      */
     public SecurityContext authenticate(AuthenticationContext ctx) throws IgniteCheckedException;
 
     /**
-     * Gets collection of authenticated nodes.
-     *
-     * @return Collection of authenticated nodes.
-     * @throws IgniteCheckedException If error occurred.
+     * Delegate call to {@link GridSecurityProcessor#authenticatedSubjects()}
      */
     public Collection<SecuritySubject> authenticatedSubjects() throws IgniteCheckedException;
 
     /**
-     * Gets authenticated node subject.
-     *
-     * @param subjId Subject ID.
-     * @return Security subject.
-     * @throws IgniteCheckedException If error occurred.
+     * Delegate call to {@link GridSecurityProcessor#authenticatedSubject(UUID)}
      */
     public SecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException;
 
@@ -97,7 +80,7 @@ public interface GridSecurityManager {
     }
 
     /**
-     * @return GridSecurityProcessor is enable.
+     * Delegate call to {@link GridSecurityProcessor#enabled()}
      */
     public boolean enabled();
 }

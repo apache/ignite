@@ -26,9 +26,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
  * Default Grid security Manager implementation.
  */
 public class GridSecurityManagerImpl implements GridSecurityManager {
-    /** Local node's security context. */
-    private SecurityContext locSecCtx;
-
     /** Current security context. */
     private final ThreadLocal<SecurityContext> curSecCtx = ThreadLocal.withInitial(this::localSecurityContext);
 
@@ -58,7 +55,7 @@ public class GridSecurityManagerImpl implements GridSecurityManager {
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecuritySession context(SecurityContext secCtx) {
+    @Override public GridSecuritySession startSession(SecurityContext secCtx) {
         assert secCtx != null;
 
         SecurityContext old = curSecCtx.get();
@@ -69,14 +66,14 @@ public class GridSecurityManagerImpl implements GridSecurityManager {
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecuritySession context(UUID nodeId) {
+    @Override public GridSecuritySession startSession(UUID nodeId) {
         if (lsnr == null) {
             lsnr = (evt, discoCache) -> secCtxs.remove(evt.eventNode().id());
 
             ctx.event().addDiscoveryEventListener(lsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
         }
 
-        return context(
+        return startSession(
             secCtxs.computeIfAbsent(nodeId,
                 uuid -> nodeSecurityContext(ctx.discovery().node(uuid))
             )
@@ -129,15 +126,7 @@ public class GridSecurityManagerImpl implements GridSecurityManager {
      * @return Security context of local node.
      */
     private SecurityContext localSecurityContext() {
-        SecurityContext res = locSecCtx;
-
-        if (res == null) {
-            res = nodeSecurityContext(ctx.discovery().localNode());
-
-            locSecCtx = res;
-        }
-
-        return res;
+        return nodeSecurityContext(ctx.discovery().localNode());
     }
 
     /**

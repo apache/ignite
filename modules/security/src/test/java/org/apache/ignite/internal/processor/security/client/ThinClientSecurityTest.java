@@ -67,7 +67,7 @@ public class ThinClientSecurityTest extends AbstractSecurityTest {
     private static final String FORBIDDEN_CACHE = "FORBIDDEN_TEST_CACHE";
 
     /** Cache to test system oper permissions. */
-    private static final String SYS_OPER_CACHE = "SYS_OPER_TEST_CACHE";
+    private static final String DYNAMIC_CACHE = "DYNAMIC_TEST_CACHE";
 
     /** Remove all task name. */
     public static final String REMOVE_ALL_TASK =
@@ -105,8 +105,8 @@ public class ThinClientSecurityTest extends AbstractSecurityTest {
                 new TestSecurityPluginConfiguration()
                     .setSecurityProcessorClass(TEST_SECURITY_PROCESSOR)
                     .setLogin("srv_" + instanceName)
-                    .setPermissions(allowAll())
-                    .clientSecData(clientData)
+                    .setPermissions(allowAllPermissionSet())
+                    .thinClientSecData(clientData)
             )
             .setCacheConfiguration(
                 new CacheConfiguration().setName(CACHE),
@@ -151,25 +151,25 @@ public class ThinClientSecurityTest extends AbstractSecurityTest {
      * @throws Exception If error occurs.
      */
     public void testCacheSinglePermOperations() throws Exception {
-        executeOperation(c -> c.cache(CACHE).put("key", "value"));
+        executeOperation(CLIENT, c -> c.cache(CACHE).put("key", "value"));
         executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).put("key", "value"));
 
         Map<String, String> map = new HashMap<>();
 
         map.put("key", "value");
-        executeOperation(c -> c.cache(CACHE).putAll(map));
+        executeOperation(CLIENT, c -> c.cache(CACHE).putAll(map));
         executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).putAll(map));
 
-        executeOperation(c -> c.cache(CACHE).get("key"));
+        executeOperation(CLIENT, c -> c.cache(CACHE).get("key"));
         executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).get("key"));
 
-        executeOperation(c -> c.cache(CACHE).getAll(Collections.singleton("key")));
+        executeOperation(CLIENT, c -> c.cache(CACHE).getAll(Collections.singleton("key")));
         executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).getAll(Collections.singleton("key")));
 
-        executeOperation(c -> c.cache(CACHE).containsKey("key"));
+        executeOperation(CLIENT, c -> c.cache(CACHE).containsKey("key"));
         executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).containsKey("key"));
 
-        executeOperation(c -> c.cache(CACHE).remove("key"));
+        executeOperation(CLIENT, c -> c.cache(CACHE).remove("key"));
         executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).remove("key"));
     }
 
@@ -177,19 +177,19 @@ public class ThinClientSecurityTest extends AbstractSecurityTest {
      * @throws Exception If error occurs.
      */
     public void testCacheMultiplePermOperations() throws Exception {
-        executeOperation(c -> c.cache(CACHE).replace("key", "value"));
+        executeOperation(CLIENT, c -> c.cache(CACHE).replace("key", "value"));
         executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).replace("key", "value"));
 
-        executeOperation(c -> c.cache(CACHE).putIfAbsent("key", "value"));
+        executeOperation(CLIENT, c -> c.cache(CACHE).putIfAbsent("key", "value"));
         executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).putIfAbsent("key", "value"));
 
-        executeOperation(c -> c.cache(CACHE).getAndPut("key", "value"));
+        executeOperation(CLIENT, c -> c.cache(CACHE).getAndPut("key", "value"));
         executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).getAndPut("key", "value"));
 
-        executeOperation(c -> c.cache(CACHE).getAndRemove("key"));
+        executeOperation(CLIENT, c -> c.cache(CACHE).getAndRemove("key"));
         executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).getAndRemove("key"));
 
-        executeOperation(c -> c.cache(CACHE).getAndReplace("key", "value"));
+        executeOperation(CLIENT, c -> c.cache(CACHE).getAndReplace("key", "value"));
         executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).getAndReplace("key", "value"));
     }
 
@@ -200,10 +200,8 @@ public class ThinClientSecurityTest extends AbstractSecurityTest {
      * @throws Exception If error occurs.
      */
     public void testCacheTaskPermOperations() throws Exception {
-        try (IgniteClient client = startClient(CLIENT_CACHE_TASK_OPER)) {
-            client.cache(CACHE).removeAll();
-            client.cache(CACHE).clear();
-        }
+        executeOperation(CLIENT_CACHE_TASK_OPER, c -> c.cache(CACHE).removeAll());
+        executeOperation(CLIENT_CACHE_TASK_OPER, c -> c.cache(CACHE).clear());
 
         executeForbiddenOperation(c -> c.cache(CACHE).removeAll());
         executeForbiddenOperation(c -> c.cache(CACHE).clear());
@@ -214,12 +212,12 @@ public class ThinClientSecurityTest extends AbstractSecurityTest {
      */
     public void testSysOperation() throws Exception {
         try (IgniteClient sysPrmClnt = startClient(CLIENT_SYS_PERM)) {
-            assertThat(sysPrmClnt.createCache(SYS_OPER_CACHE), notNullValue());
+            assertThat(sysPrmClnt.createCache(DYNAMIC_CACHE), notNullValue());
 
-            sysPrmClnt.destroyCache(SYS_OPER_CACHE);
+            sysPrmClnt.destroyCache(DYNAMIC_CACHE);
 
             try {
-                sysPrmClnt.cache(SYS_OPER_CACHE).put("key", "any value");
+                sysPrmClnt.cache(DYNAMIC_CACHE).put("key", "any value");
 
                 fail();
             }
@@ -228,15 +226,15 @@ public class ThinClientSecurityTest extends AbstractSecurityTest {
             }
         }
 
-        executeForbiddenOperation(c -> c.createCache(SYS_OPER_CACHE));
+        executeForbiddenOperation(c -> c.createCache(DYNAMIC_CACHE));
         executeForbiddenOperation(c -> c.destroyCache(CACHE));
     }
 
     /**
      * @param cons Consumer.
      */
-    private void executeOperation(Consumer<IgniteClient> cons) throws Exception {
-        try (IgniteClient client = startClient(CLIENT)) {
+    private void executeOperation(String clientName, Consumer<IgniteClient> cons) throws Exception {
+        try (IgniteClient client = startClient(clientName)) {
             cons.accept(client);
         }
     }

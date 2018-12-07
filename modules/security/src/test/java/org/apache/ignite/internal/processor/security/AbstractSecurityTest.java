@@ -127,9 +127,9 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Getting allow all security permissions.
+     * Getting allow all security permission set.
      */
-    protected SecurityPermissionSet allowAll() {
+    protected SecurityPermissionSet allowAllPermissionSet() {
         return builder().defaultAllowAll(true).build();
     }
 }

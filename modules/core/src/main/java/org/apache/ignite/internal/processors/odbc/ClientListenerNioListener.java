@@ -168,7 +168,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
             if (authCtx != null)
                 AuthorizationContext.context(authCtx);
 
-            try(GridSecuritySession s = ctx.security().context(connCtx.securityContext())) {
+            try(GridSecuritySession s = ctx.security().startSession(connCtx.securityContext())) {
                 resp = handler.handle(req);
             }
             finally {

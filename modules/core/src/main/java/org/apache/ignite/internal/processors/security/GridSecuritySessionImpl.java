@@ -21,6 +21,6 @@ public class GridSecuritySessionImpl implements GridSecuritySession {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        mngr.context(secCtx);
+        mngr.startSession(secCtx);
     }
 }

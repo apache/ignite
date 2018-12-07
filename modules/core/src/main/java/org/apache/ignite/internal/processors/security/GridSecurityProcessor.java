@@ -87,18 +87,6 @@ public interface GridSecurityProcessor extends GridProcessor {
         throws SecurityException;
 
     /**
-     * Authorizes grid operation.
-     *
-     * @param name Cache name or task class name.
-     * @param perm Permission to authorize.
-     * @throws SecurityException If security check failed.
-     */
-    public default void authorize(String name, SecurityPermission perm)
-        throws SecurityException{
-        authorize(name, perm, null);
-    }
-
-    /**
      * Callback invoked when subject session got expired.
      *
      * @param subjId Subject ID.

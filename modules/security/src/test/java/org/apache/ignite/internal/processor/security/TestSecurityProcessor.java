@@ -130,7 +130,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
 
         ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, nodeSecData.credentials());
 
-        for (TestSecurityData data : configuration().clientsSecData())
+        for (TestSecurityData data : configuration().thinClientsSecData())
             PERMS.put(data.credentials(), data.getPermissions());
     }
 
@@ -140,7 +140,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
 
         PERMS.remove(configuration().nodeSecData().credentials());
 
-        for (TestSecurityData data : configuration().clientsSecData())
+        for (TestSecurityData data : configuration().thinClientsSecData())
             PERMS.remove(data.credentials());
     }
 

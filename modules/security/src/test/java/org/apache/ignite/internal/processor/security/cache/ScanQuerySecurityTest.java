@@ -37,39 +37,39 @@ public class ScanQuerySecurityTest extends AbstractCacheSecurityTest {
      */
     public void testScanQuery() throws Exception {
         putTestData(srvAllPerms, CACHE_NAME);
-        putTestData(srvAllPerms, CACHE_WITHOUT_PERMS);
+        putTestData(srvAllPerms, CACHE_READ_ONLY_PERM);
 
         awaitPartitionMapExchange();
 
         assertAllowed(() -> query(clntAllPerms, srvAllPerms, CACHE_NAME, "key"));
         assertAllowed(() -> query(srvAllPerms, srvAllPerms, CACHE_NAME, "key"));
-        assertAllowed(() -> query(clntAllPerms, srvAllPerms, CACHE_WITHOUT_PERMS, "key"));
-        assertAllowed(() -> query(srvAllPerms, srvAllPerms, CACHE_WITHOUT_PERMS, "key"));
+        assertAllowed(() -> query(clntAllPerms, srvAllPerms, CACHE_READ_ONLY_PERM, "key"));
+        assertAllowed(() -> query(srvAllPerms, srvAllPerms, CACHE_READ_ONLY_PERM, "key"));
 
         assertAllowed(() -> transform(clntAllPerms, srvAllPerms, CACHE_NAME, "key"));
         assertAllowed(() -> transform(srvAllPerms, srvAllPerms, CACHE_NAME, "key"));
-        assertAllowed(() -> transform(clntAllPerms, srvAllPerms, CACHE_WITHOUT_PERMS, "key"));
-        assertAllowed(() -> transform(srvAllPerms, srvAllPerms, CACHE_WITHOUT_PERMS, "key"));
+        assertAllowed(() -> transform(clntAllPerms, srvAllPerms, CACHE_READ_ONLY_PERM, "key"));
+        assertAllowed(() -> transform(srvAllPerms, srvAllPerms, CACHE_READ_ONLY_PERM, "key"));
 
         assertAllowed(() -> query(clntAllPerms, srvReadOnlyPerm, CACHE_NAME, "key"));
         assertAllowed(() -> query(srvAllPerms, srvReadOnlyPerm, CACHE_NAME, "key"));
-        assertAllowed(() -> query(clntAllPerms, srvReadOnlyPerm, CACHE_WITHOUT_PERMS, "key"));
-        assertAllowed(() -> query(srvAllPerms, srvReadOnlyPerm, CACHE_WITHOUT_PERMS, "key"));
+        assertAllowed(() -> query(clntAllPerms, srvReadOnlyPerm, CACHE_READ_ONLY_PERM, "key"));
+        assertAllowed(() -> query(srvAllPerms, srvReadOnlyPerm, CACHE_READ_ONLY_PERM, "key"));
 
         assertAllowed(() -> transform(clntAllPerms, srvReadOnlyPerm, CACHE_NAME, "key"));
         assertAllowed(() -> transform(srvAllPerms, srvReadOnlyPerm, CACHE_NAME, "key"));
-        assertAllowed(() -> transform(clntAllPerms, srvReadOnlyPerm, CACHE_WITHOUT_PERMS, "key"));
-        assertAllowed(() -> transform(srvAllPerms, srvReadOnlyPerm, CACHE_WITHOUT_PERMS, "key"));
+        assertAllowed(() -> transform(clntAllPerms, srvReadOnlyPerm, CACHE_READ_ONLY_PERM, "key"));
+        assertAllowed(() -> transform(srvAllPerms, srvReadOnlyPerm, CACHE_READ_ONLY_PERM, "key"));
 
         assertForbidden(() -> query(clntReadOnlyPerm, srvAllPerms, CACHE_NAME, "fail_key"));
         assertForbidden(() -> query(srvReadOnlyPerm, srvAllPerms, CACHE_NAME, "fail_key"));
-        assertForbidden(() -> query(clntReadOnlyPerm, srvAllPerms, CACHE_WITHOUT_PERMS, "fail_key"));
-        assertForbidden(() -> query(srvReadOnlyPerm, srvAllPerms, CACHE_WITHOUT_PERMS, "fail_key"));
+        assertForbidden(() -> query(clntReadOnlyPerm, srvAllPerms, CACHE_READ_ONLY_PERM, "fail_key"));
+        assertForbidden(() -> query(srvReadOnlyPerm, srvAllPerms, CACHE_READ_ONLY_PERM, "fail_key"));
 
         assertForbidden(() -> transform(clntReadOnlyPerm, srvAllPerms, CACHE_NAME, "fail_key"));
         assertForbidden(() -> transform(srvReadOnlyPerm, srvAllPerms, CACHE_NAME, "fail_key"));
-        assertForbidden(() -> transform(clntReadOnlyPerm, srvAllPerms, CACHE_WITHOUT_PERMS, "fail_key"));
-        assertForbidden(() -> transform(srvReadOnlyPerm, srvAllPerms, CACHE_WITHOUT_PERMS, "fail_key"));
+        assertForbidden(() -> transform(clntReadOnlyPerm, srvAllPerms, CACHE_READ_ONLY_PERM, "fail_key"));
+        assertForbidden(() -> transform(srvReadOnlyPerm, srvAllPerms, CACHE_READ_ONLY_PERM, "fail_key"));
     }
 
     /**

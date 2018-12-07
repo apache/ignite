@@ -1565,7 +1565,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (change)
             CUR_PLC.set(plc);
 
-        try(GridSecuritySession s = ctx.security().context(nodeId)) {
+        try(GridSecuritySession s = ctx.security().startSession(nodeId)) {
             lsnr.onMessage(nodeId, msg, plc);
         }
         finally {
@@ -2556,7 +2556,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                 if (msgBody != null) {
                     if (predLsnr != null) {
-                        try(GridSecuritySession s = ctx.security().context(initNodeId)) {
+                        try(GridSecuritySession s = ctx.security().startSession(initNodeId)) {
                             if (!predLsnr.apply(nodeId, msgBody))
                                 removeMessageListener(TOPIC_COMM_USER, this);
                         }

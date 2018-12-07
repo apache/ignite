@@ -58,9 +58,9 @@ public class AbstractResolveSecurityContextTest extends AbstractSecurityTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        srvAllPerms = startGrid("srv_all_perms", allowAll());
+        srvAllPerms = startGrid("srv_all_perms", allowAllPermissionSet());
 
-        clntAllPerms = startGrid("clnt_all_perms", allowAll(), true);
+        clntAllPerms = startGrid("clnt_all_perms", allowAllPermissionSet(), true);
 
         srvReadOnlyPerm = startGrid("srv_read_only_perm",
             builder().defaultAllowAll(true)

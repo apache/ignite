@@ -30,8 +30,8 @@ public class TestSecurityPluginConfiguration implements PluginConfiguration {
     /** Node security data. */
     private TestSecurityData nodeSecData = new TestSecurityData();
 
-    /** Clients security data. */
-    private Collection<TestSecurityData> clientsSecData = Collections.emptyList();
+    /** Thin clients security data. */
+    private Collection<TestSecurityData> thinClientsSecData = Collections.emptyList();
 
     /** Security processor class name. */
     private String secProcCls;
@@ -101,19 +101,19 @@ public class TestSecurityPluginConfiguration implements PluginConfiguration {
     }
 
     /**
-     * @param data Array of client security data.
+     * @param data Array of thin client security data.
      */
-    public TestSecurityPluginConfiguration clientSecData(TestSecurityData... data) {
-        clientsSecData = Collections.unmodifiableCollection(Arrays.asList(data));
+    public TestSecurityPluginConfiguration thinClientSecData(TestSecurityData... data) {
+        thinClientsSecData = Collections.unmodifiableCollection(Arrays.asList(data));
 
         return this;
     }
 
     /**
-     * @return Collection of client security data.
+     * @return Collection of thin client security data.
      */
-    public Collection<TestSecurityData> clientsSecData() {
-        return clientsSecData;
+    public Collection<TestSecurityData> thinClientsSecData() {
+        return thinClientsSecData;
     }
 
     /**

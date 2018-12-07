@@ -28,7 +28,7 @@ import org.apache.ignite.internal.IgniteEx;
  */
 public abstract class AbstractCacheSecurityTest extends AbstractResolveSecurityContextTest {
     /** Cache name for tests. */
-    protected static final String CACHE_WITHOUT_PERMS = "SECOND_TEST_CACHE";
+    protected static final String CACHE_READ_ONLY_PERM = "CACHE_READ_ONLY_PERM";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -46,7 +46,7 @@ public abstract class AbstractCacheSecurityTest extends AbstractResolveSecurityC
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setReadFromBackup(false),
             new CacheConfiguration<>()
-                .setName(CACHE_WITHOUT_PERMS)
+                .setName(CACHE_READ_ONLY_PERM)
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setReadFromBackup(false)
         };
@@ -59,7 +59,7 @@ public abstract class AbstractCacheSecurityTest extends AbstractResolveSecurityC
      * @return Key.
      */
     protected Integer primaryKey(IgniteEx ignite) {
-        Affinity<Integer> affinity = ignite.affinity(CACHE_WITHOUT_PERMS);
+        Affinity<Integer> affinity = ignite.affinity(CACHE_READ_ONLY_PERM);
 
         int i = 0;
         do {

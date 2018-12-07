@@ -43,7 +43,7 @@ public class LoadCacheSecurityTest extends AbstractCacheSecurityTest {
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setReadFromBackup(false),
             new CacheConfiguration<Integer, Integer>()
-                .setName(CACHE_WITHOUT_PERMS)
+                .setName(CACHE_READ_ONLY_PERM)
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setReadFromBackup(false)
                 .setCacheStoreFactory(new TestStoreFactory())
@@ -75,7 +75,7 @@ public class LoadCacheSecurityTest extends AbstractCacheSecurityTest {
 
         Integer val = values.getAndIncrement();
 
-        initiator.<Integer, Integer>cache(CACHE_WITHOUT_PERMS).loadCache(
+        initiator.<Integer, Integer>cache(CACHE_READ_ONLY_PERM).loadCache(
             new TestClosure(remote.localNode().id(), key, val)
         );
 

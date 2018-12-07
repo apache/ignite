@@ -55,7 +55,7 @@ public class IgniteDataStreamerSecurityTest extends AbstractCacheSecurityTest {
     private Integer load(IgniteEx initiator, IgniteEx remote, String key) {
         Integer val = values.getAndIncrement();
 
-        try (IgniteDataStreamer<Integer, Integer> strm = initiator.dataStreamer(CACHE_WITHOUT_PERMS)) {
+        try (IgniteDataStreamer<Integer, Integer> strm = initiator.dataStreamer(CACHE_READ_ONLY_PERM)) {
             strm.receiver(
                 StreamVisitor.from(
                     new TestClosure(remote.localNode().id(), key, val)

@@ -270,7 +270,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                     if (secCtx0 == null || ses.isTokenExpired(sesTokTtl))
                         ses.secCtx = secCtx0 = authenticate(req, ses);
 
-                    try(GridSecuritySession s = ctx.security().context(secCtx0)) {
+                    try(GridSecuritySession s = ctx.security().startSession(secCtx0)) {
                         authorize(req);
                     }
                 }

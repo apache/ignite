@@ -44,8 +44,9 @@ public class IgniteMessagingTest extends AbstractResolveSecurityContextTest {
     /** Sever node that hasn't permissions for TEST_CACHE. */
     private IgniteEx evntNotPerms;
 
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        evntAllPerms = startGrid("evnt_all_perms", allowAll());
+        evntAllPerms = startGrid("evnt_all_perms", allowAllPermissionSet());
 
         evntNotPerms = startGrid("evnt_not_perms",
             builder().defaultAllowAll(true)
