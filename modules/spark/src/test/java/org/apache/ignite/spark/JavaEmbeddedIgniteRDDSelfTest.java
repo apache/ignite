@@ -42,6 +42,7 @@ import scala.Tuple2;
 /**
  * Tests for {@link JavaIgniteRDD} (embedded mode).
  */
+@RunWith(JUnit4.class)
 public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
     /** For Ignite instance names generation */
     private static AtomicInteger cntr = new AtomicInteger(1);
@@ -120,6 +121,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStoreDataToIgnite() throws Exception {
         JavaSparkContext sc = createContext();
 
@@ -153,6 +155,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadDataFromIgnite() throws Exception {
         JavaSparkContext sc = createContext();
 
@@ -187,6 +190,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryObjectsFromIgnite() throws Exception {
         JavaSparkContext sc = createContext();
 
@@ -225,6 +229,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryFieldsFromIgnite() throws Exception {
         JavaSparkContext sc = createContext();
 

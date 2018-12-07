@@ -52,12 +52,16 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
 /**
  * Tests the correctness of web sessions caching functionality.
  */
+@RunWith(JUnit4.class)
 public class WebSessionSelfTest extends GridCommonAbstractTest {
     /** Port for test Jetty server. */
     private static final int TEST_JETTY_PORT = 49090;
@@ -88,6 +92,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleRequest() throws Exception {
         testSingleRequest("/modules/core/src/test/config/websession/example-cache.xml");
     }
@@ -96,6 +101,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @IgniteIgnore("https://issues.apache.org/jira/browse/IGNITE-3663")
+    @Test
     public void testSessionRenewalDuringLogin() throws Exception {
         testSessionRenewalDuringLogin("/modules/core/src/test/config/websession/example-cache.xml");
     }
@@ -103,6 +109,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleRequestMetaInf() throws Exception {
         testSingleRequest("ignite-webapp-config.xml");
     }
@@ -110,6 +117,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testImplicitlyAttributeModification() throws Exception {
         testImplicitlyModification("ignite-webapp-config.xml");
     }
@@ -117,6 +125,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnectRequest() throws Exception {
         testClientReconnectRequest("/modules/core/src/test/config/websession/example-cache.xml",
             "/modules/core/src/test/config/websession/example-cache2.xml",
@@ -477,6 +486,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception Exception If failed.
      */
+    @Test
     public void testInvalidatedSession() throws Exception {
         String invalidatedSesId;
         Server srv = null;
@@ -594,6 +604,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception Exception If failed.
      */
+    @Test
     public void testChangeSessionId() throws Exception {
         String newWebSesId;
         Server srv = null;
@@ -698,6 +709,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestarts() throws Exception {
         final AtomicReference<String> sesIdRef = new AtomicReference<>();
 

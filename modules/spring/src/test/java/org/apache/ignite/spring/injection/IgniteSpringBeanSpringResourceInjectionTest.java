@@ -32,12 +32,16 @@ import org.apache.ignite.resources.SpringResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 /**
  * Test checking injections of {@link SpringResource} annotated fields.
  */
+@RunWith(JUnit4.class)
 public class IgniteSpringBeanSpringResourceInjectionTest extends GridCommonAbstractTest {
     /** */
     private static final String SPRING_CFG_LOCATION = "/org/apache/ignite/spring/injection/spring-bean.xml";
@@ -184,6 +188,7 @@ public class IgniteSpringBeanSpringResourceInjectionTest extends GridCommonAbstr
     }
 
     /** */
+    @Test
     public void testSpringResourceInjectedInCacheStore() throws Exception {
         doTestSpringResourceInjected(
             new TestSpringResourceInjectedRunnable(SPRING_CFG_LOCATION, BEAN_TO_INJECT_NAME) {
@@ -199,6 +204,7 @@ public class IgniteSpringBeanSpringResourceInjectionTest extends GridCommonAbstr
     }
 
     /** */
+    @Test
     public void testSpringResourceInjectedInService() throws Exception {
         doTestSpringResourceInjected(
             new TestSpringResourceInjectedRunnable(SPRING_CFG_LOCATION, BEAN_TO_INJECT_NAME) {

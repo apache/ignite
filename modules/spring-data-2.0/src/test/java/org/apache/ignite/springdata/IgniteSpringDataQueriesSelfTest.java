@@ -26,6 +26,9 @@ import org.apache.ignite.springdata.misc.PersonRepository;
 import org.apache.ignite.springdata.misc.Person;
 import org.apache.ignite.springdata.misc.PersonSecondRepository;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
@@ -34,6 +37,7 @@ import org.springframework.data.domain.Sort;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     /** Repository. */
     private static PersonRepository repo;
@@ -76,6 +80,7 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testExplicitQuery() {
         List<Person> persons = repo.simpleQuery("person4a");
 
@@ -86,6 +91,7 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testEqualsPart() {
         List<Person> persons = repo.findByFirstName("person4e");
 
@@ -96,6 +102,7 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testContainingPart() {
         List<Person> persons = repo.findByFirstNameContaining("person4");
 
@@ -106,6 +113,7 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testTopPart() {
         Iterable<Person> top = repo.findTopByFirstNameContaining("person4");
 
@@ -119,6 +127,7 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testLikeAndLimit() {
         Iterable<Person> like = repo.findFirst10ByFirstNameLike("person");
 
@@ -134,6 +143,7 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testCount() {
         int cnt = repo.countByFirstNameLike("person");
 
@@ -141,6 +151,7 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testCount2() {
         int cnt = repo.countByFirstNameLike("person4");
 
@@ -148,6 +159,7 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPageable() {
         PageRequest pageable = new PageRequest(1, 5, Sort.Direction.DESC, "firstName");
 
@@ -177,6 +189,7 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testAndAndOr() {
         int cntAnd = repo.countByFirstNameLikeAndSecondNameLike("person1", "lastName1");
 
@@ -186,6 +199,7 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testQueryWithSort() {
         List<Person> persons = repo.queryWithSort("^[a-z]+$", new Sort(Sort.Direction.DESC, "secondName"));
 
@@ -201,6 +215,7 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testQueryWithPaging() {
         List<Person> persons = repo.queryWithPageable("^[a-z]+$", new PageRequest(1, 7, Sort.Direction.DESC, "secondName"));
 
@@ -218,6 +233,7 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testQueryFields() {
         List<String> persons = repo.selectField("^[a-z]+$", new PageRequest(1, 7, Sort.Direction.DESC, "secondName"));
 
@@ -225,6 +241,7 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testFindCacheEntries() {
         List<Cache.Entry<Integer, Person>> cacheEntries = repo.findBySecondNameLike("stName1");
 
@@ -235,6 +252,7 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testFindOneCacheEntry() {
         Cache.Entry<Integer, Person> cacheEntry = repo.findTopBySecondNameLike("tName18");
 
@@ -244,6 +262,7 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testFindOneValue() {
         Person person = repo.findTopBySecondNameStartingWith("lastName18");
 
@@ -253,6 +272,7 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testSelectSeveralFields() {
         List<List> lists = repo.selectSeveralField("^[a-z]+$", new PageRequest(2, 6));
 
@@ -266,6 +286,7 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testCountQuery() {
         int cnt = repo.countQuery(".*");
 
@@ -273,6 +294,7 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testSliceOfCacheEntries() {
         Slice<Cache.Entry<Integer, Person>> slice = repo2.findBySecondNameIsNot("lastName18", new PageRequest(3, 4));
 
@@ -283,6 +305,7 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testSliceOfLists() {
         Slice<List> lists = repo2.querySliceOfList("^[a-z]+$", new PageRequest(0, 3));
 

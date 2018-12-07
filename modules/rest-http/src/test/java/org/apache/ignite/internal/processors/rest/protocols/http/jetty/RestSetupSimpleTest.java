@@ -26,10 +26,14 @@ import java.util.Map;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Integration test for Grid REST functionality; Jetty is under the hood.
  */
+@RunWith(JUnit4.class)
 public class RestSetupSimpleTest extends GridCommonAbstractTest {
     /** Jetty port. */
     private static final int JETTY_PORT = 8080;
@@ -56,6 +60,7 @@ public class RestSetupSimpleTest extends GridCommonAbstractTest {
     /**
      * Runs version command using GridJettyRestProtocol.
      */
+    @Test
     public void testVersionCommand() throws Exception {
         URLConnection conn = new URL("http://localhost:" + JETTY_PORT + "/ignite?cmd=version").openConnection();
 

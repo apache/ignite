@@ -51,10 +51,14 @@ import org.apache.hadoop.yarn.client.api.AMRMClient;
 import org.apache.hadoop.yarn.client.api.NMClient;
 import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync;
 import org.apache.hadoop.yarn.exceptions.YarnException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Application master tests.
  */
+@RunWith(JUnit4.class)
 public class IgniteApplicationMasterSelfTest extends TestCase {
     /** */
     private ApplicationMaster appMaster;
@@ -82,6 +86,7 @@ public class IgniteApplicationMasterSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContainerAllocate() throws Exception {
         appMaster.setRmClient(rmMock);
         appMaster.setNmClient(new NMMock());
@@ -103,12 +108,13 @@ public class IgniteApplicationMasterSelfTest extends TestCase {
             assertEquals(1024, req.getCapability().getMemory());
         }
     }
-    
+
     /**
      * Tests whether memory overhead is allocated within container memory.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMemoryOverHeadAllocation() throws Exception {
         appMaster.setRmClient(rmMock);
         appMaster.setNmClient(new NMMock());
@@ -159,6 +165,7 @@ public class IgniteApplicationMasterSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClusterResource() throws Exception {
         rmMock.availableRes(new MockResource(1024, 2));
 
@@ -181,6 +188,7 @@ public class IgniteApplicationMasterSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClusterAllocatedResource() throws Exception {
         rmMock.availableRes(new MockResource(1024, 2));
 
@@ -213,6 +221,7 @@ public class IgniteApplicationMasterSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartReleaseContainer() throws Exception {
         rmMock.availableRes(new MockResource(1024, 2));
 
@@ -246,6 +255,7 @@ public class IgniteApplicationMasterSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testHostnameConstraint() throws Exception {
         rmMock.availableRes(new MockResource(1024, 2));
 
@@ -274,6 +284,7 @@ public class IgniteApplicationMasterSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContainerEnvironment() throws Exception {
         props.memoryPerNode(1001);
         props.memoryOverHeadPerNode(2002);

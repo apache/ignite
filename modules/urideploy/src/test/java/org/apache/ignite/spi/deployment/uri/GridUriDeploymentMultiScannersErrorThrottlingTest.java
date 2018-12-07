@@ -22,15 +22,20 @@ import java.util.List;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests error and warn messages throttling.
  */
 @GridSpiTest(spi = UriDeploymentSpi.class, group = "Deployment SPI")
+@RunWith(JUnit4.class)
 public class GridUriDeploymentMultiScannersErrorThrottlingTest extends GridUriDeploymentAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testThrottling() throws Exception {
         LT.throttleTimeout(11000);
 

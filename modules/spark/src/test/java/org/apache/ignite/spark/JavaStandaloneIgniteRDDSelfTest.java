@@ -46,6 +46,7 @@ import java.util.List;
 /**
  * Tests for {@link JavaIgniteRDD} (standalone mode).
  */
+@RunWith(JUnit4.class)
 public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 3;
@@ -120,6 +121,7 @@ public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStoreDataToIgnite() throws Exception {
         JavaSparkContext sc = new JavaSparkContext("local[*]", "test");
 
@@ -148,6 +150,7 @@ public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadDataFromIgnite() throws Exception {
         JavaSparkContext sc = new JavaSparkContext("local[*]", "test");
 
@@ -177,6 +180,7 @@ public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryObjectsFromIgnite() throws Exception {
         JavaSparkContext sc = new JavaSparkContext("local[*]", "test");
 
@@ -204,6 +208,7 @@ public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryFieldsFromIgnite() throws Exception {
         JavaSparkContext sc = new JavaSparkContext("local[*]", "test");
 
@@ -249,6 +254,7 @@ public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAllFieldsTypes() throws Exception {
         JavaSparkContext sc = new JavaSparkContext("local[*]", "test");
 
