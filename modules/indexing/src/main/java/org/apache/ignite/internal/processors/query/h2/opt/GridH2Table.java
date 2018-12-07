@@ -94,7 +94,7 @@ public class GridH2Table extends TableBase {
     private final ReentrantReadWriteLock lock;
 
     /** */
-    private boolean destroyed;
+    private volatile boolean destroyed;
 
     /** Map of sessions locks.
      * Session -> Boolean.TRUE - for exclusive locks.
@@ -328,6 +328,9 @@ public class GridH2Table extends TableBase {
      * @param ses H2 session.
      */
     private void checkVersion(Session ses) {
+        if (destroyed)
+            throw new QueryRetryException(getName());
+
         Object res = sessions.get(ses);
 
         assert res != null && Boolean.TRUE != res : "Invalid table lock [lock=" + res + ']';

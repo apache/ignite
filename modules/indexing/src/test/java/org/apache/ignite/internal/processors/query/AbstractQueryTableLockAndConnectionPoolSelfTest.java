@@ -245,6 +245,37 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testCloseResultOnRemovedTable() throws Exception {
+        Ignite srv = startGrid(0);
+
+        execute(srv, "CREATE TABLE TEST (id int primary key, val int)");
+
+        for (int i = 0; i < 10; ++i)
+            execute(srv, "INSERT INTO TEST VALUES (" + i + ", " + i + ")");
+
+        FieldsQueryCursor<List<?>> cur = execute(srv, new SqlFieldsQuery("SELECT * from TEST").setPageSize(1));
+
+        Iterator<List<?>> it = cur.iterator();
+
+        it.next();
+
+        execute(srv, "DROP TABLE TEST");
+
+        try {
+            while(it.hasNext())
+                it.next();
+
+            fail();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    /**
      * Test release reserved partition after query complete.
      * In case partitions not released the `awaitPartitionMapExchange` fails by timeout.
      *
@@ -580,12 +611,24 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
      * Execute query on the given cache.
      *
      * @param node Node.
+     * @param sql Query.
+     * @return Cursor.
+     */
+    private FieldsQueryCursor<List<?>> execute(Ignite node, String sql) {
+        return ((IgniteEx)node).context().query().querySqlFields(new SqlFieldsQuery(sql).setLazy(lazy()), false);
+    }
+
+    /**
+     * Execute query on the given cache.
+     *
+     * @param node Node.
      * @param qry Query.
      * @return Cursor.
      */
     private FieldsQueryCursor<List<?>> execute(Ignite node, SqlFieldsQuery qry) {
         return ((IgniteEx)node).context().query().querySqlFields(qry.setLazy(lazy()), false);
     }
+
 
     /**
      * @return Lazy mode.
