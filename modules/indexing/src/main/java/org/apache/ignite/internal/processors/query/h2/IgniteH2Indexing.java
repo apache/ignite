@@ -2592,31 +2592,26 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         String cacheName = cacheInfo.name();
 
-        // TODO: Replace with "schemaExists" check.
-        H2Schema schema = schemaMgr.schema(schema(cacheName));
+        mapQryExec.onCacheStop(cacheName);
+        dmlProc.onCacheStop(cacheName);
 
-        if (schema != null) {
-            mapQryExec.onCacheStop(cacheName);
-            dmlProc.onCacheStop(cacheName);
+        // Drop schema (needs to be called after callback to DML processor because the latter depends on schema).
+        schemaMgr.onCacheDestroyed(cacheName, rmvIdx);
 
-            // Drop schema (needs to be called after callback to DML processor because the latter depends on schema).
-            schemaMgr.onCacheDestroyed(cacheName, rmvIdx);
+        // Unregister connection.
+        connMgr.onCacheUnregistered();
 
-            // Unregister connection.
-            connMgr.onCacheUnregistered();
+        // Clear query cache.
+        int cacheId = CU.cacheId(cacheName);
 
-            // Clear query cache.
-            int cacheId = CU.cacheId(cacheName);
+        for (Iterator<Map.Entry<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery>> it =
+             twoStepCache.entrySet().iterator(); it.hasNext();) {
+            Map.Entry<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery> e = it.next();
 
-            for (Iterator<Map.Entry<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery>> it =
-                twoStepCache.entrySet().iterator(); it.hasNext();) {
-                Map.Entry<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery> e = it.next();
+            GridCacheTwoStepQuery qry = e.getValue().query();
 
-                GridCacheTwoStepQuery qry = e.getValue().query();
-
-                if (!F.isEmpty(qry.cacheIds()) && qry.cacheIds().contains(cacheId))
-                    it.remove();
-            }
+            if (!F.isEmpty(qry.cacheIds()) && qry.cacheIds().contains(cacheId))
+                it.remove();
         }
     }
 
