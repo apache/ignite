@@ -56,6 +56,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLServerSocket;
@@ -2764,6 +2766,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 log.info("Connection check threshold is calculated: " + connCheckThreshold);
         }
 
+        AtomicInteger connCheck = new AtomicInteger(5);
+
         /**
          * @param msg Message to process.
          */
@@ -2773,6 +2777,10 @@ class ServerImpl extends TcpDiscoveryImpl {
             sendMetricsUpdateMessage();
 
             DebugLogger log = messageLogger(msg);
+
+            if (connCheck.getAndIncrement() < 3) {
+                this.log.info("Processing message : " + msg);
+            }
 
             if (log.isDebugEnabled())
                 log.debug("Processing message [cls=" + msg.getClass().getSimpleName() + ", id=" + msg.id() + ']');
@@ -2935,7 +2943,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 log.info("GetStatusCheckAccrossRing : " + ((TcpDiscoveryStatusCheckMessage)msg).creatorNode().id());
 
             if(msg instanceof TcpDiscoveryConnectionCheckMessage)
-                log.info("GetTcpDiscoveryConnectionCheckMessage : " + ((TcpDiscoveryConnectionCheckMessage)msg).creatorNodeId());
+                log.info("GetTcpDiscoveryConnectionCheckMessage : " + msg);
 
             assert ring.hasRemoteNodes();
 
@@ -2986,8 +2994,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 if (!newNext.equals(next)) {
-                    if (log.isDebugEnabled())
-                        log.debug("New next node [newNext=" + newNext + ", formerNext=" + next +
+                    if (log.isInfoEnabled())
+                        log.info("New next node [newNext=" + newNext + ", formerNext=" + next +
                             ", ring=" + ring + ", failedNodes=" + failedNodes + ']');
                     else if (log.isInfoEnabled())
                         log.info("New next node [newNext=" + newNext + ']');
@@ -3112,8 +3120,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 if (!next.id().equals(nextId)) {
                                     // Node with different ID has bounded to the same port.
-                                    if (log.isDebugEnabled())
-                                        log.debug("Failed to restore ring because next node ID received is not as " +
+                                    if (log.isInfoEnabled())
+                                        log.info("Failed to restore ring because next node ID received is not as " +
                                             "expected [expectedId=" + next.id() + ", rcvdId=" + nextId + ']');
 
                                     if (debugMode)
@@ -3133,8 +3141,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                             nextNew = hasPendingAddMessage(nextId);
 
                                         if (!nextNew) {
-                                            if (log.isDebugEnabled())
-                                                log.debug("Failed to restore ring because next node order received " +
+                                            if (log.isInfoEnabled())
+                                                log.info("Failed to restore ring because next node order received " +
                                                     "is not as expected [expected=" + next.internalOrder() +
                                                     ", rcvd=" + nextOrder + ", id=" + next.id() + ']');
 
@@ -3147,8 +3155,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         }
                                     }
 
-                                    if (log.isDebugEnabled())
-                                        log.debug("Initialized connection with next node: " + next.id());
+                                    if (log.isInfoEnabled())
+                                        log.info("Initialized connection with next node: " + next.id());
 
                                     if (debugMode)
                                         debugLog(msg, "Initialized connection with next node: " + next.id());
@@ -3293,8 +3301,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 TcpDiscoveryNode node = newNextNode ? newNext : next;
 
-                                if(msg instanceof TcpDiscoveryStatusCheckMessage)
-                                    log.info("StatusCheckAccrossRing : " + node.id());
+                                if(connCheck.get() < 3)
+                                    log.info("Send message to : " + node.id() + " : " + msg);
 
                                 spi.writeToSocket(node,
                                     sock,
@@ -5710,6 +5718,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             long elapsed = (updateTime + metricsCheckFreq) - U.currentTimeMillis();
 
+            if(metricsTime.get() < U.currentTimeMillis()) {
+                log.info("CheckMetricsReceiving : " + locNode.lastUpdateTime() + " : " + lastRingMsgTime + " : " + lastTimeStatusMsgSent + " : " + metricsCheckFreq + " :: " + elapsed);
+
+                metricsTime.set(U.currentTimeMillis() + 5000);
+            }
 
 
             if (elapsed > 0)
@@ -5721,6 +5734,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             lastTimeStatusMsgSent = U.currentTimeMillis();
         }
+
+        AtomicLong metricsTime = new AtomicLong(0);
 
         /**
          * Check connection aliveness status.
@@ -5754,9 +5769,15 @@ class ServerImpl extends TcpDiscoveryImpl {
 
 //            debugLogQ.add("CheckCOnnection : " + hasRemoteSrvNodes);
 
+            log.info("CheckConnection : " + spi.failureDetectionTimeoutEnabled() + " : " + failureThresholdReached + " : " +
+                (U.currentTimeMillis() - locNode.lastExchangeTime() >= connCheckThreshold) + " : " + connCheckThreshold + " : " + spiStateCopy() + " : " + hasRemoteSrvNodes);
+
+
 
             if (hasRemoteSrvNodes) {
                 sendMessageAcrossRing(new TcpDiscoveryConnectionCheckMessage(locNode));
+
+                connCheck.set(0);
 
                 lastTimeConnCheckMsgSent = U.currentTimeMillis();
             }
