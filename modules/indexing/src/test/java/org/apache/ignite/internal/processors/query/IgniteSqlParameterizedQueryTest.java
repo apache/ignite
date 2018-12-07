@@ -33,6 +33,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test sql queries with parameters for all types.
@@ -41,6 +44,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * @author Sergey Chernolyas &amp;sergey_chernolyas@gmail.com&amp;
  * @see <a href="https://issues.apache.org/jira/browse/IGNITE-6286">IGNITE-6286</a>
  */
+@RunWith(JUnit4.class)
 public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -119,6 +123,7 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
      * testing parametrized query by field with supported type
      * @throws Exception if any error occurs
      */
+    @Test
     public void testSupportedTypes() throws Exception {
         IgniteCache<String, Bookmark> cache = grid(NODE_CLIENT).cache(CACHE_BOOKMARK);
         Bookmark bookmark = new Bookmark();

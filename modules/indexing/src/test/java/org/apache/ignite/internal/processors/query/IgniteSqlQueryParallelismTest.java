@@ -32,11 +32,15 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * A test against setting different values of query parallelism in cache configurations of the same cache.
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class IgniteSqlQueryParallelismTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -96,6 +100,7 @@ public class IgniteSqlQueryParallelismTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIndexSegmentationOnClient() throws Exception {
         IgniteCache<Object, Object> c1 = ignite(0).cache("org");
         IgniteCache<Object, Object> c2 = ignite(0).cache("pers");
@@ -123,6 +128,7 @@ public class IgniteSqlQueryParallelismTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIndexSegmentation() throws Exception {
         IgniteCache<Object, Object> c1 = ignite(0).cache("org");
         IgniteCache<Object, Object> c2 = ignite(0).cache("pers");
