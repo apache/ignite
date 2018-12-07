@@ -31,10 +31,15 @@ import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Grid Log4j2 SPI test.
  */
+@RunWith(JUnit4.class)
 public class Log4j2LoggerSelfTest extends TestCase {
     /** */
     private static final String LOG_PATH_TEST = "modules/core/src/test/config/log4j2-test.xml";
@@ -45,6 +50,7 @@ public class Log4j2LoggerSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Before
     @Override protected void setUp() throws Exception {
         Log4J2Logger.cleanup();
     }
@@ -52,6 +58,7 @@ public class Log4j2LoggerSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFileConstructor() throws Exception {
         File xml = GridTestUtils.resolveIgnitePath(LOG_PATH_TEST);
 
@@ -73,6 +80,7 @@ public class Log4j2LoggerSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUrlConstructor() throws Exception {
         File xml = GridTestUtils.resolveIgnitePath(LOG_PATH_TEST);
 
@@ -95,6 +103,7 @@ public class Log4j2LoggerSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPathConstructor() throws Exception {
         IgniteLogger log = new Log4J2Logger(LOG_PATH_TEST).getLogger(getClass());
 

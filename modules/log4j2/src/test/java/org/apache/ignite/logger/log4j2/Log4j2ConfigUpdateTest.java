@@ -23,10 +23,14 @@ import java.nio.file.StandardCopyOption;
 import java.util.Date;
 import junit.framework.TestCase;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Checking that Log4j2 configuration is updated when its source file is changed.
  */
+@RunWith(JUnit4.class)
 public class Log4j2ConfigUpdateTest extends TestCase {
     /** Path to log4j2 configuration with INFO enabled. */
     private static final String LOG_CONFIG_INFO = "modules/log4j2/src/test/config/log4j2-info.xml";
@@ -56,6 +60,7 @@ public class Log4j2ConfigUpdateTest extends TestCase {
      * Check that changing log4j2 config file causes the logger configuration to be updated.
      * String-accepting constructor is used.
      */
+    @Test
     public void testConfigChangeStringConstructor() throws Exception {
         checkConfigUpdate(new Log4J2LoggerSupplier() {
             @Override public Log4J2Logger get(File cfgFile) throws Exception {
@@ -68,6 +73,7 @@ public class Log4j2ConfigUpdateTest extends TestCase {
      * Check that changing log4j config file causes the logger configuration to be updated.
      * File-accepting constructor is used.
      */
+    @Test
     public void testConfigChangeFileConstructor() throws Exception {
         checkConfigUpdate(new Log4J2LoggerSupplier() {
             @Override public Log4J2Logger get(File cfgFile) throws Exception {
@@ -80,6 +86,7 @@ public class Log4j2ConfigUpdateTest extends TestCase {
      * Check that changing log4j config file causes the logger configuration to be updated.
      * File-accepting constructor is used.
      */
+    @Test
     public void testConfigChangeUrlConstructor() throws Exception {
         checkConfigUpdate(new Log4J2LoggerSupplier() {
             @Override public Log4J2Logger get(File cfgFile) throws Exception {

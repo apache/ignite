@@ -59,6 +59,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
@@ -67,6 +70,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
  *
  * @author Raul Kripalani
  */
+@RunWith(JUnit4.class)
 public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
     /** */
     private static final int CACHE_ENTRY_COUNT = 100;
@@ -101,7 +105,7 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
      */
     @Before
     @SuppressWarnings("unchecked")
-    public void beforeTest() throws Exception {
+    @Override public void beforeTest() throws Exception {
         grid().<Integer, String>getOrCreateCache(defaultCacheConfiguration());
 
         broker = new BrokerService();
@@ -128,7 +132,7 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
      * @throws Exception Iff ailed.
      */
     @After
-    public void afterTest() throws Exception {
+    @Override public void afterTest() throws Exception {
         grid().cache(DEFAULT_CACHE_NAME).clear();
 
         broker.stop();
@@ -138,6 +142,7 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueFromName() throws Exception {
         Destination dest = new ActiveMQQueue(QUEUE_NAME);
 
@@ -167,6 +172,7 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopicFromName() throws JMSException, InterruptedException {
         Destination dest = new ActiveMQTopic(TOPIC_NAME);
 
@@ -199,6 +205,7 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueFromExplicitDestination() throws Exception {
         Destination dest = new ActiveMQQueue(QUEUE_NAME);
 
@@ -228,6 +235,7 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopicFromExplicitDestination() throws JMSException, InterruptedException {
         Destination dest = new ActiveMQTopic(TOPIC_NAME);
 
@@ -259,6 +267,7 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInsertMultipleCacheEntriesFromOneMessage() throws Exception {
         Destination dest = new ActiveMQQueue(QUEUE_NAME);
 
@@ -287,6 +296,7 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDurableSubscriberStartStopStart() throws Exception {
         Destination dest = new ActiveMQTopic(TOPIC_NAME);
 
@@ -327,6 +337,7 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueMessagesConsumedInBatchesCompletionSizeBased() throws Exception {
         Destination dest = new ActiveMQQueue(QUEUE_NAME);
 
@@ -366,6 +377,7 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueMessagesConsumedInBatchesCompletionTimeBased() throws Exception {
         Destination dest = new ActiveMQQueue(QUEUE_NAME);
 
@@ -416,6 +428,7 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGenerateNoEntries() throws Exception {
         Destination dest = new ActiveMQQueue(QUEUE_NAME);
 
@@ -444,6 +457,7 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransactedSessionNoBatching() throws Exception {
         Destination dest = new ActiveMQQueue(QUEUE_NAME);
 
@@ -473,6 +487,7 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueMultipleThreads() throws Exception {
         Destination dest = new ActiveMQQueue(QUEUE_NAME);
 
@@ -512,6 +527,7 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
      *
      * @throws Exception If fails.
      */
+    @Test
     public void testExceptionListener() throws Exception {
         // restart broker with auth plugin
         if (broker.isStarted())

@@ -21,11 +21,15 @@ import junit.framework.TestCase;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.apache.log4j.BasicConfigurator;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Log4j initialized test.
  */
 @GridCommonTest(group = "Logger")
+@RunWith(JUnit4.class)
 public class GridLog4jInitializedTest extends TestCase {
 
     /**
@@ -36,6 +40,7 @@ public class GridLog4jInitializedTest extends TestCase {
     }
 
     /** */
+    @Test
     public void testLogInitialize() {
         IgniteLogger log = new Log4JLogger();
 

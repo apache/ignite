@@ -32,11 +32,15 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.varia.LevelRangeFilter;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests that several grids log to files with correct names.
  */
 @GridCommonTest(group = "Logger")
+@RunWith(JUnit4.class)
 public class GridLog4jCorrectFileNameTest extends TestCase {
     /** Appender */
     private Log4jRollingFileAppender appender;
@@ -69,6 +73,7 @@ public class GridLog4jCorrectFileNameTest extends TestCase {
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testLogFilesTwoNodes() throws Exception {
         checkOneNode(0);
         checkOneNode(1);

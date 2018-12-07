@@ -35,6 +35,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 /**
  * Tests queries against entities with JSR-310 Java 8 Date and Time API fields.
  */
+@RunWith(JUnit4.class)
 public class CacheQueryEntityWithJsr310Java8DateTimeApiFieldsTest extends CacheQueryJsr310Java8DateTimeApiAbstractTest {
     /**
      * Entity containing JSR-310 fields.
@@ -222,6 +223,7 @@ public class CacheQueryEntityWithJsr310Java8DateTimeApiFieldsTest extends CacheQ
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testInsertEntityFields() throws Exception {
         cache.remove(entity.getId());
 
@@ -247,6 +249,7 @@ public class CacheQueryEntityWithJsr310Java8DateTimeApiFieldsTest extends CacheQ
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDateDiffForLocalDateTimeFieldAtMidnight() throws Exception {
         SqlFieldsQuery qry =
             new SqlFieldsQuery("select DATEDIFF('DAY', locDateTime, CURRENT_DATE ()) from EntityWithJsr310Fields");
@@ -262,6 +265,7 @@ public class CacheQueryEntityWithJsr310Java8DateTimeApiFieldsTest extends CacheQ
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSelectLocalTimeFieldReturnsTime() throws Exception {
         SqlFieldsQuery qry = new SqlFieldsQuery("select locTime from EntityWithJsr310Fields");
 
@@ -276,6 +280,7 @@ public class CacheQueryEntityWithJsr310Java8DateTimeApiFieldsTest extends CacheQ
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSelectLocalDateFieldReturnsDate() throws Exception {
         SqlFieldsQuery qry = new SqlFieldsQuery("select locDate from EntityWithJsr310Fields");
 
@@ -290,6 +295,7 @@ public class CacheQueryEntityWithJsr310Java8DateTimeApiFieldsTest extends CacheQ
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSelectLocalDateTimeFieldReturnsTimestamp() throws Exception {
         SqlFieldsQuery qry = new SqlFieldsQuery("select locDateTime from EntityWithJsr310Fields");
 
@@ -302,6 +308,7 @@ public class CacheQueryEntityWithJsr310Java8DateTimeApiFieldsTest extends CacheQ
     /**
      * Tests selection of an entity by a {@link LocalTime} field.
      */
+    @Test
     public void testSelectByAllJsr310Fields() {
         SqlFieldsQuery qry = new SqlFieldsQuery(
             "select locDate from EntityWithJsr310Fields where locTime = ? and locDate = ? and locDateTime = ?"
@@ -316,6 +323,7 @@ public class CacheQueryEntityWithJsr310Java8DateTimeApiFieldsTest extends CacheQ
     /**
      * Tests updating of all JSR-310 fields.
      */
+    @Test
     public void testUpdateAllJsr310Fields() {
         EntityWithJsr310Fields expEntity = new EntityWithJsr310Fields(entity);
 
@@ -337,6 +345,7 @@ public class CacheQueryEntityWithJsr310Java8DateTimeApiFieldsTest extends CacheQ
     /**
      * Tests deleting by all JSR-310 fields.
      */
+    @Test
     public void testDeleteByAllJsr310Fields() {
         SqlFieldsQuery qry = new SqlFieldsQuery(
             "delete from EntityWithJsr310Fields where locTime = ? and locDate = ? and locDateTime = ?"
