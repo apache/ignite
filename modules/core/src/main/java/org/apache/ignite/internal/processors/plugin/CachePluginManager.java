@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.plugin;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -176,7 +175,6 @@ public class CachePluginManager extends GridCacheManagerAdapter {
      * @param rmtNode Remote rmtNode.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public void validateRemotes(CacheConfiguration rmtCfg, ClusterNode rmtNode) throws IgniteCheckedException {
         for (Map.Entry<CachePluginContext, CachePluginProvider> entry : providersMap.entrySet()) {
             CachePluginContext cctx = entry.getKey();

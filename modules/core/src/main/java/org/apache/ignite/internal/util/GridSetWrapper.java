@@ -83,13 +83,11 @@ public class GridSetWrapper<E> extends GridSerializableSet<E> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public boolean add(E e) {
         return map.put(e, VAL) == null;
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public Iterator<E> iterator() {
         return map.keySet().iterator();
     }

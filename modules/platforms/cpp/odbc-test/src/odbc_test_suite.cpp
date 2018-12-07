@@ -56,6 +56,34 @@ namespace ignite
             BOOST_REQUIRE(dbc != NULL);
         }
 
+        void OdbcTestSuite::Connect(SQLHDBC& conn, SQLHSTMT& statement, const std::string& connectStr)
+        {
+            // Allocate a connection handle
+            SQLAllocHandle(SQL_HANDLE_DBC, env, &conn);
+
+            BOOST_REQUIRE(conn != NULL);
+
+            // Connect string
+            std::vector<SQLCHAR> connectStr0(connectStr.begin(), connectStr.end());
+
+            SQLCHAR outstr[ODBC_BUFFER_SIZE];
+            SQLSMALLINT outstrlen;
+
+            // Connecting to ODBC server.
+            SQLRETURN ret = SQLDriverConnect(conn, NULL, &connectStr0[0], static_cast<SQLSMALLINT>(connectStr0.size()),
+                outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
+
+            if (!SQL_SUCCEEDED(ret))
+            {
+                BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_DBC, conn));
+            }
+
+            // Allocate a statement handle
+            SQLAllocHandle(SQL_HANDLE_STMT, conn, &statement);
+
+            BOOST_REQUIRE(statement != NULL);
+        }
+
         void OdbcTestSuite::Connect(const std::string& connectStr)
         {
             Prepare();

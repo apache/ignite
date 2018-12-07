@@ -29,8 +29,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -174,12 +173,22 @@ public class GridH2RowDescriptor {
         return type;
     }
 
+
+    /**
+     * Gets cache context info for this row descriptor.
+     *
+     * @return Cache context info.
+     */
+    public GridCacheContextInfo<?, ?> cacheInfo() {
+        return tbl.cacheInfo();
+    }
+
     /**
      * Gets cache context for this row descriptor.
      *
      * @return Cache context.
      */
-    public GridCacheContext<?, ?> context() {
+    @Nullable public GridCacheContext<?, ?> context() {
         return tbl.cache();
     }
 

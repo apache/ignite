@@ -32,6 +32,7 @@ import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheMode;
@@ -181,13 +182,22 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      * @param collocated Collocation flag.
      * @throws Exception If failed.
      */
-    private void testCreateRemove(boolean collocated) throws Exception {
+    protected void testCreateRemove(boolean collocated) throws Exception {
+        testCreateRemove(collocated, 0);
+    }
+
+    /**
+     * @param collocated Collocation flag.
+     * @param nodeIdx Index of the node from which to create set.
+     * @throws Exception If failed.
+     */
+    protected void testCreateRemove(boolean collocated, int nodeIdx) throws Exception {
         for (int i = 0; i < gridCount(); i++)
             assertNull(grid(i).set(SET_NAME, null));
 
         CollectionConfiguration colCfg0 = config(collocated);
 
-        IgniteSet<Integer> set0 = grid(0).set(SET_NAME, colCfg0);
+        IgniteSet<Integer> set0 = grid(nodeIdx).set(SET_NAME, colCfg0);
 
         assertNotNull(set0);
 
@@ -411,11 +421,19 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      * @param collocated Collocation flag.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("deprecation")
-    private void testIterator(boolean collocated) throws Exception {
+    protected void testIterator(boolean collocated) throws Exception {
+        testIterator(collocated, 0);
+    }
+
+    /**
+     * @param collocated Collocation flag.
+     * @param nodeIdx Index of the node from which to create set.
+     * @throws Exception If failed.
+     */
+    protected void testIterator(boolean collocated, int nodeIdx) throws Exception {
         CollectionConfiguration colCfg = config(collocated);
 
-        final IgniteSet<Integer> set0 = grid(0).set(SET_NAME, colCfg);
+        final IgniteSet<Integer> set0 = grid(nodeIdx).set(SET_NAME, colCfg);
 
         for (int i = 0; i < gridCount(); i++) {
             IgniteSet<Integer> set = grid(i).set(SET_NAME, null);
@@ -734,7 +752,6 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      * @param collocated Collocation flag.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("WhileLoopReplaceableByForEach")
     private void testCleanup(boolean collocated) throws Exception {
         CollectionConfiguration colCfg = config(collocated);
 
@@ -841,7 +858,9 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         for (int i = 0; i < 10; i++)
             set.add(i);
 
-        Collection<Integer> c = grid(0).compute().broadcast(new IgniteCallable<Integer>() {
+        IgniteCluster cluster = grid(0).cluster();
+
+        Collection<Integer> c = grid(0).compute(cluster).broadcast(new IgniteCallable<Integer>() {
             @Override public Integer call() throws Exception {
                 assertEquals(SET_NAME, set.name());
 
@@ -1062,7 +1081,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      *
      * @throws Exception If failed.
      */
-    public void _testMultipleStructuresInDifferentGroups() throws Exception {
+    public void testMultipleStructuresInDifferentGroups() throws Exception {
         Ignite ignite = grid(0);
 
         CollectionConfiguration cfg1 = collectionConfiguration();

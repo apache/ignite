@@ -196,7 +196,7 @@ namespace Apache.Ignite.Core.Tests.Client
             }
         }
 
-#if !NETCOREAPP2_0
+#if !NETCOREAPP2_0 && !NETCOREAPP2_1
         /// <summary>
         /// Tests the schema validation.
         /// </summary>

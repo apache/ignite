@@ -51,6 +51,8 @@ import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -158,6 +160,11 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         }
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /**
@@ -1322,7 +1329,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         protected final AtomicBoolean failed = new AtomicBoolean(false);
 
         /** */
-        private final int topChangeThreads;
+        protected final int topChangeThreads;
 
         /** Flag to enable circular topology change. */
         private boolean circular;
@@ -1447,7 +1454,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                             throw F.wrap(e);
                     }
                 }
-            }, TOP_CHANGE_THREAD_CNT, "topology-change-thread");
+            }, topChangeThreads, "topology-change-thread");
         }
     }
 

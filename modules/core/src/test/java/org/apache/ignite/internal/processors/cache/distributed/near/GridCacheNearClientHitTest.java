@@ -37,10 +37,10 @@ import static org.apache.ignite.cache.CachePeekMode.NEAR;
  */
 public class GridCacheNearClientHitTest extends GridCommonAbstractTest {
     /** Ip finder. */
-    private final static TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private final static String CACHE_NAME = "test-near-cache";
+    private static final String CACHE_NAME = "test-near-cache";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
@@ -71,14 +71,11 @@ public class GridCacheNearClientHitTest extends GridCommonAbstractTest {
         CacheConfiguration<Object, Object> cfg = new CacheConfiguration<>();
 
         cfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-
         cfg.setCacheMode(CacheMode.PARTITIONED);
-
         cfg.setBackups(1);
-
         cfg.setCopyOnRead(false);
-
         cfg.setName(CACHE_NAME);
+        cfg.setNearConfiguration(new NearCacheConfiguration<>());
 
         return cfg;
     }

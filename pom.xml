@@ -45,6 +45,7 @@
         <module>modules/apache-license-gen</module>
         <module>modules/tools</module>
         <module>modules/core</module>
+        <module>modules/compress</module>
         <module>modules/dev-utils</module>
         <module>modules/direct-io</module>
         <module>modules/hadoop</module>
@@ -93,6 +94,7 @@
         <module>modules/rocketmq</module>
         <module>modules/sqlline</module>
         <module>modules/ml</module>
+        <module>modules/tensorflow</module>
     </modules>
 
     <profiles>
@@ -572,13 +574,6 @@
             <modules>
                 <module>modules/web-console</module>
                 <module>modules/web-console/web-agent</module>
-            </modules>
-        </profile>
-
-        <profile>
-            <id>tensorflow</id>
-            <modules>
-                <module>modules/tensorflow</module>
             </modules>
         </profile>
 

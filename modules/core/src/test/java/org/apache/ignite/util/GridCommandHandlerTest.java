@@ -17,11 +17,9 @@
 
 package org.apache.ignite.util;
 
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -42,25 +40,33 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.commandline.OutputFormat;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -76,14 +82,18 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
+import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -102,6 +112,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
+import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
+import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREMIX;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -119,6 +131,12 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
     /** Option is used for auto confirmation. */
     private static final String CMD_AUTO_CONFIRMATION = "--yes";
+
+    /** Atomic configuration. */
+    private AtomicConfiguration atomicConfiguration;
+
+    /** Additional data region configuration. */
+    private DataRegionConfiguration dataRegionConfiguration;
 
     /**
      * @return Folder in work directory.
@@ -180,12 +198,19 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        if (atomicConfiguration != null)
+            cfg.setAtomicConfiguration(atomicConfiguration);
+
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
-        DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration().setMaxSize(50L * 1024 * 1024));
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(50L * 1024 * 1024));
+
+        if (dataRegionConfiguration != null)
+            memCfg.setDataRegionConfigurations(dataRegionConfiguration);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -198,6 +223,11 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         cfg.setClientMode(igniteInstanceName.startsWith("client"));
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /**
@@ -230,6 +260,10 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     protected int execute(ArrayList<String> args) {
         // Add force to avoid interactive confirmation
         args.add(CMD_AUTO_CONFIRMATION);
+
+        SB sb = new SB();
+
+        args.forEach(arg -> sb.a(arg).a(" "));
 
         return new CommandHandler().execute(args);
     }
@@ -1040,18 +1074,26 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             .setBackups(1)
             .setName(DEFAULT_CACHE_NAME));
 
-        injectTestSystemOut();
-
         for (int i = 0; i < 100; i++)
             cache.put(i, i);
+
+        corruptingAndCheckDefaultCache(ignite, parts, CacheFilterEnum.ALL);
+    }
+
+    /**
+     * @param ignite Ignite.
+     * @param parts Parts.
+     */
+    private void corruptingAndCheckDefaultCache(IgniteEx ignite, int parts, CacheFilterEnum cacheFilterEnum) throws IOException {
+        injectTestSystemOut();
 
         GridCacheContext<Object, Object> cacheCtx = ignite.cachex(DEFAULT_CACHE_NAME).context();
 
         corruptDataEntry(cacheCtx, 0, true, false);
 
-        corruptDataEntry(cacheCtx, 0 + parts / 2, false, true);
+        corruptDataEntry(cacheCtx, parts / 2, false, true);
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump"));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--cacheFilter", cacheFilterEnum.toString()));
 
         Matcher fileNameMatcher = dumpFileNameMatcher();
 
@@ -1059,6 +1101,144 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
             assertTrue(dumpWithConflicts.contains("found 2 conflict partitions: [counterConflicts=1, hashConflicts=1]"));
+        }
+        else
+            fail("Should be found dump with conflicts");
+    }
+
+    /**
+     * Tests that idle verify print partitions info over system caches.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCacheIdleVerifyDumpForCorruptedDataOnSystemCache() throws Exception {
+        int parts = 32;
+
+        atomicConfiguration = new AtomicConfiguration()
+            .setAffinity(new RendezvousAffinityFunction(false, parts))
+            .setBackups(2);
+
+        IgniteEx ignite = (IgniteEx)startGrids(3);
+
+        ignite.cluster().active(true);
+
+        injectTestSystemOut();
+
+        // Adding some assignments without deployments.
+        for (int i = 0; i < 100; i++) {
+            ignite.semaphore("s" + i, i, false, true);
+
+            ignite.atomicSequence("sq" + i, 0, true)
+                .incrementAndGet();
+        }
+
+        CacheGroupContext storedSysCacheCtx = ignite.context().cache().cacheGroup(CU.cacheId("default-ds-group"));
+
+        assertNotNull(storedSysCacheCtx);
+
+        corruptDataEntry(storedSysCacheCtx.caches().get(0), new GridCacheInternalKeyImpl("sq0",
+            "default-ds-group"), true, false);
+
+        corruptDataEntry(storedSysCacheCtx.caches().get(0), new GridCacheInternalKeyImpl("sq" + parts / 2,
+            "default-ds-group"), false, true);
+
+        CacheGroupContext memorySysCacheCtx = ignite.context().cache().cacheGroup(CU.cacheId("default-volatile-ds-group"));
+
+        assertNotNull(memorySysCacheCtx);
+
+        corruptDataEntry(memorySysCacheCtx.caches().get(0), new GridCacheInternalKeyImpl("s0",
+                "default-volatile-ds-group"), true, false);
+
+        corruptDataEntry(memorySysCacheCtx.caches().get(0), new GridCacheInternalKeyImpl("s" + parts / 2,
+            "default-volatile-ds-group"), false, true);
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--cacheFilter", CacheFilterEnum.SYSTEM.toString()));
+
+        Matcher fileNameMatcher = dumpFileNameMatcher();
+
+        if (fileNameMatcher.find()) {
+            String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+
+            assertTrue(dumpWithConflicts.contains("found 4 conflict partitions: [counterConflicts=2, " +
+                "hashConflicts=2]"));
+        }
+        else
+            fail("Should be found dump with conflicts");
+    }
+
+    /**
+     * Tests that idle verify print partitions info over persistence client caches.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCacheIdleVerifyDumpForCorruptedDataOnPersistenceClientCache() throws Exception {
+        int parts = 32;
+
+        dataRegionConfiguration = new DataRegionConfiguration()
+            .setName("persistence-region")
+            .setMaxSize(100L * 1024 * 1024)
+            .setPersistenceEnabled(true);
+
+        IgniteEx ignite = (IgniteEx)startGrids(3);
+
+        ignite.cluster().active(true);
+
+        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
+            .setAffinity(new RendezvousAffinityFunction(false, parts))
+            .setBackups(2)
+            .setName(DEFAULT_CACHE_NAME)
+            .setDataRegionName("persistence-region"));
+
+        // Adding some assignments without deployments.
+        for (int i = 0; i < 100; i++)
+            cache.put(i, i);
+
+        corruptingAndCheckDefaultCache(ignite, parts, CacheFilterEnum.PERSISTENT);
+    }
+
+    /**
+     * Tests that idle verify print partitions info over none-persistence client caches.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCacheIdleVerifyDumpForCorruptedDataOnNonePersistenceClientCache() throws Exception {
+        int parts = 32;
+
+        dataRegionConfiguration = new DataRegionConfiguration()
+            .setName("none-persistence-region");
+
+        IgniteEx ignite = (IgniteEx)startGrids(3);
+
+        ignite.cluster().active(true);
+
+        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
+            .setAffinity(new RendezvousAffinityFunction(false, parts))
+            .setBackups(2)
+            .setName(DEFAULT_CACHE_NAME)
+            .setDataRegionName("none-persistence-region"));
+
+        // Adding some assignments without deployments.
+        for (int i = 0; i < 100; i++)
+            cache.put(i, i);
+
+        injectTestSystemOut();
+
+        GridCacheContext<Object, Object> cacheCtx = ignite.cachex(DEFAULT_CACHE_NAME).context();
+
+        corruptDataEntry(cacheCtx, 0, true, false);
+
+        corruptDataEntry(cacheCtx, parts / 2, false, true);
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--cacheFilter", CacheFilterEnum
+            .NOT_PERSISTENT.toString()));
+
+        Matcher fileNameMatcher = dumpFileNameMatcher();
+
+        if (fileNameMatcher.find()) {
+            String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+
+            assertTrue(dumpWithConflicts.contains("found 1 conflict partitions: [counterConflicts=0, " +
+                "hashConflicts=1]"));
         }
         else
             fail("Should be found dump with conflicts");
@@ -1254,6 +1434,106 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertTrue(testOut.toString().contains("affCls=RendezvousAffinityFunction"));
     }
 
+    /** */
+    public void testCacheConfigNoOutputFormat() throws Exception {
+        testCacheConfig(null, 1, 1);
+    }
+
+    /** */
+    public void testCacheConfigSingleLineOutputFormatSingleNodeSignleCache() throws Exception {
+        testCacheConfigSingleLineOutputFormat(1, 1);
+    }
+
+    /** */
+    public void testCacheConfigSingleLineOutputFormatTwoNodeSignleCache() throws Exception {
+        testCacheConfigSingleLineOutputFormat(2, 1);
+    }
+
+    /** */
+    public void testCacheConfigSingleLineOutputFormatTwoNodeManyCaches() throws Exception {
+        testCacheConfigSingleLineOutputFormat(2, 100);
+    }
+
+    /** */
+    public void testCacheConfigMultiLineOutputFormatSingleNodeSingleCache() throws Exception {
+        testCacheConfigMultiLineOutputFormat(1, 1);
+    }
+
+    /** */
+    public void testCacheConfigMultiLineOutputFormatTwoNodeSingleCache() throws Exception {
+        testCacheConfigMultiLineOutputFormat(2, 1);
+    }
+
+    /** */
+    public void testCacheConfigMultiLineOutputFormatTwoNodeManyCaches() throws Exception {
+        testCacheConfigMultiLineOutputFormat(2, 100);
+    }
+
+    /** */
+    private void testCacheConfigSingleLineOutputFormat(int nodesCnt, int cachesCnt) throws Exception {
+        testCacheConfig(SINGLE_LINE, nodesCnt, cachesCnt);
+    }
+
+    /** */
+    private void testCacheConfigMultiLineOutputFormat(int nodesCnt, int cachesCnt) throws Exception {
+        testCacheConfig(MULTI_LINE, nodesCnt, cachesCnt);
+    }
+
+    /** */
+    private void testCacheConfig(OutputFormat outputFormat, int nodesCnt, int cachesCnt) throws Exception {
+        assertTrue("Invalid number of nodes or caches", nodesCnt > 0 && cachesCnt > 0);
+
+        Ignite ignite = startGrid(nodesCnt);
+
+        ignite.cluster().active(true);
+
+        List<CacheConfiguration> ccfgs = new ArrayList<>(cachesCnt);
+
+        for (int i = 0; i < cachesCnt; i++) {
+            ccfgs.add(
+                new CacheConfiguration<>()
+                    .setAffinity(new RendezvousAffinityFunction(false, 32))
+                    .setBackups(1)
+                    .setName(DEFAULT_CACHE_NAME + i)
+            );
+        }
+
+        ignite.createCaches(ccfgs);
+
+        IgniteCache<Object, Object> cache1 = ignite.cache(DEFAULT_CACHE_NAME + 0);
+
+        for (int i = 0; i < 100; i++)
+            cache1.put(i, i);
+
+        injectTestSystemOut();
+
+        int exitCode;
+
+        if (outputFormat == null)
+            exitCode = execute("--cache", "list", ".*", "--config");
+        else
+            exitCode = execute("--cache", "list", ".*", "--config", "--output-format", outputFormat.text());
+
+        assertEquals(EXIT_CODE_OK, exitCode);
+
+        String outStr = testOut.toString();
+
+        if (outputFormat == null || outputFormat == SINGLE_LINE) {
+            for (int i = 0; i < cachesCnt; i++)
+                assertTrue(outStr.contains("name=" + DEFAULT_CACHE_NAME + i));
+
+            assertTrue(outStr.contains("partitions=32"));
+            assertTrue(outStr.contains("function=o.a.i.cache.affinity.rendezvous.RendezvousAffinityFunction"));
+        }
+        else if (outputFormat == MULTI_LINE) {
+            for (int i = 0; i < cachesCnt; i++)
+                assertTrue(outStr.contains("[cache = '" + DEFAULT_CACHE_NAME + i + "']"));
+
+            assertTrue(outStr.contains("Affinity Partitions: 32"));
+            assertTrue(outStr.contains("Affinity Function: o.a.i.cache.affinity.rendezvous.RendezvousAffinityFunction"));
+        }
+    }
+
     /**
      *
      */
@@ -1294,7 +1574,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertTrue(lastRowIndex > 0);
 
         // Last row is empty, but the previous line contains data
-        lastRowIndex = log.lastIndexOf('\n', lastRowIndex-1);
+        lastRowIndex = log.lastIndexOf('\n', lastRowIndex - 1);
 
         assertTrue(lastRowIndex > 0);
 
@@ -1514,7 +1794,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      */
     private void corruptDataEntry(
         GridCacheContext<Object, Object> ctx,
-        int key,
+        Object key,
         boolean breakCntr,
         boolean breakData
     ) {

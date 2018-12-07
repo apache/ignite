@@ -17,21 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.util.Collection;
-import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.GridProcessor;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.GridLongList;
@@ -42,31 +37,18 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface MvccProcessor extends GridProcessor {
     /**
-     * @param evtType Event type.
-     * @param nodes Current nodes.
-     * @param topVer Topology version.
-     * @param customMsg Message
-     */
-    void onDiscoveryEvent(int evtType, Collection<ClusterNode> nodes, long topVer,
-        @Nullable DiscoveryCustomMessage customMsg);
-
-    /**
-     * Exchange start callback.
+     * Local join callback.
      *
-     * @param mvccCrd Mvcc coordinator.
-     * @param exchCtx Exchange context.
-     * @param exchCrd Exchange coordinator.
+     * @param evt Discovery event.
      */
-    void onExchangeStart(MvccCoordinator mvccCrd, ExchangeContext exchCtx, ClusterNode exchCrd);
+    void onLocalJoin(DiscoveryEvent evt);
 
     /**
      * Exchange done callback.
      *
-     * @param newCoord New coordinator flag.
      * @param discoCache Disco cache.
-     * @param activeQueries Active queries.
      */
-    void onExchangeDone(boolean newCoord, DiscoCache discoCache, Map<UUID, GridLongList> activeQueries);
+    void onExchangeDone(DiscoCache discoCache);
 
     /**
      * @param nodeId Node ID
@@ -75,31 +57,14 @@ public interface MvccProcessor extends GridProcessor {
     void processClientActiveQueries(UUID nodeId, @Nullable GridLongList activeQueries);
 
     /**
-     * @return Mvcc coordinator received from discovery event.
-     */
-    @Nullable MvccCoordinator assignedCoordinator();
-
-    /**
      * @return Coordinator.
      */
     @Nullable MvccCoordinator currentCoordinator();
 
     /**
-     * Check that the given topology is greater or equals to coordinator's one and returns current coordinator.
-     * @param topVer Topology version.
-     * @return Mvcc coordinator.
-     */
-    @Nullable MvccCoordinator currentCoordinator(AffinityTopologyVersion topVer);
-
-    /**
      * @return Current coordinator node ID.
      */
     UUID currentCoordinatorId();
-
-    /**
-     * @param curCrd Coordinator.
-     */
-    void updateCoordinator(MvccCoordinator curCrd);
 
     /**
      * @param crdVer Mvcc coordinator version.
@@ -176,13 +141,6 @@ public interface MvccProcessor extends GridProcessor {
      * @throws ClusterTopologyCheckedException If coordinator doesn't match locked topology or not assigned.
      */
     MvccSnapshot tryRequestSnapshotLocal(@Nullable IgniteInternalTx tx) throws ClusterTopologyCheckedException;
-
-    /**
-     * Requests snapshot on Mvcc coordinator.
-     *
-     * @return Snapshot future.
-     */
-    IgniteInternalFuture<MvccSnapshot> requestSnapshotAsync();
 
     /**
      * Requests snapshot on Mvcc coordinator.

@@ -126,7 +126,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     /**
      * @throws Exception If failed.
      */
-    @Override protected final void setUp() throws Exception {
+    @Override public final void setUp() throws Exception {
         // Need to change classloader here, although it also handled in the parent class
         // the current test initialisation procedure doesn't allow us to setUp the parent first.
         cl = Thread.currentThread().getContextClassLoader();
@@ -171,7 +171,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"unchecked", "CastToIncompatibleInterface", "InstanceofIncompatibleInterface"})
+    @SuppressWarnings({"unchecked"})
     protected final void spiStart() throws Exception {
         GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
 
@@ -490,7 +490,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     /**
      * @throws Exception If failed.
      */
-    @Override protected final void tearDown() throws Exception {
+    @Override public final void tearDown() throws Exception {
         getTestCounters().incrementStopped();
 
         boolean wasLast = isLastTest();

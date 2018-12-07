@@ -22,6 +22,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
@@ -31,12 +33,20 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  *
  */
 @SuppressWarnings("unchecked")
 public class IgniteCacheLockFailoverSelfTest extends GridCacheAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+
+        super.setUp();
+    }
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 2;
@@ -82,6 +92,11 @@ public class IgniteCacheLockFailoverSelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 2 * 60_000;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /**

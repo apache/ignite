@@ -55,7 +55,6 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
         dbCfg.setWalMode(walMode());
         dbCfg.setWalSegmentSize(512 * 1024);
         dbCfg.setCheckpointFrequency(60 * 1000);//too high value for turn off frequency checkpoint.
-        dbCfg.setPageSize(4 * 1024);
         dbCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
             .setMaxSize(100 * 1024 * 1024)
             .setPersistenceEnabled(true));
@@ -90,7 +89,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
     /**
      * @return WAL mode used in test.
      */
-    abstract protected WALMode walMode();
+    protected abstract WALMode walMode();
 
     /**
      * History size parameters consistency check. Should be set just one of wal history size or max wal archive size.

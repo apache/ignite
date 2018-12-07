@@ -35,9 +35,8 @@ import org.apache.ignite.internal.processors.cache.WalModeChangeAdvancedSelfTest
 import org.apache.ignite.internal.processors.cache.WalModeChangeCoordinatorNotAffinityNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.Cache64kPartitionsTest;
-import org.apache.ignite.internal.processors.cache.distributed.CachePageWriteLockUnlockTest;
-import org.apache.ignite.internal.processors.cache.distributed.CacheRentingStateRepairTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheDataLossOnPartitionMoveTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheRentingStateRepairTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheStartWithLoadTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionCountersTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingWithAsyncClearingTest;
@@ -47,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.CheckpointBuff
 import org.apache.ignite.internal.processors.cache.transactions.TransactionIntegrityWithPrimaryIndexCorruptionTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncWithPersistenceTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxWithSmallTimeoutAndContentionOneKeyTest;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Test suite.
@@ -65,11 +65,11 @@ public class IgniteCacheTestSuite7 extends TestSuite {
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
+    public static TestSuite suite(Set<Class> ignoredTests) {
         TestSuite suite = new TestSuite("IgniteCache With Persistence Test Suite");
 
-        suite.addTestSuite(CheckpointBufferDeadlockTest.class);
-        suite.addTestSuite(IgniteCacheStartWithLoadTest.class);
+        GridTestUtils.addTestIfNeeded(suite, CheckpointBufferDeadlockTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheStartWithLoadTest.class, ignoredTests);
 
         suite.addTestSuite(AuthenticationConfigurationClusterTest.class);
         suite.addTestSuite(AuthenticationOnNotActiveClusterTest.class);
@@ -80,33 +80,31 @@ public class IgniteCacheTestSuite7 extends TestSuite {
         suite.addTestSuite(AuthenticationProcessorNodeRestartPersistenceOffTest.class);
         suite.addTestSuite(Authentication1kUsersNodeRestartTest.class);
 
-        suite.addTestSuite(CacheDataRegionConfigurationTest.class);
+        GridTestUtils.addTestIfNeeded(suite, CacheDataRegionConfigurationTest.class, ignoredTests);
 
-        suite.addTestSuite(WalModeChangeAdvancedSelfTest.class);
-        suite.addTestSuite(WalModeChangeSelfTest.class);
-        suite.addTestSuite(WalModeChangeCoordinatorNotAffinityNodeSelfTest.class);
+        GridTestUtils.addTestIfNeeded(suite, WalModeChangeAdvancedSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, WalModeChangeSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, WalModeChangeCoordinatorNotAffinityNodeSelfTest.class, ignoredTests);
 
-        suite.addTestSuite(Cache64kPartitionsTest.class);
-        suite.addTestSuite(GridCacheRebalancingPartitionCountersTest.class);
-        suite.addTestSuite(GridCacheRebalancingWithAsyncClearingTest.class);
+        GridTestUtils.addTestIfNeeded(suite, Cache64kPartitionsTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingPartitionCountersTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingWithAsyncClearingTest.class, ignoredTests);
 
-        suite.addTestSuite(IgnitePdsCacheAssignmentNodeRestartsTest.class);
-        suite.addTestSuite(TxRollbackAsyncWithPersistenceTest.class);
+        GridTestUtils.addTestIfNeeded(suite, IgnitePdsCacheAssignmentNodeRestartsTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, TxRollbackAsyncWithPersistenceTest.class, ignoredTests);
 
-        suite.addTestSuite(CacheGroupMetricsMBeanTest.class);
-        suite.addTestSuite(CacheMetricsManageTest.class);
-        suite.addTestSuite(PageEvictionMultinodeMixedRegionsTest.class);
+        GridTestUtils.addTestIfNeeded(suite, CacheGroupMetricsMBeanTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheMetricsManageTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, PageEvictionMultinodeMixedRegionsTest.class, ignoredTests);
 
-        suite.addTestSuite(IgniteDynamicCacheStartFailWithPersistenceTest.class);
+        GridTestUtils.addTestIfNeeded(suite, IgniteDynamicCacheStartFailWithPersistenceTest.class, ignoredTests);
 
-        suite.addTestSuite(TxWithSmallTimeoutAndContentionOneKeyTest.class);
+        GridTestUtils.addTestIfNeeded(suite, TxWithSmallTimeoutAndContentionOneKeyTest.class, ignoredTests);
 
-        suite.addTestSuite(CacheRentingStateRepairTest.class);
+        GridTestUtils.addTestIfNeeded(suite, CacheRentingStateRepairTest.class, ignoredTests);
 
-        suite.addTestSuite(TransactionIntegrityWithPrimaryIndexCorruptionTest.class);
-        suite.addTestSuite(CacheDataLossOnPartitionMoveTest.class);
-
-        suite.addTestSuite(CachePageWriteLockUnlockTest.class);
+        GridTestUtils.addTestIfNeeded(suite, TransactionIntegrityWithPrimaryIndexCorruptionTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheDataLossOnPartitionMoveTest.class, ignoredTests);
 
         return suite;
     }

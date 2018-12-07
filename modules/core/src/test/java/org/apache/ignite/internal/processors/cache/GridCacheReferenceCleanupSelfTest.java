@@ -37,6 +37,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
@@ -80,6 +81,9 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testAtomicLongPartitioned() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10391");
+
         mode = CacheMode.PARTITIONED;
 
         startGrids(2);
@@ -94,6 +98,9 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testAtomicLongReplicated() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10391");
+
         mode = CacheMode.REPLICATED;
 
         startGrids(2);
@@ -108,6 +115,8 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testAtomicLongLocal() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         mode = CacheMode.LOCAL;
 
         try {
@@ -148,6 +157,8 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testOneAsyncOpLocal() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         mode = CacheMode.LOCAL;
 
         try {
@@ -188,6 +199,8 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testSeveralAsyncOpsLocal() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         mode = CacheMode.LOCAL;
 
         try {
@@ -228,6 +241,8 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testSyncOpAsyncCommitLocal() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         mode = CacheMode.LOCAL;
 
         try {
@@ -268,6 +283,8 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testAsyncOpsAsyncCommitLocal() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         mode = CacheMode.LOCAL;
 
         try {
@@ -494,7 +511,6 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     /** Test value class. Created mostly to simplify heap dump analysis. */
     private static class TestValue {
         /** */
-        @SuppressWarnings("UnusedDeclaration")
         private final int i;
 
         /** @param i Value. */

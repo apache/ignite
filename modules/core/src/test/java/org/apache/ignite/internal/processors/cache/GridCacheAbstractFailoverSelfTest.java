@@ -27,6 +27,8 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -126,6 +128,11 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /**
@@ -230,8 +237,10 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
             }
         }, TOP_CHANGE_THREAD_CNT, "topology-change-thread");
 
+        boolean isInterrupted = false;
+
         try {
-            while (!fut.isDone()) {
+            while (!fut.isDone() && !isInterrupted) {
                 if (tx) {
                     remove(grid(0), jcache(), half, concurrency, isolation);
                     put(grid(0), jcache(), half, concurrency, isolation);
@@ -240,6 +249,14 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
                     remove(jcache(), half);
                     put(jcache(), half);
                 }
+
+                isInterrupted = Thread.currentThread().isInterrupted();
+            }
+
+            if (isInterrupted) {
+                Thread.currentThread().interrupt();
+
+                fut.cancel();
             }
         }
         catch (Exception e) {
@@ -250,7 +267,8 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
             throw e;
         }
 
-        fut.get();
+        if (!isInterrupted)
+            fut.get();
 
         Exception err0 = err.get();
 
@@ -287,8 +305,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         final int cnt,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation)
-        throws Exception
-    {
+        throws Exception {
         try {
             info("Putting values to cache [0," + cnt + ')');
 
@@ -385,7 +402,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @param g Grid.
      * @return Cache.
      */
-    private IgniteCache<String,Integer> cache(Ignite g) {
+    private IgniteCache<String, Integer> cache(Ignite g) {
         return g.cache(DEFAULT_CACHE_NAME);
     }
 }

@@ -25,7 +25,6 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Key is used for caching cache data structures.

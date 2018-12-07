@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointe
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
@@ -61,8 +60,6 @@ public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(ccfg);
 
         DataStorageConfiguration dbCfg = new DataStorageConfiguration();
-
-        dbCfg.setPageSize(4 * 1024);
 
         cfg.setDataStorageConfiguration(dbCfg);
 

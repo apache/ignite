@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import java.util.Set;
 import junit.framework.TestSuite;
+import org.apache.ignite.failure.FailureHandlingConfigurationTest;
 import org.apache.ignite.failure.IoomFailureHandlerTest;
 import org.apache.ignite.failure.SystemWorkersTerminationTest;
 import org.apache.ignite.internal.ClusterBaselineNodesMetricsSelfTest;
@@ -33,6 +34,7 @@ import org.apache.ignite.internal.GridNodeMetricsLogPdsSelfTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOnActivationTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOutsideBaselineTest;
 import org.apache.ignite.marshaller.GridMarshallerMappingConsistencyTest;
+import org.apache.ignite.util.GridCommandHandlerSslTest;
 import org.apache.ignite.util.GridCommandHandlerTest;
 import org.apache.ignite.util.GridInternalTaskUnusedWalSegmentsTest;
 import org.jetbrains.annotations.Nullable;
@@ -63,8 +65,10 @@ public class IgniteBasicWithPersistenceTestSuite extends TestSuite {
         suite.addTestSuite(ServiceDeploymentOutsideBaselineTest.class);
         suite.addTestSuite(GridMarshallerMappingConsistencyTest.class);
         suite.addTestSuite(SystemWorkersTerminationTest.class);
+        suite.addTestSuite(FailureHandlingConfigurationTest.class);
 
         suite.addTestSuite(GridCommandHandlerTest.class);
+        suite.addTestSuite(GridCommandHandlerSslTest.class);
         suite.addTestSuite(GridInternalTaskUnusedWalSegmentsTest.class);
 
         suite.addTestSuite(GridNodeMetricsLogPdsSelfTest.class);

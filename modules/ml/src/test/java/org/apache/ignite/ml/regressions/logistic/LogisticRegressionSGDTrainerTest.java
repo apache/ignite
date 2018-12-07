@@ -27,8 +27,6 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
-import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
-import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
 import org.junit.Test;
 
 /**
@@ -50,7 +48,7 @@ public class LogisticRegressionSGDTrainerTest extends TrainerTest {
                 SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
             .withMaxIterations(100000)
             .withLocIterations(100)
-            .withBatchSize(10)
+            .withBatchSize(14)
             .withSeed(123L);
 
         LogisticRegressionModel mdl = trainer.fit(

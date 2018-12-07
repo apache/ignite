@@ -144,7 +144,7 @@ public class IgniteTxRemoteSingleStateImpl extends IgniteTxRemoteStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean mvccEnabled(GridCacheSharedContext cctx) {
+    @Override public boolean mvccEnabled() {
         return entry != null && entry.context().mvccEnabled();
     }
 }

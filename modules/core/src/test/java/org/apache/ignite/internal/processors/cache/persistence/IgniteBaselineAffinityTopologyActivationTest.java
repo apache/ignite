@@ -36,6 +36,8 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.DetachedClusterNode;
@@ -110,6 +112,11 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         stopAllGrids(false);
 
         cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /**
@@ -1027,65 +1034,6 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         }
 
         assertTrue("Expected exception wasn't thrown.", expectedExceptionThrown);
-    }
-
-    /**
-     * Restore this test when requirements for BaselineTopology deletion are clarified and this feature
-     * is covered with more tests.
-     */
-    public void _testBaselineTopologyHistoryIsDeletedOnBaselineDelete() throws Exception {
-        BaselineTopologyHistoryVerifier verifier = new BaselineTopologyHistoryVerifier() {
-            @Override public void verify(BaselineTopologyHistory bltHist) {
-                assertNotNull(bltHist);
-
-                assertEquals(0, bltHist.history().size());
-            }
-        };
-
-        Ignite nodeA = startGridWithConsistentId("A");
-        startGridWithConsistentId("B");
-        startGridWithConsistentId("C");
-
-        nodeA.cluster().active(true);
-
-        stopAllGrids(false);
-
-        nodeA = startGridWithConsistentId("A");
-        startGridWithConsistentId("B");
-
-        nodeA.cluster().active(true);
-
-        nodeA.cluster().setBaselineTopology(baselineNodes(nodeA.cluster().forServers().nodes()));
-
-        stopAllGrids(false);
-
-        nodeA = startGridWithConsistentId("A");
-
-        nodeA.cluster().active(true);
-
-        nodeA.cluster().setBaselineTopology(baselineNodes(nodeA.cluster().forServers().nodes()));
-
-        stopAllGrids(false);
-
-        final Ignite node = startGridWithConsistentId("A");
-
-        boolean activated = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return node.cluster().active();
-            }
-        }, 10_000);
-
-        assertTrue(activated);
-
-        node.cluster().setBaselineTopology(null);
-
-        verifyBaselineTopologyHistoryOnNodes(verifier, new Ignite[] {node});
-
-        stopAllGrids(false);
-
-        nodeA = startGridWithConsistentId("A");
-
-        verifyBaselineTopologyHistoryOnNodes(verifier, new Ignite[] {nodeA});
     }
 
     /**

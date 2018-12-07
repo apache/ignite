@@ -34,6 +34,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -54,7 +55,6 @@ import org.apache.ignite.testframework.junits.IgniteMock;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 
 /**
  *
@@ -105,7 +105,6 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
     }
 
     /** */
-    @SuppressWarnings({"deprecation"})
     private class TestListener implements CommunicationListener<Message> {
         /** */
         private boolean block;
@@ -114,7 +113,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
         private CountDownLatch blockLatch;
 
         /** */
-        private ConcurrentHashSet<Long> msgIds = new ConcurrentHashSet<>();
+        private GridConcurrentHashSet<Long> msgIds = new GridConcurrentHashSet<>();
 
         /** */
         private AtomicInteger rcvCnt = new AtomicInteger();
@@ -217,7 +216,6 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("BusyWait")
     private void checkBlockListener() throws Exception {
         TcpCommunicationSpi spi0 = spis.get(0);
         TcpCommunicationSpi spi1 = spis.get(1);
@@ -671,7 +669,6 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
      * @return Session.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private GridNioSession communicationSession(TcpCommunicationSpi spi, boolean in) throws Exception {
         final GridNioServer srv = U.field(spi, "nioSrvr");
 

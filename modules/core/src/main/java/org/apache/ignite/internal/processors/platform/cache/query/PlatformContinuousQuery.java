@@ -52,6 +52,5 @@ public interface PlatformContinuousQuery extends CacheEntryUpdatedListener, Plat
      *
      * @return Initial query cursor.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public PlatformTarget getInitialQueryCursor();
 }

@@ -296,10 +296,15 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean mvccEnabled(GridCacheSharedContext cctx) {
+    @Override public boolean mvccEnabled() {
         GridCacheContext ctx0 = cacheCtx;
 
         return ctx0 != null && ctx0.mvccEnabled();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean recovery() {
+        return recovery;
     }
 
     /** {@inheritDoc} */

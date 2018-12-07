@@ -661,11 +661,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
         return TxState.NA;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isKeyAbsentBefore() {
-        return false;
-    }
-
     /**
      *
      */

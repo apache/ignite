@@ -251,9 +251,8 @@ public class PlatformConfigurationUtils {
         if (keyCnt > 0) {
             CacheKeyConfiguration[] keys = new CacheKeyConfiguration[keyCnt];
 
-            for (int i = 0; i < keyCnt; i++) {
+            for (int i = 0; i < keyCnt; i++)
                 keys[i] = new CacheKeyConfiguration(in.readString(), in.readString());
-            }
 
             ccfg.setKeyConfiguration(keys);
         }
@@ -407,7 +406,6 @@ public class PlatformConfigurationUtils {
      * @param out Stream.
      * @param cfg NearCacheConfiguration.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     private static void writeNearConfiguration(BinaryRawWriter out, NearCacheConfiguration cfg) {
         assert cfg != null;
 
@@ -462,7 +460,6 @@ public class PlatformConfigurationUtils {
      * @param out Stream.
      * @param p Policy.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     private static void writeEvictionPolicy(BinaryRawWriter out, EvictionPolicy p) {
         if (p instanceof FifoEvictionPolicy) {
             out.writeByte((byte)1);
@@ -662,6 +659,8 @@ public class PlatformConfigurationUtils {
             cfg.setMvccVacuumFrequency(in.readLong());
         if (in.readBoolean())
             cfg.setMvccVacuumThreadCount(in.readInt());
+        if (in.readBoolean())
+            cfg.setSystemWorkerBlockedTimeout(in.readLong());
 
         int sqlSchemasCnt = in.readInt();
 
@@ -712,9 +711,11 @@ public class PlatformConfigurationUtils {
             TcpCommunicationSpi comm = new TcpCommunicationSpi();
 
             comm.setAckSendThreshold(in.readInt());
+            comm.setConnectionsPerNode(in.readInt());
             comm.setConnectTimeout(in.readLong());
             comm.setDirectBuffer(in.readBoolean());
             comm.setDirectSendBuffer(in.readBoolean());
+            comm.setFilterReachableAddresses(in.readBoolean());
             comm.setIdleConnectionTimeout(in.readLong());
             comm.setLocalAddress(in.readString());
             comm.setLocalPort(in.readInt());
@@ -723,11 +724,15 @@ public class PlatformConfigurationUtils {
             comm.setMessageQueueLimit(in.readInt());
             comm.setReconnectCount(in.readInt());
             comm.setSelectorsCount(in.readInt());
+            comm.setSelectorSpins(in.readLong());
+            comm.setSharedMemoryPort(in.readInt());
             comm.setSlowClientQueueLimit(in.readInt());
             comm.setSocketReceiveBuffer(in.readInt());
             comm.setSocketSendBuffer(in.readInt());
+            comm.setSocketWriteTimeout(in.readLong());
             comm.setTcpNoDelay(in.readBoolean());
             comm.setUnacknowledgedMessagesBufferSize(in.readInt());
+            comm.setUsePairedConnections(in.readBoolean());
 
             cfg.setCommunicationSpi(comm);
         }
@@ -1239,6 +1244,12 @@ public class PlatformConfigurationUtils {
         w.writeLong(cfg.getMvccVacuumFrequency());
         w.writeBoolean(true);
         w.writeInt(cfg.getMvccVacuumThreadCount());
+        if (cfg.getSystemWorkerBlockedTimeout() != null) {
+            w.writeBoolean(true);
+            w.writeLong(cfg.getSystemWorkerBlockedTimeout());
+        } else {
+            w.writeBoolean(false);
+        }
 
         if (cfg.getSqlSchemas() == null)
             w.writeInt(-1);
@@ -1292,9 +1303,11 @@ public class PlatformConfigurationUtils {
             TcpCommunicationSpi tcp = (TcpCommunicationSpi) comm;
 
             w.writeInt(tcp.getAckSendThreshold());
+            w.writeInt(tcp.getConnectionsPerNode());
             w.writeLong(tcp.getConnectTimeout());
             w.writeBoolean(tcp.isDirectBuffer());
             w.writeBoolean(tcp.isDirectSendBuffer());
+            w.writeBoolean(tcp.isFilterReachableAddresses());
             w.writeLong(tcp.getIdleConnectionTimeout());
             w.writeString(tcp.getLocalAddress());
             w.writeInt(tcp.getLocalPort());
@@ -1303,11 +1316,15 @@ public class PlatformConfigurationUtils {
             w.writeInt(tcp.getMessageQueueLimit());
             w.writeInt(tcp.getReconnectCount());
             w.writeInt(tcp.getSelectorsCount());
+            w.writeLong(tcp.getSelectorSpins());
+            w.writeInt(tcp.getSharedMemoryPort());
             w.writeInt(tcp.getSlowClientQueueLimit());
             w.writeInt(tcp.getSocketReceiveBuffer());
             w.writeInt(tcp.getSocketSendBuffer());
+            w.writeLong(tcp.getSocketWriteTimeout());
             w.writeBoolean(tcp.isTcpNoDelay());
             w.writeInt(tcp.getUnacknowledgedMessagesBufferSize());
+            w.writeBoolean(tcp.isUsePairedConnections());
         }
         else
             w.writeBoolean(false);
@@ -1894,21 +1911,22 @@ public class PlatformConfigurationUtils {
                 .setConcurrencyLevel(in.readInt())
                 .setWalAutoArchiveAfterInactivity(in.readLong());
 
+        if (in.readBoolean())
+            res.setCheckpointReadLockTimeout(in.readLong());
+
         int cnt = in.readInt();
 
         if (cnt > 0) {
             DataRegionConfiguration[] regs = new DataRegionConfiguration[cnt];
 
-            for (int i = 0; i < cnt; i++) {
+            for (int i = 0; i < cnt; i++)
                 regs[i] = readDataRegionConfiguration(in);
-            }
 
             res.setDataRegionConfigurations(regs);
         }
 
-        if (in.readBoolean()) {
+        if (in.readBoolean())
             res.setDefaultDataRegionConfiguration(readDataRegionConfiguration(in));
-        }
 
         return res;
     }
@@ -2022,25 +2040,31 @@ public class PlatformConfigurationUtils {
             w.writeInt(cfg.getConcurrencyLevel());
             w.writeLong(cfg.getWalAutoArchiveAfterInactivity());
 
+            if (cfg.getCheckpointReadLockTimeout() != null) {
+                w.writeBoolean(true);
+                w.writeLong(cfg.getCheckpointReadLockTimeout());
+            }
+            else
+                w.writeBoolean(false);
+
             if (cfg.getDataRegionConfigurations() != null) {
                 w.writeInt(cfg.getDataRegionConfigurations().length);
 
-                for (DataRegionConfiguration d : cfg.getDataRegionConfigurations()) {
+                for (DataRegionConfiguration d : cfg.getDataRegionConfigurations())
                     writeDataRegionConfiguration(w, d);
-                }
-            } else {
-                w.writeInt(0);
             }
+            else
+                w.writeInt(0);
 
             if (cfg.getDefaultDataRegionConfiguration() != null) {
                 w.writeBoolean(true);
                 writeDataRegionConfiguration(w, cfg.getDefaultDataRegionConfiguration());
-            } else {
-                w.writeBoolean(false);
             }
-        } else {
-            w.writeBoolean(false);
+            else
+                w.writeBoolean(false);
         }
+        else
+            w.writeBoolean(false);
     }
 
     /**
