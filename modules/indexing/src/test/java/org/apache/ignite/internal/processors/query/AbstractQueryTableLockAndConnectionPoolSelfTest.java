@@ -264,14 +264,20 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
         execute(srv, "DROP TABLE TEST");
 
         try {
-            while(it.hasNext())
+            while (it.hasNext())
                 it.next();
 
-            fail();
+            if (lazy())
+                fail("Retry excetption must be thrown");
         }
-        catch (Exception e)
-        {
-            e.printStackTrace();
+        catch (Exception e) {
+            if (!lazy()) {
+                log.error("In lazy=false mode the query must be finished successfully", e);
+
+                fail("In lazy=false mode the query must be finished successfully");
+            }
+            else
+                assertNotNull(X.cause(e, QueryRetryException.class));
         }
     }
 

@@ -392,7 +392,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             return false;
 
         return cctx0 != null && cctx0.userCache() && cctx0.gridEvents().isRecordable(type)
-            && !cctx0.config().isEventsDisabled();
+            && cctx0.config() != null && !cctx0.config().isEventsDisabled();
     }
 
     /** {@inheritDoc} */
