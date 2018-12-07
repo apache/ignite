@@ -36,6 +36,7 @@ import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -219,7 +220,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
 
         MetaStorage metaStorage = ignite.context().cache().context().database().metaStorage();
 
-        corruptTreeRoot(ignite, (PageMemoryEx)metaStorage.pageMemory(), METASTORAGE_CACHE_ID, 0);
+        corruptTreeRoot(ignite, (PageMemoryEx)metaStorage.pageMemory(), METASTORAGE_CACHE_ID, PageIdAllocator.METASTORE_PARTITION);
 
         stopGrid(0);
 
