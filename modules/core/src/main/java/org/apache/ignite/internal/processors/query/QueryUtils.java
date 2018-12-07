@@ -581,7 +581,7 @@ public class QueryUtils {
             if (isKeyClsSqlType) // We don't care about keyFields in this case - it might be null, or empty, or anything
                 isKeyField = false;
             else
-                isKeyField = (hasKeyFields ? keyFields.contains(entry.getKey()) : null);
+                isKeyField = (hasKeyFields ? keyFields.contains(entry.getKey()) : false);
 
             boolean notNull = notNulls != null && notNulls.contains(entry.getKey());
 
