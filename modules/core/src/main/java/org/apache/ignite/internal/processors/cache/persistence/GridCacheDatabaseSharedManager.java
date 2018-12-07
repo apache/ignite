@@ -730,7 +730,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 metaStorage = createMetastorage(true);
 
-                applyLogicalUpdates(status, g -> MetaStorage.METASTORAGE_CACHE_ID == g, false, true);
+                applyLogicalUpdates(status, g -> MetaStorage.METASTORAGE_CACHE_ID == g, false);
 
                 fillWalDisabledGroups();
 
@@ -1934,8 +1934,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             RestoreLogicalState logicalState = applyLogicalUpdates(
                     status,
                     g -> !initiallyGlobalWalDisabledGrps.contains(g) && !initiallyLocalWalDisabledGrps.contains(g),
-                    true,
-                    false
+                    true
             );
 
             if (recoveryVerboseLogging && log.isInfoEnabled()) {
@@ -2347,8 +2346,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private RestoreLogicalState applyLogicalUpdates(
         CheckpointStatus status,
         Predicate<Integer> cacheGroupsPredicate,
-        boolean skipFieldLookup,
-        boolean metaStoreOnly
+        boolean skipFieldLookup
     ) throws IgniteCheckedException {
         if (log.isInfoEnabled())
             log.info("Applying lost cache updates since last checkpoint record [lastMarked="
@@ -2392,6 +2390,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                             applied++;
                         }
+
+                        break;
+
+                    case MVCC_TX_RECORD:
+                        MvccTxRecord txRecord = (MvccTxRecord)rec;
+
+                        byte txState = convertToTxState(txRecord.state());
+
+                        cctx.coordinators().updateState(txRecord.mvccVersion(), txState, false);
 
                         break;
 
@@ -2442,18 +2449,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         finally {
                             pageMem.releasePage(rec0.groupId(), rec0.pageId(), page);
                         }
-
-                        break;
-
-                    case MVCC_TX_RECORD:
-                        if (metaStoreOnly)
-                            continue;
-
-                        MvccTxRecord txRecord = (MvccTxRecord)rec;
-
-                        byte txState = convertToTxState(txRecord.state());
-
-                        cctx.coordinators().updateState(txRecord.mvccVersion(), txState, false);
 
                         break;
 
