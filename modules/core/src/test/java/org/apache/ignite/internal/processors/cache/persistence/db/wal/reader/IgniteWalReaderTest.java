@@ -143,7 +143,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         CacheConfiguration<Integer, IndexedObject> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
-        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
         ccfg.setIndexedTypes(Integer.class, IndexedObject.class);
@@ -279,9 +279,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                 WALRecord walRecord = tup.get2();
 
                 if (walRecord.type() == DATA_RECORD || walRecord.type() == MVCC_DATA_RECORD) {
-                    assert MvccFeatureChecker.forcedMvcc() && walRecord.type() == MVCC_DATA_RECORD ||
-                        !MvccFeatureChecker.forcedMvcc() && walRecord.type() == DATA_RECORD;
-
                     DataRecord record = (DataRecord)walRecord;
 
                     for (DataEntry entry : record.writeEntries()) {
@@ -860,7 +857,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testRemoveOperationPresentedForDataEntry() throws Exception {
-        runRemoveOperationTest(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+        runRemoveOperationTest(CacheAtomicityMode.TRANSACTIONAL);
     }
 
     /**
@@ -869,6 +866,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testRemoveOperationPresentedForDataEntryForAtomic() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            return;
+
         runRemoveOperationTest(CacheAtomicityMode.ATOMIC);
     }
 
