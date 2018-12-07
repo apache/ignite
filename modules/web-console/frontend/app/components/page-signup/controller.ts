@@ -20,7 +20,7 @@ import MessagesFactory from '../../services/Messages.service';
 import FormUtilsFactoryFactory from '../../services/FormUtils.service';
 import {ISignupData} from '../form-signup';
 
-export default class PageSignup {
+export default class PageSignup implements ng.IPostLink {
     form: ng.IFormController;
 
     data: ISignupData = {
@@ -34,13 +34,18 @@ export default class PageSignup {
 
     serverError: string | null = null;
 
-    static $inject = ['Auth', 'IgniteMessages', 'IgniteFormUtils'];
+    static $inject = ['Auth', 'IgniteMessages', 'IgniteFormUtils', '$element'];
 
     constructor(
         private Auth: Auth,
         private IgniteMessages: ReturnType<typeof MessagesFactory>,
-        private IgniteFormUtils: ReturnType<typeof FormUtilsFactoryFactory>
+        private IgniteFormUtils: ReturnType<typeof FormUtilsFactoryFactory>,
+        private el: JQLite
     ) {}
+
+    $postLink() {
+        this.el.addClass('public-page');
+    }
 
     canSubmitForm(form: PageSignup['form']) {
         return form.$error.server ? true : !form.$invalid;

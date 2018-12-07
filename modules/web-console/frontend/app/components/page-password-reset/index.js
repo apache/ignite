@@ -22,6 +22,7 @@ import _ from 'lodash';
 
 import template from './template.pug';
 import controller from './controller';
+import publicTemplate from '../../../views/public.pug';
 
 import './style.scss';
 
@@ -44,8 +45,10 @@ export default angular
             url: '/reset?{token}',
             views: {
                 '@': {
+                    template: publicTemplate
+                },
+                'page@password.reset': {
                     component: 'pagePasswordReset'
-
                 }
             },
             redirectTo: (trans) => {

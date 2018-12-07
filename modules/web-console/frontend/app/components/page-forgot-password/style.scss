@@ -19,39 +19,23 @@ page-forgot-password {
     display: flex;
     flex-direction: column;
     flex: 1 0 auto;
-    grid-column: span 3;
-    grid-row: span 3;
 
-    section {
-        margin-left: auto;
-        margin-right: auto;
-        width: 530px;
-        flex: 1;
-        padding: 0 var(--page-side-padding);
+    p {
+        margin-bottom: 20px;
+    }
 
-        h3 {
-            font-size: 38px;
-            font-weight: 300;
-            margin: 30px 0 30px;
-        }
+    .form-field {
+        margin: 10px 0;
+    }
 
-        p {
-            margin-bottom: 20px;
-        }
+    .form-footer {
+        padding: 15px 0;
+        text-align: right;
+        display: flex;
+        align-items: center;
 
-        .form-field {
-            margin: 10px 0;
-        }
-
-        .form-footer {
-            padding: 15px 0;
-            text-align: right;
-            display: flex;
-            align-items: center;
-
-            .btn-ignite {
-                margin-left: auto;
-            }
+        .btn-ignite {
+            margin-left: auto;
         }
     }
 }

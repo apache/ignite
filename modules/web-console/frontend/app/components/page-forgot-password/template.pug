@@ -16,32 +16,25 @@
 
 include /app/helpers/jade/mixins
 
-web-console-header(hide-menu-button='true')
-    .web-console-header-content__title Management console for Apache Ignite
-
-section
-    - const form = '$ctrl.form'
-    h3 Forgot password?
-    p Enter the email address for your account & we'll email you a link to reset your password.
-    form(name=form novalidate ng-submit='$ctrl.remindPassword()')
-        +form-field__email({
-            label: 'Email:',
-            model: '$ctrl.data.email',
-            name: '"email"',
-            placeholder: 'Input email',
-            required: true
-        })(
-            ng-model-options='{allowInvalid: true}'
-            autocomplete='email'
-            ignite-auto-focus
-            tabindex='0'
-        )
-            +form-field__error({error: 'server', message: `{{$ctrl.serverError}}`})
-        footer.form-footer
-            a(ui-sref='signin') Back to sign in
-            button.btn-ignite.btn-ignite--primary(
-                tabindex='1'
-                type='submit'
-            ) Send it to me
-
-web-console-footer.web-console-footer__page-bottom
+h3.public-page__title Forgot password?
+p Enter the email address for your account & we'll email you a link to reset your password.
+form(name='$ctrl.form' novalidate ng-submit='$ctrl.remindPassword()')
+    +form-field__email({
+        label: 'Email:',
+        model: '$ctrl.data.email',
+        name: '"email"',
+        placeholder: 'Input email',
+        required: true
+    })(
+        ng-model-options='{allowInvalid: true}'
+        autocomplete='email'
+        ignite-auto-focus
+        tabindex='0'
+    )
+        +form-field__error({error: 'server', message: `{{$ctrl.serverError}}`})
+    footer.form-footer
+        a(ui-sref='signin') Back to sign in
+        button.btn-ignite.btn-ignite--primary(
+            tabindex='1'
+            type='submit'
+        ) Send it to me

@@ -15,12 +15,18 @@
  * limitations under the License.
  */
 
-export default class {
-    static $inject = ['$state', '$timeout'];
+import {StateService} from '@uirouter/angularjs';
 
-    constructor($state, $timeout) {
+export default class implements ng.IPostLink {
+    static $inject = ['$state', '$timeout', '$element'];
+
+    constructor($state: StateService, $timeout: ng.ITimeoutService, private el: JQLite) {
         $timeout(() => {
             $state.go('signin');
         }, 10000);
+    }
+
+    $postLink() {
+        this.el.addClass('public-page');
     }
 }

@@ -290,6 +290,25 @@ body {
         padding-left: var(--page-side-padding);
         padding-right: var(--page-side-padding);
     }
+
+    &.wrapper-public {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto var(--header-height) 1fr auto;
+        grid-template-areas: 'notifications' 'header' 'content' 'footer';
+    }
+}
+
+.public-page {
+    margin-left: auto;
+    margin-right: auto;
+    flex: 1 0 auto;
+    max-width: 530px;
+
+    .public-page__title {
+        font-size: 38px;
+        font-weight: 300;
+        margin: 30px 0 30px;
+    }
 }
 
 .details-row {

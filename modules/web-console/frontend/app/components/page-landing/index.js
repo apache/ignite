@@ -17,6 +17,7 @@
 
 import angular from 'angular';
 
+import baseTemplate from './public.pug';
 import template from './template.pug';
 import './style.scss';
 
@@ -44,7 +45,15 @@ export default angular
         $stateProvider
         .state('landing', {
             url: '/',
-            template: '<page-landing></page-landing>',
+            views: {
+                '@': {
+                    template: baseTemplate
+                },
+                'page@landing': {
+                    component: 'pageLanding'
+                }
+            },
+            // template: '<page-landing></page-landing>',
             redirectTo: (trans) => {
                 return trans.injector().get('User').read()
                     .then(() => {
