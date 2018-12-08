@@ -17,6 +17,7 @@
 
 package org.apache.ignite.compatibility.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.compatibility.PdsWithTtlCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.FoldersReuseCompatibilityTest;
@@ -29,18 +30,17 @@ import org.apache.ignite.compatibility.persistence.PersistenceBasicCompatibility
 public class IgniteCompatibilityBasicTestSuite {
     /**
      * @return Test suite.
-     * @throws Exception In case of an error.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Compatibility Basic Test Suite");
 
-        suite.addTest(new JUnit4TestAdapter(PersistenceBasicCompatibilityTest.class);
+        suite.addTest(new JUnit4TestAdapter(PersistenceBasicCompatibilityTest.class));
 
-        suite.addTest(new JUnit4TestAdapter(PdsWithTtlCompatibilityTest.class);
+        suite.addTest(new JUnit4TestAdapter(PdsWithTtlCompatibilityTest.class));
 
-        suite.addTest(new JUnit4TestAdapter(FoldersReuseCompatibilityTest.class);
+        suite.addTest(new JUnit4TestAdapter(FoldersReuseCompatibilityTest.class));
 
-        suite.addTest(new JUnit4TestAdapter(MigratingToWalV2SerializerWithCompactionTest.class);
+        suite.addTest(new JUnit4TestAdapter(MigratingToWalV2SerializerWithCompactionTest.class));
 
         return suite;
     }
