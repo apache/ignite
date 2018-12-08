@@ -96,6 +96,7 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
  * and communication spi.
  */
 @SkipDaemon
+@SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
 public class IgniteServiceProcessor extends ServiceProcessorAdapter implements IgniteChangeGlobalStateSupport {
     /** Local service instances. */
     private final ConcurrentMap<IgniteUuid, Collection<ServiceContextImpl>> locServices = new ConcurrentHashMap<>();
@@ -816,14 +817,16 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             if (F.isEmpty(ctxs))
                 return null;
 
-            for (ServiceContextImpl ctx : ctxs) {
-                Service srvc = ctx.service();
+            synchronized (ctxs) {
+                for (ServiceContextImpl ctx : ctxs) {
+                    Service srvc = ctx.service();
 
-                if (srvc != null)
-                    return (T)srvc;
+                    if (srvc != null)
+                        return (T)srvc;
+                }
+
+                return null;
             }
-
-            return null;
         }
         finally {
             leaveBusy();
@@ -841,9 +844,11 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             if (F.isEmpty(ctxs))
                 return null;
 
-            for (ServiceContextImpl ctx : ctxs) {
-                if (ctx.service() != null)
-                    return ctx;
+            synchronized (ctxs) {
+                for (ServiceContextImpl ctx : ctxs) {
+                    if (ctx.service() != null)
+                        return ctx;
+                }
             }
 
             return null;
@@ -919,11 +924,13 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
             Collection<T> res = new ArrayList<>(ctxs.size());
 
-            for (ServiceContextImpl ctx : ctxs) {
-                Service srvc = ctx.service();
+            synchronized (ctxs) {
+                for (ServiceContextImpl ctx : ctxs) {
+                    Service srvc = ctx.service();
 
-                if (srvc != null)
-                    res.add((T)srvc);
+                    if (srvc != null)
+                        res.add((T)srvc);
+                }
             }
 
             return res;
@@ -1078,24 +1085,26 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         Collection<ServiceContextImpl> toInit = new ArrayList<>();
 
-        if (ctxs.size() > assignCnt) {
-            int cancelCnt = ctxs.size() - assignCnt;
+        synchronized (ctxs) {
+            if (ctxs.size() > assignCnt) {
+                int cancelCnt = ctxs.size() - assignCnt;
 
-            cancel(ctxs, cancelCnt);
-        }
-        else if (ctxs.size() < assignCnt) {
-            int createCnt = assignCnt - ctxs.size();
+                cancel(ctxs, cancelCnt);
+            }
+            else if (ctxs.size() < assignCnt) {
+                int createCnt = assignCnt - ctxs.size();
 
-            for (int i = 0; i < createCnt; i++) {
-                ServiceContextImpl srvcCtx = new ServiceContextImpl(name,
-                    UUID.randomUUID(),
-                    cacheName,
-                    affKey,
-                    Executors.newSingleThreadExecutor(threadFactory));
+                for (int i = 0; i < createCnt; i++) {
+                    ServiceContextImpl srvcCtx = new ServiceContextImpl(name,
+                        UUID.randomUUID(),
+                        cacheName,
+                        affKey,
+                        Executors.newSingleThreadExecutor(threadFactory));
 
-                ctxs.add(srvcCtx);
+                    ctxs.add(srvcCtx);
 
-                toInit.add(srvcCtx);
+                    toInit.add(srvcCtx);
+                }
             }
         }
 
@@ -1113,7 +1122,9 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             catch (Throwable e) {
                 U.error(log, "Failed to initialize service (service will not be deployed): " + name, e);
 
-                ctxs.removeAll(toInit);
+                synchronized (ctxs) {
+                    ctxs.removeAll(toInit);
+                }
 
                 throw new IgniteCheckedException("Error occured during service initialization: " +
                     "[locId=" + ctx.localNodeId() + ", name=" + name + ']', e);
@@ -1270,8 +1281,11 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     protected void undeploy(@NotNull IgniteUuid srvcId) {
         Collection<ServiceContextImpl> ctxs = locServices.remove(srvcId);
 
-        if (ctxs != null)
-            cancel(ctxs, ctxs.size());
+        if (ctxs != null) {
+            synchronized (ctxs) {
+                cancel(ctxs, ctxs.size());
+            }
+        }
     }
 
     /**

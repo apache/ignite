@@ -293,32 +293,37 @@ class ServicesDeploymentTask {
             }
         });
 
-        depActions.servicesToDeploy().forEach((srvcId, desc) -> {
-            try {
-                ServiceConfiguration cfg = desc.configuration();
+        if (!depActions.servicesToDeploy().isEmpty()) {
+            final Collection<UUID> evtTopNodes = F.nodeIds(ctx.discovery().nodes(evtTopVer));
 
-                Map<UUID, Integer> top = reassign(srvcId, cfg, evtTopVer, filterDeadNodes(desc.topologySnapshot()));
+            depActions.servicesToDeploy().forEach((srvcId, desc) -> {
+                try {
+                    ServiceConfiguration cfg = desc.configuration();
 
-                expDeps.put(srvcId, top);
+                    Map<UUID, Integer> oldTop = filterDeadNodes(evtTopNodes, desc.topologySnapshot());
 
-                Integer expCnt = top.getOrDefault(ctx.localNodeId(), 0);
+                    Map<UUID, Integer> top = reassign(srvcId, cfg, evtTopVer, oldTop);
 
-                if (expCnt > srvcProc.localInstancesCount(srvcId)) {
-                    srvcProc.deployment().deployerBlockingSectionBegin();
+                    expDeps.put(srvcId, top);
 
-                    try {
-                        srvcProc.redeploy(srvcId, cfg, top);
-                    }
-                    finally {
-                        srvcProc.deployment().deployerBlockingSectionEnd();
+                    Integer expCnt = top.getOrDefault(ctx.localNodeId(), 0);
+
+                    if (expCnt > srvcProc.localInstancesCount(srvcId)) {
+                        srvcProc.deployment().deployerBlockingSectionBegin();
+
+                        try {
+                            srvcProc.redeploy(srvcId, cfg, top);
+                        }
+                        finally {
+                            srvcProc.deployment().deployerBlockingSectionEnd();
+                        }
                     }
                 }
-            }
-            catch (IgniteCheckedException e) {
-                depErrors.computeIfAbsent(srvcId, c -> new ArrayList<>()).add(e);
-            }
-        });
-
+                catch (IgniteCheckedException e) {
+                    depErrors.computeIfAbsent(srvcId, c -> new ArrayList<>()).add(e);
+                }
+            });
+        }
         createAndSendSingleDeploymentsMessage(depId, depErrors);
     }
 
@@ -587,19 +592,22 @@ class ServicesDeploymentTask {
     }
 
     /**
-     * Filters dead nodes from given service topology snapshot.
+     * Filters dead nodes from given service topology snapshot using given ids.
      *
+     * @param evtTopNodes Ids being used to filter.
      * @param top Service topology snapshot.
      * @return Filtered service topology snapshot.
      */
-    private Map<UUID, Integer> filterDeadNodes(Map<UUID, Integer> top) {
+    private Map<UUID, Integer> filterDeadNodes(Collection<UUID> evtTopNodes, Map<UUID, Integer> top) {
         if (F.isEmpty(top))
             return top;
 
         Map<UUID, Integer> filtered = new HashMap<>();
 
         top.forEach((nodeId, cnt) -> {
-            if (ctx.discovery().alive(nodeId))
+            // We can't just use 'ctx.discovery().alive(UUID)', because during the deployment process discovery
+            // topology may be changed and results may be different on some set of nodes.
+            if (evtTopNodes.contains(nodeId))
                 filtered.put(nodeId, cnt);
         });
 
