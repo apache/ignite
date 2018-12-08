@@ -47,6 +47,7 @@ import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -59,7 +60,6 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
-import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -475,17 +475,19 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /**
      * @param cfgs Service configurations.
      * @param dfltNodeFilter Default NodeFilter.
-     * @param staticCfgs {@code true} to check statically defined services during node startup process, in this case
-     * {@link JdkMarshaller} (common marshaller for discovery layer) will be used to check services serialization
-     * because of {@link GridMarshallerMappingProcessor} is not started at this point, otherwise {@code false}.
      * @return Configurations to deploy.
      */
     @SuppressWarnings("deprecation")
     private PreparedConfigurations<IgniteUuid> prepareServiceConfigurations(Collection<ServiceConfiguration> cfgs,
-        IgnitePredicate<ClusterNode> dfltNodeFilter, boolean staticCfgs) {
+        IgnitePredicate<ClusterNode> dfltNodeFilter) {
         List<ServiceConfiguration> cfgsCp = new ArrayList<>(cfgs.size());
 
-        Marshaller marsh = !staticCfgs ? ctx.config().getMarshaller() : new JdkMarshaller();
+        // At node startup routine 'BinaryMarshaller' and 'OptimizedMarshaler' can not be used, because for a class
+        // registration they use 'GridMarshallerMappingProcessor' which is not ready at the moment. In this case
+        // 'JdkMarshaller' has to be used.
+        boolean useJdkMarshaller = ctx.gateway().getState() == GridKernalState.STARTING;
+
+        Marshaller marsh = !useJdkMarshaller ? ctx.config().getMarshaller() : new JdkMarshaller();
 
         List<GridServiceDeploymentFuture<IgniteUuid>> failedFuts = null;
 
@@ -514,10 +516,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 try {
                     byte[] srvcBytes = U.marshal(marsh, cfg.getService());
 
-                    if (!staticCfgs)
-                        cfgsCp.add(new LazyServiceConfiguration(cfg, srvcBytes));
-                    else
-                        cfgsCp.add(cfg);
+                    cfgsCp.add(new LazyServiceConfiguration(cfg, srvcBytes, useJdkMarshaller));
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to marshal service with configured marshaller " +
@@ -598,11 +597,11 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             if (cfgs.isEmpty())
                 return new GridFinishedFuture<>();
 
-            PreparedConfigurations<IgniteUuid> srvCfg = prepareServiceConfigurations(cfgs, dfltNodeFilter, false);
+            PreparedConfigurations<IgniteUuid> srvcCfg = prepareServiceConfigurations(cfgs, dfltNodeFilter);
 
-            List<ServiceConfiguration> cfgsCp = srvCfg.cfgs;
+            List<ServiceConfiguration> cfgsCp = srvcCfg.cfgs;
 
-            List<GridServiceDeploymentFuture<IgniteUuid>> failedFuts = srvCfg.failedFuts;
+            List<GridServiceDeploymentFuture<IgniteUuid>> failedFuts = srvcCfg.failedFuts;
 
             GridServiceDeploymentCompoundFuture<IgniteUuid> res = new GridServiceDeploymentCompoundFuture<>();
 
@@ -1181,12 +1180,15 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      */
     @SuppressWarnings("deprecation")
     private Service copyAndInject(ServiceConfiguration cfg) throws IgniteCheckedException {
-        Marshaller m = ctx.config().getMarshaller();
+        boolean lazySrvcCfg = cfg instanceof LazyServiceConfiguration;
 
-        if (cfg instanceof LazyServiceConfiguration) {
+        Marshaller marsh = lazySrvcCfg && ((LazyServiceConfiguration)cfg).isUsedJdkMarshaller() ?
+            new JdkMarshaller() : ctx.config().getMarshaller();
+
+        if (lazySrvcCfg) {
             byte[] bytes = ((LazyServiceConfiguration)cfg).serviceBytes();
 
-            Service srvc = U.unmarshal(m, bytes, U.resolveClassLoader(null, ctx.config()));
+            Service srvc = U.unmarshal(marsh, bytes, U.resolveClassLoader(null, ctx.config()));
 
             ctx.resource().inject(srvc);
 
@@ -1196,9 +1198,9 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             Service srvc = cfg.getService();
 
             try {
-                byte[] bytes = U.marshal(m, srvc);
+                byte[] bytes = U.marshal(marsh, srvc);
 
-                Service cp = U.unmarshal(m, bytes, U.resolveClassLoader(srvc.getClass().getClassLoader(), ctx.config()));
+                Service cp = U.unmarshal(marsh, bytes, U.resolveClassLoader(srvc.getClass().getClassLoader(), ctx.config()));
 
                 ctx.resource().inject(cp);
 
@@ -1468,7 +1470,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         if (cfgs != null) {
             PreparedConfigurations<IgniteUuid> prepCfgs = prepareServiceConfigurations(Arrays.asList(cfgs),
-                node -> !node.isClient(), true);
+                node -> !node.isClient());
 
             if (logErrors) {
                 if (prepCfgs.failedFuts != null) {
