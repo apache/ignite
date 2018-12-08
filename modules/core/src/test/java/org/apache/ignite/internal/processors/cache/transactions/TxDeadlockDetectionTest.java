@@ -93,6 +93,11 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected boolean useMulticastIpFinder() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
