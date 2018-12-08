@@ -344,8 +344,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * {@inheritDoc}
      */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        if (!opsLock.writeLock().tryLock())
-            return;
+        opsLock.writeLock().lock();
 
         try {
             if (log.isDebugEnabled()) {
