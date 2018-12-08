@@ -536,7 +536,7 @@ public class GridSqlQueryParser {
      *                           Relies on uniqueness of table filter aliases.
      */
     public GridSqlQueryParser(boolean useOptimizedSubqry) {
-        optimizedTableFilterOrder = useOptimizedSubqry ? new HashMap<String, Integer>() : null;
+        optimizedTableFilterOrder = useOptimizedSubqry ? new HashMap<>() : null;
     }
 
     /**
@@ -1183,7 +1183,7 @@ public class GridSqlQueryParser {
         res.tableName(data.tableName);
         res.ifNotExists(CREATE_TABLE_IF_NOT_EXISTS.get(createTbl));
 
-        List<String> extraParams = data.tableEngineParams != null ? new ArrayList<String>() : null;
+        List<String> extraParams = data.tableEngineParams != null ? new ArrayList<>() : null;
 
         if (data.tableEngineParams != null)
             for (String s : data.tableEngineParams)

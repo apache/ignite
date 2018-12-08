@@ -70,7 +70,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
      */
     private <K, V> IgniteCache<K, V> cache(String name) throws Exception {
         if (withClientNearCache())
-            return ig().getOrCreateNearCache(name, new NearCacheConfiguration<K, V>());
+            return ig().getOrCreateNearCache(name, new NearCacheConfiguration<>());
 
         return ig().cache(name);
     }

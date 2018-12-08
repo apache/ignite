@@ -2155,7 +2155,7 @@ public class ZookeeperDiscoveryImpl {
         exchange.onExchange(joiningNodeBag);
 
         DiscoveryDataBag collectBag = new DiscoveryDataBag(nodeId,
-            new HashSet<Integer>(),
+                new HashSet<>(),
             joiningNodeData.node().isClient());
 
         collectBag.joiningNodeData(joiningNodeBag.joiningNodeData());
@@ -3813,7 +3813,7 @@ public class ZookeeperDiscoveryImpl {
                     0,
                     1,
                     2000,
-                    new LinkedBlockingQueue<Runnable>());
+                        new LinkedBlockingQueue<>());
             }
 
             pool = utilityPool;

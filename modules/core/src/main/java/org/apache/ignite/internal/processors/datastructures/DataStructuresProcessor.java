@@ -429,7 +429,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     locCntr,
                     upBound);
 
-                return new T2<GridCacheAtomicSequenceEx, AtomicDataStructureValue>(seq, seqVal);
+                return new T2<>(seq, seqVal);
             }
         }, cfg, name, DataStructureType.ATOMIC_SEQ, create, GridCacheAtomicSequenceEx.class);
     }
@@ -478,7 +478,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                 a = new GridCacheAtomicLongImpl(name, key, cache);
 
-                return new T2<GridCacheAtomicLongEx, AtomicDataStructureValue>(a, retVal);
+                return new T2<>(a, retVal);
             }
         }, cfg, name, ATOMIC_LONG, create, GridCacheAtomicLongEx.class);
     }
@@ -1207,7 +1207,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     key,
                     cache);
 
-                return new T2<GridCacheCountDownLatchEx, AtomicDataStructureValue>(latch, retVal);
+                return new T2<>(latch, retVal);
             }
         }, cfg, name, COUNT_DOWN_LATCH, create, GridCacheCountDownLatchEx.class);
     }
@@ -1268,7 +1268,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     return null;
 
                 AtomicDataStructureValue retVal = (val == null ? new GridCacheSemaphoreState(cnt,
-                    new HashMap<UUID, Integer>(), failoverSafe, ctx.discovery().gridStartTime()) : null);
+                        new HashMap<>(), failoverSafe, ctx.discovery().gridStartTime()) : null);
 
                 GridCacheSemaphoreEx sem0 = new GridCacheSemaphoreImpl(name, key, cache);
 

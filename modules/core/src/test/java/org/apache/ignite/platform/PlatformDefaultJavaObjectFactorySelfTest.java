@@ -160,7 +160,7 @@ public class PlatformDefaultJavaObjectFactorySelfTest extends GridCommonAbstract
 
         GridTestUtils.assertThrows(null, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                factory.initialize(null, new HashMap<String, Object>());
+                factory.initialize(null, new HashMap<>());
 
                 return null;
             }

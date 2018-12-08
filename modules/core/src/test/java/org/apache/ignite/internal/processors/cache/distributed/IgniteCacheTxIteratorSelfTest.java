@@ -73,7 +73,7 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         if (nearEnabled)
-            ccfg.setNearConfiguration(new NearCacheConfiguration<String, TestClass>());
+            ccfg.setNearConfiguration(new NearCacheConfiguration<>());
 
         if (useEvictPlc) {
             ccfg.setEvictionPolicy(new FifoEvictionPolicy(50));

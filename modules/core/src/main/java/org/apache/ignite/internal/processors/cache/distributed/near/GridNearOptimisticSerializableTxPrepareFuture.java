@@ -904,7 +904,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                                             parent.cctx.exchange().affinityReadyFuture(res.clientRemapVersion());
 
                                         if (affFut == null)
-                                            affFut = new GridFinishedFuture<Object>();
+                                            affFut = new GridFinishedFuture<>();
 
                                         if (parent.remapFut.get()) {
                                             if (log.isDebugEnabled()) {

@@ -134,7 +134,7 @@ public class GridFutureQueueTest {
                             while (!stop) {
                                 long id = cnt.incrementAndGet();
 
-                                Future<Boolean> fut = new Future<Boolean>(new Message(id));
+                                Future<Boolean> fut = new Future<>(new Message(id));
 
                                 queue.offer(fut);
 

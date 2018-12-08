@@ -207,7 +207,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
             log,
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    return new BasicAddressResolver(new HashMap<String, String>());
+                    return new BasicAddressResolver(new HashMap<>());
                 }
             },
             IllegalArgumentException.class,

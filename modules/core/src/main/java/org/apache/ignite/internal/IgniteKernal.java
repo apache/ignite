@@ -2642,7 +2642,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     memPlcName = cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName();
 
                 if (!memPlcNamesMapping.containsKey(memPlcName))
-                    memPlcNamesMapping.put(memPlcName, new ArrayList<String>());
+                    memPlcNamesMapping.put(memPlcName, new ArrayList<>());
 
                 ArrayList<String> cacheNames = memPlcNamesMapping.get(memPlcName);
 

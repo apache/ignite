@@ -140,7 +140,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
             TestKey key = new TestKey(i);
             TestValue val = new TestValue(i);
 
-            refs.add(new WeakReference<Object>(val));
+            refs.add(new WeakReference<>(val));
 
             cache.put(key, val);
 

@@ -169,7 +169,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
     private List<IgniteFuture<?>> startAsyncOperations(final int ops, final IgniteCache<TestKey, TestValue> cache)
         throws Exception
     {
-        final List<IgniteFuture<?>> futs = Collections.synchronizedList(new ArrayList<IgniteFuture<?>>(ops));
+        final List<IgniteFuture<?>> futs = Collections.synchronizedList(new ArrayList<>(ops));
 
         final AtomicInteger left = new AtomicInteger(ops);
 

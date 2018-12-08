@@ -37,7 +37,7 @@ public class GridConcurrentHashSet<E> extends AbstractSet<E> {
      * Creates new set based on {@link ConcurrentHashMap}.
      */
     public GridConcurrentHashSet() {
-        this(new ConcurrentHashMap<E, Object>());
+        this(new ConcurrentHashMap<>());
     }
 
     /**

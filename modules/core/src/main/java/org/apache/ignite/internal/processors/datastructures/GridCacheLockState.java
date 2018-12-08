@@ -93,7 +93,7 @@ public final class GridCacheLockState extends VolatileAtomicDataStructureValue i
 
         signals = null;
 
-        nodes = new LinkedList<UUID>();
+        nodes = new LinkedList<>();
 
         this.fair = fair;
 

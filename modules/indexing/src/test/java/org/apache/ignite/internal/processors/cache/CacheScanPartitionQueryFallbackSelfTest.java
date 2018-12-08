@@ -310,7 +310,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
                                 info("Running query [node=" + nodeId + ", part=" + part + ']');
 
                             try (QueryCursor<Cache.Entry<Integer, Integer>> cur0 =
-                                     cache.query(new ScanQuery<Integer, Integer>(part))) {
+                                     cache.query(new ScanQuery<>(part))) {
 
                                 if (cur)
                                     doTestScanQueryCursor(cur0, part);

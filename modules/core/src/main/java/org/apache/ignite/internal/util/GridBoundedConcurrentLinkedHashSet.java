@@ -118,7 +118,7 @@ public class GridBoundedConcurrentLinkedHashSet<E> extends GridSetWrapper<E> {
      *      nonpositive.
      */
     public GridBoundedConcurrentLinkedHashSet(int max, int initCap, float loadFactor, int concurLvl, QueuePolicy qPlc) {
-        super(new GridBoundedConcurrentLinkedHashMap<E, Object>(max, initCap, loadFactor, concurLvl, qPlc));
+        super(new GridBoundedConcurrentLinkedHashMap<>(max, initCap, loadFactor, concurLvl, qPlc));
     }
 
     /**

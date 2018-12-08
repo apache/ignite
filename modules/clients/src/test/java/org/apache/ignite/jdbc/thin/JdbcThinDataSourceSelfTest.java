@@ -282,7 +282,7 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
      */
     public static class JndiMockContext implements Context {
         /** Objects map. */
-        private Map<String, Object> map = new HashMap<String, Object>();
+        private Map<String, Object> map = new HashMap<>();
 
         /** {@inheritDoc} */
         @Override public Object lookup(Name name) throws NamingException {

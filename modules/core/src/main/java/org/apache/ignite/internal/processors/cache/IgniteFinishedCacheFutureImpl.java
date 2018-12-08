@@ -27,6 +27,6 @@ public class IgniteFinishedCacheFutureImpl<V> extends IgniteCacheFutureImpl<V> {
      * @param err Error.
      */
     public IgniteFinishedCacheFutureImpl(Throwable err) {
-        super(new GridFinishedFuture<V>(err));
+        super(new GridFinishedFuture<>(err));
     }
 }

@@ -119,7 +119,7 @@ public class NearCacheMultithreadedUpdateTest extends GridCommonAbstractTest {
         assertTrue(client.configuration().isClientMode());
 
         final IgniteCache<Integer, Integer> clientCache =
-            client.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<Integer, Integer>());
+            client.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
 
         final AtomicBoolean stop = new AtomicBoolean();
 

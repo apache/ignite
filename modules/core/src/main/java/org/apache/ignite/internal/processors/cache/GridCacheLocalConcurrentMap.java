@@ -41,7 +41,7 @@ public class GridCacheLocalConcurrentMap extends GridCacheConcurrentMapImpl {
 
         this.cacheId = cctx.cacheId();
         this.entryMap = new CacheMapHolder(cctx,
-            new ConcurrentHashMap<KeyCacheObject, GridCacheMapEntry>(initCap, 0.75f, Runtime.getRuntime().availableProcessors() * 2));
+                new ConcurrentHashMap<>(initCap, 0.75f, Runtime.getRuntime().availableProcessors() * 2));
     }
 
     /** {@inheritDoc} */

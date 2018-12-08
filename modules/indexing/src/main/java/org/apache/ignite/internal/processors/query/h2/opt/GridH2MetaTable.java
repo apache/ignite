@@ -60,7 +60,7 @@ public class GridH2MetaTable extends TableBase {
 
     /** */
     private final Set<Session> fakeExclusiveSet = Collections.newSetFromMap(
-        new ConcurrentHashMap<Session,Boolean>());
+            new ConcurrentHashMap<>());
 
     /**
      * @param data Data.

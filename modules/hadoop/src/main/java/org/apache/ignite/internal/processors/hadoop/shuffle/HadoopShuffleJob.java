@@ -741,7 +741,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
             fut = new GridFutureAdapter<>();
 
             IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>> old = sentMsgs.putIfAbsent(msgId,
-                new IgniteBiTuple<HadoopShuffleMessage, GridFutureAdapter<?>>(msg, fut));
+                    new IgniteBiTuple<>(msg, fut));
 
             assert old == null;
         }

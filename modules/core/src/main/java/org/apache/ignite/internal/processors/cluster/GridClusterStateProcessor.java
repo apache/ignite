@@ -519,7 +519,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 BaselineTopologyHistoryItem bltHistItem = BaselineTopologyHistoryItem.fromBaseline(
                     globalState.baselineTopology());
 
-                transitionFuts.put(msg.requestId(), new GridFutureAdapter<Void>());
+                transitionFuts.put(msg.requestId(), new GridFutureAdapter<>());
 
                 DiscoveryDataClusterState prevState = globalState;
 
@@ -741,7 +741,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             DiscoveryDataClusterState state = stateDiscoData.globalState;
 
             if (state.transition())
-                transitionFuts.put(state.transitionRequestId(), new GridFutureAdapter<Void>());
+                transitionFuts.put(state.transitionRequestId(), new GridFutureAdapter<>());
 
             globalState = state;
 

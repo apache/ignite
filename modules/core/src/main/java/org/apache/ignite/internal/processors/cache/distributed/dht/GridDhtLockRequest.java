@@ -175,7 +175,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
         storeUsed(storeUsed);
 
-        nearKeys = nearCnt == 0 ? Collections.<KeyCacheObject>emptyList() : new ArrayList<KeyCacheObject>(nearCnt);
+        nearKeys = nearCnt == 0 ? Collections.<KeyCacheObject>emptyList() : new ArrayList<>(nearCnt);
         invalidateEntries = new BitSet(dhtCnt == 0 ? nearCnt : dhtCnt);
 
         assert miniId != null;

@@ -128,7 +128,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
             cctx.time().addTimeoutObject(this);
         }
 
-        keys = qry.query().enableDedup() ? new HashSet<K>() : null;
+        keys = qry.query().enableDedup() ? new HashSet<>() : null;
     }
 
     /**

@@ -129,9 +129,9 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
 
         for (int i = 0; i < NODES; i++) {
             afterRmvEvts.put(grid(i).cluster().localNode().id(),
-                new BlockingArrayQueue<Cache.Entry<TestKey, TestValue>>());
+                    new BlockingArrayQueue<>());
             afterPutEvts.put(grid(i).cluster().localNode().id(),
-                new BlockingArrayQueue<Cache.Entry<TestKey, TestValue>>());
+                    new BlockingArrayQueue<>());
         }
     }
 

@@ -124,7 +124,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
         CacheConfiguration<Integer, Value> cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(mode);
-        cacheCfg.setNearConfiguration(nearEnabled ? new NearCacheConfiguration<Integer, Value>() : null);
+        cacheCfg.setNearConfiguration(nearEnabled ? new NearCacheConfiguration<>() : null);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 

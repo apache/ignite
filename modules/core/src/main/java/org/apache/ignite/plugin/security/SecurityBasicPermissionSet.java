@@ -55,7 +55,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     @GridToStringInclude
     private transient Map<String, Collection<SecurityPermission>> servicePermissions = isSecurityCompatibilityMode()
             ? compatibleServicePermissions()
-            : new HashMap<String, Collection<SecurityPermission>>();
+            : new HashMap<>();
 
     /** System permissions. */
     @GridToStringInclude

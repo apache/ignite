@@ -28,5 +28,5 @@ import java.util.Map;
 public class HadoopMapReduceEmbeddedSelfTestState {
     /** */
     public static Map<String, Boolean> flags = HadoopSharedMap.map(HadoopMapReduceEmbeddedSelfTestState.class)
-        .put("flags", new HashMap<String, Boolean>());
+        .put("flags", new HashMap<>());
 }

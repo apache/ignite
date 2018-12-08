@@ -111,7 +111,7 @@ public final class GridRouterFactory {
      * @return Collection of currently running {@link GridTcpRouter}s.
      */
     public static Collection<GridTcpRouter> allTcpRouters() {
-        return new ArrayList<GridTcpRouter>(tcpRouters.values());
+        return new ArrayList<>(tcpRouters.values());
     }
 
     /**

@@ -43,7 +43,7 @@ public class BasicUserNameMapperSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testEmptyMappings() throws Exception {
-        checkNullOrEmptyMappings(new HashMap<String, String>());
+        checkNullOrEmptyMappings(new HashMap<>());
     }
 
     /**

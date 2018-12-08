@@ -72,7 +72,7 @@ public class IgfsMetaUpdatePropertiesProcessor implements EntryProcessor<IgniteU
 
         Map<String, String> tmp = oldInfo.properties();
 
-        tmp = tmp == null ? new GridLeanMap<String, String>(props.size()) : new GridLeanMap<>(tmp);
+        tmp = tmp == null ? new GridLeanMap<>(props.size()) : new GridLeanMap<>(tmp);
 
         for (Map.Entry<String, String> e : props.entrySet()) {
             if (e.getValue() == null)

@@ -28,7 +28,7 @@ public class GridSqlSubquery extends GridSqlElement {
      * @param subQry Subquery.
      */
     public GridSqlSubquery(GridSqlQuery subQry) {
-        super(new ArrayList<GridSqlAst>(1));
+        super(new ArrayList<>(1));
 
         addChild(subQry);
     }

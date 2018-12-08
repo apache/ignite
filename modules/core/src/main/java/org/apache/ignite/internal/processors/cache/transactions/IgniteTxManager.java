@@ -1911,7 +1911,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     if (log.isDebugEnabled())
                         log.debug("Transaction is preparing (will wait): " + tx);
 
-                    final GridFutureAdapter<Boolean> fut0 = fut != null ? fut : new GridFutureAdapter<Boolean>();
+                    final GridFutureAdapter<Boolean> fut0 = fut != null ? fut : new GridFutureAdapter<>();
 
                     final int txNum0 = txNum;
 

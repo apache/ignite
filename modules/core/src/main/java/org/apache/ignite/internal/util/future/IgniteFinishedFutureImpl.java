@@ -41,7 +41,7 @@ public class IgniteFinishedFutureImpl<V> extends IgniteFutureImpl<V> {
      * @param err Error.
      */
     public IgniteFinishedFutureImpl(Throwable err) {
-        super(new GridFinishedFuture<V>(err));
+        super(new GridFinishedFuture<>(err));
     }
 
     /** {@inheritDoc} */

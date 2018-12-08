@@ -273,9 +273,9 @@ public class GridResourceIoc {
                         T2<List<GridResourceField>, List<GridResourceMethod>> t2 = annMap.get(ann.annotationType());
 
                         if (t2 == null) {
-                            t2 = new T2<List<GridResourceField>, List<GridResourceMethod>>(
-                                new ArrayList<GridResourceField>(),
-                                new ArrayList<GridResourceMethod>());
+                            t2 = new T2<>(
+                                    new ArrayList<>(),
+                                    new ArrayList<>());
 
                             annMap.put(ann.annotationType(), t2);
                         }
@@ -298,9 +298,9 @@ public class GridResourceIoc {
                         T2<List<GridResourceField>, List<GridResourceMethod>> t2 = annMap.get(ann.annotationType());
 
                         if (t2 == null) {
-                            t2 = new T2<List<GridResourceField>, List<GridResourceMethod>>(
-                                new ArrayList<GridResourceField>(),
-                                new ArrayList<GridResourceMethod>());
+                            t2 = new T2<>(
+                                    new ArrayList<>(),
+                                    new ArrayList<>());
 
                             annMap.put(ann.annotationType(), t2);
                         }

@@ -173,7 +173,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** Stores pending initialization. */
     private final Collection<StoreInfo> pendingStores =
-        Collections.newSetFromMap(new ConcurrentHashMap<StoreInfo, Boolean>());
+        Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     /** Lock for store lifecycle operations. */
     private final ReadWriteLock storeLock = new ReentrantReadWriteLock();

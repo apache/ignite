@@ -41,7 +41,7 @@ public class HadoopTaskExecutionSelfTestValues {
 
     /** Working directory of each task. */
     public static final Map<String, String> taskWorkDirs = m.put("taskWorkDirs",
-        new ConcurrentHashMap<String, String>());
+            new ConcurrentHashMap<>());
 
     /** Mapper id to fail. */
     public static final AtomicInteger failMapperId = m.put("failMapperId", new AtomicInteger());

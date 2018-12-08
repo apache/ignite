@@ -54,7 +54,7 @@ public class BasicIgniteTestActivator extends IgniteAbstractOsgiContextActivator
         flags.onBeforeStartInvoked = Boolean.TRUE;
 
         // Export the flags as an OSGi service.
-        ctx.registerService(TestOsgiFlags.class, flags, new Hashtable<String, Object>());
+        ctx.registerService(TestOsgiFlags.class, flags, new Hashtable<>());
     }
 
     /** {@inheritDoc} */

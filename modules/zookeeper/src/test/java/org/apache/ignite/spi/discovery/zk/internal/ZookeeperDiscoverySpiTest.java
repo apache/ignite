@@ -1020,7 +1020,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
                 TestFastStopProcessCustomMessage msg = new TestFastStopProcessCustomMessage(false, payload++);
 
-                expCrdMsgs.add(new T3<AffinityTopologyVersion, UUID, DiscoveryCustomMessage>(topVer, sndId, msg));
+                expCrdMsgs.add(new T3<>(topVer, sndId, msg));
 
                 discoveryMgr.sendCustomEvent(msg);
 
@@ -1041,14 +1041,14 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
                 TestFastStopProcessCustomMessage msg = new TestFastStopProcessCustomMessage(true, payload++);
 
-                expCrdMsgs.add(new T3<AffinityTopologyVersion, UUID, DiscoveryCustomMessage>(topVer, sndId, msg));
+                expCrdMsgs.add(new T3<>(topVer, sndId, msg));
 
                 discoveryMgr.sendCustomEvent(msg);
 
                 TestFastStopProcessCustomMessageAck ackMsg = new TestFastStopProcessCustomMessageAck(msg.payload);
 
-                expCrdMsgs.add(new T3<AffinityTopologyVersion, UUID, DiscoveryCustomMessage>(topVer, crdId, ackMsg));
-                expNodesMsgs.add(new T3<AffinityTopologyVersion, UUID, DiscoveryCustomMessage>(topVer, crdId, ackMsg));
+                expCrdMsgs.add(new T3<>(topVer, crdId, ackMsg));
+                expNodesMsgs.add(new T3<>(topVer, crdId, ackMsg));
 
                 doSleep(200); // Wait some time to check extra messages are not received.
 

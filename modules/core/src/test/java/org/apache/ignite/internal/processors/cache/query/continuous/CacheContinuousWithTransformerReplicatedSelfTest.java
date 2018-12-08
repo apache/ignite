@@ -396,7 +396,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
 
         ContinuousQueryWithTransformer<Integer, Employee, String> qry = new ContinuousQueryWithTransformer<>();
 
-        qry.setInitialQuery(new ScanQuery<Integer, Employee>());
+        qry.setInitialQuery(new ScanQuery<>());
         qry.setRemoteFilterFactory((Factory<? extends CacheEntryEventFilter<Integer, Employee>>)rmtFilterFactory);
         qry.setRemoteTransformerFactory(
             (Factory<? extends IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Employee>, String>>)factory);

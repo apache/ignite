@@ -166,7 +166,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
                 Collections.sort(keys);
 
                 try (Transaction tx = grid.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    Map<Integer, Integer> map = cache.getAll(new LinkedHashSet<Integer>(keys));
+                    Map<Integer, Integer> map = cache.getAll(new LinkedHashSet<>(keys));
 
                     for (Map.Entry<Integer, Integer> entry : map.entrySet()) {
                         assertNotNull("Null value received from cache [key=" + entry.getKey() + "]", entry.getValue());

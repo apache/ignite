@@ -39,7 +39,7 @@ public class HadoopShutdownHookManager {
     }
 
     /** */
-    private Set<Runnable> hooks = Collections.synchronizedSet(new HashSet<Runnable>());
+    private Set<Runnable> hooks = Collections.synchronizedSet(new HashSet<>());
 
     /** */
     private AtomicBoolean shutdownInProgress = new AtomicBoolean(false);

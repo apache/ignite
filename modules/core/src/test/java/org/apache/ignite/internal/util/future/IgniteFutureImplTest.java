@@ -331,7 +331,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
         assert latch1.await(1, TimeUnit.SECONDS);
 
         checkAsyncListenerOnError(err0, fut);
-        checkAsyncListenerOnError(err0, createFuture(new GridFinishedFuture<String>(err0)));
+        checkAsyncListenerOnError(err0, createFuture(new GridFinishedFuture<>(err0)));
     }
 
     /**
@@ -720,7 +720,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
      * @param err Err.
      */
     private void checkChainedOnErrorFinishedFuture(final Exception err) throws Exception {
-        IgniteFutureImpl<String> fut = createFuture(new GridFinishedFuture<String>(err));
+        IgniteFutureImpl<String> fut = createFuture(new GridFinishedFuture<>(err));
 
         // Chain callback will be invoked in specific executor.
         IgniteFuture<Integer> chained1 = fut.chainAsync(new C1<IgniteFuture<String>, Integer>() {

@@ -5195,7 +5195,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         Map<String, List<String>> keys = new HashMap<>();
 
         for (int i = 0; i < gridCount(); ++i)
-            keys.put(grid(i).name(), new ArrayList<String>());
+            keys.put(grid(i).name(), new ArrayList<>());
 
         for (int i = 0; i < 500; ++i) {
             String key = "key" + i;

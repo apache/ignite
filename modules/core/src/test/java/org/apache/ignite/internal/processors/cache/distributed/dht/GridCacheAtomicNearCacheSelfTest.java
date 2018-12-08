@@ -201,7 +201,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         Map<Integer, Collection<UUID>> readersMap = new HashMap<>();
 
         for (Integer key : nearKeys.keySet())
-            readersMap.put(key, new HashSet<UUID>());
+            readersMap.put(key, new HashSet<>());
 
         int val = 4;
 
@@ -376,7 +376,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         Map<Integer, Collection<UUID>> readersMap = new HashMap<>();
 
         for (Integer key : nearKeys)
-            readersMap.put(key, new HashSet<UUID>());
+            readersMap.put(key, new HashSet<>());
 
         int val = 4;
 

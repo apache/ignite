@@ -49,7 +49,7 @@ public class GridServiceDeploymentCompoundFuture extends GridCompoundFuture<Obje
         synchronized (this) {
             if (this.err == null) {
                 this.err = new ServiceDeploymentException("Failed to deploy some services.",
-                    new ArrayList<ServiceConfiguration>());
+                        new ArrayList<>());
             }
 
             this.err.getFailedConfigurations().add(depFut.configuration());

@@ -104,7 +104,7 @@ public final class GridTestProperties {
         assert cfgFile != null && cfgFile.exists();
         assert !cfgFile.isDirectory();
 
-        dfltProps = Collections.unmodifiableMap(loadFromFile(new HashMap<String, String>(), cfgFile));
+        dfltProps = Collections.unmodifiableMap(loadFromFile(new HashMap<>(), cfgFile));
 
         if ("false".equals(System.getProperty("IGNITE_TEST_PROP_DISABLE_LOG4J", "false"))) {
             String user = System.getProperty("user.name");

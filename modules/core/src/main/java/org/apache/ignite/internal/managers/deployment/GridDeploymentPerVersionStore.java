@@ -722,7 +722,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 if (found || missedRsrcCacheSize > 0) {
                     if (ldrRsrcCache == null)
                         ldrRsrcCache = F.addIfAbsent(rsrcCache, meta.classLoaderId(),
-                            new ConcurrentHashMap<String, Boolean>());
+                                new ConcurrentHashMap<>());
 
                     // This is the only place where cache could have been changed,
                     // so we remove only here if classloader have been undeployed
@@ -1053,7 +1053,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
             log.debug("Created new deployment: " + dep);
 
         if (isCache) {
-            List<SharedDeployment> deps = F.addIfAbsent(cache, meta.userVersion(), new LinkedList<SharedDeployment>());
+            List<SharedDeployment> deps = F.addIfAbsent(cache, meta.userVersion(), new LinkedList<>());
 
             assert deps != null;
 

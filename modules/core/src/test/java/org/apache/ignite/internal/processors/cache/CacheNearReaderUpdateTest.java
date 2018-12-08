@@ -243,7 +243,7 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
                         IgniteCache<Integer, Integer> cache;
 
                         if (ignite.configuration().isClientMode())
-                            cache = ignite.createNearCache(cacheName, new NearCacheConfiguration<Integer, Integer>());
+                            cache = ignite.createNearCache(cacheName, new NearCacheConfiguration<>());
                         else
                             cache = ignite.cache(cacheName);
 
@@ -358,7 +358,7 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
         }
 
         if (nearCache)
-            ccfg.setNearConfiguration(new NearCacheConfiguration<Integer, Integer>());
+            ccfg.setNearConfiguration(new NearCacheConfiguration<>());
 
         return ccfg;
     }

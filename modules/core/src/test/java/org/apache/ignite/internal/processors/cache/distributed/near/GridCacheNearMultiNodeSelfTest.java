@@ -224,8 +224,8 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteEx grid = grid(i);
 
-            map.put(grid.cluster().localNode().id(), new T2<Set<Integer>, Set<Integer>>(new HashSet<Integer>(),
-                new HashSet<Integer>()));
+            map.put(grid.cluster().localNode().id(), new T2<>(new HashSet<>(),
+                    new HashSet<>()));
         }
 
         for (int key = 1; key <= cnt; key++) {

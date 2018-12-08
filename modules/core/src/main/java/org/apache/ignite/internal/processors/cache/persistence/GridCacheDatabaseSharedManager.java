@@ -800,7 +800,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 persistenceCfg.getCheckpointThreads(),
                 persistenceCfg.getCheckpointThreads(),
                 30_000,
-                new LinkedBlockingQueue<Runnable>()
+                    new LinkedBlockingQueue<>()
             );
     }
 
@@ -2597,8 +2597,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (memPlc.config().isPersistenceEnabled()) {
                 PageMemoryEx pageMem = (PageMemoryEx)memPlc.pageMemory();
 
-                cpEntities.add(new IgniteBiTuple<PageMemory, Collection<FullPageId>>(
-                    pageMem, (pageMem).beginCheckpoint()));
+                cpEntities.add(new IgniteBiTuple<>(
+                        pageMem, (pageMem).beginCheckpoint()));
             }
         }
 

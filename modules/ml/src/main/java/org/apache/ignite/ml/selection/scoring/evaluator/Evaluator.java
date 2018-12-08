@@ -50,11 +50,11 @@ public class Evaluator {
         Accuracy<L> metric) {
         double metricRes;
 
-        try (LabelPairCursor<L> cursor = new CacheBasedLabelPairCursor<L, K, V>(
-            dataCache,
-            featureExtractor,
-            lbExtractor,
-            mdl
+        try (LabelPairCursor<L> cursor = new CacheBasedLabelPairCursor<>(
+                dataCache,
+                featureExtractor,
+                lbExtractor,
+                mdl
         )) {
             metricRes = metric.score(cursor.iterator());
         }
@@ -86,12 +86,12 @@ public class Evaluator {
         Accuracy<L> metric) {
         double metricRes;
 
-        try (LabelPairCursor<L> cursor = new CacheBasedLabelPairCursor<L, K, V>(
-            dataCache,
-            filter,
-            featureExtractor,
-            lbExtractor,
-            mdl
+        try (LabelPairCursor<L> cursor = new CacheBasedLabelPairCursor<>(
+                dataCache,
+                filter,
+                featureExtractor,
+                lbExtractor,
+                mdl
         )) {
             metricRes = metric.score(cursor.iterator());
         }

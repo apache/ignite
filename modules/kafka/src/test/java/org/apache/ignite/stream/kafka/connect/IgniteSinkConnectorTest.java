@@ -298,7 +298,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Map.Entry<String, String> extract(SinkRecord msg) {
             String[] parts = ((String)msg.value()).split("_");
-            return new AbstractMap.SimpleEntry<String, String>(parts[0], parts[1]);
+            return new AbstractMap.SimpleEntry<>(parts[0], parts[1]);
         }
     }
 }

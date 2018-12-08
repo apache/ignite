@@ -428,8 +428,8 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
         Segment(int initCap, float loadFactor) {
             this.loadFactor = loadFactor;
 
-            segEntryQ = qPlc == PER_SEGMENT_Q ? new ArrayDeque<HashEntry<K, V>>() :
-                qPlc == PER_SEGMENT_Q_OPTIMIZED_RMV ? new ConcurrentLinkedDeque8<HashEntry<K, V>>() : null;
+            segEntryQ = qPlc == PER_SEGMENT_Q ? new ArrayDeque<>() :
+                qPlc == PER_SEGMENT_Q_OPTIMIZED_RMV ? new ConcurrentLinkedDeque8<>() : null;
 
             setTable(HashEntry.<K, V>newArray(initCap));
         }
@@ -1021,7 +1021,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
         this.maxCap = maxCap;
         this.qPlc = qPlc;
 
-        entryQ = qPlc == SINGLE_Q ? new ConcurrentLinkedDeque8<HashEntry<K, V>>() : null;
+        entryQ = qPlc == SINGLE_Q ? new ConcurrentLinkedDeque8<>() : null;
 
         // Find power-of-two sizes best matching arguments
         int sshift = 0;

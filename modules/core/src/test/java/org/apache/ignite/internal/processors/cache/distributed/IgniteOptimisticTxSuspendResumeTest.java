@@ -775,7 +775,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
             ccfg.setBackups(backups);
 
         if (nearCache)
-            ccfg.setNearConfiguration(new NearCacheConfiguration<Integer, Integer>());
+            ccfg.setNearConfiguration(new NearCacheConfiguration<>());
 
         return ccfg;
     }

@@ -144,10 +144,10 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
     private Connection connection;
 
     /** Stores the current JMS Sessions. */
-    private Set<Session> sessions = Collections.newSetFromMap(new ConcurrentHashMap<Session, Boolean>());
+    private Set<Session> sessions = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     /** Message consumers. */
-    private Set<MessageConsumer> consumers = Collections.newSetFromMap(new ConcurrentHashMap<MessageConsumer, Boolean>());
+    private Set<MessageConsumer> consumers = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     /** Message listeners. */
     private Set<IgniteJmsMessageListener> listeners = Collections.newSetFromMap(new ConcurrentHashMap<IgniteJmsMessageListener, Boolean>());

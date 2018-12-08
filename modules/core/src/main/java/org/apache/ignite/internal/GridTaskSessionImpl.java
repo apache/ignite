@@ -641,8 +641,8 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
 
         synchronized (mux) {
             lsnrs = this.lsnrs != null ?
-                new ArrayList<ComputeTaskSessionAttributeListener>(this.lsnrs.size() + 1) :
-                new ArrayList<ComputeTaskSessionAttributeListener>(1);
+                    new ArrayList<>(this.lsnrs.size() + 1) :
+                    new ArrayList<>(1);
 
             if (this.lsnrs != null)
                 lsnrs.addAll(this.lsnrs);

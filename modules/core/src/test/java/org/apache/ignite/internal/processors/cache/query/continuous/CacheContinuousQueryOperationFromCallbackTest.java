@@ -255,9 +255,9 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
 
             for (int idx = 0; idx < NODES; idx++) {
                 Set<T2<QueryTestKey, QueryTestValue>> evts = Collections.
-                    newSetFromMap(new ConcurrentHashMap<T2<QueryTestKey, QueryTestValue>, Boolean>());
+                    newSetFromMap(new ConcurrentHashMap<>());
                 Set<T2<QueryTestKey, QueryTestValue>> evtsFromCb = Collections.
-                    newSetFromMap(new ConcurrentHashMap<T2<QueryTestKey, QueryTestValue>, Boolean>());
+                    newSetFromMap(new ConcurrentHashMap<>());
 
                 IgniteCache<Object, Object> cache = grid(idx).getOrCreateCache(ccfg.getName());
 

@@ -123,7 +123,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
         assert grid(0).cluster().nodes().size() == gridCount();
 
         QueryCursor<Cache.Entry<UUID, Person>> qry =
-            cache0.query(new SqlQuery<UUID, Person>(Person.class, "salary < 2000"));
+            cache0.query(new SqlQuery<>(Person.class, "salary < 2000"));
 
         // Execute on full projection, duplicates are expected.
         Collection<Cache.Entry<UUID, Person>> entries = qry.getAll();
@@ -187,7 +187,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
         };
 
         try {
-            ScanQuery<Integer, Integer> qry = new ScanQuery<Integer, Integer>();
+            ScanQuery<Integer, Integer> qry = new ScanQuery<>();
 
             qry.setPageSize(pageSize);
 

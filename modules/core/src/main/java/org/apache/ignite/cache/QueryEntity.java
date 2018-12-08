@@ -132,7 +132,7 @@ public class QueryEntity implements Serializable {
         _notNullFields = other._notNullFields != null ? new HashSet<>(other._notNullFields) : null;
 
         defaultFieldValues = other.defaultFieldValues != null ? new HashMap<>(other.defaultFieldValues)
-            : new HashMap<String, Object>();
+            : new HashMap<>();
 
         fieldsPrecision = other.fieldsPrecision != null ? new HashMap<>(other.fieldsPrecision) : new HashMap<>();
 

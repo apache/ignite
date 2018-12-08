@@ -127,7 +127,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                     cliConnCfg.getThreadPoolSize(),
                     cliConnCfg.getThreadPoolSize(),
                     0,
-                    new LinkedBlockingQueue<Runnable>());
+                        new LinkedBlockingQueue<>());
 
                 Exception lastErr = null;
 

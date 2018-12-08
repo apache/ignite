@@ -705,8 +705,8 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
             // If there is nothing to start, return finished future with empty result.
             if (nodeCallCnt == 0)
-                return new GridFinishedFuture<Collection<ClusterStartNodeResult>>(
-                    Collections.<ClusterStartNodeResult>emptyList());
+                return new GridFinishedFuture<>(
+                        Collections.<ClusterStartNodeResult>emptyList());
 
             // Exceeding max line width for readability.
             GridCompoundFuture<ClusterStartNodeResult, Collection<ClusterStartNodeResult>> fut = 

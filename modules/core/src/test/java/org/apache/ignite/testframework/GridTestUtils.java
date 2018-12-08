@@ -254,8 +254,8 @@ public final class GridTestUtils {
 
         if (val == null) {
             IgnitePair<Queue<Message>> old = msgMap.putIfAbsent(key,
-                val = new IgnitePair<Queue<Message>>(
-                    new ConcurrentLinkedQueue<Message>(), new ConcurrentLinkedQueue<Message>()));
+                val = new IgnitePair<>(
+                        new ConcurrentLinkedQueue<>(), new ConcurrentLinkedQueue<>()));
 
             if (old != null)
                 val = old;

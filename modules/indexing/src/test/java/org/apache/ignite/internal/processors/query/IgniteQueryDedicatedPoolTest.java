@@ -159,7 +159,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
             for (byte b = 0; b < Byte.MAX_VALUE; ++b)
                 cache.put(b, b);
 
-            QueryCursor<Cache.Entry<Byte, Byte>> cursor = cache.query(new SpiQuery<Byte, Byte>());
+            QueryCursor<Cache.Entry<Byte, Byte>> cursor = cache.query(new SpiQuery<>());
 
             List<Cache.Entry<Byte, Byte>> all = cursor.getAll();
 

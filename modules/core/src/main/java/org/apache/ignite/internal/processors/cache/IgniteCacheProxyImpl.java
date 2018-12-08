@@ -605,7 +605,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
             return new QueryCursor<Cache.Entry<K, V>>() {
                 @Override public Iterator<Cache.Entry<K, V>> iterator() {
-                    return cur != null ? cur.iterator() : new GridEmptyIterator<Cache.Entry<K, V>>();
+                    return cur != null ? cur.iterator() : new GridEmptyIterator<>();
                 }
 
                 @Override public List<Cache.Entry<K, V>> getAll() {
@@ -1672,7 +1672,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<K, V> createAsyncInstance() {
-        return new IgniteCacheProxyImpl<K, V>(
+        return new IgniteCacheProxyImpl<>(
                 ctx,
                 delegate,
                 true

@@ -41,7 +41,7 @@ public class GridSetWrapperSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testMultipleValuesSet() throws Exception {
-        Set<String> set = new GridSetWrapper<>(new HashMap<String, Object>());
+        Set<String> set = new GridSetWrapper<>(new HashMap<>());
 
         set.add("v1");
         set.add("v2");
@@ -77,7 +77,7 @@ public class GridSetWrapperSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testSetRemove() throws Exception {
-        Collection<String> set = new GridSetWrapper<>(new HashMap<String, Object>());
+        Collection<String> set = new GridSetWrapper<>(new HashMap<>());
 
         // Put 1 element.
         set.add("v1");
@@ -118,7 +118,7 @@ public class GridSetWrapperSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testSetRemoveAll() throws Exception {
-        Collection<String> set = new GridSetWrapper<>(new HashMap<String, Object>());
+        Collection<String> set = new GridSetWrapper<>(new HashMap<>());
 
         set.add("v1");
         set.add("v2");
@@ -126,7 +126,7 @@ public class GridSetWrapperSelfTest extends GridCommonAbstractTest {
         set.add("v4");
         set.add("v5");
 
-        set.removeAll(IgniteUtils.addAll(new HashSet<String>(), "v2", "v4", "v5"));
+        set.removeAll(IgniteUtils.addAll(new HashSet<>(), "v2", "v4", "v5"));
 
         assertEquals(2, set.size());
 
@@ -139,7 +139,7 @@ public class GridSetWrapperSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testSetClear() throws Exception {
-        Collection<String> set = new GridSetWrapper<>(new HashMap<String, Object>());
+        Collection<String> set = new GridSetWrapper<>(new HashMap<>());
 
         set.add("v1");
         set.add("v2");
@@ -157,7 +157,7 @@ public class GridSetWrapperSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testIterator() throws Exception {
-        Set<String> set = new GridSetWrapper<>(new HashMap<String, Object>());
+        Set<String> set = new GridSetWrapper<>(new HashMap<>());
 
         set.add("v1");
         set.add("v2");

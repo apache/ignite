@@ -824,7 +824,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
             Set<IntegerKey> keys = map.get(part);
 
             if (keys == null) {
-                map.putIfAbsent(part, new CopyOnWriteArraySet<IntegerKey>());
+                map.putIfAbsent(part, new CopyOnWriteArraySet<>());
 
                 keys = map.get(part);
             }

@@ -481,7 +481,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         IgniteCache<Object, Object> cache,
         int expEvts)
         throws Exception {
-        evts = Collections.synchronizedList(new ArrayList<CacheEntryEvent<?, ?>>());
+        evts = Collections.synchronizedList(new ArrayList<>());
 
         evtsLatch = new CountDownLatch(expEvts);
 
@@ -711,7 +711,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
      * @throws Exception If failed.
      */
     private void checkFilter(final IgniteCache<Object, Object> cache, Map<Object, Object> vals) throws Exception {
-        evts = Collections.synchronizedList(new ArrayList<CacheEntryEvent<?, ?>>());
+        evts = Collections.synchronizedList(new ArrayList<>());
 
         final int expEvts = (vals.size() / 2) * 4; // Remove, create, update and expire for half of modified entries.
 
@@ -866,7 +866,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         if (expire)
             expEvts += 2;
 
-        evts = Collections.synchronizedList(new ArrayList<CacheEntryEvent<?, ?>>());
+        evts = Collections.synchronizedList(new ArrayList<>());
 
         evtsLatch = new CountDownLatch(expEvts);
 

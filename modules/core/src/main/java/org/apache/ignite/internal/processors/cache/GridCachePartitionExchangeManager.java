@@ -3013,7 +3013,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             int order = grp.config().getRebalanceOrder();
 
                             if (orderMap.get(order) == null)
-                                orderMap.put(order, new ArrayList<Integer>(size));
+                                orderMap.put(order, new ArrayList<>(size));
 
                             orderMap.get(order).add(grpId);
                         }

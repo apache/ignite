@@ -1283,7 +1283,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
         // Create descriptor.
         GridUriDeploymentUnitDescriptor desc = new GridUriDeploymentUnitDescriptor(uri, file, tstamp, ldr, md5);
 
-        newUnitReceived(desc, clss != null && !clss.isEmpty() ? new ArrayList<Class<?>>(clss) : null);
+        newUnitReceived(desc, clss != null && !clss.isEmpty() ? new ArrayList<>(clss) : null);
     }
 
     /**

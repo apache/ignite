@@ -37,7 +37,7 @@ public class GridLeanSet<E> extends GridSetWrapper<E> implements Cloneable {
      * load factor, and concurrencyLevel.
      */
     public GridLeanSet() {
-        super(new GridLeanMap<E, Object>());
+        super(new GridLeanMap<>());
     }
 
     /**
@@ -46,7 +46,7 @@ public class GridLeanSet<E> extends GridSetWrapper<E> implements Cloneable {
      * @param size Initial size.
      */
     public GridLeanSet(int size) {
-        super(new GridLeanMap<E, Object>(size));
+        super(new GridLeanMap<>(size));
     }
 
     /**

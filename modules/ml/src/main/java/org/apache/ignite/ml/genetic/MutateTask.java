@@ -65,7 +65,7 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
      * @return Gene primary keys
      */
     private List<Long> getMutatedGenes() {
-        List<Long> mutatedGenes = new ArrayList<Long>();
+        List<Long> mutatedGenes = new ArrayList<>();
         cfg.getChromosomeLen();
 
         for (int i = 0; i < cfg.getChromosomeLen(); i++)
@@ -148,7 +148,7 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
      * @return Primary key of Gene
      */
     private long selectGeneByChromsomeCriteria(int k) {
-        List<Gene> genes = new ArrayList<Gene>();
+        List<Gene> genes = new ArrayList<>();
 
         StringBuffer sbSqlClause = new StringBuffer("_val like '");
         sbSqlClause.append("%");

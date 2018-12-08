@@ -1186,7 +1186,7 @@ public class PlatformUtils {
                         int typeId = reader.readInt();
                         int fieldId = reader.readInt();
 
-                        return new IgniteBiTuple<String, BinaryFieldMetadata>(name,
+                        return new IgniteBiTuple<>(name,
                                 new BinaryFieldMetadata(typeId, fieldId));
                     }
                 });

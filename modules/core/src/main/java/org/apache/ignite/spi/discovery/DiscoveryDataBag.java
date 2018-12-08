@@ -257,7 +257,7 @@ public class DiscoveryDataBag {
      */
     public void addNodeSpecificData(Integer cmpId, Serializable data) {
         if (!nodeSpecificData.containsKey(DEFAULT_KEY))
-            nodeSpecificData.put(DEFAULT_KEY, new HashMap<Integer, Serializable>());
+            nodeSpecificData.put(DEFAULT_KEY, new HashMap<>());
 
         nodeSpecificData.get(DEFAULT_KEY).put(cmpId, data);
     }

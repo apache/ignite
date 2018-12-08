@@ -159,7 +159,7 @@ public class HadoopIpcToNioAdapter<T> {
             }
         }
         catch (IOException | IgniteCheckedException e) {
-            return new GridNioFinishedFuture<Object>(e);
+            return new GridNioFinishedFuture<>(e);
         }
 
         return new GridNioFinishedFuture<>((Object)null);

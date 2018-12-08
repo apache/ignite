@@ -54,7 +54,7 @@ public class PlatformJavaLifecycleTask extends ComputeTaskAdapter<Object, List<I
     private static class LifecycleJob extends ComputeJobAdapter {
         /** {@inheritDoc} */
         @Nullable @Override public Object execute() {
-            List<Integer> res = new ArrayList<Integer>();
+            List<Integer> res = new ArrayList<>();
 
             res.add(PlatformJavaLifecycleBean.beforeStartCnt);
             res.add(PlatformJavaLifecycleBean.afterStartCnt);

@@ -47,7 +47,7 @@ import org.jetbrains.annotations.Nullable;
 public class GridDebug {
     /** */
     private static final AtomicReference<ConcurrentLinkedQueue<Item>> que =
-        new AtomicReference<>(new ConcurrentLinkedQueue<Item>());
+        new AtomicReference<>(new ConcurrentLinkedQueue<>());
 
     /** */
     private static final SimpleDateFormat DEBUG_DATE_FMT = new SimpleDateFormat("HH:mm:ss,SSS");
@@ -252,7 +252,7 @@ public class GridDebug {
      * @return Empty string (useful for assertions like {@code assert x == 0 : D.dumpWithReset();} ).
      */
     public static String dumpWithReset() {
-        return dumpWithReset(new ConcurrentLinkedQueue<Item>(), null);
+        return dumpWithReset(new ConcurrentLinkedQueue<>(), null);
     }
 
     /**
@@ -301,7 +301,7 @@ public class GridDebug {
         ConcurrentLinkedQueue<Item> old = que.get();
 
         if (old != null) // Was not stopped.
-            que.compareAndSet(old, new ConcurrentLinkedQueue<Item>());
+            que.compareAndSet(old, new ConcurrentLinkedQueue<>());
     }
 
     /**

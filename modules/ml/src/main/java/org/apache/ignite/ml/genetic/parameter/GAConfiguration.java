@@ -75,7 +75,7 @@ public class GAConfiguration {
     private int populationSize = 500;
 
     /** Gene pool is the sum of ALL genes utilized to create chromsomes */
-    private List<Gene> genePool = new ArrayList<Gene>();
+    private List<Gene> genePool = new ArrayList<>();
 
     /** Number of genes within a chromosome */
     private int chromosomeLen = 0;

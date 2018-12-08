@@ -334,14 +334,14 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 try {
                     IgniteCache<Integer, TestValue> cache = g.cache(DEFAULT_CACHE_NAME);
 
-                    refs.add(new WeakReference<Object>(cacheContext(cache)));
+                    refs.add(new WeakReference<>(cacheContext(cache)));
 
                     Map<Integer, TestValue> m = new HashMap<>();
 
                     for (int i = 0; i < 10; i++) {
                         TestValue val = new TestValue(i);
 
-                        refs.add(new WeakReference<Object>(val));
+                        refs.add(new WeakReference<>(val));
 
                         m.put(i, val);
 
@@ -375,11 +375,11 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 try {
                     IgniteCache<Integer, TestValue> cache = g.cache(DEFAULT_CACHE_NAME);
 
-                    refs.add(new WeakReference<Object>(cacheContext(cache)));
+                    refs.add(new WeakReference<>(cacheContext(cache)));
 
                     TestValue val = new TestValue(0);
 
-                    refs.add(new WeakReference<Object>(val));
+                    refs.add(new WeakReference<>(val));
 
                     cache.putIfAbsentAsync(0, val).get();
                 }
@@ -408,14 +408,14 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 try {
                     IgniteCache<Integer, TestValue> cache = g.cache(DEFAULT_CACHE_NAME);
 
-                    refs.add(new WeakReference<Object>(cacheContext(cache)));
+                    refs.add(new WeakReference<>(cacheContext(cache)));
 
                     Collection<IgniteFuture<?>> futs = new ArrayList<>(1000);
 
                     for (int i = 0; i < 1000; i++) {
                         TestValue val = new TestValue(i);
 
-                        refs.add(new WeakReference<Object>(val));
+                        refs.add(new WeakReference<>(val));
 
                         futs.add(cache.putIfAbsentAsync(0, val));
                     }
@@ -448,13 +448,13 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 try {
                     IgniteCache<Integer, TestValue> cache = g.cache(DEFAULT_CACHE_NAME);
 
-                    refs.add(new WeakReference<Object>(cacheContext(cache)));
+                    refs.add(new WeakReference<>(cacheContext(cache)));
 
                     Transaction tx = g.transactions().txStart();
 
                     TestValue val = new TestValue(0);
 
-                    refs.add(new WeakReference<Object>(val));
+                    refs.add(new WeakReference<>(val));
 
                     cache.put(0, val);
 
@@ -485,14 +485,14 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 try {
                     IgniteCache<Integer, TestValue> cache = g.cache(DEFAULT_CACHE_NAME);
 
-                    refs.add(new WeakReference<Object>(cacheContext(cache)));
+                    refs.add(new WeakReference<>(cacheContext(cache)));
 
                     Transaction tx = g.transactions().txStart();
 
                     for (int i = 0; i < 1000; i++) {
                         TestValue val = new TestValue(i);
 
-                        refs.add(new WeakReference<Object>(val));
+                        refs.add(new WeakReference<>(val));
 
                         cache.putAsync(i, val).get();
                     }

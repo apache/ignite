@@ -297,7 +297,7 @@ public final class X {
             return null;
 
         try {
-            return !deep ? shallowClone(obj) : (T)deepClone(new GridLeanMap<Integer, Integer>(),
+            return !deep ? shallowClone(obj) : (T)deepClone(new GridLeanMap<>(),
                 new ArrayList<>(), obj, honorCloneable);
         }
         catch (Exception e) {

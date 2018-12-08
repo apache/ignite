@@ -104,7 +104,7 @@ class CacheContinuousQueryPartitionRecovery {
             assert entry.updateCounter() == 0L : entry;
 
             return F.<CacheEntryEvent<? extends K, ? extends V>>
-                asList(new CacheContinuousQueryEvent<K, V>(cache, cctx, entry));
+                asList(new CacheContinuousQueryEvent<>(cache, cctx, entry));
         }
 
         List<CacheEntryEvent<? extends K, ? extends V>> entries;
@@ -133,7 +133,7 @@ class CacheContinuousQueryPartitionRecovery {
 
                 return !entry.isFiltered() ?
                     F.<CacheEntryEvent<? extends K, ? extends V>>
-                        asList(new CacheContinuousQueryEvent<K, V>(cache, cctx, entry)) :
+                        asList(new CacheContinuousQueryEvent<>(cache, cctx, entry)) :
                     Collections.<CacheEntryEvent<? extends K, ? extends V>>emptyList();
             }
 
@@ -143,7 +143,7 @@ class CacheContinuousQueryPartitionRecovery {
 
                     for (CacheContinuousQueryEntry evt : pendingEvts.values()) {
                         if (evt != HOLE && !evt.isFiltered())
-                            entries.add(new CacheContinuousQueryEvent<K, V>(cache, cctx, evt));
+                            entries.add(new CacheContinuousQueryEvent<>(cache, cctx, evt));
                     }
 
                     pendingEvts.clear();
@@ -153,7 +153,7 @@ class CacheContinuousQueryPartitionRecovery {
                     lastFiredEvt = entry.updateCounter();
 
                     if (!entry.isFiltered())
-                        entries.add(new CacheContinuousQueryEvent<K, V>(cache, cctx, entry));
+                        entries.add(new CacheContinuousQueryEvent<>(cache, cctx, entry));
 
                     if (log.isDebugEnabled())
                         log.debug("Partition was lost [lastFiredEvt=" + lastFiredEvt +
@@ -210,7 +210,7 @@ class CacheContinuousQueryPartitionRecovery {
                     Map.Entry<Long, CacheContinuousQueryEntry> e = iter.next();
 
                     if (e.getValue() != HOLE && !e.getValue().isFiltered())
-                        entries.add(new CacheContinuousQueryEvent<K, V>(cache, cctx, e.getValue()));
+                        entries.add(new CacheContinuousQueryEvent<>(cache, cctx, e.getValue()));
 
                     lastFiredEvt = e.getKey();
 
@@ -236,7 +236,7 @@ class CacheContinuousQueryPartitionRecovery {
                         lastFiredEvt = e.getKey();
 
                         if (e.getValue() != HOLE && !e.getValue().isFiltered())
-                            entries.add(new CacheContinuousQueryEvent<K, V>(cache, cctx, pending));
+                            entries.add(new CacheContinuousQueryEvent<>(cache, cctx, pending));
 
                         iter.remove();
                     }

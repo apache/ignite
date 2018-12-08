@@ -31,7 +31,7 @@ public class DummyEventFilterFactory<T> implements Factory<CacheEntryEventFilter
 
     /** {@inheritDoc} */
     @Override public CacheEntryEventFilter<Integer, T> create() {
-        return new DummyEventFilter<T>();
+        return new DummyEventFilter<>();
     }
 
     /**

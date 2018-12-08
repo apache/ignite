@@ -107,7 +107,7 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
         final IgniteEx node1 = startGrid(1);
         final IgniteEx node2 = startGrid(2);
 
-        final IgniteCache<Object, Object> cache = node2.getOrCreateCache(new CacheConfiguration<Object, Object>("def")
+        final IgniteCache<Object, Object> cache = node2.getOrCreateCache(new CacheConfiguration<>("def")
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
         node0.services().deployNodeSingleton("myService", new TestServiceImpl());

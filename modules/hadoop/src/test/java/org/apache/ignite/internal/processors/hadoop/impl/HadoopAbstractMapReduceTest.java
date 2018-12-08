@@ -283,7 +283,7 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
             }
 
             if (!taskId.equals(prevTaskId))
-                tasks.put(taskId, new TreeMap<Integer,Long>());
+                tasks.put(taskId, new TreeMap<>());
 
             Integer pos = phaseOrders.get(taskPhase);
 

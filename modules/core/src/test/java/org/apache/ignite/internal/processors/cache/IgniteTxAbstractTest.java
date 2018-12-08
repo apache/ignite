@@ -261,7 +261,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
      */
     protected void checkRollback(TransactionConcurrency concurrency, TransactionIsolation isolation)
         throws Exception {
-        checkRollback(new ConcurrentHashMap<Integer, String>(), concurrency, isolation);
+        checkRollback(new ConcurrentHashMap<>(), concurrency, isolation);
     }
 
     /**

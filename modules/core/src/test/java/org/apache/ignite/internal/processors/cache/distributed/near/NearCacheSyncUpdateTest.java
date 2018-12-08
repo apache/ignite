@@ -162,7 +162,7 @@ public class NearCacheSyncUpdateTest extends GridCommonAbstractTest {
         ccfg.setBackups(1);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setAtomicityMode(atomicityMode);
-        ccfg.setNearConfiguration(new NearCacheConfiguration<Integer, Integer>());
+        ccfg.setNearConfiguration(new NearCacheConfiguration<>());
 
         return ccfg;
     }

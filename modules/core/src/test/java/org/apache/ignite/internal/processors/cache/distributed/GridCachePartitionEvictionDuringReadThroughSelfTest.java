@@ -64,7 +64,7 @@ public class GridCachePartitionEvictionDuringReadThroughSelfTest extends GridCom
                 .setOnheapCacheEnabled(true)
                 .setEvictionPolicy(new LruEvictionPolicy(100))
                 .setNearConfiguration(new NearCacheConfiguration<Integer, Integer>()
-                .setNearEvictionPolicy(new LruEvictionPolicy<Integer, Integer>()));
+                .setNearEvictionPolicy(new LruEvictionPolicy<>()));
 
         ccfg.setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.MINUTES, 1)))
             .setReadThrough(true)

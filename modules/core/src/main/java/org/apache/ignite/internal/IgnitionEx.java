@@ -1788,7 +1788,7 @@ public class IgnitionEx {
                 cfg.getPublicThreadPoolSize(),
                 cfg.getPublicThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>(),
+                    new LinkedBlockingQueue<>(),
                 GridIoPolicy.PUBLIC_POOL,
                 oomeHnd);
 
@@ -1802,7 +1802,7 @@ public class IgnitionEx {
                 cfg.getServiceThreadPoolSize(),
                 cfg.getServiceThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>(),
+                    new LinkedBlockingQueue<>(),
                 GridIoPolicy.SERVICE_POOL,
                 oomeHnd);
 
@@ -1816,7 +1816,7 @@ public class IgnitionEx {
                 cfg.getSystemThreadPoolSize(),
                 cfg.getSystemThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>(),
+                    new LinkedBlockingQueue<>(),
                 GridIoPolicy.SYSTEM_POOL,
                 oomeHnd);
 
@@ -1864,7 +1864,7 @@ public class IgnitionEx {
                 cfg.getManagementThreadPoolSize(),
                 cfg.getManagementThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>(),
+                    new LinkedBlockingQueue<>(),
                 GridIoPolicy.MANAGEMENT_POOL,
                 oomeHnd);
 
@@ -1881,7 +1881,7 @@ public class IgnitionEx {
                 cfg.getPeerClassLoadingThreadPoolSize(),
                 cfg.getPeerClassLoadingThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>(),
+                    new LinkedBlockingQueue<>(),
                 GridIoPolicy.P2P_POOL,
                 oomeHnd);
 

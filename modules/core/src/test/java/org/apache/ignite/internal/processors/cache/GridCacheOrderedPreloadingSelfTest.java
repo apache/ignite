@@ -75,7 +75,7 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
         times = new ConcurrentHashMap<>();
 
         for (int i = 0; i < GRID_CNT; i++)
-            times.put(i, new ConcurrentHashMap<String, Long>());
+            times.put(i, new ConcurrentHashMap<>());
     }
 
     /** {@inheritDoc} */

@@ -2340,7 +2340,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                     queue.add(F.t(newLvl, path));
 
                     if (!dirPaths.containsKey(newLvl))
-                        dirPaths.put(newLvl, new ArrayList<IgfsPath>());
+                        dirPaths.put(newLvl, new ArrayList<>());
 
                     dirPaths.get(newLvl).add(path);
                 }
@@ -2349,7 +2349,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                     IgfsPath path = new IgfsPath(entry.getValue(), "file-" + newLvl + "-" + i);
 
                     if (!filePaths.containsKey(newLvl))
-                        filePaths.put(newLvl, new ArrayList<IgfsPath>());
+                        filePaths.put(newLvl, new ArrayList<>());
 
                     filePaths.get(newLvl).add(path);
                 }

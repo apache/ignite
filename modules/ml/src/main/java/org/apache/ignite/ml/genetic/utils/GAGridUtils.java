@@ -41,7 +41,7 @@ public class GAGridUtils {
      * @return List of Chromosomes
      */
     public static List<Chromosome> getChromosomes(Ignite ignite, String qry) {
-        List<Chromosome> chromosomes = new ArrayList<Chromosome>();
+        List<Chromosome> chromosomes = new ArrayList<>();
 
         IgniteCache<Long, Chromosome> populationCache = ignite.getOrCreateCache(PopulationCacheConfig.populationCache());
 
@@ -63,7 +63,7 @@ public class GAGridUtils {
      * @return List of Genes
      */
     public static List<Gene> getGenesInOrderForChromosome(Ignite ignite, Chromosome chromosome) {
-        List<Gene> genes = new ArrayList<Gene>();
+        List<Gene> genes = new ArrayList<>();
         IgniteCache<Long, Gene> cache = ignite.cache(GAGridConstants.GENE_CACHE);
 
         long[] primaryKeys = chromosome.getGenes();

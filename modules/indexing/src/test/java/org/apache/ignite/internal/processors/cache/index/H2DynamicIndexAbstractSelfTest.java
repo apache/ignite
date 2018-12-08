@@ -328,7 +328,7 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
         ccfg.setCacheMode(cacheMode());
 
         if (nearCache())
-            ccfg.setNearConfiguration(new NearCacheConfiguration<KeyClass, ValueClass>());
+            ccfg.setNearConfiguration(new NearCacheConfiguration<>());
 
         return ccfg;
     }

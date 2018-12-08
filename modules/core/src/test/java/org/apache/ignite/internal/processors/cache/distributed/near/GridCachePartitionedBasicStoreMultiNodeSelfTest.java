@@ -80,7 +80,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
 
         super.beforeTestsStarted();
 
-        stores = Collections.synchronizedList(new ArrayList<GridCacheTestStore>());
+        stores = Collections.synchronizedList(new ArrayList<>());
 
         startGridsMultiThreaded(GRID_CNT);
     }

@@ -230,7 +230,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (cacheStartType() == CacheStartMode.STATIC)
             super.beforeTestsStarted();
         else {
-            cacheCfgMap = Collections.synchronizedMap(new HashMap<String, CacheConfiguration[]>());
+            cacheCfgMap = Collections.synchronizedMap(new HashMap<>());
 
             if (cacheStartType() == CacheStartMode.NODES_THEN_CACHES) {
                 super.beforeTestsStarted();
@@ -4901,7 +4901,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cache.putAll(putMap);
 
-        QueryCursor<Cache.Entry<String, Integer>> cur = cache.query(new ScanQuery<String, Integer>());
+        QueryCursor<Cache.Entry<String, Integer>> cur = cache.query(new ScanQuery<>());
 
         cur.iterator().next();
 
@@ -5176,7 +5176,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         Map<String, List<String>> keys = new HashMap<>();
 
         for (int i = 0; i < gridCount(); ++i)
-            keys.put(grid(i).name(), new ArrayList<String>());
+            keys.put(grid(i).name(), new ArrayList<>());
 
         for (int i = 0; i < 500; ++i) {
             String key = "key" + i;

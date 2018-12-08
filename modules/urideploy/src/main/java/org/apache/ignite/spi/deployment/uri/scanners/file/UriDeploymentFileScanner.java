@@ -168,7 +168,7 @@ public class UriDeploymentFileScanner implements UriDeploymentScanner {
          */
         private void scan(final UriDeploymentScannerContext scanCtx) {
             final Set<File> foundFiles = scanCtx.isFirstScan() ?
-                new HashSet<File>() : U.<File>newHashSet(tstampCache.size());
+                    new HashSet<>() : U.<File>newHashSet(tstampCache.size());
 
             GridDeploymentFileHandler hnd = new GridDeploymentFileHandler() {
                 /** {@inheritDoc} */
@@ -304,7 +304,7 @@ public class UriDeploymentFileScanner implements UriDeploymentScanner {
 
             final GridTuple<Boolean> changed = F.t(false);
 
-            final Set<File> foundFiles = firstScan ? new HashSet<File>() : U.<File>newHashSet(clssTstampCache.size());
+            final Set<File> foundFiles = firstScan ? new HashSet<>() : U.<File>newHashSet(clssTstampCache.size());
 
             GridDeploymentFileHandler hnd = new GridDeploymentFileHandler() {
                 @Override public void handle(File file) {

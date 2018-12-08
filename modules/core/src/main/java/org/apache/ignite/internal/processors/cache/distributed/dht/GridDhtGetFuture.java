@@ -376,8 +376,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         final Map<KeyCacheObject, Boolean> keys
     ) {
         if (F.isEmpty(keys))
-            return new GridFinishedFuture<Collection<GridCacheEntryInfo>>(
-                Collections.<GridCacheEntryInfo>emptyList());
+            return new GridFinishedFuture<>(
+                    Collections.<GridCacheEntryInfo>emptyList());
 
         String taskName0 = cctx.kernalContext().job().currentTaskName();
 
