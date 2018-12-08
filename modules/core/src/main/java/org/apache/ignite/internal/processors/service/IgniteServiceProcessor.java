@@ -47,7 +47,6 @@ import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -482,10 +481,10 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         IgnitePredicate<ClusterNode> dfltNodeFilter) {
         List<ServiceConfiguration> cfgsCp = new ArrayList<>(cfgs.size());
 
-        // At node startup routine 'BinaryMarshaller' and 'OptimizedMarshaler' can not be used, because for a class
-        // registration they use 'GridMarshallerMappingProcessor' which is not ready at the moment. In this case
-        // 'JdkMarshaller' has to be used.
-        boolean useJdkMarshaller = ctx.gateway().getState() == GridKernalState.STARTING;
+        // At node startup routine, if node has not been joined yet, 'BinaryMarshaller' and 'OptimizedMarshaler' can not
+        // be used, because for a class registration they use 'GridMarshallerMappingProcessor' which is not ready at
+        // the moment. In this case 'JdkMarshaller' has to be used.
+        boolean useJdkMarshaller = !ctx.discovery().localJoinFuture().isDone();
 
         Marshaller marsh = !useJdkMarshaller ? ctx.config().getMarshaller() : new JdkMarshaller();
 
