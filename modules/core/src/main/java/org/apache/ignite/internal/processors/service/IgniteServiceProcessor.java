@@ -1366,16 +1366,12 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             return;
 
         try {
-            depActions.servicesToDeploy().forEach((srvcId, desc) -> {
-                ServiceInfo old = deployedServices.putIfAbsent(srvcId, desc);
-
-                assert old == desc || old == null : "Concurrent map modification.";
-            });
+            depActions.servicesToDeploy().forEach(deployedServices::putIfAbsent);
 
             depActions.servicesToUndeploy().forEach((srvcId, desc) -> {
                 ServiceInfo rmv = deployedServices.remove(srvcId);
 
-                assert rmv == desc || rmv == null : "Concurrent map modification.";
+                assert rmv != null && rmv == desc : "Concurrent map modification.";
             });
         }
         finally {

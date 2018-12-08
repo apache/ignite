@@ -324,6 +324,7 @@ class ServicesDeploymentTask {
                 }
             });
         }
+
         createAndSendSingleDeploymentsMessage(depId, depErrors);
     }
 
