@@ -37,6 +37,9 @@ import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.sql.Column;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import scala.Tuple2;
 
 /**
@@ -65,7 +68,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
 
     /** Sum function. */
     private static final Function2<Integer, Integer, Integer> SUM_F = new Function2<Integer, Integer, Integer>() {
-        public Integer call(Integer x, Integer y) {
+        @Override public Integer call(Integer x, Integer y) {
             return x + y;
         }
     };
