@@ -848,7 +848,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             /** {@inheritDoc} */
             @Override public void onChannelCreated(GridNioSocketChannel ch) {
-                log.info("New channel connection established: " + ch.id());
+                log.info("New channel connection established [key=" + ch.id() + ", channel=" + ch.channel() + ']');
 
                 notifyListener(ch.id().nodeId(), ch);
             }

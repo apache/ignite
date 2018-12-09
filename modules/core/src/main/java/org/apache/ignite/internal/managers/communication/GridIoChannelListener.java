@@ -27,7 +27,7 @@ public interface GridIoChannelListener {
     /**
      * Handle {@link GridNioSocketChannel} creation event from remote connection.
      *
-     * @param sndId Remote nodeId.
+     * @param sndId Node from which connection has been initiated.
      * @param ch Local created channel endpoint.
      */
     public void onChannelCreated(UUID sndId, GridNioSocketChannel ch);

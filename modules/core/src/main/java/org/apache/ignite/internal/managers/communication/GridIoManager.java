@@ -77,6 +77,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.lang.IgnitePair;
+import org.apache.ignite.internal.util.nio.channel.GridNioSocketChannel;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -151,6 +152,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** Disconnect listeners. */
     private final Collection<GridDisconnectListener> disconnectLsnrs = new ConcurrentLinkedQueue<>();
+
+    /** Channel listeners. */
+    private final Collection<GridIoChannelListener> channelLsnrs = new ConcurrentLinkedQueue<>();
 
     /** Pool processor. */
     private final PoolProcessor pools;
@@ -276,6 +280,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             @Override public void onDisconnected(UUID nodeId) {
                 for (GridDisconnectListener lsnr : disconnectLsnrs)
                     lsnr.onNodeDisconnected(nodeId);
+            }
+
+            @Override public void onChannelCreated(UUID sndId, GridNioSocketChannel ch) {
+                for (GridIoChannelListener lsnr : channelLsnrs)
+                    lsnr.onChannelCreated(sndId, ch);
             }
         });
 
@@ -2036,6 +2045,20 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      */
     public void removeDisconnectListener(GridDisconnectListener lsnr) {
         disconnectLsnrs.remove(lsnr);
+    }
+
+    /**
+     * @param lsnr Listener to add.
+     */
+    public void addChannelListener(GridIoChannelListener lsnr) {
+        channelLsnrs.add(lsnr);
+    }
+
+    /**
+     * @param lsnr Listener to add.
+     */
+    public void removeChannelListener(GridIoChannelListener lsnr) {
+        channelLsnrs.remove(lsnr);
     }
 
     /**

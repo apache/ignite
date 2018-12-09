@@ -125,4 +125,13 @@ public class GridNioSocketChannelImpl implements GridNioSocketChannel {
         result = 31 * result + channel.hashCode();
         return result;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "GridNioSocketChannelImpl{" +
+            "key=" + key +
+            ", channel=" + channel +
+            ", config=" + config +
+            '}';
+    }
 }

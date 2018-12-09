@@ -17,13 +17,16 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.nio.GridCommunicationClient;
+import org.apache.ignite.internal.managers.communication.GridIoChannelListener;
+import org.apache.ignite.internal.util.nio.channel.GridNioSocketChannel;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -43,17 +46,10 @@ public class TcpCommunicationSpiChannelSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-//        cfg.setFailureDetectionTimeout(1000);
-
-        TestCommunicationSpi spi = new TestCommunicationSpi();
-
-//        spi.setIdleConnectionTimeout(100);
-//        spi.setSharedMemoryPort(-1);
-
-        TcpDiscoverySpi discoSpi = (TcpDiscoverySpi) cfg.getDiscoverySpi();
+        TcpDiscoverySpi discoSpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
         discoSpi.setIpFinder(IP_FINDER);
 
-        cfg.setCommunicationSpi(spi);
+        cfg.setCommunicationSpi(new TcpCommunicationSpi());
         cfg.setDiscoverySpi(discoSpi);
 
         return cfg;
@@ -70,49 +66,61 @@ public class TcpCommunicationSpiChannelSelfTest extends GridCommonAbstractTest {
     public void testChannelCreationOnDemand() throws Exception {
         startGrids(NODES_CNT);
 
-//        final CountDownLatch latch = new CountDownLatch(1);
+        final GridNioSocketChannel[] nioCh = new GridNioSocketChannel[1];
+        final CountDownLatch waitChLatch = new CountDownLatch(1);
 
-//        grid(0).events().localListen(new IgnitePredicate<Event>() {
-//            @Override
-//            public boolean apply(Event event) {
-//                latch.countDown();
-//
-//                return true;
-//            }
-//        }, EVT_NODE_FAILED);
+        grid(1).context().io().addChannelListener(new GridIoChannelListener() {
+            @Override public void onChannelCreated(UUID sndId, GridNioSocketChannel ch) {
+                // Created from ignite node with index = 0;
+                if (sndId.equals(grid(0).localNode().id())) {
+                    nioCh[0] = ch;
 
-        TcpCommunicationSpi commSpi = (TcpCommunicationSpi) grid(0).configuration().getCommunicationSpi();
+                    waitChLatch.countDown();
+                }
+            }
+        });
+
+        TcpCommunicationSpi commSpi = (TcpCommunicationSpi)grid(0).configuration().getCommunicationSpi();
 
         WritableByteChannel writableCh = commSpi.getOrCreateChannel(grid(1).localNode());
-    }
 
-    /**
-     *
-     */
-    private static class TestCommunicationSpi extends TcpCommunicationSpi {
-        /** {@inheritDoc} */
-        @Override protected GridCommunicationClient createTcpClient(ClusterNode node, int connIdx)
-            throws IgniteCheckedException {
+        // Wait for the channel connection established.
+        waitChLatch.await(5_000L, TimeUnit.MILLISECONDS);
 
-//            if (pred.apply(getLocalNode(), node)) {
-//                Map<String, Object> attrs = new HashMap<>(node.attributes());
-//
-//                attrs.put(createAttributeName(ATTR_ADDRS), Collections.singleton("127.0.0.1"));
-//                attrs.put(createAttributeName(ATTR_PORT), 47200);
-//                attrs.put(createAttributeName(ATTR_EXT_ADDRS), Collections.emptyList());
-//                attrs.put(createAttributeName(ATTR_HOST_NAMES), Collections.emptyList());
-//
-//                ((TcpDiscoveryNode)node).setAttributes(attrs);
-//            }
+        assertNotNull(nioCh[0]);
 
-            return super.createTcpClient(node, connIdx);
+        // Prepare ping bytes to check connection.
+        final int pingNum = 777_777;
+        final int pingBuffSize = 4;
+
+        ByteBuffer writeBuf = ByteBuffer.allocate(pingBuffSize);
+
+        writeBuf.putInt(pingNum);
+        writeBuf.flip();
+
+        // Write ping bytes to the channel.
+        int cnt = writableCh.write(writeBuf);
+
+        assertEquals(pingBuffSize, cnt);
+
+        // Read test bytes from channel on remote node.
+        ReadableByteChannel readCh = nioCh[0].channel();
+
+        ByteBuffer readBuf = ByteBuffer.allocate(pingBuffSize);
+
+        for (int i = 0; i < pingBuffSize; ) {
+            int read = readCh.read(readBuf);
+
+            if (read == -1)
+                throw new IgniteException("Failed to read remote node ID");
+
+            i += read;
         }
 
-        /**
-         * @param name Name.
-         */
-        private String createAttributeName(String name) {
-            return getClass().getSimpleName() + '.' + name;
-        }
+        readBuf.flip();
+
+        // Check established channel.
+        assertEquals(pingNum, readBuf.getInt());
     }
+
 }

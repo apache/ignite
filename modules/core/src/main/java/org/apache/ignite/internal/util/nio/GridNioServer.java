@@ -2185,6 +2185,8 @@ public class GridNioServer<T> {
 
                                 GridNioSocketChannel nioSocketCh;
 
+                                ch.configureBlocking(true);
+
                                 channels.add(nioSocketCh = new GridNioSocketChannelImpl(connKey, ch));
 
                                 onChannelCreated(nioSocketCh);

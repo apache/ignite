@@ -150,4 +150,12 @@ public final class GridNioSocketChannelConfig {
 
         return this;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "GridNioSocketChannelConfig{" +
+            "channel=" + channel +
+            ", socket=" + socket +
+            '}';
+    }
 }
