@@ -22,11 +22,14 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.distributed.CacheNearDisabledAtomicInvokeRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheNearDisabledTransactionalInvokeRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheNearDisabledTransactionalWriteReadRestartSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-public class IgniteCacheLoadConsistencyTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheLoadConsistencyTestSuite {
     /**
      * @return Ignite Cache Failover test suite.
      */

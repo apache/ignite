@@ -73,11 +73,14 @@ import org.apache.ignite.internal.processors.cache.binary.distributed.replicated
 import org.apache.ignite.internal.processors.cache.binary.local.GridCacheBinaryObjectsAtomicLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.local.GridCacheBinaryObjectsLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteBinaryMetadataUpdateChangingTopologySelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test for binary objects stored in cache.
  */
-public class IgniteBinaryObjectsTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteBinaryObjectsTestSuite {
     /**
      * @return Suite.
      */

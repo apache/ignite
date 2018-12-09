@@ -22,11 +22,14 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheClientNodeConcurrentStart;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheClientReconnectTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheManyClientsTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  *
  */
-public class IgniteClientNodesTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteClientNodesTestSuite {
     /**
      * @return Test suite.
      */

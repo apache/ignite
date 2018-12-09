@@ -31,11 +31,14 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.TxRecoverySto
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearTxPessimisticOriginatingNodeFailureSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedTxOriginatingNodeFailureSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedTxPessimisticOriginatingNodeFailureSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Tx recovery self test suite.
  */
-public class IgniteCacheTxRecoverySelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheTxRecoverySelfTestSuite {
     /**
      * @return Cache API test suite.
      */

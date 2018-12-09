@@ -39,11 +39,14 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalMet
 import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalTckMetricsSelfTestImpl;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicMetricsNoReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalMetricsSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for cache metrics.
  */
-public class IgniteCacheMetricsSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheMetricsSelfTestSuite {
     /**
      * @return Cache metrics test suite.
      */

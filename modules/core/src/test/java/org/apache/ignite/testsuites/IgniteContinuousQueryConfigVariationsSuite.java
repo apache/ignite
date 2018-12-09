@@ -20,18 +20,20 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryVariationsTest;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
 
 /**
  * Test suite for cache queries.
  */
-public class IgniteContinuousQueryConfigVariationsSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteContinuousQueryConfigVariationsSuite {
     /**
      * @return Test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         System.setProperty(IGNITE_DISCOVERY_HISTORY_SIZE, "100");
 
         TestSuite suite = new TestSuite("Ignite Continuous Query Config Variations Suite");

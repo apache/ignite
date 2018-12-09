@@ -50,11 +50,14 @@ import org.apache.ignite.internal.processors.cache.distributed.rebalancing.Cache
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheSyncRebalanceModeSelfTest;
 import org.apache.ignite.internal.processors.cache.store.IgniteCacheWriteBehindNoUpdateSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-public class IgniteCacheTestSuite5 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheTestSuite5 {
     /**
      * @return IgniteCache test suite.
      */

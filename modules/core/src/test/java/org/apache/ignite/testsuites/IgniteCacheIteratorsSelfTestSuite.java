@@ -22,16 +22,18 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedIteratorsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedIteratorsSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalIteratorsSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Cache iterators test suite.
  */
-public class IgniteCacheIteratorsSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheIteratorsSelfTestSuite {
     /**
      * @return Cache iterators test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Cache Iterators Test Suite");
 
         suite.addTest(new JUnit4TestAdapter(GridCacheLocalIteratorsSelfTest.class));

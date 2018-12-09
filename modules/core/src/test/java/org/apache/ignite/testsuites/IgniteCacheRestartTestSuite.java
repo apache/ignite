@@ -25,11 +25,14 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePart
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedNodeRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedOptimisticTxNodeRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedNodeRestartSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Cache stability test suite on changing topology.
  */
-public class IgniteCacheRestartTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheRestartTestSuite {
     /**
      * @return Suite.
      */

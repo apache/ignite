@@ -41,13 +41,16 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccCachePeekTest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUnsupportedTxModesTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorMvccPersistenceSelfTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorMvccSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
 /**
  *
  */
-public class IgniteCacheMvccTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheMvccTestSuite {
     /**
      * @return Test suite.
      */

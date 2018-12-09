@@ -30,11 +30,14 @@ import org.apache.ignite.internal.processors.cache.store.IgnteCacheClientWriteBe
 import org.apache.ignite.internal.processors.cache.store.IgnteCacheClientWriteBehindStoreNonCoalescingTest;
 import org.apache.ignite.internal.processors.cache.store.IgnteCacheClientWriteBehindStoreTxTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite that contains all tests for {@link org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore}.
  */
-public class IgniteCacheWriteBehindTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheWriteBehindTestSuite {
     /**
      * @return Ignite Bamboo in-memory data grid test suite.
      */

@@ -30,11 +30,14 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCacheWrit
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxConcurrentRemoveObjectsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxDataConsistencyOnCommitFailureTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-public class IgniteCacheTestSuite9 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheTestSuite9 {
     /**
      * @return IgniteCache test suite.
      */

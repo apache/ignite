@@ -25,11 +25,14 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectio
 import org.apache.ignite.internal.processors.cache.IgniteCacheLoadRebalanceEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimarySyncBackPressureTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxConcurrentRemoveObjectsTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-public class IgniteCacheMvccTestSuite9 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheMvccTestSuite9 {
     /**
      * @return IgniteCache test suite.
      */

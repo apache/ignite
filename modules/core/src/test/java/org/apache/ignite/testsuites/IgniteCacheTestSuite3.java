@@ -77,11 +77,14 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.preloa
 import org.apache.ignite.internal.processors.cache.local.GridCacheDaemonNodeLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalByteArrayValuesSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-public class IgniteCacheTestSuite3 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheTestSuite3 {
     /**
      * @return IgniteCache test suite.
      */

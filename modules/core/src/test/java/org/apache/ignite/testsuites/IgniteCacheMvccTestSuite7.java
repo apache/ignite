@@ -33,11 +33,14 @@ import org.apache.ignite.internal.processors.cache.distributed.Cache64kPartition
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionCountersMvccTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionCountersTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.CheckpointBufferDeadlockTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  *
  */
-public class IgniteCacheMvccTestSuite7  extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheMvccTestSuite7 {
     /**
      * @return IgniteCache test suite.
      */

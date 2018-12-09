@@ -50,16 +50,18 @@ import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruPageE
 import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruPageEvictionWithRebalanceTest;
 import org.apache.ignite.internal.processors.cache.eviction.sorted.SortedEvictionPolicyFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.sorted.SortedEvictionPolicySelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for cache eviction.
  */
-public class IgniteCacheEvictionSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheEvictionSelfTestSuite {
     /**
      * @return Cache eviction test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Cache Eviction Test Suite");
 
         suite.addTest(new JUnit4TestAdapter(FifoEvictionPolicySelfTest.class));

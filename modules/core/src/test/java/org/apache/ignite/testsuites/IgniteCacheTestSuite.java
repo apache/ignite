@@ -155,11 +155,14 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerMultinodeC
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerTimeoutTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerUpdateAfterLoadTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-public class IgniteCacheTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheTestSuite {
     /**
      * @return IgniteCache test suite.
      * @throws Exception Thrown in case of the failure.

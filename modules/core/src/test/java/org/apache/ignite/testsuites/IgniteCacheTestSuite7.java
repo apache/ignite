@@ -45,23 +45,24 @@ import org.apache.ignite.internal.processors.cache.transactions.TransactionInteg
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncWithPersistenceTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxWithSmallTimeoutAndContentionOneKeyTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
+@RunWith(AllTests.class)
 public class IgniteCacheTestSuite7 extends TestSuite {
     /**
      * @return IgniteCache test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         return suite(null);
     }
 
     /**
      * @param ignoredTests Tests to ignore.
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite(Set<Class> ignoredTests) {
         TestSuite suite = new TestSuite("IgniteCache With Persistence Test Suite");
