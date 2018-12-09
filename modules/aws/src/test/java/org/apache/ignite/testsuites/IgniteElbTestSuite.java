@@ -21,11 +21,14 @@ import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.elb.TcpDiscoveryElbIpFinderSelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * ELB IP finder test suite.
  */
-public class IgniteElbTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteElbTestSuite {
     /**
      * @return Test suite.
      */

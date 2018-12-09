@@ -92,25 +92,26 @@ import org.apache.ignite.testframework.test.ParametersTest;
 import org.apache.ignite.testframework.test.VariationsIteratorTest;
 import org.apache.ignite.util.AttributeNodeFilterSelfTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Basic test suite.
  */
-public class IgniteBasicTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteBasicTestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         return suite(null);
     }
 
     /**
      * @param ignoredTests Tests don't include in the execution. Providing null means nothing to exclude.
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite(@Nullable final Set<Class> ignoredTests) throws Exception {
+    public static TestSuite suite(@Nullable final Set<Class> ignoredTests) {
         TestSuite suite = new TestSuite("Ignite Basic Test Suite");
 
         suite.addTest(IgniteMarshallerSelfTestSuite.suite(ignoredTests));

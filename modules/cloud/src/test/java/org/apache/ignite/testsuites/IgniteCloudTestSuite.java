@@ -23,11 +23,14 @@ import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.cloud.TcpDiscoveryCloudIpFinderSelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Ignite Cloud integration test.
  */
-public class IgniteCloudTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCloudTestSuite {
     /**
      * @return Test suite.
      */

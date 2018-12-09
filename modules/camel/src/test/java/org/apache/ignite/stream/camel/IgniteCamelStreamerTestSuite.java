@@ -20,11 +20,14 @@ package org.apache.ignite.stream.camel;
 import java.util.Set;
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Camel streamer tests. Included into 'Streamers' run configuration.
  */
-public class IgniteCamelStreamerTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCamelStreamerTestSuite {
     /**
      * @return {@link IgniteCamelStreamerTest} test suite.
      */

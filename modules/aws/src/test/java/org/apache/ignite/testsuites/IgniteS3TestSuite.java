@@ -34,11 +34,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinderSSE
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.client.DummyObjectListingTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.client.DummyS3ClientTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * S3 integration tests.
  */
-public class IgniteS3TestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteS3TestSuite {
     /**
      * @return Test suite.
      */

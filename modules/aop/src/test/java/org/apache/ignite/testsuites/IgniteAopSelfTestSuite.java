@@ -25,6 +25,8 @@ import org.apache.ignite.gridify.GridifySetToXXXSpringAopSelfTest;
 import org.apache.ignite.gridify.NonSpringAopSelfTest;
 import org.apache.ignite.gridify.SpringAopSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 import org.test.gridify.ExternalNonSpringAopSelfTest;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
@@ -32,7 +34,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 /**
  * AOP test suite.
  */
-public class IgniteAopSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteAopSelfTestSuite {
     /**
      * @return AOP test suite.
      */

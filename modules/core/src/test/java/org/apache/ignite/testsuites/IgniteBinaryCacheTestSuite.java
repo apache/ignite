@@ -37,11 +37,14 @@ import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCa
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinariesPartitionedOnlyByteArrayValuesSelfTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorPersistenceSelfTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Cache suite with binary marshaller.
  */
-public class IgniteBinaryCacheTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteBinaryCacheTestSuite {
     /**
      * @return Suite.
      * @throws Exception In case of error.
