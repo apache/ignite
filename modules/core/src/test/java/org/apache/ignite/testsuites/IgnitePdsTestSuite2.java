@@ -176,7 +176,7 @@ public class IgnitePdsTestSuite2 {
 
         suite.addTest(new JUnit4TestAdapter(IgniteWalSerializerVersionTest.class));
 
-        suite.addTestSuite(WalCompactionTest.class);
+        suite.addTest(new JUnit4TestAdapter(WalCompactionTest.class));
 
         suite.addTest(new JUnit4TestAdapter(WalDeletionArchiveFsyncTest.class));
         suite.addTest(new JUnit4TestAdapter(WalDeletionArchiveLogOnlyTest.class));
