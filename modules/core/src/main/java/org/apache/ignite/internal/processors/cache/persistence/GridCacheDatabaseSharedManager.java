@@ -3018,7 +3018,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private volatile CheckpointProgress scheduledCp;
 
         /** Current checkpoint. This field is updated only by checkpoint thread. */
-        @Nullable private volatile CheckpointProgress curCpProgress;
+        @Nullable private volatile CheckpointProgress lastCp;
 
         /** Shutdown now. */
         private volatile boolean shutdownNow;
@@ -3140,8 +3140,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             GridFutureAdapter<Object> ret;
 
             synchronized (this) {
-                if (!curCpProgress.cpFinishFut.isDone())
-                    curCpProgress.canceled = true;
+                if (!lastCp.cpFinishFut.isDone())
+                    lastCp.canceled = true;
 
                 scheduledCp.nextCpTs = U.currentTimeMillis();
 
@@ -3259,7 +3259,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             if (chp.progress.canceled) {
-                chp.progress.mergeContext = new CheckpointMergeContext();
+                synchronized (this){
+                    // TODO
+                }
 
                 return true;
             }
@@ -3515,7 +3517,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             CheckpointProgress cur;
 
             synchronized (this) {
-                cur = curCpProgress;
+                cur = lastCp;
 
                 if (cur != null)
                     req = cur.destroyQueue.cancelDestroy(grpId, partId);
@@ -3713,6 +3715,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private CheckpointProgress resetCheckpointProgress(CheckpointProgress scheduled){
             CheckpointProgress curr = scheduled;
 
+            // If previous checkpoint was canceled.
+            if (lastCp.canceled){
+
+            }
+
             curr.started = true;
 
             if (curr.reason == null)
@@ -3721,7 +3728,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             // It is important that we assign a new progress object before checkpoint mark in page memory.
             scheduledCp = new CheckpointProgress(U.currentTimeMillis() + checkpointFreq);
 
-            curCpProgress = curr;
+            lastCp = curr;
 
             return curr;
         }
@@ -4326,19 +4333,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** */
         private volatile boolean canceled;
 
-        /** */
-        private CheckpointMergeContext mergeContext;
-
         /**
          * @param nextCpTs Next checkpoint timestamp.
          */
         private CheckpointProgress(long nextCpTs) {
             this.nextCpTs = nextCpTs;
         }
-    }
-
-    private class CheckpointMergeContext {
-
     }
 
     /**
