@@ -176,6 +176,11 @@ public class PartitionUpdateCounter {
         releaseOne(cntr);
 
         initCntr = get();
+
+//        if (get() < cntr)
+//            update(cntr);
+//
+//        initCntr = cntr;
     }
 
     /**
@@ -291,20 +296,28 @@ public class PartitionUpdateCounter {
     }
 
     /**
-     * Used on recovery.
+     * Used on recovery. Should be called only once for each counter.
      * @param cntr Counter.
      */
     public synchronized void releaseOne(long cntr) {
         NavigableSet<Item> items = queue.headSet(new Item(cntr, 0), true);
 
-        assert !items.isEmpty();
+        Item last;
 
-        Item last = items.last();
+        if (items.isEmpty() || !(last = items.last()).within(cntr)) { // Counter not inside gap
+            update(cntr - 1, 1);
+
+            return;
+        }
 
         last.increment();
 
-        if (!last.open() && items.first() == last)
-            release(last.start, last.delta);
+        if (items.first() == last) {
+            if (!last.open())
+                release(last.start, last.delta);
+            else
+                this.cntr.incrementAndGet();
+        }
     }
 
     public @Nullable byte[] getBytes() {
@@ -319,7 +332,13 @@ public class PartitionUpdateCounter {
 
             dos.writeByte(VERSION); // Version.
 
-            dos.writeInt(queue.size()); // Holes count.
+            int size = 0;
+            for (Item item : queue) {
+                if (!item.open())
+                    size++;
+            }
+
+            dos.writeInt(size); // Holes count.
 
             // TODO store as deltas in varint format. Eg:
             // 10000000000, 2; 10000000002, 4; 10000000004, 10;
@@ -328,6 +347,9 @@ public class PartitionUpdateCounter {
             // All ints are packed except first.
 
             for (Item item : queue) {
+                if (item.open()) // Skip writing open(just reserved) intervals - we know no updates was written.
+                    continue;
+
                 dos.writeLong(item.start);
                 dos.writeLong(item.delta);
             }
@@ -433,6 +455,10 @@ public class PartitionUpdateCounter {
 
         public long absolute() {
             return start + delta;
+        }
+
+        public boolean within(long cntr) {
+            return cntr - start < delta;
         }
     }
 

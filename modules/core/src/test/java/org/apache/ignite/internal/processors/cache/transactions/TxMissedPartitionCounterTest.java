@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -866,20 +867,23 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
     public void testSaveGaps() throws Exception {
         try {
-            IgniteEx grid = (IgniteEx)startGridsMultiThreaded(1);
-            int key = 0;
+            IgniteEx grid = startGrid(0);
+            grid.cluster().active(true);
+            int key = 0, partId = 0;
             grid.cache(DEFAULT_CACHE_NAME).put(key, 0);
 
             GridCacheContext<Object, Object> cctx = internalCache(0).context();
-            @Nullable GridDhtLocalPartition part = cctx.topology().localPartition(0);
+            @Nullable GridDhtLocalPartition part = cctx.topology().localPartition(partId);
 
-            assertTrue(grid.affinity(DEFAULT_CACHE_NAME).partition(key) == 0);
+            assertTrue(grid.affinity(DEFAULT_CACHE_NAME).partition(key) == partId);
 
             GridCacheOffheapManager.GridCacheDataStore rowStore = (GridCacheOffheapManager.GridCacheDataStore)part.dataStore();
 
             FreeList<ByteArrayDataRow> list = U.field(rowStore, "freeList");
 
             grid.context().cache().context().database().checkpointReadLock();
+
+            long link;
 
             try {
 //                Random r = new Random();
@@ -913,23 +917,63 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
                 pc.reserve(3);
                 pc.reserve(1);
 
+                pc.release(11, 1);
+//                pc.release(8, 3);
+//                pc.release(2, 6);
+//                pc.releaseOne(0);
+
+//                assertEquals(1, pc.get());
+
                 byte[] rawData = pc.getBytes();
 
                 ByteArrayDataRow row0 = new ByteArrayDataRow(cctx.cacheObjectContext(), part.id(), 0, rawData);
 
                 list.insertDataRow(row0);
 
-                System.out.println(row0.link());
+                link = row0.link();
+
+                ByteArrayDataRow r = new ByteArrayDataRow(grid.context().cache().cacheGroup(CU.cacheId(DEFAULT_CACHE_NAME)), link, partId);
+                byte[] bytes = r.value().valueBytes(null);
 
                 PartitionUpdateCounter pc2 = new PartitionUpdateCounter(log);
-                pc2.init(0, getData(part.group(), row0.link(), part.id()));
+                pc2.init(0, bytes);
 
-                assertEquals(pc.get(), pc2.get());
-                assertEquals(pc.holes(), pc2.holes());
+                assertEquals(11, pc2.holes().first().start());
+
             }
             finally {
                 grid.context().cache().context().database().checkpointReadUnlock();
             }
+
+            GridCacheDatabaseSharedManager db =
+                (GridCacheDatabaseSharedManager)grid.context().cache().context().database();
+
+            db.enableCheckpoints(false);
+
+            stopGrid(0, true);
+
+            grid = startGrid(0);
+            grid.cluster().active(true);
+
+            FreeList<?> l2 = freeList(0, partId);
+
+            grid.context().cache().context().database().checkpointReadLock();
+
+            try {
+                ByteArrayDataRow r = new ByteArrayDataRow(grid.context().cache().cacheGroup(CU.cacheId(DEFAULT_CACHE_NAME)), link, partId);
+                byte[] bytes = r.value().valueBytes(null);
+
+                PartitionUpdateCounter pc = new PartitionUpdateCounter(log);
+                pc.init(0, bytes);
+
+                l2.removeDataRowByLink(link);
+            }
+            finally {
+                grid.context().cache().context().database().checkpointReadUnlock();
+            }
+
+//            assertEquals(pc.get(), pc2.get());
+//            assertEquals(pc.holes(), pc2.holes());
         }
         finally {
             stopAllGrids();
@@ -944,6 +988,17 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+    }
+
+    private FreeList<?> freeList(int idx, int partId) {
+        GridCacheContext<Object, Object> cctx = internalCache(idx).context();
+        @Nullable GridDhtLocalPartition part = cctx.topology().localPartition(partId);
+
+        //assertTrue(grid(idx).affinity(DEFAULT_CACHE_NAME).partition(key) == 0);
+
+        GridCacheOffheapManager.GridCacheDataStore rowStore = (GridCacheOffheapManager.GridCacheDataStore)part.dataStore();
+
+        return U.field(rowStore, "freeList");
     }
 
     @Override protected long getTestTimeout() {
