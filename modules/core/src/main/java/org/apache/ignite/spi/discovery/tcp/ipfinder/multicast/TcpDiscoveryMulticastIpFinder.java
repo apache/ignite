@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -126,7 +127,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
     @GridToStringExclude
     private InetAddress mcastAddr;
 
-    /** */
+    /** Interfaces used to send requests. */
     @GridToStringExclude
     private Set<InetAddress> reqItfs;
 
@@ -313,44 +314,21 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                 "(it is recommended in production to specify at least one address in " +
                 "TcpDiscoveryMulticastIpFinder.getAddresses() configuration property)");
 
-        resolveMulticastGroup();
+        Collection<InetAddress> locAddrs = resolveLocalAddresses();
 
-        Collection<String> locAddrs;
-
-        try {
-            locAddrs = U.resolveLocalAddresses(U.resolveLocalHost(locAddr)).get1();
-        }
-        catch (IOException | IgniteCheckedException e) {
-            throw new IgniteSpiException("Failed to resolve local addresses [locAddr=" + locAddr + ']', e);
-        }
-
-        assert locAddrs != null;
+        reqItfs = new HashSet<>(locAddrs);
 
         addrSnds = new ArrayList<>(locAddrs.size());
 
-        for (String locAddr : locAddrs) {
-            InetAddress addr;
-
+        for (InetAddress addr : locAddrs) {
             try {
-                addr = InetAddress.getByName(locAddr);
+                addrSnds.add(new AddressSender(mcastAddr, addr, addrs));
             }
-            catch (UnknownHostException e) {
+            catch (IOException e) {
                 if (log.isDebugEnabled())
-                    log.debug("Failed to resolve local address [locAddr=" + locAddr + ", err=" + e + ']');
-
-                continue;
-            }
-
-            if (!addr.isLoopbackAddress()) {
-                try {
-                    addrSnds.add(new AddressSender(mcastAddr, addr, addrs));
-                }
-                catch (IOException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to create multicast socket [mcastAddr=" + mcastAddr +
-                            ", mcastGrp=" + mcastGrp + ", mcastPort=" + mcastPort + ", locAddr=" + addr +
-                            ", err=" + e + ']');
-                }
+                    log.debug("Failed to create multicast socket [mcastAddr=" + mcastAddr +
+                        ", mcastGrp=" + mcastGrp + ", mcastPort=" + mcastPort + ", locAddr=" + addr +
+                        ", err=" + e + ']');
             }
         }
 
@@ -399,9 +377,11 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
     }
 
     /**
-     * Resolve multicast group and register request interfaces.
+     * Resolve local addresses.
+     *
+     * @return List of non-loopback addresses.
      */
-    public void resolveMulticastGroup() {
+    private Collection<InetAddress> resolveLocalAddresses() {
         // If IGNITE_OVERRIDE_MCAST_GRP system property is set, use its value to override multicast group from
         // configuration. Used for testing purposes.
         String overrideMcastGrp = System.getProperty(IGNITE_OVERRIDE_MCAST_GRP);
@@ -425,8 +405,6 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
         if (ttl != -1 && (ttl < 0 || ttl > 255))
             throw new IgniteSpiException("Time-to-live value is out of 0 <= TTL <= 255 range: " + ttl);
 
-        Collection<String> locAddrs;
-
         try {
             mcastAddr = InetAddress.getByName(mcastGrp);
         }
@@ -437,6 +415,8 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
         if (!mcastAddr.isMulticastAddress())
             throw new IgniteSpiException("Invalid multicast group address: " + mcastAddr);
 
+        Collection<String> locAddrs;
+
         try {
             locAddrs = U.resolveLocalAddresses(U.resolveLocalHost(locAddr)).get1();
         }
@@ -446,7 +426,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
         assert locAddrs != null;
 
-        reqItfs = new HashSet<>(locAddrs.size()); // Interfaces used to send requests.
+        List<InetAddress> inetAddrs = new ArrayList<>(locAddrs.size());
 
         for (String locAddr : locAddrs) {
             InetAddress addr;
@@ -462,14 +442,16 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
             }
 
             if (!addr.isLoopbackAddress())
-                reqItfs.add(addr);
+                inetAddrs.add(addr);
         }
+
+        return inetAddrs;
     }
 
     /** {@inheritDoc} */
     @Override public synchronized Collection<InetSocketAddress> getRegisteredAddresses() {
         if (mcastAddr == null)
-            resolveMulticastGroup();
+            reqItfs = new HashSet<>(resolveLocalAddresses());
 
         if (mcastAddr != null && reqItfs != null) {
             Collection<InetSocketAddress> ret;
