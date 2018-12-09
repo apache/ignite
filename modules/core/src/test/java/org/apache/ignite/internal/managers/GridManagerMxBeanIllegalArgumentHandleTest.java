@@ -21,7 +21,6 @@ import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import junit.framework.TestCase;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -31,12 +30,11 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
 
 /**
@@ -44,8 +42,7 @@ import static org.mockito.Mockito.when;
  *
  * Test modifies static final field, used only for development
  */
-@RunWith(JUnit4.class)
-public class GridManagerMxBeanIllegalArgumentHandleTest extends TestCase {
+public class GridManagerMxBeanIllegalArgumentHandleTest {
     /** Original value of {@link GridDiscoveryManager#mem} to be restored after test */
     private Object mxBeanToRestore;
 
@@ -57,8 +54,7 @@ public class GridManagerMxBeanIllegalArgumentHandleTest extends TestCase {
 
     /** {@inheritDoc} Changes field to always failing mock */
     @Before
-    @Override public void setUp() throws Exception {
-        super.setUp();
+    public void setUp() throws Exception {
         try {
             final MemoryMXBean memoryMXBean = createAlwaysFailingMxBean();
             memMxBeanField = createAccessibleMemField();
@@ -103,8 +99,7 @@ public class GridManagerMxBeanIllegalArgumentHandleTest extends TestCase {
      * @throws Exception if field set failed
      */
     @After
-    @Override public void tearDown() throws Exception {
-        super.tearDown();
+    public void tearDown() throws Exception {
         if (correctSetupOfTestPerformed)
             memMxBeanField.set(null, mxBeanToRestore);
     }

@@ -22,7 +22,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import junit.framework.TestCase;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -31,8 +30,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.GridTestIoUtils.getCharByByteLE;
 import static org.apache.ignite.GridTestIoUtils.getDoubleByByteLE;
@@ -41,12 +38,15 @@ import static org.apache.ignite.GridTestIoUtils.getIntByByteLE;
 import static org.apache.ignite.GridTestIoUtils.getLongByByteLE;
 import static org.apache.ignite.GridTestIoUtils.getShortByByteLE;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * {@link DirectByteBufferStreamImplV2} byte order sanity tests.
  */
-@RunWith(JUnit4.class)
-public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
+public class DirectByteBufferStreamImplV2ByteOrderSelfTest {
     /** Array length. */
     private static final int ARR_LEN = 16;
 
@@ -67,9 +67,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
 
     /** {@inheritDoc} */
     @Before
-    @Override public void setUp() throws Exception {
-        super.setUp();
-
+    public void setUp() throws Exception {
         outArr = new byte[ARR_LEN * 8 + LEN_BYTES];
 
         buff = ByteBuffer.wrap(outArr);

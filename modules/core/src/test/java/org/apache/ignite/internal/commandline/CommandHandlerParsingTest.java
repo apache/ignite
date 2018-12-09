@@ -20,7 +20,6 @@ package org.apache.ignite.internal.commandline;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
-import junit.framework.TestCase;
 import org.apache.ignite.internal.commandline.cache.CacheArguments;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.visor.tx.VisorTxOperation;
@@ -30,8 +29,6 @@ import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
@@ -44,26 +41,25 @@ import static org.apache.ignite.internal.commandline.CommandHandler.VI_CHECK_THR
 import static org.apache.ignite.internal.commandline.CommandHandler.WAL_DELETE;
 import static org.apache.ignite.internal.commandline.CommandHandler.WAL_PRINT;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Tests Command Handler parsing arguments.
  */
-@RunWith(JUnit4.class)
-public class CommandHandlerParsingTest extends TestCase {
+public class CommandHandlerParsingTest {
     /** {@inheritDoc} */
     @Before
-    @Override public void setUp() throws Exception {
+    public void setUp() throws Exception {
         System.setProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
-
-        super.setUp();
     }
 
     /** {@inheritDoc} */
     @After
-    @Override public void tearDown() throws Exception {
+    public void tearDown() throws Exception {
         System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
-
-        super.tearDown();
     }
 
     /**

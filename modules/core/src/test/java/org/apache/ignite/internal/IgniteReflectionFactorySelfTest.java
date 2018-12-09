@@ -20,17 +20,15 @@ package org.apache.ignite.internal;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
-import junit.framework.TestCase;
 import org.apache.ignite.configuration.IgniteReflectionFactory;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Tests for {@link IgniteReflectionFactory} class.
  */
-@RunWith(JUnit4.class)
-public class IgniteReflectionFactorySelfTest extends TestCase {
+public class IgniteReflectionFactorySelfTest {
     /**
      * @throws Exception If failed.
      */

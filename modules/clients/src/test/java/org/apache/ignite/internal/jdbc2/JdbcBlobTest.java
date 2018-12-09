@@ -21,16 +21,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.Arrays;
-import junit.framework.TestCase;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
-public class JdbcBlobTest extends TestCase {
+public class JdbcBlobTest {
     /**
      * @throws Exception If failed.
      */

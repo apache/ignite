@@ -19,17 +19,19 @@ package org.apache.ignite;
 
 import java.io.IOException;
 import java.util.List;
-import junit.framework.TestCase;
 import org.apache.ignite.internal.util.typedef.X;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
-public class GridSuppressedExceptionSelfTest extends TestCase {
+public class GridSuppressedExceptionSelfTest {
     /**
      * @throws Exception If failed.
      */

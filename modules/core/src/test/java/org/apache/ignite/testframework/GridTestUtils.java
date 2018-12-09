@@ -67,7 +67,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -1955,7 +1954,7 @@ public final class GridTestUtils {
      * @param test Test.
      * @param ignoredTests Tests to ignore. If test contained in the collection it is not included in suite
      */
-    public static void addTestIfNeeded(@NotNull final TestSuite suite, @NotNull final Class<? extends TestCase> test,
+    public static void addTestIfNeeded(@NotNull final TestSuite suite, @NotNull final Class<?> test,
         @Nullable final Collection<Class> ignoredTests) {
         if (ignoredTests != null && ignoredTests.contains(test))
             return;
