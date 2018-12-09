@@ -40,7 +40,7 @@ public class IgniteSchedulerSelfTest {
     /** */
     private IgniteScheduler scheduler;
 
-    /** {@inheritDoc} */
+    /** */
     @Before
     public void setUp() throws Exception {
         ClusterProperties clustProp = new ClusterProperties();

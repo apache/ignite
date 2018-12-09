@@ -50,13 +50,13 @@ import static org.junit.Assert.fail;
  * Tests Command Handler parsing arguments.
  */
 public class CommandHandlerParsingTest {
-    /** {@inheritDoc} */
+    /** */
     @Before
     public void setUp() throws Exception {
         System.setProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
     }
 
-    /** {@inheritDoc} */
+    /** */
     @After
     public void tearDown() throws Exception {
         System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);

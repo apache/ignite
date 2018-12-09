@@ -52,7 +52,7 @@ public class GridManagerMxBeanIllegalArgumentHandleTest {
     /** If we succeeded to set final field this flag is true, otherwise test assertions will not be performed */
     private boolean correctSetupOfTestPerformed;
 
-    /** {@inheritDoc} Changes field to always failing mock */
+    /** Changes field to always failing mock. */
     @Before
     public void setUp() throws Exception {
         try {

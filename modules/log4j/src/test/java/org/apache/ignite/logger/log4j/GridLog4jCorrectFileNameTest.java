@@ -46,7 +46,7 @@ public class GridLog4jCorrectFileNameTest {
     /** Appender */
     private Log4jRollingFileAppender appender;
 
-    /** {@inheritDoc} */
+    /** */
     @Before
     public void setUp() throws Exception {
         Logger root = Logger.getRootLogger();
@@ -61,7 +61,7 @@ public class GridLog4jCorrectFileNameTest {
         root.addAppender(appender);
     }
 
-    /** {@inheritDoc} */
+    /** */
     @After
     public void tearDown() {
         if (appender != null) {

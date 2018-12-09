@@ -65,7 +65,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest {
     /** Array. */
     private byte[] outArr;
 
-    /** {@inheritDoc} */
+    /** */
     @Before
     public void setUp() throws Exception {
         outArr = new byte[ARR_LEN * 8 + LEN_BYTES];

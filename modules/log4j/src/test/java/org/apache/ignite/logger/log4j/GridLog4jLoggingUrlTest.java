@@ -38,7 +38,7 @@ public class GridLog4jLoggingUrlTest {
     /** Logger config */
     private URL url;
 
-    /** {@inheritDoc} */
+    /** */
     @Before
     public void setUp() throws Exception {
         File xml = GridTestUtils.resolveIgnitePath("modules/core/src/test/config/log4j-test.xml");

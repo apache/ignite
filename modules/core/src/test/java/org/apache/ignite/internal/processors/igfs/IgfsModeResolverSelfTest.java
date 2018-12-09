@@ -45,7 +45,7 @@ public class IgfsModeResolverSelfTest {
     /** */
     private IgfsModeResolver reslvr;
 
-    /** {@inheritDoc} */
+    /** */
     @Before
     public void setUp() throws Exception {
         reslvr = new IgfsModeResolver(DUAL_SYNC, new ArrayList<>(Arrays.asList(new T2<>(

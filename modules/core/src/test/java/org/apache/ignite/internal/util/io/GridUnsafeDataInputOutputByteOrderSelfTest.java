@@ -51,7 +51,7 @@ public class GridUnsafeDataInputOutputByteOrderSelfTest {
     /** In. */
     private GridUnsafeDataInput in;
 
-    /** {@inheritDoc} */
+    /** */
     @Before
     public void setUp() throws Exception {
         out = new GridUnsafeDataOutput(16 * 8+ LEN_BYTES);
@@ -59,7 +59,7 @@ public class GridUnsafeDataInputOutputByteOrderSelfTest {
         in.inputStream(new ByteArrayInputStream(out.internalArray()));
     }
 
-    /** {@inheritDoc} */
+    /** */
     @After
     public void tearDown() throws Exception {
         in.close();

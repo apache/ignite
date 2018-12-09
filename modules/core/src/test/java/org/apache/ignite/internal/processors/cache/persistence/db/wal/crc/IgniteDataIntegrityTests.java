@@ -48,7 +48,7 @@ public class IgniteDataIntegrityTests {
     /** Buffer expander. */
     private ByteBufferExpander expBuf;
 
-    /** {@inheritDoc} */
+    /** */
     @Before
     public void setUp() throws Exception {
         File file = File.createTempFile("integrity", "dat");
@@ -81,7 +81,7 @@ public class IgniteDataIntegrityTests {
         fileInput.io().force();
     }
 
-    /** {@inheritDoc} */
+    /** */
     @After
     public void tearDown() throws Exception {
         fileInput.io().close();
