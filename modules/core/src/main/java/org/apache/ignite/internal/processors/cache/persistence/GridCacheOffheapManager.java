@@ -253,8 +253,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         if (rowStore0 != null) {
             CacheFreeListImpl freeList = (CacheFreeListImpl)rowStore0.freeList();
 
-            freeList.saveMetadata();
-
             long updCntr = store.updateCounter();
             long size = store.fullSize(); // TODO FIXME size is wrong (ahead of counter).
             long rmvId = globalRemoveId().get();
@@ -429,6 +427,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
             else if (needSnapshot)
                 tryAddEmptyPartitionToSnapshot(store, ctx);
+
+            // Page update could trigger freelist metadata change.
+            freeList.saveMetadata();
         }
         else if (needSnapshot)
             tryAddEmptyPartitionToSnapshot(store, ctx);
@@ -468,6 +469,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                 GridDhtLocalPartition part = grp.topology().forceCreatePartition(p);
 
+                // TODO FIXME this should only be called if partition is newly created.
                 onPartitionInitialCounterUpdated(p, 0);
 
                 ctx.database().checkpointReadLock();

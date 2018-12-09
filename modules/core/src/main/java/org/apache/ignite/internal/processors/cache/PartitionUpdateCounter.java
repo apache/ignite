@@ -173,7 +173,16 @@ public class PartitionUpdateCounter {
         if (cntr <= cntr0) // These counter updates was already applied before checkpoint.
             return;
 
-        releaseOne(cntr);
+        long tmp = cntr - 1;
+
+        NavigableSet<Item> items = queue.headSet(new Item(tmp, 0), true);
+
+        assert items.isEmpty() || !items.last().within(tmp) : "Invalid counter";
+
+        //releaseOne(cntr);
+
+        // TODO FIXME assert what counter not within any gap.
+        update(tmp, 1); // We expecting only unapplied updates.
 
         initCntr = get();
 
@@ -297,6 +306,7 @@ public class PartitionUpdateCounter {
 
     /**
      * Used on recovery. Should be called only once for each counter.
+     * TODO releaseOne bad name, because no releasing happens (release semantics absent on recovery).
      * @param cntr Counter.
      */
     public synchronized void releaseOne(long cntr) {
@@ -307,6 +317,10 @@ public class PartitionUpdateCounter {
         if (items.isEmpty() || !(last = items.last()).within(cntr)) { // Counter not inside gap
             update(cntr - 1, 1);
 
+            if (queue.first().start == this.cntr.get()) {
+
+            }
+
             return;
         }
 
@@ -314,7 +328,7 @@ public class PartitionUpdateCounter {
 
         if (items.first() == last) {
             if (!last.open())
-                release(last.start, last.delta);
+                update(last.start, last.delta);
             else
                 this.cntr.incrementAndGet();
         }
