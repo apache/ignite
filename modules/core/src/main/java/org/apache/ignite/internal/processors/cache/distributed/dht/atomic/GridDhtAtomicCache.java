@@ -1792,7 +1792,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                         List<GridDhtPartitionsExchangeFuture> futs =
                                             ctx.shared().exchange().exchangeFutures();
 
-                                        for (int i = futs.size() - 1; i >= 0; --i) {
+                                        for (int i = 0; i < futs.size(); ++i) {
                                             GridDhtPartitionsExchangeFuture fut = futs.get(i);
 
                                             if (fut.isDone() && fut.exchangeDone() &&
