@@ -22,10 +22,13 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithExpiryPolicy;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  *
  */
+@RunWith(AllTests.class)
 public class IgnitePdsTestSuite3 extends TestSuite {
     /**
      * @return IgniteCache test suite.
@@ -39,7 +42,7 @@ public class IgnitePdsTestSuite3 extends TestSuite {
      * @return IgniteCache test suite.
      */
     public static TestSuite suite(Collection<Class> ignoredTests) {
-        TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite 3");
+        TestSuite suite = new TestSuite("Ignite Persistent Store Mvcc Test Suite 3");
 
         addRealPageStoreTestsNotForDirectIo(suite, ignoredTests);
 
