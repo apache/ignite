@@ -1918,9 +1918,15 @@ public abstract class GridAbstractTest extends TestCase {
 
     /**
      * Gets flag whether {@link TcpDiscoveryMulticastIpFinder} should be used as IP finder during preparing of
-     * configuration at node startup in{@link #getConfiguration(String)}.
+     * configuration at node startup in {@link #getConfiguration(String)}.
      * <p/>
-     * NOTE: the value of this method will be ignored if {@link #isMultiJvm()} is {@code true}.
+     * Default is {@code false}, that means shared static IP finder will be used for all test methods in class.
+     * <p/>
+     * Override this method to return {@code true}, if you want to return back behaviour used before implementation of
+     * <a href="https://issues.apache.org/jira/browse/IGNITE-10555"</a>, when multicast IP finder was used.
+     * <p/>
+     * NOTE: this does not affect multi-JVM tests, because returned value of this method is ignored if {@link
+     * #isMultiJvm()} returns {@code true}.
      *
      * @return {@code true} if multicast IP finder will be used, otherwise shared static IP finder will be used.
      */
