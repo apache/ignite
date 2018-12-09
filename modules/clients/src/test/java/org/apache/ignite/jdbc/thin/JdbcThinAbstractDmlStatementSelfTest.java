@@ -57,6 +57,11 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() {
+        stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         ignite(0).getOrCreateCache(cacheConfig());
 
