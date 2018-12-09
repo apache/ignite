@@ -20,7 +20,6 @@ package org.apache.ignite.logger.log4j;
 import java.io.File;
 import java.util.Collections;
 import java.util.Enumeration;
-import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
@@ -32,21 +31,24 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.varia.LevelRangeFilter;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests that several grids log to files with correct names.
  */
 @GridCommonTest(group = "Logger")
-@RunWith(JUnit4.class)
-public class GridLog4jCorrectFileNameTest extends TestCase {
+public class GridLog4jCorrectFileNameTest {
     /** Appender */
     private Log4jRollingFileAppender appender;
 
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Before
+    public void setUp() throws Exception {
         Logger root = Logger.getRootLogger();
 
         for (Enumeration appenders = root.getAllAppenders(); appenders.hasMoreElements(); ) {
@@ -60,7 +62,8 @@ public class GridLog4jCorrectFileNameTest extends TestCase {
     }
 
     /** {@inheritDoc} */
-    @Override public void tearDown() {
+    @After
+    public void tearDown() {
         if (appender != null) {
             Logger.getRootLogger().removeAppender(Log4jRollingFileAppender.class.getSimpleName());
 

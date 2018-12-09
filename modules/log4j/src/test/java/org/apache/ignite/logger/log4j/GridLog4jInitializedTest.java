@@ -17,25 +17,24 @@
 
 package org.apache.ignite.logger.log4j;
 
-import junit.framework.TestCase;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.apache.log4j.BasicConfigurator;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * Log4j initialized test.
  */
 @GridCommonTest(group = "Logger")
-@RunWith(JUnit4.class)
-public class GridLog4jInitializedTest extends TestCase {
-
+public class GridLog4jInitializedTest {
     /**
      * @throws Exception If failed.
      */
-    @Override protected void setUp() throws Exception {
+    @Before
+    public void setUp() throws Exception {
         BasicConfigurator.configure();
     }
 

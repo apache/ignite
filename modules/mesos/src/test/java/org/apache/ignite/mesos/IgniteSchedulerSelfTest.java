@@ -22,22 +22,27 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
-import junit.framework.TestCase;
 import org.apache.ignite.mesos.resource.ResourceProvider;
 import org.apache.mesos.Protos;
 import org.apache.mesos.SchedulerDriver;
+import org.junit.Before;
+import org.junit.Test;
+
+import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 /**
  * Scheduler tests.
  */
-public class IgniteSchedulerSelfTest extends TestCase {
+public class IgniteSchedulerSelfTest {
     /** */
     private IgniteScheduler scheduler;
 
     /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
-        super.setUp();
-
+    @Before
+    public void setUp() throws Exception {
         ClusterProperties clustProp = new ClusterProperties();
 
         scheduler = new IgniteScheduler(clustProp, new ResourceProvider() {
@@ -62,6 +67,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testHostRegister() throws Exception {
         Protos.Offer offer = createOffer("hostname", 4, 1024);
 
@@ -81,6 +87,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeclineByCpu() throws Exception {
         Protos.Offer offer = createOffer("hostname", 4, 1024);
 
@@ -115,6 +122,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeclineByMem() throws Exception {
         Protos.Offer offer = createOffer("hostname", 4, 1024);
 
@@ -149,6 +157,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeclineByMemCpu() throws Exception {
         Protos.Offer offer = createOffer("hostname", 1, 1024);
 
@@ -191,6 +200,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeclineByCpuMinRequirements() throws Exception {
         Protos.Offer offer = createOffer("hostname", 8, 10240);
 
@@ -211,6 +221,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeclineByMemMinRequirements() throws Exception {
         Protos.Offer offer = createOffer("hostname", 8, 10240);
 
@@ -231,6 +242,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testHosthameConstraint() throws Exception {
         Protos.Offer offer = createOffer("hostname", 8, 10240);
 
@@ -258,6 +270,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPerNode() throws Exception {
         Protos.Offer offer = createOffer("hostname", 8, 1024);
 
@@ -304,6 +317,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIgniteFramework() throws Exception {
         final String mesosUserValue = "userAAAAA";
         final String mesosRoleValue = "role1";
@@ -330,6 +344,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMesosRoleValidation() throws Exception {
         List<String> failedRoleValues = Arrays.asList("", ".", "..", "-testRole",
             "test/Role", "test\\Role", "test Role", null);

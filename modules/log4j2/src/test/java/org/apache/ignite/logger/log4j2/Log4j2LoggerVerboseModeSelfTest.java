@@ -21,7 +21,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
 import java.util.Collections;
-import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
@@ -31,14 +30,13 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.logging.log4j.Level;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * Grid Log4j2 SPI test.
  */
-@RunWith(JUnit4.class)
-public class Log4j2LoggerVerboseModeSelfTest extends TestCase {
+public class Log4j2LoggerVerboseModeSelfTest {
     /** */
     private static final String LOG_PATH_VERBOSE_TEST = "modules/core/src/test/config/log4j2-verbose-test.xml";
 
@@ -46,7 +44,7 @@ public class Log4j2LoggerVerboseModeSelfTest extends TestCase {
      * @throws Exception If failed.
      */
     @Before
-    @Override public void setUp() throws Exception {
+    public void setUp() throws Exception {
         Log4J2Logger.cleanup();
 
     }
