@@ -25,11 +25,14 @@ import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakLargePag
 import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakNonTransactionalTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakWithExpirationTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Page memory leaks tests.
  */
-public class IgniteDbMemoryLeakTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteDbMemoryLeakTestSuite {
     /**
      * @return Test suite.
      */

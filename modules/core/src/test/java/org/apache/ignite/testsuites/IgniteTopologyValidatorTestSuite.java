@@ -32,16 +32,18 @@ import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplic
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedAtomicCacheTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedTxCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedTxCacheTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Topology validator test suite.
  */
-public class IgniteTopologyValidatorTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteTopologyValidatorTestSuite {
     /**
      * @return Topology validator tests suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Topology validator Test Suite");
 
         suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorNearPartitionedAtomicCacheTest.class));

@@ -58,12 +58,15 @@ import org.apache.ignite.loadtests.mergesort.GridMergeSortLoadTest;
 import org.apache.ignite.loadtests.nio.GridNioBenchmarkTest;
 import org.apache.ignite.marshaller.GridMarshallerPerformanceTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiLanLoadTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Tests suite for performance tests tests.
  * Note: Most of these are resource-consuming or non-terminating.
  */
-public class IgnitePerformanceTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgnitePerformanceTestSuite {
     /**
      * @return Tests suite for orphaned tests (not in any test sute previously).
      */

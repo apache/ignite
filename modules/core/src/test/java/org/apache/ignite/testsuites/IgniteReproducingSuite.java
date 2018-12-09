@@ -18,6 +18,8 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for cycled run tests on PR code. <br>
@@ -29,12 +31,12 @@ import junit.framework.TestSuite;
  *
  * This suite is not included into main build
  */
-public class IgniteReproducingSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteReproducingSuite {
     /**
      * @return suite with test(s) for reproduction some problem.
-     * @throws Exception if failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Issue Reproducing Test Suite");
 
         //uncomment to add some test

@@ -21,16 +21,18 @@ import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessorSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Suite for {@link GridTimeoutProcessor} tests.
  */
-public class IgniteTimeoutProcessorSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteTimeoutProcessorSelfTestSuite {
     /**
      * @return Job metrics test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Timeout Processor Test Suite");
 
         suite.addTest(new JUnit4TestAdapter(GridTimeoutProcessorSelfTest.class));

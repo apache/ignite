@@ -18,11 +18,14 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Suite for shared memory mode.
  */
-public class IgniteIpcTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteIpcTestSuite {
     /**
      * @return IgniteCache test suite.
      * @throws Exception Thrown in case of the failure.

@@ -40,11 +40,14 @@ import org.apache.ignite.jvmtest.ServerSocketMultiThreadedTest;
 import org.apache.ignite.lang.GridSystemCurrentTimeMillisTest;
 import org.apache.ignite.lang.GridThreadPriorityTest;
 import org.apache.ignite.startup.servlet.GridServletLoaderTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Tests suite for orphaned tests.
  */
-public class IgniteLostAndFoundTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteLostAndFoundTestSuite {
     /**
      * @return Tests suite for orphaned tests (not in any test sute previously).
      */

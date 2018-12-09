@@ -46,16 +46,18 @@ import org.apache.ignite.lang.utils.GridStripedLockSelfTest;
 import org.apache.ignite.lang.utils.IgniteOffheapReadWriteLockSelfTest;
 import org.apache.ignite.util.GridConcurrentLinkedDequeSelfTest;
 import org.apache.ignite.util.GridConcurrentLinkedHashMapMultiThreadedSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Ignite language test suite.
  */
-public class IgniteLangSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteLangSelfTestSuite {
     /**
      * @return Kernal test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Lang Test Suite");
 
         suite.addTest(new JUnit4TestAdapter(GridTupleSelfTest.class));

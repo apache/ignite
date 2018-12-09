@@ -22,11 +22,14 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.managers.GridManagerLocalMessageListenerSelfTest;
 import org.apache.ignite.internal.managers.GridNoopManagerSelfTest;
 import org.apache.ignite.spi.encryption.KeystoreEncryptionSpiSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Grid SPI test suite.
  */
-public class IgniteSpiTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteSpiTestSuite {
     /**
      * @return All SPI tests suite.
      * @throws Exception If failed.
