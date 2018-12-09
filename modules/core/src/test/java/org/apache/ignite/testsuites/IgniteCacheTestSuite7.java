@@ -52,7 +52,7 @@ import org.junit.runners.AllTests;
  * Test suite.
  */
 @RunWith(AllTests.class)
-public class IgniteCacheTestSuite7 extends TestSuite {
+public class IgniteCacheTestSuite7 {
     /**
      * @return IgniteCache test suite.
      */

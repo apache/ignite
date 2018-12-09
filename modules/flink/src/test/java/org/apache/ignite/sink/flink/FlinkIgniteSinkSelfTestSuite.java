@@ -19,11 +19,14 @@ package org.apache.ignite.sink.flink;
 
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Apache Flink sink tests.
  */
-public class FlinkIgniteSinkSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class FlinkIgniteSinkSelfTestSuite {
     /**
      * @return Test suite.
      */

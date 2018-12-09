@@ -28,7 +28,7 @@ import org.junit.runners.AllTests;
  * Stream test suite.
  */
 @RunWith(AllTests.class)
-public class IgniteStreamSelfTestSuite extends TestSuite {
+public class IgniteStreamSelfTestSuite {
     /**
      * @return Stream tests suite.
      */

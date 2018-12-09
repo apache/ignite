@@ -20,11 +20,14 @@ package org.apache.ignite.testsuites;
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.gce.TcpDiscoveryGoogleStorageIpFinderSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Google Compute Engine integration tests.
  */
-public class IgniteGCETestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteGCETestSuite {
     /**
      * @return Test suite.
      */

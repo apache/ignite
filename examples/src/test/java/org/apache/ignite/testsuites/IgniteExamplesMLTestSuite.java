@@ -33,6 +33,8 @@ import junit.framework.TestSuite;
 import org.apache.ignite.examples.ml.util.MLExamplesCommonArgs;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
@@ -41,7 +43,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
  * <p>
  * Contains only ML Grid Ignite examples tests.</p>
  */
-public class IgniteExamplesMLTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteExamplesMLTestSuite {
     /** Base package to create test classes in. */
     private static final String basePkgForTests = "org.apache.ignite.examples.ml";
 

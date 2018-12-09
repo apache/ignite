@@ -49,13 +49,16 @@ import org.apache.ignite.examples.SpringDataExampleSelfTest;
 import org.apache.ignite.examples.SqlExamplesSelfTest;
 import org.apache.ignite.examples.TaskExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.TaskExamplesSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Examples test suite.
  * <p>
  * Contains all Ignite examples tests.</p>
  */
-public class IgniteExamplesSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteExamplesSelfTestSuite {
     /**
      * @return Suite.
      * @throws Exception If failed.

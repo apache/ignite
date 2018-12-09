@@ -19,11 +19,14 @@ package org.apache.ignite.stream.zeromq;
 
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * ZeroMQ streamer tests.
  */
-public class IgniteZeroMqStreamerTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteZeroMqStreamerTestSuite {
     /**
      * @return ZeroMQ streamer tests suite.
      */

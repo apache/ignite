@@ -27,6 +27,8 @@ import org.apache.ignite.examples.EventsExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.EventsExamplesSelfTest;
 import org.apache.ignite.examples.MessagingExamplesSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
@@ -35,7 +37,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
  * <p>
  * Contains only Spring ignite examples tests.
  */
-public class IgniteExamplesJ8SelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteExamplesJ8SelfTestSuite {
     /**
      * @return Suite.
      * @throws Exception If failed.
