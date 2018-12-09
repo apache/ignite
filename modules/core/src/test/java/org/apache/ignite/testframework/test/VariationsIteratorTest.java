@@ -20,17 +20,16 @@ package org.apache.ignite.testframework.test;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import junit.framework.TestCase;
 import org.apache.ignite.testframework.configvariations.VariationsIterator;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /**
  * Test start iterator.
  */
-@RunWith(JUnit4.class)
-public class VariationsIteratorTest extends TestCase {
+public class VariationsIteratorTest {
     /**
      * @throws Exception If failed.
      */

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal.crc;
 
-import junit.framework.TestCase;
 import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
@@ -35,14 +34,14 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDat
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
-public class IgniteDataIntegrityTests extends TestCase {
+public class IgniteDataIntegrityTests {
     /** File input. */
     private SimpleFileInput fileInput;
 
@@ -51,9 +50,7 @@ public class IgniteDataIntegrityTests extends TestCase {
 
     /** {@inheritDoc} */
     @Before
-    @Override public void setUp() throws Exception {
-        super.setUp();
-
+    public void setUp() throws Exception {
         File file = File.createTempFile("integrity", "dat");
         file.deleteOnExit();
 
@@ -86,7 +83,7 @@ public class IgniteDataIntegrityTests extends TestCase {
 
     /** {@inheritDoc} */
     @After
-    @Override public void tearDown() throws Exception {
+    public void tearDown() throws Exception {
         fileInput.io().close();
         expBuf.close();
     }

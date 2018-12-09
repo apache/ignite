@@ -21,19 +21,16 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Set;
 
-import junit.framework.TestCase;
-
 import org.apache.ignite.internal.client.GridClientCacheFlag;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests conversions between GridClientCacheFlag.
  */
-@RunWith(JUnit4.class)
-public class ClientCacheFlagsCodecTest extends TestCase {
+public class ClientCacheFlagsCodecTest {
     /**
      * Tests that each client flag will be correctly converted to server flag.
      */

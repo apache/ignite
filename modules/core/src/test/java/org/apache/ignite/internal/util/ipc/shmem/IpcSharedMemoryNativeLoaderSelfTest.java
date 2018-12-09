@@ -21,19 +21,16 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Collections;
-import junit.framework.TestCase;
 import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Test shared memory native loader.
  */
-@RunWith(JUnit4.class)
-public class IpcSharedMemoryNativeLoaderSelfTest extends TestCase {
-
+public class IpcSharedMemoryNativeLoaderSelfTest {
     /**
      * Test {@link IpcSharedMemoryNativeLoader#load()} in case, when native library path was
      * already loaded, but corrupted.

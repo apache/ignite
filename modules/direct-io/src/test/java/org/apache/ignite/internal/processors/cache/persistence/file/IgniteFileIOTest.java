@@ -21,17 +21,13 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * File IO tests.
  */
-@RunWith(JUnit4.class)
-public class IgniteFileIOTest extends TestCase {
+public class IgniteFileIOTest {
     /** Test data size. */
     private static final int TEST_DATA_SIZE = 16 * 1024 * 1024;
 

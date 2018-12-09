@@ -18,7 +18,6 @@
 package org.apache.ignite.testframework.test;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -26,14 +25,13 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
-public class ConfigVariationsTestSuiteBuilderTest extends TestCase {
+public class ConfigVariationsTestSuiteBuilderTest {
     /**
      * @throws Exception If failed.
      */

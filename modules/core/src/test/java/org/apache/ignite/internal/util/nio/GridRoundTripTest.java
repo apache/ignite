@@ -26,17 +26,13 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Random;
-import junit.framework.TestCase;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests pure round trip time on network.
  */
-@RunWith(JUnit4.class)
-public class GridRoundTripTest extends TestCase {
+public class GridRoundTripTest {
     /** Communication port. */
     public static final int PORT = 47600;
 

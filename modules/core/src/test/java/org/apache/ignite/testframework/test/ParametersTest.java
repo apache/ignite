@@ -19,20 +19,18 @@ package org.apache.ignite.testframework.test;
 
 import java.util.HashSet;
 import java.util.Set;
-import junit.framework.TestCase;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.configvariations.ConfigParameter;
 import org.apache.ignite.testframework.configvariations.Parameters;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Test.
  */
-@RunWith(JUnit4.class)
-public class ParametersTest extends TestCase {
+public class ParametersTest {
     /** */
     private static final String DEFAULT_CACHE_NAME = "default";
 

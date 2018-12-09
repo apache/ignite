@@ -19,12 +19,9 @@ package org.apache.ignite.internal.util.io;
 
 import java.io.ByteArrayInputStream;
 import java.util.Random;
-import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.GridTestIoUtils.getCharByByteLE;
 import static org.apache.ignite.GridTestIoUtils.getDoubleByByteLE;
@@ -33,12 +30,12 @@ import static org.apache.ignite.GridTestIoUtils.getIntByByteLE;
 import static org.apache.ignite.GridTestIoUtils.getLongByByteLE;
 import static org.apache.ignite.GridTestIoUtils.getShortByByteLE;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Grid unsafe data input/output byte order sanity tests.
  */
-@RunWith(JUnit4.class)
-public class GridUnsafeDataInputOutputByteOrderSelfTest extends TestCase {
+public class GridUnsafeDataInputOutputByteOrderSelfTest {
     /** Array length. */
     private static final int ARR_LEN = 16;
 
@@ -56,7 +53,7 @@ public class GridUnsafeDataInputOutputByteOrderSelfTest extends TestCase {
 
     /** {@inheritDoc} */
     @Before
-    @Override public void setUp() throws Exception {
+    public void setUp() throws Exception {
         out = new GridUnsafeDataOutput(16 * 8+ LEN_BYTES);
         in = new GridUnsafeDataInput();
         in.inputStream(new ByteArrayInputStream(out.internalArray()));
@@ -64,7 +61,7 @@ public class GridUnsafeDataInputOutputByteOrderSelfTest extends TestCase {
 
     /** {@inheritDoc} */
     @After
-    @Override public void tearDown() throws Exception {
+    public void tearDown() throws Exception {
         in.close();
         out.close();
     }

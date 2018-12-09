@@ -17,16 +17,12 @@
 
 package org.apache.ignite.internal.util;
 
-import junit.framework.TestCase;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Grid cleaner tests.
  */
-@RunWith(JUnit4.class)
-public class GridCleanerTest extends TestCase {
+public class GridCleanerTest {
     /**
      * @throws Exception If failed.
      */
