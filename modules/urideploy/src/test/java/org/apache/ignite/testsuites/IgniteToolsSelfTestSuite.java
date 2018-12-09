@@ -20,11 +20,14 @@ package org.apache.ignite.testsuites;
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.tools.GridToolsSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Tools self-test suite.
  */
-public class IgniteToolsSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteToolsSelfTestSuite {
     /**
      * @return Grid ant tasks tests suite.
      */

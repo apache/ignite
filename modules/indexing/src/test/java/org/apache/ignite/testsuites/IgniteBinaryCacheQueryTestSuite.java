@@ -235,11 +235,14 @@ import org.apache.ignite.spi.communication.tcp.GridOrderedMessageCancelSelfTest;
 import org.apache.ignite.sqltests.PartitionedSqlTest;
 import org.apache.ignite.sqltests.ReplicatedSqlTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for cache queries.
  */
-public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteBinaryCacheQueryTestSuite {
     /**
      * @return Test suite.
      */

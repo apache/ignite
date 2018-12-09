@@ -20,11 +20,14 @@ package org.apache.ignite;
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.yarn.IgniteApplicationMasterSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Apache Hadoop Yarn integration tests.
  */
-public class IgniteYarnTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteYarnTestSuite {
     /**
      * @return Test suite.
      */

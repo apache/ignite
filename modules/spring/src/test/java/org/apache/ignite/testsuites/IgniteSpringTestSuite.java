@@ -46,16 +46,18 @@ import org.apache.ignite.testframework.IgniteTestSuite;
 import org.apache.ignite.transactions.spring.GridSpringTransactionManagerSelfTest;
 import org.apache.ignite.transactions.spring.GridSpringTransactionManagerSpringBeanSelfTest;
 import org.apache.ignite.transactions.spring.SpringTransactionManagerContextInjectionTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Spring tests.
  */
-public class IgniteSpringTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteSpringTestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new IgniteTestSuite("Spring Test Suite");
 
         suite.addTest(new JUnit4TestAdapter(GridSpringBeanSerializationSelfTest.class));

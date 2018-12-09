@@ -33,6 +33,8 @@ import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSy
 import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemShmemExternalToClientPrimarySelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemShmemExternalToClientProxySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsServerManagerIpcEndpointRegistrationOnLinuxAndMacSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 import static org.apache.ignite.testsuites.IgniteHadoopTestSuite.downloadHadoop;
 
@@ -40,7 +42,8 @@ import static org.apache.ignite.testsuites.IgniteHadoopTestSuite.downloadHadoop;
  * Test suite for Hadoop file system over Ignite cache.
  * Contains tests which works on Linux and Mac OS platform only.
  */
-public class IgniteIgfsLinuxAndMacOSTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteIgfsLinuxAndMacOSTestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.

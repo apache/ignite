@@ -104,13 +104,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 import static org.apache.ignite.testframework.GridTestUtils.modeToPermissionSet;
 
 /**
  * Test suite for Hadoop Map Reduce engine.
  */
-public class IgniteHadoopTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteHadoopTestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.

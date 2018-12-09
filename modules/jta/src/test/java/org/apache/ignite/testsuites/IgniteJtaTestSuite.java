@@ -31,11 +31,14 @@ import org.apache.ignite.internal.processors.cache.jta.GridReplicatedCacheJtaFac
 import org.apache.ignite.internal.processors.cache.jta.GridReplicatedCacheJtaLookupClassNameSelfTest;
 import org.apache.ignite.internal.processors.cache.GridJtaLifecycleAwareSelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * JTA integration tests.
  */
-public class IgniteJtaTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteJtaTestSuite {
     /**
      * @return Test suite.
      */

@@ -21,11 +21,14 @@ import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.springdata.IgniteSpringDataCrudSelfTest;
 import org.apache.ignite.springdata.IgniteSpringDataQueriesSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Ignite Spring Data 2.0 test suite.
  */
-public class IgniteSpringData2TestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteSpringData2TestSuite {
     /**
      * @return Test suite.
      */

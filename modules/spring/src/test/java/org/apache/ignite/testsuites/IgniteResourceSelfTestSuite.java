@@ -24,12 +24,15 @@ import org.apache.ignite.internal.processors.resource.GridResourceProcessorSelfT
 import org.apache.ignite.internal.processors.resource.GridServiceInjectionSelfTest;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceInjectionSelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Ignite resource injection test Suite.
  */
 @SuppressWarnings({"ProhibitedExceptionDeclared"})
-public class IgniteResourceSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteResourceSelfTestSuite {
     /**
      * @return Resource injection test suite.
      */

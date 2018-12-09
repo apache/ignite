@@ -22,11 +22,14 @@ import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.kubernetes.TcpDiscoveryKubernetesIpFinderSelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Ignite Kubernetes integration test.
  */
-public class IgniteKubernetesTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteKubernetesTestSuite {
     /**
      * @return Test suite.
      */

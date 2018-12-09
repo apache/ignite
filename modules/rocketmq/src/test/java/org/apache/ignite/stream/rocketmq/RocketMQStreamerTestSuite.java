@@ -19,11 +19,14 @@ package org.apache.ignite.stream.rocketmq;
 
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Apache RocketMQ streamers tests.
  */
-public class RocketMQStreamerTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class RocketMQStreamerTestSuite {
     /**
      * @return Test suite.
      */

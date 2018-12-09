@@ -60,11 +60,14 @@ import org.apache.ignite.internal.processors.query.h2.twostep.NonCollocatedRetry
 import org.apache.ignite.internal.processors.query.h2.twostep.RetryCauseMessageSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.TableViewSubquerySelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for cache queries.
  */
-public class IgniteBinaryCacheQueryTestSuite2 extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteBinaryCacheQueryTestSuite2 {
     /**
      * @return Test suite.
      */

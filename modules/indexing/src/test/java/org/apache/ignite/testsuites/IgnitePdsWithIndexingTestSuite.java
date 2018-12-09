@@ -27,11 +27,14 @@ import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeWithInde
 import org.apache.ignite.internal.processors.database.IgnitePersistentStoreQueryWithMultipleClassesPerCacheTest;
 import org.apache.ignite.internal.processors.database.IgnitePersistentStoreSchemaLoadTest;
 import org.apache.ignite.internal.processors.database.IgniteTwoRegionsRebuildIndexTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  *
  */
-public class IgnitePdsWithIndexingTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgnitePdsWithIndexingTestSuite {
     /**
      * @return Test suite.
      */

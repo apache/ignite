@@ -44,11 +44,14 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalPathsTe
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRecoveryTxLogicalRecordsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRolloverRecordLoggingFsyncTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRolloverRecordLoggingLogOnlyTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for tests that cover core PDS features and depend on indexing module.
  */
-public class IgnitePdsWithIndexingCoreTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgnitePdsWithIndexingCoreTestSuite {
     /**
      * @return Test suite.
      */
