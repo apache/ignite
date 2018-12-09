@@ -36,10 +36,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  *
  */
 public class TcpCommunicationSpiChannelSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
+    /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** Nodes count. */
+    /** */
     private static final int NODES_CNT = 2;
 
     /** {@inheritDoc} */

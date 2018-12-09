@@ -917,21 +917,25 @@ public class GridNioServer<T> {
      * The new {@link GridNioSocketChannel} will be created and {@link GridNioSession} will be destroyed.
      *
      * @param ses Session.
+     * @param msg Message to send on complete.
      */
-    public GridNioFuture<Boolean> createNioChannel(final GridSelectorNioSession ses) {
+    public GridNioFuture<Boolean> createNioChannel(final GridSelectorNioSession ses, Message msg) {
         assert ses instanceof GridSelectorNioSessionImpl : ses;
-
-        if (ses.closed())
-            return new GridNioFinishedFuture<>(false);
 
         NioOperationFuture<Boolean> req =
             new NioOperationFuture<>((SocketChannel)ses.key().channel(),
                 NioOperation.ADD_CHANNEL,
                 (GridSelectorNioSessionImpl)ses,
+                msg,
                 true,
                 null);
 
-        ses.offerStateChange(req);
+        try {
+            send0((GridSelectorNioSessionImpl)ses, req, true);
+        }
+        catch (IgniteCheckedException e) {
+            return new GridNioFinishedFuture<>(e);
+        }
 
         return req;
     }
@@ -2163,6 +2167,8 @@ public class GridNioServer<T> {
                                 finally {
                                     req.onDone(sb.toString());
                                 }
+
+                                break;
                             }
 
                             case ADD_CHANNEL:
@@ -2170,26 +2176,30 @@ public class GridNioServer<T> {
 
                                 SocketChannel ch = req.socketChannel();
 
-                                close(req.session(), null, false);
-
                                 assert ch.isOpen() && ch.isConnected() : req;
 
                                 SelectionKey key = ch.keyFor(selector);
 
-                                if (key != null)
+                                if (key == null)
+                                    break;
+
+                                try {
+                                    writeAndCloseSession(key, req.session(), ch);
+
+                                }
+                                catch (Exception e) {
+                                    U.closeQuiet(ch);
+
+                                    req.onDone(e);
+
+                                    throw e;
+                                }
+                                finally {
                                     key.cancel();
 
-                                ConnectionKey connKey = req.session().meta(CONN_IDX_META);
-
-                                assert connKey != null : req;
-
-                                GridNioSocketChannel nioSocketCh;
-
-                                ch.configureBlocking(true);
-
-                                channels.add(nioSocketCh = new GridNioSocketChannelImpl(connKey, ch));
-
-                                onChannelCreated(nioSocketCh);
+                                    if (ch.isOpen() && ch.isConnected())
+                                        ch.configureBlocking(true);
+                                }
 
                                 req.onDone();
 
@@ -2617,6 +2627,27 @@ public class GridNioServer<T> {
                     close(ses,  e);
                 }
             }
+        }
+
+        /** */
+        private void writeAndCloseSession(
+            SelectionKey key,
+            GridSelectorNioSession ses,
+            SocketChannel ch
+        ) throws IOException {
+            ConnectionKey connKey = ses.meta(CONN_IDX_META);
+
+            assert connKey != null : ses;
+
+            processWrite(key);
+
+            close((GridSelectorNioSessionImpl)ses, null, false);
+
+            GridNioSocketChannel nioSocketCh;
+
+            channels.add(nioSocketCh = new GridNioSocketChannelImpl(connKey, ch));
+
+            onChannelCreated(nioSocketCh);
         }
 
         /**
@@ -3397,6 +3428,7 @@ public class GridNioServer<T> {
          * @param sockCh Socket channel.
          * @param op Operation to execute.
          * @param ses Session.
+         * @param msg Message to send.
          * @param accepted If socket accepted.
          * @param meta Optional meta.
          */
@@ -3404,6 +3436,7 @@ public class GridNioServer<T> {
             SocketChannel sockCh,
             NioOperation op,
             GridSelectorNioSession ses,
+            Message msg,
             boolean accepted,
             @Nullable Map<Integer, ?> meta
         ) {
@@ -3411,6 +3444,7 @@ public class GridNioServer<T> {
 
             this.op = op;
             this.ses = (GridSelectorNioSessionImpl)ses;
+            this.msg = msg;
             this.sockCh = sockCh;
             this.accepted = accepted;
             this.meta = meta;

@@ -574,11 +574,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         log.info("Handle channel connection creation [" +
                             "locNodeId=" + locNode.id() + ", rmtNodeId=" + sndId + ']');
 
-                    ses.send(new RecoveryLastReceivedMessage(0)).listen(new CI1<IgniteInternalFuture<?>>() {
-                        @Override public void apply(IgniteInternalFuture<?> fut) {
-                            nioSrvr.createNioChannel((GridSelectorNioSession)ses);
-                        }
-                    });
+                    nioSrvr.createNioChannel((GridSelectorNioSession)ses, new RecoveryLastReceivedMessage(0));
 
                     return;
                 }
@@ -3601,8 +3597,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         T2<GridNioSocketChannel, IgniteCheckedException> sockChnl = createTcpClient2(node, chBuilder, connKey);
 
-        if (log.isInfoEnabled())
-            log.info("Socket channel created with err: " + sockChnl.get2());
+        if (sockChnl.get2() != null)
+            throw sockChnl.get2();
 
         return sockChnl.get1();
     }
