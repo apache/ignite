@@ -173,6 +173,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_READ_LO
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
+import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 import static org.apache.ignite.internal.util.IgniteUtils.checkpointBufferSize;
 
@@ -3284,8 +3285,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             chp.metrics.onPagesWriteStart();
 
-            final int totalPagesToWriteCnt = chp.cpPages.size();
-
             if (asyncRunner != null) {
                 for (int i = 0; i < chp.cpPages.collectionsSize(); i++) {
                     Runnable write = new WriteCheckpointPages(
@@ -3293,7 +3292,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         chp.cpPages.innerCollection(i),
                         updStores,
                         doneWriteFut,
-                        totalPagesToWriteCnt,
                         asyncRunner,
                         () -> {
                             updateHeartbeat();
@@ -3322,7 +3320,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     chp.cpPages,
                     updStores,
                     doneWriteFut,
-                    totalPagesToWriteCnt,
                     null,
                     () -> {
                         updateHeartbeat();
@@ -3905,7 +3902,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 currCheckpointPagesCnt = 0;
             }
 
-            if (chp.hasPages()) {
+            if (chp.hasPages() || chp.hasDestroyedPartitions()) {
                 CheckpointEntry cp = prepareCheckpointEntry(
                     checkpointEntryWriteBuffer,
                     chp.cpEntry.timestamp(),
@@ -3973,13 +3970,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             FullPageId[] objects = cpPagesList.toArray(new FullPageId[cpPagesList.size()]);
 
             Arrays.parallelSort(objects, new Comparator<FullPageId>() {
-                @Override public int compare(FullPageId o1, FullPageId o2) {
-                    int cmp = Long.compare(o1.groupId(), o2.groupId());
+                @Override public int compare(FullPageId pageId1, FullPageId pageId2) {
+                    int cmp = Long.compare(pageId1.groupId(), pageId2.groupId());
+
                     if (cmp != 0)
                         return cmp;
 
-                    return Long.compare(PageIdUtils.effectivePageId(o1.pageId()),
-                        PageIdUtils.effectivePageId(o2.pageId()));
+                    return Long.compare(effectivePageId(pageId1.pageId()), effectivePageId(pageId2.pageId()));
                 }
             });
 
@@ -4020,9 +4017,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** */
         private final CountDownFuture doneFut;
 
-        /** Total pages to write, counter may be greater than {@link #writePageIds} size */
-        private final int totalPagesToWrite;
-
         /** If any pages were skipped, new task with remaining pages will be submitted here. */
         private final ExecutorService retryWriteExecutor;
 
@@ -4036,7 +4030,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @param writePageIds Collection of page IDs to write.
          * @param updStores
          * @param doneFut
-         * @param totalPagesToWrite total pages to be written under this checkpoint
          * @param retryWriteExecutor Retry write executor.
          */
         private WriteCheckpointPages(
@@ -4044,7 +4037,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             Collection<FullPageId> writePageIds,
             Map<PageStore, LongAdder> updStores,
             CountDownFuture doneFut,
-            int totalPagesToWrite,
             ExecutorService retryWriteExecutor,
             Supplier<Boolean> checkCancel
         ) {
@@ -4052,7 +4044,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             this.writePageIds = writePageIds;
             this.updStores = updStores;
             this.doneFut = doneFut;
-            this.totalPagesToWrite = totalPagesToWrite;
             this.retryWriteExecutor = retryWriteExecutor;
             this.checkCancel = checkCancel;
         }
@@ -4080,7 +4071,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             pagesToRetry,
                             updStores,
                             doneFut,
-                            totalPagesToWrite,
                             retryWriteExecutor,
                             checkCancel
                         );
