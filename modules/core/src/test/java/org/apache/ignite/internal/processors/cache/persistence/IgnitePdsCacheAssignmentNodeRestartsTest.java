@@ -45,6 +45,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -129,6 +130,9 @@ public class IgnitePdsCacheAssignmentNodeRestartsTest extends GridCommonAbstract
      */
     public void testAssignmentAfterRestarts() throws Exception {
         try {
+            if (MvccFeatureChecker.forcedMvcc())
+                fail("https://issues.apache.org/jira/browse/IGNITE-10582");
+
             System.setProperty(IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC, "true");
 
             final int gridsCnt = 5;
