@@ -2067,10 +2067,17 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             AffinityTopologyVersion lastAffChangedTopVer =
                 ctx.cache().context().exchange().lastAffinityChangedTopologyVersion(topVer);
 
-            DiscoCache lastAffChangedDiscoCache = discoCacheHist.get(lastAffChangedTopVer);
+            if (!lastAffChangedTopVer.equals(topVer)) {
+                assert lastAffChangedTopVer.compareTo(topVer) < 0;
 
-            if (lastAffChangedDiscoCache != null)
-                return lastAffChangedDiscoCache;
+                for (Map.Entry<AffinityTopologyVersion, DiscoCache> e : discoCacheHist.descendingEntrySet()) {
+                    if (e.getKey().isBetween(lastAffChangedTopVer, topVer))
+                        return e.getValue();
+
+                    if (e.getKey().compareTo(lastAffChangedTopVer) < 0)
+                        break;
+                }
+            }
 
             CacheGroupDescriptor desc = ctx.cache().cacheGroupDescriptors().get(grpId);
 
