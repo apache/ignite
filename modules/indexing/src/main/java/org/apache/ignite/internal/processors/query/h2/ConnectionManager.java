@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,9 +32,12 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2PlainRowFactory;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.h2.jdbc.JdbcStatement;
 import org.h2.server.web.WebServer;
 import org.h2.tools.Server;
 import org.jetbrains.annotations.Nullable;
@@ -163,17 +168,8 @@ public class ConnectionManager {
 
         sysConn = connectionNoCache(QueryUtils.SCHEMA_INFORMATION);
 
-        stmtCleanupTask = ctx.timeout().schedule(new Runnable() {
-            @Override public void run() {
-                cleanupStatements();
-            }
-        }, stmtCleanupPeriod, stmtCleanupPeriod);
-
-        connCleanupTask = ctx.timeout().schedule(new Runnable() {
-            @Override public void run() {
-                cleanupConnections();
-            }
-        }, CONN_CLEANUP_PERIOD, CONN_CLEANUP_PERIOD);
+        stmtCleanupTask = ctx.timeout().schedule(this::cleanupStatements, stmtCleanupPeriod, stmtCleanupPeriod);
+        connCleanupTask = ctx.timeout().schedule(this::cleanupConnections, CONN_CLEANUP_PERIOD, CONN_CLEANUP_PERIOD);
 
         startDebugConsole();
     }
@@ -219,7 +215,7 @@ public class ConnectionManager {
      *
      * @return Connection associated with current thread.
      */
-    public ObjectPoolReusable<H2ConnectionWrapper> detachConnection() {
+    public ObjectPoolReusable<H2ConnectionWrapper> detachThreadConnection() {
         ObjectPoolReusable<H2ConnectionWrapper> reusableConnection = connCache.get();
 
         connCache.remove();
@@ -280,7 +276,7 @@ public class ConnectionManager {
         catch (SQLException e) {
             onSqlException(c);
 
-            throw new IgniteSQLException("Failed to execute statement: " + sql, e);
+            throw new IgniteCheckedException("Failed to execute statement: " + sql, e);
         }
         finally {
             U.close(stmt, log);
@@ -292,9 +288,7 @@ public class ConnectionManager {
      *
      * @param sql SQL statement.
      */
-    public void executeSystemStatement(String sql) {
-        assert sysConn != null;
-
+    public void executeSystemStatement(String sql) throws IgniteCheckedException {
         Statement stmt = null;
 
         try {
@@ -307,20 +301,84 @@ public class ConnectionManager {
 
             IgniteSQLException ex = new IgniteSQLException("Failed to execute system statement: " + sql, e);
 
-            try {
-                sysConn = connectionNoCache(QueryUtils.SCHEMA_INFORMATION);
-            }
-            catch (IgniteSQLException exOnReopenSysConn) {
-                sysConn = null;
-
-                ex.addSuppressed(exOnReopenSysConn);
-            }
-
-            throw ex;
+            throw new IgniteCheckedException("Failed to execute system statement: " + sql, e);
         }
         finally {
             U.close(stmt, log);
         }
+    }
+
+    /**
+     * Get cached prepared statement (if any).
+     *
+     * @param c Connection.
+     * @param sql SQL.
+     * @return Prepared statement or {@code null}.
+     */
+    @Nullable public PreparedStatement cachedPreparedStatement(Connection c, String sql) throws SQLException {
+        H2StatementCache cache = statementCacheForThread();
+
+        H2CachedStatementKey key = new H2CachedStatementKey(c.getSchema(), sql);
+
+        PreparedStatement stmt = cache.get(key);
+
+        if (stmt != null && !stmt.isClosed() && !stmt.unwrap(JdbcStatement.class).isCancelled() &&
+            !GridSqlQueryParser.prepared(stmt).needRecompile()) {
+            assert stmt.getConnection() == c;
+
+            return stmt;
+        }
+
+        return null;
+    }
+
+    /**
+     * Prepare statement caching it if needed.
+     *
+     * @param c Connection.
+     * @param sql SQL.
+     * @return Prepared statement.
+     * @throws SQLException If failed.
+     */
+    public PreparedStatement prepareStatement(Connection c, String sql) throws SQLException {
+        PreparedStatement stmt = cachedPreparedStatement(c, sql);
+
+        if (stmt == null) {
+            H2StatementCache cache = statementCacheForThread();
+
+            H2CachedStatementKey key = new H2CachedStatementKey(c.getSchema(), sql);
+
+            stmt = PreparedStatementExImpl.wrap(prepareStatementNoCache(c, sql));
+
+            cache.put(key, stmt);
+        }
+
+        return stmt;
+    }
+
+    /**
+     * Get prepared statement without caching.
+     *
+     * @param c Connection.
+     * @param sql SQL.
+     * @return Prepared statement.
+     * @throws SQLException If failed.
+     */
+    public PreparedStatement prepareStatementNoCache(Connection c, String sql) throws SQLException {
+        boolean insertHack = GridH2Table.insertHackRequired(sql);
+
+        if (insertHack) {
+            GridH2Table.insertHack(true);
+
+            try {
+                return c.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+            }
+            finally {
+                GridH2Table.insertHack(false);
+            }
+        }
+        else
+            return c.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
     }
 
     /**

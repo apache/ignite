@@ -812,7 +812,7 @@ public class GridMapQueryExecutor {
                         PreparedStatement stmt;
 
                         try {
-                            stmt = h2.prepareStatement(conn, sql, true);
+                            stmt = h2.connections().prepareStatement(conn, sql);
                         }
                         catch (SQLException e) {
                             throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
@@ -822,7 +822,7 @@ public class GridMapQueryExecutor {
 
                         if (GridSqlQueryParser.isForUpdateQuery(p)) {
                             sql = GridSqlQueryParser.rewriteQueryForUpdateIfNeeded(p, inTx);
-                            stmt = h2.prepareStatement(conn, sql, true);
+                            stmt = h2.connections().prepareStatement(conn, sql);
                         }
 
                         h2.bindParameters(stmt, params0);
@@ -1279,7 +1279,7 @@ public class GridMapQueryExecutor {
         else {
             // Detach connection if the result set greater than one page.
             if (!res.isConnectionDetached())
-                res.detachedConnection(h2.connections().detachConnection());
+                res.detachedConnection(h2.connections().detachThreadConnection());
         }
 
         boolean loc = node.isLocal();

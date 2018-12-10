@@ -495,7 +495,7 @@ public class GridReduceQueryExecutor {
                 h2.connections().connectionForThread(schemaName), qry.mapQueries().size(), qry.pageSize(),
                 U.currentTimeMillis(), sfuFut, cancel);
 
-            ObjectPoolReusable<H2ConnectionWrapper> detachedConn = h2.connections().detachConnection();
+            ObjectPoolReusable<H2ConnectionWrapper> detachedConn = h2.connections().detachThreadConnection();
 
             Collection<ClusterNode> nodes;
 
@@ -775,7 +775,6 @@ public class GridReduceQueryExecutor {
                             ResultSet res = h2.executeSqlQueryWithTimer(r.connection(),
                                 rdc.query(),
                                 F.asList(rdc.parameters(params)),
-                                false, // The statement will cache some extra thread local objects.
                                 timeoutMillis,
                                 cancel);
 
@@ -1155,7 +1154,7 @@ public class GridReduceQueryExecutor {
 
         for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++) {
             ResultSet rs =
-                h2.executeSqlQueryWithTimer(c, "SELECT PLAN FROM " + mergeTableIdentifier(i), null, false, 0, null);
+                h2.executeSqlQueryWithTimer(c, "SELECT PLAN FROM " + mergeTableIdentifier(i), null, 0, null);
 
             lists.add(F.asList(getPlan(rs)));
         }
@@ -1173,7 +1172,6 @@ public class GridReduceQueryExecutor {
         ResultSet rs = h2.executeSqlQueryWithTimer(c,
             "EXPLAIN " + rdc.query(),
             F.asList(rdc.parameters(params)),
-            false,
             0,
             null);
 

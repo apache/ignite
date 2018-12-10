@@ -742,12 +742,11 @@ public interface GridCacheEntryEx {
     /**
      * Peeks into entry without loading value or updating statistics.
      *
-     * @param plc Expiry policy if TTL should be updated.
      * @return Value.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public CacheObject peek(@Nullable IgniteCacheExpiryPolicy plc)
+    @Nullable public CacheObject peek()
         throws GridCacheEntryRemovedException, IgniteCheckedException;
 
     /**
