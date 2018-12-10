@@ -419,14 +419,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 case CMD_FINISHED_EOF:
                     JdbcBulkLoadProcessor removedProcessor = bulkLoadRequests.remove(req.cursorId());
 
-                    synchronized (cancellationProcessingMux) {
-                        List<Closeable> processors = requestToCursorMapping.get(removedProcessor.requestId());
-
-                        if (processors != null)
-                            processors.remove(removedProcessor);
-
-                        unregisterRequest(removedProcessor.requestId());
-                    }
+                    cleanupRequestToCursorMapping(removedProcessor);
 
                     processor.close();
 
@@ -637,14 +630,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 if (res.last() && (!res.isQuery() || autoCloseCursors)) {
                     qryCursors.remove(cursorId);
 
-                    synchronized (cancellationProcessingMux) {
-                        List<Closeable> cursors = requestToCursorMapping.get(cur.requestId());
-
-                        if (cursors != null)
-                            cursors.remove(cur);
-
-                        unregisterRequest(cur.requestId());
-                    }
+                    cleanupRequestToCursorMapping(cur, req.requestId());
 
                     cur.close();
                 }
@@ -710,14 +696,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         catch (Exception e) {
             JdbcQueryCursor removedCur = qryCursors.remove(cursorId);
 
-            synchronized (cancellationProcessingMux) {
-                List<Closeable> cursors = requestToCursorMapping.get(removedCur.requestId());
-
-                if (cursors != null)
-                    cursors.remove(removedCur);
-
-                unregisterRequest(removedCur.requestId());
-            }
+            cleanupRequestToCursorMapping(removedCur);
 
             U.error(log, "Failed to execute SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
@@ -735,8 +714,12 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Response.
      */
     private JdbcResponse closeQuery(JdbcQueryCloseRequest req) {
+        JdbcQueryCursor removedCur = null;
+
         try {
             JdbcQueryCursor cur = qryCursors.remove(req.cursorId());
+
+            removedCur = cur;
 
             if (cur == null)
                 return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
@@ -744,32 +727,17 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             cur.close();
 
-            synchronized (cancellationProcessingMux) {
-                List<Closeable> cursors = requestToCursorMapping.get(cur.requestId());
-
-                if (cursors != null)
-                    cursors.remove(cur);
-
-                unregisterRequest(cur.requestId());
-            }
-
             return new JdbcResponse(null, req.requestId());
         }
         catch (Exception e) {
-            JdbcQueryCursor cur = qryCursors.remove(req.cursorId());
-
-            synchronized (cancellationProcessingMux) {
-                List<Closeable> cursors = requestToCursorMapping.get(cur.requestId());
-
-                if (cursors != null)
-                    cursors.remove(cur);
-
-                unregisterRequest(cur.requestId());
-            }
+            removedCur = qryCursors.remove(req.cursorId());
 
             U.error(log, "Failed to close SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
             return exceptionToResult(e, req.requestId());
+        }
+        finally {
+            cleanupRequestToCursorMapping(removedCur);
         }
     }
 
@@ -798,14 +766,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             if (res.last() && (!cur.isQuery() || autoCloseCursors)) {
                 JdbcQueryCursor removedCur = qryCursors.remove(req.cursorId());
 
-                synchronized (cancellationProcessingMux) {
-                    List<Closeable> cursors = requestToCursorMapping.get(removedCur.requestId());
-
-                    if (cursors != null)
-                        cursors.remove(removedCur);
-
-                    unregisterRequest(removedCur.requestId());
-                }
+                cleanupRequestToCursorMapping(removedCur);
 
                 cur.close();
             }
@@ -1324,5 +1285,42 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             else
                 return exceptionToResult(new QueryCancelledException(), req.requestIdToBeCancelled());
         }
+    }
+
+    /**
+     * Removes given cursor from requestToCursorMapping and unregisters given request.
+     *
+     * @param cursor Cursor to remove.
+     * @param reqId Request Id.
+     */
+    private void cleanupRequestToCursorMapping(Closeable cursor, Long reqId) {
+        synchronized (cancellationProcessingMux) {
+            List<Closeable> processors = requestToCursorMapping.get(reqId);
+
+            if (processors != null)
+                processors.remove(cursor);
+
+            unregisterRequest(reqId);
+        }
+    }
+
+    /**
+     * Removes given cursor from requestToCursorMapping and unregisters given request.
+     *
+     * @param cursor Cursor to remove.
+     */
+    private void cleanupRequestToCursorMapping(JdbcQueryCursor cursor) {
+        if (cursor != null)
+            cleanupRequestToCursorMapping(cursor, cursor.requestId());
+    }
+
+    /**
+     * Removes given processor from requestToCursorMapping and unregisters given request.
+     *
+     * @param processor Bulk load processor to remove.
+     */
+    private void cleanupRequestToCursorMapping(JdbcBulkLoadProcessor processor) {
+        if (processor != null)
+            cleanupRequestToCursorMapping(processor, processor.requestId());
     }
 }
