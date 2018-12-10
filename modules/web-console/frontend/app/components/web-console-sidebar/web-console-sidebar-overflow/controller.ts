@@ -37,10 +37,10 @@ export default class WebCOnsoleSidebarOverflow {
     applyStyles(target: HTMLElement) {
         const {offsetHeight, scrollTop, scrollHeight} = target;
         const top = scrollTop !== 0;
-        const bottom = (offsetHeight + scrollTop) !== scrollHeight;
+        const bottom = Math.floor((offsetHeight + scrollTop)) !== Math.floor(scrollHeight);
 
-        target.classList.toggle('top', scrollTop !== 0);
-        target.classList.toggle('bottom', (offsetHeight + scrollTop) !== scrollHeight);
+        target.classList.toggle('top', top);
+        target.classList.toggle('bottom', bottom);
     }
     onScroll = (e: UIEvent) => {
         this.$win.requestAnimationFrame(() => {
