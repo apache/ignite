@@ -198,8 +198,8 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(IgniteMarshallerCacheClassNameConflictTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteMarshallerCacheClientRequestsMappingOnMissTest.class));
 
-        suite.addTest(new JUnit4TestAdapte(IgniteDiagnosticMessagesTest.class));
-        suite.addTest(new JUnit4TestAdapte(IgniteDiagnosticMessagesMultipleConnectionsTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteDiagnosticMessagesTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteDiagnosticMessagesMultipleConnectionsTest.class));
 
         suite.addTest(new JUnit4TestAdapter(IgniteRejectConnectOnNodeStopTest.class));
 
