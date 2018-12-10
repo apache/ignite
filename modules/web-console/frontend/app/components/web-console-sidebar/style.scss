@@ -24,6 +24,7 @@ web-console-sidebar {
     --width-wide: 280px;
     // Does not include notifications height
     max-height: calc(100vh - var(--header-height));
+    position: -webkit-sticky;
     position: sticky;
     top: var(--header-height);
 
