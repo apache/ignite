@@ -36,8 +36,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -76,11 +74,6 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-807");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
     }
 
     /** {@inheritDoc} */
