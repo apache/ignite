@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractCacheSecurityTest;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.stream.StreamVisitor;
 
@@ -36,35 +37,29 @@ public class IgniteDataStreamerSecurityTest extends AbstractCacheSecurityTest {
      *
      */
     public void testDataStreamer() {
-        assertAllowed(() -> load(clntAllPerms, srvAllPerms, "key"));
-        assertAllowed(() -> load(clntAllPerms, srvReadOnlyPerm, "key"));
-        assertAllowed(() -> load(srvAllPerms, srvAllPerms, "key"));
-        assertAllowed(() -> load(srvAllPerms, srvReadOnlyPerm, "key"));
+        assertAllowed((t) -> load(clntAllPerms, srvAllPerms, t));
+        assertAllowed((t) -> load(clntAllPerms, srvReadOnlyPerm, t));
+        assertAllowed((t) -> load(srvAllPerms, srvAllPerms, t));
+        assertAllowed((t) -> load(srvAllPerms, srvReadOnlyPerm, t));
 
-        assertForbidden(() -> load(clntReadOnlyPerm, srvAllPerms, "fail_key"));
-        assertForbidden(() -> load(srvReadOnlyPerm, srvAllPerms, "fail_key"));
-        assertForbidden(() -> load(srvReadOnlyPerm, srvReadOnlyPerm, "fail_key"));
+        assertForbidden((t) -> load(clntReadOnlyPerm, srvAllPerms, t));
+        assertForbidden((t) -> load(srvReadOnlyPerm, srvAllPerms, t));
+        assertForbidden((t) -> load(srvReadOnlyPerm, srvReadOnlyPerm, t));
     }
 
     /**
      * @param initiator Initiator node.
      * @param remote Remoute node.
-     * @param key Key.
-     * @return Value that will be to put into cache with passed key.
      */
-    private Integer load(IgniteEx initiator, IgniteEx remote, String key) {
-        Integer val = values.getAndIncrement();
-
+    private void load(IgniteEx initiator, IgniteEx remote, T2<String, Integer> entry) {
         try (IgniteDataStreamer<Integer, Integer> strm = initiator.dataStreamer(CACHE_READ_ONLY_PERM)) {
             strm.receiver(
                 StreamVisitor.from(
-                    new TestClosure(remote.localNode().id(), key, val)
+                    new TestClosure(remote.localNode().id(), entry.getKey(), entry.getValue())
                 ));
 
             strm.addData(primaryKey(remote), 100);
         }
-
-        return val;
     }
 
     /**

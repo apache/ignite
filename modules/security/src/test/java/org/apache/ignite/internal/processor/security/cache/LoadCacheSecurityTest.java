@@ -27,6 +27,7 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractCacheSecurityTest;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -54,32 +55,26 @@ public class LoadCacheSecurityTest extends AbstractCacheSecurityTest {
      *
      */
     public void testLoadCache() {
-        assertAllowed(() -> load(clntAllPerms, srvAllPerms, "key"));
-        assertAllowed(() -> load(clntAllPerms, srvReadOnlyPerm, "key"));
-        assertAllowed(() -> load(srvAllPerms, srvAllPerms, "key"));
-        assertAllowed(() -> load(srvAllPerms, srvReadOnlyPerm, "key"));
+        assertAllowed((t) -> load(clntAllPerms, srvAllPerms, t));
+        assertAllowed((t) -> load(clntAllPerms, srvReadOnlyPerm, t));
+        assertAllowed((t) -> load(srvAllPerms, srvAllPerms, t));
+        assertAllowed((t) -> load(srvAllPerms, srvReadOnlyPerm, t));
 
-        assertForbidden(() -> load(clntReadOnlyPerm, srvAllPerms, "fail_key"));
-        assertForbidden(() -> load(srvReadOnlyPerm, srvAllPerms, "fail_key"));
-        assertForbidden(() -> load(srvReadOnlyPerm, srvReadOnlyPerm, "fail_key"));
+        assertForbidden((t) -> load(clntReadOnlyPerm, srvAllPerms, t));
+        assertForbidden((t) -> load(srvReadOnlyPerm, srvAllPerms, t));
+        assertForbidden((t) -> load(srvReadOnlyPerm, srvReadOnlyPerm, t));
     }
 
     /**
      * @param initiator Initiator node.
      * @param remote Remoute node.
-     * @param key Key.
-     * @return Value that will be to put into cache with passed key.
      */
-    private Integer load(IgniteEx initiator, IgniteEx remote, String key) {
+    private void load(IgniteEx initiator, IgniteEx remote, T2<String, Integer> entry) {
         assert !remote.localNode().isClient();
 
-        Integer val = values.getAndIncrement();
-
         initiator.<Integer, Integer>cache(CACHE_READ_ONLY_PERM).loadCache(
-            new TestClosure(remote.localNode().id(), key, val)
+            new TestClosure(remote.localNode().id(), entry.getKey(), entry.getValue())
         );
-
-        return val;
     }
 
     /**

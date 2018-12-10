@@ -64,25 +64,25 @@ public class IgniteMessagingTest extends AbstractResolveSecurityContextTest {
     public void testMessaging() throws Exception {
         awaitPartitionMapExchange();
 
-        assertResult("key", key -> messaging(clntAllPerms, clntReadOnlyPerm, evntAllPerms, key));
-        assertResult("key", key -> messaging(clntAllPerms, srvReadOnlyPerm, evntAllPerms, key));
-        assertResult("key", key -> messaging(srvAllPerms, clntReadOnlyPerm, evntAllPerms, key));
-        assertResult("key", key -> messaging(srvAllPerms, srvReadOnlyPerm, evntAllPerms, key));
+        assertAllowedResult(key -> messaging(clntAllPerms, clntReadOnlyPerm, evntAllPerms, key));
+        assertAllowedResult(key -> messaging(clntAllPerms, srvReadOnlyPerm, evntAllPerms, key));
+        assertAllowedResult(key -> messaging(srvAllPerms, clntReadOnlyPerm, evntAllPerms, key));
+        assertAllowedResult(key -> messaging(srvAllPerms, srvReadOnlyPerm, evntAllPerms, key));
 
-        assertResult("key", key -> messaging(clntAllPerms, srvReadOnlyPerm, evntNotPerms, key));
-        assertResult("key", key -> messaging(clntAllPerms, clntReadOnlyPerm, evntNotPerms, key));
-        assertResult("key", key -> messaging(srvAllPerms, srvReadOnlyPerm, evntNotPerms, key));
-        assertResult("key", key -> messaging(srvAllPerms, clntReadOnlyPerm, evntNotPerms, key));
+        assertAllowedResult(key -> messaging(clntAllPerms, srvReadOnlyPerm, evntNotPerms, key));
+        assertAllowedResult(key -> messaging(clntAllPerms, clntReadOnlyPerm, evntNotPerms, key));
+        assertAllowedResult(key -> messaging(srvAllPerms, srvReadOnlyPerm, evntNotPerms, key));
+        assertAllowedResult(key -> messaging(srvAllPerms, clntReadOnlyPerm, evntNotPerms, key));
 
-        assertResult("fail_key", key -> messaging(clntReadOnlyPerm, srvAllPerms, evntAllPerms, key));
-        assertResult("fail_key", key -> messaging(clntReadOnlyPerm, clntAllPerms, evntAllPerms, key));
-        assertResult("fail_key", key -> messaging(srvReadOnlyPerm, srvAllPerms, evntAllPerms, key));
-        assertResult("fail_key", key -> messaging(srvReadOnlyPerm, clntAllPerms, evntAllPerms, key));
+        assertForbiddenResult(key -> messaging(clntReadOnlyPerm, srvAllPerms, evntAllPerms, key));
+        assertForbiddenResult(key -> messaging(clntReadOnlyPerm, clntAllPerms, evntAllPerms, key));
+        assertForbiddenResult(key -> messaging(srvReadOnlyPerm, srvAllPerms, evntAllPerms, key));
+        assertForbiddenResult(key -> messaging(srvReadOnlyPerm, clntAllPerms, evntAllPerms, key));
 
-        assertResult("fail_key", key -> messaging(clntReadOnlyPerm, srvAllPerms, evntNotPerms, key));
-        assertResult("fail_key", key -> messaging(clntReadOnlyPerm, clntAllPerms, evntNotPerms, key));
-        assertResult("fail_key", key -> messaging(srvReadOnlyPerm, srvAllPerms, evntNotPerms, key));
-        assertResult("fail_key", key -> messaging(srvReadOnlyPerm, clntAllPerms, evntNotPerms, key));
+        assertForbiddenResult(key -> messaging(clntReadOnlyPerm, srvAllPerms, evntNotPerms, key));
+        assertForbiddenResult(key -> messaging(clntReadOnlyPerm, clntAllPerms, evntNotPerms, key));
+        assertForbiddenResult(key -> messaging(srvReadOnlyPerm, srvAllPerms, evntNotPerms, key));
+        assertForbiddenResult(key -> messaging(srvReadOnlyPerm, clntAllPerms, evntNotPerms, key));
     }
 
     /**
@@ -140,17 +140,28 @@ public class IgniteMessagingTest extends AbstractResolveSecurityContextTest {
     }
 
     /**
-     * @param key Key.
      * @param f Function.
      */
-    private void assertResult(String key, Function<String, Integer> f) {
-        assert "key".equals(key) || "fail_key".equals(key);
+    private void assertAllowedResult(Function<String, Integer> f) {
+        assertResult(f, false);
+    }
+
+    /**
+     * @param f Function.
+     */
+    private void assertForbiddenResult(Function<String, Integer> f) {
+        assertResult(f, true);
+    }
+
+    /**
+     * @param f Function.
+     * @param failExpected True if expectaed fail behavior.
+     */
+    private void assertResult(Function<String, Integer> f, boolean failExpected) {
+        String key = failExpected ? "fail_key" : "key";
 
         Integer val = f.apply(key);
 
-        if ("key".equals(key))
-            assertThat(srvAllPerms.cache(CACHE_NAME).get("key"), is(val));
-        else if ("fail_key".equals(key))
-            assertThat(srvAllPerms.cache(CACHE_NAME).get("fail_key"), nullValue());
+        assertThat(srvAllPerms.cache(CACHE_NAME).get(key), failExpected ? nullValue() : is(val));
     }
 }

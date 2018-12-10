@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processor.security.compute;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractResolveSecurityContextTest;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteRunnable;
 
 /**
@@ -30,37 +31,33 @@ public class ExecuteServiceTaskSecurityTest extends AbstractResolveSecurityConte
      *
      */
     public void testExecute() {
-        assertAllowed(() -> execute(clntAllPerms, clntReadOnlyPerm, "key"));
-        assertAllowed(() -> execute(clntAllPerms, srvReadOnlyPerm, "key"));
-        assertAllowed(() -> execute(srvAllPerms, clntReadOnlyPerm, "key"));
-        assertAllowed(() -> execute(srvAllPerms, srvReadOnlyPerm, "key"));
-        assertAllowed(() -> execute(srvAllPerms, srvAllPerms, "key"));
-        assertAllowed(() -> execute(clntAllPerms, clntAllPerms, "key"));
+        assertAllowed((t) -> execute(clntAllPerms, clntReadOnlyPerm, t));
+        assertAllowed((t) -> execute(clntAllPerms, srvReadOnlyPerm, t));
+        assertAllowed((t) -> execute(srvAllPerms, clntReadOnlyPerm, t));
+        assertAllowed((t) -> execute(srvAllPerms, srvReadOnlyPerm, t));
+        assertAllowed((t) -> execute(srvAllPerms, srvAllPerms, t));
+        assertAllowed((t) -> execute(clntAllPerms, clntAllPerms, t));
 
-        assertForbidden(() -> execute(clntReadOnlyPerm, srvAllPerms, "fail_key"));
-        assertForbidden(() -> execute(clntReadOnlyPerm, clntAllPerms, "fail_key"));
-        assertForbidden(() -> execute(srvReadOnlyPerm, srvAllPerms, "fail_key"));
-        assertForbidden(() -> execute(srvReadOnlyPerm, clntAllPerms, "fail_key"));
-        assertForbidden(() -> execute(srvReadOnlyPerm, srvReadOnlyPerm, "fail_key"));
-        assertForbidden(() -> execute(clntReadOnlyPerm, clntReadOnlyPerm, "fail_key"));
+        assertForbidden((t) -> execute(clntReadOnlyPerm, srvAllPerms, t));
+        assertForbidden((t) -> execute(clntReadOnlyPerm, clntAllPerms, t));
+        assertForbidden((t) -> execute(srvReadOnlyPerm, srvAllPerms, t));
+        assertForbidden((t) -> execute(srvReadOnlyPerm, clntAllPerms, t));
+        assertForbidden((t) -> execute(srvReadOnlyPerm, srvReadOnlyPerm, t));
+        assertForbidden((t) -> execute(clntReadOnlyPerm, clntReadOnlyPerm, t));
     }
 
     /**
      * @param initiator Initiator node.
      * @param remote Remoute node.
-     * @param key Key.
-     * @return Value that will be to put into cache with passed key.
      */
-    private Integer execute(IgniteEx initiator, IgniteEx remote, String key) {
-        Integer val = values.getAndIncrement();
-
+    private void execute(IgniteEx initiator, IgniteEx remote, T2<String, Integer> entry) {
         try {
             initiator.executorService(initiator.cluster().forNode(remote.localNode()))
                 .submit(
                     new IgniteRunnable() {
                         @Override public void run() {
                             Ignition.localIgnite().cache(CACHE_NAME)
-                                .put(key, val);
+                                .put(entry.getKey(), entry.getValue());
                         }
                     }
                 ).get();
@@ -68,7 +65,5 @@ public class ExecuteServiceTaskSecurityTest extends AbstractResolveSecurityConte
         catch (Exception e) {
             throw new RuntimeException(e);
         }
-
-        return val;
     }
 }

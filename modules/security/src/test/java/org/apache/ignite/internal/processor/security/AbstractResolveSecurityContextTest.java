@@ -18,11 +18,12 @@
 package org.apache.ignite.internal.processor.security;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
+import java.util.function.Consumer;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.plugin.security.SecurityException;
 
@@ -82,21 +83,31 @@ public class AbstractResolveSecurityContextTest extends AbstractSecurityTest {
                 .setReadFromBackup(false));
     }
 
-    /**
-     * @param s Supplier.
-     */
-    protected void assertAllowed(Supplier<Integer> s) {
-        Integer val = s.get();
+    private T2<String, Integer> entry(){
+        int val = values.incrementAndGet();
 
-        assertThat(srvAllPerms.cache(CACHE_NAME).get("key"), is(val));
+        return new T2<>("key_" + val, -1 * val);
     }
 
     /**
-     * @param s Supplier.
+     * @param c Consumer.
      */
-    protected void assertForbidden(Supplier<Integer> s) {
+    protected void assertAllowed(Consumer<T2<String, Integer>> c) {
+        T2<String, Integer> entry = entry();
+
+        c.accept(entry);
+
+        assertThat(srvAllPerms.cache(CACHE_NAME).get(entry.getKey()), is(entry.getValue()));
+    }
+
+    /**
+     * @param c Consumer.
+     */
+    protected void assertForbidden(Consumer<T2<String, Integer>> c) {
+        T2<String, Integer> entry = entry();
+
         try {
-            s.get();
+            c.accept(entry);
 
             fail("Should not happen");
         }
@@ -104,7 +115,7 @@ public class AbstractResolveSecurityContextTest extends AbstractSecurityTest {
             assertThat(X.cause(e, SecurityException.class), notNullValue());
         }
 
-        assertThat(srvAllPerms.cache(CACHE_NAME).get("fail_key"), nullValue());
+        assertThat(srvAllPerms.cache(CACHE_NAME).get(entry.getKey()), nullValue());
     }
 
     /**

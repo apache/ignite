@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractCacheSecurityTest;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -41,74 +42,62 @@ public class ScanQuerySecurityTest extends AbstractCacheSecurityTest {
 
         awaitPartitionMapExchange();
 
-        assertAllowed(() -> query(clntAllPerms, srvAllPerms, CACHE_NAME, "key"));
-        assertAllowed(() -> query(srvAllPerms, srvAllPerms, CACHE_NAME, "key"));
-        assertAllowed(() -> query(clntAllPerms, srvAllPerms, CACHE_READ_ONLY_PERM, "key"));
-        assertAllowed(() -> query(srvAllPerms, srvAllPerms, CACHE_READ_ONLY_PERM, "key"));
+        assertAllowed((t) -> query(clntAllPerms, srvAllPerms, CACHE_NAME, t));
+        assertAllowed((t) -> query(srvAllPerms, srvAllPerms, CACHE_NAME, t));
+        assertAllowed((t) -> query(clntAllPerms, srvAllPerms, CACHE_READ_ONLY_PERM, t));
+        assertAllowed((t) -> query(srvAllPerms, srvAllPerms, CACHE_READ_ONLY_PERM, t));
 
-        assertAllowed(() -> transform(clntAllPerms, srvAllPerms, CACHE_NAME, "key"));
-        assertAllowed(() -> transform(srvAllPerms, srvAllPerms, CACHE_NAME, "key"));
-        assertAllowed(() -> transform(clntAllPerms, srvAllPerms, CACHE_READ_ONLY_PERM, "key"));
-        assertAllowed(() -> transform(srvAllPerms, srvAllPerms, CACHE_READ_ONLY_PERM, "key"));
+        assertAllowed((t) -> transform(clntAllPerms, srvAllPerms, CACHE_NAME, t));
+        assertAllowed((t) -> transform(srvAllPerms, srvAllPerms, CACHE_NAME, t));
+        assertAllowed((t) -> transform(clntAllPerms, srvAllPerms, CACHE_READ_ONLY_PERM, t));
+        assertAllowed((t) -> transform(srvAllPerms, srvAllPerms, CACHE_READ_ONLY_PERM, t));
 
-        assertAllowed(() -> query(clntAllPerms, srvReadOnlyPerm, CACHE_NAME, "key"));
-        assertAllowed(() -> query(srvAllPerms, srvReadOnlyPerm, CACHE_NAME, "key"));
-        assertAllowed(() -> query(clntAllPerms, srvReadOnlyPerm, CACHE_READ_ONLY_PERM, "key"));
-        assertAllowed(() -> query(srvAllPerms, srvReadOnlyPerm, CACHE_READ_ONLY_PERM, "key"));
+        assertAllowed((t) -> query(clntAllPerms, srvReadOnlyPerm, CACHE_NAME, t));
+        assertAllowed((t) -> query(srvAllPerms, srvReadOnlyPerm, CACHE_NAME, t));
+        assertAllowed((t) -> query(clntAllPerms, srvReadOnlyPerm, CACHE_READ_ONLY_PERM, t));
+        assertAllowed((t) -> query(srvAllPerms, srvReadOnlyPerm, CACHE_READ_ONLY_PERM, t));
 
-        assertAllowed(() -> transform(clntAllPerms, srvReadOnlyPerm, CACHE_NAME, "key"));
-        assertAllowed(() -> transform(srvAllPerms, srvReadOnlyPerm, CACHE_NAME, "key"));
-        assertAllowed(() -> transform(clntAllPerms, srvReadOnlyPerm, CACHE_READ_ONLY_PERM, "key"));
-        assertAllowed(() -> transform(srvAllPerms, srvReadOnlyPerm, CACHE_READ_ONLY_PERM, "key"));
+        assertAllowed((t) -> transform(clntAllPerms, srvReadOnlyPerm, CACHE_NAME, t));
+        assertAllowed((t) -> transform(srvAllPerms, srvReadOnlyPerm, CACHE_NAME, t));
+        assertAllowed((t) -> transform(clntAllPerms, srvReadOnlyPerm, CACHE_READ_ONLY_PERM, t));
+        assertAllowed((t) -> transform(srvAllPerms, srvReadOnlyPerm, CACHE_READ_ONLY_PERM, t));
 
-        assertForbidden(() -> query(clntReadOnlyPerm, srvAllPerms, CACHE_NAME, "fail_key"));
-        assertForbidden(() -> query(srvReadOnlyPerm, srvAllPerms, CACHE_NAME, "fail_key"));
-        assertForbidden(() -> query(clntReadOnlyPerm, srvAllPerms, CACHE_READ_ONLY_PERM, "fail_key"));
-        assertForbidden(() -> query(srvReadOnlyPerm, srvAllPerms, CACHE_READ_ONLY_PERM, "fail_key"));
+        assertForbidden((t) -> query(clntReadOnlyPerm, srvAllPerms, CACHE_NAME, t));
+        assertForbidden((t) -> query(srvReadOnlyPerm, srvAllPerms, CACHE_NAME, t));
+        assertForbidden((t) -> query(clntReadOnlyPerm, srvAllPerms, CACHE_READ_ONLY_PERM, t));
+        assertForbidden((t) -> query(srvReadOnlyPerm, srvAllPerms, CACHE_READ_ONLY_PERM, t));
 
-        assertForbidden(() -> transform(clntReadOnlyPerm, srvAllPerms, CACHE_NAME, "fail_key"));
-        assertForbidden(() -> transform(srvReadOnlyPerm, srvAllPerms, CACHE_NAME, "fail_key"));
-        assertForbidden(() -> transform(clntReadOnlyPerm, srvAllPerms, CACHE_READ_ONLY_PERM, "fail_key"));
-        assertForbidden(() -> transform(srvReadOnlyPerm, srvAllPerms, CACHE_READ_ONLY_PERM, "fail_key"));
+        assertForbidden((t) -> transform(clntReadOnlyPerm, srvAllPerms, CACHE_NAME, t));
+        assertForbidden((t) -> transform(srvReadOnlyPerm, srvAllPerms, CACHE_NAME, t));
+        assertForbidden((t) -> transform(clntReadOnlyPerm, srvAllPerms, CACHE_READ_ONLY_PERM, t));
+        assertForbidden((t) -> transform(srvReadOnlyPerm, srvAllPerms, CACHE_READ_ONLY_PERM, t));
     }
 
     /**
      * @param initiator Initiator node.
      * @param remote Remoute node.
-     * @param key Key.
-     * @return Value that will be to put into cache with passed key.
      */
-    private Integer query(IgniteEx initiator, IgniteEx remote, String cacheName, String key) {
+    private void query(IgniteEx initiator, IgniteEx remote, String cacheName, T2<String, Integer> entry) {
         assert !remote.localNode().isClient();
-
-        Integer val = values.getAndIncrement();
 
         initiator.cache(cacheName).query(
             new ScanQuery<>(
-                new QueryFilter(remote.localNode().id(), key, val)
+                new QueryFilter(remote.localNode().id(), entry.getKey(), entry.getValue())
             )
         ).getAll();
-
-        return val;
     }
 
     /**
      * @param initiator Initiator node.
      * @param remote Remoute node.
-     * @param key Key.
-     * @return Value that will be to put into cache with passed key.
      */
-    private Integer transform(IgniteEx initiator, IgniteEx remote, String cacheName, String key) {
+    private void transform(IgniteEx initiator, IgniteEx remote, String cacheName, T2<String, Integer> entry) {
         assert !remote.localNode().isClient();
-
-        Integer val = values.getAndIncrement();
 
         initiator.cache(cacheName).query(
             new ScanQuery<>((k, v) -> true),
-            new Transformer(remote.localNode().id(), key, val)
+            new Transformer(remote.localNode().id(), entry.getKey(), entry.getValue())
         ).getAll();
-
-        return val;
     }
 
     /**
