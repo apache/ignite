@@ -248,7 +248,6 @@ public class GridCacheTwoStepQuery {
         cp.pageSize = pageSize;
         cp.distributedJoins = distributedJoins;
         cp.derivedPartitions = derivedPartitions;
-        cp.derivedPartitions = derivedPartitions;
         cp.local = local;
         cp.mvccEnabled = mvccEnabled;
         cp.forUpdate = forUpdate;

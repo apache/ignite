@@ -189,7 +189,6 @@ import org.h2.index.Index;
 import org.h2.jdbc.JdbcStatement;
 import org.h2.table.IndexColumn;
 import org.h2.util.JdbcUtils;
-import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
