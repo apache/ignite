@@ -32,6 +32,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -54,6 +55,14 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
 
     /** Cache mode for test. */
     private CacheMode cacheMode;
+
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        super.beforeTestsStarted();
+    }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -116,7 +125,7 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
         this.nearEnabled = nearEnabled;
         this.cacheMode = cacheMode;
 
-        startGrids(3);
+        startGridsMultiThreaded(3);
 
         try {
             GridTestUtils.assertThrows(log, new Callable<Object>() {

@@ -34,7 +34,6 @@ import java.util.TreeSet;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -132,17 +131,19 @@ public class GridSqlQuerySplitter {
     /** */
     private IdentityHashMap<GridSqlAst, GridSqlAlias> uniqueFromAliases = new IdentityHashMap<>();
 
-    /** */
-    private GridKernalContext ctx;
+    /** Partition extractor. */
+    private final PartitionExtractor extractor;
 
     /**
      * @param params Query parameters.
      * @param collocatedGrpBy If it is a collocated GROUP BY query.
+     * @param idx Indexing.
      */
-    public GridSqlQuerySplitter(Object[] params, boolean collocatedGrpBy, GridKernalContext ctx) {
+    public GridSqlQuerySplitter(Object[] params, boolean collocatedGrpBy, IgniteH2Indexing idx) {
         this.params = params;
         this.collocatedGrpBy = collocatedGrpBy;
-        this.ctx = ctx;
+
+        extractor = new PartitionExtractor(idx);
     }
 
     /**
@@ -206,7 +207,7 @@ public class GridSqlQuerySplitter {
 
         qry.explain(false);
 
-        GridSqlQuerySplitter splitter = new GridSqlQuerySplitter(params, collocatedGrpBy, h2.kernalContext());
+        GridSqlQuerySplitter splitter = new GridSqlQuerySplitter(params, collocatedGrpBy, h2);
 
         // Normalization will generate unique aliases for all the table filters in FROM.
         // Also it will collect all tables and schemas from the query.
@@ -261,7 +262,7 @@ public class GridSqlQuerySplitter {
         twoStepQry.distributedJoins(distributedJoins);
 
         // all map queries must have non-empty derivedPartitions to use this feature.
-        twoStepQry.derivedPartitions(PartitionExtractor.mergePartitionsFromMultipleQueries(twoStepQry.mapQueries()));
+        twoStepQry.derivedPartitions(splitter.extractor.merge(twoStepQry.mapQueries()));
 
         twoStepQry.forUpdate(forUpdate);
 
@@ -1549,7 +1550,7 @@ public class GridSqlQuerySplitter {
         map.hasSubQueries(hasSubQueries);
 
         if (map.isPartitioned())
-            map.derivedPartitions(PartitionExtractor.derivePartitionsFromQuery(mapQry, ctx));
+            map.derivedPartitions(extractor.extract(mapQry));
 
         mapSqlQrys.add(map);
     }

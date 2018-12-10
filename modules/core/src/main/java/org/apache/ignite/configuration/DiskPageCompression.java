@@ -17,6 +17,8 @@
 
 package org.apache.ignite.configuration;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Disk page compression options.
  *
@@ -34,5 +36,18 @@ public enum DiskPageCompression {
     LZ4,
 
     /** Snappy compression. */
-    SNAPPY
+    SNAPPY;
+
+    /** Enumerated values. */
+    private static final DiskPageCompression[] VALS = values();
+
+    /**
+     * Efficiently gets enumerated value from its ordinal.
+     *
+     * @param ord Ordinal value.
+     * @return Enumerated value or {@code null} if ordinal out of range.
+     */
+    @Nullable public static DiskPageCompression fromOrdinal(int ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    }
 }
