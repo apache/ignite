@@ -610,11 +610,6 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public int partition() {
-        return U.safeAbs(version().hashCode());
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNearTxQueryEnlistRequest.class, this);
     }
