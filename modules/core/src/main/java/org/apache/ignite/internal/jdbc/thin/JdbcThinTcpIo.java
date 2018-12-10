@@ -28,6 +28,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -482,7 +483,7 @@ public class JdbcThinTcpIo {
      * @throws IOException In case of IO error.
      * @throws SQLException On concurrent access to JDBC connection.
      */
-    JdbcResponse sendRequest(JdbcRequest req) throws SQLException, IOException {
+    JdbcResponse sendRequest(JdbcRequest req, Lock lock) throws SQLException, IOException {
         synchronized (mux) {
             if (ownThread != null) {
                 throw new SQLException("Concurrent access to JDBC connection is not allowed"
@@ -495,6 +496,9 @@ public class JdbcThinTcpIo {
 
         try {
             sendRequestRaw(req);
+
+            if (lock != null)
+                lock.unlock();
 
             JdbcResponse response = readResponse();
 
@@ -585,18 +589,16 @@ public class JdbcThinTcpIo {
      * @throws IOException On error.
      */
     private void send(byte[] req) throws IOException {
-        synchronized (mux) {
-            int size = req.length;
+        int size = req.length;
 
-            out.write(size & 0xFF);
-            out.write((size >> 8) & 0xFF);
-            out.write((size >> 16) & 0xFF);
-            out.write((size >> 24) & 0xFF);
+        out.write(size & 0xFF);
+        out.write((size >> 8) & 0xFF);
+        out.write((size >> 16) & 0xFF);
+        out.write((size >> 24) & 0xFF);
 
-            out.write(req);
+        out.write(req);
 
-            out.flush();
-        }
+        out.flush();
     }
 
     /**

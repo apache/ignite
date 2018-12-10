@@ -80,14 +80,19 @@ public class JdbcBulkLoadProcessor implements Closeable {
     /** Next batch index (for a very simple check that all batches were delivered to us). */
     protected long nextBatchIdx;
 
+    /** Id of the request that created given processor. */
+    private long reqId;
+
     /**
      * Creates a JDBC-specific adapter for bulk load processor.
      *
      * @param processor Bulk load processor from the core to delegate calls to.
+     * @param reqId Id of the request that created given processor.
      */
-    public JdbcBulkLoadProcessor(BulkLoadProcessor processor) {
+    public JdbcBulkLoadProcessor(BulkLoadProcessor processor, long reqId) {
         this.processor = processor;
         nextBatchIdx = 0;
+        this.reqId = reqId;
     }
 
     /**
@@ -146,5 +151,12 @@ public class JdbcBulkLoadProcessor implements Closeable {
      */
     public long updateCnt() {
         return processor.outputStreamer().updateCnt();
+    }
+
+    /**
+     * @return Id of the request that created given processor.
+     */
+    public long requestId() {
+        return reqId;
     }
 }

@@ -48,12 +48,12 @@ public interface ClientListenerRequestHandler {
     void writeHandshake(BinaryWriterExImpl writer);
 
     /**
-     * Detect whether synchronous handling is expected for a request with given command Id.
+     * Detect whether given command is a cancellation command.
      *
      * @param cmdId Command Id
-     * @return true if synchronous handling expected, false otherwise;
+     * @return true if given command is cancellation one, false otherwise;
      */
-    boolean isSynchronousHandlingExpected(int cmdId);
+    boolean isCancellationCommand(int cmdId);
 
     /**
      * Handle request synchronously
@@ -62,4 +62,16 @@ public interface ClientListenerRequestHandler {
      * @return Response
      */
     ClientListenerResponse handleSynchronously(ClientListenerRequest req);
+
+    /**
+     * Registers request for futher cancellation if any.
+     * @param reqId Request Id.
+     */
+    void registerRequest(long reqId);
+
+    /**
+     * Try to unregister request.
+     * @param reqId Request Id.
+     */
+    void unregisterRequest(long reqId);
 }

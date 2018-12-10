@@ -395,10 +395,11 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
         BinaryInputStream inStream = new BinaryHeapInputStream(msg);
 
-        // skipHdrCheck must be true (we have 103 op code).
-        BinaryRawReaderEx reader = new BinaryReaderExImpl(marsh.context(), inStream,
-            null, null, true, true);
+        return inStream.readShort();
+    }
 
-        return reader.readShort();
+    /** {@inheritDoc} */
+    @Override public long decodeRequestId(byte[] msg) {
+        return 0;
     }
 }

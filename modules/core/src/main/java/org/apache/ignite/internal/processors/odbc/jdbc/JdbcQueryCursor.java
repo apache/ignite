@@ -47,17 +47,22 @@ class JdbcQueryCursor implements Closeable {
     /** Query results iterator. */
     private Iterator<List<Object>> iter;
 
+    /** Id of the request that created given cursor. */
+    private long reqId;
+
     /**
      * @param cursorId Cursor ID.
      * @param pageSize Fetch size.
      * @param maxRows Max rows.
      * @param cur Query cursor.
+     * @param reqId Id of the request that created given cursor.
      */
-    JdbcQueryCursor(long cursorId, int pageSize, int maxRows, QueryCursorImpl<List<Object>> cur) {
+    JdbcQueryCursor(long cursorId, int pageSize, int maxRows, QueryCursorImpl<List<Object>> cur, long reqId) {
         this.cursorId = cursorId;
         this.pageSize = pageSize;
         this.maxRows = maxRows;
         this.cur = cur;
+        this.reqId = reqId;
     }
 
     /**
@@ -146,5 +151,12 @@ class JdbcQueryCursor implements Closeable {
      */
     public boolean isQuery() {
         return cur.isQuery();
+    }
+
+    /**
+     * @return Id of the request that created given cursor.
+     */
+    public long requestId() {
+        return reqId;
     }
 }

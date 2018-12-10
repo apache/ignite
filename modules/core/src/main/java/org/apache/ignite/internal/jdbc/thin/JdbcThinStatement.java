@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
@@ -105,12 +106,11 @@ public class JdbcThinStatement implements Statement {
     /** Current request Id. */
     private volatile long currReqId;
 
-    /** Cancellation Processing Mutex sets mutex. */
-    private final Object cancellationProcessingMutex = new Object();
-
     /** Cancelled flag. */
     private volatile boolean canceled;
 
+    /** Cancellation processing lock. */
+    private ReentrantLock lock = new ReentrantLock();
     /**
      * Creates new statement.
      *
@@ -180,11 +180,12 @@ public class JdbcThinStatement implements Statement {
      * @throws SQLException Onj error.
      */
     protected void execute0(JdbcStatementType stmtType, String sql, List<Object> args) throws SQLException {
-        SqlCommand nativeCmd = null;
-        JdbcQueryExecuteRequest request = null;
+        lock.lock();
 
-        synchronized (cancellationProcessingMutex) {
+        try {
             canceled = false;
+
+            SqlCommand nativeCmd = null;
 
             ensureAlive();
 
@@ -198,83 +199,85 @@ public class JdbcThinStatement implements Statement {
             if (stmtType != JdbcStatementType.SELECT_STATEMENT_TYPE && isEligibleForNativeParsing(sql))
                 nativeCmd = tryParseNative(sql);
 
-            if (nativeCmd == null && !conn.isStream()) {
-                request = new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
-                    maxRows, conn.getAutoCommit(), sql, args == null ? null : args.toArray(new Object[args.size()]));
+            if (nativeCmd != null) {
+                conn.executeNative(sql, nativeCmd);
 
-                currReqId = request.requestId();
+                resultSets = Collections.singletonList(resultSetForUpdate(0));
+
+                // If this command should be executed as native one, we do not treat it
+                // as an ordinary batch citizen.
+                return;
             }
-        }
 
-        if (nativeCmd != null) {
-            conn.executeNative(sql, nativeCmd);
+            if (conn.isStream()) {
+                if (stmtType == JdbcStatementType.SELECT_STATEMENT_TYPE)
+                    throw new SQLException("executeQuery() method is not allowed in streaming mode.",
+                        SqlStateCode.INTERNAL_ERROR,
+                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-            resultSets = Collections.singletonList(resultSetForUpdate(0));
+                conn.addBatch(sql, args);
 
-            // If this command should be executed as native one, we do not treat it
-            // as an ordinary batch citizen.
-            return;
-        }
+                resultSets = Collections.singletonList(resultSetForUpdate(0));
 
-        if (conn.isStream()) {
-            if (stmtType == JdbcStatementType.SELECT_STATEMENT_TYPE)
-                throw new SQLException("executeQuery() method is not allowed in streaming mode.",
-                    SqlStateCode.INTERNAL_ERROR,
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                return;
+            }
 
-            conn.addBatch(sql, args);
+            JdbcQueryExecuteRequest req = new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
+                maxRows, conn.getAutoCommit(), sql, args == null ? null : args.toArray(new Object[args.size()]));
 
-            resultSets = Collections.singletonList(resultSetForUpdate(0));
+            currReqId = req.requestId();
 
-            return;
-        }
+            JdbcResult res0 = conn.sendRequest(req, lock);
 
-        JdbcResult res0 = conn.sendRequest(request);
+            assert res0 != null;
 
-        assert res0 != null;
+            if (res0 instanceof JdbcBulkLoadAckResult)
+                res0 = sendFile((JdbcBulkLoadAckResult)res0);
 
-        if (res0 instanceof JdbcBulkLoadAckResult)
-            res0 = sendFile((JdbcBulkLoadAckResult)res0);
+            if (res0 instanceof JdbcQueryExecuteResult) {
+                JdbcQueryExecuteResult res = (JdbcQueryExecuteResult)res0;
 
-        if (res0 instanceof JdbcQueryExecuteResult) {
-            JdbcQueryExecuteResult res = (JdbcQueryExecuteResult)res0;
+                resultSets = Collections.singletonList(new JdbcThinResultSet(this, res.cursorId(), pageSize,
+                    res.last(), res.items(), res.isQuery(), conn.autoCloseServerCursor(), res.updateCount(),
+                    closeOnCompletion));
+            }
+            else if (res0 instanceof JdbcQueryExecuteMultipleStatementsResult) {
+                JdbcQueryExecuteMultipleStatementsResult res = (JdbcQueryExecuteMultipleStatementsResult)res0;
 
-            resultSets = Collections.singletonList(new JdbcThinResultSet(this, res.cursorId(), pageSize,
-                res.last(), res.items(), res.isQuery(), conn.autoCloseServerCursor(), res.updateCount(),
-                closeOnCompletion));
-        }
-        else if (res0 instanceof JdbcQueryExecuteMultipleStatementsResult) {
-            JdbcQueryExecuteMultipleStatementsResult res = (JdbcQueryExecuteMultipleStatementsResult)res0;
+                List<JdbcResultInfo> resInfos = res.results();
 
-            List<JdbcResultInfo> resInfos = res.results();
+                resultSets = new ArrayList<>(resInfos.size());
 
-            resultSets = new ArrayList<>(resInfos.size());
+                boolean firstRes = true;
 
-            boolean firstRes = true;
-
-            for (JdbcResultInfo rsInfo : resInfos) {
-                if (!rsInfo.isQuery())
-                    resultSets.add(resultSetForUpdate(rsInfo.updateCount()));
-                else {
-                    if (firstRes) {
-                        firstRes = false;
-
-                        resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize,
-                            res.isLast(), res.items(), true,
-                            conn.autoCloseServerCursor(), -1, closeOnCompletion));
-                    }
+                for (JdbcResultInfo rsInfo : resInfos) {
+                    if (!rsInfo.isQuery())
+                        resultSets.add(resultSetForUpdate(rsInfo.updateCount()));
                     else {
-                        resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize,
-                            false, null, true,
-                            conn.autoCloseServerCursor(), -1, closeOnCompletion));
+                        if (firstRes) {
+                            firstRes = false;
+
+                            resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize,
+                                res.isLast(), res.items(), true,
+                                conn.autoCloseServerCursor(), -1, closeOnCompletion));
+                        }
+                        else {
+                            resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize,
+                                false, null, true,
+                                conn.autoCloseServerCursor(), -1, closeOnCompletion));
+                        }
                     }
                 }
             }
-        }
-        else
-            throw new SQLException("Unexpected result [res=" + res0 + ']');
+            else
+                throw new SQLException("Unexpected result [res=" + res0 + ']');
 
-        assert !resultSets.isEmpty() : "At least one results set is expected";
+            assert !resultSets.isEmpty() : "At least one results set is expected";
+        }
+        finally {
+            if (lock.isHeldByCurrentThread())
+                lock.unlock();
+        }
     }
 
     /**
@@ -384,7 +387,9 @@ public class JdbcThinStatement implements Statement {
      * @throws SQLException On error.
      */
     private void closeResults() throws SQLException {
-        synchronized (cancellationProcessingMutex) {
+        lock.lock();
+
+        try {
             if (resultSets != null) {
                 for (JdbcThinResultSet rs : resultSets)
                     rs.close0();
@@ -393,6 +398,9 @@ public class JdbcThinStatement implements Statement {
                 curRes = 0;
                 currReqId = 0;
             }
+        }
+        finally {
+            lock.unlock();
         }
     }
 
@@ -407,7 +415,9 @@ public class JdbcThinStatement implements Statement {
      *
      */
     void closeOnDisconnect() {
-        synchronized (cancellationProcessingMutex) {
+        lock.lock();
+
+        try {
             if (resultSets != null) {
                 for (JdbcThinResultSet rs : resultSets)
                     rs.closeOnDisconnect();
@@ -418,6 +428,10 @@ public class JdbcThinStatement implements Statement {
             closed = true;
             currReqId = 0;
         }
+        finally {
+            lock.unlock();
+        }
+
     }
 
     /** {@inheritDoc} */
@@ -478,7 +492,9 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public void cancel() throws SQLException {
-        synchronized (cancellationProcessingMutex) {
+        lock.lock();
+
+        try {
             ensureAlive();
 
             if (conn.isStream()) {
@@ -497,6 +513,9 @@ public class JdbcThinStatement implements Statement {
                     SqlStateCode.INTERNAL_ERROR,
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
             }
+        }
+        finally {
+            lock.unlock();
         }
     }
 
@@ -679,9 +698,9 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public int[] executeBatch() throws SQLException {
-        JdbcBatchExecuteRequest request = null;
+        lock.lock();
 
-        synchronized (cancellationProcessingMutex) {
+        try {
             canceled = false;
 
             ensureAlive();
@@ -701,26 +720,30 @@ public class JdbcThinStatement implements Statement {
             if (F.isEmpty(batch))
                 return new int[0];
 
-            request = new JdbcBatchExecuteRequest(conn.getSchema(), batch,
+            JdbcBatchExecuteRequest req = new JdbcBatchExecuteRequest(conn.getSchema(), batch,
                 conn.getAutoCommit(), false);
 
-            currReqId = request.requestId();
-        }
+            currReqId = req.requestId();
 
-        try {
-            JdbcBatchExecuteResult res = conn.sendRequest(request);
+            try {
+                JdbcBatchExecuteResult res = conn.sendRequest(req, lock);
 
-            if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS) {
-                throw new BatchUpdateException(res.errorMessage(), IgniteQueryErrorCode.codeToSqlState(res.errorCode()),
-                    res.errorCode(), res.updateCounts());
+                if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS) {
+                    throw new BatchUpdateException(res.errorMessage(), IgniteQueryErrorCode.codeToSqlState(res.errorCode()),
+                        res.errorCode(), res.updateCounts());
+                }
+
+                return res.updateCounts();
             }
+            finally {
+                batchSize = 0;
 
-            return res.updateCounts();
+                batch = null;
+            }
         }
         finally {
-            batchSize = 0;
-
-            batch = null;
+            if (lock.isHeldByCurrentThread())
+                lock.unlock();
         }
     }
 
@@ -741,23 +764,34 @@ public class JdbcThinStatement implements Statement {
 
             switch (curr) {
                 case CLOSE_CURRENT_RESULT:
-                    if (curRes > 0)
-                        synchronized (cancellationProcessingMutex) {
-                            resultSets.get(curRes - 1).close0();
+                    lock.lock();
+                    try {
+                        if (curRes > 0)
 
-                            if (resultSets == null || curRes >= resultSets.size())
-                                currReqId = 0;
-                        }
+                        resultSets.get(curRes - 1).close0();
+
+                        if (resultSets == null || curRes >= resultSets.size())
+                            currReqId = 0;
+                    }
+                    finally {
+                        lock.unlock();
+                    }
 
                     break;
 
                 case CLOSE_ALL_RESULTS:
-                    synchronized (cancellationProcessingMutex) {
+                    lock.lock();
+
+                    try {
                         for (int i = 0; i < curRes; ++i)
                             resultSets.get(i).close0();
 
                         currReqId = 0;
                     }
+                    finally {
+                        lock.unlock();
+                    }
+
                     break;
 
                 case KEEP_CURRENT_RESULT:
@@ -890,7 +924,9 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public void closeOnCompletion() throws SQLException {
-        synchronized (cancellationProcessingMutex) {
+        lock.lock();
+
+        try {
             ensureAlive();
 
             closeOnCompletion = true;
@@ -901,6 +937,9 @@ public class JdbcThinStatement implements Statement {
             }
 
             currReqId = 0;
+        }
+        finally {
+            lock.unlock();
         }
     }
 
@@ -932,7 +971,7 @@ public class JdbcThinStatement implements Statement {
      *
      * @throws SQLException If statement is closed.
      */
-    protected void ensureAlive() throws SQLException {
+    void ensureAlive() throws SQLException {
         if (isClosed())
             throw new SQLException("Statement is closed.");
 
@@ -945,7 +984,9 @@ public class JdbcThinStatement implements Statement {
      * @throws SQLException On error.
      */
     void closeIfAllResultsClosed() throws SQLException {
-        synchronized (cancellationProcessingMutex) {
+        lock.lock();
+
+        try {
             if (isClosed())
                 return;
 
@@ -962,6 +1003,9 @@ public class JdbcThinStatement implements Statement {
 
             if (allRsClosed)
                 close();
+        }
+        finally {
+            lock.unlock();
         }
     }
 }

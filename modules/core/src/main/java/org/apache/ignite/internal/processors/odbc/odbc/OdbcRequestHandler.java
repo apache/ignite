@@ -305,8 +305,18 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isSynchronousHandlingExpected(int cmdId) {
+    @Override public boolean isCancellationCommand(int cmdId) {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void registerRequest(long reqId) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unregisterRequest(long reqId) {
+        // No-op.
     }
 
     /**

@@ -32,6 +32,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.stream.StreamReceiver;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -99,6 +100,8 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testHitsAndMisses() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.METRICS);
+
         startGrids(GRID_CNT);
 
         awaitPartitionMapExchange();

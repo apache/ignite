@@ -416,6 +416,12 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
         return msg[0];
     }
 
+
+    /** {@inheritDoc} */
+    @Override public long decodeRequestId(byte[] msg) {
+        return 0;
+    }
+
     /**
      * @param writer Writer to use.
      * @param affectedRows Affected rows.

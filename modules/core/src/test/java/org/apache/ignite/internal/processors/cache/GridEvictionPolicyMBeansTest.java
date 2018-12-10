@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -34,6 +35,13 @@ public class GridEvictionPolicyMBeansTest extends GridCommonAbstractTest {
     /** Create test and auto-start the grid */
     public GridEvictionPolicyMBeansTest() {
         super(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+
+        super.beforeTestsStarted();
     }
 
     /**
@@ -60,8 +68,6 @@ public class GridEvictionPolicyMBeansTest extends GridCommonAbstractTest {
 
         ncf.setNearEvictionPolicyFactory(new LruEvictionPolicyFactory<>(40, 10, 500));
 
-        cache1.setNearConfiguration(ncf);
-
         CacheConfiguration cache2 = defaultCacheConfiguration();
 
         cache2.setName("cache2");
@@ -81,7 +87,11 @@ public class GridEvictionPolicyMBeansTest extends GridCommonAbstractTest {
         lep.setMaxMemorySize(500);
         lep.setMaxSize(40);
         ncf.setNearEvictionPolicy(lep);
-        cache2.setNearConfiguration(ncf);
+
+        if (!MvccFeatureChecker.forcedMvcc() || MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE)) {
+            cache1.setNearConfiguration(ncf);
+            cache2.setNearConfiguration(ncf);
+        }
 
         cfg.setCacheConfiguration(cache1, cache2);
 
@@ -94,17 +104,21 @@ public class GridEvictionPolicyMBeansTest extends GridCommonAbstractTest {
         checkBean("cache1", "org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy", "BatchSize", 10);
         checkBean("cache1", "org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy", "MaxMemorySize", 20L);
 
-        checkBean("cache1-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxSize", 40);
-        checkBean("cache1-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "BatchSize", 10);
-        checkBean("cache1-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxMemorySize", 500L);
+        if (!MvccFeatureChecker.forcedMvcc() || MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE)) {
+            checkBean("cache1-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxSize", 40);
+            checkBean("cache1-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "BatchSize", 10);
+            checkBean("cache1-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxMemorySize", 500L);
+        }
 
         checkBean("cache2", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxSize", 30);
         checkBean("cache2", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "BatchSize", 10);
         checkBean("cache2", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxMemorySize", 125L);
 
-        checkBean("cache2-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxSize", 40);
-        checkBean("cache2-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "BatchSize", 10);
-        checkBean("cache2-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxMemorySize", 500L);
+        if (!MvccFeatureChecker.forcedMvcc() || MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE)) {
+            checkBean("cache2-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxSize", 40);
+            checkBean("cache2-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "BatchSize", 10);
+            checkBean("cache2-near", "org.apache.ignite.cache.eviction.lru.LruEvictionPolicy", "MaxMemorySize", 500L);
+        }
     }
 
     /** Checks that a bean with the specified group and name is available and has the expected attribute */
