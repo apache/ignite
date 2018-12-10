@@ -289,6 +289,7 @@ body {
         grid-area: content;
         padding-left: var(--page-side-padding);
         padding-right: var(--page-side-padding);
+        padding-bottom: var(--page-side-padding);
     }
 
     &.wrapper-public {
