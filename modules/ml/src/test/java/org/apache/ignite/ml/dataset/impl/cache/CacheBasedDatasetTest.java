@@ -40,7 +40,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleDatasetData;
-import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**

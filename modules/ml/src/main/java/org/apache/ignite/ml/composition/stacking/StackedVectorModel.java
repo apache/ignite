@@ -19,18 +19,35 @@ package org.apache.ignite.ml.composition.stacking;
 
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 
 public class StackedVectorModel<O, AM extends Model<Vector, O>, L> extends SimpleStackedModelTrainer<Vector, O, AM, L> {
-    public StackedVectorModel(DatasetTrainer<AM, L> aggregatingTrainer,
-        IgniteBinaryOperator<Vector> aggregatingInputMerger) {
-        super(aggregatingTrainer, aggregatingInputMerger);
+    /**
+     * Construct instance of this class with given aggregator trainer and aggregator input merger.
+     *
+     * @param aggregatorTrainer Aggregator trainer.
+     * @param aggregatorInputMerger Function used to merge submodels outputs into one.
+     */
+    public StackedVectorModel(DatasetTrainer<AM, L> aggregatorTrainer,
+        IgniteBinaryOperator<Vector> aggregatorInputMerger) {
+        super(aggregatorTrainer, aggregatorInputMerger);
     }
 
-    public StackedVectorModel(DatasetTrainer<AM, L> aggregatingTrainer) {
-        super(aggregatingTrainer, VectorUtils::concat);
+    /**
+     * Construct instance of this class with given aggregator trainer.
+     *
+     * @param aggregatorTrainer Aggregator trainer.
+     */
+    public StackedVectorModel(DatasetTrainer<AM, L> aggregatorTrainer) {
+        super(aggregatorTrainer, VectorUtils::concat);
+    }
+
+    /**
+     * Construct instance of this class.
+     */
+    public StackedVectorModel() {
+        this(null);
     }
 }

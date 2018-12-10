@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.DatasetFactory;
-import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
 

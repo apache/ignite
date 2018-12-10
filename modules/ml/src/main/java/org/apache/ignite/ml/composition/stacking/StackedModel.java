@@ -45,7 +45,7 @@ public class StackedModel<IS, IA, O, AM extends Model<IA, O>> implements Model<I
     private Model<IS, IA> subModelsLayer;
 
     /** Aggregator model. */
-    private final AM aggregatorModel;
+    private final AM aggregatorMdl;
 
     /** Models constituting submodels layer. */
     private List<Model<IS, IA>> submodels;
@@ -64,7 +64,7 @@ public class StackedModel<IS, IA, O, AM extends Model<IA, O>> implements Model<I
     StackedModel(AM aggregatorMdl,
         IgniteBinaryOperator<IA> aggregatingInputMerger,
         IgniteFunction<IS, IA> subMdlInput2AggregatingInput) {
-        this.aggregatorModel = aggregatorMdl;
+        this.aggregatorMdl = aggregatorMdl;
         this.aggregatingInputMerger = aggregatingInputMerger;
         this.subModelsLayer = subMdlInput2AggregatingInput != null ? subMdlInput2AggregatingInput::apply : null;
         submodels = new ArrayList<>();
@@ -80,21 +80,27 @@ public class StackedModel<IS, IA, O, AM extends Model<IA, O>> implements Model<I
     }
 
     /**
+     * Get aggregator model.
      *
-     *
-     * @return
+     * @return Aggregator model.
      */
-    AM aggregatingModel() {
-        return aggregatorModel;
+    AM aggregatorModel() {
+        return aggregatorMdl;
     }
 
-    void addSubmodel(Model<IS, IA> subModel) {
-        submodels.add(subModel);
-        subModelsLayer = subModelsLayer != null ? subModelsLayer.combine(subModel, aggregatingInputMerger)
-            : subModel;
+    /**
+     * Add submodel into first layer.
+     *
+     * @param subMdl Submodel to add.
+     */
+    void addSubmodel(Model<IS, IA> subMdl) {
+        submodels.add(subMdl);
+        subModelsLayer = subModelsLayer != null ? subModelsLayer.combine(subMdl, aggregatingInputMerger)
+            : subMdl;
     }
 
+    /** {@inheritDoc} */
     @Override public O apply(IS is) {
-        return subModelsLayer.andThen(aggregatorModel).apply(is);
+        return subModelsLayer.andThen(aggregatorMdl).apply(is);
     }
 }
