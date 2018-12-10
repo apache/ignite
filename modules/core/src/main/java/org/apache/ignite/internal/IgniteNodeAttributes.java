@@ -205,6 +205,9 @@ public final class IgniteNodeAttributes {
     /** Internal attribute indicates that incoming cache requests should be validated on primary node as well. */
     public static final String ATTR_VALIDATE_CACHE_REQUESTS = ATTR_CACHE + ".validate.cache.requests";
 
+    /** Supported features. */
+    public static final String ATTR_IGNITE_FEATURES = ATTR_PREFIX + ".features";
+
     /** Ignite services processor mode. */
     public static final String ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED = ATTR_PREFIX +
         ".event.driven.service.processor.enabled";
