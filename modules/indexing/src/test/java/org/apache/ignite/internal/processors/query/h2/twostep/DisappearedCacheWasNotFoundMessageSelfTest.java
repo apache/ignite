@@ -62,7 +62,7 @@ public class DisappearedCacheWasNotFoundMessageSelfTest extends GridCommonAbstra
             fail("No CacheException emitted.");
         }
         catch (CacheException e) {
-            boolean exp = e.getMessage().contains("Cache not found on local node");
+            boolean exp = e.getMessage().contains("Cache not found on local node (was concurrently destroyed?)");
 
             if (!exp)
                 throw e;
