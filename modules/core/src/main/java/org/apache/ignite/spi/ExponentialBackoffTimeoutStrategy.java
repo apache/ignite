@@ -31,20 +31,20 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
     /** Default backoff coefficient to calculate next timeout based on backoff strategy. */
     private static final double DLFT_BACKOFF_COEFF = 2.0;
 
-    /** Max startTimeout of the next try, ms. */
+    /** Max timeout of the next try, ms. */
     private final long maxTimeout;
 
-    /** Total startTimeout, ms. */
+    /** Total timeout, ms. */
     private final long totalTimeout;
 
-    /** Start of operation to check totalTimeout. */
+    /** Timestamp of operation start to check totalTimeout. */
     private final long start;
 
-    /** Current startTimeout, ms. */
+    /** Current calculated timeout, ms. */
     private long currTimeout;
 
     /**
-     * Compute expected backoffConnTimeout delay based on startTimeout, maxTimeout and reconCnt and backoff coeffient.
+     * Compute expected max backoff timeout based on initTimeout, maxTimeout and reconCnt and backoff coefficient.
      *
      * @param initTimeout Initial timeout.
      * @param maxTimeout Max Timeout per retry.
@@ -68,7 +68,7 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
      *
      * @param timeout Timeout.
      * @param maxTimeout Maximum startTimeout for backoff function.
-     * @return Next exponetial backoff totalTimeout.
+     * @return Next exponential backoff timeout.
      */
     public static long nextTimeout(long timeout, long maxTimeout) {
         return (long) Math.min(timeout * DLFT_BACKOFF_COEFF, maxTimeout);
@@ -100,7 +100,7 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
         long remainingTime = remainingTime(U.currentTimeMillis());
 
         if (remainingTime <= 0)
-            throw new IgniteSpiOperationTimeoutException("Operation timed out [timeoutStrategy = " +this +"]");
+            throw new IgniteSpiOperationTimeoutException("Operation timed out [timeoutStrategy= " +this +"]");
 
         long currTimeout0 = currTimeout;
 
@@ -117,18 +117,14 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
     /**
      * Returns remaining time for current totalTimeout chunk.
      *
-     * @param curTs Current time stamp.
+     * @param curTs Current timestamp.
      * @return Time to wait in millis.
      */
     public long remainingTime(long curTs) {
         return totalTimeout - (curTs - start);
     }
 
-    /**
-     *
-     * @param timeInFut Some time in millis in future.
-     * @return {@code True} if startTimeout enabled.
-     */
+    /** {@inheritDoc} */
     @Override public boolean checkTimeout(long timeInFut) {
         return remainingTime(U.currentTimeMillis() + timeInFut) <= 0;
     }
