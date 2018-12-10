@@ -249,6 +249,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSeveralLongRunningMvccTxs() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9322"); // Fix diagnostic message or disable test.
 
@@ -493,6 +494,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteMvccTx() throws Exception {
         checkRemoteTx(TRANSACTIONAL_SNAPSHOT);
     }

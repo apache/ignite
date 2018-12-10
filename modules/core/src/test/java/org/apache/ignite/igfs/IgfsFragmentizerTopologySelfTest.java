@@ -21,19 +21,12 @@ import org.apache.ignite.IgniteFileSystem;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 
 /**
  * Tests coordinator transfer from one node to other.
  */
 @RunWith(JUnit4.class)
 public class IgfsFragmentizerTopologySelfTest extends IgfsFragmentizerAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * @throws Exception If failed.
      */

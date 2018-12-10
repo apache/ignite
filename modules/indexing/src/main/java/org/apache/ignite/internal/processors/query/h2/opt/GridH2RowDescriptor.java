@@ -44,9 +44,6 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueR
  * Row descriptor.
  */
 public class GridH2RowDescriptor {
-    /** Indexing SPI. */
-    private final IgniteH2Indexing idx;
-
     /** Table descriptor. */
     private final H2TableDescriptor tbl;
 
@@ -77,14 +74,12 @@ public class GridH2RowDescriptor {
     /**
      * Constructor.
      *
-     * @param idx Indexing.
      * @param tbl Table.
      * @param type Type descriptor.
      */
-    public GridH2RowDescriptor(IgniteH2Indexing idx, H2TableDescriptor tbl, GridQueryTypeDescriptor type) {
+    public GridH2RowDescriptor(H2TableDescriptor tbl, GridQueryTypeDescriptor type) {
         assert type != null;
 
-        this.idx = idx;
         this.tbl = tbl;
         this.type = type;
 
@@ -137,7 +132,7 @@ public class GridH2RowDescriptor {
      * @return indexing.
      */
     public IgniteH2Indexing indexing() {
-        return idx;
+        return tbl.indexing();
     }
 
     /**
@@ -180,7 +175,7 @@ public class GridH2RowDescriptor {
 
         try {
             if (dataRow.value() == null) { // Only can happen for remove operation, can create simple search row.
-                row = new GridH2KeyRowOnheap(dataRow, H2Utils.wrap(idx.objectContext(), dataRow.key(), keyType));
+                row = new GridH2KeyRowOnheap(dataRow, H2Utils.wrap(indexing().objectContext(), dataRow.key(), keyType));
             }
             else
                 row = new GridH2KeyValueRowOnheap(this, dataRow, keyType, valType);

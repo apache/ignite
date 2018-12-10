@@ -70,6 +70,15 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+
+        if (nearEnabled)
+            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         cacheMode = null;
         nearEnabled = true;

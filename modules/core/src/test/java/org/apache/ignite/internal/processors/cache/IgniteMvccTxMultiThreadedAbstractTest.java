@@ -44,6 +44,11 @@ public abstract class IgniteMvccTxMultiThreadedAbstractTest extends IgniteTxAbst
         super.beforeTestsStarted();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
+    }
+
     /**
      * @return Thread count.
      */

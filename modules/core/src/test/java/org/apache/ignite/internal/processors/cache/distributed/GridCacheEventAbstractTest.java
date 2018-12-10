@@ -94,9 +94,9 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+
+        super.beforeTest();
 
         if (TEST_INFO)
             info("Called beforeTest() callback.");
