@@ -319,9 +319,10 @@ public class GridH2Table extends TableBase {
 
         Object res = sessions.get(ses);
 
-        assert res != null && Boolean.TRUE != res : "Invalid table lock [lock=" + res + ']';
-
-        lock(false);
+        // Check 'destroyed' flag again because changes at the sessions map and destroyed are not synchronized
+        // at the destroy() method.
+        if (!destroyed && res != null)
+            lock(false);
     }
 
     /**
