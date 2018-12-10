@@ -50,6 +50,7 @@ import static junit.framework.TestCase.assertEquals;
  * Tests stacked trainers.
  */
 public class StackingTest extends TrainerTest {
+    /** Rule to check exceptions. */
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 

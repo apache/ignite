@@ -25,7 +25,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Type used to adapt input and output types of wrapped {@link DatasetTrainer}.
- * Produces model which is combination  of form {@code after . wMdl . before} where dot denotes functional composition
+ * Produces model which is composition  of form {@code after . wMdl . before} where dot denotes functional composition
  * and wMdl is model produced by wrapped trainer.
  *
  * @param <I> Input type of model produced by this trainer.

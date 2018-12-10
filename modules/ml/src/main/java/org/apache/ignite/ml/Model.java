@@ -33,10 +33,23 @@ public interface Model<T, V> extends IgniteFunction<T, V> {
         return v -> combiner.apply(apply(v), other.apply(v));
     }
 
+    /**
+     * Model equivalent to identity function.
+     *
+     * @param <X> Type of input and output of identity model.
+     * @return Model equivalent to identity function.
+     */
     public static <X> Model<X, X> identityModel() {
         return v -> v;
     }
 
+    /**
+     * Get a composition model of the form {@code after . mdl}.
+     *
+     * @param after Function to apply after this model.
+     * @param <V1> Type of input of function applied before this model.
+     * @return Composition model of the form {@code after . mdl}.
+     */
     public default <V1> Model<T, V1> andThen(IgniteFunction<V, V1> after) {
         return t -> after.apply(apply(t));
     }
