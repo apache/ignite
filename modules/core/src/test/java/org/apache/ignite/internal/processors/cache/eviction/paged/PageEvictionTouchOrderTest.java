@@ -79,6 +79,36 @@ public class PageEvictionTouchOrderTest extends PageEvictionAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testTouchOrderWithFairFifoEvictionMvccTxReplicated() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10448");
+        fail("https://issues.apache.org/jira/browse/IGNITE-7956");
+
+        testTouchOrderWithFairFifoEviction(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.REPLICATED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTouchOrderWithFairFifoEvictionMvccTxPartitioned() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10448");
+        fail("https://issues.apache.org/jira/browse/IGNITE-7956");
+
+        testTouchOrderWithFairFifoEviction(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.PARTITIONED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTouchOrderWithFairFifoEvictionMvccTxLocal() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7956");
+        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+
+        testTouchOrderWithFairFifoEviction(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.LOCAL);
+    }
+
+    /**
      * @param atomicityMode Atomicity mode.
      * @param cacheMode Cache mode.
      * @throws Exception If failed.

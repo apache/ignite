@@ -25,6 +25,7 @@ import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyFactory;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -35,6 +36,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -61,6 +63,13 @@ public class DhtAndNearEvictionTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder));
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+
+        super.beforeTestsStarted();
     }
 
     /** */
@@ -90,6 +99,8 @@ public class DhtAndNearEvictionTest extends GridCommonAbstractTest {
      */
     @Test
     public void testConcurrentWritesAndReadsWithReadThrough() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         startGrid(0);
         startGrid(1);
 
@@ -102,6 +113,7 @@ public class DhtAndNearEvictionTest extends GridCommonAbstractTest {
             )
             .setReadThrough(true)
             .setCacheStoreFactory(DummyCacheStore.factoryOf())
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setBackups(1);
 
         grid(0).createCache(ccfg);
@@ -148,6 +160,7 @@ public class DhtAndNearEvictionTest extends GridCommonAbstractTest {
         CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<Integer, Integer>("mycache")
             .setOnheapCacheEnabled(true)
             .setEvictionPolicyFactory(new LruEvictionPolicyFactory<>(500))
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setNearConfiguration(
                 new NearCacheConfiguration<Integer, Integer>()
                     .setNearEvictionPolicyFactory(new LruEvictionPolicyFactory<>(100))

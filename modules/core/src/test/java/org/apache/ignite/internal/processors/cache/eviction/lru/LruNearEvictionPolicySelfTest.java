@@ -35,6 +35,7 @@ import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
@@ -103,6 +104,18 @@ public class LruNearEvictionPolicySelfTest extends GridCommonAbstractTest {
     @Test
     public void testTransactionalNearEvictionMaxSize() throws Exception {
         atomicityMode = TRANSACTIONAL;
+
+        checkNearEvictionMaxSize();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMvccTransactionalNearEvictionMaxSize() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+        fail("https://issues.apache.org/jira/browse/IGNITE-7956");
+
+        atomicityMode = TRANSACTIONAL_SNAPSHOT;
 
         checkNearEvictionMaxSize();
     }

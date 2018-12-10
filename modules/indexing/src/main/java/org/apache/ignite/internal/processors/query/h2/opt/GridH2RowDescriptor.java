@@ -17,47 +17,23 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.math.BigDecimal;
-import java.sql.Date;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.h2.message.DbException;
 import org.h2.result.SearchRow;
-import org.h2.util.LocalDateTimeUtils;
 import org.h2.value.DataType;
 import org.h2.value.Value;
-import org.h2.value.ValueArray;
-import org.h2.value.ValueBoolean;
-import org.h2.value.ValueByte;
-import org.h2.value.ValueBytes;
-import org.h2.value.ValueDate;
-import org.h2.value.ValueDecimal;
-import org.h2.value.ValueDouble;
-import org.h2.value.ValueFloat;
-import org.h2.value.ValueGeometry;
-import org.h2.value.ValueInt;
-import org.h2.value.ValueJavaObject;
-import org.h2.value.ValueLong;
-import org.h2.value.ValueNull;
-import org.h2.value.ValueShort;
-import org.h2.value.ValueString;
-import org.h2.value.ValueTime;
-import org.h2.value.ValueTimestamp;
-import org.h2.value.ValueUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
@@ -193,94 +169,6 @@ public class GridH2RowDescriptor {
     }
 
     /**
-     * Wraps object to respective {@link Value}.
-     *
-     * @param obj Object.
-     * @param type Value type.
-     * @return Value.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings("ConstantConditions")
-    public Value wrap(Object obj, int type) throws IgniteCheckedException {
-        assert obj != null;
-
-        if (obj instanceof CacheObject) { // Handle cache object.
-            CacheObject co = (CacheObject)obj;
-
-            if (type == Value.JAVA_OBJECT)
-                return new GridH2ValueCacheObject(co, idx.objectContext());
-
-            obj = co.value(idx.objectContext(), false);
-        }
-
-        switch (type) {
-            case Value.BOOLEAN:
-                return ValueBoolean.get((Boolean)obj);
-            case Value.BYTE:
-                return ValueByte.get((Byte)obj);
-            case Value.SHORT:
-                return ValueShort.get((Short)obj);
-            case Value.INT:
-                return ValueInt.get((Integer)obj);
-            case Value.FLOAT:
-                return ValueFloat.get((Float)obj);
-            case Value.LONG:
-                return ValueLong.get((Long)obj);
-            case Value.DOUBLE:
-                return ValueDouble.get((Double)obj);
-            case Value.UUID:
-                UUID uuid = (UUID)obj;
-                return ValueUuid.get(uuid.getMostSignificantBits(), uuid.getLeastSignificantBits());
-            case Value.DATE:
-                if (LocalDateTimeUtils.LOCAL_DATE == obj.getClass())
-                    return LocalDateTimeUtils.localDateToDateValue(obj);
-
-                return ValueDate.get((Date)obj);
-
-            case Value.TIME:
-                if (LocalDateTimeUtils.LOCAL_TIME == obj.getClass())
-                    return LocalDateTimeUtils.localTimeToTimeValue(obj);
-
-                return ValueTime.get((Time)obj);
-
-            case Value.TIMESTAMP:
-                if (obj instanceof java.util.Date && !(obj instanceof Timestamp))
-                    obj = new Timestamp(((java.util.Date)obj).getTime());
-
-                if (LocalDateTimeUtils.LOCAL_DATE_TIME == obj.getClass())
-                    return LocalDateTimeUtils.localDateTimeToValue(obj);
-
-                return ValueTimestamp.get((Timestamp)obj);
-
-            case Value.DECIMAL:
-                return ValueDecimal.get((BigDecimal)obj);
-            case Value.STRING:
-                return ValueString.get(obj.toString());
-            case Value.BYTES:
-                return ValueBytes.get((byte[])obj);
-            case Value.JAVA_OBJECT:
-                return ValueJavaObject.getNoCopy(obj, null, null);
-            case Value.ARRAY:
-                Object[] arr = (Object[])obj;
-
-                Value[] valArr = new Value[arr.length];
-
-                for (int i = 0; i < arr.length; i++) {
-                    Object o = arr[i];
-
-                    valArr[i] = o == null ? ValueNull.INSTANCE : wrap(o, DataType.getTypeFromClass(o.getClass()));
-                }
-
-                return ValueArray.get(valArr);
-
-            case Value.GEOMETRY:
-                return ValueGeometry.getFromGeometry(obj);
-        }
-
-        throw new IgniteCheckedException("Failed to wrap value[type=" + type + ", value=" + obj + "]");
-    }
-
-    /**
      * Creates new row.
      *
      * @param dataRow Data row.
@@ -292,7 +180,7 @@ public class GridH2RowDescriptor {
 
         try {
             if (dataRow.value() == null) { // Only can happen for remove operation, can create simple search row.
-                row = new GridH2KeyRowOnheap(dataRow, wrap(dataRow.key(), keyType));
+                row = new GridH2KeyRowOnheap(dataRow, H2Utils.wrap(idx.objectContext(), dataRow.key(), keyType));
             }
             else
                 row = new GridH2KeyValueRowOnheap(this, dataRow, keyType, valType);

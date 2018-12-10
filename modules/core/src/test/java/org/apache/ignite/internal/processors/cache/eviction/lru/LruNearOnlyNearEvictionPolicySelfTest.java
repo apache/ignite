@@ -35,6 +35,7 @@ import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -121,6 +122,20 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     @Test
+    public void testPartitionedMvccTransactionalNearEvictionMaxSize() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+        fail("https://issues.apache.org/jira/browse/IGNITE-7956");
+
+        atomicityMode = TRANSACTIONAL_SNAPSHOT;
+        cacheMode = PARTITIONED;
+
+        checkNearEvictionMaxSize();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testReplicatedAtomicNearEvictionMaxSize() throws Exception {
         atomicityMode = ATOMIC;
         cacheMode = REPLICATED;
@@ -134,6 +149,20 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
     @Test
     public void testReplicatedTransactionalNearEvictionMaxSize() throws Exception {
         atomicityMode = TRANSACTIONAL;
+        cacheMode = REPLICATED;
+
+        checkNearEvictionMaxSize();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReplicatedMvccTransactionalNearEvictionMaxSize() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+        fail("https://issues.apache.org/jira/browse/IGNITE-7956");
+
+        atomicityMode = TRANSACTIONAL_SNAPSHOT;
         cacheMode = REPLICATED;
 
         checkNearEvictionMaxSize();
