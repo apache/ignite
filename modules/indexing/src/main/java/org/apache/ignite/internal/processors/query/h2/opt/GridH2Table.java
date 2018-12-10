@@ -463,8 +463,6 @@ public class GridH2Table extends TableBase {
 
             destroyed = true;
 
-            sessions.keySet().forEach(Session::close);
-
             sessions.clear();
 
             for (int i = 1, len = idxs.size(); i < len; i++)

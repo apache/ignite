@@ -273,7 +273,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
                 it.next();
 
             if (lazy())
-                fail("Retry excetption must be thrown");
+                fail("Retry exception must be thrown");
         }
         catch (Exception e) {
             if (!lazy()) {
