@@ -39,7 +39,7 @@ web-console-sidebar-navigation {
         justify-content: center;
         align-items: center;
 
-        &:hover {
+        &:hover, &:focus {
             color: var(--active-link-color);
         }
 
@@ -76,7 +76,7 @@ web-console-sidebar-navigation {
         padding: 10px 27px 11px;
         width: var(--width-wide);
 
-        &:hover {
+        &:hover, &:focus {
             color: var(--active-link-color);
         }
         &.web-console-sidebar-navigation__link-active {

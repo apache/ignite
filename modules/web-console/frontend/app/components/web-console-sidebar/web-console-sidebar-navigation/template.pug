@@ -29,6 +29,7 @@ nav
                 'web-console-sidebar-navigation__link-narrow': !$ctrl.opened,
                 'web-console-sidebar-navigation__link-wide': $ctrl.opened
             }`
+            tabindex='0'
         )
             svg.web-console-sidebar-navigation__link-icon(ignite-icon='{{item.icon}}')
             span.web-console-sidebar-navigation__link-content(translate='{{item.label}}')
