@@ -204,6 +204,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
         }
 
+        syncMetadata(execSvc, ctx, needSnapshot);
+    }
+
+    private void syncMetadata(Executor execSvc, Context ctx, boolean needSnapshot) throws IgniteCheckedException {
         if (execSvc == null) {
             reuseList.saveMetadata();
 
