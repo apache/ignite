@@ -444,7 +444,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
                 F.iterator0(dhtSet, false, new P1<Cache.Entry<K, V>>() {
                     @Override public boolean apply(Cache.Entry<K, V> e) {
                         try {
-                            return GridNearCacheAdapter.super.localPeek(e.getKey(), NEAR_PEEK_MODE, null) == null;
+                            return GridNearCacheAdapter.super.localPeek(e.getKey(), NEAR_PEEK_MODE) == null;
                         }
                         catch (IgniteCheckedException ex) {
                             throw new IgniteException(ex);
