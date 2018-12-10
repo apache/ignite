@@ -18,7 +18,7 @@
 package org.apache.ignite.spi;
 
 /**
- * Strategy to calculate next timeout chunk and check if total timeout reached.
+ * Strategy to calculate next timeout and check if total timeout reached.
  */
 public interface TimeoutStrategy {
     /**
@@ -32,8 +32,8 @@ public interface TimeoutStrategy {
     /**
      * Get new next timeout.
      *
-     * @return Gets next timeout.
-     * @throws IgniteSpiOperationTimeoutException in case of total timeout already breached.
+     * @return Get next timeout.
+     * @throws IgniteSpiOperationTimeoutException In case of total timeout already breached.
      */
     public default long nextTimeout() throws IgniteSpiOperationTimeoutException {
         return nextTimeout(0);
@@ -45,14 +45,14 @@ public interface TimeoutStrategy {
      * If timeInFut is 0, will check that timeout already reached.
      *
      * @param timeInFut Some millis in future.
-     * @return {@code True} if total timeout reached.
+     * @return {@code True} if total timeout will be reached.
      */
     public boolean checkTimeout(long timeInFut);
 
     /**
      * Check if total timeout will be reached by now.
      *
-     * @return {@code True} if total timeout reached.
+     * @return {@code True} if total timeout already reached.
      */
     public default boolean checkTimeout() {
         return checkTimeout(0);
