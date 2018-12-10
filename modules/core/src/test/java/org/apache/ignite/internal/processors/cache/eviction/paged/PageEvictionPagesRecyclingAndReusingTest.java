@@ -93,6 +93,7 @@ public class PageEvictionPagesRecyclingAndReusingTest extends PageEvictionAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPagesRecyclingAndReusingMvccTxPartitioned() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10448");
 
@@ -103,6 +104,7 @@ public class PageEvictionPagesRecyclingAndReusingTest extends PageEvictionAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPagesRecyclingAndReusingMvccTxReplicated() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10448");
 
@@ -112,6 +114,7 @@ public class PageEvictionPagesRecyclingAndReusingTest extends PageEvictionAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPagesRecyclingAndReusingMvccTxLocal() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-7956");
         fail("https://issues.apache.org/jira/browse/IGNITE-9530");

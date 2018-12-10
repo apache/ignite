@@ -86,6 +86,7 @@ public class CacheDeferredDeleteQueueTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeferredDeleteQueueMvcc() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-7187");
 

@@ -72,6 +72,7 @@ public class CacheDeferredDeleteSanitySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testDeferredDeleteMvcc() throws Exception {
         testDeferredDelete(PARTITIONED, TRANSACTIONAL_SNAPSHOT, false, true);
         testDeferredDelete(REPLICATED, TRANSACTIONAL_SNAPSHOT, false, true);
@@ -80,6 +81,7 @@ public class CacheDeferredDeleteSanitySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testDeferredDeleteMvccNear() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-7187");
 
@@ -90,6 +92,7 @@ public class CacheDeferredDeleteSanitySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testDeferredDeleteMvccLocal() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9530");
 

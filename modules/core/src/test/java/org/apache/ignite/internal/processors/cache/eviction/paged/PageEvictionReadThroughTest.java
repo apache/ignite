@@ -78,6 +78,7 @@ public class PageEvictionReadThroughTest extends PageEvictionAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionWithReadThroughMvccTxReplicated() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-8582");
         fail("https://issues.apache.org/jira/browse/IGNITE-7956");
@@ -88,6 +89,7 @@ public class PageEvictionReadThroughTest extends PageEvictionAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionWithReadThroughMvccTxPartitioned() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-8582");
         fail("https://issues.apache.org/jira/browse/IGNITE-7956");
@@ -98,6 +100,7 @@ public class PageEvictionReadThroughTest extends PageEvictionAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionWithReadThroughMvccTxLocal() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-7956");
         fail("https://issues.apache.org/jira/browse/IGNITE-8582");
