@@ -47,7 +47,7 @@ public class GridCacheEmptyEntriesLocalSelfTest extends GridCacheEmptyEntriesAbs
 
 
     /** {@inheritDoc} */
-    @Override protected void beforeTests() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
     }
