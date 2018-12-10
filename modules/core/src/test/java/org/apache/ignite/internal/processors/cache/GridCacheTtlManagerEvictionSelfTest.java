@@ -31,6 +31,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -52,6 +53,14 @@ public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest 
 
     /** Cache mode. */
     private volatile CacheMode cacheMode;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+
+        super.beforeTestsStarted();
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

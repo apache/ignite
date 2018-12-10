@@ -15,30 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
-
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+package org.apache.ignite.internal.processors.cache.binary.datastreaming;
 
 /**
  *
  */
-public class IgniteCacheTxPeekModesTest extends IgniteCachePeekModesAbstractTest {
+public class DataStreamProcessorPersistenceBinarySelfTest extends DataStreamProcessorBinarySelfTest {
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 4;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return TRANSACTIONAL;
+    @Override public boolean persistenceEnabled() {
+        return true;
     }
 }

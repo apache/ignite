@@ -17,10 +17,20 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.Collection;
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.GridCacheTcpClientDiscoveryMultiThreadedTest;
-import org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesTcpClientDiscoveryAbstractTest;
+import org.apache.ignite.testframework.GridTestUtils;
+
+import static org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientPartitionedAtomic;
+import static org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientPartitionedTransactional;
+import static org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientReplicatedAtomic;
+import static org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientReplicatedTransactional;
+import static org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearPartitionedAtomic;
+import static org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearPartitionedTransactional;
+import static org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearReplicatedAtomic;
+import static org.apache.ignite.internal.processors.cache.distributed.GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearReplicatedTransactional;
 
 /**
  * Tests a cache with TcpClientDiscovery SPI being enabled.
@@ -28,20 +38,27 @@ import org.apache.ignite.internal.processors.cache.distributed.GridCacheClientMo
 public class IgniteCacheTcpClientDiscoveryTestSuite {
     /**
      * @return Suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
+        return suite(null);
+    }
+
+    /**
+     * @param ignoredTests Tests to ignore.
+     * @return Test suite.
+     */
+    public static TestSuite suite(Collection<Class> ignoredTests) {
         TestSuite suite = new TestSuite("Cache + TcpClientDiscovery SPI test suite.");
 
-        suite.addTest(new JUnit4TestAdapter(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearPartitionedAtomic.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearPartitionedTransactional.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearReplicatedAtomic.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearReplicatedTransactional.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientPartitionedAtomic.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientPartitionedTransactional.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientReplicatedAtomic.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientReplicatedTransactional.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheTcpClientDiscoveryMultiThreadedTest.class));
+        GridTestUtils.addTestIfNeeded(suite, CaseNearPartitionedAtomic.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CaseNearPartitionedTransactional.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CaseNearReplicatedAtomic.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CaseNearReplicatedTransactional.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CaseClientPartitionedAtomic.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CaseClientPartitionedTransactional.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CaseClientReplicatedAtomic.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CaseClientReplicatedTransactional.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheTcpClientDiscoveryMultiThreadedTest.class, ignoredTests);
 
         return suite;
     }

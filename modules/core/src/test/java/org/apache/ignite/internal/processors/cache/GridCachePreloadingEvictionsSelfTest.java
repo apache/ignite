@@ -239,7 +239,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
             "Sizes do not match [s1=" + cache1.size(ALL_PEEK_MODES) + ", s2=" + cache2.size(ALL_PEEK_MODES) + ']';
 
         for (Integer key : cache1.keySet()) {
-            Object e = cache1.localPeek(key, new CachePeekMode[] {CachePeekMode.ONHEAP}, null);
+            Object e = cache1.localPeek(key, new CachePeekMode[] {CachePeekMode.ONHEAP});
 
             if (e != null)
                 assert cache2.containsKey(key) : "Cache2 does not contain key: " + key;
