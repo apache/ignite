@@ -45,11 +45,9 @@ import static org.apache.ignite.events.EventType.EVT_TX_STARTED;
 @RunWith(JUnit4.class)
 public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-10415");
-
-        super.beforeTestsStarted();
     }
 
     /**

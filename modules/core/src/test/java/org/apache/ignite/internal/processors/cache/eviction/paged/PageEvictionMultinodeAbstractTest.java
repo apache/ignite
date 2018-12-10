@@ -51,12 +51,15 @@ public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbst
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10448");
-
         startGridsMultiThreaded(4, false);
 
         clientGrid = startGrid("client");
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10448");
     }
 
 
