@@ -51,7 +51,8 @@ web-console-sidebar-navigation {
                 content: '';
                 display: block;
                 width: 2px;
-                right: -2px;
+                // Line can't be outside of scrollable container
+                right: 0;
                 top: 0;
                 bottom: 0;
                 position: absolute;

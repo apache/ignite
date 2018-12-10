@@ -22,15 +22,16 @@ web-console-sidebar {
     border-right: 1px #dddddd solid;
     --width-narrow: 75px;
     --width-wide: 280px;
+    // Does not include notifications height
+    max-height: calc(100vh - var(--header-height));
+    position: sticky;
+    top: var(--header-height);
 
-    web-console-sidebar-navigation {
-        position: sticky;
-        top: var(--header-height);
+    web-console-sidebar-overflow {
+        flex: 1;
     }
 
     web-console-footer {
-        position: sticky;
-        bottom: 0;
-        margin-top: auto;
+        flex: 0 0 auto;
     }
 }
