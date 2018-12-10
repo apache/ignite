@@ -162,7 +162,7 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
 
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
-        return false;
+        return op == EnlistOperation.TRANSFORM;
     }
 
     /** {@inheritDoc} */
