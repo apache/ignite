@@ -4798,13 +4798,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** Last archived segment. */
         protected final long lastArchivedSegment;
 
+        /** WAL iterator. */
         private final WALIterator iterator;
 
         /** Only {@link WalRecordCacheGroupAware} records satisfied this predicate will be applied. */
         private final IgnitePredicate<Integer> cacheGroupPredicate;
 
         /**
-         * @param iterator
+         * @param iterator WAL iterator.
          * @param lastArchivedSegment Last archived segment index.
          */
         public RestoreStateContext(WALIterator iterator, long lastArchivedSegment, IgnitePredicate<Integer> cacheGroupPredicate) {
@@ -4911,7 +4912,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         /**
          * @param status Checkpoint status.
+         * @param iterator WAL iterator.
          * @param lastArchivedSegment Last archived segment index.
+         * @param cacheGroupsPredicate Cache groups predicate.
          */
         public RestoreBinaryState(CheckpointStatus status, WALIterator iterator, long lastArchivedSegment, IgnitePredicate<Integer> cacheGroupsPredicate) {
             super(iterator, lastArchivedSegment, cacheGroupsPredicate);
