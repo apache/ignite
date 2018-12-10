@@ -137,6 +137,8 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         super.beforeTestsStarted();
 
         for (int i = 0; i < GRID_CNT; i++)
