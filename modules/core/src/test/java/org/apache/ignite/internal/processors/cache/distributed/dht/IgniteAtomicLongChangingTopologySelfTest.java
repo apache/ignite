@@ -47,6 +47,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -144,6 +145,9 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testClientAtomicLongCreateCloseFailover() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10604");
+
         testFailoverWithClient(new IgniteInClosure<Ignite>() {
             @Override public void apply(Ignite ignite) {
                 for (int i = 0; i < 100; i++) {
@@ -166,7 +170,7 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
 
                     colCfg.setBackups(1);
                     colCfg.setCacheMode(PARTITIONED);
-                    colCfg.setAtomicityMode(i % 2 == 0 ? TRANSACTIONAL : ATOMIC);
+                    colCfg.setAtomicityMode(MvccFeatureChecker.forcedMvcc() || i % 2 == 0 ? TRANSACTIONAL : ATOMIC);
 
                     IgniteQueue q = ignite.queue("q-" + i, 0, colCfg);
 
@@ -205,7 +209,7 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
                     colCfg.setCollocated(collocated);
                     colCfg.setBackups(1);
                     colCfg.setCacheMode(PARTITIONED);
-                    colCfg.setAtomicityMode(i % 2 == 0 ? TRANSACTIONAL : ATOMIC);
+                    colCfg.setAtomicityMode(MvccFeatureChecker.forcedMvcc() || i % 2 == 0 ? TRANSACTIONAL : ATOMIC);
 
                     IgniteSet set = ignite.set("set-" + i, colCfg);
 
@@ -331,6 +335,9 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testQueueClose() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10391");
+
         startGrids(GRID_CNT);
 
         int threads = 4;
