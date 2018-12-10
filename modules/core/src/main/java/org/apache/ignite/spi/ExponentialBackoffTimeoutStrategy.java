@@ -59,7 +59,7 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
         long totalBackoffTimeout = initTimeout;
 
         for (int i = 1; i < reconCnt && totalBackoffTimeout < maxTimeout; i++)
-            totalBackoffTimeout += nextTimeout(totalBackoffTimeout, maxTimeout);
+            totalBackoffTimeout += backoffTimeout(totalBackoffTimeout, maxTimeout);
 
         return totalBackoffTimeout;
     }
@@ -70,7 +70,7 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
      * @param maxTimeout Maximum startTimeout for backoff function.
      * @return Next exponential backoff timeout.
      */
-    public static long nextTimeout(long timeout, long maxTimeout) {
+    public static long backoffTimeout(long timeout, long maxTimeout) {
         return (long) Math.min(timeout * DLFT_BACKOFF_COEFF, maxTimeout);
     }
 
@@ -109,7 +109,7 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
         if (timeout == 0) {
             long prevTimeout = currTimeout;
 
-            currTimeout = nextTimeout(currTimeout, maxTimeout);
+            currTimeout = backoffTimeout(currTimeout, maxTimeout);
 
             return Math.min(prevTimeout, remainingTime);
         } else
