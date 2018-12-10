@@ -35,10 +35,36 @@ public interface IgniteFunction<T, R> extends Function<T, R>, Serializable {
      * @return {@link IgniteFunction} returning specified constant.
      */
     static <T, R> IgniteFunction<T, R> constant(R r) {
-        return t -> r;
+        return new IgniteFunction<T, R>() {
+            /** {@inheritDoc} */
+            @Override public String toString() {
+                return "Constant function [c=" + r + "]";
+            }
+
+            /** {@inheritDoc} */
+            @Override public R apply(T t) {
+                return r;
+            }
+        };
     }
 
+    /**
+     * Identity function.
+     *
+     * @param <T> Type of input and output.
+     * @return Identity function.
+     */
     static <T> IgniteFunction<T, T> identity() {
-        return t -> t;
+        return new IgniteFunction<T, T>() {
+            /** {@inheritDoc} */
+            @Override public String toString() {
+                return "Identity function.";
+            }
+
+            /** {@inheritDoc} */
+            @Override public T apply(T t) {
+                return t;
+            }
+        };
     }
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.trainers.transformers;
+package org.apache.ignite.ml.composition.stacking;
 
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -23,15 +23,27 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 
-public class VectorStackedTrainer<O, L, AM extends Model<Vector, O>> extends StackedDatasetTrainer<Vector, Vector, O, AM, L> {
+/**
+ * {@link StackedDatasetTrainer} with {@link Vector} as submodels input and output.
+ *
+ * @param <O> Type of aggregator model output.
+ * @param <L> Type of labels.
+ * @param <AM> Type of aggregator model.
+ */
+public class VectorStackedTrainer<O, L, AM extends Model<Vector, O>>
+    extends SimpleStackedModelTrainer<Vector, O, AM, L> {
+    /**
+     * Constructs instance of this class.
+     *
+     * @param aggregatingTrainer Aggregator trainer.
+     */
     public VectorStackedTrainer(DatasetTrainer<AM, L> aggregatingTrainer) {
         super(aggregatingTrainer, VectorUtils::concat, IgniteFunction.identity());
     }
 
-    public <O1, M extends Model<Vector, O1>> StackedDatasetTrainer<Vector, Vector, O, AM, L> withAddedTrainer(
-        DatasetTrainer<M, L> trainer,
-        IgniteFunction<O1, Vector> output2VecConverter,
-        IgniteFunction<O1, Vector> submodelOutput2AggregatingInputConverter) {
-        return super.withAddedTrainer(trainer, IgniteFunction.identity(), output2VecConverter, submodelOutput2AggregatingInputConverter);
+    /** {@inheritDoc} */
+    @Override public <M1 extends Model<Vector, Vector>> StackedDatasetTrainer<Vector, Vector, O, AM, L> withAddedTrainer(
+        DatasetTrainer<M1, L> trainer) {
+        return super.withAddedTrainer(trainer);
     }
 }

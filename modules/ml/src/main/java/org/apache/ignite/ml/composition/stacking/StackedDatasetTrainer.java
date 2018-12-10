@@ -15,22 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.trainers.transformers;
+package org.apache.ignite.ml.composition.stacking;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.environment.parallelism.Promise;
@@ -40,7 +30,6 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.trainers.ComposableDatasetTrainer;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 
 /**
@@ -217,9 +206,33 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
      * @param trainer Submodel trainer.
      * @return This object.
      */
-    public StackedDatasetTrainer<IS, IA, O, AM, L> withAddedTrainer(
-        DatasetTrainer<? extends Model<IS, IA>, L> trainer) {
-        submodelsTrainers.add(ComposableDatasetTrainer.of(trainer).simplyTyped());
+    public <M1 extends Model<IS, IA>> StackedDatasetTrainer<IS, IA, O, AM, L> withAddedTrainer(
+        DatasetTrainer<M1, L> trainer) {
+        submodelsTrainers.add(new DatasetTrainer<Model<IS, IA>, L>() {
+            /** {@inheritDoc} */
+            @Override public <K, V> Model<IS, IA> fit(DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+                return trainer.fit(datasetBuilder, featureExtractor, lbExtractor);
+            }
+
+            /** {@inheritDoc} */
+            @Override protected boolean checkState(Model<IS, IA> mdl) {
+                return true;
+            }
+
+            /** {@inheritDoc} */
+            @Override protected <K, V> Model<IS, IA> updateModel(Model<IS, IA> mdl, DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+                return null;
+            }
+
+            /** {@inheritDoc} */
+            @Override public <K, V> Model<IS, IA> update(Model<IS, IA> mdl, DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+                DatasetTrainer<Model<IS, IA>, L> trainer1 = (DatasetTrainer<Model<IS, IA>, L>)trainer;
+                return trainer1.update(mdl, datasetBuilder, featureExtractor, lbExtractor);
+            }
+        });
 
         return this;
     }
@@ -272,35 +285,6 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
         );
     }
 
-
-//    public static <IS, IA, O, AM, L> boolean checkState1(StackedModel<IS, IA, O, AM> mdl) {
-//        boolean res = true;
-//        int i = 0;
-//        for (Model<IS, IA> submodel : mdl.submodels()) {
-//            DatasetTrainer<ModelsComposition, L> trainer = submodelsTrainers.get(i);
-//            res &= new DatasetTrainer<ModelsComposition, L>() {
-//
-//                @Override public <K, V> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
-//                    IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-//                    return null;
-//                }
-//
-//                @Override protected boolean checkState(ModelsComposition mdl) {
-//                    return trainer.checkState(mdl);
-//                }
-//
-//                @Override protected <K, V> ModelsComposition updateModel(ModelsComposition mdl,
-//                    DatasetBuilder<K, V> datasetBuilder,
-//                    IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-//                    return null;
-//                }
-//            }.check(mdl);
-//            i++;
-//        }
-//
-//        return res && aggregatorTrainer.checkState(mdl.aggregatingModel());
-//    }
-
     /** {@inheritDoc} */
     @Override public StackedDatasetTrainer<IS, IA, O, AM, L> withEnvironmentBuilder(
         LearningEnvironmentBuilder envBuilder) {
@@ -333,6 +317,11 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
         if (submodelInput2AggregatingInputConverter == null && submodelsTrainers.isEmpty())
             throw new IllegalStateException("There should be at least one way for submodels " +
                 "input to be propageted to aggregator.");
+
+        if (submodelOutput2VectorConverter == null || vector2SubmodelInputConverter == null) {
+            throw new IllegalStateException("There should be a specified way to convert vectors to submodels " +
+                "input and submodels output to vector");
+        }
 
         List<IgniteSupplier<Model<IS, IA>>> mdlSuppliers = taskSupplier.apply(submodelsTrainers);
 

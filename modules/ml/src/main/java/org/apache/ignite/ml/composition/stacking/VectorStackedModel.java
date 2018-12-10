@@ -15,22 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.trainers.transformers;
+package org.apache.ignite.ml.composition.stacking;
 
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 
-public class SimpleStackedModelTrainer<I, O, AM extends Model<I, O>, L> extends StackedDatasetTrainer<I, I, O, AM, L> {
-    public SimpleStackedModelTrainer(DatasetTrainer<AM, L> aggregatingTrainer,
-        IgniteBinaryOperator<I> aggregatingInputMerger,
-        IgniteFunction<I, I> submodelInput2AggregatingInputConverter) {
-        super(aggregatingTrainer, aggregatingInputMerger, submodelInput2AggregatingInputConverter);
+public class VectorStackedModel<O, AM extends Model<Vector, O>, L> extends SimpleStackedModelTrainer<Vector, O, AM, L> {
+    public VectorStackedModel(DatasetTrainer<AM, L> aggregatingTrainer,
+        IgniteBinaryOperator<Vector> aggregatingInputMerger) {
+        super(aggregatingTrainer, aggregatingInputMerger);
     }
 
-    public SimpleStackedModelTrainer(DatasetTrainer<AM, L> aggregatingTrainer,
-        IgniteBinaryOperator<I> aggregatingInputMerger) {
-        super(aggregatingTrainer, aggregatingInputMerger, IgniteFunction.identity());
+    public VectorStackedModel(DatasetTrainer<AM, L> aggregatingTrainer) {
+        super(aggregatingTrainer, VectorUtils::concat);
     }
 }

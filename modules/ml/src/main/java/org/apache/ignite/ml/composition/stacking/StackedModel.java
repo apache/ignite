@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.trainers.transformers;
+package org.apache.ignite.ml.composition.stacking;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,12 +23,44 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
+/**
+ * Model consisting of two layers:
+ * <pre>
+ *     1. Submodels layer {@code (IS -> IA)}.
+ *     2. Aggregator layer {@code (IA -> O)}.
+ * </pre>
+ * Submodels layer is a "parallel" composition of several models {@code IS -> IA} each of them getting same input
+ * {@code IS} and produce own output, these outputs outputs {@code [IA]}
+ * are combined into a single output with a given binary "merger" operator {@code IA -> IA -> IA}. Result of merge
+ * is then passed to the aggregator layer.
+ * Aggregator layer consists of a model {@code IA -> O}.
+ *
+ * @param <IS> Type of submodels input.
+ * @param <IA> Type of submodels output (same as aggregator model input).
+ * @param <O> Type of aggregator model output.
+ * @param <AM> Type of aggregator model.
+ */
 public class StackedModel<IS, IA, O, AM extends Model<IA, O>> implements Model<IS, O> {
+    /** Submodels layer. */
     private Model<IS, IA> subModelsLayer;
+
+    /** Aggregator model. */
     private final AM aggregatorModel;
+
+    /** Models constituting submodels layer. */
     private List<Model<IS, IA>> submodels;
+
+    /** Binary operator merging submodels outputs. */
     private final IgniteBinaryOperator<IA> aggregatingInputMerger;
 
+    /**
+     * Constructs instance of this class.
+     *
+     * @param aggregatorMdl Aggregator model.
+     * @param aggregatingInputMerger Binary operator used to merge submodels outputs.
+     * @param subMdlInput2AggregatingInput Function converting submodels input to aggregator input. (This function
+     * is needed when in {@link StackedDatasetTrainer} option to keep original features is chosen).
+     */
     StackedModel(AM aggregatorMdl,
         IgniteBinaryOperator<IA> aggregatingInputMerger,
         IgniteFunction<IS, IA> subMdlInput2AggregatingInput) {
@@ -38,17 +70,27 @@ public class StackedModel<IS, IA, O, AM extends Model<IA, O>> implements Model<I
         submodels = new ArrayList<>();
     }
 
+    /**
+     * Get submodels constituting first layer of this model.
+     *
+     * @return Submodels constituting first layer of this model.
+     */
     List<Model<IS, IA>> submodels() {
         return submodels;
     }
 
+    /**
+     *
+     *
+     * @return
+     */
     AM aggregatingModel() {
         return aggregatorModel;
     }
 
     void addSubmodel(Model<IS, IA> subModel) {
         submodels.add(subModel);
-        subModelsLayer = subModelsLayer != null ? subModelsLayer.combine(subModelsLayer, aggregatingInputMerger)
+        subModelsLayer = subModelsLayer != null ? subModelsLayer.combine(subModel, aggregatingInputMerger)
             : subModel;
     }
 
