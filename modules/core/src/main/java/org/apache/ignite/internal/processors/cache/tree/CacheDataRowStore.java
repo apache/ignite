@@ -49,6 +49,13 @@ public class CacheDataRowStore extends RowStore {
     }
 
     /**
+     * @return Partition Id.
+     */
+    public int getPartitionId() {
+        return partId;
+    }
+
+    /**
      * @param cacheId Cache ID.
      * @param hash Hash code.
      * @param link Link.

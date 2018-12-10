@@ -254,6 +254,14 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
 
     /**
      * @param pageAddr Page address.
+     * @return Rows number in the given data page.
+     */
+    public int getRowsCount(long pageAddr) {
+        return getDirectCount(pageAddr);
+    }
+
+    /**
+     * @param pageAddr Page address.
      * @param c Closure.
      * @param <T> Closure return type.
      * @return Collection of closure results for all items in page.

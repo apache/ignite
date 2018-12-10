@@ -28,9 +28,18 @@ import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Page memory with some persistence related additions.
  */
 public interface PageMemoryEx extends PageMemory {
+    /**
+     * @param absPtr Absolute pointer to read lock.
+     * @param pageId Page ID.
+     * @param force Force flag.
+     * @param touch Update page timestamp.
+     * @return Pointer to the page read buffer.
+     */
+    long readLock(long absPtr, long pageId, boolean force, boolean touch);
+
     /**
      *
      * @param grpId Group ID.

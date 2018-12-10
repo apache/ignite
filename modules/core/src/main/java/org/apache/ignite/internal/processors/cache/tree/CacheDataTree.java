@@ -19,17 +19,21 @@ package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataLeafIO;
@@ -37,16 +41,21 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataInnerI
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.MVCC_INFO_SIZE;
+import static org.apache.ignite.internal.util.GridArrays.clearTail;
 
 /**
  *
  */
 public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
+    /** */
+    private static CacheDataRow[] EMPTY_ROWS = {};
+
     /** */
     private final CacheDataRowStore rowStore;
 
@@ -89,6 +98,125 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         assert !grp.dataRegion().config().isPersistenceEnabled() || grp.shared().database().checkpointLockIsHeldByThread();
 
         initTree(initNew);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCursor<CacheDataRow> find(
+        CacheSearchRow lower,
+        CacheSearchRow upper,
+        TreeRowClosure<CacheSearchRow,CacheDataRow> c,
+        Object x
+    ) throws IgniteCheckedException {
+        // If there is a group of caches, lower and upper bounds will not be null here.
+        if (c == null && lower == null && upper == null && grp.persistenceEnabled())
+            return scanDataPages(asRowData(x));
+
+        return super.find(lower, upper, c, x);
+    }
+
+    /**
+     * @param rowData Required row data.
+     * @return Cache row cursor.
+     * @throws IgniteCheckedException If failed.
+     */
+    private GridCursor<CacheDataRow> scanDataPages(CacheDataRowAdapter.RowData rowData) throws IgniteCheckedException {
+        assert rowData != null;
+        assert grp.persistenceEnabled();
+
+        int partId = rowStore.getPartitionId();
+
+        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)grp.shared().database();
+        PageStore pageStore = db.getPageStore(grpId, partId);
+
+        long startPageId = ((PageMemoryEx)pageMem).partitionMetaPageId(grp.groupId(), partId);
+
+        class DataPageScanCursor implements GridCursor<CacheDataRow> {
+            /** */
+            int pagesCnt = pageStore.pages();
+
+            /** */
+            int curPage = -1;
+
+            /** */
+            CacheDataRow[] rows = EMPTY_ROWS;
+
+            /** */
+            int curRow = -1;
+
+            /** {@inheritDoc} */
+            @Override public boolean next() throws IgniteCheckedException {
+                if (++curRow < rows.length && rows[curRow] != null)
+                    return true;
+
+                return fetchNextPage();
+            }
+
+            /**
+             * @return {@code true} If new rows were fetched.
+             * @throws IgniteCheckedException If failed.
+             */
+            private boolean fetchNextPage() throws IgniteCheckedException {
+                for (;;) {
+                    if (++curPage == pagesCnt) {
+                        int newPagesCnt = pageStore.pages();
+
+                        if (newPagesCnt <= pagesCnt)
+                            return false;
+
+                        pagesCnt = newPagesCnt;
+                    }
+
+                    long pageId = startPageId + curPage;
+                    long page = pageMem.acquirePage(grpId, pageId);
+                    long pageAddr = ((PageMemoryEx)pageMem).readLock(page, pageId, true, false);
+
+                    try {
+                        PageIO io = PageIO.getPageIO(pageAddr);
+
+                        if (io instanceof DataPageIO) {
+                            DataPageIO iox = (DataPageIO)io;
+
+                            int rowsCnt = iox.getRowsCount(pageAddr);
+
+                            if (rowsCnt == 0)
+                                continue;
+
+                            if (rowsCnt > rows.length)
+                                rows = new CacheDataRow[rowsCnt];
+                            else
+                                clearTail(rows, rowsCnt);
+
+                            for (int i = 0; i < rowsCnt; i++) {
+                                rows[i] = null; // TODO
+                            }
+
+                            curRow = 0;
+                            return true;
+                        }
+                    }
+                    finally {
+                        pageMem.readUnlock(grpId, pageId, page);
+                        pageMem.releasePage(grpId, pageId, page);
+                    }
+                }
+            }
+
+            /** {@inheritDoc} */
+            @Override public CacheDataRow get() throws IgniteCheckedException {
+                return rows[curRow];
+            }
+        }
+
+        return new DataPageScanCursor();
+    }
+
+    /**
+     * @param flags Flags.
+     * @return Row data.
+     */
+    private static CacheDataRowAdapter.RowData asRowData(Object flags) {
+        return flags != null ? (CacheDataRowAdapter.RowData)flags :
+            CacheDataRowAdapter.RowData.FULL;
     }
 
     /**
@@ -176,8 +304,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheDataRow getRow(BPlusIO<CacheSearchRow> io, long pageAddr, int idx, Object flags)
-        throws IgniteCheckedException {
+    @Override public CacheDataRow getRow(BPlusIO<CacheSearchRow> io, long pageAddr, int idx, Object flags) {
         RowLinkIO rowIo = (RowLinkIO)io;
 
         long link = rowIo.getLink(pageAddr, idx);
@@ -185,9 +312,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
         int cacheId = grp.sharedGroup() ? rowIo.getCacheId(pageAddr, idx) : CU.UNDEFINED_CACHE_ID;
 
-        CacheDataRowAdapter.RowData x = flags != null ?
-            (CacheDataRowAdapter.RowData)flags :
-            CacheDataRowAdapter.RowData.FULL;
+        CacheDataRowAdapter.RowData x = asRowData(flags);
 
         if (grp.mvccEnabled()) {
             long mvccCrdVer = rowIo.getMvccCoordinatorVersion(pageAddr, idx);

@@ -1970,6 +1970,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
+     * @param grpId Cache group id.
+     * @param partId Partition ID.
+     * @return Page store.
+     * @throws IgniteCheckedException If failed.
+     */
+    public PageStore getPageStore(int grpId, int partId) throws IgniteCheckedException {
+        return storeMgr.getStore(grpId, partId);
+    }
+
+    /**
      * @param gctx Group context.
      * @param f Consumer.
      * @return Accumulated result for all page stores.
