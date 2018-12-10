@@ -368,6 +368,14 @@ public class ClusterListener implements AutoCloseable {
         boolean differentCluster(TopologySnapshot prev) {
             return prev == null || F.isEmpty(prev.nids) || Collections.disjoint(nids, prev.nids);
         }
+
+        /**
+         * @param prev Previous topology.
+         * @return {@code true} in case if current topology is the same cluster, but topology changed.
+         */
+        boolean topologyChanged(TopologySnapshot prev) {
+            return prev != null && !prev.nids.equals(nids);
+        }
     }
 
     /** */
@@ -495,6 +503,8 @@ public class ClusterListener implements AutoCloseable {
 
                         if (newTop.differentCluster(top))
                             log.info("Connection successfully established to cluster with nodes: " + newTop.nid8());
+                        else if (newTop.topologyChanged(top))
+                            log.info("Cluster topology changed, new topology: " + newTop.nid8());
 
                         boolean active = active(newTop.clusterVersion(), F.first(newTop.getNids()));
 

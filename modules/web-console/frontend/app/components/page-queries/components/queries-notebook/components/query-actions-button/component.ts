@@ -15,22 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+import template from './template.pug';
+import QueryActionsButton from './controller';
 
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
-
-/**
- * Test getEntry and getEntries methods.
- */
-public class CacheGetEntryOptimisticRepeatableReadSeltTest extends CacheGetEntryAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected TransactionConcurrency concurrency() {
-        return TransactionConcurrency.OPTIMISTIC;
+export const component: ng.IComponentOptions = {
+    controller: QueryActionsButton,
+    template,
+    bindings: {
+        actions: '<',
+        item: '<'
     }
-
-    /** {@inheritDoc} */
-    @Override protected TransactionIsolation isolation() {
-        return TransactionIsolation.REPEATABLE_READ;
-    }
-}
+};

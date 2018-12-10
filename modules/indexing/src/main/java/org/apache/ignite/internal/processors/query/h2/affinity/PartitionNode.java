@@ -15,22 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.query.h2.affinity;
 
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.IgniteCheckedException;
+
+import java.util.Collection;
 
 /**
- * Test getEntry and getEntries methods.
+ * Common node of partition tree.
  */
-public class CacheGetEntryPessimisticSerializableSeltTest extends CacheGetEntryAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected TransactionConcurrency concurrency() {
-        return TransactionConcurrency.PESSIMISTIC;
-    }
+public interface PartitionNode {
+    /**
+     * Get partitions.
+     *
+     * @param args Query arguments.
+     * @return Partitions.
+     * @throws IgniteCheckedException If failed.
+     */
+    Collection<Integer> apply(Object... args) throws IgniteCheckedException;
 
-    /** {@inheritDoc} */
-    @Override protected TransactionIsolation isolation() {
-        return TransactionIsolation.SERIALIZABLE;
+    /**
+     * Try optimizing partition nodes into a simpler form.
+     *
+     * @return Optimized node or {@code this} if optimization failed.
+     */
+    default PartitionNode optimize() {
+        return this;
     }
 }
