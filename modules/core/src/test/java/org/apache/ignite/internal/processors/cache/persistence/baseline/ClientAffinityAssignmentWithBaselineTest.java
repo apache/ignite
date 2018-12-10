@@ -156,15 +156,10 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-10261");
 
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
         cleanPersistenceDir();

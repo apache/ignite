@@ -60,14 +60,6 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
     private boolean failFileIo;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -99,6 +91,9 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
+
         stopAllGrids();
 
         cleanPersistenceDir();

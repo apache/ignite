@@ -70,15 +70,10 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
     protected abstract int gridCount();
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-10550");
 
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
         stopAllGrids();

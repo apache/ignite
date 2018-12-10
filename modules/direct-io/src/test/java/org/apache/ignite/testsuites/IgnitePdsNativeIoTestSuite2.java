@@ -28,9 +28,8 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteNati
 public class IgnitePdsNativeIoTestSuite2 extends TestSuite {
     /**
      * @return Suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite 2 (Native IO)");
 
         IgnitePdsTestSuite2.addRealPageStoreTests(suite, null);
