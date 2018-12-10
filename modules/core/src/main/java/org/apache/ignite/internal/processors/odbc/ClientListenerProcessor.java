@@ -254,8 +254,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 proceedSessionOpened(ses);
             }
 
-            @Override
-            public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
+            @Override public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
                 ClientListenerConnectionContext connCtx = ses.meta(ClientListenerNioListener.CONN_CTX_META_KEY);
 
                 if (connCtx != null && connCtx.parser() != null) {
@@ -287,7 +286,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
                         super.onMessageReceived(ses, msg);
                     }
-
                 }
                 else
                     super.onMessageReceived(ses, msg);

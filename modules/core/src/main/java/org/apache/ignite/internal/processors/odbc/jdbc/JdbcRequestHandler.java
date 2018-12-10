@@ -153,6 +153,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private AuthorizationContext actx;
 
     /** Mapping query to cursors using corresponding IDs. */
+    // TODO: Need to review how we use it: duplication
     private Map<Long, List<Closeable>> requestToCursorMapping = new HashMap<>();
 
     private AtomicLong c = new AtomicLong(0);
@@ -489,6 +490,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
         bulkLoadRequests.clear();
 
+        // TODO: Either mutex or change to CHM
         requestToCursorMapping.values().forEach(lst -> lst.forEach(c -> U.close(c, log)));
 
         requestToCursorMapping.clear();
@@ -564,6 +566,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             qry.setSchema(schemaName);
 
+            // TODO: Query cancel check most probably should be here.
+
             List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFields(null, qry, cliCtx, true,
                 protocolVer.compareTo(VER_2_3_0) < 0);
 
@@ -598,6 +602,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 JdbcQueryCursor cur = new JdbcQueryCursor(cursorId, req.pageSize(), req.maxRows(),
                     (QueryCursorImpl)fieldsCur, req.requestId());
 
+                // TODO: Can we avoid duplication here?
                 synchronized (cancellationProcessingMux) {
                     if (req.isCancellationSupported()) {
                         if (!requestToCursorMapping.containsKey(req.requestId()))
@@ -655,6 +660,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                         queryCursors.put(cursor.cursorId(), cursor);
                 }
 
+                // TODO: Can we avoid duplication here?
                 synchronized (cancellationProcessingMux) {
                     if (req.isCancellationSupported()) {
                         if (!requestToCursorMapping.containsKey(req.requestId()))
