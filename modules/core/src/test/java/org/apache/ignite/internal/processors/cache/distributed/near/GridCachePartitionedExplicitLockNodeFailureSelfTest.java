@@ -56,10 +56,8 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
     public static final int GRID_CNT = 4;
 
     /** {@inheritDoc} */
-    @Override public void beforeTestsStarted() throws Exception {
+    @Override public void beforeTest() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
-
-        super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */

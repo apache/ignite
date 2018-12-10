@@ -92,8 +92,6 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
-
         ignite1 = startGrid(1);
         ignite2 = startGrid(2);
         ignite3 = startGrid(3);
@@ -101,6 +99,11 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
         cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
         cache3 = ignite3.cache(DEFAULT_CACHE_NAME);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
     }
 
     /** {@inheritDoc} */

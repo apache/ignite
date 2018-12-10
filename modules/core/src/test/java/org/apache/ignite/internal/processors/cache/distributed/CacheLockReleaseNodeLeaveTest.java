@@ -61,10 +61,8 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
     private static final String REPLICATED_TEST_CACHE = "REPLICATED_TEST_CACHE";
 
     /** {@inheritDoc} */
-    @Override public void beforeTestsStarted() throws Exception {
+    @Override public void beforeTest() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
-
-        super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */

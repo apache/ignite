@@ -52,10 +52,8 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
-
-        super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */

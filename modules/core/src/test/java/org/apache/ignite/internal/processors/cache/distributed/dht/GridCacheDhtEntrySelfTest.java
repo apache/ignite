@@ -83,8 +83,6 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(GRID_CNT);
@@ -93,6 +91,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @SuppressWarnings({"SizeReplaceableByIsEmpty"})
     @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
         for (int i = 0; i < GRID_CNT; i++) {
             assert near(grid(i)).size() == 0 : "Near cache size is not zero for grid: " + i;
             assert dht(grid(i)).size() == 0 : "DHT cache size is not zero for grid: " + i;

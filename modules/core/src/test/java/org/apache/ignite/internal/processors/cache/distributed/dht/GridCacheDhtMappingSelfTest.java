@@ -49,10 +49,8 @@ public class GridCacheDhtMappingSelfTest extends GridCommonAbstractTest {
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
-        super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */

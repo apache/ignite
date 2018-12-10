@@ -36,13 +36,6 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
  */
 @RunWith(JUnit4.class)
 public class GridCacheLocalIsolatedNodesSelfTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-
-        super.beforeTestsStarted();
-    }
-
     /**
      *
      */
@@ -52,6 +45,8 @@ public class GridCacheLocalIsolatedNodesSelfTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         startGrids(3);
     }
 

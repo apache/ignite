@@ -67,10 +67,8 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
     private IgniteCache<Integer, Integer> cache3;
 
     /** {@inheritDoc} */
-    @Override public void beforeTestsStarted() throws Exception {
+    @Override public void beforeTest() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
-        super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
