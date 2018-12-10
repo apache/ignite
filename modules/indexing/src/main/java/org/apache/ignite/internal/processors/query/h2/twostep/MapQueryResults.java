@@ -22,7 +22,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
-import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,9 +38,6 @@ class MapQueryResults {
 
     /** */
     private final AtomicReferenceArray<MapQueryResult> results;
-
-    /** */
-    private final GridQueryCancel[] cancels;
 
     /** */
     private final GridCacheContext<?, ?> cctx;
@@ -72,10 +69,6 @@ class MapQueryResults {
         this.lazyWorker = lazyWorker;
 
         results = new AtomicReferenceArray<>(qrys);
-        cancels = new GridQueryCancel[qrys];
-
-        for (int i = 0; i < cancels.length; i++)
-            cancels[i] = new GridQueryCancel();
     }
 
     /**
@@ -84,16 +77,6 @@ class MapQueryResults {
      */
     MapQueryResult result(int qry) {
         return results.get(qry);
-    }
-
-    /**
-     * Get cancel token for query.
-     *
-     * @param qryIdx Query index.
-     * @return Cancel token.
-     */
-    GridQueryCancel queryCancel(int qryIdx) {
-        return cancels[qryIdx];
     }
 
     /**
@@ -111,8 +94,9 @@ class MapQueryResults {
      * @param rs Result set.
      * @param params Query arguments.
      */
-    void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params) {
-        MapQueryResult res = new MapQueryResult(h2, rs, cctx, qrySrcNodeId, q, params, lazyWorker);
+    void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params,
+        GridRunningQueryInfo runningQryInfo) {
+        MapQueryResult res = new MapQueryResult(h2, rs, cctx, qrySrcNodeId, q, params, lazyWorker, runningQryInfo);
 
         if (lazyWorker != null)
             lazyWorker.result(res);
@@ -138,7 +122,7 @@ class MapQueryResults {
     /**
      * Cancels the query.
      */
-    void cancel(boolean forceQryCancel) {
+    void cancel() {
         if (cancelled)
             return;
 
@@ -147,19 +131,8 @@ class MapQueryResults {
         for (int i = 0; i < results.length(); i++) {
             MapQueryResult res = results.get(i);
 
-            if (res != null) {
+            if (res != null)
                 res.close();
-
-                continue;
-            }
-
-            // NB: Cancel is already safe even for lazy queries (see implementation of passed Runnable).
-            if (forceQryCancel) {
-                GridQueryCancel cancel = cancels[i];
-
-                if (cancel != null)
-                    cancel.cancel();
-            }
         }
     }
 

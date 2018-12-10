@@ -32,7 +32,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Context for DML operation on reducer node.
  */
-class DistributedUpdateRun {
+public class DistributedUpdateRun {
     /** Expected number of responses. */
     private final int nodeCount;
 

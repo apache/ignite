@@ -42,9 +42,6 @@ class GridMergeIndexIterator implements Iterator<List<?>>, AutoCloseable {
     /** Query run. */
     private final ReduceQueryRun run;
 
-    /** Query request ID. */
-    private final long qryReqId;
-
     /** Distributed joins. */
     private final boolean distributedJoins;
 
@@ -69,21 +66,18 @@ class GridMergeIndexIterator implements Iterator<List<?>>, AutoCloseable {
      * @param rdcExec Reduce query executor.
      * @param nodes Participating nodes.
      * @param run Query run.
-     * @param qryReqId Query request ID.
      * @param distributedJoins Distributed joins.
      * @throws IgniteCheckedException if failed.
      */
     GridMergeIndexIterator(GridReduceQueryExecutor rdcExec,
         Collection<ClusterNode> nodes,
         ReduceQueryRun run,
-        long qryReqId,
         boolean distributedJoins,
         @Nullable MvccQueryTracker mvccTracker)
         throws IgniteCheckedException {
         this.rdcExec = rdcExec;
         this.nodes = nodes;
         this.run = run;
-        this.qryReqId = qryReqId;
         this.distributedJoins = distributedJoins;
         this.mvccTracker = mvccTracker;
 
@@ -164,7 +158,7 @@ class GridMergeIndexIterator implements Iterator<List<?>>, AutoCloseable {
     private void releaseIfNeeded() {
         if (!released) {
             try {
-                rdcExec.releaseRemoteResources(nodes, run, qryReqId, distributedJoins, mvccTracker);
+                rdcExec.releaseRemoteResources(nodes, run, distributedJoins, mvccTracker);
             }
             finally {
                 released = true;

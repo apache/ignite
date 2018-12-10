@@ -89,7 +89,8 @@ public interface GridQueryIndexing {
      * @return Cursor.
      */
     public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-        SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker, GridQueryCancel cancel);
+        SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker,
+        GridQueryCancel cancel, Long parentQryId);
 
     /**
      * Execute an INSERT statement using data streamer as receiver.
@@ -125,10 +126,13 @@ public interface GridQueryIndexing {
      * @param keepBinary Keep binary flag.
      * @param filter Cache name and key filter.
      * @param cancel Query cancel.
+     * @param qryId Id of query if executing query is part of another query. Can be {@code null} in case it's initial
+     * user query
      * @return Cursor.
      */
     public FieldsQueryCursor<List<?>> queryLocalSqlFields(String schemaName, SqlFieldsQuery qry,
-        boolean keepBinary, IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException;
+        boolean keepBinary, IndexingQueryFilter filter, GridQueryCancel cancel,
+        Long qryId) throws IgniteCheckedException;
 
     /**
      * Executes text query.
@@ -138,10 +142,12 @@ public interface GridQueryIndexing {
      * @param qry Text query.
      * @param typeName Type name.
      * @param filter Cache name and key filter.    @return Queried rows.
+     * @param qryId Id of query if executing query is part of another query. Can be {@code null} in case it's user query
+     * on local node.
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String schemaName, String cacheName,
-        String qry, String typeName, IndexingQueryFilter filter) throws IgniteCheckedException;
+        String qry, String typeName, IndexingQueryFilter filter, Long qryId) throws IgniteCheckedException;
 
     /**
      * Create new index locally.
@@ -228,13 +234,15 @@ public interface GridQueryIndexing {
      * @param topVer Topology version.
      * @param mvccSnapshot MVCC snapshot.
      * @param cancel Query cancel object.
+     * @param qryId Id of query if executing query is part of another query. Can be {@code null} in case it's initial
+     * user query
      * @return Cursor over entries which are going to be changed.
      * @throws IgniteCheckedException If failed.
      */
     public UpdateSourceIterator<?> prepareDistributedUpdate(GridCacheContext<?, ?> cctx, int[] ids, int[] parts,
         String schema, String qry, Object[] params, int flags,
         int pageSize, int timeout, AffinityTopologyVersion topVer,
-        MvccSnapshot mvccSnapshot, GridQueryCancel cancel) throws IgniteCheckedException;
+        MvccSnapshot mvccSnapshot, GridQueryCancel cancel, Long qryId) throws IgniteCheckedException;
 
     /**
      * Registers type if it was not known before or updates it otherwise.
@@ -369,4 +377,11 @@ public interface GridQueryIndexing {
      * @return {@code true} If context has been initialized.
      */
     public boolean initCacheContext(GridCacheContext ctx) throws IgniteCheckedException;
+
+    /**
+     * Return Running query manager.
+     *
+     * @return Running query manager.
+     */
+    RunningQueryManager runningQueryManager();
 }

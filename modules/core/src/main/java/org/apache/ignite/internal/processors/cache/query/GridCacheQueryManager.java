@@ -76,8 +76,8 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridSetQueryPredicate;
@@ -531,12 +531,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param subjId Security subject ID.
      * @param taskName Task name.
      * @param rcpt ID of the recipient.
+     * @param qryId Id of query if executing query is part of another query. Can be {@code null} in case it's user query
+     * on local node.
      * @return Collection of found keys.
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("unchecked")
     private QueryResult<K, V> executeQuery(GridCacheQueryAdapter<?> qry, @Nullable Object[] args,
-        IgniteClosure transformer, boolean loc, @Nullable UUID subjId, @Nullable String taskName, Object rcpt)
+        IgniteClosure transformer, boolean loc, @Nullable UUID subjId, @Nullable String taskName, Object rcpt,
+        Long qryId)
         throws IgniteCheckedException {
         if (qry.type() == null) {
             assert !loc;
@@ -611,7 +614,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             taskName));
                     }
 
-                    iter = qryProc.queryText(cacheName, qry.clause(), qry.queryClassName(), filter(qry));
+                    iter = qryProc.queryText(cacheName, qry.clause(), qry.queryClassName(), filter(qry), qryId);
 
                     break;
 
@@ -1102,7 +1105,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 res = loc ?
                     executeQuery(qry, qryInfo.arguments(), trans, loc, qry.subjectId(), taskName,
-                        recipient(qryInfo.senderId(), qryInfo.requestId())) :
+                        recipient(qryInfo.senderId(), qryInfo.requestId()), qryInfo.requestId()) :
                     queryResult(qryInfo, taskName);
 
                 if (res == null)
@@ -1470,7 +1473,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         if (exec) {
             try {
                 fut.onDone(executeQuery(qryInfo.query(), qryInfo.arguments(), qryInfo.transformer(), false,
-                    qryInfo.query().subjectId(), taskName, recipient(qryInfo.senderId(), qryInfo.requestId())));
+                    qryInfo.query().subjectId(), taskName, recipient(qryInfo.senderId(), qryInfo.requestId()), qryInfo.requestId()));
             }
             catch (Throwable e) {
                 fut.onDone(e);

@@ -64,8 +64,8 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -336,7 +336,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
         synchronized (stateMux) {
             // Preserve proposals.
@@ -2050,16 +2049,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param topVer Topology version.
      * @param mvccSnapshot MVCC snapshot.
      * @param cancel Query cancel object.
+     * @param qryId Query id.
      * @return Cursor over entries which are going to be changed.
      * @throws IgniteCheckedException If failed.
      */
     public UpdateSourceIterator<?> prepareDistributedUpdate(GridCacheContext<?, ?> cctx, int[] cacheIds,
         int[] parts, String schema, String qry, Object[] params, int flags, int pageSize, int timeout,
         AffinityTopologyVersion topVer, MvccSnapshot mvccSnapshot,
-        GridQueryCancel cancel) throws IgniteCheckedException {
+        GridQueryCancel cancel, Long qryId) throws IgniteCheckedException {
         checkxEnabled();
 
-        return idx.prepareDistributedUpdate(cctx, cacheIds, parts, schema, qry, params, flags, pageSize, timeout, topVer, mvccSnapshot, cancel);
+        return idx.prepareDistributedUpdate(cctx, cacheIds, parts, schema, qry, params, flags, pageSize, timeout,
+            topVer, mvccSnapshot, cancel, qryId);
     }
 
     /**
@@ -2164,7 +2165,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         GridQueryCancel cancel = new GridQueryCancel();
 
                         List<FieldsQueryCursor<List<?>>> res =
-                            idx.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, null, cancel);
+                            idx.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, null, cancel, null);
 
                         if (cctx != null)
                             sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx, qryType);
@@ -2313,7 +2314,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public Collection<GridRunningQueryInfo> runningQueries(long duration) {
         if (moduleEnabled())
-            return idx.runningQueries(duration);
+            return idx.runningQueryManager().longRunningUserQueries(duration);
 
         return Collections.emptyList();
     }
@@ -2571,13 +2572,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param clause Clause.
      * @param resType Result type.
      * @param filters Key and value filters.
+     * @param qryId Id of query if executing query is part of another query. Can be {@code null} in case it's user query
+     * on local node.
      * @param <K> Key type.
      * @param <V> Value type.
      * @return Key/value rows.
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryText(final String cacheName, final String clause,
-        final String resType, final IndexingQueryFilter filters) throws IgniteCheckedException {
+        final String resType, final IndexingQueryFilter filters, Long qryId) throws IgniteCheckedException {
         checkEnabled();
 
         if (!busyLock.enterBusy())
@@ -2592,7 +2595,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         String typeName = typeName(cacheName, resType);
                         String schemaName = idx.schema(cacheName);
 
-                        return idx.queryLocalText(schemaName, cacheName, clause, typeName, filters);
+                        return idx.queryLocalText(schemaName, cacheName, clause, typeName, filters, qryId);
                     }
                 }, true);
         }

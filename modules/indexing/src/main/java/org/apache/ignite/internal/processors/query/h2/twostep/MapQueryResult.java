@@ -27,6 +27,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
+import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.util.typedef.F;
@@ -99,6 +100,9 @@ class MapQueryResult {
     /** Lazy worker. */
     private final MapQueryLazyWorker lazyWorker;
 
+    /***/
+    private final GridRunningQueryInfo runningQryInfo;
+
     /**
      * @param rs Result set.
      * @param cctx Cache context.
@@ -108,7 +112,8 @@ class MapQueryResult {
      * @param lazyWorker Lazy worker.
      */
     MapQueryResult(IgniteH2Indexing h2, ResultSet rs, @Nullable GridCacheContext cctx,
-        UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params, @Nullable MapQueryLazyWorker lazyWorker) {
+        UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params, @Nullable MapQueryLazyWorker lazyWorker,
+        GridRunningQueryInfo runningQryInfo) {
         this.h2 = h2;
         this.cctx = cctx;
         this.qry = qry;
@@ -116,6 +121,7 @@ class MapQueryResult {
         this.qrySrcNodeId = qrySrcNodeId;
         this.cpNeeded = F.eq(h2.kernalContext().localNodeId(), qrySrcNodeId);
         this.lazyWorker = lazyWorker;
+        this.runningQryInfo = runningQryInfo;
 
         if (rs != null) {
             this.rs = rs;
@@ -137,6 +143,8 @@ class MapQueryResult {
             this.rowCnt = -1;
 
             closed = true;
+
+            h2.runningQueryManager().unregisterRunningQuery(runningQryInfo);
         }
     }
 
@@ -283,6 +291,8 @@ class MapQueryResult {
 
             if (lazyWorker != null)
                 lazyWorker.stop(false);
+
+            h2.runningQueryManager().unregisterRunningQuery(runningQryInfo);
         }
     }
 }

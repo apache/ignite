@@ -111,7 +111,7 @@ public final class GridDhtTxQueryEnlistFuture extends GridDhtTxQueryAbstractEnli
     /** {@inheritDoc} */
     @Override protected UpdateSourceIterator<?> createIterator() throws IgniteCheckedException {
         return cctx.kernalContext().query().prepareDistributedUpdate(cctx, cacheIds, parts, schema, qry,
-                params, flags, pageSize, 0, tx.topologyVersionSnapshot(), mvccSnapshot, new GridQueryCancel());
+            params, flags, pageSize, 0, tx.topologyVersionSnapshot(), mvccSnapshot, new GridQueryCancel(), null);
     }
 
     /** {@inheritDoc} */

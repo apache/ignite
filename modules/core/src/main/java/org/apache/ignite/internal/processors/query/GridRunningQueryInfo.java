@@ -26,6 +26,11 @@ public class GridRunningQueryInfo {
     /** */
     private final long id;
 
+    /**
+     *
+     */
+    private final Long userQryId;
+
     /** */
     private final String qry;
 
@@ -45,7 +50,8 @@ public class GridRunningQueryInfo {
     private final boolean loc;
 
     /**
-     * @param id Query ID.
+     * @param id Query ID. Can be id one of sub query for query initiated by user.
+     * @param userQryId Id of query initiated by user.
      * @param qry Query text.
      * @param qryType Query type.
      * @param schemaName Schema name.
@@ -53,9 +59,11 @@ public class GridRunningQueryInfo {
      * @param cancel Query cancel.
      * @param loc Local query flag.
      */
-    public GridRunningQueryInfo(Long id, String qry, GridCacheQueryType qryType, String schemaName, long startTime,
+    public GridRunningQueryInfo(long id, long userQryId, String qry, GridCacheQueryType qryType, String schemaName,
+        long startTime,
         GridQueryCancel cancel, boolean loc) {
         this.id = id;
+        this.userQryId = userQryId;
         this.qry = qry;
         this.qryType = qryType;
         this.schemaName = schemaName;
@@ -69,6 +77,13 @@ public class GridRunningQueryInfo {
      */
     public Long id() {
         return id;
+    }
+
+    /**
+     * @return Parent query id related to user initial query.
+     */
+    public Long userQueryId() {
+        return userQryId;
     }
 
     /**
@@ -109,6 +124,13 @@ public class GridRunningQueryInfo {
     }
 
     /**
+     * @return Query cancel.
+     */
+    public GridQueryCancel queryCancel() {
+        return cancel;
+    }
+
+    /**
      * Cancel query.
      */
     public void cancel() {
@@ -128,5 +150,12 @@ public class GridRunningQueryInfo {
      */
     public boolean local() {
         return loc;
+    }
+
+    /**
+     * @return {@code true} for user main query, {@code false} for system query, which is part of user query.
+     */
+    public boolean userQuery() {
+        return userQryId != null && id == userQryId;
     }
 }

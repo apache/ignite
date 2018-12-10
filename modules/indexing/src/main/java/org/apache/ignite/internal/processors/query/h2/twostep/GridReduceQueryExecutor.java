@@ -34,7 +34,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.CacheException;
@@ -101,6 +100,7 @@ import org.h2.jdbc.JdbcConnection;
 import org.h2.table.Column;
 import org.h2.util.IntArray;
 import org.h2.value.Value;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonList;
@@ -136,9 +136,6 @@ public class GridReduceQueryExecutor {
     private IgniteLogger log;
 
     /** */
-    private final AtomicLong qryIdGen;
-
-    /** */
     private final ConcurrentMap<Long, ReduceQueryRun> runs = new ConcurrentHashMap<>();
 
     /** Contexts of running DML requests. */
@@ -166,11 +163,9 @@ public class GridReduceQueryExecutor {
     /**
      * Constructor.
      *
-     * @param qryIdGen Query ID generator.
      * @param busyLock Busy lock.
      */
-    public GridReduceQueryExecutor(AtomicLong qryIdGen, GridSpinBusyLock busyLock) {
-        this.qryIdGen = qryIdGen;
+    public GridReduceQueryExecutor(GridSpinBusyLock busyLock) {
         this.busyLock = busyLock;
     }
 
@@ -393,7 +388,8 @@ public class GridReduceQueryExecutor {
         Object[] params,
         final int[] parts,
         boolean lazy,
-        MvccQueryTracker mvccTracker) {
+        MvccQueryTracker mvccTracker,
+        Long parentQryId) {
         assert !qry.mvccEnabled() || mvccTracker != null;
 
         if (F.isEmpty(params))
@@ -414,6 +410,8 @@ public class GridReduceQueryExecutor {
 
                 assert !F.isEmpty(retryCause);
 
+                h2.runningQueryManager().unregisterRunningQuery(lastRun.queryInfo());
+
                 throw new CacheException("Failed to map SQL query to topology on data node [dataNodeId=" + retryNodeId +
                     ", msg=" + retryCause + ']');
             }
@@ -421,6 +419,8 @@ public class GridReduceQueryExecutor {
             if (attempt != 0) {
                 try {
                     Thread.sleep(attempt * 10); // Wait for exchange.
+
+                    h2.runningQueryManager().unregisterRunningQuery(lastRun.queryInfo());
                 }
                 catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -428,8 +428,6 @@ public class GridReduceQueryExecutor {
                     throw new CacheException("Query was interrupted.", e);
                 }
             }
-
-            long qryReqId = qryIdGen.incrementAndGet();
 
             List<Integer> cacheIds = qry.cacheIds();
 
@@ -474,10 +472,6 @@ public class GridReduceQueryExecutor {
                 }
             }
 
-            final ReduceQueryRun r = new ReduceQueryRun(qryReqId, qry.originalSql(), schemaName,
-                h2.connections().connectionForThread(schemaName), qry.mapQueries().size(), qry.pageSize(),
-                U.currentTimeMillis(), sfuFut, cancel);
-
             Collection<ClusterNode> nodes;
 
             // Explicit partition mapping for unstable topology.
@@ -506,7 +500,7 @@ public class GridReduceQueryExecutor {
                 nodes = singletonList(ctx.discovery().localNode());
             else {
                 ReducePartitionMapResult nodesParts =
-                    mapper.nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly, qryReqId);
+                    mapper.nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly);
 
                 nodes = nodesParts.nodes();
                 partsMap = nodesParts.partitionsMap();
@@ -538,59 +532,11 @@ public class GridReduceQueryExecutor {
             if (sfuFut != null && !sfuFut.isFailed())
                 sfuFut.init(topVer, nodes);
 
-            int tblIdx = 0;
-
             final boolean skipMergeTbl = !qry.explain() && qry.skipMergeTable();
-
-            final int segmentsPerIndex = qry.explain() || isReplicatedOnly ? 1 :
-                findFirstPartitioned(cacheIds).config().getQueryParallelism();
-
-            int replicatedQrysCnt = 0;
 
             final Collection<ClusterNode> finalNodes = nodes;
 
-            for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
-                GridMergeIndex idx;
-
-                if (!skipMergeTbl) {
-                    GridMergeTable tbl;
-
-                    try {
-                        tbl = createMergeTable(r.connection(), mapQry, qry.explain());
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
-
-                    idx = tbl.getMergeIndex();
-
-                    fakeTable(r.connection(), tblIdx++).innerTable(tbl);
-                }
-                else
-                    idx = GridMergeIndexUnsorted.createDummy(ctx);
-
-                // If the query has only replicated tables, we have to run it on a single node only.
-                if (!mapQry.isPartitioned()) {
-                    ClusterNode node = F.rand(nodes);
-
-                    mapQry.node(node.id());
-
-                    replicatedQrysCnt++;
-
-                    idx.setSources(singletonList(node), 1); // Replicated tables can have only 1 segment.
-                }
-                else
-                    idx.setSources(nodes, segmentsPerIndex);
-
-                idx.setPageSize(r.pageSize());
-
-                r.indexes().add(idx);
-            }
-
-            r.latch(new CountDownLatch(isReplicatedOnly ? 1 :
-                (r.indexes().size() - replicatedQrysCnt) * nodes.size() * segmentsPerIndex + replicatedQrysCnt));
-
-            runs.put(qryReqId, r);
+            final ReduceQueryRun r = prepareReduceQueryRun(schemaName, qry, cancel, sfuFut, nodes, parentQryId);
 
             boolean release = true;
 
@@ -615,11 +561,11 @@ public class GridReduceQueryExecutor {
 
                 final boolean distributedJoins = qry.distributedJoins();
 
-                final long qryReqId0 = qryReqId;
+                final long qryReqId = r.queryInfo().id();
 
                 cancel.set(new Runnable() {
                     @Override public void run() {
-                        send(finalNodes, new GridQueryCancelRequest(qryReqId0), null, false);
+                        send(finalNodes, new GridQueryCancelRequest(qryReqId), null, false);
                     }
                 });
 
@@ -731,7 +677,6 @@ public class GridReduceQueryExecutor {
                         resIter = new GridMergeIndexIterator(this,
                             finalNodes,
                             r,
-                            qryReqId,
                             qry.distributedJoins(),
                             mvccTracker);
 
@@ -828,7 +773,7 @@ public class GridReduceQueryExecutor {
             }
             finally {
                 if (release) {
-                    releaseRemoteResources(finalNodes, r, qryReqId, qry.distributedJoins(), mvccTracker);
+                    releaseRemoteResources(finalNodes, r, qry.distributedJoins(), mvccTracker);
 
                     if (!skipMergeTbl) {
                         for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++)
@@ -837,6 +782,90 @@ public class GridReduceQueryExecutor {
                 }
             }
         }
+    }
+
+    /**
+     * @param schemaName Schema name.
+     * @param qry Query.
+     * @param cancel Query cancel.
+     * @param sfuFut Grid Near Tx Select For Update Future.
+     * @param nodes Nodes.
+     * @return prepared Recude query run object.
+     */
+    @NotNull private ReduceQueryRun prepareReduceQueryRun(String schemaName, GridCacheTwoStepQuery qry,
+        GridQueryCancel cancel, GridNearTxSelectForUpdateFuture sfuFut, Collection<ClusterNode> nodes,
+        Long parentQryId) {
+        boolean skipMergeTbl = !qry.explain() && qry.skipMergeTable();
+
+        final boolean isReplicatedOnly = qry.isReplicatedOnly();
+
+        final JdbcConnection con = (JdbcConnection)h2.connections().connectionForThread(schemaName);
+
+        final int pageSize = qry.pageSize();
+
+        int replicatedQrysCnt = 0;
+
+        List<Integer> cacheIds = qry.cacheIds();
+
+        final int segmentsPerIndex = qry.explain() || isReplicatedOnly ? 1 :
+            findFirstPartitioned(cacheIds).config().getQueryParallelism();
+
+        int tblIdx = 0;
+
+        List<GridMergeIndex> idxs = new ArrayList<>();
+
+        for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
+            GridMergeIndex idx;
+
+            if (!skipMergeTbl) {
+                GridMergeTable tbl;
+
+                try {
+                    tbl = createMergeTable(con, mapQry, qry.explain());
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+
+                idx = tbl.getMergeIndex();
+
+                fakeTable(con, tblIdx++).innerTable(tbl);
+            }
+            else
+                idx = GridMergeIndexUnsorted.createDummy(ctx);
+
+            // If the query has only replicated tables, we have to run it on a single node only.
+            if (!mapQry.isPartitioned()) {
+                ClusterNode node = F.rand(nodes);
+
+                mapQry.node(node.id());
+
+                replicatedQrysCnt++;
+
+                idx.setSources(singletonList(node), 1); // Replicated tables can have only 1 segment.
+            }
+            else
+                idx.setSources(nodes, segmentsPerIndex);
+
+            idx.setPageSize(pageSize);
+
+            idxs.add(idx);
+        }
+
+        GridRunningQueryInfo runningQryInfo = h2.runningQueryManager().registerRunningQuery(parentQryId,
+            qry.originalSql(), GridCacheQueryType.SQL_FIELDS, schemaName, cancel, false);
+
+        final ReduceQueryRun r = new ReduceQueryRun(runningQryInfo,
+            con, qry.mapQueries().size(), pageSize, sfuFut);
+
+        r.indexes().addAll(idxs);
+
+        r.latch(new CountDownLatch(isReplicatedOnly ? 1 :
+            (r.indexes().size() - replicatedQrysCnt) * nodes.size() * segmentsPerIndex + replicatedQrysCnt));
+
+        runs.put(runningQryInfo.id(), r);
+
+        return r;
     }
 
     /**
@@ -851,6 +880,7 @@ public class GridReduceQueryExecutor {
      * @param parts Partitions.
      * @param isReplicatedOnly Whether query uses only replicated caches.
      * @param cancel Cancel state.
+     * @param parentQryId Query id.
      * @return Update result, or {@code null} when some map node doesn't support distributed DML.
      */
     public UpdateResult update(
@@ -863,17 +893,13 @@ public class GridReduceQueryExecutor {
         int timeoutMillis,
         final int[] parts,
         boolean isReplicatedOnly,
-        GridQueryCancel cancel
+        GridQueryCancel cancel,
+        Long parentQryId
     ) {
         AffinityTopologyVersion topVer = h2.readyTopologyVersion();
 
-        final long reqId = qryIdGen.incrementAndGet();
-
         ReducePartitionMapResult nodesParts =
-            mapper.nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly, reqId);
-
-        final GridRunningQueryInfo qryInfo = new GridRunningQueryInfo(reqId, selectQry, GridCacheQueryType.SQL_FIELDS,
-            schemaName, U.currentTimeMillis(), cancel, false);
+            mapper.nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly);
 
         Collection<ClusterNode> nodes = nodesParts.nodes();
 
@@ -899,7 +925,12 @@ public class GridReduceQueryExecutor {
             }
         }
 
+        final GridRunningQueryInfo qryInfo = h2.runningQueryManager().registerRunningQuery(parentQryId, selectQry,
+            GridCacheQueryType.SQL_FIELDS, schemaName, cancel, false);
+
         final DistributedUpdateRun r = new DistributedUpdateRun(nodes.size(), qryInfo);
+
+        final long reqId = qryInfo.id();
 
         int flags = enforceJoinOrder ? GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER : 0;
 
@@ -954,6 +985,8 @@ public class GridReduceQueryExecutor {
         finally {
             if (release)
                 send(nodes, new GridQueryCancelRequest(reqId), null, false);
+
+            h2.runningQueryManager().unregisterRunningQuery(qryInfo);
 
             if (!updRuns.remove(reqId, r))
                 U.warn(log, "Update run was already removed: " + reqId);
@@ -1020,11 +1053,12 @@ public class GridReduceQueryExecutor {
      *
      * @param nodes Query nodes.
      * @param r Query run.
-     * @param qryReqId Query id.
      * @param distributedJoins Distributed join flag.
      */
-    public void releaseRemoteResources(Collection<ClusterNode> nodes, ReduceQueryRun r, long qryReqId,
-        boolean distributedJoins, MvccQueryTracker mvccTracker) {
+    public void releaseRemoteResources(Collection<ClusterNode> nodes, ReduceQueryRun r, boolean distributedJoins,
+        MvccQueryTracker mvccTracker) {
+        long qryReqId = r.queryInfo().id();
+
         // For distributedJoins need always send cancel request to cleanup resources.
         if (distributedJoins)
             send(nodes, new GridQueryCancelRequest(qryReqId), null, false);
@@ -1037,6 +1071,8 @@ public class GridReduceQueryExecutor {
                 }
             }
         }
+
+        h2.runningQueryManager().unregisterRunningQuery(qryReqId);
 
         if (!runs.remove(qryReqId, r))
             U.warn(log, "Query run was already removed: " + qryReqId);
@@ -1318,30 +1354,6 @@ public class GridReduceQueryExecutor {
 
         for (DistributedUpdateRun r: updRuns.values())
             r.handleDisconnect(err);
-    }
-
-    /**
-     * Collect queries that already running more than specified duration.
-     *
-     * @param duration Duration to check.
-     * @return Collection of IDs and statements of long running queries.
-     */
-    public Collection<GridRunningQueryInfo> longRunningQueries(long duration) {
-        Collection<GridRunningQueryInfo> res = new ArrayList<>();
-
-        long curTime = U.currentTimeMillis();
-
-        for (ReduceQueryRun run : runs.values()) {
-            if (run.queryInfo().longQuery(curTime, duration))
-                res.add(run.queryInfo());
-        }
-
-        for (DistributedUpdateRun upd: updRuns.values()) {
-            if (upd.queryInfo().longQuery(curTime, duration))
-                res.add(upd.queryInfo());
-        }
-
-        return res;
     }
 
     /**

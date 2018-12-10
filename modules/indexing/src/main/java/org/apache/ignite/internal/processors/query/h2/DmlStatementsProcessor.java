@@ -177,7 +177,7 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     private UpdateResult updateSqlFields(String schemaName, Connection conn, Prepared prepared,
-        SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel)
+        SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel, Long qryId)
         throws IgniteCheckedException {
         Object[] errKeys = null;
 
@@ -193,7 +193,7 @@ public class DmlStatementsProcessor {
             UpdateResult r;
 
             try {
-                r = executeUpdateStatement(schemaName, plan, fieldsQry, loc, filters, cancel);
+                r = executeUpdateStatement(schemaName, plan, fieldsQry, loc, filters, cancel, qryId);
             }
             finally {
                 cctx.operationContextPerCall(opCtx);
@@ -230,7 +230,7 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     private Collection<UpdateResult> updateSqlFieldsBatched(String schemaName, Connection conn, Prepared prepared,
-        SqlFieldsQueryEx fieldsQry, boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel)
+        SqlFieldsQueryEx fieldsQry, boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel, Long parentQryId)
         throws IgniteCheckedException {
         List<Object[]> argss = fieldsQry.batchedArguments();
 
@@ -270,7 +270,7 @@ public class DmlStatementsProcessor {
                 UpdateResult res;
 
                 try {
-                    res = updateSqlFields(schemaName, conn, prepared, qry0, loc, filters, cancel);
+                    res = updateSqlFields(schemaName, conn, prepared, qry0, loc, filters, cancel, parentQryId);
 
                     cntPerRow[cntr++] = (int)res.counter();
 
@@ -345,10 +345,10 @@ public class DmlStatementsProcessor {
      */
     @SuppressWarnings("unchecked")
     List<QueryCursorImpl<List<?>>> updateSqlFieldsDistributed(String schemaName, Connection c, Prepared p,
-        SqlFieldsQuery fieldsQry, GridQueryCancel cancel) throws IgniteCheckedException {
+        SqlFieldsQuery fieldsQry, GridQueryCancel cancel, Long parentQryId) throws IgniteCheckedException {
         if (DmlUtils.isBatched(fieldsQry)) {
             Collection<UpdateResult> ress = updateSqlFieldsBatched(schemaName, c, p, (SqlFieldsQueryEx)fieldsQry,
-                false, null, cancel);
+                false, null, cancel, parentQryId);
 
             ArrayList<QueryCursorImpl<List<?>>> resCurs = new ArrayList<>(ress.size());
 
@@ -366,7 +366,7 @@ public class DmlStatementsProcessor {
             return resCurs;
         }
         else {
-            UpdateResult res = updateSqlFields(schemaName, c, p, fieldsQry, false, null, cancel);
+            UpdateResult res = updateSqlFields(schemaName, c, p, fieldsQry, false, null, cancel, parentQryId);
 
             checkUpdateResult(res);
 
@@ -393,10 +393,10 @@ public class DmlStatementsProcessor {
      */
     @SuppressWarnings("unchecked")
     GridQueryFieldsResult updateSqlFieldsLocal(String schemaName, Connection conn, Prepared prepared,
-        SqlFieldsQuery fieldsQry, IndexingQueryFilter filters, GridQueryCancel cancel)
+        SqlFieldsQuery fieldsQry, IndexingQueryFilter filters, GridQueryCancel cancel, Long parentQryId)
         throws IgniteCheckedException {
         UpdateResult res = updateSqlFields(schemaName, conn, prepared, fieldsQry, true,
-            filters, cancel);
+            filters, cancel, parentQryId);
 
         return new GridQueryFieldsResultAdapter(UPDATE_RESULT_META,
             new IgniteSingletonIterator(Collections.singletonList(res.counter())));
@@ -439,7 +439,7 @@ public class DmlStatementsProcessor {
                     if (!F.isEmpty(plan.selectQuery())) {
                         GridQueryFieldsResult res = idx.queryLocalSqlFields(idx.schema(cctx.name()),
                             plan.selectQuery(), F.asList(U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY)),
-                            null, false, false, 0, null);
+                            null, false, false, 0, null, null);
 
                         it = res.iterator();
                     }
@@ -498,7 +498,7 @@ public class DmlStatementsProcessor {
     @SuppressWarnings({"ConstantConditions"})
     private UpdateResult executeUpdateStatement(String schemaName, final UpdatePlan plan,
         SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters,
-        GridQueryCancel cancel) throws IgniteCheckedException {
+        GridQueryCancel cancel, Long parentQryId) throws IgniteCheckedException {
         GridCacheContext cctx = plan.cacheContext();
 
         if (cctx != null && cctx.mvccEnabled()) {
@@ -550,7 +550,7 @@ public class DmlStatementsProcessor {
                             .setTimeout((int)timeout, TimeUnit.MILLISECONDS);
 
                         FieldsQueryCursor<List<?>> cur = idx.querySqlFields(schemaName, newFieldsQry, null,
-                            true, true, mvccTracker(cctx, tx), cancel).get(0);
+                            true, true, mvccTracker(cctx, tx), cancel, parentQryId).get(0);
 
                         it = plan.iteratorForTransaction(idx, cur);
                     }
@@ -615,7 +615,7 @@ public class DmlStatementsProcessor {
             return fastUpdateRes;
 
         if (plan.distributedPlan() != null) {
-            UpdateResult result = doDistributedUpdate(schemaName, fieldsQry, plan, cancel);
+            UpdateResult result = doDistributedUpdate(schemaName, fieldsQry, plan, cancel, parentQryId);
 
             // null is returned in case not all nodes support distributed DML.
             if (result != null)
@@ -637,15 +637,15 @@ public class DmlStatementsProcessor {
                 .setPageSize(fieldsQry.getPageSize())
                 .setTimeout(fieldsQry.getTimeout(), TimeUnit.MILLISECONDS);
 
-            cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(schemaName, newFieldsQry, null, true, true,
-                null, cancel).get(0);
+            cur = idx.querySqlFields(schemaName, newFieldsQry, null, true, true,
+                null, cancel, parentQryId).get(0);
         }
         else if (plan.hasRows())
             cur = plan.createRows(fieldsQry.getArgs());
         else {
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(schemaName, plan.selectQuery(),
                 F.asList(fieldsQry.getArgs()), filters, fieldsQry.isEnforceJoinOrder(), false, fieldsQry.getTimeout(),
-                cancel);
+                cancel, parentQryId);
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
@@ -766,16 +766,16 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     private UpdateResult doDistributedUpdate(String schemaName, SqlFieldsQuery fieldsQry, UpdatePlan plan,
-        GridQueryCancel cancel) throws IgniteCheckedException {
+        GridQueryCancel cancel, Long parentQryId) throws IgniteCheckedException {
         DmlDistributedPlanInfo distributedPlan = plan.distributedPlan();
 
         assert distributedPlan != null;
-
-        if (cancel == null)
-            cancel = new GridQueryCancel();
+//ToDo: need to check if it really required check on null and create new Cancel object.
+//        if (cancel == null)
+//            cancel = new GridQueryCancel();
 
         return idx.runDistributedUpdate(schemaName, fieldsQry, distributedPlan.getCacheIds(),
-            distributedPlan.isReplicatedOnly(), cancel);
+            distributedPlan.isReplicatedOnly(), cancel, parentQryId);
     }
 
     /**
@@ -1092,7 +1092,8 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     UpdateResult mapDistributedUpdate(String schemaName, PreparedStatement stmt, SqlFieldsQuery fldsQry,
-        IndexingQueryFilter filter, GridQueryCancel cancel, boolean local) throws IgniteCheckedException {
+        IndexingQueryFilter filter, GridQueryCancel cancel, boolean local,
+        Long parentQryId) throws IgniteCheckedException {
         Connection c;
 
         try {
@@ -1102,7 +1103,8 @@ public class DmlStatementsProcessor {
             throw new IgniteCheckedException(e);
         }
 
-        return updateSqlFields(schemaName, c, GridSqlQueryParser.prepared(stmt), fldsQry, local, filter, cancel);
+        return updateSqlFields(schemaName, c, GridSqlQueryParser.prepared(stmt), fldsQry, local, filter, cancel,
+            parentQryId);
     }
 
     /**
@@ -1112,6 +1114,7 @@ public class DmlStatementsProcessor {
      * @param qry Sql fields query
      * @param filter Backup filter.
      * @param cancel Query cancel object.
+     * @param qryId Query id.
      * @param local {@code true} if should be executed locally.
      * @param topVer Topology version.
      * @param mvccSnapshot MVCC snapshot.
@@ -1120,7 +1123,7 @@ public class DmlStatementsProcessor {
      */
     public UpdateSourceIterator<?> prepareDistributedUpdate(String schema, Connection conn,
         PreparedStatement stmt, SqlFieldsQuery qry,
-        IndexingQueryFilter filter, GridQueryCancel cancel, boolean local,
+        IndexingQueryFilter filter, GridQueryCancel cancel, Long qryId, boolean local,
         AffinityTopologyVersion topVer, MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
 
         Prepared prepared = GridSqlQueryParser.prepared(stmt);
@@ -1158,12 +1161,12 @@ public class DmlStatementsProcessor {
                 .setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
             cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(schema, newFieldsQry, null, true, true,
-                new StaticMvccQueryTracker(cctx, mvccSnapshot), cancel).get(0);
+                new StaticMvccQueryTracker(cctx, mvccSnapshot), cancel, qryId).get(0);
         }
         else {
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(schema, plan.selectQuery(),
                 F.asList(qry.getArgs()), filter, qry.isEnforceJoinOrder(), false, qry.getTimeout(), cancel,
-                new StaticMvccQueryTracker(cctx, mvccSnapshot));
+                qryId, new StaticMvccQueryTracker(cctx, mvccSnapshot));
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
@@ -1423,12 +1426,12 @@ public class DmlStatementsProcessor {
         }
 
         /** {@inheritDoc} */
-        public boolean hasNextX() {
+        @Override public boolean hasNextX() {
             return it.hasNext();
         }
 
         /** {@inheritDoc} */
-        public Object nextX() throws IgniteCheckedException {
+        @Override public Object nextX() throws IgniteCheckedException {
             return plan.processRowForTx(it.next());
         }
     }
@@ -1459,12 +1462,12 @@ public class DmlStatementsProcessor {
         }
 
         /** {@inheritDoc} */
-        public boolean hasNextX() {
+        @Override public boolean hasNextX() {
             return first;
         }
 
         /** {@inheritDoc} */
-        public T nextX() {
+        @Override public T nextX() {
             T res = first ? entry : null;
 
             first = false;
