@@ -39,7 +39,7 @@ import org.apache.ignite.transactions.Transaction;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
@@ -211,7 +211,7 @@ public abstract class IgniteCachePutGetRestartAbstractTest extends IgniteCacheAb
      * @param txs Transactions.
      */
     private void readCache(IgniteCache<Integer, Integer> cache, IgniteTransactions txs) {
-        try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (Transaction tx = txs.txStart(OPTIMISTIC, REPEATABLE_READ)) {
             for (int i = 0; i < ENTRY_CNT; i++)
                 assertNotNull(cache.get(i));
         }
@@ -225,7 +225,7 @@ public abstract class IgniteCachePutGetRestartAbstractTest extends IgniteCacheAb
         int val = expVal + 1;
 
         try {
-            try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (Transaction tx = txs.txStart(OPTIMISTIC, REPEATABLE_READ)) {
                 for (int i = 0; i < ENTRY_CNT; i++)
                     cache.put(i, val);
 
