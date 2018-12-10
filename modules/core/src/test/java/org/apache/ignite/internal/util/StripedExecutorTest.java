@@ -25,6 +25,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_STRIPED_POOL_STARVATION_THRESHOLD;
+
 /**
  *
  */
@@ -33,8 +35,14 @@ public class StripedExecutorTest extends GridCommonAbstractTest {
     /** */
     private StripedExecutor stripedExecSvc;
 
+    /** */
+    private String origStarvationThreshold;
+
     /** {@inheritDoc} */
     @Override public void beforeTest() {
+        origStarvationThreshold = System.getProperty(IGNITE_STRIPED_POOL_STARVATION_THRESHOLD);
+        System.setProperty(IGNITE_STRIPED_POOL_STARVATION_THRESHOLD, Long.toString(2000));
+
         stripedExecSvc = new StripedExecutor(3, "foo name", "pool name", new JavaLogger(),
             new IgniteInClosure<Throwable>() {
                 @Override public void apply(Throwable throwable) {}
@@ -44,6 +52,8 @@ public class StripedExecutorTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override public void afterTest() {
         stripedExecSvc.shutdown();
+        if (origStarvationThreshold != null)
+            System.setProperty(IGNITE_STRIPED_POOL_STARVATION_THRESHOLD, origStarvationThreshold);
     }
 
     /**
@@ -148,7 +158,7 @@ public class StripedExecutorTest extends GridCommonAbstractTest {
         final int stripeIdx = 0;
 
         stripedExecSvc.execute(stripeIdx, new TestRunnable(true));
-        assertFalse(GridTestUtils.waitForCondition(() -> stripedExecSvc.activeStripesCount() == 0, 2000));
+        assertFalse(GridTestUtils.waitForCondition(() -> stripedExecSvc.activeStripesCount() == 0, 3000));
 
         stripedExecSvc.execute(stripeIdx, new TestRunnable());
         assertTrue(GridTestUtils.waitForCondition(() -> stripedExecSvc.activeStripesCount() == 1, 10000));
