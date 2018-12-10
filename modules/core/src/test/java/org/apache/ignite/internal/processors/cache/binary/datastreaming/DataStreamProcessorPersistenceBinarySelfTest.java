@@ -15,27 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
-
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.internal.processors.cache.IgniteTxExceptionAbstractSelfTest;
-import org.apache.ignite.testframework.MvccFeatureChecker;
-
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+package org.apache.ignite.internal.processors.cache.binary.datastreaming;
 
 /**
- * Tests near cache.
+ *
  */
-public class GridCacheNearTxExceptionSelfTest extends IgniteTxExceptionAbstractSelfTest {
+public class DataStreamProcessorPersistenceBinarySelfTest extends DataStreamProcessorBinarySelfTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
+    @Override public boolean persistenceEnabled() {
+        return true;
     }
 }

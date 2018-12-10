@@ -258,7 +258,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
                 BinaryObjectBuilder obj = g0.binary().builder("NoExistedClass");
 
                 obj.setField("id", i);
-                obj.setField("name", String.valueOf("name = " + i));
+                obj.setField("name", "name = " + i);
 
                 dataLdr.addData(i, obj.build());
             }

@@ -17,42 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.testframework.MvccFeatureChecker;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  *
  */
-public class IgniteCacheEntryListenerTxLocalTest extends IgniteCacheEntryListenerAbstractTest {
+public class IgniteCacheMvccTxNearEnabledInvokeTest extends IgniteCacheMvccTxInvokeTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
 
         super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return LOCAL;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return TRANSACTIONAL;
-    }
-
-    /** {@inheritDoc} */
     @Override protected NearCacheConfiguration nearConfiguration() {
-        return null;
+        return new NearCacheConfiguration();
     }
 }
