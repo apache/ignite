@@ -143,6 +143,13 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
             req = parser.decode(msg);
         }
         catch (Exception e) {
+            try {
+                handler.unregisterRequest(parser.decodeRequestId(msg));
+            }
+            catch (Exception e1) {
+                U.error(log, "Failed to unregister request.", e1);
+            }
+
             U.error(log, "Failed to parse client request.", e);
 
             ses.close();
@@ -197,6 +204,9 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
             U.error(log, "Failed to process client request [req=" + req + ']', e);
 
             ses.send(parser.encode(handler.handleException(e, req)));
+        }
+        finally {
+            handler.unregisterRequest(req.requestId());
         }
     }
 

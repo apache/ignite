@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -213,12 +214,30 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     }
 
     /**
-     * Reads JdbcRequest command type
+     * Reads JdbcRequest command type.
      *
      * @param msg Jdbc request as byte array.
      * @return Command type.
      */
     public static byte readType(byte[] msg) {
         return msg[0];
+    }
+
+    /**
+     * Reads JdbcRequest Id.
+     *
+     * @param reader Reader.
+     * @param msg Jdbc request as byte array.
+     * @return Request Id.
+     */
+    public static long readRequestId(BinaryReaderExImpl reader, byte[] msg) {
+        try {
+            reader.skipBytes(1);
+        }
+        catch (IOException e) {
+            throw new IgniteException("Unable to decode request Id.");
+        }
+
+        return reader.readLong();
     }
 }

@@ -253,11 +253,48 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 throws IgniteCheckedException {
                 proceedSessionOpened(ses);
             }
+
+            @Override
+            public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
+                ClientListenerConnectionContext connCtx = ses.meta(ClientListenerNioListener.CONN_CTX_META_KEY);
+
+                if (connCtx != null && connCtx.parser() != null) {
+                    byte[] inMsg;
+
+                    int cmdType;
+
+                    long reqId;
+
+                    try {
+                        inMsg = (byte[])msg;
+
+                        cmdType = connCtx.parser().decodeCommandType(inMsg);
+
+                        reqId = connCtx.parser().decodeRequestId(inMsg);
+                    }
+                    catch (Exception e) {
+                        U.error(log, "Failed to parse client request.", e);
+
+                        ses.close();
+
+                        return;
+                    }
+
+                    if (connCtx.handler().isCancellationCommand(cmdType))
+                        proceedMessageReceived(ses, msg);
+                    else {
+                        connCtx.handler().registerRequest(reqId);
+
+                        super.onMessageReceived(ses, msg);
+                    }
+
+                }
+                else
+                    super.onMessageReceived(ses, msg);
+            }
         };
 
         GridNioFilter codecFilter = new GridNioCodecFilter(new ClientListenerBufferedParser(), log, false);
-
-        GridNioFilter priorityFilter = new ClientListenerNioRequestPriorityFilter(log);
 
         if (cliConnCfg.isSslEnabled()) {
             Factory<SSLContext> sslCtxFactory = cliConnCfg.isUseIgniteSslContextFactory() ?
@@ -279,14 +316,12 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
             return new GridNioFilter[] {
                 openSesFilter,
-                priorityFilter,
                 codecFilter,
                 sslFilter
             };
         } else {
             return new GridNioFilter[] {
                 openSesFilter,
-                priorityFilter,
                 codecFilter
             };
         }

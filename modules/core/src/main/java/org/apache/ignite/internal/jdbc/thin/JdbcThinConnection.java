@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.locks.Lock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.ignite.IgniteCheckedException;
@@ -744,10 +745,21 @@ public class JdbcThinConnection implements Connection {
      */
     @SuppressWarnings("unchecked")
     <R extends JdbcResult> R sendRequest(JdbcRequest req) throws SQLException {
+        return sendRequest(req, null);
+    }
+
+    /**
+     * Send request for execution via {@link #cliIo}.
+     * @param req Request.
+     * @return Server response.
+     * @throws SQLException On any error.
+     */
+    @SuppressWarnings("unchecked")
+    <R extends JdbcResult> R sendRequest(JdbcRequest req, Lock lock) throws SQLException {
         ensureConnected();
 
         try {
-            JdbcResponse res = cliIo.sendRequest(req);
+            JdbcResponse res = cliIo.sendRequest(req, lock);
 
             if (res.status() != ClientListenerResponse.STATUS_SUCCESS)
                 throw new SQLException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()), res.status());
