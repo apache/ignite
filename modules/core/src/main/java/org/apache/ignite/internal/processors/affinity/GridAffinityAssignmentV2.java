@@ -73,7 +73,7 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
      * Default constructor for deserialization.
      */
     public GridAffinityAssignmentV2() {
-
+        //No-op
     }
 
     /**
