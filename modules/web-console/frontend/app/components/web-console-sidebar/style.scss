@@ -34,5 +34,9 @@ web-console-sidebar {
 
     web-console-footer {
         flex: 0 0 auto;
+
+        &:first-child {
+            margin-top: auto;
+        }
     }
 }
