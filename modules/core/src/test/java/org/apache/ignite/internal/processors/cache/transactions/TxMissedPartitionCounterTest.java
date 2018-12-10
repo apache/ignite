@@ -669,6 +669,8 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
                 db.enableCheckpoints(false);
             }
 
+            client.close();
+
             stopGrid(0, skipCheckpointOnNodeLeft); // Skip checkpoint. TODO add true
 
             crd = startGrid(0);
