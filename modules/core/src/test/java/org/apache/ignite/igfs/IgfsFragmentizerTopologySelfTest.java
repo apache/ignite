@@ -21,8 +21,6 @@ import org.apache.ignite.IgniteFileSystem;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 
 /**
  * Tests coordinator transfer from one node to other.
