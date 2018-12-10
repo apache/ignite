@@ -330,13 +330,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     public static final int DFLT_SELECTORS_CNT = Math.max(4, Runtime.getRuntime().availableProcessors() / 2);
 
     /** Default initial connect/handshake timeout in case of failure detection enabled. */
-    private static final int DFLT_INITIAL_TIMEOUT = 1000;
+    private static final int DFLT_INITIAL_TIMEOUT = 500;
 
     /** Default initial delay in case of target node is still out of topology. */
     private static final int DFLT_NEED_WAIT_DELAY = 200;
 
     /** Default delay between reconnects attempts in case of temporary network issues. */
-    private static final int DFLT_RECONNECT_DELAY = 50;
+    private static final int DFLT_RECONNECT_DELAY = 200;
 
     /**
      * Version when client is ready to wait to connect to server (could be needed when client tries to open connection
