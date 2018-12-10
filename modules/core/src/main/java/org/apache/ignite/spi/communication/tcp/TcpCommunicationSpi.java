@@ -3963,8 +3963,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         return rcvCnt;
     }
 
-
-
     /**
      * @param sndId Sender ID.
      * @param msg Communication message.
