@@ -48,6 +48,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -77,13 +78,13 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
     public static final int ITERATION_CNT = 1;
 
     /** */
-    public static final int KEYS = 10;
+    public static final int KEY = 10;
 
     /** */
     private boolean client;
 
     /** */
-    private boolean failOnWrite = false;
+    private boolean failOnWrite;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -148,6 +149,158 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     @Test
+    public void testOptimistic() throws Exception {
+        CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 2);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
+
+        failOnWrite = true;
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOptimisticWithNearCache() throws Exception {
+        CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 2)
+            .setNearConfiguration(new NearCacheConfiguration<>());
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
+
+        failOnWrite = true;
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOptimisticFullSyncWithNearCache() throws Exception {
+        CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 2)
+            .setNearConfiguration(new NearCacheConfiguration<>());
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
+
+        failOnWrite = true;
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOptimisticOnePhaseCommit() throws Exception {
+        CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 1);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
+
+        failOnWrite = true;
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOptimisticOnePhaseCommitWithNearCache() throws Exception {
+        CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 1)
+            .setNearConfiguration(new NearCacheConfiguration<>());
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
+
+        failOnWrite = true;
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOptimisticOnePhaseCommitFullSync() throws Exception {
+        CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 1);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
+
+        failOnWrite = true;
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOptimisticOnePhaseCommitFullSyncWithNearCache() throws Exception {
+        CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 1)
+            .setNearConfiguration(new NearCacheConfiguration<>());
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
+
+        failOnWrite = true;
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
+
+        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testPessimisticOnePhaseCommit() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 1);
 
@@ -172,7 +325,7 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
     @Test
     public void testPessimisticOnePhaseCommitWithNearCache() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 1)
-            .setNearConfiguration(new NearCacheConfiguration());
+            .setNearConfiguration(new NearCacheConfiguration<>());
 
         doTestInvokeTest(ccfg, PESSIMISTIC, SERIALIZABLE);
 
@@ -217,7 +370,7 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
     @Test
     public void testPessimisticOnePhaseCommitFullSyncWithNearCache() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 1)
-            .setNearConfiguration(new NearCacheConfiguration());
+            .setNearConfiguration(new NearCacheConfiguration<>());
 
         doTestInvokeTest(ccfg, PESSIMISTIC, SERIALIZABLE);
 
@@ -262,7 +415,7 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
     @Test
     public void testPessimisticWithNearCache() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 2)
-            .setNearConfiguration(new NearCacheConfiguration());
+            .setNearConfiguration(new NearCacheConfiguration<>());
 
         doTestInvokeTest(ccfg, PESSIMISTIC, SERIALIZABLE);
 
@@ -305,59 +458,15 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     @Test
-    public void testOptimisticOnePhaseCommit() throws Exception {
-        CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 1);
+    public void testPessimisticFullSyncWithNearCache() throws Exception {
+        CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 2)
+            .setNearConfiguration(new NearCacheConfiguration<>());
 
-        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
+        doTestInvokeTest(ccfg, PESSIMISTIC, SERIALIZABLE);
 
-        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
+        doTestInvokeTest(ccfg, PESSIMISTIC, READ_COMMITTED);
 
-        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
-
-        failOnWrite = true;
-
-        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
-
-        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
-
-        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testOptimisticOnePhaseCommitFullSync() throws Exception {
-        CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 1);
-
-        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
-
-        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
-
-        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
-
-        failOnWrite = true;
-
-        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
-
-        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
-
-        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testOptimisticOnePhaseCommitFullSyncWithNearCache() throws Exception {
-        CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 1)
-            .setNearConfiguration(new NearCacheConfiguration());
-
-        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
-
-        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
-
-        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
+        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
 
         failOnWrite = true;
 
@@ -371,21 +480,14 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    @Test
-    public void testOptimistic() throws Exception {
-        CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 2);
+    public void testMvccPessimisticOnePhaseCommit() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10483");
 
-        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
+        CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 1).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
-        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
-
-        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
+        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
 
         failOnWrite = true;
-
-        doTestInvokeTest(ccfg, PESSIMISTIC, SERIALIZABLE);
-
-        doTestInvokeTest(ccfg, PESSIMISTIC, READ_COMMITTED);
 
         doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -394,20 +496,112 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     @Test
-    public void testOptimisticFullSyncWithNearCache() throws Exception {
-        CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 2);
+    public void testMvccPessimisticOnePhaseCommitWithNearCache() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
 
-        doTestInvokeTest(ccfg, OPTIMISTIC, SERIALIZABLE);
+        CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 1).setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
+            .setNearConfiguration(new NearCacheConfiguration<>());
 
-        doTestInvokeTest(ccfg, OPTIMISTIC, READ_COMMITTED);
-
-        doTestInvokeTest(ccfg, OPTIMISTIC, REPEATABLE_READ);
+        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
 
         failOnWrite = true;
 
-        doTestInvokeTest(ccfg, PESSIMISTIC, SERIALIZABLE);
+        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
+    }
 
-        doTestInvokeTest(ccfg, PESSIMISTIC, READ_COMMITTED);
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMvccPessimisticOnePhaseCommitFullSync() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10483");
+
+        CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 1).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
+
+        failOnWrite = true;
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMvccPessimisticOnePhaseCommitFullSyncWithNearCache() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+
+        CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 1).setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
+            .setNearConfiguration(new NearCacheConfiguration<>());
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
+
+        failOnWrite = true;
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMvccPessimistic() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10483");
+
+        CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 2).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
+
+        failOnWrite = true;
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMvccPessimisticWithNearCache() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+
+        CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 2).setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
+            .setNearConfiguration(new NearCacheConfiguration<>());
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
+
+        failOnWrite = true;
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMvccPessimisticFullSync() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10483");
+
+        CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 2).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
+
+        failOnWrite = true;
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMvccPessimisticFullSyncWithNearCache() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+
+        CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 2).setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
+            .setNearConfiguration(new NearCacheConfiguration<>());
+
+        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
+
+        failOnWrite = true;
 
         doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -416,6 +610,7 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
      * @param ccfg Cache configuration.
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     private void doTestInvokeTest(CacheConfiguration ccfg, TransactionConcurrency txConcurrency,
         TransactionIsolation txIsolation) throws Exception {
         IgniteEx cln = grid(getServerNodeCount());
@@ -429,28 +624,19 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
         else
             clnCache = cln.cache(ccfg.getName());
 
-        putKeys(clnCache, EXPECTED_VALUE);
+        clnCache.put(KEY, EXPECTED_VALUE);
 
         try {
             // Explicit tx.
             for (int i = 0; i < ITERATION_CNT; i++) {
-                try (final Transaction tx = cln.transactions().txStart(txConcurrency, txIsolation)) {
-                    putKeys(clnCache, WRONG_VALUE);
-
-                    clnCache.invoke(KEYS, createEntryProcessor());
-
-                    GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
-                        @Override public Object call() throws Exception {
-                            tx.commit();
-
-                            return null;
-                        }
-                    }, UnsupportedOperationException.class);
-                }
+                if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
+                    checkExplicitMvccInvoke(cln, clnCache, txConcurrency, txIsolation);
+                else
+                    checkExplicitTxInvoke(cln, clnCache, txConcurrency, txIsolation);
 
                 assertNull(cln.transactions().tx());
 
-                checkKeys(clnCache, EXPECTED_VALUE);
+                assertEquals(EXPECTED_VALUE, clnCache.get(KEY));
             }
 
             // From affinity node.
@@ -460,32 +646,24 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
 
             // Explicit tx.
             for (int i = 0; i < ITERATION_CNT; i++) {
-                try (final Transaction tx = grid.transactions().txStart(txConcurrency, txIsolation)) {
-                    putKeys(cache, WRONG_VALUE);
-
-                    cache.invoke(KEYS, createEntryProcessor());
-
-                    GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
-                        @Override public Object call() throws Exception {
-                            tx.commit();
-
-                            return null;
-                        }
-                    }, UnsupportedOperationException.class);
-                }
+                if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
+                    checkExplicitMvccInvoke(cln, clnCache, txConcurrency, txIsolation);
+                else
+                    checkExplicitTxInvoke(cln, clnCache, txConcurrency, txIsolation);
 
                 assertNull(cln.transactions().tx());
 
-                checkKeys(cache, EXPECTED_VALUE);
+                assertEquals(EXPECTED_VALUE, cache.get(KEY));
             }
 
             final IgniteCache clnCache0 = clnCache;
 
             // Implicit tx.
             for (int i = 0; i < ITERATION_CNT; i++) {
+                //noinspection ThrowableNotThrown
                 GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
                     @Override public Object call() throws Exception {
-                        clnCache0.invoke(KEYS, createEntryProcessor());
+                        clnCache0.invoke(KEY, createEntryProcessor());
 
                         return null;
                     }
@@ -494,7 +672,7 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
                 assertNull(cln.transactions().tx());
             }
 
-            checkKeys(clnCache, EXPECTED_VALUE);
+            assertEquals(EXPECTED_VALUE, clnCache.get(KEY));
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -505,33 +683,61 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
     }
 
     /**
+     * @param node Ignite node.
+     * @param cache Node cache.
+     * @param txConcurrency Transaction concurrency.
+     * @param txIsolation TransactionIsolation.
+     */
+    @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
+    private void checkExplicitTxInvoke(Ignite node, IgniteCache cache, TransactionConcurrency txConcurrency,
+        TransactionIsolation txIsolation) {
+        try (final Transaction tx = node.transactions().txStart(txConcurrency, txIsolation)) {
+            cache.put(KEY, WRONG_VALUE);
+
+            cache.invoke(KEY, createEntryProcessor());
+
+            GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    tx.commit();
+
+                    return null;
+                }
+            }, UnsupportedOperationException.class);
+        }
+    }
+
+    @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
+    private void checkExplicitMvccInvoke(Ignite node, IgniteCache cache, TransactionConcurrency txConcurrency,
+        TransactionIsolation txIsolation) {
+        try (final Transaction tx = node.transactions().txStart(txConcurrency, txIsolation)) {
+            cache.put(KEY, WRONG_VALUE);
+
+            GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    cache.invoke(KEY, createEntryProcessor());
+
+                    fail("Should never happened.");
+
+                    tx.commit();
+
+                    return null;
+                }
+            }, UnsupportedOperationException.class);
+        }
+    }
+
+    /**
      * @return Entry processor.
      */
-    @NotNull private EntryProcessor<Integer, Integer, Integer> createEntryProcessor() {
+    private @NotNull EntryProcessor<Integer, Integer, Integer> createEntryProcessor() {
         return failOnWrite ? new ExternalizableFailedWriteEntryProcessor() :
             new ExternalizableFailedReadEntryProcessor();
     }
 
     /**
-     * @param cache Cache.
-     * @param val Value.
-     */
-    private void putKeys(IgniteCache cache, int val) {
-        cache.put(KEYS, val);
-    }
-
-    /**
-     * @param cache Cache.
-     * @param expVal Expected value.
-     */
-    private void checkKeys(IgniteCache cache, int expVal) {
-        assertEquals(expVal, cache.get(KEYS));
-    }
-
-    /**
      * @return Cache configuration.
      */
-    private CacheConfiguration cacheConfiguration(CacheWriteSynchronizationMode wrMode, int backup) {
+    private CacheConfiguration<?, ?> cacheConfiguration(CacheWriteSynchronizationMode wrMode, int backup) {
         return new CacheConfiguration("test-cache-" + wrMode + "-" + backup)
             .setAtomicityMode(TRANSACTIONAL)
             .setWriteSynchronizationMode(FULL_SYNC)
@@ -542,7 +748,7 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
      *
      */
     private static class ExternalizableFailedWriteEntryProcessor implements EntryProcessor<Integer, Integer, Integer>,
-        Externalizable{
+        Externalizable {
         /** */
         public ExternalizableFailedWriteEntryProcessor() {
             // No-op.

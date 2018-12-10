@@ -111,9 +111,6 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-9470");
-
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(SRVS);
@@ -124,6 +121,12 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
 
         for (int i = 0; i < CLIENTS; i++)
             assertTrue(grid(SRVS + i).configuration().isClientMode());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-9470");
     }
 
     /** {@inheritDoc} */

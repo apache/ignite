@@ -79,7 +79,8 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(
             cacheConfiguration("cache1", TRANSACTIONAL),
-            cacheConfiguration("cache2", ATOMIC));
+            //cacheConfiguration("cache2", TRANSACTIONAL_SNAPSHOT), //TODO IGNITE-10474: add Mvcc cache after fix.
+            cacheConfiguration("cache3", ATOMIC));
 
         return cfg;
     }
@@ -99,6 +100,7 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @SuppressWarnings("unchecked")
     public void testConnectionRecovery() throws Exception {
         final Map<Integer, Integer> data = new TreeMap<>();
 
@@ -120,16 +122,17 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
 
                 Thread.currentThread().setName("test-thread-" + idx0 + "-" + node.name());
 
-                IgniteCache cache1 = node.cache("cache1");
-                IgniteCache cache2 = node.cache("cache2");
+                IgniteCache[] caches = {
+                    node.cache("cache1"),
+//                    node.cache("cache2"), //TODO IGNITE-10474: add Mvcc cache after fix.
+                    node.cache("cache3")};
 
                 int iter = 0;
 
                 while (U.currentTimeMillis() < stopTime) {
                     try {
-                        cache1.putAllAsync(data).get(15, SECONDS);
-
-                        cache2.putAllAsync(data).get(15, SECONDS);
+                        for (IgniteCache cache : caches)
+                            cache.putAllAsync(data).get(15, SECONDS);
 
                         CyclicBarrier b = barrierRef.get();
 

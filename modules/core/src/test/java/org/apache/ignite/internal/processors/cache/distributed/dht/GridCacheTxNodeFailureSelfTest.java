@@ -361,14 +361,14 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
             assertNotNull(dhtEntry);
             assertTrue("dhtEntry=" + dhtEntry, dhtEntry.remoteMvccSnapshot().isEmpty());
             assertTrue("dhtEntry=" + dhtEntry, dhtEntry.localCandidates().isEmpty());
-            assertEquals(key, backupCache.localPeek(key, null, null));
+            assertEquals(key, backupCache.localPeek(key, null));
 
             if (nearEntry != null) {
                 assertTrue("near=" + nearEntry, nearEntry.remoteMvccSnapshot().isEmpty());
                 assertTrue("near=" + nearEntry, nearEntry.localCandidates().isEmpty());
 
                 // Near peek wil be null since primary node has changed.
-                assertNull("near=" + nearEntry, origCache.localPeek(key, null, null));
+                assertNull("near=" + nearEntry, origCache.localPeek(key, null));
             }
         }
         else {

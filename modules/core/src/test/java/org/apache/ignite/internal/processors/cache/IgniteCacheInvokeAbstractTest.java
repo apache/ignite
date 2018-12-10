@@ -52,6 +52,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -75,10 +76,11 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
         invoke(cache, null);
 
-        if (atomicityMode() == TRANSACTIONAL) {
-            invoke(cache, PESSIMISTIC);
+        if (atomicityMode() != ATOMIC) {
+            invoke(cache, PESSIMISTIC); // Tx or Mvcc tx.
 
-            invoke(cache, OPTIMISTIC);
+            if (atomicityMode() == TRANSACTIONAL)
+                invoke(cache, OPTIMISTIC);
         }
     }
 
@@ -242,10 +244,11 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
         invokeAll(cache, null);
 
-        if (atomicityMode() == TRANSACTIONAL) {
+        if (atomicityMode() != ATOMIC) {
             invokeAll(cache, PESSIMISTIC);
 
-            invokeAll(cache, OPTIMISTIC);
+            if (atomicityMode() == TRANSACTIONAL)
+                invokeAll(cache, OPTIMISTIC);
         }
     }
 

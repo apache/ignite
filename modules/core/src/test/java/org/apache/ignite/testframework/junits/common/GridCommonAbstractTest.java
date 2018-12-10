@@ -1403,7 +1403,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param key Key.
      */
     protected static <K, V> V localPeek(GridCacheAdapter<K, V> cache, K key) throws IgniteCheckedException {
-        return cache.localPeek(key, null, null);
+        return cache.localPeek(key, null);
     }
 
     /**
@@ -1411,7 +1411,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param key Key.
      */
     protected static <K, V> V localPeekOnHeap(GridCacheAdapter<K, V> cache, K key) throws IgniteCheckedException {
-        return cache.localPeek(key, new CachePeekMode[] {CachePeekMode.ONHEAP}, null);
+        return cache.localPeek(key, new CachePeekMode[] {CachePeekMode.ONHEAP});
     }
 
     /**

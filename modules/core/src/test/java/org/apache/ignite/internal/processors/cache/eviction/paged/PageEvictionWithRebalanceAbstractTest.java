@@ -37,10 +37,26 @@ public abstract class PageEvictionWithRebalanceAbstractTest extends PageEviction
      */
     @Test
     public void testEvictionWithRebalance() throws Exception {
+        checkEvictionWithRebalance(CacheAtomicityMode.ATOMIC);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testEvictionWithRebalanceMvcc() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10448");
+
+        checkEvictionWithRebalance(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void checkEvictionWithRebalance(CacheAtomicityMode atomicityMode) throws Exception {
         startGridsMultiThreaded(4);
 
         CacheConfiguration<Object, Object> cfg = cacheConfig("evict-rebalance", null, CacheMode.PARTITIONED,
-            CacheAtomicityMode.ATOMIC, CacheWriteSynchronizationMode.PRIMARY_SYNC);
+            atomicityMode, CacheWriteSynchronizationMode.PRIMARY_SYNC);
 
         IgniteCache<Object, Object> cache = ignite(0).getOrCreateCache(cfg);
 

@@ -195,7 +195,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
             for (int i = 0; i < keyCnt; i++) {
                 assertNull(near(cache1).peekEx(i));
-                assertNotNull((dht(cache1).localPeek(i, null, null)));
+                assertNotNull((dht(cache1).localPeek(i, null)));
 
                 assertEquals(Integer.toString(i), cache1.localPeek(i));
             }

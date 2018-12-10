@@ -57,9 +57,6 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     private static final String TEST_VALUE = "org.apache.ignite.tests.p2p.GridCacheDeploymentTestValue3";
 
     /** */
-    private static final long OFFHEAP = 0;// 4 * 1024 * 1024;
-
-    /** */
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
