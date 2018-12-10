@@ -3164,7 +3164,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          *
          */
         private void doCheckpoint() {
-            Checkpoint chp = new Checkpoint(getCheckpointTimeStamp());
+            resetLastCheckpointTimeStamp();
+
+            Checkpoint chp = new Checkpoint(lastCpTs);
 
             try {
                 markCheckpointBegin(chp);
@@ -3183,13 +3185,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         if (checkCancel(chp))
                             return;
 
-                        // Write pages to page stores.
+                        // Write pages to stores.
                         writePages(chp);
 
                         if (checkCancel(chp))
                             return;
 
-                        // Fsync pageStores.
+                        // Fsync page stores.
                         fsyncStores(chp);
 
                         if (checkCancel(chp))
@@ -3373,9 +3375,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
-         * @return Checkpoint timeStamp.
+         *
          */
-        private long getCheckpointTimeStamp(){
+        private void resetLastCheckpointTimeStamp(){
             long cpTs = System.currentTimeMillis();
 
             // This can happen in an unlikely event of two checkpoints happening
@@ -3383,7 +3385,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (cpTs == lastCpTs)
                 cpTs++;
 
-            return cpTs;
+            lastCpTs = cpTs;
         }
 
         private void printCheckpointCancel(Checkpoint chp){
@@ -3585,19 +3587,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private void markCheckpointBegin(Checkpoint chp) throws IgniteCheckedException {
             CheckpointRecord cpRec = new CheckpointRecord();
 
-            WALPointer cpPtr = null;
-
             CheckpointProgress curr;
 
             IgniteBiTuple<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> cpPagesTuple;
-
-            chp.metrics.onLockWaitStart();
 
             boolean hasPages;
 
             IgniteFuture snapFut = null;
 
-            lastCpTs = chp.cpTs;
+            chp.metrics.onLockWaitStart();
 
             checkpointLock.writeLock().lock();
 
@@ -3617,14 +3615,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 addPartitionState(cpRec);
 
+                // TODO Check pages from previius snapshot.
                 hasPages = hasPageForWrite(cpPagesTuple = beginAllCheckpoints());
 
                 if (hasPages || curr.nextSnapshot || chp.hasDestroyedPartitions()) {
                     // No page updates for this checkpoint are allowed from now on.
-                    cpPtr = cctx.wal().log(cpRec);
+                    WALPointer cpPtr = cctx.wal().log(cpRec);
 
                     if (cpPtr == null)
                         cpPtr = CheckpointStatus.NULL_PTR;
+
+                    cpRec.position(cpPtr);
                 }
 
                 if (hasPages || chp.hasDestroyedPartitions()) {
@@ -3632,7 +3633,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         checkpointEntryWriteBuffer,
                         chp.cpTs,
                         cpRec.checkpointId(),
-                        cpPtr,
+                        cpRec.position(),
                         cpRec,
                         CheckpointEntryType.START
                     );
@@ -3653,12 +3654,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             awaitSnapshotFuture(curr, snapFut);
 
             if (hasPages || chp.hasDestroyedPartitions()) {
-                assert cpPtr != null;
+                assert cpRec.position() != null;
 
                 chp.metrics.onWalCpRecordFsyncStart();
 
                 // Sync log outside the checkpoint write lock.
-                cctx.wal().flush(cpPtr, true);
+                cctx.wal().flush(cpRec.position(), true);
 
                 chp.metrics.onWalCpRecordFsyncEnd();
 
@@ -3670,7 +3671,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     log.info(String.format("Checkpoint started [checkpointId=%s, startPtr=%s, checkpointLockWait=%dms, " +
                             "checkpointLockHoldTime=%dms, walCpRecordFsyncDuration=%dms, pages=%d, reason='%s']",
                         cpRec.checkpointId(),
-                        cpPtr,
+                        cpRec.position(),
                         chp.metrics.lockWaitDuration(),
                         chp.metrics.lockHoldDuration(),
                         chp.metrics.walCpRecordFsyncDuration(),
