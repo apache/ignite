@@ -17,7 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
+import java.util.Collection;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorGridSplitCacheTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorNearPartitionedAtomicCacheGroupsTest;
@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplic
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedAtomicCacheTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedTxCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedTxCacheTest;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.runner.RunWith;
 import org.junit.runners.AllTests;
 
@@ -41,26 +42,27 @@ import org.junit.runners.AllTests;
 @RunWith(AllTests.class)
 public class IgniteTopologyValidatorTestSuite {
     /**
+     * @param ignoredTests Ignored tests.
      * @return Topology validator tests suite.
      */
-    public static TestSuite suite() {
+    public static TestSuite suite(Collection<Class> ignoredTests) {
         TestSuite suite = new TestSuite("Topology validator Test Suite");
 
-        suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorNearPartitionedAtomicCacheTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorNearPartitionedTxCacheTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorPartitionedAtomicCacheTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorPartitionedTxCacheTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorReplicatedAtomicCacheTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorReplicatedTxCacheTest.class));
+        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorNearPartitionedAtomicCacheTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorNearPartitionedTxCacheTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorPartitionedAtomicCacheTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorPartitionedTxCacheTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorReplicatedAtomicCacheTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorReplicatedTxCacheTest.class, ignoredTests);
 
-        suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorNearPartitionedAtomicCacheGroupsTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorNearPartitionedTxCacheGroupsTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorPartitionedAtomicCacheGroupsTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorPartitionedTxCacheGroupsTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorReplicatedAtomicCacheGroupsTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorReplicatedTxCacheGroupsTest.class));
+        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorNearPartitionedAtomicCacheGroupsTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorNearPartitionedTxCacheGroupsTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorPartitionedAtomicCacheGroupsTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorPartitionedTxCacheGroupsTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorReplicatedAtomicCacheGroupsTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorReplicatedTxCacheGroupsTest.class, ignoredTests);
 
-        suite.addTest(new JUnit4TestAdapter(IgniteTopologyValidatorGridSplitCacheTest.class));
+        GridTestUtils.addTestIfNeeded(suite, IgniteTopologyValidatorGridSplitCacheTest.class, ignoredTests);
 
         return suite;
     }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -28,7 +29,9 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -49,13 +52,14 @@ public class GridCachePartitionedStorePutSelfTest extends GridCommonAbstractTest
     private static final AtomicInteger CNT = new AtomicInteger(0);
 
     /** */
-    private IgniteCache<Integer, Integer> cache1;
+    private static AtomicInteger loads;
 
-    /** */
-    private IgniteCache<Integer, Integer> cache2;
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
-    /** */
-    private IgniteCache<Integer, Integer> cache3;
+        super.beforeTestsStarted();
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -99,9 +103,9 @@ public class GridCachePartitionedStorePutSelfTest extends GridCommonAbstractTest
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        cache1 = startGrid(1).cache(DEFAULT_CACHE_NAME);
-        cache2 = startGrid(2).cache(DEFAULT_CACHE_NAME);
-        cache3 = startGrid(3).cache(DEFAULT_CACHE_NAME);
+        loads = new AtomicInteger();
+
+        startGridsMultiThreaded(3);
     }
 
     /** {@inheritDoc} */
@@ -109,22 +113,36 @@ public class GridCachePartitionedStorePutSelfTest extends GridCommonAbstractTest
         stopAllGrids();
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testPutx() throws Throwable {
-        info("Putting to the first node.");
+    public void testPutShouldNotTriggerLoad() {
+        checkPut(0);
 
-        cache1.put(0, 1);
+        assertEquals(0, loads.get());
 
-        info("Putting to the second node.");
+        checkPut(1);
 
-        cache2.put(0, 2);
+        assertEquals(0, loads.get());
 
-        info("Putting to the third node.");
+        checkPut(2);
 
-        cache3.put(0, 3);
+        assertEquals(0, loads.get());
+    }
+
+    /**     */
+    public void checkPut(int idx) {
+        IgniteCache<Object, Object> cache = grid(idx).cache(DEFAULT_CACHE_NAME);
+
+        cache.put(0, 1);
+
+        try (Transaction tx = grid(idx).transactions().txStart()) {
+            cache.put(1, 1);
+            cache.put(2, 2);
+
+            tx.commit();
+        }
+
+        assertEquals(0, loads.get());
     }
 
     /**
@@ -133,13 +151,13 @@ public class GridCachePartitionedStorePutSelfTest extends GridCommonAbstractTest
     private static class TestStore extends CacheStoreAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override public Object load(Object key) {
-            assert false;
+            loads.incrementAndGet();
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void write(javax.cache.Cache.Entry<? extends Object, ? extends Object> e) {
+        @Override public void write(Cache.Entry<? extends Object, ? extends Object> e) {
             // No-op
         }
 

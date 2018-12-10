@@ -19,6 +19,8 @@ package org.apache.ignite.cache;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -28,8 +30,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
 import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -39,6 +39,15 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstractTest {
+    /** */
+    private static final String CACHE = "cache";
+
+    /** */
+    private static final String MVCC_CACHE = "mvccCache";
+
+    /** */
+    private String cacheName;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(2);
@@ -50,10 +59,33 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        cacheName = CACHE;
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration cacheCfg = new CacheConfiguration("cache");
+        CacheConfiguration ccfg = cacheConfiguration(CACHE);
+
+        CacheConfiguration mvccCfg = cacheConfiguration(MVCC_CACHE)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+
+        cfg.setCacheConfiguration(ccfg, mvccCfg);
+
+        return cfg;
+    }
+
+    /**
+     *
+     * @return Cache configuration.
+     * @param name Cache name.
+     */
+    private CacheConfiguration cacheConfiguration(String name) {
+        CacheConfiguration cacheCfg = new CacheConfiguration(name);
 
         cacheCfg.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
@@ -61,10 +93,7 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setMaxConcurrentAsyncOperations(0);
         cacheCfg.setBackups(0);
-
-        cfg.setCacheConfiguration(cacheCfg);
-
-        return cfg;
+        return cacheCfg;
     }
 
     /**
@@ -128,6 +157,18 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
     }
 
     /**
+     *
+     */
+    @Test
+    public void testMvccTxInvokeSequentialCall() throws Exception {
+        cacheName = MVCC_CACHE;
+
+        transactionInvokeSequentialCallOnPrimaryNode(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
+
+        transactionInvokeSequentialCallOnNearNode(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
+    }
+
+    /**
      * Test for sequential entry processor invoking not null value on primary cache.
      * In this test entry processor gets value from local node.
      *
@@ -142,12 +183,12 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
 
         Ignite primaryIgnite;
 
-        if (ignite(0).affinity("cache").isPrimary(ignite(0).cluster().localNode(), key))
+        if (ignite(0).affinity(cacheName).isPrimary(ignite(0).cluster().localNode(), key))
             primaryIgnite = ignite(0);
         else
             primaryIgnite = ignite(1);
 
-        IgniteCache<TestKey, TestValue> cache = primaryIgnite.cache("cache");
+        IgniteCache<TestKey, TestValue> cache = primaryIgnite.cache(cacheName);
 
         cache.put(key, val);
 
@@ -181,7 +222,7 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
         Ignite nearIgnite;
         Ignite primaryIgnite;
 
-        if (ignite(0).affinity("cache").isPrimary(ignite(0).cluster().localNode(), key)) {
+        if (ignite(0).affinity(cacheName).isPrimary(ignite(0).cluster().localNode(), key)) {
             primaryIgnite = ignite(0);
 
             nearIgnite = ignite(1);
@@ -192,9 +233,9 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
             nearIgnite = ignite(0);
         }
 
-        primaryIgnite.cache("cache").put(key, val);
+        primaryIgnite.cache(cacheName).put(key, val);
 
-        IgniteCache<TestKey, TestValue> nearCache = nearIgnite.cache("cache");
+        IgniteCache<TestKey, TestValue> nearCache = nearIgnite.cache(cacheName);
 
         NotNullCacheEntryProcessor cacheEntryProcessor = new NotNullCacheEntryProcessor();
 
@@ -207,7 +248,7 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
             transaction.commit();
         }
 
-        primaryIgnite.cache("cache").remove(key);
+        primaryIgnite.cache(cacheName).remove(key);
     }
 
     /**
@@ -215,10 +256,11 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
      * optimistic conflict exception.
      */
     @Test
+    @SuppressWarnings("ThrowableNotThrown")
     public void testTxInvokeSequentialOptimisticConflict() throws Exception {
         TestKey key = new TestKey(1L);
 
-        IgniteCache<TestKey, TestValue> cache = ignite(0).cache("cache");
+        IgniteCache<TestKey, TestValue> cache = ignite(0).cache(CACHE);
 
         CountDownLatch latch = new CountDownLatch(1);
 

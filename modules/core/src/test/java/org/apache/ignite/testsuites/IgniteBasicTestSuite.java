@@ -43,6 +43,7 @@ import org.apache.ignite.internal.IgniteLocalNodeMapBeforeStartTest;
 import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
 import org.apache.ignite.internal.MarshallerContextLockingSelfTest;
 import org.apache.ignite.internal.TransactionsMXBeanImplTest;
+import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesMultipleConnectionsTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorMemoryLeakTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
@@ -199,6 +200,7 @@ public class IgniteBasicTestSuite {
         suite.addTest(new JUnit4TestAdapter(IgniteMarshallerCacheClientRequestsMappingOnMissTest.class));
 
         suite.addTest(new JUnit4TestAdapter(IgniteDiagnosticMessagesTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteDiagnosticMessagesMultipleConnectionsTest.class));
 
         suite.addTest(new JUnit4TestAdapter(IgniteRejectConnectOnNodeStopTest.class));
 

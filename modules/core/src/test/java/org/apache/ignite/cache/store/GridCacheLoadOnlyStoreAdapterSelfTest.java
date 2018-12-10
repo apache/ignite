@@ -21,10 +21,12 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import javax.cache.integration.CacheLoaderException;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,7 +36,7 @@ import org.junit.runners.JUnit4;
  *
  */
 @RunWith(JUnit4.class)
-public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCacheAbstractSelfTest {
+public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCommonAbstractTest {
     /** Expected loadAll arguments, hardcoded on call site for convenience. */
     private static final Integer[] EXP_ARGS = {1, 2, 3};
 
@@ -42,34 +44,32 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCacheAbstractSelf
     private CacheLoadOnlyStoreAdapter store;
 
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
+        super.beforeTestsStarted();
+
+        startGrid(0);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-
+        stopAllGrids();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        grid(0).destroyCache(DEFAULT_CACHE_NAME);
 
+        super.afterTest();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Cache configuration.
+     */
     @SuppressWarnings("unchecked")
-    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
+    private CacheConfiguration<?, ?> cacheConfiguration() {
+        CacheConfiguration cfg = defaultCacheConfiguration();
 
         assertNotNull(store);
 
@@ -86,27 +86,15 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCacheAbstractSelf
      */
     @Test
     public void testStore() throws Exception {
-        try {
-            int inputSize = 100;
+        int inputSize = 100;
 
-            store = new TestStore(inputSize);
+        store = new TestStore(inputSize);
 
-            startGrids(gridCount());
+        IgniteCache<?, ?> cache = grid(0).createCache(cacheConfiguration());
 
-            awaitPartitionMapExchange();
+        cache.localLoadCache(null, 1, 2, 3);
 
-            jcache().localLoadCache(null, 1, 2, 3);
-
-            int cnt = 0;
-
-            for (int i = 0; i < gridCount(); i++)
-                cnt += jcache(i).localSize();
-
-            assertEquals(inputSize - (inputSize / 10), cnt);
-        }
-        finally {
-            stopAllGrids();
-        }
+        assertEquals(inputSize - (inputSize / 10), cache.localSize());
     }
 
     /**
@@ -114,31 +102,20 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCacheAbstractSelf
      */
     @Test
     public void testStoreSmallQueueSize() throws Exception {
-        try {
-            int inputSize = 1500;
+        int inputSize = 1500;
 
-            store = new ParallelTestStore(inputSize);
+        store = new ParallelTestStore(inputSize);
 
-            store.setBatchSize(1);
-            store.setBatchQueueSize(1);
-            store.setThreadsCount(2);
+        store.setBatchSize(1);
+        store.setBatchQueueSize(1);
+        store.setThreadsCount(2);
 
-            startGrids(gridCount());
+        IgniteCache<?, ?> cache = grid(0).createCache(cacheConfiguration());
 
-            awaitPartitionMapExchange();
+        cache.localLoadCache(null, 1, 2, 3);
 
-            jcache().localLoadCache(null, 1, 2, 3);
+        assertEquals(inputSize, cache.localSize());
 
-            int cnt = 0;
-
-            for (int i = 0; i < gridCount(); i++)
-                cnt += jcache(i).localSize();
-
-            assertEquals(inputSize, cnt);
-        }
-        finally {
-            stopAllGrids();
-        }
     }
 
     /**

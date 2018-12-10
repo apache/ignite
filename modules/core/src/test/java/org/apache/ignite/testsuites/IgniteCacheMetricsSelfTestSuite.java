@@ -17,7 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
+import java.util.Collection;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.TransactionMetricsMxBeanImplTest;
 import org.apache.ignite.internal.processors.cache.CacheGroupsMetricsRebalanceTest;
@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalMet
 import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalTckMetricsSelfTestImpl;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicMetricsNoReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalMetricsSelfTest;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.runner.RunWith;
 import org.junit.runners.AllTests;
 
@@ -48,38 +49,40 @@ import org.junit.runners.AllTests;
 @RunWith(AllTests.class)
 public class IgniteCacheMetricsSelfTestSuite {
     /**
+     * @param ignoredTests Ignored tests.
      * @return Cache metrics test suite.
+     * @throws Exception If failed.
      */
-    public static TestSuite suite() {
+    public static TestSuite suite(Collection<Class> ignoredTests) {
         TestSuite suite = new TestSuite("Cache Metrics Test Suite");
 
-        suite.addTest(new JUnit4TestAdapter(GridCacheLocalMetricsSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheLocalAtomicMetricsNoReadThroughSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheNearMetricsSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheNearAtomicMetricsSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedMetricsSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedMetricsSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedHitsAndMissesSelfTest.class));
+        GridTestUtils.addTestIfNeeded(suite, GridCacheLocalMetricsSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheLocalAtomicMetricsNoReadThroughSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheNearMetricsSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheNearAtomicMetricsSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheReplicatedMetricsSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedMetricsSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedHitsAndMissesSelfTest.class, ignoredTests);
 
         // Atomic cache.
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicLocalMetricsSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicLocalMetricsNoStoreSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicReplicatedMetricsSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicPartitionedMetricsSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicPartitionedTckMetricsSelfTestImpl.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicLocalTckMetricsSelfTestImpl.class));
+        GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicLocalMetricsSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicLocalMetricsNoStoreSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicReplicatedMetricsSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicPartitionedMetricsSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicPartitionedTckMetricsSelfTestImpl.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicLocalTckMetricsSelfTestImpl.class, ignoredTests);
 
-        suite.addTest(new JUnit4TestAdapter(CacheGroupsMetricsRebalanceTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheValidatorMetricsTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheMetricsEntitiesCountTest.class));
+        GridTestUtils.addTestIfNeeded(suite, CacheGroupsMetricsRebalanceTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheValidatorMetricsTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheMetricsEntitiesCountTest.class, ignoredTests);
 
         // Cluster wide metrics.
-        suite.addTest(new JUnit4TestAdapter(CacheMetricsForClusterGroupSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(OffheapCacheMetricsForClusterGroupSelfTest.class));
+        GridTestUtils.addTestIfNeeded(suite, CacheMetricsForClusterGroupSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, OffheapCacheMetricsForClusterGroupSelfTest.class, ignoredTests);
 
-        suite.addTest(new JUnit4TestAdapter(TransactionMetricsMxBeanImplTest.class));
+        GridTestUtils.addTestIfNeeded(suite, TransactionMetricsMxBeanImplTest.class, ignoredTests);
 
-        suite.addTest(new JUnit4TestAdapter(GridEvictionPolicyMBeansTest.class));
+        GridTestUtils.addTestIfNeeded(suite, GridEvictionPolicyMBeansTest.class, ignoredTests);
 
         return suite;
     }

@@ -18,10 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -33,27 +30,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 public abstract class GridCacheAbstractPartitionedByteArrayValuesSelfTest extends
     GridCacheAbstractDistributedByteArrayValuesSelfTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        if (nearConfiguration() != null)
-            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TransactionConfiguration tCfg = new TransactionConfiguration();
-
-        tCfg.setTxSerializableEnabled(true);
-
-        cfg.setTransactionConfiguration(tCfg);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration0() {
-        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+        CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setAtomicityMode(TRANSACTIONAL);

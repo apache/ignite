@@ -40,6 +40,7 @@ import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -91,6 +92,14 @@ public class IgniteCacheMessageRecoveryIdleConnectionTest extends GridCommonAbst
     @Test
     public void testCacheOperationsIdleConnectionCloseTx() throws Exception {
         cacheOperationsIdleConnectionClose(TRANSACTIONAL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCacheOperationsIdleConnectionCloseMvccTx() throws Exception {
+        cacheOperationsIdleConnectionClose(TRANSACTIONAL_SNAPSHOT);
     }
 
     /**

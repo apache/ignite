@@ -110,9 +110,6 @@ public class CacheEventWithTxLabelTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10270");
-
         super.beforeTestsStarted();
 
         client = false;
@@ -128,6 +125,12 @@ public class CacheEventWithTxLabelTest extends GridCommonAbstractTest {
         waitForDiscovery(primary(), backup1(), backup2(), client());
 
         registerEventListeners(primary(), backup1(), backup2(), client());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10270");
     }
 
     /** {@inheritDoc} */

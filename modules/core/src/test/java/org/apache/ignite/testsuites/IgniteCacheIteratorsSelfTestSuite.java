@@ -17,11 +17,12 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
+import java.util.Collection;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedIteratorsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedIteratorsSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalIteratorsSelfTest;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.runner.RunWith;
 import org.junit.runners.AllTests;
 
@@ -31,14 +32,15 @@ import org.junit.runners.AllTests;
 @RunWith(AllTests.class)
 public class IgniteCacheIteratorsSelfTestSuite {
     /**
+     * @param ignoredTests Ignored tests.
      * @return Cache iterators test suite.
      */
-    public static TestSuite suite() {
+    public static TestSuite suite(Collection<Class> ignoredTests) {
         TestSuite suite = new TestSuite("Cache Iterators Test Suite");
 
-        suite.addTest(new JUnit4TestAdapter(GridCacheLocalIteratorsSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedIteratorsSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedIteratorsSelfTest.class));
+        GridTestUtils.addTestIfNeeded(suite, GridCacheLocalIteratorsSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheReplicatedIteratorsSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedIteratorsSelfTest.class, ignoredTests);
 
         return suite;
    }

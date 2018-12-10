@@ -40,6 +40,7 @@ import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -104,7 +105,7 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testEntryProcessorCall() throws Exception {
+    public void testEntryProcessorCallOnAtomicCache() throws Exception {
         {
             CacheConfiguration<Integer, TestValue> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
             ccfg.setBackups(1);
@@ -122,7 +123,13 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
 
             checkEntryProcessorCallCount(ccfg, 1);
         }
+    }
 
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testEntryProcessorCallOnTxCache() throws Exception {
         {
             CacheConfiguration<Integer, TestValue> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
             ccfg.setBackups(1);
@@ -137,6 +144,30 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
             ccfg.setBackups(0);
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
             ccfg.setAtomicityMode(TRANSACTIONAL);
+
+            checkEntryProcessorCallCount(ccfg, 1);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testEntryProcessorCallOnMvccCache() throws Exception {
+        {
+            CacheConfiguration<Integer, TestValue> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+            ccfg.setBackups(1);
+            ccfg.setWriteSynchronizationMode(FULL_SYNC);
+            ccfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
+
+            checkEntryProcessorCallCount(ccfg, 2);
+        }
+
+        {
+            CacheConfiguration<Integer, TestValue> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+            ccfg.setBackups(0);
+            ccfg.setWriteSynchronizationMode(FULL_SYNC);
+            ccfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
             checkEntryProcessorCallCount(ccfg, 1);
         }
@@ -168,18 +199,22 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
 
         if (ccfg.getAtomicityMode() == TRANSACTIONAL) {
             checkEntryProcessCall(key++, clientCache1, OPTIMISTIC, REPEATABLE_READ, expCallCnt + 1);
-            checkEntryProcessCall(key++, clientCache1, PESSIMISTIC, REPEATABLE_READ, expCallCnt + 1);
             checkEntryProcessCall(key++, clientCache1, OPTIMISTIC, SERIALIZABLE, expCallCnt + 1);
+            checkEntryProcessCall(key++, clientCache1, PESSIMISTIC, REPEATABLE_READ, expCallCnt + 1);
         }
+        else if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
+            checkEntryProcessCall(key++, clientCache1, PESSIMISTIC, REPEATABLE_READ, expCallCnt);
 
         for (int i = 100; i < 110; i++) {
             checkEntryProcessCall(key++, srvCache, null, null, expCallCnt);
 
             if (ccfg.getAtomicityMode() == TRANSACTIONAL) {
-                checkEntryProcessCall(key++, srvCache, OPTIMISTIC, REPEATABLE_READ, expCallCnt + 1);
-                checkEntryProcessCall(key++, srvCache, PESSIMISTIC, REPEATABLE_READ, expCallCnt + 1);
-                checkEntryProcessCall(key++, srvCache, OPTIMISTIC, SERIALIZABLE, expCallCnt + 1);
+                checkEntryProcessCall(key++, clientCache1, OPTIMISTIC, REPEATABLE_READ, expCallCnt + 1);
+                checkEntryProcessCall(key++, clientCache1, OPTIMISTIC, SERIALIZABLE, expCallCnt + 1);
+                checkEntryProcessCall(key++, clientCache1, PESSIMISTIC, REPEATABLE_READ, expCallCnt + 1);
             }
+            else if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
+                checkEntryProcessCall(key++, clientCache1, PESSIMISTIC, REPEATABLE_READ, expCallCnt);
         }
 
         for (int i = 0; i < NODES; i++)
@@ -187,7 +222,6 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
      * @param key Key.
      * @param cache Cache.
      * @param concurrency Transaction concurrency.
@@ -209,6 +243,9 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
             ", primary=" + primary.attribute(ATTR_IGNITE_INSTANCE_NAME) +
             ", concurrency=" + concurrency +
             ", isolation=" + isolation + "]");
+
+        int expCallCntOnGet = cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL_SNAPSHOT ?
+            1 : expCallCnt;
 
         Transaction tx;
         TestReturnValue retVal;
@@ -242,7 +279,7 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
         if (tx != null)
             tx.commit();
 
-        assertEquals(expCallCnt, callCnt.get());
+        assertEquals(expCallCntOnGet, callCnt.get());
 
         checkReturnValue(retVal, "0");
         checkCacheValue(cache.getName(), key, new TestValue(0));
@@ -420,7 +457,7 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            TestValue testVal = (TestValue) o;
+            TestValue testVal = (TestValue)o;
 
             return val.equals(testVal.val);
 
@@ -478,7 +515,7 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            TestReturnValue testVal = (TestReturnValue) o;
+            TestReturnValue testVal = (TestReturnValue)o;
 
             return val.equals(testVal.val);
 
