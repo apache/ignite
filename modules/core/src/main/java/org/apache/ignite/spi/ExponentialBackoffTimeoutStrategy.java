@@ -31,14 +31,8 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
     /** Default backoff coefficient to calculate next timeout based on backoff strategy. */
     private static final double DLFT_BACKOFF_COEFF = 2.0;
 
-    /** Initial startTimeout, ms. */
-    private final long startTimeout;
-
     /** Max startTimeout of the next try, ms. */
     private final long maxTimeout;
-
-    /** Max reconnections count. */
-    private final int reconCnt;
 
     /** Total startTimeout, ms. */
     private final long totalTimeout;
@@ -85,29 +79,24 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
      * @param totalTimeout Total startTimeout.
      * @param startTimeout Initial connection timeout.
      * @param maxTimeout Max connection Timeout.
-     * @param reconCnt Max number of reconnects.
      *
      */
     public ExponentialBackoffTimeoutStrategy(
         long totalTimeout,
         long startTimeout,
-        long maxTimeout,
-        int reconCnt
+        long maxTimeout
     ) {
         this.totalTimeout = totalTimeout;
 
-        this.startTimeout = startTimeout;
         this.maxTimeout = maxTimeout;
 
         currTimeout = startTimeout;
-
-        this.reconCnt = reconCnt;
 
         start = U.currentTimeMillis();
     }
 
     /** {@inheritDoc} */
-    @Override public long getAndCalculateNextTimeout() throws IgniteSpiOperationTimeoutException {
+    @Override public long nextTimeout(long timeout) throws IgniteSpiOperationTimeoutException {
         long remainingTime = remainingTime(U.currentTimeMillis());
 
         if (remainingTime <= 0)
@@ -115,7 +104,12 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
 
         long currTimeout0 = currTimeout;
 
-        currTimeout = nextTimeout(currTimeout, maxTimeout);
+        /*
+            If timeout is zero that means we need return current verified timeout and calculate next timeout.
+            In case of non zero we just reverify previously calculated value not to breach totalTimeout.
+         */
+        if (timeout == 0)
+            currTimeout = nextTimeout(currTimeout, maxTimeout);
 
         return Math.min(currTimeout0, remainingTime);
     }

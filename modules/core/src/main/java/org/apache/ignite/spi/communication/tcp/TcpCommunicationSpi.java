@@ -3101,7 +3101,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             catch (IgniteSpiOperationTimeoutException e) {
                 client.forceClose();
 
-                if (failureDetectionTimeoutEnabled() && (timeoutHelper.checkFailureTimeoutReached(e))) {
+                if (failureDetectionTimeoutEnabled() && timeoutHelper.checkFailureTimeoutReached(e)) {
                     if (log.isDebugEnabled())
                         log.debug("Handshake timed out (failure threshold reached) [failureDetectionTimeout=" +
                             failureDetectionTimeout() + ", err=" + e.getMessage() + ", client=" + client + ']');
@@ -3293,8 +3293,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             TimeoutStrategy connTimeoutStgy = new ExponentialBackoffTimeoutStrategy(
                 totalTimeout,
                 failureDetectionTimeoutEnabled() ? DFLT_INITIAL_TIMEOUT : connTimeout,
-                maxConnTimeout,
-                reconCnt
+                maxConnTimeout
             );
 
             while (client == null) { // Reconnection on handshake timeout.
@@ -3351,7 +3350,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     GridSslMeta sslMeta = null;
 
                     try {
-                        long currTimeout = connTimeoutStgy.getAndCalculateNextTimeout();
+                        long currTimeout = connTimeoutStgy.nextTimeout();
 
                         ch.socket().connect(addr, (int) currTimeout);
 
@@ -3373,7 +3372,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         rcvCnt = safeTcpHandshake(ch,
                             recoveryDesc,
                             node.id(),
-                            currTimeout,
+                            connTimeoutStgy.nextTimeout(currTimeout),
                             sslMeta,
                             handshakeConnIdx);
 
@@ -3460,7 +3459,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             "[nodeId=" + node.id() + ", addrs=" + addrs + ']';
 
                         if (errs == null)
-                            errs = new IgniteCheckedException(msg, new IgniteSpiOperationTimeoutException(""));
+                            errs = new IgniteCheckedException(msg, e);
                         else
                             errs.addSuppressed(new IgniteCheckedException(msg, e));
 
@@ -3506,8 +3505,19 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     if (isRecoverableException(e))
                         U.sleep(DFLT_RECONNECT_DELAY);
-                    else
+                    else {
+                        String msg = "Failed to connect to node due to unrecoverable exception (is node still alive?). " +
+                                "Make sure that each ComputeTask and cache Transaction has a timeout set " +
+                                "in order to prevent parties from waiting forever in case of network issues " +
+                                "[nodeId=" + node.id() + ", addrs=" + addrs + ", err= "+ e + ']';
+
+                        if (errs == null)
+                            errs = new IgniteCheckedException(msg, e);
+                        else
+                            errs.addSuppressed(new IgniteCheckedException(msg, e));
+
                         break;
+                    }
                 }
             }
 
@@ -3566,7 +3576,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 && !getLocalNode().isClient()
                 && isRecoverableException(errs)
             ) {
-                //only server can fail client for now, as in TcpDiscovery resolveCommunicationFailure() is not supported.
+                // Only server can fail client for now, as in TcpDiscovery resolveCommunicationFailure() is not supported.
                 String msg = "TcpCommunicationSpi failed to establish connection to node, node will be dropped from " +
                     "cluster [" + "rmtNode=" + node + ']';
 

@@ -102,8 +102,6 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL,"true");
-
         startGridsMultiThreaded(SRVS);
 
         clientMode = true;
@@ -121,8 +119,6 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
-
         stopAllGrids();
 
         super.afterTestsStopped();

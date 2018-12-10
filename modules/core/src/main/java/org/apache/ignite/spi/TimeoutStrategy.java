@@ -22,10 +22,22 @@ package org.apache.ignite.spi;
  */
 public interface TimeoutStrategy {
     /**
+     * Get next timeout based on previously timeout calculated by strategy.
      *
-     * @return Gets current value of timeout and calculates value for next retry.
+     * @return Gets next timeout.
+     * @throws IgniteSpiOperationTimeoutException in case of total timeout already breached.
      */
-    public long getAndCalculateNextTimeout() throws IgniteSpiOperationTimeoutException;
+    public long nextTimeout(long currTimeout) throws IgniteSpiOperationTimeoutException;
+
+    /**
+     * Get new next timeout.
+     *
+     * @return Gets next timeout.
+     * @throws IgniteSpiOperationTimeoutException in case of total timeout already breached.
+     */
+    public default long nextTimeout() throws IgniteSpiOperationTimeoutException {
+        return nextTimeout(0);
+    }
 
     /**
      * Check if total timeout will be reached in now() + timeInFut.

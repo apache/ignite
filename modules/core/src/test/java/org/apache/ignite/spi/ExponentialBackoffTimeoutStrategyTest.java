@@ -33,9 +33,7 @@ public class ExponentialBackoffTimeoutStrategyTest extends GridCommonAbstractTes
         ExponentialBackoffTimeoutStrategy helper = new ExponentialBackoffTimeoutStrategy(
             5_000L,
             1000L,
-            3000L,
-            3,
-            2.
+            3000L
         );
 
         checkTimeout(helper, 5_000L);
@@ -47,25 +45,23 @@ public class ExponentialBackoffTimeoutStrategyTest extends GridCommonAbstractTes
         ExponentialBackoffTimeoutStrategy helper = new ExponentialBackoffTimeoutStrategy(
             5_000L,
             1000L,
-            3_000L,
-            3,
-            2.
+            3_000L
         );
 
-        assertEquals(1000L, helper.getAndCalculateNextTimeout());
+        assertEquals(1000L, helper.nextTimeout());
 
-        assertEquals(2000L, helper.getAndCalculateNextTimeout());
+        assertEquals(2000L, helper.nextTimeout());
 
-        helper.getAndCalculateNextTimeout();
+        helper.nextTimeout();
 
-        assertEquals(3000L, helper.getAndCalculateNextTimeout());
+        assertEquals(3000L, helper.nextTimeout());
     }
 
     /** */
     @Test
     public void totalBackoffTimeout() {
-        assertEquals(8_000, ExponentialBackoffTimeoutStrategy.totalBackoffTimeout(1000, 5000, 3, 2.0));
-        assertEquals(45_000, ExponentialBackoffTimeoutStrategy.totalBackoffTimeout(5_000, 60_000, 3, 2.0));
+        assertEquals(8_000, ExponentialBackoffTimeoutStrategy.totalBackoffTimeout(1000, 5000, 3));
+        assertEquals(45_000, ExponentialBackoffTimeoutStrategy.totalBackoffTimeout(5_000, 60_000, 3));
     }
 
     /** */
@@ -82,7 +78,7 @@ public class ExponentialBackoffTimeoutStrategyTest extends GridCommonAbstractTes
                 assertTrue( (System.currentTimeMillis() + 100 - start) >= timeout);
 
                 try {
-                    helper.getAndCalculateNextTimeout();
+                    helper.nextTimeout();
 
                     fail("Should fail with IOException");
                 } catch (IgniteSpiOperationTimeoutException ignored) {
