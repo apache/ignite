@@ -24,13 +24,13 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 
-public class VectorStackedModel<O, AM extends Model<Vector, O>, L> extends SimpleStackedModelTrainer<Vector, O, AM, L> {
-    public VectorStackedModel(DatasetTrainer<AM, L> aggregatingTrainer,
+public class StackedVectorModel<O, AM extends Model<Vector, O>, L> extends SimpleStackedModelTrainer<Vector, O, AM, L> {
+    public StackedVectorModel(DatasetTrainer<AM, L> aggregatingTrainer,
         IgniteBinaryOperator<Vector> aggregatingInputMerger) {
         super(aggregatingTrainer, aggregatingInputMerger);
     }
 
-    public VectorStackedModel(DatasetTrainer<AM, L> aggregatingTrainer) {
+    public StackedVectorModel(DatasetTrainer<AM, L> aggregatingTrainer) {
         super(aggregatingTrainer, VectorUtils::concat);
     }
 }

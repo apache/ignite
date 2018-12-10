@@ -55,7 +55,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
     }
 
     /** {@inheritDoc} */
-    @Override public boolean checkState(GaussianNaiveBayesModel mdl) {
+    @Override protected boolean checkState(GaussianNaiveBayesModel mdl) {
         return true;
     }
 
@@ -65,7 +65,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GaussianNaiveBayesModel updateModel(GaussianNaiveBayesModel mdl,
+    @Override protected <K, V> GaussianNaiveBayesModel updateModel(GaussianNaiveBayesModel mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
         assert datasetBuilder != null;

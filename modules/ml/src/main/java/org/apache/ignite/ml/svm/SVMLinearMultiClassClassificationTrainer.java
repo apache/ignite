@@ -69,7 +69,7 @@ public class SVMLinearMultiClassClassificationTrainer
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> SVMLinearMultiClassClassificationModel updateModel(
+    @Override protected <K, V> SVMLinearMultiClassClassificationModel updateModel(
         SVMLinearMultiClassClassificationModel mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
@@ -109,7 +109,7 @@ public class SVMLinearMultiClassClassificationTrainer
     }
 
     /** {@inheritDoc} */
-    @Override public boolean checkState(SVMLinearMultiClassClassificationModel mdl) {
+    @Override protected boolean checkState(SVMLinearMultiClassClassificationModel mdl) {
         return true;
     }
 

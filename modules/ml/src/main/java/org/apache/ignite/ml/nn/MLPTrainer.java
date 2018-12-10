@@ -115,7 +115,7 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> MultilayerPerceptron updateModel(MultilayerPerceptron lastLearnedMdl,
+    @Override protected <K, V> MultilayerPerceptron updateModel(MultilayerPerceptron lastLearnedMdl,
         DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
 
@@ -354,7 +354,7 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
     }
 
     /** {@inheritDoc} */
-    @Override public boolean checkState(MultilayerPerceptron mdl) {
+    @Override protected boolean checkState(MultilayerPerceptron mdl) {
         return true;
     }
 

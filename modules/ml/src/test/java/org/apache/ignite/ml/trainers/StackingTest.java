@@ -18,8 +18,10 @@
 package org.apache.ignite.ml.trainers;
 
 import java.util.Arrays;
+import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.composition.stacking.StackedVectorTrainer;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
@@ -51,6 +53,9 @@ public class StackingTest extends TrainerTest {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
+    /**
+     * Tests simple stack training.
+     */
     @Test
     public void testSimpleStack() {
         StackedDatasetTrainer<Vector, Vector, Double, LinearRegressionModel, Double> trainer =
@@ -77,7 +82,8 @@ public class StackingTest extends TrainerTest {
         );
 
         // Convert model trainer to produce Vector -> Vector model
-        DatasetTrainer<CDM<Vector, Vector, Matrix, Matrix, MultilayerPerceptron>, Double> mlpTrainer = CDT.of(trainer1)
+        DatasetTrainer<AdaptableDatasetModel<Vector, Vector, Matrix, Matrix, MultilayerPerceptron>, Double> mlpTrainer =
+            AdaptableDatasetTrainer.of(trainer1)
             .beforeTrainedModel((Vector v) -> new DenseMatrix(v.asArray(), 1))
             .afterTrainedModel((Matrix mtx) -> mtx.getRow(0))
             .withConvertedLabels(VectorUtils::num2Arr);
@@ -88,7 +94,6 @@ public class StackingTest extends TrainerTest {
             .withAggregatorTrainer(new LinearRegressionLSQRTrainer().withConvertedLabels(x -> x * factor))
             .withAddedTrainer(mlpTrainer)
             .withAggregatorInputMerger(VectorUtils::concat)
-            .withOriginalFeaturesDropped()
             .withSubmodelOutput2VectorConverter(IgniteFunction.identity())
             .withVector2SubmodelInputConverter(IgniteFunction.identity())
             .withOriginalFeaturesKept(IgniteFunction.identity())
@@ -98,17 +103,73 @@ public class StackingTest extends TrainerTest {
                 (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
                 (k, v) -> v[v.length - 1]);
 
-//        assertEquals(0.0 * factor, mdl.apply(VectorUtils.of(0.0, 0.0)), 0.3);
+        assertEquals(0.0 * factor, mdl.apply(VectorUtils.of(0.0, 0.0)), 0.3);
         assertEquals(1.0 * factor, mdl.apply(VectorUtils.of(0.0, 1.0)), 0.3);
         assertEquals(1.0 * factor, mdl.apply(VectorUtils.of(1.0, 0.0)), 0.3);
         assertEquals(0.0 * factor, mdl.apply(VectorUtils.of(1.0, 1.0)), 0.3);
     }
 
-//    @Test
-//    public void testINoWaysOfPropagation() {
-//        StackedDatasetTrainer<?, ?, ?, Model<?, ?>, ?> trainer =
-//            new StackedDatasetTrainer<>();
-//        thrown.expect(IllegalStateException.class);
-//        trainer.fit(null, null, null);
-//    }
+    /**
+     * Tests simple stack training.
+     */
+    @Test
+    public void testSimpleVectorStack() {
+        StackedVectorTrainer<Double, LinearRegressionModel, Double> trainer =
+            new StackedVectorTrainer<>();
+
+        UpdatesStrategy<SmoothParametrized, SimpleGDParameterUpdate> updatesStgy = new UpdatesStrategy<>(
+            new SimpleGDUpdateCalculator(0.2),
+            SimpleGDParameterUpdate::sumLocal,
+            SimpleGDParameterUpdate::avg
+        );
+
+        MLPArchitecture arch = new MLPArchitecture(2).
+            withAddedLayer(10, true, Activators.RELU).
+            withAddedLayer(1, false, Activators.SIGMOID);
+
+        MLPTrainer<SimpleGDParameterUpdate> trainer1 = new MLPTrainer<>(
+            arch,
+            LossFunctions.MSE,
+            updatesStgy,
+            3000,
+            10,
+            50,
+            123L
+        );
+
+        // Convert model trainer to produce Vector -> Vector model
+        DatasetTrainer<AdaptableDatasetModel<Vector, Vector, Matrix, Matrix, MultilayerPerceptron>, Double> mlpTrainer =
+            AdaptableDatasetTrainer.of(trainer1)
+                .beforeTrainedModel((Vector v) -> new DenseMatrix(v.asArray(), 1))
+                .afterTrainedModel((Matrix mtx) -> mtx.getRow(0))
+                .withConvertedLabels(VectorUtils::num2Arr);
+
+        final double factor = 3;
+
+        StackedModel<Vector, Vector, Double, LinearRegressionModel> mdl = trainer
+            .withAggregatorTrainer(new LinearRegressionLSQRTrainer().withConvertedLabels(x -> x * factor))
+            .withAddedTrainer(mlpTrainer)
+            .withEnvironmentBuilder(TestUtils.testEnvBuilder())
+            .fit(getCacheMock(xor),
+                parts,
+                (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
+                (k, v) -> v[v.length - 1]);
+
+        assertEquals(0.0 * factor, mdl.apply(VectorUtils.of(0.0, 0.0)), 0.3);
+        assertEquals(1.0 * factor, mdl.apply(VectorUtils.of(0.0, 1.0)), 0.3);
+        assertEquals(1.0 * factor, mdl.apply(VectorUtils.of(1.0, 0.0)), 0.3);
+        assertEquals(0.0 * factor, mdl.apply(VectorUtils.of(1.0, 1.0)), 0.3);
+    }
+
+    /**
+     * Tests that if there is no any way for input of first layer to propagate to second layer,
+     * exception will be thrown.
+     */
+    @Test
+    public void testINoWaysOfPropagation() {
+        StackedDatasetTrainer<Void, Void, Void, Model<Void, Void>, Void> trainer =
+            new StackedDatasetTrainer<>();
+        thrown.expect(IllegalStateException.class);
+        trainer.fit(null, null, null);
+    }
 }

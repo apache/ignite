@@ -42,7 +42,7 @@ public class KNNRegressionTrainer extends SingleLabelDatasetTrainer<KNNRegressio
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> KNNRegressionModel updateModel(
+    @Override protected <K, V> KNNRegressionModel updateModel(
         KNNRegressionModel mdl,
         DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor,
@@ -56,7 +56,7 @@ public class KNNRegressionTrainer extends SingleLabelDatasetTrainer<KNNRegressio
     }
 
     /** {@inheritDoc} */
-    @Override public boolean checkState(KNNRegressionModel mdl) {
+    @Override protected boolean checkState(KNNRegressionModel mdl) {
         return true;
     }
 }

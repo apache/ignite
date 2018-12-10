@@ -68,7 +68,7 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> LogisticRegressionModel updateModel(LogisticRegressionModel mdl,
+    @Override protected <K, V> LogisticRegressionModel updateModel(LogisticRegressionModel mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
@@ -139,7 +139,7 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
     }
 
     /** {@inheritDoc} */
-    @Override public boolean checkState(LogisticRegressionModel mdl) {
+    @Override protected boolean checkState(LogisticRegressionModel mdl) {
         return true;
     }
 

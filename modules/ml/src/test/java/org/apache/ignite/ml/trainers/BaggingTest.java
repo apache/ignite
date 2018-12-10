@@ -177,12 +177,12 @@ public class BaggingTest extends TrainerTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean checkState(Model<Vector, Double> mdl) {
+        @Override protected boolean checkState(Model<Vector, Double> mdl) {
             return true;
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> Model<Vector, Double> updateModel(
+        @Override protected <K, V> Model<Vector, Double> updateModel(
             Model<Vector, Double> mdl,
             DatasetBuilder<K, V> datasetBuilder,
             IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {

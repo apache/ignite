@@ -20,12 +20,12 @@ package org.apache.ignite.ml.trainers;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
-public class CDM<I, O, IW, OW, M extends Model<IW, OW>> implements Model<I, O> {
+public class AdaptableDatasetModel<I, O, IW, OW, M extends Model<IW, OW>> implements Model<I, O> {
     private final IgniteFunction<I, IW> before;
     private final IgniteFunction<OW, O> after;
     private final M mdl;
 
-    public CDM(IgniteFunction<I, IW> before, M mdl, IgniteFunction<OW, O> after) {
+    public AdaptableDatasetModel(IgniteFunction<I, IW> before, M mdl, IgniteFunction<OW, O> after) {
         this.before = before;
         this.after = after;
         this.mdl = mdl;
@@ -35,20 +35,20 @@ public class CDM<I, O, IW, OW, M extends Model<IW, OW>> implements Model<I, O> {
         return before.andThen(mdl).andThen(after).apply(i);
     }
 
-    @Override public <O1> CDM<I, O1, IW, OW, M> andThen(IgniteFunction<O, O1> after) {
-        return new CDM<>(before, mdl, i -> after.apply(this.after.apply(i)));
+    @Override public <O1> AdaptableDatasetModel<I, O1, IW, OW, M> andThen(IgniteFunction<O, O1> after) {
+        return new AdaptableDatasetModel<>(before, mdl, i -> after.apply(this.after.apply(i)));
     }
 
-    public <I1> CDM<I1, O, IW, OW, M> andBefore(IgniteFunction<I1, I> before) {
+    public <I1> AdaptableDatasetModel<I1, O, IW, OW, M> andBefore(IgniteFunction<I1, I> before) {
         IgniteFunction<I1, IW> function = i -> this.before.apply(before.apply(i));
-        return new CDM<>(function, mdl, after);
+        return new AdaptableDatasetModel<>(function, mdl, after);
     }
 
     public M innerModel() {
         return mdl;
     }
 
-    public <M1 extends Model<IW, OW>> CDM<I, O, IW, OW, M1> withInnerModel(M1 mdl) {
-        return new CDM<>(before, mdl, after);
+    public <M1 extends Model<IW, OW>> AdaptableDatasetModel<I, O, IW, OW, M1> withInnerModel(M1 mdl) {
+        return new AdaptableDatasetModel<>(before, mdl, after);
     }
 }

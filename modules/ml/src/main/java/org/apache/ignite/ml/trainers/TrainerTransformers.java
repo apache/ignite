@@ -102,7 +102,7 @@ public class TrainerTransformers {
             }
 
             /** {@inheritDoc} */
-            @Override public <K, V> ModelsComposition updateModel(
+            @Override protected <K, V> ModelsComposition updateModel(
                 ModelsComposition mdl,
                 DatasetBuilder<K, V> datasetBuilder,
                 IgniteBiFunction<K, V, Vector> featureExtractor,

@@ -65,11 +65,12 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
     /** Aggregating trainer. */
     private DatasetTrainer<AM, L> aggregatorTrainer;
 
+    /** Function used for conversion of {@link Vector} to submodel input. */
+    private IgniteFunction<Vector, IS> vector2SubmodelInputConverter;
+
     /** Function used for conversion of submodel output to {@link Vector}. */
     private IgniteFunction<IA, Vector> submodelOutput2VectorConverter;
 
-    /** Function used for conversion of {@link Vector} to submodel input. */
-    private IgniteFunction<Vector, IS> vector2SubmodelInputConverter;
 
     /**
      * Create instance of this class.
@@ -81,14 +82,18 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
      * this function is used if user chooses to keep original features.
      * @param submodelsTrainers List of submodel trainers.
      */
-    private StackedDatasetTrainer(DatasetTrainer<AM, L> aggregatorTrainer,
+    public StackedDatasetTrainer(DatasetTrainer<AM, L> aggregatorTrainer,
         IgniteBinaryOperator<IA> aggregatingInputMerger,
         IgniteFunction<IS, IA> submodelInput2AggregatingInputConverter,
-        List<DatasetTrainer<Model<IS, IA>, L>> submodelsTrainers) {
+        List<DatasetTrainer<Model<IS, IA>, L>> submodelsTrainers,
+        IgniteFunction<Vector, IS> vector2SubmodelInputConverter,
+        IgniteFunction<IA, Vector> submodelOutput2VectorConverter) {
         this.aggregatorTrainer = aggregatorTrainer;
         this.aggregatingInputMerger = aggregatingInputMerger;
         this.submodelInput2AggregatingInputConverter = submodelInput2AggregatingInputConverter;
         this.submodelsTrainers = new ArrayList<>(submodelsTrainers);
+        this.vector2SubmodelInputConverter = vector2SubmodelInputConverter;
+        this.submodelOutput2VectorConverter = submodelOutput2VectorConverter;
     }
 
     /**
@@ -106,14 +111,16 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
         this(aggregatorTrainer,
             aggregatingInputMerger,
             submodelInput2AggregatingInputConverter,
-            new ArrayList<>());
+            new ArrayList<>(),
+            null,
+            null);
     }
 
     /**
      * Constructs instance of this class.
      */
     public StackedDatasetTrainer() {
-        this(null,null,null, new ArrayList<>());
+        this(null,null,null, new ArrayList<>(), null, null);
     }
 
     /**
@@ -252,7 +259,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
     }
 
     /** {@inheritDoc} */
-    @Override protected  <K, V> StackedModel<IS, IA, O, AM> updateModel(StackedModel<IS, IA, O, AM> mdl,
+    @Override protected <K, V> StackedModel<IS, IA, O, AM> updateModel(StackedModel<IS, IA, O, AM> mdl,
         DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor) {
@@ -260,7 +267,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
     }
 
     /** {@inheritDoc} */
-    @Override public boolean checkState(StackedModel<IS, IA, O, AM> mdl) {
+    @Override protected boolean checkState(StackedModel<IS, IA, O, AM> mdl) {
         return true;
     }
 

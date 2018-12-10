@@ -17,10 +17,12 @@
 
 package org.apache.ignite.ml.composition.stacking;
 
+import java.util.ArrayList;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.stacking.StackedDatasetTrainer;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 
 /**
@@ -34,7 +36,7 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
 public class SimpleStackedModelTrainer<I, O, AM extends Model<I, O>, L> extends StackedDatasetTrainer<I, I, O, AM, L> {
     /**
      * Construct instance of this class.
-     *
+     *SS
      * @param aggregatingTrainer Aggregator trainer.
      * @param aggregatingInputMerger Function used to merge submodels outputs into one.
      * @param submodelInput2AggregatingInputConverter Function used to convert input of submodel to output of submodel
@@ -42,8 +44,22 @@ public class SimpleStackedModelTrainer<I, O, AM extends Model<I, O>, L> extends 
      */
     public SimpleStackedModelTrainer(DatasetTrainer<AM, L> aggregatingTrainer,
         IgniteBinaryOperator<I> aggregatingInputMerger,
-        IgniteFunction<I, I> submodelInput2AggregatingInputConverter) {
-        super(aggregatingTrainer, aggregatingInputMerger, submodelInput2AggregatingInputConverter);
+        IgniteFunction<I, I> submodelInput2AggregatingInputConverter,
+        IgniteFunction<Vector, I> vector2SubmodelInputConverter,
+        IgniteFunction<I, Vector> submodelOutput2VectorConverter) {
+        super(aggregatingTrainer,
+            aggregatingInputMerger,
+            submodelInput2AggregatingInputConverter,
+            new ArrayList<>(),
+            vector2SubmodelInputConverter,
+            submodelOutput2VectorConverter);
+    }
+
+    /**
+     * Constructs instance of this class.
+     */
+    public SimpleStackedModelTrainer() {
+        super();
     }
 
     /**

@@ -82,7 +82,7 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> LogRegressionMultiClassModel updateModel(LogRegressionMultiClassModel newMdl,
+    @Override protected <K, V> LogRegressionMultiClassModel updateModel(LogRegressionMultiClassModel newMdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
@@ -122,7 +122,7 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
     }
 
     /** {@inheritDoc} */
-    @Override public boolean checkState(LogRegressionMultiClassModel mdl) {
+    @Override protected boolean checkState(LogRegressionMultiClassModel mdl) {
         return true;
     }
 

@@ -30,15 +30,26 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
  * @param <L> Type of labels.
  * @param <AM> Type of aggregator model.
  */
-public class VectorStackedTrainer<O, L, AM extends Model<Vector, O>>
+public class StackedVectorTrainer<O, AM extends Model<Vector, O>, L>
     extends SimpleStackedModelTrainer<Vector, O, AM, L> {
     /**
      * Constructs instance of this class.
      *
      * @param aggregatingTrainer Aggregator trainer.
      */
-    public VectorStackedTrainer(DatasetTrainer<AM, L> aggregatingTrainer) {
-        super(aggregatingTrainer, VectorUtils::concat, IgniteFunction.identity());
+    public StackedVectorTrainer(DatasetTrainer<AM, L> aggregatingTrainer) {
+        super(aggregatingTrainer,
+            VectorUtils::concat,
+            IgniteFunction.identity(),
+            IgniteFunction.identity(),
+            IgniteFunction.identity());
+    }
+
+    /**
+     * Constructs instance of this class.
+     */
+    public StackedVectorTrainer() {
+        this(null);
     }
 
     /** {@inheritDoc} */

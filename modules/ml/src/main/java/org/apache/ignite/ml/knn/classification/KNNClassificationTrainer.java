@@ -43,7 +43,7 @@ public class KNNClassificationTrainer extends SingleLabelDatasetTrainer<KNNClass
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> KNNClassificationModel updateModel(KNNClassificationModel mdl,
+    @Override protected <K, V> KNNClassificationModel updateModel(KNNClassificationModel mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
@@ -60,7 +60,7 @@ public class KNNClassificationTrainer extends SingleLabelDatasetTrainer<KNNClass
     }
 
     /** {@inheritDoc} */
-    @Override public boolean checkState(KNNClassificationModel mdl) {
+    @Override protected boolean checkState(KNNClassificationModel mdl) {
         return true;
     }
 }

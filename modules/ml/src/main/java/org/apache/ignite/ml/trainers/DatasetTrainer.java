@@ -326,12 +326,12 @@ public abstract class DatasetTrainer<M extends Model, L> {
             }
 
             /** {@inheritDoc} */
-            @Override public boolean checkState(M mdl) {
+            @Override protected boolean checkState(M mdl) {
                 return old.checkState(mdl);
             }
 
             /** {@inheritDoc} */
-            @Override public <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
+            @Override protected <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
                 IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L1> lbExtractor) {
                 return old.update(mdl, datasetBuilder, featureExtractor, lbExtractor.andThen(new2Old));
             }

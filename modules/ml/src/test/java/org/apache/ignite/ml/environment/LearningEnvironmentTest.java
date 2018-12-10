@@ -103,12 +103,12 @@ public class LearningEnvironmentTest {
             }
 
             /** {@inheritDoc} */
-            @Override public boolean checkState(Model<Object, Vector> mdl) {
+            @Override protected boolean checkState(Model<Object, Vector> mdl) {
                 return false;
             }
 
             /** {@inheritDoc} */
-            @Override public <K, V> Model<Object, Vector> updateModel(Model<Object, Vector> mdl,
+            @Override protected <K, V> Model<Object, Vector> updateModel(Model<Object, Vector> mdl,
                 DatasetBuilder<K, V> datasetBuilder,
                 IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Void> lbExtractor) {
                 return null;

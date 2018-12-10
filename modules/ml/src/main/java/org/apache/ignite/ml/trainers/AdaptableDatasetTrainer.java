@@ -24,7 +24,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
- * Type used to convert input and output types of wrapped {@link DatasetTrainer}.
+ * Type used to adapt input and output types of wrapped {@link DatasetTrainer}.
  * Produces model which is combination  of form {@code after . wMdl . before} where dot denotes functional composition
  * and wMdl is model produced by wrapped trainer.
  *
@@ -35,7 +35,8 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * @param <M> Type of model produced by wrapped model.
  * @param <L> Type of labels.
  */
-public class CDT<I, O, IW, OW, M extends Model<IW, OW>, L> extends DatasetTrainer<CDM<I, O, IW, OW, M>, L> {
+public class AdaptableDatasetTrainer<I, O, IW, OW, M extends Model<IW, OW>, L>
+    extends DatasetTrainer<AdaptableDatasetModel<I, O, IW, OW, M>, L> {
     /** Wrapped trainer. */
     private final DatasetTrainer<M, L> wrapped;
 
@@ -55,8 +56,8 @@ public class CDT<I, O, IW, OW, M extends Model<IW, OW>, L> extends DatasetTraine
      * @param <L> Type of labels.
      * @return Instance of this class.
      */
-    public static <I, O, M extends Model<I, O>, L> CDT<I, O, I, O, M, L> of(DatasetTrainer<M, L> wrapped) {
-        return new CDT<>(IgniteFunction.identity(), wrapped, IgniteFunction.identity());
+    public static <I, O, M extends Model<I, O>, L> AdaptableDatasetTrainer<I, O, I, O, M, L> of(DatasetTrainer<M, L> wrapped) {
+        return new AdaptableDatasetTrainer<>(IgniteFunction.identity(), wrapped, IgniteFunction.identity());
     }
 
     /**
@@ -66,26 +67,26 @@ public class CDT<I, O, IW, OW, M extends Model<IW, OW>, L> extends DatasetTraine
      * @param wrapped  Wrapped trainer.
      * @param after Function used to convert output type of wrapped trainer.
      */
-    private CDT(IgniteFunction<I, IW> before, DatasetTrainer<M, L> wrapped, IgniteFunction<OW, O> after) {
+    private AdaptableDatasetTrainer(IgniteFunction<I, IW> before, DatasetTrainer<M, L> wrapped, IgniteFunction<OW, O> after) {
         this.before = before;
         this.wrapped = wrapped;
         this.after = after;
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> CDM<I, O, IW, OW, M> fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> AdaptableDatasetModel<I, O, IW, OW, M> fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
         M fit = wrapped.fit(datasetBuilder, featureExtractor, lbExtractor);
-        return new CDM<>(before, fit, after);
+        return new AdaptableDatasetModel<>(before, fit, after);
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(CDM<I, O, IW, OW, M> mdl) {
+    @Override protected boolean checkState(AdaptableDatasetModel<I, O, IW, OW, M> mdl) {
         return wrapped.checkState(mdl.innerModel());
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> CDM<I, O, IW, OW, M> updateModel(CDM<I, O, IW, OW, M> mdl, DatasetBuilder<K, V> datasetBuilder,
+    @Override protected <K, V> AdaptableDatasetModel<I, O, IW, OW, M> updateModel(AdaptableDatasetModel<I, O, IW, OW, M> mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
         return mdl.withInnerModel(wrapped.updateModel(mdl.innerModel(), datasetBuilder, featureExtractor, lbExtractor));
     }
@@ -99,8 +100,8 @@ public class CDT<I, O, IW, OW, M extends Model<IW, OW>, L> extends DatasetTraine
      * @return New {@link DatasetTrainer} which produces composition of specified function and model produced by
      * original trainer.
      */
-    public <O1> CDT<I, O1, IW, OW, M, L> afterTrainedModel(IgniteFunction<O, O1> after) {
-        return new CDT<>(before, wrapped, i -> after.apply(this.after.apply(i)));
+    public <O1> AdaptableDatasetTrainer<I, O1, IW, OW, M, L> afterTrainedModel(IgniteFunction<O, O1> after) {
+        return new AdaptableDatasetTrainer<>(before, wrapped, i -> after.apply(this.after.apply(i)));
     }
 
     /**
@@ -112,8 +113,8 @@ public class CDT<I, O, IW, OW, M extends Model<IW, OW>, L> extends DatasetTraine
      * @return New {@link DatasetTrainer} which produces composition of specified function and model produced by
      * original trainer.
      */
-    public <I1> CDT<I1, O, IW, OW, M, L> beforeTrainedModel(IgniteFunction<I1, I> before) {
+    public <I1> AdaptableDatasetTrainer<I1, O, IW, OW, M, L> beforeTrainedModel(IgniteFunction<I1, I> before) {
         IgniteFunction<I1, IW> function = i -> this.before.apply(before.apply(i));
-        return new CDT<>(function, wrapped, after);
+        return new AdaptableDatasetTrainer<>(function, wrapped, after);
     }
 }
