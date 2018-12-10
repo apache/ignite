@@ -3259,16 +3259,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private void writePages(Checkpoint chp) throws IgniteCheckedException {
             snapshotMgr.beforeCheckpointPageWritten();
 
-            CountDownFuture doneWriteFut = new CountDownFuture(asyncRunner == null ? 1 : chp.cpPages.collectionsSize());
+            CheckpointProgress cpProgress = chp.progress;
+
+            CountDownFuture doneWriteFut = new CountDownFuture(asyncRunner == null ? 1 : cpProgress.cpPages.collectionsSize());
 
             chp.metrics.onPagesWriteStart();
 
             if (asyncRunner != null) {
-                for (int i = 0; i < chp.cpPages.collectionsSize(); i++) {
+                for (int i = 0; i < cpProgress.cpPages.collectionsSize(); i++) {
                     Runnable write = new WriteCheckpointPages(
                         chp.metrics,
-                        chp.cpPages.innerCollection(i),
-                        chp.pageStores,
+                        cpProgress.cpPages.innerCollection(i),
+                        cpProgress.pageStores,
                         doneWriteFut,
                         asyncRunner,
                         () -> {
@@ -3295,8 +3297,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 Runnable write = new WriteCheckpointPages(
                     chp.metrics,
-                    chp.cpPages,
-                    chp.pageStores,
+                    cpProgress.cpPages,
+                    cpProgress.pageStores,
                     doneWriteFut,
                     null,
                     () -> {
@@ -3321,8 +3323,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private void fsyncStores(Checkpoint chp) throws IgniteCheckedException {
             chp.metrics.onFsyncStart();
 
+            CheckpointProgress cpProgress = chp.progress;
+
             if (!skipSync) {
-                for (Map.Entry<PageStore, LongAdder> updStoreEntry : chp.pageStores.entrySet()) {
+                for (Map.Entry<PageStore, LongAdder> updStoreEntry : cpProgress.pageStores.entrySet()) {
                     if (checkCancel(chp))
                         return;
 
@@ -3338,7 +3342,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         blockingSectionEnd();
                     }
 
-                    chp.pageStores.remove(pageStore);
+                    cpProgress.remoteStore(pageStore);
 
                     syncedPagesCntr.addAndGet(pageCounter.intValue());
                 }
@@ -3658,7 +3662,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 writeCheckpointEntry(checkpointEntryWriteBuffer, chp.cpEntry, CheckpointEntryType.START);
 
-                chp.cpPages = splitAndSortCpPagesIfNeeded(cpPagesTuple);
+                chp.progress.addCheckpointPages(splitAndSortCpPagesIfNeeded(cpPagesTuple));
 
                 if (log.isInfoEnabled())
                     log.info(String.format("Checkpoint started [checkpointId=%s, startPtr=%s, checkpointLockWait=%dms, " +
@@ -4157,14 +4161,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** */
         private final CheckpointMetricsTracker metrics = new CheckpointMetricsTracker();
 
-        /** */
-        private final Map<PageStore, LongAdder> pageStores = new ConcurrentLinkedHashMap<>();
-
         /** Checkpoint entry. */
         @Nullable private CheckpointEntry cpEntry;
-
-        /** Checkpoint pages. */
-        private GridMultiCollectionWrapper<FullPageId> cpPages;
 
         /** */
         private CheckpointProgress progress;
@@ -4186,14 +4184,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @return {@code true} if this checkpoint contains at least one dirty page.
          */
         public boolean hasPages() {
-            return !cpPages.isEmpty();
+            return !progress.cpPages.isEmpty();
         }
 
         /**
          *
          */
         public int pages() {
-            return cpPages.size();
+            return progress.cpPages.size();
         }
 
         /**
@@ -4308,6 +4306,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** Snapshot operation that should be performed if {@link #nextSnapshot} set to true. */
         private volatile SnapshotOperation snapshotOperation;
 
+        /** Checkpoint pages. */
+        private GridMultiCollectionWrapper<FullPageId> cpPages;
+
+        /** */
+        private final Map<PageStore, LongAdder> pageStores = new ConcurrentLinkedHashMap<>();
+
         /** Partitions destroy queue. */
         private final PartitionDestroyQueue destroyQueue = new PartitionDestroyQueue();
 
@@ -4322,6 +4326,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         private CheckpointProgress(long nextCpTs) {
             this.nextCpTs = nextCpTs;
+        }
+
+        private void addCheckpointPages(GridMultiCollectionWrapper<FullPageId> pageIds) {
+            this.cpPages = pageIds;
+        }
+
+        private void addStore(PageStore pageStore) {
+
+        }
+
+        private void remoteStore(PageStore pageStore) {
+
         }
     }
 
