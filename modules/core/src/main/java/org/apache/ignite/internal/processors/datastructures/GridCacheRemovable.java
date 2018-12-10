@@ -35,7 +35,14 @@ public interface GridCacheRemovable {
      */
     public void needCheckNotRemoved();
 
+    /**
+     * Would suspend calls for this object.
+     */
     public void suspend();
 
+    /**
+     * Would return this object work to normal.
+     * @param cache To update with.
+     */
     public void restart(IgniteInternalCache cache);
 }

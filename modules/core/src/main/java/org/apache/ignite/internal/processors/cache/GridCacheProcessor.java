@@ -2662,7 +2662,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 continue;
 
             if (proxy.isRestarting()) {
-
                 String cacheName = e.getKey();
 
                 res.add(cacheName);

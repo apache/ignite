@@ -705,6 +705,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         });
     }
 
+    /**
+     * Would suspend calls for this cache if it is atomics cache.
+     * @param cacheName To suspend.
+     */
     public void suspend(String cacheName) {
         for (Map.Entry<GridCacheInternalKey, GridCacheRemovable> e : dsMap.entrySet()) {
             String cacheName0 = ATOMICS_CACHE_NAME + "@" + e.getKey().groupName();
@@ -714,6 +718,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         }
     }
 
+
+    /**
+     * Would return this cache to normal work if it was suspened (and if it is atomics cache).
+     * @param cacheName To restart.
+     */
     public void restart(String cacheName, IgniteInternalCache cache) {
         for (Map.Entry<GridCacheInternalKey, GridCacheRemovable> e : dsMap.entrySet()) {
             String cacheName0 = ATOMICS_CACHE_NAME + "@" + e.getKey().groupName();
