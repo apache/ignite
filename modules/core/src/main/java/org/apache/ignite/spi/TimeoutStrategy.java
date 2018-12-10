@@ -30,7 +30,7 @@ public interface TimeoutStrategy {
     public long nextTimeout(long currTimeout) throws IgniteSpiOperationTimeoutException;
 
     /**
-     * Get new next timeout.
+     * Get next timeout.
      *
      * @return Get next timeout.
      * @throws IgniteSpiOperationTimeoutException In case of total timeout already breached.
