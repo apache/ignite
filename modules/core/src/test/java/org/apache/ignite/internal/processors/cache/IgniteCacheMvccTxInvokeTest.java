@@ -15,30 +15,43 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.context;
+package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  *
  */
-public class IgniteCachePartitionedExecutionContextTest extends IgniteCacheAbstractExecutionContextTest {
+public class IgniteCacheMvccTxInvokeTest extends IgniteCacheInvokeAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 3;
+    }
+
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
-        return CacheMode.PARTITIONED;
+        return PARTITIONED;
     }
 
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
+        return TRANSACTIONAL_SNAPSHOT;
     }
 
     /** {@inheritDoc} */
     @Override protected NearCacheConfiguration nearConfiguration() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testInvokeAllAppliedOnceOnBinaryTypeRegistration() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10472");
+
+        super.testInvokeAllAppliedOnceOnBinaryTypeRegistration();
     }
 }
