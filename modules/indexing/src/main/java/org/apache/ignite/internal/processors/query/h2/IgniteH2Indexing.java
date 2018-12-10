@@ -33,8 +33,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import javax.cache.CacheException;
@@ -93,7 +91,6 @@ import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionNode;
-import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeClientIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
@@ -987,7 +984,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             enforceJoinOrder, startTx, timeout, cancel, qryId);
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
-            @SuppressWarnings("NullableProblems")
             @Override public Iterator<List<?>> iterator() {
                 try {
                     return new GridQueryCacheObjectsIterator(res.iterator(), objectContext(), keepBinary);
@@ -1137,7 +1133,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             int opTimeout = operationTimeout(qryTimeout, tx);
 
             return new Iterable<List<?>>() {
-                @SuppressWarnings("NullableProblems")
                 @Override public Iterator<List<?>> iterator() {
                     return rdcQryExec.query(schemaName, qry, keepCacheObj, enforceJoinOrder, opTimeout,
                         cancel, params, parts, lazy, tracker, qryId);
