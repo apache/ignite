@@ -3595,12 +3595,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     connKey.connectionIndex(),
                     true));
 
-        T2<GridNioSocketChannel, IgniteCheckedException> sockChnl = createTcpClient2(node, chBuilder, connKey);
+        T2<GridNioSocketChannel, IgniteCheckedException> channelResult = createTcpClient2(node, chBuilder, connKey);
 
-        if (sockChnl.get2() != null)
-            throw sockChnl.get2();
+        if (channelResult.get2() != null)
+            throw channelResult.get2();
 
-        return sockChnl.get1();
+        return channelResult.get1();
     }
 
     /** */
@@ -4426,6 +4426,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /** {@inheritDoc} */
     @Override public WritableByteChannel getOrCreateChannel(ClusterNode remote) throws IgniteSpiException {
+        // TODO: change index by connection node
         ConnectionKey connKey = new ConnectionKey(remote.id(), 10, -1);
 
         GridNioSocketChannel nioCh = connMgr.getChannel(connKey);
