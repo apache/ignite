@@ -236,6 +236,13 @@ class MapQueryResults {
     /**
      */
     public void release() {
+        for (int i = 0; i < results.length(); i++) {
+            MapQueryResult res = results.get(i);
+
+            if (res != null)
+                res.session().release();
+        }
+
         GridH2QueryContext.clearThreadLocal();
 
         if (qctx.distributedJoinMode() == OFF)

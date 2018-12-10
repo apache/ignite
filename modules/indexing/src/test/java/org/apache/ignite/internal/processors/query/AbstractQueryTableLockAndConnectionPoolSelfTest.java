@@ -208,6 +208,11 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
 
                             fail("Unexpected exception. " + e);
                         }
+                        else if (!lazy()) {
+                            log.error("Unexpected exception", e);
+
+                            fail("Unexpected QueryRetryException.");
+                        }
                     }
                 }
             }

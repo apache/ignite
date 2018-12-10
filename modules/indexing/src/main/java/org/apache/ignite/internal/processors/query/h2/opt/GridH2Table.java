@@ -390,7 +390,14 @@ public class GridH2Table extends TableBase {
     private void unlock(boolean exclusive) {
         Lock l = exclusive ? lock.writeLock() : lock.readLock();
 
-        l.unlock();
+        try {
+            l.unlock();
+        }
+        catch(IllegalMonitorStateException e) {
+            // Skip invalid lock state on table unlock when the table is destroyed.
+            if (!destroyed)
+                throw e;
+        }
     }
 
     /**
@@ -454,6 +461,8 @@ public class GridH2Table extends TableBase {
             ensureNotDestroyed();
 
             destroyed = true;
+
+            sessions.keySet().forEach(Session::close);
 
             sessions.clear();
 
