@@ -166,6 +166,7 @@
     <ClCompile Include="..\..\src\impl\net\remote_type_updater.cpp" />
     <ClCompile Include="..\..\src\impl\protocol_version.cpp" />
     <ClCompile Include="..\..\src\impl\ssl\secure_socket_client.cpp" />
+    <ClCompile Include="..\..\src\impl\ssl\ssl_api.cpp" />
     <ClCompile Include="..\..\src\impl\ssl\ssl_gateway.cpp" />
     <ClCompile Include="..\..\src\impl\utility.cpp" />
   </ItemGroup>
@@ -195,7 +196,7 @@
     <ClInclude Include="..\..\src\impl\response_status.h" />
     <ClInclude Include="..\..\src\impl\socket_client.h" />
     <ClInclude Include="..\..\src\impl\ssl\secure_socket_client.h" />
-    <ClInclude Include="..\..\src\impl\ssl\ssl_bindings.h" />
+    <ClInclude Include="..\..\src\impl\ssl\ssl_api.h" />
     <ClInclude Include="..\..\src\impl\ssl\ssl_gateway.h" />
     <ClInclude Include="..\..\src\impl\utility.h" />
   </ItemGroup>

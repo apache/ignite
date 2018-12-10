@@ -31,6 +31,8 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionRecoverState;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccUpdateResult;
@@ -80,6 +82,15 @@ public interface IgniteCacheOffheapManager {
      *
      */
     public void stop();
+
+    /**
+     * Pre-create partitions that resides in page memory or WAL and restores their state.
+     *
+     * @param partitionRecoveryStates Partition recovery states.
+     * @return Number of processed partitions.
+     * @throws IgniteCheckedException If failed.
+     */
+    long restorePartitionStates(Map<GroupPartitionId, PartitionRecoverState> partitionRecoveryStates) throws IgniteCheckedException;
 
     /**
      * Partition counter update callback. May be overridden by plugin-provided subclasses.
@@ -180,10 +191,11 @@ public interface IgniteCacheOffheapManager {
     /**
      * @param cctx Cache context.
      * @param key Key.
+     * @param mvccSnapshot MVCC snapshot.
      * @return Cached row, if available, null otherwise.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public CacheDataRow mvccRead(GridCacheContext cctx, KeyCacheObject key, MvccSnapshot ver)
+    @Nullable public CacheDataRow mvccRead(GridCacheContext cctx, KeyCacheObject key, MvccSnapshot mvccSnapshot)
         throws IgniteCheckedException;
 
     /**
@@ -449,11 +461,11 @@ public interface IgniteCacheOffheapManager {
     public int onUndeploy(ClassLoader ldr);
 
     /**
-     *
      * @param cacheId Cache ID.
      * @param primary Primary entries flag.
      * @param backup Backup entries flag.
      * @param topVer Topology version.
+     * @param mvccSnapshot MVCC snapshot.
      * @return Rows iterator.
      * @throws IgniteCheckedException If failed.
      */
@@ -512,20 +524,21 @@ public interface IgniteCacheOffheapManager {
 
     /**
      * @param cctx Cache context.
-     * @param primary Primary entries flag.
-     * @param backup Backup entries flag.
+     * @param primary {@code True} if need to return primary entries.
+     * @param backup {@code True} if need to return backup entries.
      * @param topVer Topology version.
      * @param keepBinary Keep binary flag.
+     * @param mvccSnapshot MVCC snapshot.
      * @return Entries iterator.
      * @throws IgniteCheckedException If failed.
      */
-    // TODO: MVCC>
     public <K, V> GridCloseableIterator<Cache.Entry<K, V>> cacheEntriesIterator(
         GridCacheContext cctx,
         final boolean primary,
         final boolean backup,
         final AffinityTopologyVersion topVer,
-        final boolean keepBinary) throws IgniteCheckedException;
+        final boolean keepBinary,
+        @Nullable final MvccSnapshot mvccSnapshot) throws IgniteCheckedException;
 
     /**
      * @param cacheId Cache ID.
@@ -577,17 +590,18 @@ public interface IgniteCacheOffheapManager {
     /**
      * @param cacheId Cache ID.
      * @param idxName Index name.
+     * @param segment Segment.
      * @return Root page for index tree.
      * @throws IgniteCheckedException If failed.
      */
-    public RootPage rootPageForIndex(int cacheId, String idxName) throws IgniteCheckedException;
+    public RootPage rootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException;
 
     /**
      * @param cacheId Cache ID.
      * @param idxName Index name.
      * @throws IgniteCheckedException If failed.
      */
-    public void dropRootPageForIndex(int cacheId, String idxName) throws IgniteCheckedException;
+    public void dropRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException;
 
     /**
      * @param idxName Index name.
@@ -662,6 +676,11 @@ public interface IgniteCacheOffheapManager {
          * @return Total size.
          */
         long fullSize();
+
+        /**
+         * @return {@code True} if there are no items in the store.
+         */
+        boolean isEmpty();
 
         /**
          * Updates size metric for particular cache.
@@ -1117,8 +1136,10 @@ public interface IgniteCacheOffheapManager {
 
         /**
          * Flushes pending update counters closing all possible gaps.
+         *
+         * @return Even-length array of pairs [start, end] for each gap.
          */
-        public void finalizeUpdateCountres();
+        GridLongList finalizeUpdateCounters();
 
         /**
          * Preload a store into page memory.

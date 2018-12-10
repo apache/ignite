@@ -51,6 +51,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -510,6 +511,32 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setNearConfiguration(null);
                     cfg.setAtomicityMode(TRANSACTIONAL);
+                    return null;
+                }
+            }
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDifferentTxAtomicity() throws Exception {
+        cacheMode = PARTITIONED;
+
+        checkSecondGridStartFails(
+            new C1<CacheConfiguration, Void>() {
+                /** {@inheritDoc} */
+                @Override public Void apply(CacheConfiguration cfg) {
+                    cfg.setNearConfiguration(null);
+                    cfg.setAtomicityMode(TRANSACTIONAL);
+                    return null;
+                }
+            },
+            new C1<CacheConfiguration, Void>() {
+                /** {@inheritDoc} */
+                @Override public Void apply(CacheConfiguration cfg) {
+                    cfg.setNearConfiguration(null);
+                    cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
                     return null;
                 }
             }

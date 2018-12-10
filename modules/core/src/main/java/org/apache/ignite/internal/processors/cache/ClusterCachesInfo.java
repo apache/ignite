@@ -681,14 +681,6 @@ class ClusterCachesInfo {
                         continue;
                     }
 
-                    if (!req.sql() && desc.sql()) {
-                        ctx.cache().completeCacheStartFuture(req, false,
-                            new IgniteCheckedException("Only cache created with cache API may be removed with " +
-                                "direct call to destroyCache [cacheName=" + req.cacheName() + ']'));
-
-                        continue;
-                    }
-
                     DynamicCacheDescriptor old = registeredCaches.remove(req.cacheName());
 
                     if (req.restart())
@@ -1310,6 +1302,7 @@ class ClusterCachesInfo {
 
         if (joinDiscoData != null) {
             List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> locJoinStartCaches = new ArrayList<>();
+            List<DynamicCacheDescriptor> locJoinInitCaches = new ArrayList<>();
             locCfgsForActivation = new HashMap<>();
 
             boolean active = ctx.state().clusterState().active();
@@ -1358,10 +1351,13 @@ class ClusterCachesInfo {
                     else
                         locCfgsForActivation.put(desc.cacheName(), new T2<>(desc.cacheConfiguration(), nearCfg));
                 }
+                else
+                    locJoinInitCaches.add(desc);
             }
 
             locJoinCachesCtx = new LocalJoinCachesContext(
                 locJoinStartCaches,
+                locJoinInitCaches,
                 new HashMap<>(registeredCacheGrps),
                 new HashMap<>(registeredCaches));
         }

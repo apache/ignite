@@ -55,6 +55,7 @@ import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
@@ -202,7 +203,6 @@ import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -221,7 +221,6 @@ import java.util.Random;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
@@ -3586,7 +3585,7 @@ public abstract class IgniteUtils {
             }
         }
 
-        if (path.endsWith("jar")) {
+        if (path.toFile().getName().endsWith("jar")) {
             try {
                 // Why do we do this?
                 new JarFile(path.toString(), false).close();
@@ -3935,12 +3934,20 @@ public abstract class IgniteUtils {
      * @return Hex string.
      */
     public static String byteArray2HexString(byte[] arr) {
-        SB sb = new SB(arr.length << 1);
+        StringBuilder sb = new StringBuilder(arr.length << 1);
 
         for (byte b : arr)
-            sb.a(Integer.toHexString(MASK & b >>> 4)).a(Integer.toHexString(MASK & b));
+            addByteAsHex(sb, b);
 
         return sb.toString().toUpperCase();
+    }
+
+    /**
+     * @param sb String builder.
+     * @param b Byte to add in hexadecimal format.
+     */
+    private static void addByteAsHex(StringBuilder sb, byte b) {
+        sb.append(Integer.toHexString(MASK & b >>> 4)).append(Integer.toHexString(MASK & b));
     }
 
     /**
@@ -7193,137 +7200,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     *
-     * @param str ISO date.
-     * @return Calendar instance.
-     * @throws IgniteCheckedException Thrown in case of any errors.
-     */
-    public static Calendar parseIsoDate(String str) throws IgniteCheckedException {
-        StringTokenizer t = new StringTokenizer(str, "+-:.TZ", true);
-
-        Calendar cal = Calendar.getInstance();
-        cal.clear();
-
-        try {
-            if (t.hasMoreTokens())
-                cal.set(Calendar.YEAR, Integer.parseInt(t.nextToken()));
-            else
-                return cal;
-
-            if (checkNextToken(t, "-", str) && t.hasMoreTokens())
-                cal.set(Calendar.MONTH, Integer.parseInt(t.nextToken()) - 1);
-            else
-                return cal;
-
-            if (checkNextToken(t, "-", str) && t.hasMoreTokens())
-                cal.set(Calendar.DAY_OF_MONTH, Integer.parseInt(t.nextToken()));
-            else
-                return cal;
-
-            if (checkNextToken(t, "T", str) && t.hasMoreTokens())
-                cal.set(Calendar.HOUR_OF_DAY, Integer.parseInt(t.nextToken()));
-            else {
-                cal.set(Calendar.HOUR_OF_DAY, 0);
-                cal.set(Calendar.MINUTE, 0);
-                cal.set(Calendar.SECOND, 0);
-                cal.set(Calendar.MILLISECOND, 0);
-
-                return cal;
-            }
-
-            if (checkNextToken(t, ":", str) && t.hasMoreTokens())
-                cal.set(Calendar.MINUTE, Integer.parseInt(t.nextToken()));
-            else {
-                cal.set(Calendar.MINUTE, 0);
-                cal.set(Calendar.SECOND, 0);
-                cal.set(Calendar.MILLISECOND, 0);
-
-                return cal;
-            }
-
-            if (!t.hasMoreTokens())
-                return cal;
-
-            String tok = t.nextToken();
-
-            if (":".equals(tok)) { // Seconds.
-                if (t.hasMoreTokens()) {
-                    cal.set(Calendar.SECOND, Integer.parseInt(t.nextToken()));
-
-                    if (!t.hasMoreTokens())
-                        return cal;
-
-                    tok = t.nextToken();
-
-                    if (".".equals(tok)) {
-                        String nt = t.nextToken();
-
-                        while (nt.length() < 3)
-                            nt += "0";
-
-                        nt = nt.substring(0, 3); // Cut trailing chars.
-
-                        cal.set(Calendar.MILLISECOND, Integer.parseInt(nt));
-
-                        if (!t.hasMoreTokens())
-                            return cal;
-
-                        tok = t.nextToken();
-                    }
-                    else
-                        cal.set(Calendar.MILLISECOND, 0);
-                }
-                else
-                    throw new IgniteCheckedException("Invalid date format: " + str);
-            }
-            else {
-                cal.set(Calendar.SECOND, 0);
-                cal.set(Calendar.MILLISECOND, 0);
-            }
-
-            if (!"Z".equals(tok)) {
-                if (!"+".equals(tok) && !"-".equals(tok))
-                    throw new IgniteCheckedException("Invalid date format: " + str);
-
-                boolean plus = "+".equals(tok);
-
-                if (!t.hasMoreTokens())
-                    throw new IgniteCheckedException("Invalid date format: " + str);
-
-                tok = t.nextToken();
-
-                int tzHour;
-                int tzMin;
-
-                if (tok.length() == 4) {
-                    tzHour = Integer.parseInt(tok.substring(0, 2));
-                    tzMin = Integer.parseInt(tok.substring(2, 4));
-                }
-                else {
-                    tzHour = Integer.parseInt(tok);
-
-                    if (checkNextToken(t, ":", str) && t.hasMoreTokens())
-                        tzMin = Integer.parseInt(t.nextToken());
-                    else
-                        throw new IgniteCheckedException("Invalid date format: " + str);
-                }
-
-                if (plus)
-                    cal.set(Calendar.ZONE_OFFSET, (tzHour * 60 + tzMin) * 60 * 1000);
-                else
-                    cal.set(Calendar.ZONE_OFFSET, -(tzHour * 60 + tzMin) * 60 * 1000);
-            }
-            else
-                cal.setTimeZone(TimeZone.getTimeZone("GMT"));
-        }
-        catch (NumberFormatException ex) {
-            throw new IgniteCheckedException("Invalid date format: " + str, ex);
-        }
-
-        return cal;
-    }
-
-    /**
      * Adds values to collection and returns the same collection to allow chaining.
      *
      * @param c Collection to add values to.
@@ -7426,20 +7302,6 @@ public abstract class IgniteUtils {
         return t instanceof IgniteCheckedException
             ? (IgniteCheckedException)t
             : new IgniteCheckedException(t);
-    }
-
-    /**
-     * Parses passed string with specified date.
-     *
-     * @param src String to parse.
-     * @param ptrn Pattern.
-     * @return Parsed date.
-     * @throws java.text.ParseException If exception occurs while parsing.
-     */
-    public static Date parse(String src, String ptrn) throws java.text.ParseException {
-        java.text.DateFormat format = new java.text.SimpleDateFormat(ptrn);
-
-        return format.parse(src);
     }
 
     /**
@@ -10699,12 +10561,10 @@ public abstract class IgniteUtils {
      * @return hex representation of memory region
      */
     public static String toHexString(long addr, int len) {
-        assert (len & 0b111) == 0 && len > 0;
-
         StringBuilder sb = new StringBuilder(len * 2);
 
-        for (int i = 0; i < len; i += 8)
-            sb.append(U.hexLong(GridUnsafe.getLong(addr + i)));
+        for (int i = 0; i < len; i++) // Can not use getLong because on little-endian it produces bs.
+            addByteAsHex(sb, GridUnsafe.getByte(addr + i));
 
         return sb.toString();
     }
@@ -10715,12 +10575,10 @@ public abstract class IgniteUtils {
      * @return hex representation of memory region
      */
     public static String toHexString(ByteBuffer buf) {
-        assert (buf.capacity() & 0b111) == 0;
-
         StringBuilder sb = new StringBuilder(buf.capacity() * 2);
 
-        for (int i = 0; i < buf.capacity(); i += 8)
-            sb.append(U.hexLong(buf.getLong(i)));
+        for (int i = 0; i < buf.capacity(); i++)
+            addByteAsHex(sb, buf.get(i)); // Can not use getLong because on little-endian it produces bs.
 
         return sb.toString();
     }
@@ -10744,6 +10602,71 @@ public abstract class IgniteUtils {
             assert rndNode != null;
 
         return rndNode;
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @param plc IO Policy.
+     * @param reserved Thread to reserve.
+     * @return Number of available threads in executor service for {@code plc}. If {@code plc}
+     *         is invalid, return {@code 1}.
+     */
+    public static int availableThreadCount(GridKernalContext ctx, byte plc, int reserved) {
+        IgniteConfiguration cfg = ctx.config();
+
+        int parallelismLvl;
+
+        switch (plc) {
+            case GridIoPolicy.P2P_POOL:
+                parallelismLvl = cfg.getPeerClassLoadingThreadPoolSize();
+
+                break;
+
+            case GridIoPolicy.SYSTEM_POOL:
+                parallelismLvl = cfg.getSystemThreadPoolSize();
+
+                break;
+
+            case GridIoPolicy.PUBLIC_POOL:
+                parallelismLvl = cfg.getPublicThreadPoolSize();
+
+                break;
+
+            case GridIoPolicy.MANAGEMENT_POOL:
+                parallelismLvl = cfg.getManagementThreadPoolSize();
+
+                break;
+
+            case GridIoPolicy.UTILITY_CACHE_POOL:
+                parallelismLvl = cfg.getUtilityCacheThreadPoolSize();
+
+                break;
+
+            case GridIoPolicy.IGFS_POOL:
+                parallelismLvl = cfg.getIgfsThreadPoolSize();
+
+                break;
+
+            case GridIoPolicy.SERVICE_POOL:
+                parallelismLvl = cfg.getServiceThreadPoolSize();
+
+                break;
+
+            case GridIoPolicy.DATA_STREAMER_POOL:
+                parallelismLvl = cfg.getDataStreamerThreadPoolSize();
+
+                break;
+
+            case GridIoPolicy.QUERY_POOL:
+                parallelismLvl = cfg.getQueryThreadPoolSize();
+
+                break;
+
+            default:
+                parallelismLvl = -1;
+        }
+
+        return Math.max(1, parallelismLvl - reserved);
     }
 
     /**
@@ -10841,7 +10764,7 @@ public abstract class IgniteUtils {
 
                 batch.result(res);
             }
-            catch (IgniteCheckedException e) {
+            catch (Throwable e) {
                 batch.result(e);
             }
         }
@@ -10854,10 +10777,7 @@ public abstract class IgniteUtils {
                 Throwable err = batch.error;
 
                 if (err != null) {
-                    if (error == null)
-                        error = err;
-                    else
-                        error.addSuppressed(err);
+                    error = addSuppressed(error, err);
 
                     continue;
                 }
@@ -10875,16 +10795,10 @@ public abstract class IgniteUtils {
                 throw new IgniteInterruptedCheckedException(e);
             }
             catch (ExecutionException e) {
-                if(error == null)
-                    error = e.getCause();
-                else
-                    error.addSuppressed(e.getCause());
+                error = addSuppressed(error, e.getCause());
             }
             catch (CancellationException e) {
-                if(error == null)
-                    error = e;
-                else
-                    error.addSuppressed(e);
+                error = addSuppressed(error, e);
             }
         }
 
@@ -10902,6 +10816,31 @@ public abstract class IgniteUtils {
         }
 
         return results;
+    }
+
+    /**
+     * Utility method to add the given throwable error to the given throwable root error. If the given
+     * suppressed throwable is an {@code Error}, but the root error is not, will change the root to the {@code Error}.
+     *
+     * @param root Root error to add suppressed error to.
+     * @param err Error to add.
+     * @return New root error.
+     */
+    private static Throwable addSuppressed(Throwable root, Throwable err) {
+        assert err != null;
+
+        if (root == null)
+            return err;
+
+        if (err instanceof Error && !(root instanceof Error)) {
+            err.addSuppressed(root);
+
+            root = err;
+        }
+        else
+            root.addSuppressed(err);
+
+        return root;
     }
 
     /**

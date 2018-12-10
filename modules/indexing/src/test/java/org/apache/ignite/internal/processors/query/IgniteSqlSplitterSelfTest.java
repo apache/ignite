@@ -162,7 +162,9 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
     /**
      */
-    public void _testMergeJoin() {
+    public void testMergeJoin() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10199");
+
         IgniteCache<Integer, Org> c = ignite(CLIENT).getOrCreateCache(cacheConfig("org", true,
             Integer.class, Org.class));
 

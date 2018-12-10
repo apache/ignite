@@ -41,6 +41,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionHeuristicException;
@@ -77,8 +78,6 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
         cfg.setIndexingSpi(new TestIndexingSpi());
 
-        cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
-
         return cfg;
     }
 
@@ -89,7 +88,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         ccfg.setCacheStoreFactory(null);
         ccfg.setReadThrough(false);
         ccfg.setWriteThrough(false);
-        ccfg.setLoadPreviousValue(true);
+        ccfg.setLoadPreviousValue(false);
 
         ccfg.setIndexedTypes(Integer.class, Integer.class);
 
@@ -98,6 +97,9 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10377");
+
         super.beforeTestsStarted();
 
         lastKey = 0;
@@ -191,6 +193,9 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      * @throws Exception If failed.
      */
     public void testRemovePrimary() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-9470");
+
         checkRemove(false, keyForNode(grid(0).localNode(), PRIMARY));
 
         checkRemove(true, keyForNode(grid(0).localNode(), PRIMARY));
@@ -311,6 +316,10 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     private void checkPutTx(boolean putBefore, TransactionConcurrency concurrency,
         TransactionIsolation isolation, final Integer... keys) throws Exception {
+        if (MvccFeatureChecker.forcedMvcc() &&
+            !MvccFeatureChecker.isSupported(concurrency, isolation))
+            return;
+
         assertTrue(keys.length > 0);
 
         info("Test transaction [concurrency=" + concurrency + ", isolation=" + isolation + ']');
@@ -477,6 +486,9 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      * @throws Exception If failed.
      */
     private void checkTransform(boolean putBefore, final Integer key) throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-9470");
+
         if (putBefore) {
             TestIndexingSpi.forceFail(false);
 

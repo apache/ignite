@@ -40,6 +40,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -72,6 +73,13 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
     /** IP finder. */
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
+        super.beforeTestsStarted();
+    }
 
     /**
      *
@@ -186,7 +194,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
             for (int i = 0; i < keyCnt; i++) {
                 assertNull(near(cache1).peekEx(i));
-                assertNotNull((dht(cache1).localPeek(i, null, null)));
+                assertNotNull((dht(cache1).localPeek(i, null)));
 
                 assertEquals(Integer.toString(i), cache1.localPeek(i));
             }

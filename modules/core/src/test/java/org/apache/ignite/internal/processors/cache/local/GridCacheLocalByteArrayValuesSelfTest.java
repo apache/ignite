@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractByteArrayValuesSelfTest;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
@@ -55,7 +56,6 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        ccfg.setName(CACHE_REGULAR);
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setCacheMode(LOCAL);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -67,16 +67,18 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         ignite = startGrid(1);
 
-        cache = ignite.cache(CACHE_REGULAR);
+        cache = ignite.cache(DEFAULT_CACHE_NAME);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         cache = null;
 
-        ignite = null;
+        stopAllGrids();
     }
 
     /**

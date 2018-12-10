@@ -437,9 +437,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                     return;
                                 }
+                                else
+                                    U.error(log, "Unsupported message type: " + m.getClass().getName());
                             }
 
-                            U.error(log, "Unsupported message type: " + m.getClass().getName());
+                            U.warn(log, "Cache group with id=" + m.groupId() + " is stopped or absent");
                         }
                         finally {
                             leaveBusy();
@@ -1475,7 +1477,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     grp.affinity().similarAffinityKey());
 
                 if (sndCounters) {
-                    CachePartitionPartialCountersMap cntrsMap = grp.topology().localUpdateCounters(true, true);
+                    CachePartitionPartialCountersMap cntrsMap = grp.topology().localUpdateCounters(true);
 
                     m.addPartitionUpdateCounters(grp.groupId(),
                         newCntrMap ? cntrsMap : CachePartitionPartialCountersMap.toCountersMap(cntrsMap));
@@ -1499,7 +1501,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 top.similarAffinityKey());
 
             if (sndCounters) {
-                CachePartitionPartialCountersMap cntrsMap = top.localUpdateCounters(true, true);
+                CachePartitionPartialCountersMap cntrsMap = top.localUpdateCounters(true);
 
                 m.addPartitionUpdateCounters(top.groupId(),
                     newCntrMap ? cntrsMap : CachePartitionPartialCountersMap.toCountersMap(cntrsMap));
@@ -2299,14 +2301,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     ClusterNode node = evt.eventNode();
 
-                    if ((evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT) &&
-                        node.equals(cctx.coordinators().currentCoordinator())) {
-                        if (log.isInfoEnabled())
-                            log.info("Stop merge, need exchange for mvcc coordinator failure: " + node);
-
-                        break;
-                    }
-
                     if (!curFut.context().supportsMergeExchanges(node)) {
                         if (log.isInfoEnabled())
                             log.info("Stop merge, node does not support merge: " + node);
@@ -2860,12 +2854,18 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                 if (lastFut != null) {
                                     if (!lastFut.changedAffinity()) {
-                                        AffinityTopologyVersion lastAffVer = cctx.exchange().lastAffinityChangedTopologyVersion(lastFut.initialVersion());
+                                        // If lastFut corresponds to merged exchange, it is essential to use
+                                        // topologyVersion() instead of initialVersion() - nodes joined in this PME
+                                        // will have DiscoCache only for the last version.
+                                        AffinityTopologyVersion lastAffVer = cctx.exchange()
+                                            .lastAffinityChangedTopologyVersion(lastFut.topologyVersion());
 
-                                        cctx.exchange().lastAffinityChangedTopologyVersion(exchFut.initialVersion(), lastAffVer);
+                                        cctx.exchange().lastAffinityChangedTopologyVersion(exchFut.initialVersion(),
+                                            lastAffVer);
                                     }
                                     else
-                                        cctx.exchange().lastAffinityChangedTopologyVersion(exchFut.initialVersion(), lastFut.initialVersion());
+                                        cctx.exchange().lastAffinityChangedTopologyVersion(exchFut.initialVersion(),
+                                            lastFut.topologyVersion());
                                 }
                             }
 
@@ -2914,8 +2914,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                             "topVer=" + exchFut.initialVersion() +
                                             ", node=" + cctx.localNodeId() + "]. " +
                                             (curTimeout <= 0 && !txRolledBack ? "Consider changing " +
-                                                    "TransactionConfiguration.txTimeoutOnPartitionMapSynchronization" +
-                                                    " to non default value to avoid this message. " : "") +
+                                            "TransactionConfiguration.txTimeoutOnPartitionMapSynchronization" +
+                                            " to non default value to avoid this message. " : "") +
                                             "Dumping pending objects that might be the cause: ");
 
                                         try {

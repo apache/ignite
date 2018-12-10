@@ -56,6 +56,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
@@ -78,6 +79,15 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
     /** Cache store. */
     private static TestStore store = new TestStore();
+
+    /** {@inheritDoc} */
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+
+        super.setUp();
+    }
 
     /** */
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -361,7 +371,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
             GridCacheAdapter<Integer, String> dhtCache = dht(G.ignite(n.id()));
 
-            String s = dhtCache.localPeek(key, null, null);
+            String s = dhtCache.localPeek(key, null);
 
             assert s != null : "Value is null for key: " + key;
             assertEquals(s, Integer.toString(key));
@@ -521,7 +531,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
                 assertEquals("2", near.get(2));
                 assertEquals("3", near.get(3));
 
-                assertNotNull(dht(primaryGrid(3)).localPeek(3, null, null));
+                assertNotNull(dht(primaryGrid(3)).localPeek(3, null));
 
                 tx.commit();
             }

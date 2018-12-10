@@ -1163,6 +1163,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 updRes.filtered(true);
 
+                if(retVal)
+                    updRes.prevValue(res.oldValue());
+
                 return updRes;
             }
             else if(noCreate && !invoke && res.resultType() == ResultType.PREV_NULL)
@@ -3215,13 +3218,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject peek(@Nullable IgniteCacheExpiryPolicy plc)
+    @Nullable @Override public CacheObject peek()
         throws GridCacheEntryRemovedException, IgniteCheckedException {
         IgniteInternalTx tx = cctx.tm().localTx();
 
         AffinityTopologyVersion topVer = tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion();
 
-        return peek(true, false, topVer, plc);
+        return peek(true, false, topVer, null);
     }
 
     /**
@@ -3475,7 +3478,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             expireTime,
                             partition(),
                             updateCntr,
-                            mvccVer
+                            mvccVer == null ? MvccUtils.INITIAL_VERSION : mvccVer
                         )));
                     } else {
                         cctx.shared().wal().log(new DataRecord(new DataEntry(
@@ -4466,7 +4469,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     return null;
 
                 try {
-                    return e.peek(null);
+                    return e.peek();
                 }
                 catch (GridCacheEntryRemovedException ignored) {
                     // No-op.
@@ -5537,6 +5540,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     }
 
                     updRes.filtered(true);
+
+                    if(needVal)
+                        updRes.prevValue(res.oldValue());
 
                     resFut.onDone(updRes);
 
@@ -6733,12 +6739,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         ensureFreeSpace();
 
+        CacheObject val = null;
+        CacheObject oldVal = null;
+
         lockEntry();
 
         try {
             checkObsolete();
 
-            CacheObject val = null;
 
             for (int i = 0; i < entries.size(); i++) {
                 GridCacheMvccEntryInfo info = (GridCacheMvccEntryInfo)entries.get(i);
@@ -6759,7 +6767,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     info.newMvccTxState());
             }
 
-            CacheObject oldVal = null;
 
             // Assume list contains  only previous committed row and rows changed by the current tx.
             if (!entries.isEmpty()) {
@@ -6806,7 +6813,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
         }
 
-        return new GridCacheUpdateTxResult(true, logPtr);
+        GridCacheUpdateTxResult res = new GridCacheUpdateTxResult(true, logPtr);
+
+        res.newValue(val);
+        res.oldValue(oldVal);
+
+        return res;
     }
 
     /**

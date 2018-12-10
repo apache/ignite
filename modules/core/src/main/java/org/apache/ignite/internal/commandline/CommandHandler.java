@@ -54,6 +54,7 @@ import org.apache.ignite.internal.client.GridClientHandshakeException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
+import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
 import org.apache.ignite.internal.commandline.cache.CacheArguments;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTask;
@@ -100,6 +101,7 @@ import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTask;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
+import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
 import org.apache.ignite.internal.visor.verify.IndexIntegrityCheckIssue;
 import org.apache.ignite.internal.visor.verify.IndexValidationIssue;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesPartitionResult;
@@ -124,6 +126,7 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
+import org.apache.ignite.ssl.SslContextFactory;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
@@ -193,8 +196,37 @@ public class CommandHandler {
     /** */
     private static final String CMD_SKIP_ZEROS = "--skipZeros";
 
+    /** Cache filter. */
+    private static final String CACHE_FILTER = "--cacheFilter";
+
     /** */
     private static final String CMD_USER_ATTRIBUTES = "--user-attributes";
+
+    // SSL configuration section
+
+    /** */
+    private static final String CMD_SSL_PROTOCOL = "--ssl-protocol";
+
+    /** */
+    private static final String CMD_SSL_KEY_ALGORITHM = "--ssl-key-algorithm";
+
+    /** */
+    private static final String CMD_KEYSTORE = "--keystore";
+
+    /** */
+    private static final String CMD_KEYSTORE_PASSWORD = "--keystore-password";
+
+    /** */
+    private static final String CMD_KEYSTORE_TYPE = "--keystore-type";
+
+    /** */
+    private static final String CMD_TRUSTSTORE = "--truststore";
+
+    /** */
+    private static final String CMD_TRUSTSTORE_PASSWORD = "--truststore-password";
+
+    /** */
+    private static final String CMD_TRUSTSTORE_TYPE = "--truststore-type";
 
     /** List of optional auxiliary commands. */
     private static final Set<String> AUX_COMMANDS = new HashSet<>();
@@ -208,6 +240,14 @@ public class CommandHandler {
         AUX_COMMANDS.add(CMD_AUTO_CONFIRMATION);
         AUX_COMMANDS.add(CMD_PING_INTERVAL);
         AUX_COMMANDS.add(CMD_PING_TIMEOUT);
+        AUX_COMMANDS.add(CMD_SSL_PROTOCOL);
+        AUX_COMMANDS.add(CMD_SSL_KEY_ALGORITHM);
+        AUX_COMMANDS.add(CMD_KEYSTORE);
+        AUX_COMMANDS.add(CMD_KEYSTORE_PASSWORD);
+        AUX_COMMANDS.add(CMD_KEYSTORE_TYPE);
+        AUX_COMMANDS.add(CMD_TRUSTSTORE);
+        AUX_COMMANDS.add(CMD_TRUSTSTORE_PASSWORD);
+        AUX_COMMANDS.add(CMD_TRUSTSTORE_TYPE);
     }
 
     /** Broadcast uuid. */
@@ -316,7 +356,13 @@ public class CommandHandler {
     private static final String UTILITY_NAME = "control.sh";
 
     /** Common options. */
-    private static final String COMMON_OPTIONS = String.join(" ", op(CMD_HOST, "HOST_OR_IP"), op(CMD_PORT, "PORT"), op(CMD_USER, "USER"), op(CMD_PASSWORD, "PASSWORD"), op(CMD_PING_INTERVAL, "PING_INTERVAL"), op(CMD_PING_TIMEOUT, "PING_TIMEOUT"));
+    private static final String COMMON_OPTIONS = String.join(" ", op(CMD_HOST, "HOST_OR_IP"),
+        op(CMD_PORT, "PORT"), op(CMD_USER, "USER"), op(CMD_PASSWORD, "PASSWORD"),
+        op(CMD_PING_INTERVAL, "PING_INTERVAL"), op(CMD_PING_TIMEOUT, "PING_TIMEOUT"),
+        op(CMD_SSL_PROTOCOL, "SSL_PROTOCOL"), op(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM"),
+        op(CMD_KEYSTORE, "KEYSTORE"), op(CMD_KEYSTORE_TYPE, "KEYSTORE_TYPE"),
+        op(CMD_KEYSTORE_PASSWORD, "KEYSTORE_PASSWORD"), op(CMD_TRUSTSTORE, "TRUSTSTORE"),
+        op(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE"), op(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD"));
 
     /** Utility name with common options. */
     private static final String UTILITY_NAME_WITH_COMMON_OPTIONS = String.join(" ", UTILITY_NAME, COMMON_OPTIONS);
@@ -767,10 +813,14 @@ public class CommandHandler {
         nl();
         log(i("Subcommands:"));
 
-        usageCache(LIST, "regexPattern", "[groups|seq]", "[nodeId]", op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE.text()));
-        usageCache(CONTENTION, "minQueueSize", "[nodeId]", "[maxPrint]");
-        usageCache(IDLE_VERIFY, op(CMD_DUMP), op(CMD_SKIP_ZEROS), "[cache1,...,cacheN]");
-        usageCache(VALIDATE_INDEXES, "[cache1,...,cacheN]", "[nodeId]", op(or(VI_CHECK_FIRST + " N", VI_CHECK_THROUGH + " K")));
+        usageCache(LIST, "regexPattern", op(or("groups","seq")), op("nodeId"), op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE
+            .text()));
+        usageCache(CONTENTION, "minQueueSize", op("nodeId"), op("maxPrint"));
+        usageCache(IDLE_VERIFY, op(CMD_DUMP), op(CMD_SKIP_ZEROS), "[cache1,...,cacheN]",
+            op(CACHE_FILTER, or(CacheFilterEnum.ALL.toString(), CacheFilterEnum.SYSTEM.toString(), CacheFilterEnum.PERSISTENT.toString(),
+                CacheFilterEnum.NOT_PERSISTENT.toString())));
+        usageCache(VALIDATE_INDEXES, "[cache1,...,cacheN]", op("nodeId"), op(or(VI_CHECK_FIRST + " N",
+            VI_CHECK_THROUGH + " K")));
         usageCache(DISTRIBUTION, or("nodeId", NULL), "[cacheName1,...,cacheNameN]", op(CMD_USER_ATTRIBUTES, "attName1,...,attrNameN"));
         usageCache(RESET_LOST_PARTITIONS, "cacheName1,...,cacheNameN");
         nl();
@@ -812,39 +862,43 @@ public class CommandHandler {
     private void cacheValidateIndexes(GridClient client, CacheArguments cacheArgs) throws GridClientException {
         VisorValidateIndexesTaskArg taskArg = new VisorValidateIndexesTaskArg(
             cacheArgs.caches(),
+            cacheArgs.nodeId() != null ? Collections.singleton(cacheArgs.nodeId()) : null,
             cacheArgs.checkFirst(),
             cacheArgs.checkThrough()
         );
 
-        UUID nodeId = cacheArgs.nodeId() == null ? BROADCAST_UUID : cacheArgs.nodeId();
-
         VisorValidateIndexesTaskResult taskRes = executeTaskByNameOnNode(
-            client, VALIDATE_INDEXES_TASK, taskArg, nodeId);
+            client, VALIDATE_INDEXES_TASK, taskArg, null);
+
+        boolean errors = false;
 
         if (!F.isEmpty(taskRes.exceptions())) {
+            errors = true;
+
             log("Index validation failed on nodes:");
 
             for (Map.Entry<UUID, Exception> e : taskRes.exceptions().entrySet()) {
-                log("Node ID = " + e.getKey());
+                log(i("Node ID = " + e.getKey()));
 
-                log("Exception message:");
-                log(e.getValue().getMessage());
+                log(i("Exception message:"));
+                log(i(e.getValue().getMessage(), 2));
                 nl();
             }
         }
 
         for (Map.Entry<UUID, VisorValidateIndexesJobResult> nodeEntry : taskRes.results().entrySet()) {
-            boolean errors = false;
+            if (!nodeEntry.getValue().hasIssues())
+                continue;
 
-            log("validate_indexes result on node " + nodeEntry.getKey() + ":");
+            errors = true;
+
+            log("Index issues found on node " + nodeEntry.getKey() + ":");
 
             Collection<IndexIntegrityCheckIssue> integrityCheckFailures = nodeEntry.getValue().integrityCheckFailures();
 
             if (!integrityCheckFailures.isEmpty()) {
-                errors = true;
-
                 for (IndexIntegrityCheckIssue is : integrityCheckFailures)
-                    log("\t" + is.toString());
+                    log(i(is.toString()));
             }
 
             Map<PartitionKey, ValidateIndexesPartitionResult> partRes = nodeEntry.getValue().partitionResult();
@@ -853,12 +907,10 @@ public class CommandHandler {
                 ValidateIndexesPartitionResult res = e.getValue();
 
                 if (!res.issues().isEmpty()) {
-                    errors = true;
-
-                    log("\t" + e.getKey().toString() + " " + e.getValue().toString());
+                    log(i(e.getKey().toString() + " " + e.getValue().toString()));
 
                     for (IndexValidationIssue is : res.issues())
-                        log("\t\t" + is.toString());
+                        log(i(is.toString(), 2));
                 }
             }
 
@@ -868,20 +920,20 @@ public class CommandHandler {
                 ValidateIndexesPartitionResult res = e.getValue();
 
                 if (!res.issues().isEmpty()) {
-                    errors = true;
-
-                    log("\tSQL Index " + e.getKey() + " " + e.getValue().toString());
+                    log(i("SQL Index " + e.getKey() + " " + e.getValue().toString()));
 
                     for (IndexValidationIssue is : res.issues())
-                        log("\t\t" + is.toString());
+                        log(i(is.toString(),2));
                 }
             }
-
-            if (!errors)
-                log("no issues found.\n");
-            else
-                log("issues found (listed above).\n");
         }
+
+        if (!errors)
+            log("no issues found.");
+        else
+            log("issues found (listed above).");
+
+        nl();
     }
 
     /**
@@ -1089,7 +1141,7 @@ public class CommandHandler {
         String path = executeTask(
             client,
             VisorIdleVerifyDumpTask.class,
-            new VisorIdleVerifyDumpTaskArg(cacheArgs.caches(), cacheArgs.isSkipZeros())
+            new VisorIdleVerifyDumpTaskArg(cacheArgs.caches(), cacheArgs.isSkipZeros(), cacheArgs.getCacheFilterEnum())
         );
 
         log("VisorIdleVerifyDumpTask successfully written output to '" + path + "'");
@@ -1774,6 +1826,22 @@ public class CommandHandler {
 
         VisorTxTaskArg txArgs = null;
 
+        String sslProtocol = SslContextFactory.DFLT_SSL_PROTOCOL;
+
+        String sslKeyAlgorithm = SslContextFactory.DFLT_KEY_ALGORITHM;
+
+        String sslKeyStorePath = null;
+
+        String sslKeyStoreType = SslContextFactory.DFLT_STORE_TYPE;
+
+        char sslKeyStorePassword[] = null;
+
+        String sslTrustStorePath = null;
+
+        String sslTrustStoreType = SslContextFactory.DFLT_STORE_TYPE;
+
+        char sslTrustStorePassword[] = null;
+
         while (hasNextArg()) {
             String str = nextArg("").toLowerCase();
 
@@ -1886,6 +1954,46 @@ public class CommandHandler {
 
                         break;
 
+                    case CMD_SSL_PROTOCOL:
+                        sslProtocol = nextArg("Expected SSL protocol");
+
+                        break;
+
+                    case CMD_SSL_KEY_ALGORITHM:
+                        sslKeyAlgorithm = nextArg("Expected SSL key algorithm");
+
+                        break;
+
+                    case CMD_KEYSTORE:
+                        sslKeyStorePath = nextArg("Expected keystore path");
+
+                        break;
+
+                    case CMD_KEYSTORE_PASSWORD:
+                        sslKeyStorePassword = nextArg("Expected keystore password").toCharArray();
+
+                        break;
+
+                    case CMD_KEYSTORE_TYPE:
+                        sslKeyStoreType = nextArg("Expected keystore type");
+
+                        break;
+
+                    case CMD_TRUSTSTORE:
+                        sslTrustStorePath = nextArg("Expected truststore path");
+
+                        break;
+
+                    case CMD_TRUSTSTORE_PASSWORD:
+                        sslTrustStorePassword = nextArg("Expected truststore password").toCharArray();
+
+                        break;
+
+                    case CMD_TRUSTSTORE_TYPE:
+                        sslTrustStoreType = nextArg("Expected truststore type");
+
+                        break;
+
                     case CMD_AUTO_CONFIRMATION:
                         autoConfirmation = true;
 
@@ -1908,7 +2016,9 @@ public class CommandHandler {
         Command cmd = commands.get(0);
 
         return new Arguments(cmd, host, port, user, pwd, baselineAct, baselineArgs, txArgs, cacheArgs, walAct, walArgs,
-            pingTimeout, pingInterval, autoConfirmation);
+            pingTimeout, pingInterval, autoConfirmation,
+            sslProtocol, sslKeyAlgorithm, sslKeyStorePath, sslKeyStorePassword, sslKeyStoreType,
+            sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType);
     }
 
     /**
@@ -1947,6 +2057,12 @@ public class CommandHandler {
                         cacheArgs.dump(true);
                     else if (CMD_SKIP_ZEROS.equals(nextArg))
                         cacheArgs.skipZeros(true);
+                    else if (CACHE_FILTER.equals(nextArg)) {
+                        String filter = nextArg("The cache filter should be specified. The following values can be " +
+                            "used: " + Arrays.toString(CacheFilterEnum.values()) + '.').toUpperCase();
+
+                        cacheArgs.setCacheFilterEnum(CacheFilterEnum.valueOf(filter));
+                    }
                     else
                         parseCacheNames(nextArg, cacheArgs);
                 }
@@ -2433,6 +2549,10 @@ public class CommandHandler {
                 log(i("PORT=" + DFLT_PORT, 2));
                 log(i("PING_INTERVAL=" + DFLT_PING_INTERVAL, 2));
                 log(i("PING_TIMEOUT=" + DFLT_PING_TIMEOUT, 2));
+                log(i("SSL_PROTOCOL=" + SslContextFactory.DFLT_SSL_PROTOCOL, 2));
+                log(i("SSL_KEY_ALGORITHM=" + SslContextFactory.DFLT_KEY_ALGORITHM, 2));
+                log(i("KEYSTORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
+                log(i("TRUSTSTORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
                 nl();
 
                 log("Exit codes:");
@@ -2479,14 +2599,41 @@ public class CommandHandler {
 
                     if (securityCredential == null) {
                         securityCredential = new SecurityCredentialsBasicProvider(
-                            new SecurityCredentials(args.getUserName(), args.getPassword())
-                        );
+                            new SecurityCredentials(args.getUserName(), args.getPassword()));
 
                         clientCfg.setSecurityCredentialsProvider(securityCredential);
                     }
                     final SecurityCredentials credential = securityCredential.credentials();
                     credential.setLogin(args.getUserName());
                     credential.setPassword(args.getPassword());
+                }
+
+                if (!F.isEmpty(args.sslKeyStorePath())) {
+                    GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
+
+                    factory.setProtocol(args.sslProtocol());
+
+                    factory.setKeyAlgorithm(args.sslKeyAlgorithm());
+
+                    factory.setKeyStoreFilePath(args.sslKeyStorePath());
+
+                    if (args.sslKeyStorePassword() != null)
+                        factory.setKeyStorePassword(args.sslKeyStorePassword());
+
+                    factory.setKeyStoreType(args.sslKeyStoreType());
+
+                    if (F.isEmpty(args.sslTrustStorePath()))
+                        factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
+                    else {
+                        factory.setTrustStoreFilePath(args.sslTrustStorePath());
+
+                        if (args.sslTrustStorePassword() != null)
+                            factory.setTrustStorePassword(args.sslTrustStorePassword());
+
+                        factory.setTrustStoreType(args.sslTrustStoreType());
+                    }
+
+                    clientCfg.setSslContextFactory(factory);
                 }
 
                 try (GridClient client = GridClientFactory.start(clientCfg)) {

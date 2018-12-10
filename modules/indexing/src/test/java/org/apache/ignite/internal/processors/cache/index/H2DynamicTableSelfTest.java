@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
@@ -725,6 +724,28 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * Test that {@code DROP TABLE} executed at client node actually removes specified cache and type descriptor on all nodes.
+     * @throws Exception if failed.
+     */
+    public void testDropTableFromClient() throws Exception {
+        execute(grid(0),"CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
+            " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
+            "\"template=cache\"");
+
+        execute(client(), "DROP TABLE \"Person\"");
+
+        for (int i = 0; i < 4; i++) {
+            IgniteEx node = grid(i);
+
+            assertNull(node.cache("Person"));
+
+            QueryTypeDescriptorImpl desc = type(node, "Person", "Person");
+
+            assertNull(desc);
+        }
+    }
+
+    /**
      * Test that {@code DROP TABLE} actually removes specified cache and type descriptor on all nodes.
      * @throws Exception if failed.
      */
@@ -808,7 +829,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Test that attempting to destroy via cache API a cache created via SQL yields an error.
+     * Test that attempting to destroy via cache API a cache created via SQL finishes successfully.
      * @throws Exception if failed.
      */
     public void testDestroyDynamicSqlCache() throws Exception {
@@ -816,14 +837,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
             "\"template=cache\"");
 
-        GridTestUtils.assertThrows(null, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                client().destroyCache(cacheName("Person"));
-
-                return null;
-            }
-        }, CacheException.class,
-        "Only cache created with cache API may be removed with direct call to destroyCache");
+        client().destroyCache(cacheName("Person"));
     }
 
     /**
@@ -1438,7 +1452,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         assertEquals(cacheName, type.tableName());
         assertEquals(affKeyFieldName, type.affinityKey());
 
-        GridH2Table tbl = ((IgniteH2Indexing)queryProcessor(client()).getIndexing()).dataTable("PUBLIC", cacheName);
+        GridH2Table tbl =
+            ((IgniteH2Indexing)queryProcessor(client()).getIndexing()).schemaManager().dataTable("PUBLIC", cacheName);
 
         assertNotNull(tbl);
 
@@ -1488,8 +1503,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Test that {@link IgniteH2Indexing#tables(String)} method
-     * only returns tables belonging to given cache.
+     * Test that tables method only returns tables belonging to given cache.
      *
      * @throws Exception if failed.
      */
@@ -1502,7 +1516,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
             String cacheName = cacheName("T1");
 
-            Collection<H2TableDescriptor> col = GridTestUtils.invoke(h2Idx, "tables", cacheName);
+            Collection<H2TableDescriptor> col = h2Idx.schemaManager().tablesForCache(cacheName);
 
             assertNotNull(col);
 
@@ -1589,7 +1603,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @return Configuration.
      * @throws Exception If failed.
      */
-    protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
+    @Override protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
         IgniteConfiguration cfg = super.commonConfiguration(idx);
 
         DataRegionConfiguration dataRegionCfg = new DataRegionConfiguration().setName(DATA_REGION_NAME);

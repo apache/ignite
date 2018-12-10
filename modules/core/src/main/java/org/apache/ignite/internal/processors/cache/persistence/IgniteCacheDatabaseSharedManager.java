@@ -699,21 +699,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Creates file with current timestamp and specific "node-started.bin" suffix
-     * and writes into memory recovery pointer.
-     *
-     * @param ptr Memory recovery wal pointer.
-     */
-    public void nodeStart(@Nullable WALPointer ptr) throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /**
      * @param memPlcName Name of {@link DataRegion} to obtain {@link DataRegionMetrics} for.
      * @return {@link DataRegionMetrics} snapshot for specified {@link DataRegion} or {@code null} if
      * no {@link DataRegion} is configured for specified name.
      */
-    @Nullable public DataRegionMetrics memoryMetrics(String memPlcName) {
+    public @Nullable DataRegionMetrics memoryMetrics(String memPlcName) {
         if (!F.isEmpty(memMetricsMap)) {
             DataRegionMetrics memMetrics = memMetricsMap.get(memPlcName);
 
