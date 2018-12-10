@@ -43,6 +43,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -79,6 +81,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -149,7 +152,12 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
                 cacheConfiguration("c7", TRANSACTIONAL, PARTITIONED, 1),
                 cacheConfiguration("c8", TRANSACTIONAL, PARTITIONED, 2),
                 cacheConfiguration("c9", TRANSACTIONAL, PARTITIONED, 10),
-                cacheConfiguration("c10", TRANSACTIONAL, REPLICATED, 0)
+                cacheConfiguration("c10", TRANSACTIONAL, REPLICATED, 0),
+                cacheConfiguration("c11", TRANSACTIONAL_SNAPSHOT, PARTITIONED, 0),
+                cacheConfiguration("c12", TRANSACTIONAL_SNAPSHOT, PARTITIONED, 1),
+                cacheConfiguration("c13", TRANSACTIONAL_SNAPSHOT, PARTITIONED, 2),
+                cacheConfiguration("c14", TRANSACTIONAL_SNAPSHOT, PARTITIONED, 10),
+                cacheConfiguration("c15", TRANSACTIONAL_SNAPSHOT, REPLICATED, 0)
             );
         }
 
@@ -174,6 +182,11 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         super.afterTest();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /**
@@ -824,7 +837,6 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     public void testMergeServersAndClientsFail2() throws Exception {
         mergeServersAndClientsFail(true);
     }
-
 
     /**
      * @param waitRebalance Wait for rebalance end before start tested topology change.

@@ -41,16 +41,19 @@ public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbst
     private static final CacheWriteSynchronizationMode[] WRITE_MODES = {CacheWriteSynchronizationMode.PRIMARY_SYNC,
         CacheWriteSynchronizationMode.FULL_SYNC, CacheWriteSynchronizationMode.FULL_ASYNC};
 
-    /** Client grid. */
-    Ignite clientGrid;
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(4, false);
 
-        clientGrid = startGrid("client");
+        startGrid("client");
     }
 
+    /**
+     * @return Client grid.
+     */
+    Ignite clientGrid() {
+        return grid("client");
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -78,7 +81,7 @@ public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbst
                         CacheConfiguration<Object, Object> cfg = cacheConfig(
                             "evict" + i + j + k, null, CACHE_MODES[i], ATOMICITY_MODES[j], WRITE_MODES[k]);
 
-                        createCacheAndTestEvcition(cfg);
+                        createCacheAndTestEviction(cfg);
                     }
                 }
             }
@@ -86,11 +89,26 @@ public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbst
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testPageEvictionMvcc() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10448");
+
+        for (int i = 0; i < CACHE_MODES.length; i++) {
+            CacheConfiguration<Object, Object> cfg = cacheConfig(
+                "evict" + i, null, CACHE_MODES[i], CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT,
+                CacheWriteSynchronizationMode.FULL_SYNC);
+
+            createCacheAndTestEviction(cfg);
+        }
+    }
+
+    /**
      * @param cfg Config.
      * @throws Exception If failed.
      */
-    protected void createCacheAndTestEvcition(CacheConfiguration<Object, Object> cfg) throws Exception {
-        IgniteCache<Object, Object> cache = clientGrid.getOrCreateCache(cfg);
+    protected void createCacheAndTestEviction(CacheConfiguration<Object, Object> cfg) throws Exception {
+        IgniteCache<Object, Object> cache = clientGrid().getOrCreateCache(cfg);
 
         for (int i = 1; i <= ENTRIES; i++) {
             ThreadLocalRandom r = ThreadLocalRandom.current();
@@ -118,6 +136,6 @@ public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbst
         // Eviction started, no OutOfMemory occurred, success.
         assertTrue(resultingSize < ENTRIES * 10 / 11);
 
-        clientGrid.destroyCache(cfg.getName());
+        clientGrid().destroyCache(cfg.getName());
     }
 }

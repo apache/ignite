@@ -21,6 +21,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -65,6 +66,7 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
         );
 
         cfg.setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME)
+                .setAtomicityMode(atomicityMode())
                 .setBackups(2)
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
                 .setIndexedTypes(Integer.class, Integer.class)
@@ -91,6 +93,13 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
         stopAllGrids();
 
         cleanPersistenceDir();
+    }
+
+    /**
+     * @return Atomicity mode.
+     */
+    protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.ATOMIC;
     }
 
     /**
