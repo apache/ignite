@@ -437,9 +437,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                     return;
                                 }
+                                else
+                                    U.error(log, "Unsupported message type: " + m.getClass().getName());
                             }
 
-                            U.error(log, "Unsupported message type: " + m.getClass().getName());
+                            U.warn(log, "Cache group with id=" + m.groupId() + " is stopped or absent");
                         }
                         finally {
                             leaveBusy();
@@ -2852,12 +2854,18 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                 if (lastFut != null) {
                                     if (!lastFut.changedAffinity()) {
-                                        AffinityTopologyVersion lastAffVer = cctx.exchange().lastAffinityChangedTopologyVersion(lastFut.initialVersion());
+                                        // If lastFut corresponds to merged exchange, it is essential to use
+                                        // topologyVersion() instead of initialVersion() - nodes joined in this PME
+                                        // will have DiscoCache only for the last version.
+                                        AffinityTopologyVersion lastAffVer = cctx.exchange()
+                                            .lastAffinityChangedTopologyVersion(lastFut.topologyVersion());
 
-                                        cctx.exchange().lastAffinityChangedTopologyVersion(exchFut.initialVersion(), lastAffVer);
+                                        cctx.exchange().lastAffinityChangedTopologyVersion(exchFut.initialVersion(),
+                                            lastAffVer);
                                     }
                                     else
-                                        cctx.exchange().lastAffinityChangedTopologyVersion(exchFut.initialVersion(), lastFut.initialVersion());
+                                        cctx.exchange().lastAffinityChangedTopologyVersion(exchFut.initialVersion(),
+                                            lastFut.topologyVersion());
                                 }
                             }
 

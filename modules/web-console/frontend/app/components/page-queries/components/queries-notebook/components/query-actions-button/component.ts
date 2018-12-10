@@ -15,30 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.context;
+import template from './template.pug';
+import QueryActionsButton from './controller';
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-
-/**
- *
- */
-public class IgniteCachePartitionedExecutionContextTest extends IgniteCacheAbstractExecutionContextTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return CacheMode.PARTITIONED;
+export const component: ng.IComponentOptions = {
+    controller: QueryActionsButton,
+    template,
+    bindings: {
+        actions: '<',
+        item: '<'
     }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return null;
-    }
-}
+};
