@@ -51,7 +51,7 @@ noinst_HEADERS = \
     ignite/odbc/diagnostic/diagnosable.h \
     ignite/odbc/diagnostic/diagnosable_adapter.h \
     ignite/odbc/ssl/ssl_mode.h \
-    ignite/odbc/ssl/ssl_bindings.h \
+    ignite/odbc/ssl/ssl_api.h \
     ignite/odbc/ssl/secure_socket_client.h \
     ignite/odbc/ssl/ssl_gateway.h \
     ignite/odbc/connection.h \

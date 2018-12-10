@@ -57,7 +57,7 @@ libignite_odbc_la_SOURCES = \
     src/config/config_tools.cpp \
     src/config/configuration.cpp \
     src/config/connection_info.cpp \
-	src/config/connection_string_parser.cpp \
+    src/config/connection_string_parser.cpp \
     src/connection.cpp \
     src/cursor.cpp \
     src/diagnostic/diagnosable_adapter.cpp \
@@ -80,6 +80,7 @@ libignite_odbc_la_SOURCES = \
     src/ssl/ssl_gateway.cpp \
     src/ssl/secure_socket_client.cpp \
     src/ssl/ssl_mode.cpp \
+    src/ssl/ssl_api.cpp \
     src/protocol_version.cpp \
     src/result_page.cpp \
     src/row.cpp \

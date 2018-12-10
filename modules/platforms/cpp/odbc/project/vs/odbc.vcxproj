@@ -195,6 +195,7 @@
     <ClCompile Include="..\..\src\result_page.cpp" />
     <ClCompile Include="..\..\src\row.cpp" />
     <ClCompile Include="..\..\src\ssl\secure_socket_client.cpp" />
+    <ClCompile Include="..\..\src\ssl\ssl_api.cpp" />
     <ClCompile Include="..\..\src\ssl\ssl_gateway.cpp" />
     <ClCompile Include="..\..\src\ssl\ssl_mode.cpp" />
     <ClCompile Include="..\..\src\statement.cpp" />
@@ -246,7 +247,7 @@
     <ClInclude Include="..\..\include\ignite\odbc\row.h" />
     <ClInclude Include="..\..\include\ignite\odbc\socket_client.h" />
     <ClInclude Include="..\..\include\ignite\odbc\ssl\secure_socket_client.h" />
-    <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_bindings.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_api.h" />
     <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_gateway.h" />
     <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_mode.h" />
     <ClInclude Include="..\..\include\ignite\odbc\statement.h" />
