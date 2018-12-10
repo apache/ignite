@@ -130,7 +130,6 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMXBeanImpl;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -250,6 +249,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STORAGE_
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JIT_NAME;
@@ -1621,6 +1621,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Save transactions configuration.
         add(ATTR_TX_CONFIG, cfg.getTransactionConfiguration());
 
+        // Supported features.
+        add(ATTR_IGNITE_FEATURES, IgniteFeatures.allFeatures());
+
         // Stick in SPI versions and classes attributes.
         addSpiAttributes(cfg.getCollisionSpi());
         addSpiAttributes(cfg.getDiscoverySpi());
@@ -2109,12 +2112,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                         pdsUsedSummary += pdsUsed;
 
-                        // TODO https://issues.apache.org/jira/browse/IGNITE-9455
-                        // TODO Print actual value for meta store region when issue will be fixed.
-                        boolean metastore =
-                            GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME.equals(region.config().getName());
-
-                        String pdsUsedSize = metastore ? "unknown" : dblFmt.format(pdsUsedMBytes) + "MB";
+                        String pdsUsedSize = dblFmt.format(pdsUsedMBytes) + "MB";
 
                         pdsRegionsInfo.append("    ^--   ")
                             .append(region.config().getName()).append(" region")

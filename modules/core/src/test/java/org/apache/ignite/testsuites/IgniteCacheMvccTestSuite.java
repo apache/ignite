@@ -18,9 +18,6 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.internal.processors.cache.IgniteCacheTxPeekModesTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheTxReplicatedPeekModesTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccClusterRestartTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccConfigurationValidationTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccIteratorWithConcurrentTransactionTest;
@@ -40,8 +37,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccCachePeekTest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUnsupportedTxModesTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorMvccPersistenceSelfTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorMvccSelfTest;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
 /**
  *
@@ -69,9 +64,6 @@ public class IgniteCacheMvccTestSuite extends TestSuite {
 
         suite.addTestSuite(MvccCachePeekTest.class);
 
-        suite.addTestSuite(MvccIgniteCacheTxPeekModesTest.class);
-        suite.addTestSuite(MvccIgniteCacheTxReplicatedPeekModesTest.class);
-
         // Concurrent ops tests.
         suite.addTestSuite(CacheMvccIteratorWithConcurrentTransactionTest.class);
         suite.addTestSuite(CacheMvccLocalEntriesWithConcurrentTransactionTest.class);
@@ -86,35 +78,5 @@ public class IgniteCacheMvccTestSuite extends TestSuite {
         suite.addTestSuite(CacheMvccProcessorLazyStartTest.class);
 
         return suite;
-    }
-
-    /** */
-    public static class MvccIgniteCacheTxPeekModesTest extends IgniteCacheTxPeekModesTest {
-        /** {@inheritDoc} */
-        @Override protected CacheAtomicityMode atomicityMode() {
-            return TRANSACTIONAL_SNAPSHOT;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void testLocalEntries() throws Exception {
-            fail("https://issues.apache.org/jira/browse/IGNITE-10167");
-
-            super.testLocalEntries();
-        }
-    }
-
-    /** */
-    public static class MvccIgniteCacheTxReplicatedPeekModesTest extends IgniteCacheTxReplicatedPeekModesTest {
-        /** {@inheritDoc} */
-        @Override protected CacheAtomicityMode atomicityMode() {
-            return TRANSACTIONAL_SNAPSHOT;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void testLocalEntries() throws Exception {
-            fail("https://issues.apache.org/jira/browse/IGNITE-10167");
-
-            super.testLocalEntries();
-        }
     }
 }

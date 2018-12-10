@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.eviction;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  *
@@ -37,5 +38,14 @@ public class GridCacheEmptyEntriesLocalSelfTest extends GridCacheEmptyEntriesAbs
     /** {@inheritDoc} */
     @Override public void testFifo() throws Exception {
         super.testFifo();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
+        super.beforeTestsStarted();
     }
 }
