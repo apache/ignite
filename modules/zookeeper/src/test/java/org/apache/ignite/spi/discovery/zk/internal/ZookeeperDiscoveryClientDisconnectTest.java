@@ -52,6 +52,7 @@ import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
@@ -179,6 +180,8 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
 
         startGridsMultiThreaded(1, CLIENTS);
 
+        Long failureDetectionTimeout = ignite(1).configuration().getFailureDetectionTimeout();
+
         waitForTopology(CLIENTS + 1);
 
         final CountDownLatch latch = new CountDownLatch(CLIENTS);
@@ -197,7 +200,7 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
 
         stopGrid(getTestIgniteInstanceName(0), true, false);
 
-        assertTrue(latch.await(10, SECONDS));
+        assertTrue(latch.await(failureDetectionTimeout * 2, MILLISECONDS));
 
         evts.clear();
     }
