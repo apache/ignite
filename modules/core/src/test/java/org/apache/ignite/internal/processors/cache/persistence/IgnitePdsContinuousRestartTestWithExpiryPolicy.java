@@ -67,9 +67,9 @@ public class IgnitePdsContinuousRestartTestWithExpiryPolicy extends IgnitePdsCon
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
 
-        super.beforeTestsStarted();
+        super.beforeTest();
     }
 }
