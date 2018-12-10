@@ -19,7 +19,6 @@ package org.apache.ignite.testsuites;
 
 import java.util.Collection;
 import java.util.HashSet;
-import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityRoutingSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryMemorySizeSelfTest;
