@@ -372,7 +372,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
             GridCacheAdapter<Integer, String> dhtCache = dht(G.ignite(n.id()));
 
-            String s = dhtCache.localPeek(key, null, null);
+            String s = dhtCache.localPeek(key, null);
 
             assert s != null : "Value is null for key: " + key;
             assertEquals(s, Integer.toString(key));
@@ -532,7 +532,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
                 assertEquals("2", near.get(2));
                 assertEquals("3", near.get(3));
 
-                assertNotNull(dht(primaryGrid(3)).localPeek(3, null, null));
+                assertNotNull(dht(primaryGrid(3)).localPeek(3, null));
 
                 tx.commit();
             }
