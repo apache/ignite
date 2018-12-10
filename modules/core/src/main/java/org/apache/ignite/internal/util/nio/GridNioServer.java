@@ -122,6 +122,9 @@ public class GridNioServer<T> {
     /** Selection key meta key. */
     private static final int WORKER_IDX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
+    /** Meta key for pending messages to be written. */
+    private static final int MESSAGES_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+
     /** */
     private static final boolean DISABLE_KEYSET_OPTIMIZATION =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_NO_SELECTOR_OPTS);
@@ -1373,12 +1376,19 @@ public class GridNioServer<T> {
 
                         return;
                     }
+                    else {
+                        List<Message> messages = ses.removeMeta(MESSAGES_META_KEY);
+
+                        if (messages != null)
+                            for (Message message : messages)
+                                onMessageWritten(ses, message);
+                    }
                 }
 
                 ByteBuffer buf = ses.writeBuffer();
 
                 if (ses.meta(WRITE_BUF_LIMIT) != null)
-                    buf.limit((int)ses.meta(WRITE_BUF_LIMIT));
+                    buf.limit(ses.meta(WRITE_BUF_LIMIT));
 
                 SessionWriteRequest req = ses.removeMeta(NIO_OPERATION.ordinal());
 
@@ -1409,10 +1419,10 @@ public class GridNioServer<T> {
                     Message msg;
                     boolean finished = false;
 
-                    List<Message> writtenMessages = new ArrayList<>(2);
+                    List<Message> pendingMessages = new ArrayList<>(2);
 
                     if (req != null) {
-                        msg = (Message)req.message();
+                        msg = (Message) req.message();
 
                         assert msg != null;
 
@@ -1422,7 +1432,7 @@ public class GridNioServer<T> {
                         finished = msg.writeTo(buf, writer);
 
                         if (finished) {
-                            writtenMessages.add(msg);
+                            pendingMessages.add(msg);
 
                             if (writer != null)
                                 writer.reset();
@@ -1439,7 +1449,7 @@ public class GridNioServer<T> {
                         if (req == null)
                             break;
 
-                        msg = (Message)req.message();
+                        msg = (Message) req.message();
 
                         assert msg != null;
 
@@ -1449,7 +1459,7 @@ public class GridNioServer<T> {
                         finished = msg.writeTo(buf, writer);
 
                         if (finished) {
-                            writtenMessages.add(msg);
+                            pendingMessages.add(msg);
 
                             if (writer != null)
                                 writer.reset();
@@ -1478,7 +1488,7 @@ public class GridNioServer<T> {
                     assert buf.hasRemaining();
 
                     if (!skipWrite) {
-                        int cnt = U.writeFully(sockCh, buf);
+                        int cnt = sockCh.write(buf);
 
                         if (log.isTraceEnabled())
                             log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
@@ -1500,13 +1510,22 @@ public class GridNioServer<T> {
 
                     ses.addMeta(NIO_OPERATION.ordinal(), req);
 
-                    for (Message writtenMessage : writtenMessages)
-                        onMessageWritten(ses, writtenMessage);
+                    if (buf.hasRemaining()) {
+                        ses.addMeta(BUF_META_KEY, buf);
 
-                    buf = ses.writeBuffer();
+                        ses.addMeta(MESSAGES_META_KEY, pendingMessages);
 
-                    if (ses.meta(WRITE_BUF_LIMIT) != null)
-                        buf.limit((int)ses.meta(WRITE_BUF_LIMIT));
+                        break;
+                    }
+                    else {
+                        for (Message message : pendingMessages)
+                            onMessageWritten(ses, message);
+
+                        buf = ses.writeBuffer();
+
+                        if (ses.meta(WRITE_BUF_LIMIT) != null)
+                            buf.limit(ses.meta(WRITE_BUF_LIMIT));
+                    }
                 }
             }
             finally {
@@ -1528,7 +1547,7 @@ public class GridNioServer<T> {
             ByteBuffer buf;
 
             while ((buf = queue.peek()) != null) {
-                int cnt = U.writeFully(sockCh, buf);
+                int cnt = sockCh.write(buf);
 
                 if (metricsLsnr != null)
                     metricsLsnr.onBytesSent(cnt);
