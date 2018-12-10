@@ -25,6 +25,8 @@ export default class ClusterEditFormController {
     caches;
     /** @type {ig.menu<string>} */
     cachesMenu;
+    /** @type {ig.menu<string>} */
+    servicesCachesMenu;
     /** @type {ng.ICompiledExpression} */
     onSave;
 
@@ -108,8 +110,11 @@ export default class ClusterEditFormController {
                 this.$scope.ui.inputForm.$setUntouched();
             }
         }
-        if ('caches' in changes)
+
+        if ('caches' in changes) {
             this.cachesMenu = (changes.caches.currentValue || []).map((c) => ({label: c.name, value: c._id}));
+            this.servicesCachesMenu = [{label: 'Key-affinity not used', value: null}].concat(this.cachesMenu);
+        }
     }
 
     /**
