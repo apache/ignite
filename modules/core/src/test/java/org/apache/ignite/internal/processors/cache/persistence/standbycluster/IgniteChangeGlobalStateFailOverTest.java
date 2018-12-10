@@ -25,8 +25,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -58,11 +56,6 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
     /** {@inheritDoc} */
     @Override protected int backUpNodes() {
         return 4;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
     }
 
     /**

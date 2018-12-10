@@ -29,11 +29,6 @@ import org.apache.ignite.failure.NoOpFailureHandler;
  */
 @RunWith(JUnit4.class)
 public class IgfsFragmentizerTopologySelfTest extends IgfsFragmentizerAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * @throws Exception If failed.
      */

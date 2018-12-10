@@ -37,8 +37,6 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.F;
@@ -116,11 +114,6 @@ public class IgniteCacheFailedUpdateResponseTest extends GridCommonAbstractTest 
         atomicCache = grid("client").cache(ATOMIC_CACHE);
         txCache = grid("client").cache(TX_CACHE);
         mvccTxCache = grid("client").cache(MVCC_TX_CACHE);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
     }
 
     /**
