@@ -14,40 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.distributed.near;
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+import org.apache.ignite.cache.CacheAtomicityMode;
 
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.cache.GridCacheTransactionalAbstractMetricsSelfTest;
-import org.apache.ignite.testframework.MvccFeatureChecker;
-
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
 /**
- * Replicated cache metrics test.
+ * Test for mvcc cache.
  */
-public class GridCacheReplicatedMetricsSelfTest extends GridCacheTransactionalAbstractMetricsSelfTest {
-    /** */
-    private static final int GRID_CNT = 2;
-
+public class GridCacheMvccNearEvictionSelfTest extends GridCacheNearEvictionSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.METRICS);
+        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+        fail("https://issues.apache.org/jira/browse/IGNITE-7956");
 
         super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
-
-        cfg.setCacheMode(REPLICATED);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return GRID_CNT;
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL_SNAPSHOT;
     }
 }

@@ -17,14 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import java.util.concurrent.CountDownLatch;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 
@@ -140,11 +141,16 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
         }
     }
 
+    /**
+     * @param cacheName Cache name.
+     * @return Cache configuration.
+     */
     private static CacheConfiguration<Integer, Integer> cacheConfiguration(String cacheName) {
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>(cacheName);
 
         cfg.setBackups(1);
         cfg.setStatisticsEnabled(true);
+        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         return cfg;
     }
 }

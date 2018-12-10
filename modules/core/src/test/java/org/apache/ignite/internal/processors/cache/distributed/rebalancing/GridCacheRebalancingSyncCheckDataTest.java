@@ -21,6 +21,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -48,6 +49,7 @@ public class GridCacheRebalancingSyncCheckDataTest extends GridCommonAbstractTes
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         ccfg.setCacheMode(REPLICATED);
         ccfg.setRebalanceMode(SYNC);
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         cfg.setCacheConfiguration(ccfg);
 
