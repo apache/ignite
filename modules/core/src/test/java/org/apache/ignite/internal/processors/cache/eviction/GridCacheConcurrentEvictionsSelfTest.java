@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
@@ -33,13 +34,14 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils.SF;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  *
@@ -65,7 +67,7 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
-        c.getTransactionConfiguration().setDefaultTxIsolation(READ_COMMITTED);
+        c.getTransactionConfiguration().setDefaultTxIsolation(REPEATABLE_READ);
 
         CacheConfiguration<?, ?> cc = defaultCacheConfiguration();
 
@@ -94,6 +96,13 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
         super.afterTest();
 
         plc = null;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
+        super.beforeTestsStarted();
     }
 
     /**
@@ -181,7 +190,7 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
 
                             if (i != 0 && i % 1000 == 0)
                                 // info("Puts count: " + i);
-                                info("Stats [putsCnt=" + i + ", size=" + cache.size() + ']');
+                                info("Stats [putsCnt=" + i + ", size=" + cache.size(CachePeekMode.ONHEAP) + ']');
                         }
 
                         return null;
@@ -192,8 +201,10 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
 
             fut.get();
 
-            info("Test results [threadCnt=" + threadCnt + ", iterCnt=" + iterCnt + ", cacheSize=" + cache.size() +
+            info("Test results [threadCnt=" + threadCnt + ", iterCnt=" + iterCnt + ", cacheSize=" + cache.size(CachePeekMode.ONHEAP) +
                 ", duration=" + (System.currentTimeMillis() - start) + ']');
+
+            assertTrue(cache.size(CachePeekMode.ONHEAP) <= 1000);
         }
         finally {
             stopAllGrids();

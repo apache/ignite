@@ -25,8 +25,6 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.GridTestTaskSession;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -103,11 +101,6 @@ public class GridJobStealingCollisionSpiCustomTopologySelfTest extends
         ctx.addNode(rmtNode2);
 
         return ctx;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
     }
 
     /**
