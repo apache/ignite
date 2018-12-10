@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -50,7 +51,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * One request per batch of entries is used.
  */
-public class GridNearTxEnlistRequest extends GridCacheIdMessage {
+public class GridNearTxEnlistRequest extends GridCacheIdMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -167,6 +168,8 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
         this.rows = rows;
         this.op = op;
         this.needRes = needRes;
+
+        addDepInfo = op == EnlistOperation.TRANSFORM;
     }
 
     /**
@@ -644,7 +647,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
 
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
-        return false;
+        return addDepInfo;
     }
 
     /** {@inheritDoc} */

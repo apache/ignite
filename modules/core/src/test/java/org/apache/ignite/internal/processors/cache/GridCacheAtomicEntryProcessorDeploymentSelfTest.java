@@ -57,13 +57,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc()) {
-            assert atomicityMode() != ATOMIC;
-
-            fail("https://issues.apache.org/jira/browse/IGNITE-10359");
-        }
-
-        super.beforeTestsStarted();
+       super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
