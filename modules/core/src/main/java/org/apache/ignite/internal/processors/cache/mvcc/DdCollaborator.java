@@ -72,10 +72,9 @@ public class DdCollaborator {
                 }
                 else {
                     // probe each blocker
-                    // t0d0 pending responses from MULTIPLE nodes, MULTIPLE blocking transactions from each node
-                    // consider grouping (only if it will lead to correct results!)
                     // t0d0 check if holding some lock already
                     // t0d0 first find all peers then send messages
+                    // t0d0 consider grouping (only if it will lead to correct results!)
                     collectBlockers(tx).forEach(fut -> {
                         fut.listen(fut0 -> {
                             try {
@@ -105,7 +104,6 @@ public class DdCollaborator {
     }
 
     private Set<UUID> getPendingResponseNodes(GridNearTxLocal tx) {
-        // t0d0 handle primaries local to near node
         IgniteInternalFuture lockFut = tx.lockFuture();
 
         if (lockFut instanceof GridNearTxAbstractEnlistFuture)

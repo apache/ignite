@@ -1821,6 +1821,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     @Override public IgniteInternalFuture<NearTxLocator> checkWaiting(UUID nodeId, MvccVersion mvccVer) {
+        // t0d0 employ local check without futures and messagses
         LockWaitCheckFuture fut = new LockWaitCheckFuture(nodeId, mvccVer, ctx.cache().context());
         fut.init();
         return fut;
@@ -1978,7 +1979,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     private Optional<IgniteInternalTx> findBlockerTx(MvccVersion checkedTxVer) {
-        // t0d0 multiple bloker txs seems to be possible
+        // t0d0 multiple blocker txs seems to be possible
         return waitMap.entrySet().stream()
             .filter(e -> e.getValue().waitQueue().stream()
                 .anyMatch(waitingVer -> DdCollaborator.belongToSameTx(waitingVer, checkedTxVer)))
