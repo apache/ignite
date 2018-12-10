@@ -15,32 +15,14 @@
  * limitations under the License.
  */
 
-'use strict';
+import template from './template.pug';
+import QueryActionsButton from './controller';
 
-const express = require('express');
-
-// Fire me up!
-
-module.exports = {
-    implements: 'routes/activities',
-    inject: ['services/activities'],
-
-    /**
-     * @param {ActivitiesService} activitiesService
-     * @returns {Promise}
-     */
-    factory: (activitiesService) => {
-        return new Promise((factoryResolve) => {
-            const router = new express.Router();
-
-            // Post user activities to page.
-            router.post('/page', (req, res) => {
-                activitiesService.merge(req.user, req.body)
-                    .then(res.api.ok)
-                    .catch(res.api.error);
-            });
-
-            factoryResolve(router);
-        });
+export const component: ng.IComponentOptions = {
+    controller: QueryActionsButton,
+    template,
+    bindings: {
+        actions: '<',
+        item: '<'
     }
 };
