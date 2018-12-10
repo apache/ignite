@@ -3662,7 +3662,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 writeCheckpointEntry(checkpointEntryWriteBuffer, chp.cpEntry, CheckpointEntryType.START);
 
-                chp.progress.addCheckpointPages(splitAndSortCpPagesIfNeeded(cpPagesTuple));
+                curr.addCheckpointPages(splitAndSortCpPagesIfNeeded(cpPagesTuple));
 
                 if (log.isInfoEnabled())
                     log.info(String.format("Checkpoint started [checkpointId=%s, startPtr=%s, checkpointLockWait=%dms, " +
@@ -3687,10 +3687,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         chp.metrics.lockHoldDuration(),
                         curr.reason));
             }
-        }
-
-        private void markCheckpointBeginOnWriteLock(Checkpoint chp){
-
         }
 
         /**
@@ -4328,16 +4324,25 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             this.nextCpTs = nextCpTs;
         }
 
+        /**
+         * @param pageIds Checkpoint pages.
+         */
         private void addCheckpointPages(GridMultiCollectionWrapper<FullPageId> pageIds) {
             this.cpPages = pageIds;
         }
 
+        /**
+         * @param pageStore Add page store for fsync.
+         */
         private void addStore(PageStore pageStore) {
 
         }
 
+        /**
+         * @param pageStore Remove page store from fsync stores collection.
+         */
         private void remoteStore(PageStore pageStore) {
-
+            pageStores.remove(pageStore);
         }
     }
 
