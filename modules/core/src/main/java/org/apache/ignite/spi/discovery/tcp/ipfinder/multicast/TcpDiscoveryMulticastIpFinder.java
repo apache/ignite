@@ -316,13 +316,15 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
         Collection<InetAddress> locAddrs = resolveLocalAddresses();
 
-        reqItfs = new HashSet<>(locAddrs);
-
         addrSnds = new ArrayList<>(locAddrs.size());
+
+        reqItfs = new HashSet<>(U.capacity(locAddrs.size())); // Interfaces used to send requests.
 
         for (InetAddress addr : locAddrs) {
             try {
                 addrSnds.add(new AddressSender(mcastAddr, addr, addrs));
+
+                reqItfs.add(addr);
             }
             catch (IOException e) {
                 if (log.isDebugEnabled())
@@ -374,6 +376,48 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
         super.onSpiContextInitialized(spiCtx);
 
         spiCtx.registerPort(mcastPort, UDP);
+    }
+
+    /** {@inheritDoc} */
+    @Override public synchronized Collection<InetSocketAddress> getRegisteredAddresses() {
+        if (mcastAddr == null)
+            reqItfs = new HashSet<>(resolveLocalAddresses());
+
+        if (mcastAddr != null && reqItfs != null) {
+            Collection<InetSocketAddress> ret;
+
+            if (reqItfs.size() > 1)
+                ret = requestAddresses(reqItfs);
+            else {
+                T2<Collection<InetSocketAddress>, Boolean> res = requestAddresses(mcastAddr, F.first(reqItfs));
+
+                ret = res.get1();
+
+                mcastErr |= res.get2();
+            }
+
+            if (ret.isEmpty()) {
+                if (mcastErr && firstReq) {
+                    if (super.getRegisteredAddresses().isEmpty()) {
+                        InetSocketAddress addr = new InetSocketAddress("localhost", TcpDiscoverySpi.DFLT_PORT);
+
+                        U.quietAndWarn(log, "TcpDiscoveryMulticastIpFinder failed to initialize multicast, " +
+                            "will use default address: " + addr);
+
+                        registerAddresses(Collections.singleton(addr));
+                    }
+                    else
+                        U.quietAndWarn(log, "TcpDiscoveryMulticastIpFinder failed to initialize multicast, " +
+                            "will use pre-configured addresses.");
+                }
+            }
+            else
+                registerAddresses(ret);
+
+            firstReq = false;
+        }
+
+        return super.getRegisteredAddresses();
     }
 
     /**
@@ -447,49 +491,6 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
         return inetAddrs;
     }
-
-    /** {@inheritDoc} */
-    @Override public synchronized Collection<InetSocketAddress> getRegisteredAddresses() {
-        if (mcastAddr == null)
-            reqItfs = new HashSet<>(resolveLocalAddresses());
-
-        if (mcastAddr != null && reqItfs != null) {
-            Collection<InetSocketAddress> ret;
-
-            if (reqItfs.size() > 1)
-                ret = requestAddresses(reqItfs);
-            else {
-                T2<Collection<InetSocketAddress>, Boolean> res = requestAddresses(mcastAddr, F.first(reqItfs));
-
-                ret = res.get1();
-
-                mcastErr |= res.get2();
-            }
-
-            if (ret.isEmpty()) {
-                if (mcastErr && firstReq) {
-                    if (super.getRegisteredAddresses().isEmpty()) {
-                        InetSocketAddress addr = new InetSocketAddress("localhost", TcpDiscoverySpi.DFLT_PORT);
-
-                        U.quietAndWarn(log, "TcpDiscoveryMulticastIpFinder failed to initialize multicast, " +
-                            "will use default address: " + addr);
-
-                        registerAddresses(Collections.singleton(addr));
-                    }
-                    else
-                        U.quietAndWarn(log, "TcpDiscoveryMulticastIpFinder failed to initialize multicast, " +
-                            "will use pre-configured addresses.");
-                }
-            }
-            else
-                registerAddresses(ret);
-
-            firstReq = false;
-        }
-
-        return super.getRegisteredAddresses();
-    }
-
 
     /**
      * @param reqItfs Interfaces used to send requests.
