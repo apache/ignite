@@ -248,6 +248,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** */
     private DdlStatementsProcessor ddlProc;
 
+    /**
+     *
+     */
     private final RunningQueryManager runningQueryMgr = new RunningQueryManager();
 
     /** */
