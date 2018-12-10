@@ -27,8 +27,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.nio.file.StandardCopyOption;
 import java.util.AbstractList;
 import java.util.Arrays;
@@ -60,7 +62,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -119,6 +123,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** */
     public static final String META_STORAGE_NAME = "metastorage";
+
+    /** Matcher for searching of *.tmp files. */
+    public static final PathMatcher TMP_FILE_MATCHER =
+        FileSystems.getDefault().getPathMatcher("glob:**" + TMP_SUFFIX);
 
     /** Marshaller. */
     private static final Marshaller marshaller = new JdkMarshaller();
@@ -368,12 +376,14 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         int grpId = MetaStorage.METASTORAGE_CACHE_ID;
 
         if (!idxCacheStores.containsKey(grpId)) {
+            DataRegion dataRegion = cctx.database().dataRegion(GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME);
+
             CacheStoreHolder holder = initDir(
                 new File(storeWorkDir, META_STORAGE_NAME),
-                    grpId,
-                    1,
-                    AllocatedPageTracker.NO_OP,
-                    false);
+                grpId,
+                PageIdAllocator.METASTORE_PARTITION + 1,
+                dataRegion.memoryMetrics(),
+                false);
 
             CacheStoreHolder old = idxCacheStores.put(grpId, holder);
 

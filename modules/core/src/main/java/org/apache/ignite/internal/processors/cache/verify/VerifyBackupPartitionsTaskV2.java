@@ -36,20 +36,26 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
+import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -176,7 +182,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                 for (String cacheName : arg.getCaches()) {
                     DynamicCacheDescriptor desc = ignite.context().cache().cacheDescriptor(cacheName);
 
-                    if (desc == null) {
+                    if (desc == null || !isCacheMatchFilter(cacheName)) {
                         missingCaches.add(cacheName);
 
                         continue;
@@ -185,15 +191,13 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                     grpIds.add(desc.groupId());
                 }
 
-                if (!missingCaches.isEmpty()) {
-                    StringBuilder strBuilder = new StringBuilder("The following caches do not exist: ");
-
-                    for (String name : missingCaches)
-                        strBuilder.append(name).append(", ");
-
-                    strBuilder.delete(strBuilder.length() - 2, strBuilder.length());
-
-                    throw new IgniteException(strBuilder.toString());
+                handlingMissedCaches(missingCaches);
+            }
+            else if (onlySpecificCaches()) {
+                for (DynamicCacheDescriptor desc : ignite.context().cache().cacheDescriptors().values()) {
+                    if (desc.cacheConfiguration().getCacheMode() != CacheMode.LOCAL
+                        && isCacheMatchFilter(desc.cacheName()))
+                        grpIds.add(desc.groupId());
                 }
             }
             else {
@@ -257,6 +261,79 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             }
 
             return res;
+        }
+
+        /**
+         *  Checks and throw exception if caches was missed.
+         *
+         * @param missingCaches Missing caches.
+         */
+        private void handlingMissedCaches(Set<String> missingCaches) {
+            if (missingCaches.isEmpty())
+                return;
+
+            StringBuilder strBuilder = new StringBuilder("The following caches do not exist");
+
+            if (onlySpecificCaches()) {
+                VisorIdleVerifyDumpTaskArg vdta = (VisorIdleVerifyDumpTaskArg)arg;
+
+                strBuilder.append(" or do not match to the given filter [")
+                    .append(vdta.getCacheFilterEnum())
+                    .append("]: ");
+            }
+            else
+                strBuilder.append(": ");
+
+            for (String name : missingCaches)
+                strBuilder.append(name).append(", ");
+
+            strBuilder.delete(strBuilder.length() - 2, strBuilder.length());
+
+            throw new IgniteException(strBuilder.toString());
+        }
+
+        /**
+         * @return True if validates only specific caches, else false.
+         */
+        private boolean onlySpecificCaches() {
+            if (arg instanceof VisorIdleVerifyDumpTaskArg) {
+                VisorIdleVerifyDumpTaskArg vdta = (VisorIdleVerifyDumpTaskArg)arg;
+
+                return vdta.getCacheFilterEnum() != CacheFilterEnum.ALL;
+            }
+
+            return false;
+        }
+
+        /**
+         * @param cacheName Cache name.
+         */
+        private boolean isCacheMatchFilter(String cacheName) {
+            if (arg instanceof VisorIdleVerifyDumpTaskArg) {
+                DataStorageConfiguration dsc = ignite.context().config().getDataStorageConfiguration();
+                DynamicCacheDescriptor desc = ignite.context().cache().cacheDescriptor(cacheName);
+                CacheConfiguration cc = desc.cacheConfiguration();
+                VisorIdleVerifyDumpTaskArg vdta = (VisorIdleVerifyDumpTaskArg)arg;
+
+                switch (vdta.getCacheFilterEnum()) {
+                    case SYSTEM:
+                        return !desc.cacheType().userCache();
+
+                    case NOT_PERSISTENT:
+                        return desc.cacheType().userCache() && !GridCacheUtils.isPersistentCache(cc, dsc);
+
+                    case PERSISTENT:
+                        return desc.cacheType().userCache() && GridCacheUtils.isPersistentCache(cc, dsc);
+
+                    case ALL:
+                        break;
+
+                    default:
+                        assert false: "Illegal cache filter: " + vdta.getCacheFilterEnum();
+                }
+            }
+
+            return true;
         }
 
         /**

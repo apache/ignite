@@ -130,7 +130,6 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMXBeanImpl;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -2109,12 +2108,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                         pdsUsedSummary += pdsUsed;
 
-                        // TODO https://issues.apache.org/jira/browse/IGNITE-9455
-                        // TODO Print actual value for meta store region when issue will be fixed.
-                        boolean metastore =
-                            GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME.equals(region.config().getName());
-
-                        String pdsUsedSize = metastore ? "unknown" : dblFmt.format(pdsUsedMBytes) + "MB";
+                        String pdsUsedSize = dblFmt.format(pdsUsedMBytes) + "MB";
 
                         pdsRegionsInfo.append("    ^--   ")
                             .append(region.config().getName()).append(" region")
