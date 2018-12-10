@@ -178,16 +178,16 @@ public abstract class GridNearTxPrepareFutureAdapter extends
         if (tx.storeWriteThrough() || tx.txState().mvccEnabled()) // TODO IGNITE-3479 (onePhase + mvcc)
             return;
 
-        if (txNodes.size() == 1) {
-            Map.Entry<UUID, Collection<UUID>> entry = txNodes.entrySet().iterator().next();
-
-            assert entry != null;
-
-            Collection<UUID> backups = entry.getValue();
-
-            if (backups.size() <= 1)
-                tx.onePhaseCommit(true);
-        }
+//        if (txNodes.size() == 1) {
+//            Map.Entry<UUID, Collection<UUID>> entry = txNodes.entrySet().iterator().next();
+//
+//            assert entry != null;
+//
+//            Collection<UUID> backups = entry.getValue();
+//
+//            if (backups.size() <= 1)
+//                tx.onePhaseCommit(true);
+//        }
     }
 
     /**
