@@ -56,12 +56,12 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
             long maxTimeout,
             long reconCnt
     ) {
-        long maxBackoffTimeout = initTimeout;
+        long totalBackoffTimeout = initTimeout;
 
-        for (int i = 1; i < reconCnt && maxBackoffTimeout < maxTimeout; i++)
-            maxBackoffTimeout += nextTimeout(maxBackoffTimeout, maxTimeout);
+        for (int i = 1; i < reconCnt && totalBackoffTimeout < maxTimeout; i++)
+            totalBackoffTimeout += nextTimeout(totalBackoffTimeout, maxTimeout);
 
-        return maxBackoffTimeout;
+        return totalBackoffTimeout;
     }
 
     /**
