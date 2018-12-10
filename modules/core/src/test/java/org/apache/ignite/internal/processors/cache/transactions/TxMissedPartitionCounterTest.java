@@ -678,7 +678,7 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
             cntr = locPart.dataStore().partUpdateCounter();
 
-            System.out.println();
+            assertEquals(10, cntr.get());
         }
         finally {
             stopAllGrids();

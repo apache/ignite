@@ -71,6 +71,10 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
         Map<Integer, IgniteUuid> cacheDeploymentIds) {
         assert !F.isEmpty(assignmentChange) : assignmentChange;
 
+        if (topVer.topologyVersion() == 12 && topVer.minorTopologyVersion() == 1) {
+            System.out.println();
+        }
+
         this.topVer = topVer;
         this.assignmentChange = assignmentChange;
         this.cacheDeploymentIds = cacheDeploymentIds;
