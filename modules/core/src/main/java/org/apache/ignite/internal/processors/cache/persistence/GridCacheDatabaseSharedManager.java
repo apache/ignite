@@ -4129,6 +4129,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** */
         private final long cpTs;
 
+        /** */
         private Checkpoint(long cpTs) {
             this.cpTs = cpTs;
         }
@@ -4260,7 +4261,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private volatile SnapshotOperation snapshotOperation;
 
         /** */
-        private final CheckpointPagesHolder cpPages;
+        private final CheckpointBeginPages cpPages;
 
         /** */
         private Map<PageStore, LongAdder> pageStores;
@@ -4272,7 +4273,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private String reason;
 
         /** */
-        private boolean canceled;
+        private volatile boolean canceled;
 
         /** */
         private boolean prevCanceled;
@@ -4282,7 +4283,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @param nextCpTs Next checkpoint timestamp.
          */
         private CheckpointProgress(CheckpointWriteOrder order, long nextCpTs) {
-            cpPages = new CheckpointPagesHolder(order);
+            cpPages = new CheckpointBeginPages(order);
             pageStores = new ConcurrentLinkedHashMap<>();
             destroyQueue = new PartitionDestroyQueue();
 
@@ -4297,95 +4298,28 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
-    private interface CheckpointPages {
-        int checkpointPages();
+    private static class CheckpointPages {
+        protected List<FullPageId> pageIds;
 
-        boolean isEmpty();
+        protected List<FullPageId> retryPageIds = new ArrayList<>();
 
-        Iterator<FullPageId> iterator();
+        protected int totalCpPages;
 
-        void addForRetry(FullPageId fullPageId);
+        protected int written;
 
-        CheckpointPages[] split(int parts);
-    }
-
-    private static class CheckpointPagesHolder implements CheckpointPages {
-
-        private final CheckpointWriteOrder writeOrder;
-
-        private CheckpointPagesHolder previousCheckpointPages;
-
-        private CheckpointPages[] splittedCheckpointPages;
-
-        private T2<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> tup;
-
-        private List<FullPageId> pageIds;
-
-        private List<FullPageId> retryPageIds = new ArrayList<>();
-
-        private int totalCpPages;
-
-        private int written;
-
-        private CheckpointPagesHolder(CheckpointWriteOrder order) {
-            writeOrder = order;
+        CheckpointPages[] split(int parts) {
+            throw new UnsupportedOperationException();
         }
 
-        private void mergeCheckpoint(CheckpointPagesHolder previousCheckpointPages) {
-            this.previousCheckpointPages = previousCheckpointPages;
-        }
-
-        private void onCheckpointBegin() {
-            // No need merge previous checkpoin. standart flow.
-            if (previousCheckpointPages == null) {
-
-            }
-            else {
-                // Merge all not written pages.
-            }
-
-            pageIds = new ArrayList<>();
-
-            if (writeOrder == CheckpointWriteOrder.SEQUENTIAL) {
-                FullPageId[] objects = pageIds.toArray(new FullPageId[pageIds.size()]);
-
-                Arrays.parallelSort(objects, new Comparator<FullPageId>() {
-                    @Override public int compare(FullPageId pageId1, FullPageId pageId2) {
-                        int cmp = Long.compare(pageId1.groupId(), pageId2.groupId());
-
-                        if (cmp != 0)
-                            return cmp;
-
-                        return Long.compare(effectivePageId(pageId1.pageId()), effectivePageId(pageId2.pageId()));
-                    }
-                });
-
-                pageIds = Arrays.asList(objects);
-            }
-        }
-
-        private void addCheckpointPages(T2<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> tup) {
-            this.tup = tup;
-        }
-
-        @Override public int checkpointPages() {
-            if (totalCpPages == 0) {
-                int total = tup.get2();
-
-                if (previousCheckpointPages != null)
-                    total += previousCheckpointPages.totalCpPages;
-
-                totalCpPages = total;
-            }
-
+        int checkpointPages() {
             return totalCpPages;
         }
 
-        @Override public boolean isEmpty() {
+        public boolean isEmpty() {
             return totalCpPages == written;
         }
 
-        @Override public Iterator<FullPageId> iterator() {
+        public Iterator<FullPageId> iterator() {
             if (!pageIds.isEmpty())
                 return iteratorPages(pageIds);
 
@@ -4420,8 +4354,73 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             };
         }
 
-        @Override public void addForRetry(FullPageId fullPageId) {
+        public void addForRetry(FullPageId fullPageId) {
             retryPageIds.add(fullPageId);
+        }
+    }
+
+    private static class CheckpointBeginPages extends CheckpointPages {
+
+        private final CheckpointWriteOrder writeOrder;
+
+        private CheckpointBeginPages previousCheckpointPages;
+
+        private CheckpointPages[] splittedCheckpointPages;
+
+        private T2<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> markChpBeginTup;
+
+        private CheckpointBeginPages(CheckpointWriteOrder order) {
+            writeOrder = order;
+        }
+
+        private void mergeCheckpoint(CheckpointBeginPages previousCheckpointPages) {
+            this.previousCheckpointPages = previousCheckpointPages;
+        }
+
+        private void onCheckpointBegin() {
+            // No need merge previous checkpoin. standart flow.
+            if (previousCheckpointPages == null) {
+
+            }
+            else {
+                // Merge all not written pages.
+            }
+
+            pageIds = new ArrayList<>();
+
+            if (writeOrder == CheckpointWriteOrder.SEQUENTIAL) {
+                FullPageId[] objects = pageIds.toArray(new FullPageId[pageIds.size()]);
+
+                Arrays.parallelSort(objects, new Comparator<FullPageId>() {
+                    @Override public int compare(FullPageId pageId1, FullPageId pageId2) {
+                        int cmp = Long.compare(pageId1.groupId(), pageId2.groupId());
+
+                        if (cmp != 0)
+                            return cmp;
+
+                        return Long.compare(effectivePageId(pageId1.pageId()), effectivePageId(pageId2.pageId()));
+                    }
+                });
+
+                pageIds = Arrays.asList(objects);
+            }
+        }
+
+        private void addCheckpointPages(T2<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> markChpBeginTup) {
+            this.markChpBeginTup = markChpBeginTup;
+        }
+
+        @Override public int checkpointPages() {
+            if (totalCpPages == 0) {
+                int total = markChpBeginTup.get2();
+
+                if (previousCheckpointPages != null)
+                    total += previousCheckpointPages.totalCpPages;
+
+                totalCpPages = total;
+            }
+
+            return totalCpPages;
         }
 
         @Override public CheckpointPages[] split(int parts) {
@@ -4447,8 +4446,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 List<FullPageId> subList = allCpPages.subList(from, to);
 
-                //TODO
-               // pagesSubListArr[i] = new CheckpointPagesHolder();
+                CheckpointPages pages = new CheckpointPages();
+
+                pages.pageIds = subList;
+                pages.totalCpPages = subList.size();
+
+                pagesSubListArr[i] = pages;
             }
 
             return pagesSubListArr;
