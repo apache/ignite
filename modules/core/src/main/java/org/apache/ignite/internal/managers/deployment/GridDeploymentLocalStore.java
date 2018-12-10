@@ -47,6 +47,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.deployment.DeploymentListener;
 import org.apache.ignite.spi.deployment.DeploymentResource;
 import org.apache.ignite.spi.deployment.DeploymentSpi;
+import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CLASS_DEPLOYED;
@@ -355,9 +356,12 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
             if (dep == null) {
                 DeploymentResource rsrc = spi.findResource(cls.getName());
 
-                if (rsrc != null && rsrc.getClassLoader() == clsLdr)
-                    dep = deploy(ctx.config().getDeploymentMode(), rsrc.getClassLoader(),
-                        rsrc.getResourceClass(), rsrc.getName(), true);
+                if (rsrc != null) {
+                    if (!(spi instanceof LocalDeploymentSpi) || rsrc.getClassLoader() == clsLdr) {
+                        dep = deploy(ctx.config().getDeploymentMode(), rsrc.getClassLoader(),
+                                rsrc.getResourceClass(), rsrc.getName(), true);
+                    }
+                }
             }
 
             return dep;
