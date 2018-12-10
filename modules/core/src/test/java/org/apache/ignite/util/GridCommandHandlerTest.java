@@ -17,9 +17,14 @@
 
 package org.apache.ignite.util;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.PrintStream;
+import java.io.RandomAccessFile;
+import java.io.Serializable;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,6 +39,7 @@ import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
@@ -82,7 +88,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
@@ -234,10 +239,6 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     protected int execute(ArrayList<String> args) {
         // Add force to avoid interactive confirmation
         args.add(CMD_AUTO_CONFIRMATION);
-
-        SB sb = new SB();
-
-        args.forEach(arg -> sb.a(arg).a(" "));
 
         return new CommandHandler().execute(args);
     }
@@ -908,6 +909,38 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertTrue(testOut.toString().contains("conflict partitions"));
     }
 
+    public void testCacheIdleVerifyWithCorruptedPartition() throws Exception {
+        testCacheIdleVerifyWithCorruptedPartition("--cache", "idle_verify");
+
+        String out = testOut.toString();
+
+        assertTrue(out.contains("idle_verify check has finished, from 1 nodes were got errors."));
+        assertTrue(out.contains("CRC check of partition"));
+        assertTrue(out.contains("for cache group default failed"));
+
+        testOut.reset();
+
+        log.error("output: " + out);
+    }
+
+    public void testCacheIdleVerifyDumpWithCorruptedPartition() throws Exception {
+        testCacheIdleVerifyWithCorruptedPartition("--cache", "idle_verify", "--dump");
+
+        String parts[] = testOut.toString().split("VisorIdleVerifyDumpTask successfully written output to '");
+
+        assertEquals(2, parts.length);
+
+        String dumpFile = parts[1].split("\\.")[0]+".txt";
+
+        try(BufferedReader br = new BufferedReader(new FileReader(dumpFile))){
+            assertEquals("idle_verify check has finished, 1 nodes return error", br.readLine());
+            assertTrue(br.readLine().contains("Node ID"));
+            assertTrue(br.readLine().contains("CRC check of partition"));
+        }
+
+        testOut.reset();
+    }
+
     /**
      * Tests that both update counter and hash conflicts are detected.
      *
@@ -1262,52 +1295,72 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertTrue(testOut.toString().contains("affCls=RendezvousAffinityFunction"));
     }
 
-    /** */
+    /**
+     *
+     */
     public void testCacheConfigNoOutputFormat() throws Exception {
         testCacheConfig(null, 1, 1);
     }
 
-    /** */
+    /**
+     *
+     */
     public void testCacheConfigSingleLineOutputFormatSingleNodeSignleCache() throws Exception {
         testCacheConfigSingleLineOutputFormat(1, 1);
     }
 
-    /** */
+    /**
+     *
+     */
     public void testCacheConfigSingleLineOutputFormatTwoNodeSignleCache() throws Exception {
         testCacheConfigSingleLineOutputFormat(2, 1);
     }
 
-    /** */
+    /**
+     *
+     */
     public void testCacheConfigSingleLineOutputFormatTwoNodeManyCaches() throws Exception {
         testCacheConfigSingleLineOutputFormat(2, 100);
     }
 
-    /** */
+    /**
+     *
+     */
     public void testCacheConfigMultiLineOutputFormatSingleNodeSingleCache() throws Exception {
         testCacheConfigMultiLineOutputFormat(1, 1);
     }
 
-    /** */
+    /**
+     *
+     */
     public void testCacheConfigMultiLineOutputFormatTwoNodeSingleCache() throws Exception {
         testCacheConfigMultiLineOutputFormat(2, 1);
     }
 
-    /** */
+    /**
+     *
+     */
     public void testCacheConfigMultiLineOutputFormatTwoNodeManyCaches() throws Exception {
         testCacheConfigMultiLineOutputFormat(2, 100);
     }
 
-    /** */
+    /**
+     *
+     */
     private void testCacheConfigSingleLineOutputFormat(int nodesCnt, int cachesCnt) throws Exception {
         testCacheConfig(SINGLE_LINE, nodesCnt, cachesCnt);
     }
 
-    /** */
+    /**
+     *
+     */
     private void testCacheConfigMultiLineOutputFormat(int nodesCnt, int cachesCnt) throws Exception {
         testCacheConfig(MULTI_LINE, nodesCnt, cachesCnt);
     }
 
-    /** */
+    /**
+     *
+     */
     private void testCacheConfig(OutputFormat outputFormat, int nodesCnt, int cachesCnt) throws Exception {
         assertTrue("Invalid number of nodes or caches", nodesCnt > 0 && cachesCnt > 0);
 
@@ -1610,6 +1663,57 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
             return null;
         }
+    }
+
+    private void corruptPartition(File partitionsDir) throws IOException {
+        ThreadLocalRandom rand = ThreadLocalRandom.current();
+
+        for(File partFile : partitionsDir.listFiles((d, n) -> n.startsWith("part"))) {
+            try (RandomAccessFile raf = new RandomAccessFile(partFile, "rw")) {
+                byte[] buf = new byte[1024];
+
+                rand.nextBytes(buf);
+
+                raf.seek(4096 * 2 + 1);
+
+                raf.write(buf);
+            }
+        }
+    }
+
+    /** */
+    private void testCacheIdleVerifyWithCorruptedPartition(String... args) throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().active(true);
+
+        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setBackups(1)
+            .setName(DEFAULT_CACHE_NAME));
+
+        for (int i = 0; i < 1000; i++)
+            cache.put(i, i);
+
+        Serializable consistId = ignite.configuration().getConsistentId();
+
+        File partitionsDir = U.resolveWorkDirectory(
+            ignite.configuration().getWorkDirectory(),
+            "db/" + consistId + "/cache-" + DEFAULT_CACHE_NAME,
+            false
+        );
+
+        stopGrid(0);
+
+        corruptPartition(partitionsDir);
+
+        startGrid(0);
+
+        awaitPartitionMapExchange();
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute(args));
     }
 
     /**
