@@ -23,10 +23,19 @@ import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -66,6 +75,8 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         cfg.setDiscoverySpi(new TestDiscoverySpi().setIpFinder(IP_FINDER));
 
@@ -202,6 +213,79 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         assertEquals(new AffinityTopologyVersion(5, 0), grid(3).context().discovery().topologyVersionEx());
 
         latch.countDown();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNoAffinityChangeOnClientLeftWithMergedExchanges() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_EXCHANGE_MERGE_DELAY, "1000");
+
+        try {
+            Ignite ig = startGridsMultiThreaded(4);
+
+            IgniteCache<Integer, Integer> atomicCache = ig.createCache(new CacheConfiguration<Integer, Integer>()
+                .setName("atomic").setAtomicityMode(CacheAtomicityMode.ATOMIC).setCacheMode(CacheMode.REPLICATED));
+
+            IgniteCache<Integer, Integer> txCache = ig.createCache(new CacheConfiguration<Integer, Integer>()
+                .setName("tx").setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL).setCacheMode(CacheMode.REPLICATED));
+
+            startClient = true;
+
+            Ignite client = startGrid("client");
+
+            startClient = false;
+
+            stopGrid(1);
+            stopGrid(2);
+            stopGrid(3);
+
+            awaitPartitionMapExchange();
+
+            atomicCache.put(-1, -1);
+            txCache.put(-1, -1);
+
+            TestRecordingCommunicationSpi.spi(ig).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                @Override public boolean apply(ClusterNode node, Message message) {
+                    return message instanceof GridDhtPartitionSupplyMessageV2;
+                }
+            });
+
+            startGridsMultiThreaded(1, 3);
+
+            CountDownLatch latch = new CountDownLatch(1);
+            for (Ignite ignite : G.allGrids()) {
+                if (ignite.cluster().localNode().order() == 9) {
+                    TestDiscoverySpi discoSpi =
+                        (TestDiscoverySpi)((IgniteEx)ignite).context().discovery().getInjectedDiscoverySpi();
+
+                    discoSpi.latch = latch;
+
+                    break;
+                }
+            }
+
+            client.close();
+
+            for (int k = 0; k < 100; k++) {
+                atomicCache.put(k, k);
+                txCache.put(k, k);
+
+                Lock lock = txCache.lock(k);
+                lock.lock();
+                lock.unlock();
+            }
+
+            for (int k = 0; k < 100; k++) {
+                assertEquals(Integer.valueOf(k), atomicCache.get(k));
+                assertEquals(Integer.valueOf(k), txCache.get(k));
+            }
+
+            latch.countDown();
+        }
+        finally {
+            System.clearProperty(IgniteSystemProperties.IGNITE_EXCHANGE_MERGE_DELAY);
+        }
     }
 
     /**
