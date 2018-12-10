@@ -21,7 +21,7 @@ import java.util.List;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 
 /**
- * Listens for WAL write events.
+ * Listens for WAL write events. TODO FIXME used for tests, how to do better ?
  */
 public interface WALWriteListener {
     /**

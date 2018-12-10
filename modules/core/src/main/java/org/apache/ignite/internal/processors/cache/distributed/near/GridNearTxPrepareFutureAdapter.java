@@ -178,18 +178,16 @@ public abstract class GridNearTxPrepareFutureAdapter extends
         if (tx.storeWriteThrough() || tx.txState().mvccEnabled()) // TODO IGNITE-3479 (onePhase + mvcc)
             return;
 
-        // TODO FIXME 1pc inverts commit ordering (backup first so counter assignment is not working)
+        if (txNodes.size() == 1) {
+            Map.Entry<UUID, Collection<UUID>> entry = txNodes.entrySet().iterator().next();
 
-//        if (txNodes.size() == 1) {
-//            Map.Entry<UUID, Collection<UUID>> entry = txNodes.entrySet().iterator().next();
-//
-//            assert entry != null;
-//
-//            Collection<UUID> backups = entry.getValue();
-//
-//            if (backups.size() <= 1)
-//                tx.onePhaseCommit(true);
-//        }
+            assert entry != null;
+
+            Collection<UUID> backups = entry.getValue();
+
+            if (backups.size() <= 1)
+                tx.onePhaseCommit(true);
+        }
     }
 
     /**
