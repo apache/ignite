@@ -3049,9 +3049,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             // No-op.
         }
 
-        @Override public void finishRecovery() {
-        }
-
         /**
          * @param cctx Cache context.
          * @param key Key.

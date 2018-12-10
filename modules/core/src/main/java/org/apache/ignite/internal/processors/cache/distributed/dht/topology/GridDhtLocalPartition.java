@@ -1442,10 +1442,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         return store.finalizeUpdateCounters();
     }
 
-    public void finishRecovery() {
-        store.finishRecovery();
-    }
-
     /**
      * Removed entry holder.
      */

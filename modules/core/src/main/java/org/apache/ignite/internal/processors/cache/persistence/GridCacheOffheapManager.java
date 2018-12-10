@@ -2501,17 +2501,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 delegate0.preload();
         }
 
-        @Override public void finishRecovery() {
-            try {
-                CacheDataStore delegate0 = init0(true);
-
-                if (delegate0 != null)
-                    delegate0.finishRecovery();
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-        }
     }
 
     /**

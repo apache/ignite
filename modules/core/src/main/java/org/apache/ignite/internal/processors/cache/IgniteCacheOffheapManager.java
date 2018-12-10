@@ -1158,7 +1158,5 @@ public interface IgniteCacheOffheapManager {
          * @throws IgniteCheckedException If failed.
          */
         public void preload() throws IgniteCheckedException;
-
-        public void finishRecovery();
     }
 }
