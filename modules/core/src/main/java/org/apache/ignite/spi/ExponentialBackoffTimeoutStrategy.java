@@ -102,16 +102,18 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
         if (remainingTime <= 0)
             throw new IgniteSpiOperationTimeoutException("Operation timed out [timeoutStrategy= " +this +"]");
 
-        long currTimeout0 = currTimeout;
-
         /*
             If timeout is zero that means we need return current verified timeout and calculate next timeout.
             In case of non zero we just reverify previously calculated value not to breach totalTimeout.
          */
-        if (timeout == 0)
+        if (timeout == 0) {
+            long prevTimeout = currTimeout;
+
             currTimeout = nextTimeout(currTimeout, maxTimeout);
 
-        return Math.min(currTimeout0, remainingTime);
+            return Math.min(prevTimeout, remainingTime);
+        } else
+            return Math.min(timeout, remainingTime);
     }
 
     /**

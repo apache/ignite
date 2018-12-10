@@ -42,19 +42,27 @@ public class ExponentialBackoffTimeoutStrategyTest extends GridCommonAbstractTes
     /** */
     @Test
     public void backoff() throws IgniteSpiOperationTimeoutException {
-        ExponentialBackoffTimeoutStrategy helper = new ExponentialBackoffTimeoutStrategy(
-            5_000L,
+        ExponentialBackoffTimeoutStrategy strategy = new ExponentialBackoffTimeoutStrategy(
+            25_000L,
             1000L,
             3_000L
         );
 
-        assertEquals(1000L, helper.nextTimeout());
+        assertEquals(1000L, strategy.nextTimeout());
 
-        assertEquals(2000L, helper.nextTimeout());
+        assertEquals(1000L, strategy.nextTimeout(1000L));
 
-        helper.nextTimeout();
+        assertEquals(2000L, strategy.nextTimeout());
 
-        assertEquals(3000L, helper.nextTimeout());
+        assertEquals(1000L, strategy.nextTimeout(1000L));
+
+        assertEquals(2000L, strategy.nextTimeout(2000L));
+
+        assertEquals(3000L, strategy.nextTimeout());
+
+        assertEquals(3000L, strategy.nextTimeout());
+
+        assertEquals(100L, strategy.nextTimeout(100L));
     }
 
     /** */
@@ -66,19 +74,19 @@ public class ExponentialBackoffTimeoutStrategyTest extends GridCommonAbstractTes
 
     /** */
     private void checkTimeout(
-        ExponentialBackoffTimeoutStrategy helper,
+        ExponentialBackoffTimeoutStrategy strategy,
         long timeout
     ) {
         long start = System.currentTimeMillis();
 
         while (true) {
-            boolean timedOut = helper.checkTimeout();
+            boolean timedOut = strategy.checkTimeout();
 
             if (timedOut) {
                 assertTrue( (System.currentTimeMillis() + 100 - start) >= timeout);
 
                 try {
-                    helper.nextTimeout();
+                    strategy.nextTimeout();
 
                     fail("Should fail with IgniteSpiOperationTimeoutException");
                 } catch (IgniteSpiOperationTimeoutException ignored) {
