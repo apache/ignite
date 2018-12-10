@@ -73,8 +73,6 @@ public class CacheTryLockMultithreadedTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
-
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(SRVS);
@@ -82,6 +80,11 @@ public class CacheTryLockMultithreadedTest extends GridCommonAbstractTest {
         client = true;
 
         startGrid(SRVS);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
     }
 
     /**

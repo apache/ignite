@@ -48,10 +48,8 @@ public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
     private CacheStore store;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
-        super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */

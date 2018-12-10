@@ -78,13 +78,6 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
     /** IP finder. */
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
-        super.beforeTestsStarted();
-    }
-
     /**
      *
      */
@@ -119,6 +112,8 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
         backups = DFLT_BACKUPS;
         partitions = DFLT_PARTITIONS;
     }
