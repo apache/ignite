@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridCacheTransfor
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheClientNodeChangingTopologyTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheClientNodePartitionsExchangeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheServerNodeConcurrentStart;
+import org.apache.ignite.internal.processors.cache.distributed.dht.CacheGetReadFromBackupFailoverTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CachePartitionPartialCountersMapSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedOptimisticTransactionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedPreloadRestartSelfTest;
@@ -201,7 +202,6 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedAtomicGetAndTransformStoreSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedBasicStoreSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridNearCacheStoreUpdateTest.class, ignoredTests);
-        //GridTestUtils.addTestIfNeeded(suite,GridCachePartitionedStorePutSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedBasicStoreMultiNodeSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedNearDisabledBasicStoreMultiNodeSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheConcurrentReadThroughTest.class, ignoredTests);
@@ -246,6 +246,7 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         GridTestUtils.addTestIfNeeded(suite, CacheLoadingConcurrentGridStartSelfTestAllowOverwrite.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheTxLoadingConcurrentGridStartSelfTestAllowOverwrite.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridPartitionedBackupLoadSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheGetReadFromBackupFailoverTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedLoadCacheSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedEventSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCachePartitionNotLoadedEventSelfTest.class, ignoredTests);

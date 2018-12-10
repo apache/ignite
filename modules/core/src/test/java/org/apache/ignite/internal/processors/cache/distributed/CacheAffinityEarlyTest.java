@@ -156,7 +156,7 @@ public class CacheAffinityEarlyTest extends GridCommonAbstractTest {
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
-        ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setBackups(1);
         ccfg.setNearConfiguration(null);
 
