@@ -3140,9 +3140,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             GridFutureAdapter<Object> ret;
 
             synchronized (this) {
-                if (!lastCp.cpFinishFut.isDone())
-                    lastCp.canceled = true;
-
                 scheduledCp.nextCpTs = U.currentTimeMillis();
 
                 scheduledCp.reason = "snapshot";
@@ -3152,6 +3149,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 scheduledCp.snapshotOperation = snapshotOperation;
 
                 ret = scheduledCp.cpBeginFut;
+
+                // Cancel last checkpoint if it still in progress.
+                if (!lastCp.cpFinishFut.isDone())
+                    lastCp.canceled = true;
 
                 notifyAll();
             }
@@ -3233,18 +3234,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @return {@code True} if current checkpoint operation canceleted.
          */
         private boolean checkCancel(Checkpoint chp) {
+            CheckpointProgress cpProgress = chp.progress;
+
             if (shutdownNow) {
-                chp.progress.cpFinishFut.onDone(new NodeStoppingException("Node is stopping."));
+                cpProgress.cpFinishFut.onDone(new NodeStoppingException("Node is stopping."));
 
                 return true;
             }
 
-            if (chp.progress.canceled) {
-                synchronized (this){
-                    // TODO
-
-                    printCheckpointCancel(chp);
-                }
+            // Check cancle flag for current checkpoint progress.
+            // Only one cancle is allow, second will be ignore via prevCanceled flag.
+            if (cpProgress.canceled && !cpProgress.prevCanceled) {
+                //TODO Actions after checkpoint canceled.
+                printCheckpointCancel(chp);
 
                 return true;
             }
@@ -3706,12 +3708,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         @SuppressWarnings("UnnecessaryLocalVariable")
-        private CheckpointProgress resetCheckpointProgress(CheckpointProgress previus, CheckpointProgress scheduled) {
+        private CheckpointProgress resetCheckpointProgress(CheckpointProgress last, CheckpointProgress scheduled) {
             CheckpointProgress curr = scheduled;
 
             // If previous checkpoint was canceled.
-            if (previus.canceled){
-                // TODO
+            if (last.canceled) {
+                curr.prevCanceled = true;
+
+                curr.cpPages = last.cpPages;
+                curr.pageStores = last.pageStores;
+
+                curr.destroyQueue.pendingReqs.putAll(last.destroyQueue.pendingReqs);
             }
 
             curr.started = true;
@@ -4306,7 +4313,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private GridMultiCollectionWrapper<FullPageId> cpPages;
 
         /** */
-        private final Map<PageStore, LongAdder> pageStores = new ConcurrentLinkedHashMap<>();
+        private Map<PageStore, LongAdder> pageStores = new ConcurrentLinkedHashMap<>();
 
         /** Partitions destroy queue. */
         private final PartitionDestroyQueue destroyQueue = new PartitionDestroyQueue();
@@ -4316,6 +4323,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         /** */
         private volatile boolean canceled;
+
+        /** */
+        private volatile boolean prevCanceled;
 
         /**
          * @param nextCpTs Next checkpoint timestamp.
