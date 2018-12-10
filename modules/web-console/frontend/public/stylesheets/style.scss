@@ -291,6 +291,14 @@ body {
         padding-left: var(--page-side-padding);
         padding-right: var(--page-side-padding);
         padding-bottom: var(--page-side-padding);
+        display: flex;
+        flex-direction: column;
+
+        &>ui-view {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
     }
 
     &.wrapper-public {
@@ -304,6 +312,7 @@ body {
     margin-left: auto;
     margin-right: auto;
     flex: 1 0 auto;
+    width: 100%;
     max-width: 530px;
 
     .public-page__title {
