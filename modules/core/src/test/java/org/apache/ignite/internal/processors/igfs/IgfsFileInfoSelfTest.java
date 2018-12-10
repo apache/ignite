@@ -69,7 +69,6 @@ public class IgfsFileInfoSelfTest extends IgfsCommonAbstractTest {
      * @param info Node info to test serialization for.
      * @throws IgniteCheckedException If failed.
      */
-    @Test
     public void testSerialization(IgfsEntryInfo info) throws IgniteCheckedException {
         assertEquals(info, mu(info));
     }

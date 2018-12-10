@@ -83,9 +83,9 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                                     label: 'Cache:',
                                     model: '$item.cache',
                                     name: '"serviceCache"',
-                                    placeholder: 'Choose cache',
+                                    placeholder: 'Key-affinity not used',
                                     placeholderEmpty: 'No caches configured for current cluster',
-                                    options: '$ctrl.cachesMenu',
+                                    options: '$ctrl.servicesCachesMenu',
                                     tip: 'Cache name used for key-to-node affinity calculation'
                                 })(
                                     pc-is-in-collection='$ctrl.clonedCluster.caches'
