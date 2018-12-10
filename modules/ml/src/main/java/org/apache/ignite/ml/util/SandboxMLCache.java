@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.util;
+package org.apache.ignite.ml.util;
 
 import java.io.File;
 import java.io.FileNotFoundException;
