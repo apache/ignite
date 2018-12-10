@@ -44,7 +44,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
@@ -221,7 +223,7 @@ public class GridNioServer<T> {
     private final GridConcurrentHashSet<GridSelectorNioSessionImpl> sessions = new GridConcurrentHashSet<>();
 
     /** Java NIO channels. */
-    private final GridConcurrentHashSet<GridNioSocketChannel> channels = new GridConcurrentHashSet<>();
+    private final ConcurrentMap<ConnectionKey, GridNioSocketChannel> channels = new ConcurrentHashMap<>();
 
     /** */
     private GridNioSslFilter sslFilter;
@@ -429,6 +431,11 @@ public class GridNioServer<T> {
      */
     public int port() {
         return locAddr != null ? locAddr.getPort() : -1;
+    }
+
+    /** */
+    public Set<ConnectionKey> channelKeys() {
+        return channels.keySet();
     }
 
     /**
@@ -949,10 +956,12 @@ public class GridNioServer<T> {
     public GridNioFuture<GridNioSocketChannel> createNioChannel(ConnectionKey key,
         SocketChannel channel) throws IgniteCheckedException {
         if (!closed) {
-            GridNioSocketChannel nioSocketCh;
+            if (channels.get(key) != null)
+                return new GridNioFinishedFuture<>(new IgniteCheckedException("Channel connection already exists: " + key));
 
-            if (!channels.add(nioSocketCh = new GridNioSocketChannelImpl(key, channel)))
-                throw new IgniteCheckedException("Channel connection already exists.");
+            GridNioSocketChannel nioSocketCh = new GridNioSocketChannelImpl(key, channel);
+
+            channels.putIfAbsent(key, nioSocketCh);
 
             onChannelCreated(nioSocketCh);
 
@@ -2638,6 +2647,7 @@ public class GridNioServer<T> {
             ConnectionKey connKey = ses.meta(CONN_IDX_META);
 
             assert connKey != null : ses;
+            assert channels.get(connKey) == null : connKey;
 
             processWrite(key);
 
@@ -2645,7 +2655,7 @@ public class GridNioServer<T> {
 
             GridNioSocketChannel nioSocketCh;
 
-            channels.add(nioSocketCh = new GridNioSocketChannelImpl(connKey, ch));
+            channels.putIfAbsent(connKey, nioSocketCh = new GridNioSocketChannelImpl(connKey, ch));
 
             onChannelCreated(nioSocketCh);
         }

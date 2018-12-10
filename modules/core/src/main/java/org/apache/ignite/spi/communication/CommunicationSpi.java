@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.nio.channels.WritableByteChannel;
 import java.util.Collection;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.nio.channel.GridNioSocketChannel;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.jetbrains.annotations.Nullable;
@@ -122,7 +123,7 @@ public interface CommunicationSpi<T extends Serializable> extends IgniteSpi {
      * @param remote Destination cluster node to communicate with.
      * @throws IgniteSpiException If fails.
      */
-    public default WritableByteChannel getOrCreateChannel(ClusterNode remote) throws IgniteSpiException {
+    public default GridNioSocketChannel getOrCreateChannel(ClusterNode remote) throws IgniteSpiException {
         throw new UnsupportedOperationException();
     }
 }

@@ -29,7 +29,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.SocketChannel;
-import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -47,6 +46,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
@@ -69,8 +69,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.managers.communication.GridNioConnectionManager;
-import org.apache.ignite.internal.managers.communication.GridNioConnectionManagerImpl;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
@@ -370,6 +368,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** Default connections per node. */
     public static final int DFLT_CONN_PER_NODE = 1;
 
+    /** Maximum {@link GridNioSession} connections per node. */
+    public static final int MAX_CONN_PER_NODE = 1024;
+
+    /** Maximum {@link GridNioSocketChannel} connections per node. */
+    public static final int MAX_SOCK_CONN_PER_NODE = 1024;
+
     /** No-op runnable. */
     private static final IgniteRunnable NOOP = new IgniteRunnable() {
         @Override public void run() {
@@ -391,6 +395,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /** */
     private ConnectionPolicy connPlc = new FirstConnectionPolicy();
+
+    /** */
+    private ConnectionPolicy sockConnPlc = new RandomConnectionPolicy();
 
     /** */
     private boolean enableForcibleNodeKill = IgniteSystemProperties
@@ -1225,9 +1232,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /** */
     private final GridLocalEventListener discoLsnr = new DiscoveryListener();
-
-    /** */
-    private GridNioConnectionManager connMgr = new GridNioConnectionManagerImpl();
 
     /**
      * @return {@code True} if ssl enabled.
@@ -2125,7 +2129,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         assertParameter(shmemPort > 0 || shmemPort == -1, "shmemPort > 0 || shmemPort == -1");
         assertParameter(selectorsCnt > 0, "selectorsCnt > 0");
         assertParameter(connectionsPerNode > 0, "connectionsPerNode > 0");
-        assertParameter(connectionsPerNode <= 1024, "connectionsPerNode <= 1024");
+        assertParameter(connectionsPerNode <= MAX_CONN_PER_NODE, "connectionsPerNode <= 1024");
 
         if (!failureDetectionTimeoutEnabled()) {
             assertParameter(reconCnt > 0, "reconnectCnt > 0");
@@ -4425,38 +4429,35 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /** {@inheritDoc} */
-    @Override public WritableByteChannel getOrCreateChannel(ClusterNode remote) throws IgniteSpiException {
-        // TODO: change index by connection node
-        ConnectionKey connKey = new ConnectionKey(remote.id(), 10, -1);
+    @Override public GridNioSocketChannel getOrCreateChannel(ClusterNode remote) throws IgniteSpiException {
+        connectGate.enter();
 
-        GridNioSocketChannel nioCh = connMgr.getChannel(connKey);
+        ConnectionKey connKey = new ConnectionKey(remote.id(), sockConnPlc.connectionIndex(), -1);
 
-        if (nioCh == null) {
-            connectGate.enter();
+        GridNioSocketChannel nioCh;
 
-            try {
-                final long start = System.currentTimeMillis();
+        try {
+            // TODO: add retry count for connKey
+            if (nioSrvr.channelKeys().contains(connKey))
+                throw new IgniteCheckedException("Connection key already used: " + connKey);
 
-                nioCh = createGridNioSocketChannel(remote, connKey);
+            final long start = System.currentTimeMillis();
 
-                connMgr.addChannel(connKey, nioCh);
+            nioCh = createGridNioSocketChannel(remote, connKey);
 
-                final long time = System.currentTimeMillis() - start;
+            final long time = System.currentTimeMillis() - start;
 
-                if (log.isDebugEnabled())
-                    log.debug("Tcp channel created [channel=" + nioCh + ", duration=" + time + " ms]");
+            if (log.isDebugEnabled())
+                log.debug("Tcp channel created [channel=" + nioCh + ", duration=" + time + " ms]");
 
-                return (WritableByteChannel) nioCh.channel();
-            }
-            catch (IgniteCheckedException e) {
-                throw new RuntimeException(e);
-            }
-            finally {
-                connectGate.leave();
-            }
+            return nioCh;
         }
-
-        return nioCh.channel();
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+        finally {
+            connectGate.leave();
+        }
     }
 
     /**
@@ -5070,6 +5071,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         /** {@inheritDoc} */
         @Override public int connectionIndex() {
             return (int)(U.safeAbs(Thread.currentThread().getId()) % connectionsPerNode);
+        }
+    }
+
+    /** */
+    private static class RandomConnectionPolicy implements ConnectionPolicy {
+        /** {@inheritDoc} */
+        @Override public int connectionIndex() {
+            return ThreadLocalRandom.current().nextInt(MAX_CONN_PER_NODE + 1, MAX_CONN_PER_NODE + MAX_SOCK_CONN_PER_NODE);
         }
     }
 
