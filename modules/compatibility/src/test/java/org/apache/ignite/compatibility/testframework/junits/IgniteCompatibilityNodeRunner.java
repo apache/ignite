@@ -73,9 +73,10 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
 
             X.println("Starting Ignite Node... Args=" + Arrays.toString(args));
 
-            if (args.length < 3) {
-                throw new IllegalArgumentException("At least four arguments expected:" +
-                    " [path/to/closure/file] [ignite-instance-name] [node-id] [sync-node-id] [node-ver] [optional/path/to/closure/file]");
+            if (args.length < 5) {
+                throw new IllegalArgumentException("At least five arguments expected:" +
+                    " [path/to/closure/file] [ignite-instance-name] [node-id] [sync-node-id] [node-ver]" +
+                    " [optional/path/to/closure/file]");
             }
 
             final Thread watchdog = delayedDumpClasspath();
