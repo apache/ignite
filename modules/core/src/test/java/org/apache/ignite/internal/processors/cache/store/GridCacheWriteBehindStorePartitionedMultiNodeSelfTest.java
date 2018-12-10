@@ -98,10 +98,8 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
-        super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */

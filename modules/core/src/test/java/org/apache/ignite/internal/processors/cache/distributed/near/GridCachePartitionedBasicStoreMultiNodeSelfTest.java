@@ -62,6 +62,11 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        if (nearCacheConfiguration() != null)
+            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
         for (GridCacheTestStore store : stores)
             store.resetTimestamp();
     }
@@ -77,11 +82,6 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
-        if (nearCacheConfiguration() != null)
-            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
         super.beforeTestsStarted();
 
         stores = Collections.synchronizedList(new ArrayList<GridCacheTestStore>());

@@ -54,10 +54,8 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
     private static final int PUT_CNT = 100;
 
     /** {@inheritDoc} */
-    @Override public void beforeTestsStarted() throws Exception {
+    @Override public void beforeTest() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
-        super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */

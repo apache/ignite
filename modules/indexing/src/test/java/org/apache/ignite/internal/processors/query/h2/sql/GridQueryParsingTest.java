@@ -647,6 +647,22 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         assertParseThrows("create table Int (_key int primary key, _val int) WITH \"template=cache\"",
             IgniteSQLException.class, "Direct specification of _KEY and _VAL columns is forbidden");
+
+        assertParseThrows("create table Person (" +
+                "unquoted_id LONG, " +
+                "\"quoted_id\" LONG, " +
+                "PERSON_NAME VARCHAR(255), " +
+                "PRIMARY KEY (UNQUOTED_ID, quoted_id)) " +
+                "WITH \"template=cache\"",
+            IgniteSQLException.class, "PRIMARY KEY column is not defined: QUOTED_ID");
+
+        assertParseThrows("create table Person (" +
+                "unquoted_id LONG, " +
+                "\"quoted_id\" LONG, " +
+                "PERSON_NAME VARCHAR(255), " +
+                "PRIMARY KEY (\"unquoted_id\", \"quoted_id\")) " +
+                "WITH \"template=cache\"",
+            IgniteSQLException.class, "PRIMARY KEY column is not defined: unquoted_id");
     }
 
     /** */

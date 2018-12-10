@@ -102,14 +102,6 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        if (nearEnabled())
-            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
@@ -147,6 +139,9 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        if (nearEnabled())
+            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
         backups = DFLT_BACKUPS;
         partitions = DFLT_PARTITIONS;
         preloadMode = ASYNC;

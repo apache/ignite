@@ -56,15 +56,18 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        if (nearEnabled())
-            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
         gridCnt = new AtomicInteger();
 
         super.beforeTestsStarted();
 
         if (nearEnabled())
             grid(nearOnlyIgniteInstanceName).createNearCache(DEFAULT_CACHE_NAME, nearConfiguration());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        if (nearEnabled())
+            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
     }
 
     /** {@inheritDoc} */

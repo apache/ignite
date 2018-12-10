@@ -78,10 +78,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
     private GridCacheModuloAffinityFunction aff = new GridCacheModuloAffinityFunction();
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
-        super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
