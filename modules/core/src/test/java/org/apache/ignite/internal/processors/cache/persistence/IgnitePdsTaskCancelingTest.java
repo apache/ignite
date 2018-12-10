@@ -87,6 +87,9 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(getDataStorageConfiguration());
 
+        // Set the thread pool size according to the NUM_TASKS.
+        cfg.setPublicThreadPoolSize(16);
+
         return cfg;
     }
 
