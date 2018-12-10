@@ -3225,7 +3225,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 updateMetrics(chp);
 
                 // Print checkpoint finish message.
-                printCheckpointFinishInfo(chp);
+                printCheckpointFinish(chp);
             }
             catch (IgniteCheckedException e) {
                 if (chp != null)
@@ -3277,6 +3277,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             chp.metrics.onPagesWriteStart();
 
             if (asyncRunner != null) {
+                updateHeartbeat();
+
                 CheckpointPages[] splittedCpPages = cpProgress.cpPages.split(splitFactor);
 
                 for (int i = 0; i < splittedCpPages.length; i++) {
@@ -3355,7 +3357,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         blockingSectionEnd();
                     }
 
-                    cpProgress.remoteStore(pageStore);
+                    cpProgress.fsyncPageStore(pageStore);
 
                     syncedPagesCntr.addAndGet(pageCounter.intValue());
                 }
@@ -3384,7 +3386,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
-         *
+         * Reset last checkpoint timeStamp.
          */
         private void resetLastCheckpointTimeStamp(){
             long cpTs = System.currentTimeMillis();
@@ -3398,7 +3400,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
-         *
+         * Print information if checkpoint was canceled.
          */
         private void printCheckpointCancel(Checkpoint chp){
             if (log.isInfoEnabled()) {
@@ -3415,9 +3417,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
-         *
+         * Print information if checkpoint was finished.
          */
-        private void printCheckpointFinishInfo(Checkpoint chp) {
+        private void printCheckpointFinish(Checkpoint chp) {
             if (chp.hasPages() || chp.hasDestroyedPartitions()) {
                 if (log.isInfoEnabled()) {
                     String walSegsCoveredMsg = prepareWalSegsCoveredMsg(chp.walSegsCoveredRange);
@@ -3622,11 +3624,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 chp.metrics.onMarkStart();
 
                 synchronized (this) {
+                    // Reset current checkpoint in progress and scheduled checkpoint.
                     curr = chp.progress = resetCheckpointProgress(lastCp, scheduledCp);
                 }
 
                 PartitionAllocationMap parts = new PartitionAllocationMap();
 
+                // Notify checkpoint listeners on checkpoint write lock.
                 notifyLisnteners(curr, parts);
 
                 if (curr.nextSnapshot)
@@ -3670,9 +3674,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 chp.metrics.onLockRelease();
             }
 
+            //TODO complete future only after log sync.
             curr.cpBeginFut.onDone();
 
-            awaitSnapshotFuture(curr, snapFut);
+            snapshotMgr.onMarkCheckPointEnd(curr.snapshotOperation, snapFut);
 
             // We should fsync WAL and write file marker if checkpoint is not empty.
             if (chp.hasPages() || chp.hasDestroyedPartitions()) {
@@ -3713,22 +3718,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         chp.metrics.lockWaitDuration(),
                         chp.metrics.lockHoldDuration(),
                         curr.reason));
-            }
-        }
-
-        /**
-         * @param chpProgress Checkpoint progress.
-         * @param fut Snapshot future.
-         */
-        private void awaitSnapshotFuture(CheckpointProgress chpProgress, IgniteFuture<?> fut) {
-            if (fut != null) {
-                try {
-                    fut.get();
-                }
-                catch (IgniteException e) {
-                    U.error(log, "Failed to wait for snapshot operation initialization: " +
-                        chpProgress.snapshotOperation, e);
-                }
             }
         }
 
@@ -3874,7 +3863,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @return tuple with collections of FullPageIds obtained from each PageMemory and overall number of dirty
          * pages.
          */
-        private Collection<GridMultiCollectionWrapper<FullPageId>> beginAllCheckpoints() {
+        private T2<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> beginAllCheckpoints() {
             Collection<GridMultiCollectionWrapper<FullPageId>> res = new ArrayList(dataRegions().size());
 
             int pagesNum = 0;
@@ -3892,7 +3881,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             currCheckpointPagesCnt = pagesNum;
 
-            return res;
+            return new T2<>(res, pagesNum);
         }
 
         /**
@@ -3933,8 +3922,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             for (CheckpointEntry cp : removedFromHistory)
                 removeCheckpointFiles(cp);
 
-            if (chp.progress != null)
-                chp.progress.cpFinishFut.onDone();
+            CheckpointProgress cpProgress = chp.progress;
+
+            if (cpProgress != null)
+                cpProgress.cpFinishFut.onDone();
         }
 
         /** {@inheritDoc} */
@@ -4145,14 +4136,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @return {@code true} if this checkpoint contains at least one dirty page.
          */
         public boolean hasPages() {
-            return !progress.cpPages.isEmpty();
+            return pages() > 0;
         }
 
         /**
          *
          */
         public int pages() {
-            return progress.cpPages.pages();
+            return progress.cpPages.checkpointPages();
         }
 
         /**
@@ -4268,7 +4259,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private volatile SnapshotOperation snapshotOperation;
 
         /** */
-        private final CheckpointPagesHandler cpPages;
+        private final CheckpointPagesHolder cpPages;
 
         /** */
         private Map<PageStore, LongAdder> pageStores;
@@ -4280,41 +4271,33 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private String reason;
 
         /** */
-        private volatile boolean canceled;
+        private boolean canceled;
 
         /** */
-        private volatile boolean prevCanceled;
+        private boolean prevCanceled;
 
         /**
-         * @param order
+         * @param order Checkpoint write order.
          * @param nextCpTs Next checkpoint timestamp.
          */
         private CheckpointProgress(CheckpointWriteOrder order, long nextCpTs) {
-            cpPages = new CheckpointPagesHandler(order);
+            cpPages = new CheckpointPagesHolder(order);
             pageStores = new ConcurrentLinkedHashMap<>();
             destroyQueue = new PartitionDestroyQueue();
 
             this.nextCpTs = nextCpTs;
         }
 
-
-        /**
-         * @param pageStore Add page store for fsync.
-         */
-        private void addStore(PageStore pageStore) {
-
-        }
-
         /**
          * @param pageStore Remove page store from fsync stores collection.
          */
-        private void remoteStore(PageStore pageStore) {
+        private void fsyncPageStore(PageStore pageStore) {
             pageStores.remove(pageStore);
         }
     }
 
     private interface CheckpointPages {
-        int pages();
+        int checkpointPages();
 
         boolean isEmpty();
 
@@ -4325,30 +4308,41 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         CheckpointPages[] split(int parts);
     }
 
-    private static class CheckpointPagesHandler implements CheckpointPages {
+    private static class CheckpointPagesHolder implements CheckpointPages {
 
         private final CheckpointWriteOrder writeOrder;
 
+        private Collection<GridMultiCollectionWrapper<FullPageId>> cpPages;
+
         private Collection<FullPageId> pageIds;
 
-        private CheckpointPagesHandler(CheckpointWriteOrder order) {
+        private Set<FullPageId> retrySet;
+
+        private int totalCpPages;
+
+        private CheckpointPagesHolder(CheckpointWriteOrder order) {
             writeOrder = order;
         }
 
-        private void mergeCheckpoint(CheckpointPagesHandler checkpointPages) {
+        private void mergeCheckpoint(CheckpointPagesHolder checkpointPages) {
+            if (pageIds == null)
+                pageIds = checkpointPages.pageIds;
 
+            if (retrySet == null)
+                retrySet = checkpointPages.retrySet;
         }
 
-        private void addCheckpointPages(Collection<GridMultiCollectionWrapper<FullPageId>> pages) {
-
+        private void addCheckpointPages(T2<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> tup) {
+            cpPages = tup.get1();
+            totalCpPages = tup.get2();
         }
 
-        @Override public int pages() {
-            return 0;
+        @Override public int checkpointPages() {
+            return totalCpPages;
         }
 
         @Override public boolean isEmpty() {
-            return false;
+            return pageIds.isEmpty() && retrySet.isEmpty();
         }
 
         @Override public Iterator<FullPageId> iterator() {
@@ -4368,7 +4362,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         @Override public void addForRetry(FullPageId fullPageId) {
+            if (retrySet == null)
+                retrySet = new HashSet<>();
 
+            retrySet.add(fullPageId);
         }
 
         @Override public CheckpointPages[] split(int parts) {
@@ -4380,12 +4377,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
-         * Reorders list of checkpoint pages and splits them into needed number of sublists according to
-         * {@link DataStorageConfiguration#getCheckpointThreads()} and
-         * {@link DataStorageConfiguration#getCheckpointWriteOrder()}.
-         *
+         * Reorders list of checkpoint pages and splits them into needed number of sublists according to {@link
+         * DataStorageConfiguration#getCheckpointThreads()} and {@link DataStorageConfiguration#getCheckpointWriteOrder()}.
          */
-        private Collection<FullPageId>[] splitAndSortCpPagesIfNeeded(Collection<FullPageId>  pages, int parts) {
+        private Collection<FullPageId>[] splitAndSortCpPagesIfNeeded(Collection<FullPageId> pages, int parts) {
             List<FullPageId> cpPagesList = new ArrayList<>(pages.size());
 
             cpPagesList.addAll(pages);
