@@ -58,6 +58,10 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SER
 
 /**
  * Services deployment task.
+ *
+ * @see ServicesDeploymentActions
+ * @see ServicesSingleDeploymentsMessage
+ * @see ServicesFullDeploymentsMessage
  */
 class ServicesDeploymentTask {
     /** Task's completion future. */

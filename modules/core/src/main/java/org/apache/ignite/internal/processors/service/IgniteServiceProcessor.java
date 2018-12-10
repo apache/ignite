@@ -93,6 +93,11 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
  * <p/>
  * Event driven implementation of service processor. Services deployment are managed by messages across discovery spi
  * and communication spi.
+ *
+ * @see ServicesDeploymentManager
+ * @see ServicesDeploymentTask
+ * @see ServicesDeploymentActions
+ * @see DynamicServicesChangeRequestBatchMessage
  */
 @SkipDaemon
 @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
@@ -100,10 +105,34 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /** Local service instances. */
     private final ConcurrentMap<IgniteUuid, Collection<ServiceContextImpl>> locServices = new ConcurrentHashMap<>();
 
-    /** Cluster services info <b>updated from discovery thread</b>. */
+    /**
+     * Collection of services information that were registered in the cluster. <b>It is updated from discovery
+     * thread</b>. It will be included in the initial data bag to be sent on newly joining node, it means a new node
+     * will have all services' information to be able to work with services in the whole cluster.
+     * <p/>
+     * This collection is used, to make fast verification for requests of change service's state and prepare services
+     * deployments actions (possible long-running) which will be processed from a queue by deployment worker.
+     * <p/>
+     * Collection reflects a services' state which will be reached as soon as a relevant deployment task will be
+     * processed.
+     *
+     * @see ServicesDeploymentActions
+     * @see ServicesDeploymentManager
+     */
     private final ConcurrentMap<IgniteUuid, ServiceInfo> registeredServices = new ConcurrentHashMap<>();
 
-    /** Cluster services info <b>updated from services deployment worker</b>. */
+    /**
+     * Collection of services information that were processed by deployment worker. <b>It is updated from deployment
+     * worker</b>.
+     * <p/>
+     * Collection reflects a state of deployed services for a moment of the latest deployment task processed by
+     * deployment worker.
+     * <p/>
+     * It is catching up the state of {@link #registeredServices}.
+     *
+     * @see ServicesDeploymentManager#readyTopologyVersion()
+     * @see ServicesDeploymentTask
+     */
     private final ConcurrentMap<IgniteUuid, ServiceInfo> deployedServices = new ConcurrentHashMap<>();
 
     /** Deployment futures. */
