@@ -69,8 +69,8 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
     /** */
     private final GridQueryTypeDescriptor type;
 
-    /** */
-    private final H2Schema schema;
+    /** Schema name. */
+    private final String schemaName;
 
     /** Cache context info. */
     private final GridCacheContextInfo cacheInfo;
@@ -91,20 +91,27 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
      * Constructor.
      *
      * @param idx Indexing.
-     * @param schema Schema.
+     * @param schemaName Schema name.
      * @param type Type descriptor.
      * @param cacheInfo Cache context info.
      * @param isSql {@code true} in case table has been created from SQL.
      */
-    public H2TableDescriptor(IgniteH2Indexing idx, H2Schema schema, GridQueryTypeDescriptor type,
+    public H2TableDescriptor(IgniteH2Indexing idx, String schemaName, GridQueryTypeDescriptor type,
         GridCacheContextInfo cacheInfo, boolean isSql) {
         this.idx = idx;
         this.type = type;
-        this.schema = schema;
+        this.schemaName = schemaName;
         this.cacheInfo = cacheInfo;
         this.isSql = isSql;
 
-        fullTblName = H2Utils.withQuotes(schema.schemaName()) + "." + H2Utils.withQuotes(type.tableName());
+        fullTblName = H2Utils.withQuotes(schemaName) + "." + H2Utils.withQuotes(type.tableName());
+    }
+
+    /**
+     * @return Indexing.
+     */
+    public IgniteH2Indexing indexing() {
+        return idx;
     }
 
     /**
@@ -122,17 +129,10 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
     }
 
     /**
-     * @return Schema.
-     */
-    public H2Schema schema() {
-        return schema;
-    }
-
-    /**
      * @return Schema name.
      */
     public String schemaName() {
-        return schema.schemaName();
+        return schemaName;
     }
 
     /**
@@ -226,7 +226,6 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
         Index hashIdx = createHashIndex(
             tbl,
-            PK_HASH_IDX_NAME,
             wrappedKeyCols
         );
 
@@ -422,7 +421,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
             );
         }
         else if (idxDesc.type() == QueryIndexType.GEOSPATIAL)
-            return H2Utils.createSpatialIndex(tbl, idxDesc.name(), cols.toArray(new IndexColumn[cols.size()]));
+            return H2Utils.createSpatialIndex(tbl, idxDesc.name(), cols.toArray(new IndexColumn[0]));
 
         throw new IllegalStateException("Index type: " + idxDesc.type());
     }
@@ -431,15 +430,14 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
      * Create hash index.
      *
      * @param tbl Table.
-     * @param idxName Index name.
      * @param cols Columns.
      * @return Index.
      */
-    private Index createHashIndex(GridH2Table tbl, String idxName, List<IndexColumn> cols) {
+    private Index createHashIndex(GridH2Table tbl, List<IndexColumn> cols) {
         if (cacheInfo.affinityNode()) {
             assert pkHashIdx == null : pkHashIdx;
 
-            pkHashIdx = new H2PkHashIndex(cacheInfo.gridCacheContext(), tbl, idxName, cols);
+            pkHashIdx = new H2PkHashIndex(cacheInfo.gridCacheContext(), tbl, PK_HASH_IDX_NAME, cols);
 
             return pkHashIdx;
         }
@@ -451,8 +449,6 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
      * Handle drop.
      */
     void onDrop() {
-        idx.removeDataTable(tbl);
-
         tbl.destroy();
 
         U.closeQuiet(luceneIdx);
