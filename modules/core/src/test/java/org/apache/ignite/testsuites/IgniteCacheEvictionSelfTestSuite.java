@@ -64,7 +64,6 @@ public class IgniteCacheEvictionSelfTestSuite {
      * @return Cache eviction test suite.
      */
     public static TestSuite suite(Collection<Class> ignoredTests) {
-    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Cache Eviction Test Suite");
 
         GridTestUtils.addTestIfNeeded(suite, FifoEvictionPolicySelfTest.class, ignoredTests);
