@@ -24,11 +24,20 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  * Test remove all method.
  */
 public class CacheRemoveAllSelfTest extends GridCacheAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override public void setUp() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10082");
+
+        super.setUp();
+    }
+
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 2 * 60 * 1000;

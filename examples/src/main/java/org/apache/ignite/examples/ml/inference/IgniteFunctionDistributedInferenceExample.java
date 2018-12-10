@@ -27,8 +27,6 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.examples.ml.regression.linear.LinearRegressionLSQRTrainerExample;
-import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
-import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.inference.InfModel;
 import org.apache.ignite.ml.inference.builder.IgniteDistributedInfModelBuilder;
 import org.apache.ignite.ml.inference.parser.IgniteFunctionInfModelParser;
@@ -38,6 +36,8 @@ import org.apache.ignite.ml.inference.reader.InfModelReader;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
+import org.apache.ignite.ml.util.MLSandboxDatasets;
+import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
  * This example is based on {@link LinearRegressionLSQRTrainerExample}, but to perform inference it uses an approach

@@ -14,23 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.cache.CacheAtomicityMode;
 
 /**
- * Test getEntry and getEntries methods.
+ *
  */
-public class CacheGetEntryPessimisticSerializableSeltTest extends CacheGetEntryAbstractTest {
+public class MvccCacheGroupMetricsMBeanTest extends CacheGroupMetricsMBeanTest {
     /** {@inheritDoc} */
-    @Override protected TransactionConcurrency concurrency() {
-        return TransactionConcurrency.PESSIMISTIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected TransactionIsolation isolation() {
-        return TransactionIsolation.SERIALIZABLE;
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
     }
 }
