@@ -18,18 +18,11 @@
 package org.apache.ignite.igfs;
 
 import org.apache.ignite.IgniteFileSystem;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 
 /**
  * Tests coordinator transfer from one node to other.
  */
 public class IgfsFragmentizerTopologySelfTest extends IgfsFragmentizerAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * @throws Exception If failed.
      */
