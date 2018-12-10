@@ -2876,6 +2876,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Finishes query recovery for given cache using updated cluster-wide cache descriptor during exchange.
+     *
+     * @param cacheCtx Cache context.
+     * @param clusterWideDesc Cluster-wide descriptor.
+     */
+    public void finishRecovery(GridCacheContext cacheCtx, DynamicCacheDescriptor clusterWideDesc) {
+        GridCacheContextInfo info = idx.registeredCacheInfo(cacheCtx.name());
+
+        if (info != null)
+            info.changeDeploymentId(clusterWideDesc.deploymentId());
+    }
+
+    /**
      * @param ver Version.
      */
     public static void setRequestAffinityTopologyVersion(AffinityTopologyVersion ver) {

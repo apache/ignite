@@ -39,7 +39,7 @@ public class GridCacheContextInfo<K, V> {
     private final GridKernalContext ctx;
 
     /** Dynamic cache deployment ID. */
-    private final IgniteUuid dynamicDeploymentId;
+    private volatile IgniteUuid dynamicDeploymentId;
 
     /** Cache configuration. */
     private final CacheConfiguration config;
@@ -170,6 +170,13 @@ public class GridCacheContextInfo<K, V> {
      */
     public boolean isCacheContextInited() {
         return gridCacheContext != null;
+    }
+
+    /**
+     * Change local deployment id to cluster-wide during exchange.
+     */
+    public void changeDeploymentId(IgniteUuid clusterWideDeploymentId) {
+        this.dynamicDeploymentId = clusterWideDeploymentId;
     }
 
     /** {@inheritDoc} */
