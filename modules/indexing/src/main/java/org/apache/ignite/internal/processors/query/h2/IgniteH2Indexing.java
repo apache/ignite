@@ -75,7 +75,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.query.h2.affinity.PartitionInfo;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -101,6 +100,7 @@ import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
+import org.apache.ignite.internal.processors.query.h2.affinity.PartitionNode;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeClientIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
@@ -2306,11 +2306,41 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (cancel == null)
             cancel = new GridQueryCancel();
 
+        // TODO: Use intersection (https://issues.apache.org/jira/browse/IGNITE-10567)
         int partitions[] = qry.getPartitions();
 
         if (partitions == null && twoStepQry.derivedPartitions() != null) {
             try {
-                partitions = calculateQueryPartitions(twoStepQry.derivedPartitions(), qry.getArgs());
+                PartitionNode partTree = twoStepQry.derivedPartitions().tree();
+
+                Collection<Integer> partitions0 = partTree.apply(qry.getArgs());
+
+                if (F.isEmpty(partitions0))
+                    partitions = new int[0];
+                else {
+                    partitions = new int[partitions0.size()];
+
+                    int i = 0;
+
+                    for (Integer part : partitions0)
+                        partitions[i++] = part;
+                }
+
+                if (partitions.length == 0) //here we know that result of requested query is empty
+                    return new QueryCursorImpl<List<?>>(new Iterable<List<?>>(){
+                        @Override public Iterator<List<?>> iterator() {
+                            return new Iterator<List<?>>(){
+
+                                @Override public boolean hasNext() {
+                                    return false;
+                                }
+
+                                @Override public List<?> next() {
+                                    return null;
+                                }
+                            };
+                        }
+                    });
             }
             catch (IgniteCheckedException e) {
                 throw new CacheException("Failed to calculate derived partitions: [qry=" + qry.getSql() + ", params=" +
@@ -3249,65 +3279,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
         rdcQryExec.onDisconnected(reconnectFut);
-    }
-
-    /**
-     * Bind query parameters and calculate partitions derived from the query.
-     *
-     * @param partInfoList Collection of query derived partition info.
-     * @param params Query parameters.
-     * @return Partitions.
-     * @throws IgniteCheckedException, If fails.
-     */
-    private int[] calculateQueryPartitions(PartitionInfo[] partInfoList, Object[] params)
-        throws IgniteCheckedException {
-
-        ArrayList<Integer> list = new ArrayList<>(partInfoList.length);
-
-        for (PartitionInfo partInfo: partInfoList) {
-            int partId = (partInfo.partition() >= 0) ? partInfo.partition() :
-                bindPartitionInfoParameter(partInfo, params);
-
-            int i = 0;
-
-            while (i < list.size() && list.get(i) < partId)
-                i++;
-
-            if (i < list.size()) {
-                if (list.get(i) > partId)
-                    list.add(i, partId);
-            }
-            else
-                list.add(partId);
-        }
-
-        int[] result = new int[list.size()];
-
-        for (int i = 0; i < list.size(); i++)
-            result[i] = list.get(i);
-
-        return result;
-    }
-
-    /**
-     * Bind query parameter to partition info and calculate partition.
-     *
-     * @param partInfo Partition Info.
-     * @param params Query parameters.
-     * @return Partition.
-     * @throws IgniteCheckedException, If fails.
-     */
-    private int bindPartitionInfoParameter(PartitionInfo partInfo, Object[] params)
-        throws IgniteCheckedException {
-        assert partInfo != null;
-        assert partInfo.partition() < 0;
-
-        GridH2RowDescriptor desc = dataTable(schema(partInfo.cacheName()), partInfo.tableName()).rowDescriptor();
-
-        Object param = H2Utils.convert(params[partInfo.paramIdx()],
-                desc, partInfo.dataType());
-
-        return kernalContext().affinity().partition(partInfo.cacheName(), param);
     }
 
     /** {@inheritDoc} */
