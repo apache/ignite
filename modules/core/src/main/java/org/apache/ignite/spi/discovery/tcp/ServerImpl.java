@@ -5450,6 +5450,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                             processCustomMessage(msg, waitForNotification);
                         }
                     }
+                    else
+                        log.warning("Discarding duplicated custom event message [msg=" + msg + "]");
 
                     msg.message(null, msg.messageBytes());
                 }
@@ -5487,28 +5489,23 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
             }
             else {
-                TcpDiscoverySpiState state0;
+                if (msg.verified()) {
+                    if (msg.topologyVersion() != ring.topologyVersion()) {
+                        log.warning("Discarding custom event message [msg=" + msg + ", ring=" + ring + "] (topology version mismatch)");
 
-                synchronized (mux) {
-                    state0 = spiState;
-                }
+                        return;
+                    }
 
-                if (msg.verified() && msg.topologyVersion() != ring.topologyVersion()) {
-                    if (log.isDebugEnabled())
-                        log.debug("Discarding custom event message [msg=" + msg + ", ring=" + ring + ']');
-
-                    return;
-                }
-
-                if (msg.verified() && state0 == CONNECTED && pendingMsgs.procCustomMsgs.add(msg.id())) {
                     assert msg.topologyVersion() == ring.topologyVersion() :
                         "msg: " + msg + ", topVer=" + ring.topologyVersion();
 
-                    notifyDiscoveryListener(msg, waitForNotification);
-                }
+                    if (pendingMsgs.procCustomMsgs.add(msg.id()))
+                        notifyDiscoveryListener(msg, waitForNotification);
+                    else
+                        log.warning("Discarding duplicated custom event message [msg=" + msg + "]");
 
-                if (msg.verified())
                     msg.message(null, msg.messageBytes());
+                }
 
                 if (sendMessageToRemotes(msg))
                     sendMessageAcrossRing(msg);
@@ -5600,22 +5597,21 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void notifyDiscoveryListener(TcpDiscoveryCustomEventMessage msg, boolean waitForNotification) {
             DiscoverySpiListener lsnr = spi.lsnr;
 
-            TcpDiscoverySpiState spiState = spiStateCopy();
+            TcpDiscoverySpiState state0;
 
             Map<Long, Collection<ClusterNode>> hist;
 
             synchronized (mux) {
                 hist = new TreeMap<>(topHist);
+
+                state0 = spiState;
             }
 
             Collection<ClusterNode> snapshot = hist.get(msg.topologyVersion());
 
-            if (lsnr != null && (spiState == CONNECTED || spiState == DISCONNECTING)) {
-                TcpDiscoveryNode node = ring.node(msg.creatorNodeId());
+            ClusterNode node = ring.node(msg.creatorNodeId());
 
-                if (node == null)
-                    return;
-
+            if (lsnr != null && (state0 == CONNECTED || state0 == DISCONNECTING) && node != null) {
                 DiscoverySpiCustomMessage msgObj;
 
                 try {
@@ -5625,12 +5621,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                     throw new IgniteException("Failed to unmarshal discovery custom message: " + msg, t);
                 }
 
-                IgniteFuture<?> fut = lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
+                IgniteFuture<?> fut = lsnr.onDiscovery(
+                    DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
                     msg.topologyVersion(),
                     node,
                     snapshot,
                     hist,
-                    msgObj);
+                    msgObj
+                );
 
                 if (waitForNotification || msgObj.isMutable()) {
                     blockingSectionBegin();
@@ -5655,6 +5653,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
             }
+            else if (log.isInfoEnabled())
+                log.info("Skip notifyDiscoveryListener spiState = " + state0
+                    + ", waitForNotification = " + waitForNotification
+                    + ", listener = " + lsnr
+                    + ", creatorNode = " + node
+                    + ", for message = " + msg
+                );
         }
 
         /**

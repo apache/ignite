@@ -667,6 +667,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if (type == EVT_DISCOVERY_CUSTOM_EVT) {
                     assert customMsg != null;
 
+                    if (log.isDebugEnabled())
+                        log.debug("Custom discovery message received : " + customMsg);
+
                     boolean incMinorTopVer;
 
                     if (customMsg instanceof ChangeGlobalStateMessage) {
@@ -973,8 +976,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             assert customMsg != null && customMsg.id() != null : customMsg;
 
             if (rcvdCustomMsgs.contains(customMsg.id())) {
-                if (log.isDebugEnabled())
-                    log.debug("Received duplicated custom message, will ignore [msg=" + customMsg + "]");
+                log.warning("Received duplicated custom message, will ignore [msg=" + customMsg + "]");
 
                 return true;
             }
