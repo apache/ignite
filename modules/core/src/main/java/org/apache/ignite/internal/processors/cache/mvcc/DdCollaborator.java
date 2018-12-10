@@ -81,11 +81,13 @@ public class DdCollaborator {
                             try {
                                 NearTxLocator blockerTx = fut.get();
 
-                                sendProbe(
-                                    probe.initiatorVersion(),
-                                    tx.nearXidVersion(),
-                                    blockerTx.xidVersion(),
-                                    blockerTx.nodeId());
+                                if (blockerTx != null) {
+                                    sendProbe(
+                                        probe.initiatorVersion(),
+                                        tx.nearXidVersion(),
+                                        blockerTx.xidVersion(),
+                                        blockerTx.nodeId());
+                                }
                             }
                             catch (IgniteCheckedException e) {
                                 e.printStackTrace();
