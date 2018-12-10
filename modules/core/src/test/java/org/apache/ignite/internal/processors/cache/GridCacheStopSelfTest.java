@@ -140,6 +140,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopExplicitMvccTransactions() throws Exception {
         atomicityMode = TRANSACTIONAL_SNAPSHOT;
 
@@ -149,6 +150,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopImplicitMvccTransactions() throws Exception {
         atomicityMode = TRANSACTIONAL_SNAPSHOT;
 
@@ -158,6 +160,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopExplicitMvccTransactionsReplicated() throws Exception {
         atomicityMode = TRANSACTIONAL_SNAPSHOT;
         replicated = true;
@@ -168,6 +171,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopImplicitMvccTransactionsReplicated() throws Exception {
         atomicityMode = TRANSACTIONAL_SNAPSHOT;
         replicated = true;

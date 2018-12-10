@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionResult;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -224,7 +225,7 @@ public class GridCacheTwoStepQuery {
      * @return Query derived partitions info.
      */
     public PartitionResult derivedPartitions() {
-        return this.derivedPartitions;
+        return derivedPartitions;
     }
 
     /**
@@ -303,5 +304,19 @@ public class GridCacheTwoStepQuery {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheTwoStepQuery.class, this);
+    }
+
+    /**
+     * @return {@code True} is system views exist.
+     */
+    public boolean hasSystemViews() {
+        if (tablesCount() > 0) {
+            for (QueryTable tbl : tables()) {
+                if (QueryUtils.SCHEMA_SYS.equals(tbl.schema()))
+                    return true;
+            }
+        }
+
+        return false;
     }
 }

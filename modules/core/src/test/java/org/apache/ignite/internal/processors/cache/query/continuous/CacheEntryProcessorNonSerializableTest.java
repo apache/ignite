@@ -231,6 +231,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
 
     /**
      */
+    @Test
     public void testMvccPessimisticOnePhaseCommit() {
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 1).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
@@ -250,6 +251,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
 
     /**
      */
+    @Test
     public void testMvccPessimisticOnePhaseCommitFullSync() {
         CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 1).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
@@ -258,6 +260,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
 
     /**
      */
+    @Test
     public void testMvccPessimisticOnePhaseCommitFullSyncWithNearCache() {
         fail("https://issues.apache.org/jira/browse/IGNITE-7187");
 
@@ -269,6 +272,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
 
     /**
      */
+    @Test
     public void testMvccPessimistic() {
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 2).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
@@ -277,6 +281,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
 
     /**
      */
+    @Test
     public void testMvccPessimisticWithNearCache() {
         fail("https://issues.apache.org/jira/browse/IGNITE-7187");
 
@@ -288,6 +293,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
 
     /**
      */
+    @Test
     public void testMvccPessimisticFullSync() {
         CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 2).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
@@ -297,6 +303,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccPessimisticFullSyncWithNearCache() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-7187");
 
@@ -385,6 +392,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticWithNearCache() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 2)
             .setNearConfiguration(new NearCacheConfiguration<>());

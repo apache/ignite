@@ -23,8 +23,6 @@ import org.apache.ignite.GridTestJob;
 import org.apache.ignite.GridTestTaskSession;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTaskSession;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridSpiTestContext;
 import org.apache.ignite.testframework.GridTestNode;
@@ -58,11 +56,6 @@ public class GridRoundRobinLoadBalancingSpiTopologyChangeSelfTest
         spiCtx.createRemoteNodes(10);
 
         return spiCtx;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
     }
 
     /**

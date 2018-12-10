@@ -218,6 +218,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoAffinityChangeOnClientLeftWithMergedExchanges() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_EXCHANGE_MERGE_DELAY, "1000");
 

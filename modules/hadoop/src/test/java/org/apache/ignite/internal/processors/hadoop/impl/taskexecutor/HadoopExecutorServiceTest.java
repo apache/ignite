@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.taskexecutor;
 
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopExecutorService;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -34,11 +32,6 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class HadoopExecutorServiceTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * @throws Exception If failed.
      */

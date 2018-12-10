@@ -18,7 +18,6 @@
 package org.apache.ignite.testsuites;
 
 import java.util.Collection;
-import java.util.Set;
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.cache.IgniteCacheEntryProcessorSequentialCallTest;

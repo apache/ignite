@@ -71,6 +71,8 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         ignite = startGrid(1);
 
         cache = ignite.cache(DEFAULT_CACHE_NAME);

@@ -43,8 +43,6 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -104,9 +102,6 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
     /** Atomicity mode. */
     private final CacheAtomicityMode atomicityMode;
 
-    /** No-Op failure handler. */
-    private boolean noOpFailureHnd;
-
     /**
      * Constructor.
      *
@@ -128,8 +123,6 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         super.beforeTest();
 
         GridQueryProcessor.idxCls = BlockingIndexing.class;
-
-        noOpFailureHnd = false;
     }
 
     /** {@inheritDoc} */
@@ -145,14 +138,6 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         stopAllGrids();
 
         super.afterTest();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        if (noOpFailureHnd)
-            return new NoOpFailureHandler();
-
-        return super.getFailureHandler(igniteInstanceName);
     }
 
     /** {@inheritDoc} */
@@ -196,8 +181,6 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      * @throws Exception If failed.
      */
     public void checkCoordinatorChange(boolean addOrRemove) throws Exception {
-        noOpFailureHnd = true;
-
         CountDownLatch finishLatch = new CountDownLatch(2);
 
         // Start servers.
@@ -793,8 +776,6 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      * @throws Exception If failed.
      */
     private void checkClientReconnect(final boolean restartCache, boolean dynamicCache) throws Exception {
-        noOpFailureHnd = true;
-
         // Start complex topology.
         final IgniteEx srv = ignitionStart(serverConfiguration(1));
         ignitionStart(serverConfiguration(2));
@@ -882,8 +863,6 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
     @SuppressWarnings("StringConcatenationInLoop")
     @Test
     public void testConcurrentOperationsAndNodeStartStopMultithreaded() throws Exception {
-        noOpFailureHnd = true;
-
         // Start several stable nodes.
         ignitionStart(serverConfiguration(1));
         ignitionStart(serverConfiguration(2));
