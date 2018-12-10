@@ -15,7 +15,7 @@
  * $Revision: 88625 $
 */
 
-#include "teamcity_messages.h"
+#include "teamcity/teamcity_messages.h"
 
 #include <cstdlib>
 #include <iostream>

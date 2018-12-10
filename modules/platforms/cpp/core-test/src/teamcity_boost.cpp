@@ -16,7 +16,7 @@
  * $Revision: 88625 $
  */
 
-#include "teamcity/teamcity_messages.h"
+#include "teamcity_messages.h"
 
 #include <boost/version.hpp>
 #if BOOST_VERSION >= 105900
