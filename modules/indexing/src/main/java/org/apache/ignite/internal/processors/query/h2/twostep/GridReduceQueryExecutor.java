@@ -370,7 +370,7 @@ public class GridReduceQueryExecutor {
         GridCacheContext<?, ?> cctx = ctx.cache().context().cacheContext(cacheId);
 
         if (cctx == null)
-            throw new CacheException(String.format("Cache not found on local node [cacheId=%d]", cacheId));
+            throw new CacheException(String.format("Cache not found on local node (was concurrently destroyed?) [cacheId=%d]", cacheId));
 
         return cctx;
     }
