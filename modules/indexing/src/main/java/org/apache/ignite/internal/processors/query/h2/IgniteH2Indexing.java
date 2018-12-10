@@ -22,13 +22,10 @@ import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.sql.Types;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -63,7 +60,6 @@ import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -121,7 +117,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
@@ -194,27 +189,7 @@ import org.h2.index.Index;
 import org.h2.jdbc.JdbcStatement;
 import org.h2.table.IndexColumn;
 import org.h2.util.JdbcUtils;
-import org.h2.util.LocalDateTimeUtils;
-import org.h2.value.DataType;
 import org.h2.value.Value;
-import org.h2.value.ValueArray;
-import org.h2.value.ValueBoolean;
-import org.h2.value.ValueByte;
-import org.h2.value.ValueBytes;
-import org.h2.value.ValueDate;
-import org.h2.value.ValueDecimal;
-import org.h2.value.ValueDouble;
-import org.h2.value.ValueFloat;
-import org.h2.value.ValueGeometry;
-import org.h2.value.ValueInt;
-import org.h2.value.ValueJavaObject;
-import org.h2.value.ValueLong;
-import org.h2.value.ValueNull;
-import org.h2.value.ValueShort;
-import org.h2.value.ValueString;
-import org.h2.value.ValueTime;
-import org.h2.value.ValueTimestamp;
-import org.h2.value.ValueUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -3398,93 +3373,5 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         return false;
-    }
-
-    /**
-     * Wraps object to respective {@link Value}.
-     *
-     * @param obj Object.
-     * @param type Value type.
-     * @return Value.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings("ConstantConditions")
-    public Value wrap(Object obj, int type) throws IgniteCheckedException {
-        assert obj != null;
-
-        if (obj instanceof CacheObject) { // Handle cache object.
-            CacheObject co = (CacheObject)obj;
-
-            if (type == Value.JAVA_OBJECT)
-                return new GridH2ValueCacheObject(co, objectContext());
-
-            obj = co.value(objectContext(), false);
-        }
-
-        switch (type) {
-            case Value.BOOLEAN:
-                return ValueBoolean.get((Boolean)obj);
-            case Value.BYTE:
-                return ValueByte.get((Byte)obj);
-            case Value.SHORT:
-                return ValueShort.get((Short)obj);
-            case Value.INT:
-                return ValueInt.get((Integer)obj);
-            case Value.FLOAT:
-                return ValueFloat.get((Float)obj);
-            case Value.LONG:
-                return ValueLong.get((Long)obj);
-            case Value.DOUBLE:
-                return ValueDouble.get((Double)obj);
-            case Value.UUID:
-                UUID uuid = (UUID)obj;
-                return ValueUuid.get(uuid.getMostSignificantBits(), uuid.getLeastSignificantBits());
-            case Value.DATE:
-                if (LocalDateTimeUtils.LOCAL_DATE == obj.getClass())
-                    return LocalDateTimeUtils.localDateToDateValue(obj);
-
-                return ValueDate.get((Date)obj);
-
-            case Value.TIME:
-                if (LocalDateTimeUtils.LOCAL_TIME == obj.getClass())
-                    return LocalDateTimeUtils.localTimeToTimeValue(obj);
-
-                return ValueTime.get((Time)obj);
-
-            case Value.TIMESTAMP:
-                if (obj instanceof java.util.Date && !(obj instanceof Timestamp))
-                    obj = new Timestamp(((java.util.Date)obj).getTime());
-
-                if (LocalDateTimeUtils.LOCAL_DATE_TIME == obj.getClass())
-                    return LocalDateTimeUtils.localDateTimeToValue(obj);
-
-                return ValueTimestamp.get((Timestamp)obj);
-
-            case Value.DECIMAL:
-                return ValueDecimal.get((BigDecimal)obj);
-            case Value.STRING:
-                return ValueString.get(obj.toString());
-            case Value.BYTES:
-                return ValueBytes.get((byte[])obj);
-            case Value.JAVA_OBJECT:
-                return ValueJavaObject.getNoCopy(obj, null, null);
-            case Value.ARRAY:
-                Object[] arr = (Object[])obj;
-
-                Value[] valArr = new Value[arr.length];
-
-                for (int i = 0; i < arr.length; i++) {
-                    Object o = arr[i];
-
-                    valArr[i] = o == null ? ValueNull.INSTANCE : wrap(o, DataType.getTypeFromClass(o.getClass()));
-                }
-
-                return ValueArray.get(valArr);
-
-            case Value.GEOMETRY:
-                return ValueGeometry.getFromGeometry(obj);
-        }
-
-        throw new IgniteCheckedException("Failed to wrap value[type=" + type + ", value=" + obj + "]");
     }
 }

@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.h2.message.DbException;
 import org.h2.result.SearchRow;
@@ -179,7 +180,7 @@ public class GridH2RowDescriptor {
 
         try {
             if (dataRow.value() == null) { // Only can happen for remove operation, can create simple search row.
-                row = new GridH2KeyRowOnheap(dataRow, idx.wrap(dataRow.key(), keyType));
+                row = new GridH2KeyRowOnheap(dataRow, H2Utils.wrap(idx.objectContext(), dataRow.key(), keyType));
             }
             else
                 row = new GridH2KeyValueRowOnheap(this, dataRow, keyType, valType);
