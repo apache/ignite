@@ -413,8 +413,6 @@ public class PageMemoryTracker implements IgnitePlugin {
             try {
                 PageUtils.putBytes(page.address(), 0, snapshot.pageData());
 
-                page.fullPageId(fullPageId);
-
                 page.changeHistory().clear();
 
                 page.changeHistory().add(record);
@@ -437,12 +435,6 @@ public class PageMemoryTracker implements IgnitePlugin {
 
             try {
                 deltaRecord.applyDelta(pageMemoryMock, page.address());
-
-                // Set new fullPageId after recycle or after new page init, because pageId tag is changed.
-                if (record instanceof RecycleRecord)
-                    page.fullPageId(new FullPageId(((RecycleRecord)record).newPageId(), grpId));
-                else if (record instanceof InitNewPageRecord)
-                    page.fullPageId(new FullPageId(((InitNewPageRecord)record).newPageId(), grpId));
 
                 page.changeHistory().add(record);
             }
