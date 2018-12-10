@@ -74,7 +74,7 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
     /** Ignite instance . */
     @IgniteInstanceResource
     @GridToStringExclude
-    protected Ignite ignite;
+    private Ignite ignite;
 
     /** Grid logger. */
     @LoggerResource
