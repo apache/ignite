@@ -1517,7 +1517,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
             String cacheName = cacheName("T1");
 
-            Collection<H2TableDescriptor> col = GridTestUtils.invoke(h2Idx, "tables", cacheName);
+            Collection<H2TableDescriptor> col = h2Idx.schemaManager().tablesForCache(cacheName);
 
             assertNotNull(col);
 
