@@ -22,6 +22,7 @@ import java.util.EventListener;
 import java.util.UUID;
 import org.apache.ignite.internal.util.nio.channel.GridNioSocketChannel;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
 
 /**
  * Listener SPI notifies IO manager with.
@@ -50,10 +51,10 @@ public interface CommunicationListener<T extends Serializable> extends EventList
     /**
      * Handle {@link GridNioSocketChannel} creation event from remote connection.
      *
-     * @param sndId Remote nodeId.
+     * @param connKey Remote nodeId.
      * @param ch Local created channel endpoint.
      */
-    public default void onChannelCreated(UUID sndId, GridNioSocketChannel ch) {
+    public default void onChannelCreated(ConnectionKey connKey, GridNioSocketChannel ch) {
         // No-op.
     }
 }

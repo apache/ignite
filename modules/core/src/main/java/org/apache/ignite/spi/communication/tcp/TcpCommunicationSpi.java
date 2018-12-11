@@ -853,7 +853,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             @Override public void onChannelCreated(GridNioSocketChannel ch) {
                 log.info("New channel connection established [key=" + ch.id() + ", channel=" + ch.channel() + ']');
 
-                notifyListener(ch.id().nodeId(), ch);
+                notifyListener(ch.id(), ch);
             }
 
             /**
@@ -4165,11 +4165,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /** */
-    private void notifyListener(UUID sndId, GridNioSocketChannel ch) {
+    private void notifyListener(ConnectionKey connKey, GridNioSocketChannel ch) {
         CommunicationListener<Message> lsnr0 = lsnr;
 
         if (lsnr0 != null)
-            lsnr0.onChannelCreated(sndId, ch);
+            lsnr0.onChannelCreated(connKey, ch);
     }
 
     /**

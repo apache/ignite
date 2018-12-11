@@ -98,6 +98,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -282,9 +283,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     lsnr.onNodeDisconnected(nodeId);
             }
 
-            @Override public void onChannelCreated(UUID sndId, GridNioSocketChannel ch) {
+            @Override public void onChannelCreated(ConnectionKey connKey, GridNioSocketChannel ch) {
                 for (GridIoChannelListener lsnr : channelLsnrs)
-                    lsnr.onChannelCreated(sndId, ch);
+                    lsnr.onChannelCreated(connKey, ch);
             }
         });
 
