@@ -23,6 +23,8 @@ import org.apache.ignite.internal.processors.service.inner.LongInitializedTestSe
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -36,6 +38,12 @@ import org.junit.runners.JUnit4;
 public class ServiceDeploymentProcessingOnCoordinatorChangeTest extends GridCommonAbstractTest {
     /** Timeout to avoid tests hang. */
     private static final long TEST_FUTURE_WAIT_TIMEOUT = 60_000;
+
+    /** */
+    @BeforeClass
+    public static void check() {
+        Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
+    }
 
     /**
      * @throws Exception In case of an error.

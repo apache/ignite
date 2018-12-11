@@ -23,6 +23,8 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -31,13 +33,15 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class GridServiceDeploymentExceptionPropagationTest extends GridCommonAbstractTest {
     /** */
+    @BeforeClass
+    public static void check() {
+        Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
+    }
+
+    /** */
     @Test
     public void testExceptionPropagation() throws Exception {
         try (IgniteEx srv = startGrid("server")) {
-
-            if (!srv.context().service().eventDrivenServiceProcessorEnabled())
-                return; // Skip for this mode
-
             try (Ignite client = startGrid("client", getConfiguration("client").setClientMode(true))) {
                 final String srvcName = "my-service";
 

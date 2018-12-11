@@ -25,6 +25,8 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -39,6 +41,12 @@ public class NonSerializableStaticServiceDeploymentTest extends GridCommonAbstra
 
     /** */
     private final ListeningTestLogger log = new ListeningTestLogger(false, super.log);
+
+    /** */
+    @BeforeClass
+    public static void check() {
+        Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -70,7 +78,7 @@ public class NonSerializableStaticServiceDeploymentTest extends GridCommonAbstra
         log.registerListener(lsnr);
 
         try {
-            startGrid(0);
+            IgniteEx crd = startGrid(0);
 
             IgniteEx ignite = startGrid(1);
 

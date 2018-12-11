@@ -46,12 +46,15 @@ public class GridServiceProcessorSingleNodeSelfTest extends GridServiceProcessor
             // Deploy only on remote nodes.
             ignite.services(ignite.cluster().forRemotes()).deployNodeSingleton(name, new CounterServiceImpl());
 
-            assertTrue("Exception was expected in this mode.", !ignite.context().service().eventDrivenServiceProcessorEnabled());
+            assertTrue("Exception was expected in this mode.",
+                !ignite.context().service().eventDrivenServiceProcessorEnabled());
 
             info("Deployed service: " + name);
 
             // Get local proxy.
             CounterService svc = ignite.services().serviceProxy(name, CounterService.class, false);
+
+            svc.increment();
 
             fail("Should never reach here.");
         }

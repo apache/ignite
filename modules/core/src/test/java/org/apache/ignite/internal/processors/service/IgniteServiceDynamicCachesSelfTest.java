@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.services.Service;
@@ -122,7 +123,7 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
         CacheConfiguration ccfg = new CacheConfiguration(cacheName);
         ccfg.setBackups(1);
 
-        Ignite ig = ignite(0);
+        IgniteEx ig = grid(0);
 
         final IgniteServices svcs = ig.services();
 
@@ -136,17 +137,24 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        GridTestUtils.assertThrowsWithCause(() -> {
+        if (!ig.context().service().eventDrivenServiceProcessorEnabled()) {
             svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, key);
 
-            return null;
-        }, ServiceDeploymentException.class);
+            assertNull(svcs.service(svcName));
 
-        assertNull(svcs.service(svcName));
+            ig.createCache(ccfg);
+        }
+        else {
+            GridTestUtils.assertThrowsWithCause(() -> {
+                svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, key);
 
-        ig.createCache(ccfg);
+                return null;
+            }, ServiceDeploymentException.class);
 
-        svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, key);
+            ig.createCache(ccfg);
+
+            svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, key);
+        }
 
         try {
             boolean res = GridTestUtils.waitForCondition(new PA() {

@@ -120,6 +120,8 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Before;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
@@ -2059,5 +2061,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
             return topVer.compareTo(readyTopVer) <= 0;
         }, SERVICE_DEPLOYMENT_WAIT_TIMEOUT);
+    }
+
+    /**
+     * @return {@code true} if values of system variable "IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED" is "false",
+     * otherwise {@code false}.
+     */
+    protected static boolean isEventDrivenServiceProcessorEnabled() {
+        return getBoolean(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, true);
     }
 }

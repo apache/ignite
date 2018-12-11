@@ -38,6 +38,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -202,6 +203,8 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
      */
     @Test
     public void testZombieAssignmentsCleanup() throws Exception {
+        Assume.assumeTrue(!isEventDrivenServiceProcessorEnabled());
+
         useStrLog = true;
 
         final int nodesCnt = 2;
@@ -211,9 +214,6 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
             startGridsMultiThreaded(nodesCnt);
 
             IgniteEx ignite = grid(0);
-
-            if (ignite.context().service().eventDrivenServiceProcessorEnabled())
-                return; // Skip for this mode
 
             IgniteInternalCache<GridServiceAssignmentsKey, Object> sysCache = ignite.utilityCache();
 
@@ -262,15 +262,14 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNodeStopWhileThereAreCacheActivitiesInServiceProcessor() throws Exception {
+        Assume.assumeTrue(!isEventDrivenServiceProcessorEnabled());
+
         final int nodesCnt = 2;
         final int maxSvc = 1024;
 
         startGridsMultiThreaded(nodesCnt);
 
         IgniteEx ignite = grid(0);
-
-        if (ignite.context().service().eventDrivenServiceProcessorEnabled())
-            return; // Skip for this mode
 
         IgniteInternalCache<GridServiceAssignmentsKey, Object> sysCache = ignite.utilityCache();
 
