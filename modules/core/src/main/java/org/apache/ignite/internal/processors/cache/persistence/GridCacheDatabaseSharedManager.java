@@ -4368,17 +4368,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return totalCpPages == written;
         }
 
-
         public Iterator<FullPageId> iterator() {
             if (retryPageIds.isEmpty())
                 return iteratorPages(pageIds);
 
-            Iterator<FullPageId> it = iteratorPages(retryPageIds);
-
-            // Reset retry pages.
-            retryPageIds = new ArrayList<>();
-
-            return it;
+            return iteratorPages(retryPageIds);
         }
 
         private Iterator<FullPageId> iteratorPages(List<FullPageId> pages) {
@@ -4392,7 +4386,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
 
                 @Override public FullPageId next() {
-                    return pages.get(idx++);
+                    FullPageId fullPageId = null;
+
+                    while (hasNext()) {
+                        if ((fullPageId = pages.get(idx++)) != null)
+                            break;
+                    }
+
+                    return fullPageId;
                 }
 
                 @Override public void remove() {
@@ -4448,9 +4449,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         private final CheckpointWriteOrder writeOrder;
 
-        private CheckpointBeginPages prevCpPages;
+        private CheckpointPages[] splittedCpPages;
 
-        private CheckpointPages[] splittedCheckpointPages;
+        private CheckpointBeginPages prevCpPages;
 
         private Collection<GridMultiCollectionWrapper<FullPageId>> markChpBeginPages;
 
@@ -4480,7 +4481,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             if (prevCpPages != null) {
                 // Merge all not written page Ids from previous checkpoint.
-                if (prevCpPages.splittedCheckpointPages == null) {
+                if (prevCpPages.splittedCpPages == null) {
                     // TODO check page count.
                     // If not all pages was written in previous checkpoint.
                     if (prevCpPages.written != prevCpPages.totalCpPages) {
@@ -4498,7 +4499,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     }
                 }
                 else {
-                    for (CheckpointPages prevCpPages : prevCpPages.splittedCheckpointPages) {
+                    for (CheckpointPages prevCpPages : prevCpPages.splittedCpPages) {
                         // Skip if all pages was written.
                         if (prevCpPages.written == prevCpPages.totalCpPages)
                             continue;
@@ -4550,8 +4551,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return totalCpPages;
         }
 
-       public CheckpointPages[] split(int parts) {
-            return splittedCheckpointPages = splitCpPages(pageIds, parts);
+        public CheckpointPages[] split(int parts) {
+            assert parts > 0;
+
+            return splittedCpPages = splitCpPages(pageIds, parts);
         }
 
         /**
@@ -4560,16 +4563,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         private CheckpointPages[] splitCpPages(FullPageId[] allCpPages, int parts) {
             // Splitting pages to (threads * 4) subtasks. If any thread will be faster, it will help slower threads.
-            int pagesSubLists = parts == 1 ? 1 : parts * 4;
+            int subArraysCnt = parts == 1 ? 1 : parts * 4;
 
-            CheckpointPages[] pagesSubListArr = new CheckpointPages[pagesSubLists];
+            CheckpointPages[] cpPageSubArrays = new CheckpointPages[subArraysCnt];
 
-            for (int i = 0; i < pagesSubLists; i++) {
+            for (int i = 0; i < subArraysCnt; i++) {
                 int totalSize = allCpPages.length;
 
-                int from = totalSize * i / (pagesSubLists);
+                int from = totalSize * i / (subArraysCnt);
 
-                int to = totalSize * (i + 1) / (pagesSubLists);
+                int to = totalSize * (i + 1) / (subArraysCnt);
 
                 CheckpointPages pages = new CheckpointPages();
 
@@ -4578,10 +4581,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 pages.pageIds = allCpPages;
                 pages.totalCpPages = (to - from);
 
-                pagesSubListArr[i] = pages;
+                cpPageSubArrays[i] = pages;
             }
 
-            return pagesSubListArr;
+            return cpPageSubArrays;
         }
     }
 
