@@ -205,11 +205,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private final AtomicLong ioTestId = new AtomicLong();
 
     /** No-op runnable. */
-    private static final IgniteRunnable NOOP = new IgniteRunnable() {
-        @Override public void run() {
-            // No-op.
-        }
-    };
+    private static final IgniteRunnable NOOP = () -> {};
 
     /**
      * @param ctx Grid kernal context.
@@ -257,7 +253,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
     @Override public void start() throws IgniteCheckedException {
         startSpi();
 
@@ -302,7 +297,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     throws IgniteCheckedException {
 
                     return new DirectMessageReader(msgFactory,
-                        rmtNodeId != null ? U.directProtocolVersion(ctx, rmtNodeId) : GridIoManager.DIRECT_PROTO_VER);
+                        rmtNodeId != null ? U.directProtocolVersion(ctx, rmtNodeId) : DIRECT_PROTO_VER);
                 }
             };
         }

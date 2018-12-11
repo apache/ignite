@@ -629,11 +629,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         sharedCtx.io().addCacheHandler(
             0, GridChangeGlobalStateMessageResponse.class,
-            new CI2<UUID, GridChangeGlobalStateMessageResponse>() {
-                @Override public void apply(UUID nodeId, GridChangeGlobalStateMessageResponse msg) {
-                    processChangeGlobalStateResponse(nodeId, msg);
-                }
-            });
+            this::processChangeGlobalStateResponse
+        );
     }
 
     /** {@inheritDoc} */
@@ -1161,8 +1158,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         ctx.closure().runLocalSafe(new Runnable() {
             @Override public void run() {
                 boolean client = ctx.clientNode();
-
-                Exception e = null;
 
                 try {
                     ctx.service().onUtilityCacheStarted();

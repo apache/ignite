@@ -70,7 +70,10 @@ public interface GridComponent {
         CACHE_CRD_PROC,
 
         /** Encryption manager. */
-        ENCRYPTION_MGR
+        ENCRYPTION_MGR,
+
+        /** Distributed MetaStorage processor. */
+        META_STORAGE;
     }
 
     /**

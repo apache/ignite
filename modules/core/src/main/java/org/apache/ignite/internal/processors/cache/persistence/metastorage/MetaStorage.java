@@ -72,6 +72,7 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -85,7 +86,7 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 /**
  * General purpose key-value local-only storage.
  */
-public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, ReadWriteMetastorage {
+public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
     /** */
     public static final String METASTORAGE_CACHE_NAME = "MetaStorage";
 
@@ -142,7 +143,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     private Map<String, byte[]> lastUpdates;
 
     /** */
-    private final Marshaller marshaller = new JdkMarshaller();
+    private final Marshaller marshaller = JdkMarshaller.DEFAULT;
 
     /** */
     private final FailureProcessor failureProcessor;
@@ -155,7 +156,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
 
     /** */
     public MetaStorage(
-        GridCacheSharedContext cctx,
+        GridCacheSharedContext<?, ?> cctx,
         DataRegion dataRegion,
         DataRegionMetricsImpl regionMetrics,
         boolean readOnly
@@ -263,37 +264,42 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     @Override public Serializable read(String key) throws IgniteCheckedException {
         byte[] data = getData(key);
 
-        Object result = null;
+        Object res = null;
 
         if (data != null)
-            result = marshaller.unmarshal(data, getClass().getClassLoader());
+            res = marshaller.unmarshal(data, getClass().getClassLoader());
 
-        return (Serializable)result;
+        return (Serializable)res;
     }
 
-    /** {@inheritDoc} */
-    @Override public Map<String, ? extends Serializable> readForPredicate(IgnitePredicate<String> keyPred)
-        throws IgniteCheckedException {
-        Map<String, Serializable> res = null;
+
+    /** */
+    public void iterate(
+        @NotNull IgnitePredicate<String> keyPred,
+        @NotNull IgniteBiInClosure<String, ? super Serializable> cb,
+        boolean ignoreValues
+    ) throws IgniteCheckedException {
+        if (empty)
+            return;
 
         if (readOnly) {
-            if (empty)
-                return Collections.emptyMap();
-
             if (lastUpdates != null) {
                 for (Map.Entry<String, byte[]> lastUpdate : lastUpdates.entrySet()) {
-                    if (keyPred.apply(lastUpdate.getKey())) {
+                    String key = lastUpdate.getKey();
+
+                    if (keyPred.apply(key)) {
                         byte[] valBytes = lastUpdate.getValue();
 
                         if (valBytes == TOMBSTONE)
                             continue;
 
-                        if (res == null)
-                            res = new HashMap<>();
+                        if (ignoreValues)
+                            cb.apply(key, null);
+                        else {
+                            Serializable val = marshaller.unmarshal(valBytes, getClass().getClassLoader());
 
-                        Serializable val = marshaller.unmarshal(valBytes, getClass().getClassLoader());
-
-                        res.put(lastUpdate.getKey(), val);
+                            cb.apply(key, val);
+                        }
                     }
                 }
             }
@@ -312,19 +318,26 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
                 if (lastUpdates != null && lastUpdates.containsKey(key))
                     continue;
 
-                if (res == null)
-                    res = new HashMap<>();
+                if (ignoreValues)
+                    cb.apply(key, null);
+                else {
+                    Serializable val = marshaller.unmarshal(valBytes, getClass().getClassLoader());
 
-                Serializable val = marshaller.unmarshal(valBytes, getClass().getClassLoader());
-
-                res.put(key, val);
+                    cb.apply(key, val);
+                }
             }
         }
+    }
 
-        if (res == null)
-            res = Collections.emptyMap();
+    /** {@inheritDoc} */
+    @Override public Map<String, ? extends Serializable> readForPredicate(
+        IgnitePredicate<String> keyPred
+    ) throws IgniteCheckedException {
+        Map<String, Serializable> res = new HashMap<>();
 
-        return res;
+        iterate(keyPred, res::put, false);
+
+        return res.isEmpty() ? Collections.emptyMap() : res;
     }
 
     /**
