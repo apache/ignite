@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import java.util.Collection;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.CachePutIfAbsentTest;
+import org.apache.ignite.internal.processors.cache.ClientReconnectSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectionsSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLoadRebalanceEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimarySyncBackPressureTest;
@@ -49,6 +50,10 @@ public class IgniteCacheTestSuite9 extends TestSuite {
     public static TestSuite suite(Collection<Class> ignoredTests) {
         TestSuite suite = new TestSuite("IgniteCache Test Suite part 9");
 
+        for (int i = 0; i < 50; i++)
+        suite.addTestSuite(ClientReconnectSelfTest.class);
+
+/*
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheGetCustomCollectionsSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheLoadRebalanceEvictionSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCachePrimarySyncTest.class, ignoredTests);
@@ -63,6 +68,7 @@ public class IgniteCacheTestSuite9 extends TestSuite {
         GridTestUtils.addTestIfNeeded(suite, TxDataConsistencyOnCommitFailureTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, CacheOperationsInterruptTest.class, ignoredTests);
+*/
 
         return suite;
     }
