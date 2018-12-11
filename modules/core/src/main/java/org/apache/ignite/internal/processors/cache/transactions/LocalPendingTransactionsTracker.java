@@ -242,6 +242,13 @@ public class LocalPendingTransactionsTracker {
     }
 
     /**
+     * @return whether this tracker is enabled or not.
+     */
+    public boolean enabled() {
+        return enabled;
+    }
+
+    /**
      * Returns a collection of  transactions {@code P2} that are prepared but yet not committed
      * between phase {@code Cut1} and phase {@code Cut2}.
      *
