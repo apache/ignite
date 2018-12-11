@@ -3182,7 +3182,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 ret = scheduledCp.cpBeginFut;
 
-                // Cancel last checkpoint if it still in progress.
+                // Cancel checkpoint if it still in progress.
                 if (!lastCp.cpFinishFut.isDone())
                     lastCp.canceled = true;
 
@@ -3641,6 +3641,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private void markCheckpointBegin(Checkpoint chp) throws IgniteCheckedException {
             CheckpointProgress curr;
 
+            // Represent of initialized snapshot operation under cpWriteLock.
             IgniteFuture snapFut = null;
 
             chp.metrics.onLockWaitStart();
@@ -3655,13 +3656,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     curr = chp.progress = resetCheckpointProgress(lastCp, scheduledCp);
                 }
 
-                PartitionAllocationMap parts = new PartitionAllocationMap();
-
                 // Notify checkpoint listeners on checkpoint write lock.
-                notifyLisnteners(curr, parts);
+                notifyCheckpointLisnteners(curr);
 
+                // If this checkpoint for snapshot, invoke snapshot manager.
                 if (curr.nextSnapshot)
-                    snapFut = snapshotMgr.onMarkCheckPointBegin(curr.snapshotOperation, parts);
+                    snapFut = snapshotMgr.onMarkCheckPointBegin(curr.snapshotOperation, curr.parts);
 
                 // Store all partitions state to checkpoint record.
                 collectPartitionState(chp.cpRec);
@@ -3680,6 +3680,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     chp.cpRec.position(cpPtr);
                 }
 
+                // Write checkpoint entry to file, as marker checkpoint start.
                 if (chp.hasPages() || chp.hasDestroyedPartitions()) {
                     CheckpointEntry cp = prepareCheckpointEntry(
                         checkpointEntryWriteBuffer,
@@ -3690,6 +3691,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         CheckpointEntryType.START
                     );
 
+                    // Update checkpoint history.
                     cpHistory.addCheckpoint(cp);
 
                     chp.cpEntry = cp;
@@ -3701,7 +3703,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 chp.metrics.onLockRelease();
             }
 
-            snapshotMgr.onMarkCheckPointEnd(curr.snapshotOperation, snapFut);
+            // If this checkpoint for snapshot, invoke snapshot manager after checkpoint unlock cpWriteLock.
+            if (curr.nextSnapshot)
+                snapshotMgr.onMarkCheckPointEnd(curr.snapshotOperation, snapFut);
 
             // We should fsync WAL and write file marker if checkpoint is not empty.
             if (chp.hasPages() || chp.hasDestroyedPartitions()) {
@@ -3746,7 +3750,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             curr.cpBeginFut.onDone();
 
-            // After cpBegin callback.
             curr.cpPages.onCheckpointBegin();
 
             curr.destroyQueue.onCheckpointBegin();
@@ -3763,7 +3766,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 // Merge previus checkpoint page Ids from current.
                 curr.cpPages.mergeCheckpoint(last.cpPages);
 
-                // Copy stores by reference, no need addAll under cp write lock.
+                // Copy stores by reference, no need to do addAll under cpWriteLock.
                 curr.pageStores = last.pageStores;
 
                 // Merge previus checkpoint destroy queue from current.
@@ -3786,13 +3789,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /**
          *
          * @param curr Checkpoint progress info.
-         * @param map Map partition allocation.
          * @throws IgniteCheckedException If some operation failed.
          */
-        private void notifyLisnteners(
-            CheckpointProgress curr,
-            PartitionAllocationMap map
-        ) throws IgniteCheckedException {
+        private void notifyCheckpointLisnteners(CheckpointProgress curr) throws IgniteCheckedException {
             GridCompoundFuture asyncLsnrFut = asyncRunner == null ? null : new GridCompoundFuture();
 
             DbCheckpointListener.Context ctx0 = new DbCheckpointListener.Context() {
@@ -3802,7 +3801,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 /** {@inheritDoc} */
                 @Override public PartitionAllocationMap partitionStatMap() {
-                    return map;
+                    return curr.parts;
                 }
 
                 /** {@inheritDoc} */
@@ -4295,22 +4294,34 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** Snapshot operation that should be performed if {@link #nextSnapshot} set to true. */
         private volatile SnapshotOperation snapshotOperation;
 
-        /** */
+        /**
+         * Chekpoint page Ids wrapper.
+         * Contains all page Ids which should be written in the current checkpoint.
+         * Has the ability to split pages to multiple CheckpointPages.
+         */
         private final CheckpointBeginPages cpPages;
 
-        /** */
+        /**
+         * (PageStore -> Number of written pages.)
+         * Map for tracking which stores should be sync and how many pages was written.
+         */
         private Map<PageStore, LongAdder> pageStores;
 
-        /** Partitions destroy queue. */
+        /**
+         * Partitions destroy queue. Contains all partitions which should be destroyed in the current checkpoint.
+         */
         private final PartitionDestroyQueue destroyQueue;
+
+        /** Partition allocation map. */
+        private final PartitionAllocationMap parts;
 
         /** Wakeup reason. */
         private String reason;
 
-        /** */
+        /** Flag cancel for current checkpoint operation. */
         private volatile boolean canceled;
 
-        /** */
+        /** Flag indicate that pevious checkpoint was canceled, required for future checkpoint merge. */
         private boolean prevCanceled;
 
         /**
@@ -4321,6 +4332,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             cpPages = new CheckpointBeginPages(order);
             pageStores = new ConcurrentLinkedHashMap<>();
             destroyQueue = new PartitionDestroyQueue();
+            parts = new PartitionAllocationMap();
 
             this.nextCpTs = nextCpTs;
         }
