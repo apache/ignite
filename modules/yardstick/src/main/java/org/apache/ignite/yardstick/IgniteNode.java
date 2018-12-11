@@ -309,7 +309,7 @@ public class IgniteNode implements BenchmarkServer {
 
         Collection<InetSocketAddress> regAdrList = spi.getIpFinder().getRegisteredAddresses();
 
-        List<String> adrList = new ArrayList<>(regAdrList.size());
+        Collection<String> adrList = new ArrayList<>(regAdrList.size());
 
         for (InetSocketAddress adr : regAdrList)
             adrList.add(adr.getHostString());
