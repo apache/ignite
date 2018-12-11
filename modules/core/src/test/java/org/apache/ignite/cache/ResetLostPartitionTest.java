@@ -38,6 +38,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
@@ -46,6 +49,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class ResetLostPartitionTest extends GridCommonAbstractTest {
     /** Ip finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -134,6 +138,7 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
      *
      * @throws Exception if fail.
      */
+    @Test
     public void testReactivateGridBeforeResetLostPartitions() throws Exception {
         doRebalanceAfterPartitionsWereLost(true);
     }
@@ -143,6 +148,7 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
      *
      * @throws Exception if fail.
      */
+    @Test
     public void testResetLostPartitions() throws Exception {
         doRebalanceAfterPartitionsWereLost(false);
     }

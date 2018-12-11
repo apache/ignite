@@ -35,6 +35,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -43,6 +46,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 /**
  * Checks ordered preloading.
  */
+@RunWith(JUnit4.class)
 public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -125,6 +129,7 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreloadOrderPartitionedPartitioned() throws Exception {
         checkPreloadOrder(PARTITIONED, PARTITIONED);
     }
@@ -132,6 +137,7 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreloadOrderReplicatedReplicated() throws Exception {
         checkPreloadOrder(REPLICATED, REPLICATED);
     }
@@ -139,6 +145,7 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreloadOrderPartitionedReplicated() throws Exception {
         checkPreloadOrder(PARTITIONED, REPLICATED);
     }
@@ -146,6 +153,7 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreloadOrderReplicatedPartitioned() throws Exception {
         checkPreloadOrder(REPLICATED, PARTITIONED);
     }

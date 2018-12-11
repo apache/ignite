@@ -34,10 +34,14 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class PageIdDistributionTest extends GridCommonAbstractTest {
     /** */
     private static final int[] CACHE_IDS = new int[] {
@@ -60,6 +64,7 @@ public class PageIdDistributionTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testDistributions() {
         printPageIdDistribution(
             CU.cacheId("partitioned"), 1024, 10_000, 32, 2.5f);
@@ -149,6 +154,7 @@ public class PageIdDistributionTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRealHistory() throws Exception {
         int capacity = CACHE_IDS.length * PARTS * PAGES;
 

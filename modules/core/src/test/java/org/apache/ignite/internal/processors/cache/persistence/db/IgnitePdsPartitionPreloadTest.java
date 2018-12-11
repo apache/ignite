@@ -41,6 +41,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -50,6 +53,7 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 /**
  * Test partition preload for varios cache modes.
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -153,6 +157,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testLocalPreloadPartitionClient() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL).setDataRegionName(MEM);
 
@@ -167,6 +172,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testLocalPreloadPartitionClientMvcc() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT).setDataRegionName(MEM);
 
@@ -182,6 +188,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
 
 
     /** */
+    @Test
     public void testLocalPreloadPartitionPrimary() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL);
 
@@ -190,6 +197,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testLocalPreloadPartitionPrimaryMvcc() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT);
 
@@ -198,6 +206,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testLocalPreloadPartitionBackup() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL);
 
@@ -206,6 +215,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testLocalPreloadPartitionBackupMvcc() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT);
 
@@ -214,6 +224,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionInMemoryRemote() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL).setDataRegionName(MEM);
 
@@ -234,6 +245,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionInMemoryRemoteMvcc() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT).setDataRegionName(MEM);
 
@@ -254,6 +266,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionInMemoryLocal() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL).setDataRegionName(MEM);
 
@@ -276,6 +289,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionInMemoryLocalMvcc() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT).setDataRegionName(MEM);
 
@@ -298,6 +312,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionTransactionalClientSync() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL);
 
@@ -312,6 +327,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionTransactionalClientSyncMvcc() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT);
 
@@ -326,6 +342,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionTransactionalClientAsync() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL);
 
@@ -340,6 +357,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionTransactionalClientAsyncMvcc() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT);
 
@@ -354,6 +372,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionTransactionalNodeFilteredSync() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL);
 
@@ -361,6 +380,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionTransactionalNodeFilteredSyncMvcc() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT);
 
@@ -368,6 +388,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionTransactionalNodeFilteredAsync() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL);
 
@@ -375,6 +396,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionTransactionalNodeFilteredAsyncMvcc() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL);
 
@@ -382,6 +404,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionTransactionalPrimarySync() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL);
 
@@ -390,6 +413,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionTransactionalPrimarySyncMvcc() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT);
 
@@ -398,6 +422,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionTransactionalPrimaryAsync() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL);
 
@@ -406,6 +431,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionTransactionalPrimaryAsyncMvcc() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT);
 
@@ -414,6 +440,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionTransactionalBackupSync() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL);
 
@@ -422,6 +449,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionTransactionalBackupSyncMvcc() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT);
 
@@ -430,6 +458,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionTransactionalBackupAsync() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL);
 
@@ -438,6 +467,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionTransactionalBackupAsyncMvcc() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT);
 
@@ -446,6 +476,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionAtomicClientSync() throws Exception {
         cfgFactory = () -> cacheConfiguration(ATOMIC);
 
@@ -460,6 +491,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionAtomicClientAsync() throws Exception {
         cfgFactory = () -> cacheConfiguration(ATOMIC);
 
@@ -474,6 +506,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionAtomicNodeFilteredSync() throws Exception {
         cfgFactory = () -> cacheConfiguration(ATOMIC);
 
@@ -481,6 +514,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionAtomicNodeFilteredAsync() throws Exception {
         cfgFactory = () -> cacheConfiguration(ATOMIC);
 
@@ -488,6 +522,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionAtomicPrimarySync() throws Exception {
         cfgFactory = () -> cacheConfiguration(ATOMIC);
 
@@ -496,6 +531,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionAtomicPrimaryAsync() throws Exception {
         cfgFactory = () -> cacheConfiguration(ATOMIC);
 
@@ -504,6 +540,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionAtomicBackupSync() throws Exception {
         cfgFactory = () -> cacheConfiguration(ATOMIC);
 
@@ -512,6 +549,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadPartitionAtomicBackupAsync() throws Exception {
         cfgFactory = () -> cacheConfiguration(ATOMIC);
 
@@ -520,6 +558,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadLocalTransactionalSync() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL).setCacheMode(LOCAL);
 
@@ -528,6 +567,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadLocalTransactionalSyncMvcc() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9530");
 
@@ -538,6 +578,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPreloadLocalTransactionalAsync() throws Exception {
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL).setCacheMode(LOCAL);
 

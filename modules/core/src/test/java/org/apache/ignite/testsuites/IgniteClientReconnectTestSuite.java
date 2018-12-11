@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.IgniteClientConnectAfterCommunicationFailureTest;
 import org.apache.ignite.internal.IgniteClientReconnectApiExceptionTest;
@@ -40,26 +41,25 @@ import org.apache.ignite.internal.IgniteClientRejoinTest;
 public class IgniteClientReconnectTestSuite extends TestSuite {
     /**
      * @return Test suite.
-     * @throws Exception In case of error.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Client Reconnect Test Suite");
 
-        suite.addTestSuite(IgniteClientConnectAfterCommunicationFailureTest.class);
-        suite.addTestSuite(IgniteClientReconnectStopTest.class);
-        suite.addTestSuite(IgniteClientReconnectApiExceptionTest.class);
-        suite.addTestSuite(IgniteClientReconnectDiscoveryStateTest.class);
-        suite.addTestSuite(IgniteClientReconnectCacheTest.class);
-        suite.addTestSuite(IgniteClientReconnectDelayedSpiTest.class);
-        suite.addTestSuite(IgniteClientReconnectBinaryContexTest.class);
-        suite.addTestSuite(IgniteClientReconnectContinuousProcessorTest.class);
-        suite.addTestSuite(IgniteClientReconnectComputeTest.class);
-        suite.addTestSuite(IgniteClientReconnectAtomicsTest.class);
-        suite.addTestSuite(IgniteClientReconnectCollectionsTest.class);
-        suite.addTestSuite(IgniteClientReconnectServicesTest.class);
-        suite.addTestSuite(IgniteClientReconnectStreamerTest.class);
-        suite.addTestSuite(IgniteClientReconnectFailoverTest.class);
-        suite.addTestSuite(IgniteClientRejoinTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteClientConnectAfterCommunicationFailureTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteClientReconnectStopTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteClientReconnectApiExceptionTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteClientReconnectDiscoveryStateTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteClientReconnectCacheTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteClientReconnectDelayedSpiTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteClientReconnectBinaryContexTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteClientReconnectContinuousProcessorTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteClientReconnectComputeTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteClientReconnectAtomicsTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteClientReconnectCollectionsTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteClientReconnectServicesTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteClientReconnectStreamerTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteClientReconnectFailoverTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteClientRejoinTest.class));
 
         return suite;
     }

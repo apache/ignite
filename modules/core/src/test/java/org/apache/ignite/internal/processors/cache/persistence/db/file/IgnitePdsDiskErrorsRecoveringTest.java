@@ -50,12 +50,16 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAhea
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
 
 /**
  * Tests node recovering after disk errors during interaction with persistent storage.
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     /** */
     private static final int PAGE_SIZE = DataStorageConfiguration.DFLT_PAGE_SIZE;
@@ -123,6 +127,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     /**
      * Test node stopping & recovering on cache initialization fail.
      */
+    @Test
     public void testRecoveringOnCacheInitFail() throws Exception {
         // Fail to initialize page store. 2 extra pages is needed for MetaStorage.
         ioFactory = new FilteringFileIOFactory(".bin", new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), 2 * PAGE_SIZE));
@@ -164,6 +169,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testRecoveringOnCheckpointBeginFail() throws Exception {
         // Fail to write checkpoint start marker tmp file at the second checkpoint. Pass only initial checkpoint.
         ioFactory = new FilteringFileIOFactory("START.bin" + FilePageStoreManager.TMP_SUFFIX, new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), 20));
@@ -214,6 +220,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     /**
      * Test node stopping & recovering on checkpoint pages write fail.
      */
+    @Test
     public void testRecoveringOnCheckpointWriteFail() throws Exception {
         // Fail write partition and index files at the second checkpoint. Pass only initial checkpoint.
         ioFactory = new FilteringFileIOFactory(".bin", new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), 128 * PAGE_SIZE));
@@ -263,6 +270,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     /**
      * Test node stopping & recovering on WAL writing fail with enabled MMAP (Batch allocation for WAL segments).
      */
+    @Test
     public void testRecoveringOnWALWritingFail1() throws Exception {
         // Allow to allocate only 1 wal segment, fail on write to second.
         ioFactory = new FilteringFileIOFactory(".wal", new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), WAL_SEGMENT_SIZE));
@@ -275,6 +283,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     /**
      * Test node stopping & recovering on WAL writing fail with disabled MMAP.
      */
+    @Test
     public void testRecoveringOnWALWritingFail2() throws Exception {
         // Fail somewhere on the second wal segment.
         ioFactory = new FilteringFileIOFactory(".wal", new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), (long) (1.5 * WAL_SEGMENT_SIZE)));
