@@ -2882,6 +2882,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param clusterWideDesc Cluster-wide descriptor.
      */
     public void finishRecovery(GridCacheContext cacheCtx, DynamicCacheDescriptor clusterWideDesc) {
+        // Indexing is not enanled.
+        if (idx == null)
+            return;
+
         GridCacheContextInfo info = idx.registeredCacheInfo(cacheCtx.name());
 
         if (info != null)
