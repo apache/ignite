@@ -53,11 +53,15 @@ import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @GridSpiTest(spi = TcpCommunicationSpi.class, group = "Communication SPI")
+@RunWith(JUnit4.class)
 public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends CommunicationSpi>
     extends GridSpiAbstractTest<T> {
     /** */
@@ -123,6 +127,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAckOnIdle() throws Exception {
         checkAck(10, 2000, 9);
     }
@@ -130,6 +135,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAckOnCount() throws Exception {
         checkAck(10, 60_000, 10);
     }
@@ -257,6 +263,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueOverflow() throws Exception {
         for (int i = 0; i < 3; i++) {
             try {

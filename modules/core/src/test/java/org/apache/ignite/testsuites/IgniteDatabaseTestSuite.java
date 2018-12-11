@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.database.IgniteDbMultiNodePutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodePutGetTest;
@@ -27,13 +28,12 @@ import org.apache.ignite.internal.processors.database.IgniteDbSingleNodePutGetTe
 public class IgniteDatabaseTestSuite extends TestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Database Tests");
 
-        suite.addTestSuite(IgniteDbSingleNodePutGetTest.class);
-        suite.addTestSuite(IgniteDbMultiNodePutGetTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteDbSingleNodePutGetTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteDbMultiNodePutGetTest.class));
 
         return suite;
     }

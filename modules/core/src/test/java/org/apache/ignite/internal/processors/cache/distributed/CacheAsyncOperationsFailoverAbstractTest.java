@@ -31,8 +31,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -41,12 +39,16 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCacheAbstractSelfTest {
     /** */
     private static final int NODE_CNT = 4;
@@ -95,14 +97,10 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllAsyncFailover() throws Exception {
         putAllAsyncFailover(5, 10);
     }
@@ -110,6 +108,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllAsyncFailoverManyThreads() throws Exception {
         putAllAsyncFailover(ignite(0).configuration().getSystemThreadPoolSize() * 2, 3);
     }
@@ -117,6 +116,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAsyncFailover() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9759");
 
