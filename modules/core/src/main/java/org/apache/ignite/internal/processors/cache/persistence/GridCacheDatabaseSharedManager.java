@@ -2915,6 +2915,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return rmvd == null ? null : !rmvd.cancel() ? rmvd : null;
         }
 
+        private boolean isEmpty() {
+            boolean empty = pendingReqs.isEmpty();
+
+            if (prevDestroyQueue != null) {
+                if (empty)
+                    empty = prevDestroyQueue.isEmpty();
+            }
+
+            return empty;
+        }
+
         private void mergeCheckpoint(PartitionDestroyQueue prevDestroyQueue) {
             this.prevDestroyQueue = prevDestroyQueue;
         }
@@ -4176,9 +4187,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          *
          */
         public boolean hasDestroyedPartitions() {
-            return !progress.destroyQueue.pendingReqs.isEmpty() ||
-                (progress.destroyQueue.prevDestroyQueue != null &&
-                    !progress.destroyQueue.prevDestroyQueue.pendingReqs.isEmpty());
+            return !progress.destroyQueue.isEmpty();
         }
 
         /**
@@ -4339,7 +4348,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         protected int lastAddIdx;
 
-        int checkpointPages() {
+        public int checkpointPages() {
             return totalCpPages;
         }
 
@@ -4347,14 +4356,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return totalCpPages == written;
         }
 
-        public void addPage(FullPageId pageId) {
-            pageIds[lastAddIdx++] = pageId;
-        }
-
-        public void addPages(Collection<FullPageId> pageIds) {
-            for (FullPageId fullPageId : pageIds)
-                addPage(fullPageId);
-        }
 
         public Iterator<FullPageId> iterator() {
             if (retryPageIds.isEmpty())
@@ -4417,6 +4418,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         public void addForRetry(FullPageId fullPageId) {
             retryPageIds.add(fullPageId);
         }
+
+        protected void addPage(FullPageId pageId) {
+            assert lastAddIdx < totalCpPages;
+
+            pageIds[lastAddIdx++] = pageId;
+        }
+
+        protected void addPages(Collection<FullPageId> pageIds) {
+            for (FullPageId fullPageId : pageIds)
+                addPage(fullPageId);
+        }
+
     }
 
     private static class CheckpointBeginPages extends CheckpointPages {
