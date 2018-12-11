@@ -37,10 +37,14 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteFutureImplTest extends GridCommonAbstractTest {
     /** Context thread name. */
     private static final String CTX_THREAD_NAME = "test-async";
@@ -72,6 +76,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFutureGet() throws Exception {
         GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
@@ -91,6 +96,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFutureException() throws Exception {
         GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
@@ -130,6 +136,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFutureIgniteException() throws Exception {
         GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
@@ -153,6 +160,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testListeners() throws Exception {
         GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
@@ -197,6 +205,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testListenersOnError() throws Exception {
         {
             GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
@@ -264,6 +273,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAsyncListeners() throws Exception {
         GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
@@ -305,6 +315,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAsyncListenersOnError() throws Exception {
         checkAsyncListenerOnError(new IgniteException("Test exception"));
         checkAsyncListenerOnError(new IgniteCheckedException("Test checked exception"));
@@ -384,6 +395,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testChain() throws Exception {
         GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
@@ -425,6 +437,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testChainError() throws Exception {
         {
             GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
@@ -574,6 +587,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testChainAsync() throws Exception {
         GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
@@ -646,6 +660,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testChainAsyncOnError() throws Exception {
         checkChainedOnError(new IgniteException("Test exception"));
         checkChainedOnError(new IgniteCheckedException("Test checked exception"));

@@ -40,10 +40,14 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridCachePartitionEvictionDuringReadThroughSelfTest extends GridCommonAbstractTest {
     /** Failing key. */
     private static final int FAILING_KEY = 3;
@@ -83,6 +87,7 @@ public class GridCachePartitionEvictionDuringReadThroughSelfTest extends GridCom
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPartitionRent() throws Exception {
         startGrid(DATA_READ_GRID_IDX);
 

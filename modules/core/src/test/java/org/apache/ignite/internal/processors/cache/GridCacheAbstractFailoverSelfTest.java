@@ -27,8 +27,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -43,12 +41,16 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 
 /**
  * Failover tests for cache.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static final long TEST_TIMEOUT = 3 * 60 * 1000;
@@ -128,14 +130,10 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         stopAllGrids();
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyChange() throws Exception {
         testTopologyChange(null, null);
     }
@@ -143,6 +141,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConstantTopologyChange() throws Exception {
         testConstantTopologyChange(null, null);
     }

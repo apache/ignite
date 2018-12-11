@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.ClusterNode;
@@ -29,10 +30,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Cache validator metrics test.
  */
+@RunWith(JUnit4.class)
 public class CacheValidatorMetricsTest extends GridCommonAbstractTest implements Serializable {
     /** Cache name 1. */
     private static String CACHE_NAME_1 = "cache1";
@@ -48,11 +53,13 @@ public class CacheValidatorMetricsTest extends GridCommonAbstractTest implements
             .setName(CACHE_NAME_1)
             .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(0)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_ALL);
 
         CacheConfiguration cCfg2 = new CacheConfiguration()
             .setName(CACHE_NAME_2)
             .setCacheMode(CacheMode.REPLICATED)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setTopologyValidator(new TopologyValidator() {
             @Override public boolean validate(Collection<ClusterNode> nodes) {
                 return nodes.size() == 2;
@@ -90,6 +97,7 @@ public class CacheValidatorMetricsTest extends GridCommonAbstractTest implements
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheValidatorMetrics() throws Exception {
         startGrid(1);
 

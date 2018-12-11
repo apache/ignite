@@ -32,8 +32,12 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /** */
+@RunWith(JUnit4.class)
 public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -101,6 +105,7 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServersWithPersistence() throws Exception {
         persistence = true;
 
@@ -110,6 +115,7 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testClientsWithPersistence() throws Exception {
         persistence = true;
 
@@ -119,6 +125,7 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testServersWithoutPersistence() throws Exception {
         persistence = false;
 
@@ -128,6 +135,7 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testClientsWithoutPersistence() throws Exception {
         persistence = false;
 
@@ -137,6 +145,7 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServersStaticConfigWithPersistence() throws Exception {
         persistence = true;
 
@@ -146,6 +155,7 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientsStaticConfigWithPersistence() throws Exception {
         persistence = true;
 
@@ -155,6 +165,7 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServersStaticConfigWithoutPersistence() throws Exception {
         persistence = false;
 
@@ -164,6 +175,7 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientsStaticConfigWithoutPersistence() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-8279");
 
