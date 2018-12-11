@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheAtomicCommandHandlerSelfTest;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheCommandHandlerSelfTest;
@@ -30,16 +31,15 @@ import org.apache.ignite.internal.processors.rest.handlers.top.CacheTopologyComm
 public class IgniteRestHandlerTestSuite extends TestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("REST Support Test Suite");
 
-        suite.addTestSuite(GridCacheCommandHandlerSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicCommandHandlerSelfTest.class);
-        suite.addTestSuite(GridLogCommandHandlerTest.class);
-        suite.addTestSuite(GridQueryCommandHandlerTest.class);
-        suite.addTestSuite(CacheTopologyCommandHandlerTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridCacheCommandHandlerSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicCommandHandlerSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridLogCommandHandlerTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridQueryCommandHandlerTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheTopologyCommandHandlerTest.class));
 
         return suite;
     }

@@ -23,11 +23,15 @@ import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * GridFunc performance test.
  */
 @GridCommonTest(group = "Lang")
+@RunWith(JUnit4.class)
 public class GridFuncPerformanceTest extends GridCommonAbstractTest {
     /**
      *  Creates test.
@@ -39,6 +43,7 @@ public class GridFuncPerformanceTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testTransformingIteratorPerformance() {
         // Warmup.
         testBody();

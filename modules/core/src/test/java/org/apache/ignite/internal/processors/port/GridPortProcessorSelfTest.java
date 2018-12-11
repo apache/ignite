@@ -22,6 +22,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 import static org.apache.ignite.spi.IgnitePortProtocol.UDP;
@@ -29,6 +32,7 @@ import static org.apache.ignite.spi.IgnitePortProtocol.UDP;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridPortProcessorSelfTest extends GridCommonAbstractTest {
     /** */
     private GridTestKernalContext ctx;
@@ -52,6 +56,7 @@ public class GridPortProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any exception occurs.
      */
+    @Test
     public void testA() throws Exception {
         Class cls1 = TcpCommunicationSpi.class;
 
@@ -81,6 +86,7 @@ public class GridPortProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any exception occurs.
      */
+    @Test
     public void testB() throws Exception {
         final AtomicInteger ai = new AtomicInteger();
 

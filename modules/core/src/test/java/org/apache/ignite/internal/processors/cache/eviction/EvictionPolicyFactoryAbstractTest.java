@@ -47,6 +47,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -64,6 +67,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Base class for eviction tests.
  */
+@RunWith(JUnit4.class)
 public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy<?, ?>>
     extends GridCommonAbstractTest {
     /** IP finder. */
@@ -161,6 +165,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxSizePolicy() throws Exception {
         plcMax = 3;
         plcMaxMemSize = 0;
@@ -172,6 +177,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxSizePolicyWithBatch() throws Exception {
         plcMax = 3;
         plcMaxMemSize = 0;
@@ -183,6 +189,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxMemSizePolicy() throws Exception {
         plcMax = 0;
         plcMaxMemSize = 3 * MockEntry.ENTRY_SIZE;
@@ -196,6 +203,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxMemSizePolicyWithBatch() throws Exception {
         plcMax = 3;
         plcMaxMemSize = 10 * MockEntry.ENTRY_SIZE;
@@ -207,6 +215,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxSizeMemory() throws Exception {
         int max = 10;
 
@@ -220,6 +229,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxSizeMemoryWithBatch() throws Exception {
         int max = 10;
 
@@ -233,6 +243,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxMemSizeMemory() throws Exception {
         int max = 10;
 
@@ -246,6 +257,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxSizeRandom() throws Exception {
         plcMax = 10;
         plcMaxMemSize = 0;
@@ -257,6 +269,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxSizeRandomWithBatch() throws Exception {
         plcMax = 10;
         plcMaxMemSize = 0;
@@ -268,6 +281,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxMemSizeRandom() throws Exception {
         plcMax = 0;
         plcMaxMemSize = 10 * MockEntry.KEY_SIZE;
@@ -279,6 +293,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxSizeAllowEmptyEntries() throws Exception {
         plcMax = 10;
         plcMaxMemSize = 0;
@@ -290,6 +305,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxSizeAllowEmptyEntriesWithBatch() throws Exception {
         plcMax = 10;
         plcMaxMemSize = 0;
@@ -301,6 +317,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxMemSizeAllowEmptyEntries() throws Exception {
         plcMax = 0;
         plcMaxMemSize = 10 * MockEntry.KEY_SIZE;
@@ -312,6 +329,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxSizePut() throws Exception {
         plcMax = 100;
         plcBatchSize = 1;
@@ -323,6 +341,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxSizePutWithBatch() throws Exception {
         plcMax = 100;
         plcBatchSize = 2;
@@ -334,6 +353,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxMemSizePut() throws Exception {
         int max = 100;
 
@@ -681,6 +701,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMaxSizePartitionedNearDisabled() throws Exception {
         mode = PARTITIONED;
         nearEnabled = false;
@@ -693,6 +714,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMaxSizePartitionedNearDisabledWithBatch() throws Exception {
         mode = PARTITIONED;
         nearEnabled = false;
@@ -706,6 +728,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMaxMemSizePartitionedNearDisabled() throws Exception {
         mode = PARTITIONED;
         nearEnabled = false;
@@ -719,6 +742,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPartitionedNearEnabled() throws Exception {
         mode = PARTITIONED;
         nearEnabled = true;
@@ -732,6 +756,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPartitionedNearDisabledMultiThreaded() throws Exception {
         mode = PARTITIONED;
         nearEnabled = false;
@@ -743,6 +768,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPartitionedNearEnabledMultiThreaded() throws Exception {
         mode = PARTITIONED;
         nearEnabled = true;

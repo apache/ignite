@@ -33,6 +33,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -44,6 +47,7 @@ import static org.apache.ignite.cache.CachePeekMode.PRIMARY;
  * Checks that once value is read from store, it will be loaded in
  * backups as well.
  */
+@RunWith(JUnit4.class)
 public class CacheStoreReadFromBackupTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE_NAME = "cache";
@@ -100,6 +104,7 @@ public class CacheStoreReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicated() throws Exception {
         cacheMode = REPLICATED;
         backups = 0;
@@ -111,6 +116,7 @@ public class CacheStoreReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitioned() throws Exception {
         cacheMode = PARTITIONED;
         backups = 1;
@@ -122,6 +128,7 @@ public class CacheStoreReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearReplicated() throws Exception {
         cacheMode = REPLICATED;
         backups = 0;
@@ -133,6 +140,7 @@ public class CacheStoreReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearPartitioned() throws Exception {
         cacheMode = PARTITIONED;
         backups = 1;
