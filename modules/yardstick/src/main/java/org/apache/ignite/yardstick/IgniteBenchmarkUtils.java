@@ -206,7 +206,7 @@ public class IgniteBenchmarkUtils {
      * Parses portRange string.
      *
      * @param portRange {@code String} port range as 'int..int'.
-     * @return {@code Collection} List of ports.
+     * @return {@code Collection<Integer>} Port list.
      */
     static Collection<Integer> getPortList(String portRange) {
         int firstPort;

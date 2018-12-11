@@ -291,8 +291,8 @@ public class IgniteNode implements BenchmarkServer {
         if (cfg.customProperties() == null)
             return;
 
-        if (cfg.customProperties().get("SET_IPFINDER") == null
-            || !Boolean.valueOf(cfg.customProperties().get("SET_IPFINDER")))
+        if (cfg.customProperties().get("AUTOSET_DISCOVERY_VM_IP_FINDER") == null
+            || !Boolean.valueOf(cfg.customProperties().get("AUTOSET_DISCOVERY_VM_IP_FINDER")))
             return;
 
         if (cfg.customProperties().get("SERVER_HOSTS") == null)
@@ -309,7 +309,7 @@ public class IgniteNode implements BenchmarkServer {
 
         Collection<InetSocketAddress> regAdrList = spi.getIpFinder().getRegisteredAddresses();
 
-        Collection<String> adrList = new ArrayList<>(regAdrList.size());
+        List<String> adrList = new ArrayList<>(regAdrList.size());
 
         for (InetSocketAddress adr : regAdrList)
             adrList.add(adr.getHostString());
@@ -332,12 +332,11 @@ public class IgniteNode implements BenchmarkServer {
 
             Collections.sort(toDisplay);
 
-            BenchmarkUtils.println("WARNING! Host list from SERVER_HOSTS property does not contain any " +
-                "'127.0.0.1' or 'localhost' addresses and host list from IpFinger configuration contains " +
-                "only default local addresses. ");
+            if(!adrList.isEmpty() && adrList.get(0).contains("127.0.0.1"))
+                BenchmarkUtils.println("WARNING! Host list from SERVER_HOSTS property does not contain any " +
+                    "'127.0.0.1' or 'localhost' addresses.");
 
-            BenchmarkUtils.println("Assuming you want to use for IpFinder configuration addresses " +
-                "from SERVER_HOSTS property.");
+            BenchmarkUtils.println("Setting SERVER_HOSTS addresses for IpFinder configuration.");
 
             BenchmarkUtils.println(String.format("Replacing list: \n %s \n to list: \n %s",
                 regAdrList, toDisplay));
