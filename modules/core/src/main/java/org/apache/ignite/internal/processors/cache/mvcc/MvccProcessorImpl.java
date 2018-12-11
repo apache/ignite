@@ -1161,13 +1161,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
                     vacuumWorkers.add(new VacuumScheduler(ctx, log, this));
 
-                    for (int i = 0; i < ctx.config().getMvccVacuumThreadCount(); i++) {
+                    for (int i = 0; i < ctx.config().getMvccVacuumThreadCount(); i++)
                         vacuumWorkers.add(new VacuumWorker(ctx, log, cleanupQueue));
-                    }
 
-                    for (GridWorker worker : vacuumWorkers) {
+                    for (GridWorker worker : vacuumWorkers)
                         new IgniteThread(worker).start();
-                    }
 
                     return;
                 }
@@ -1209,9 +1207,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             if (!queue.isEmpty()) {
                 IgniteCheckedException ex = vacuumCancelledException();
 
-                for (VacuumTask task : queue) {
+                for (VacuumTask task : queue)
                     task.onDone(ex);
-                }
             }
         }
     }
@@ -2594,13 +2591,16 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                             if (rest.getClass() == ArrayList.class) {
                                 for (MvccDataRow row : ((List<MvccDataRow>) rest))
                                     part.dataStore().updateTxState(cctx, row);
-                            } else
-                                part.dataStore().updateTxState(cctx, (MvccDataRow) rest);
+                            }
+                            else
+                                part.dataStore().updateTxState(cctx, (MvccDataRow)rest);
                         }
-                    } finally {
+                    }
+                    finally {
                         cctx.shared().database().checkpointReadUnlock();
                     }
-                } finally {
+                }
+                finally {
                     entry.unlockEntry();
                     cctx.evicts().touch(entry, AffinityTopologyVersion.NONE);
 
