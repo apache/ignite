@@ -2876,6 +2876,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private final ConcurrentMap<T2<Integer, Integer>, PartitionDestroyRequest> pendingReqs =
             new ConcurrentHashMap<>();
 
+        /** */
+        private PartitionDestroyQueue prevDestroyQueue;
+
         /**
          * @param grpCtx Group context.
          * @param partId Partition ID to destroy.
@@ -2910,6 +2913,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             PartitionDestroyRequest rmvd = pendingReqs.remove(new T2<>(grpId, partId));
 
             return rmvd == null ? null : !rmvd.cancel() ? rmvd : null;
+        }
+
+        private void mergeCheckpoint(PartitionDestroyQueue prevDestroyQueue) {
+            this.prevDestroyQueue = prevDestroyQueue;
+        }
+
+        private void onCheckpointBegin() {
+            if (prevDestroyQueue != null)
+                pendingReqs.putAll(prevDestroyQueue.pendingReqs);
         }
     }
 
@@ -3719,7 +3731,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             curr.cpBeginFut.onDone();
 
+            // After cpBegin callback.
             curr.cpPages.onCheckpointBegin();
+
+            curr.destroyQueue.onCheckpointBegin();
         }
 
         @SuppressWarnings("UnnecessaryLocalVariable")
@@ -3730,11 +3745,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (last.canceled) {
                 curr.prevCanceled = true;
 
+                // Merge previus checkpoint page Ids from current.
                 curr.cpPages.mergeCheckpoint(last.cpPages);
 
+                // Copy stores by reference, no need addAll under cp write lock.
                 curr.pageStores = last.pageStores;
 
-                curr.destroyQueue.pendingReqs.putAll(last.destroyQueue.pendingReqs);
+                // Merge previus checkpoint destroy queue from current.
+                curr.destroyQueue.mergeCheckpoint(last.destroyQueue);
             }
 
             curr.started = true;
@@ -4145,6 +4163,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          *
          */
         public int pages() {
+            assert progress != null && progress.cpPages != null;
+
             return progress.cpPages.checkpointPages();
         }
 
@@ -4410,7 +4430,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         private void mergeCheckpoint(CheckpointBeginPages previousCheckpointPages) {
-            this.prevCpPages = previousCheckpointPages;
+            prevCpPages = previousCheckpointPages;
         }
 
         private void onCheckpointBegin() {
@@ -4459,6 +4479,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         addPages(prevCpPages.retryPageIds);
                     }
                 }
+
+                // Free previous checkpoint page Ids array. Ready for gc.
+                prevCpPages = null;
             }
 
             // Sort page Ids if write mod SEQUENTIAL.
