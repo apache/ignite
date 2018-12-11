@@ -85,9 +85,9 @@ public class StackingTest extends TrainerTest {
         // Convert model trainer to produce Vector -> Vector model
         DatasetTrainer<AdaptableDatasetModel<Vector, Vector, Matrix, Matrix, MultilayerPerceptron>, Double> mlpTrainer =
             AdaptableDatasetTrainer.of(trainer1)
-            .beforeTrainedModel((Vector v) -> new DenseMatrix(v.asArray(), 1))
-            .afterTrainedModel((Matrix mtx) -> mtx.getRow(0))
-            .withConvertedLabels(VectorUtils::num2Arr);
+                .beforeTrainedModel((Vector v) -> new DenseMatrix(v.asArray(), 1))
+                .afterTrainedModel((Matrix mtx) -> mtx.getRow(0))
+                .withConvertedLabels(VectorUtils::num2Arr);
 
         final double factor = 3;
 
