@@ -57,12 +57,16 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  * Various tests for Messaging public API.
  */
+@RunWith(JUnit4.class)
 public class GridMessagingSelfTest extends GridCommonAbstractTest implements Serializable {
     /** */
     private static final String MSG_1 = "MSG-1";
@@ -213,6 +217,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testSendReceiveMessage() throws Exception {
         final Collection<Object> rcvMsgs = new GridConcurrentHashSet<>();
 
@@ -262,6 +267,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
      * @throws Exception If error occurs.
      */
     @SuppressWarnings("TooBroadScope")
+    @Test
     public void testStopLocalListen() throws Exception {
         final AtomicInteger msgCnt1 = new AtomicInteger();
 
@@ -374,6 +380,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testSendReceiveMessageWithStringTopic() throws Exception {
         final Collection<Object> rcvMsgs = new GridConcurrentHashSet<>();
 
@@ -497,6 +504,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testSendReceiveMessageWithEnumTopic() throws Exception {
         final Collection<Object> rcvMsgs = new GridConcurrentHashSet<>();
 
@@ -621,6 +629,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testRemoteListen() throws Exception {
         final Collection<Object> rcvMsgs = new GridConcurrentHashSet<>();
 
@@ -658,6 +667,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
      * @throws Exception If failed.
      */
     @SuppressWarnings("TooBroadScope")
+    @Test
     public void testStopRemoteListen() throws Exception {
         final AtomicInteger msgCnt1 = new AtomicInteger();
 
@@ -751,6 +761,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testRemoteListenOrderedMessages() throws Exception {
         List<TestMessage> msgs = Arrays.asList(
             new TestMessage(MSG_1),
@@ -795,7 +806,6 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
 
         assertFalse(error.get());
 
-        //noinspection AssertEqualsBetweenInconvertibleTypes
         assertEquals(msgs, Arrays.asList(rcvMsgs.toArray()));
     }
 
@@ -805,6 +815,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testRemoteListenWithIntTopic() throws Exception {
         final Collection<Object> rcvMsgs = new GridConcurrentHashSet<>();
 
@@ -944,6 +955,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testSendMessageWithExternalClassLoader() throws Exception {
         URL[] urls = new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))};
 
@@ -988,7 +1000,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ConstantConditions")
+    @Test
     public void testNullMessages() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1026,6 +1038,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAsyncOld() throws Exception {
         final AtomicInteger msgCnt = new AtomicInteger();
 
@@ -1138,6 +1151,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAsync() throws Exception {
         final AtomicInteger msgCnt = new AtomicInteger();
 
@@ -1214,6 +1228,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
      *
      * @throws Exception If an error occurred.
      */
+    @Test
     public void testRemoteListenForOldest() throws Exception {
         remoteListenForOldest(ignite1);
 

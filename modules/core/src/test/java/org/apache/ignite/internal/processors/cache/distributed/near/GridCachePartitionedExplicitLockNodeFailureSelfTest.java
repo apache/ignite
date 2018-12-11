@@ -33,7 +33,11 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -43,12 +47,18 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 /**
  * Tests for node failure in transactions.
  */
+@RunWith(JUnit4.class)
 public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     public static final int GRID_CNT = 4;
+
+    /** {@inheritDoc} */
+    @Override public void beforeTest() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -84,6 +94,7 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
 
     /** @throws Exception If check failed. */
     @SuppressWarnings("ErrorNotRethrown")
+    @Test
     public void testLockFromNearOrBackup() throws Exception {
         startGrids(GRID_CNT);
 

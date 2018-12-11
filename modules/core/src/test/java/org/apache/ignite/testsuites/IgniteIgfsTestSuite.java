@@ -17,10 +17,10 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.igfs.IgfsFragmentizerSelfTest;
 import org.apache.ignite.igfs.IgfsFragmentizerTopologySelfTest;
-import org.apache.ignite.igfs.IgfsPathSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsAtomicPrimaryMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsAtomicPrimarySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsAttributesSelfTest;
@@ -56,7 +56,6 @@ import org.apache.ignite.internal.processors.igfs.IgfsProxySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsLocalSecondaryFileSystemProxySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemInjectionSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest;
-import org.apache.ignite.internal.processors.igfs.IgfsSizeSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsStartCacheTest;
 import org.apache.ignite.internal.processors.igfs.IgfsStreamsSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsTaskSelfTest;
@@ -77,85 +76,84 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public class IgniteIgfsTestSuite extends TestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite FS Test Suite For Platform Independent Tests");
 
-        suite.addTest(new TestSuite(IgfsPrimarySelfTest.class));
-        suite.addTest(new TestSuite(IgfsPrimaryMultiNodeSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsPrimarySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsPrimaryMultiNodeSelfTest.class));
 
-        suite.addTest(new TestSuite(IgfsPrimaryRelaxedConsistencySelfTest.class));
-        suite.addTest(new TestSuite(IgfsPrimaryRelaxedConsistencyMultiNodeSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsPrimaryRelaxedConsistencySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsPrimaryRelaxedConsistencyMultiNodeSelfTest.class));
 
-        suite.addTest(new TestSuite(IgfsDualSyncSelfTest.class));
-        suite.addTest(new TestSuite(IgfsDualAsyncSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsDualSyncSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsDualAsyncSelfTest.class));
 
-        suite.addTest(new TestSuite(IgfsLocalSecondaryFileSystemDualSyncSelfTest.class));
-        suite.addTest(new TestSuite(IgfsLocalSecondaryFileSystemDualAsyncSelfTest.class));
-        suite.addTest(new TestSuite(IgfsLocalSecondaryFileSystemDualSyncClientSelfTest.class));
-        suite.addTest(new TestSuite(IgfsLocalSecondaryFileSystemDualAsyncClientSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsLocalSecondaryFileSystemDualSyncSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsLocalSecondaryFileSystemDualAsyncSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsLocalSecondaryFileSystemDualSyncClientSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsLocalSecondaryFileSystemDualAsyncClientSelfTest.class));
 
-        //suite.addTest(new TestSuite(IgfsSizeSelfTest.class));
-        suite.addTest(new TestSuite(IgfsAttributesSelfTest.class));
-        suite.addTest(new TestSuite(IgfsFileInfoSelfTest.class));
-        suite.addTest(new TestSuite(IgfsMetaManagerSelfTest.class));
-        suite.addTest(new TestSuite(IgfsDataManagerSelfTest.class));
-        suite.addTest(new TestSuite(IgfsProcessorSelfTest.class));
-        suite.addTest(new TestSuite(IgfsProcessorValidationSelfTest.class));
-        suite.addTest(new TestSuite(IgfsCacheSelfTest.class));
+        //suite.addTest(new JUnit4TestAdapter(IgfsSizeSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsAttributesSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsFileInfoSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsMetaManagerSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsDataManagerSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsProcessorSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsProcessorValidationSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsCacheSelfTest.class));
 
         if (U.isWindows())
-            suite.addTest(new TestSuite(IgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest.class));
+            suite.addTest(new JUnit4TestAdapter(IgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest.class));
 
-        suite.addTest(new TestSuite(IgfsCachePerBlockLruEvictionPolicySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsCachePerBlockLruEvictionPolicySelfTest.class));
 
-        suite.addTest(new TestSuite(IgfsStreamsSelfTest.class));
-        suite.addTest(new TestSuite(IgfsModesSelfTest.class));
-        suite.addTest(new TestSuite(IgfsMetricsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsStreamsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsModesSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsMetricsSelfTest.class));
 
-        suite.addTest(new TestSuite(IgfsPrimaryClientSelfTest.class));
-        suite.addTest(new TestSuite(IgfsPrimaryRelaxedConsistencyClientSelfTest.class));
-        suite.addTest(new TestSuite(IgfsDualSyncClientSelfTest.class));
-        suite.addTest(new TestSuite(IgfsDualAsyncClientSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsPrimaryClientSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsPrimaryRelaxedConsistencyClientSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsDualSyncClientSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsDualAsyncClientSelfTest.class));
 
-        suite.addTest(new TestSuite(IgfsOneClientNodeTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsOneClientNodeTest.class));
 
-        suite.addTest(new TestSuite(IgfsModeResolverSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsModeResolverSelfTest.class));
 
-        //suite.addTestSuite(IgfsPathSelfTest.class);
-        suite.addTestSuite(IgfsFragmentizerSelfTest.class);
-        suite.addTestSuite(IgfsFragmentizerTopologySelfTest.class);
-        suite.addTestSuite(IgfsFileMapSelfTest.class);
+        //suite.addTest(new JUnit4TestAdapter(IgfsPathSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsFragmentizerSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsFragmentizerTopologySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsFileMapSelfTest.class));
 
-        suite.addTestSuite(IgfsByteDelimiterRecordResolverSelfTest.class);
-        suite.addTestSuite(IgfsStringDelimiterRecordResolverSelfTest.class);
-        suite.addTestSuite(IgfsFixedLengthRecordResolverSelfTest.class);
-        suite.addTestSuite(IgfsNewLineDelimiterRecordResolverSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgfsByteDelimiterRecordResolverSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsStringDelimiterRecordResolverSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsFixedLengthRecordResolverSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsNewLineDelimiterRecordResolverSelfTest.class));
 
-        suite.addTestSuite(IgfsTaskSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgfsTaskSelfTest.class));
 
-        suite.addTestSuite(IgfsGroupDataBlockKeyMapperHashSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgfsGroupDataBlockKeyMapperHashSelfTest.class));
 
-        suite.addTestSuite(IgfsStartCacheTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgfsStartCacheTest.class));
 
-        suite.addTestSuite(IgfsBackupsPrimarySelfTest.class);
-        suite.addTestSuite(IgfsBackupsDualSyncSelfTest.class);
-        suite.addTestSuite(IgfsBackupsDualAsyncSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgfsBackupsPrimarySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsBackupsDualSyncSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsBackupsDualAsyncSelfTest.class));
 
-        suite.addTestSuite(IgfsBlockMessageSystemPoolStarvationSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgfsBlockMessageSystemPoolStarvationSelfTest.class));
 
         // TODO: Enable when IGFS failover is fixed.
-        //suite.addTestSuite(IgfsBackupFailoverSelfTest.class);
+        //suite.addTest(new JUnit4TestAdapter(IgfsBackupFailoverSelfTest.class));
 
-        suite.addTestSuite(IgfsProxySelfTest.class);
-        suite.addTestSuite(IgfsLocalSecondaryFileSystemProxySelfTest.class);
-        suite.addTestSuite(IgfsLocalSecondaryFileSystemProxyClientSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgfsProxySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsLocalSecondaryFileSystemProxySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsLocalSecondaryFileSystemProxyClientSelfTest.class));
 
-        suite.addTestSuite(IgfsAtomicPrimarySelfTest.class);
-        suite.addTestSuite(IgfsAtomicPrimaryMultiNodeSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgfsAtomicPrimarySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgfsAtomicPrimaryMultiNodeSelfTest.class));
 
-        suite.addTestSuite(IgfsSecondaryFileSystemInjectionSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgfsSecondaryFileSystemInjectionSelfTest.class));
 
         return suite;
     }

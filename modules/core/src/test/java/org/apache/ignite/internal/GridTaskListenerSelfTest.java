@@ -34,12 +34,15 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * This test checks that GridTaskListener is only called once per task.
  */
-@SuppressWarnings("deprecation")
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class GridTaskListenerSelfTest extends GridCommonAbstractTest {
     /** */
     public GridTaskListenerSelfTest() {
@@ -51,7 +54,8 @@ public class GridTaskListenerSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"BusyWait", "unchecked"})
+    @SuppressWarnings({"BusyWait"})
+    @Test
     public void testGridTaskListener() throws Exception {
         final AtomicInteger cnt = new AtomicInteger(0);
 

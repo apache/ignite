@@ -75,7 +75,6 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private static Ignite ignite;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
@@ -633,6 +632,22 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         assertParseThrows("create table Int (_key int primary key, _val int) WITH \"template=cache\"",
             IgniteSQLException.class, "Direct specification of _KEY and _VAL columns is forbidden");
+
+        assertParseThrows("create table Person (" +
+                "unquoted_id LONG, " +
+                "\"quoted_id\" LONG, " +
+                "PERSON_NAME VARCHAR(255), " +
+                "PRIMARY KEY (UNQUOTED_ID, quoted_id)) " +
+                "WITH \"template=cache\"",
+            IgniteSQLException.class, "PRIMARY KEY column is not defined: QUOTED_ID");
+
+        assertParseThrows("create table Person (" +
+                "unquoted_id LONG, " +
+                "\"quoted_id\" LONG, " +
+                "PERSON_NAME VARCHAR(255), " +
+                "PRIMARY KEY (\"unquoted_id\", \"quoted_id\")) " +
+                "WITH \"template=cache\"",
+            IgniteSQLException.class, "PRIMARY KEY column is not defined: unquoted_id");
     }
 
     /** */
@@ -698,7 +713,6 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      * @param exCls Exception class.
      * @param msg Expected message.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void assertParseThrows(final String sql, Class<? extends Exception> exCls, String msg) {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1010,7 +1024,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         String schemaName = idx.schema(DEFAULT_CACHE_NAME);
 
-        return (JdbcConnection)idx.connectionForSchema(schemaName);
+        return (JdbcConnection)idx.connections().connectionForThread(schemaName);
     }
 
     /**

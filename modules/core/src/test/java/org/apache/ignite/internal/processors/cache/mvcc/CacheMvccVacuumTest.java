@@ -25,12 +25,16 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Vacuum test.
  */
+@RunWith(JUnit4.class)
 public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
@@ -40,6 +44,7 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartStopVacuumInMemory() throws Exception {
         Ignite node0 = startGrid(0);
         Ignite node1 = startGrid(1);
@@ -70,6 +75,7 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartStopVacuumPersistence() throws Exception {
         persistence = true;
 
@@ -80,6 +86,12 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
         ensureNoVacuum(node1);
 
         node1.cluster().active(true);
+
+        ensureNoVacuum(node0);
+        ensureNoVacuum(node1);
+
+        node1.createCache(new CacheConfiguration<>("test1")
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
         ensureNoVacuum(node0);
         ensureNoVacuum(node1);
@@ -125,6 +137,7 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVacuumNotStartedWithoutMvcc() throws Exception {
         IgniteConfiguration cfg = getConfiguration("grid1");
 
@@ -136,6 +149,7 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVacuumNotStartedWithoutMvccPersistence() throws Exception {
         persistence = true;
 

@@ -45,12 +45,16 @@ import org.apache.ignite.spi.collision.CollisionJobContext;
 import org.apache.ignite.spi.collision.CollisionSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Job collision cancel test.
  */
 @SuppressWarnings( {"PublicInnerClass"})
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
     /** */
     private static final Object mux = new Object();
@@ -79,6 +83,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings( {"AssignmentToCatchBlockParameter"})
+    @Test
     public void testCancel() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 

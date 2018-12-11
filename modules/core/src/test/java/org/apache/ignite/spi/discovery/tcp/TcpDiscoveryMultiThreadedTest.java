@@ -58,6 +58,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -68,6 +71,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 /**
  * Test for {@link TcpDiscoverySpi}.
  */
+@RunWith(JUnit4.class)
 public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 5;
@@ -107,9 +111,10 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"IfMayBeConditional"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setConsistentId(igniteInstanceName);
 
         UUID id = nodeId.get();
 
@@ -171,6 +176,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testMultiThreadedClientsRestart() throws Exception {
         final AtomicBoolean done = new AtomicBoolean();
 
@@ -219,6 +225,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testMultiThreadedClientsServersRestart() throws Throwable {
         fail("https://issues.apache.org/jira/browse/IGNITE-1123");
 
@@ -228,7 +235,10 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
-    public void _testMultiThreadedServersRestart() throws Throwable {
+    @Test
+    public void testMultiThreadedServersRestart() throws Throwable {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1123");
+
         multiThreadedClientsServersRestart(GRID_CNT * 2, 0);
     }
 
@@ -423,6 +433,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testTopologyVersion() throws Exception {
         clientFlagGlobal = false;
 
@@ -447,6 +458,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testMultipleStartOnCoordinatorStop() throws Exception{
         for (int k = 0; k < 3; k++) {
             log.info("Iteration: " + k);
@@ -496,7 +508,10 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testCustomEventOnJoinCoordinatorStop() throws Exception {
+    @Test
+    public void testCustomEventOnJoinCoordinatorStop() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10198");
+
         for (int k = 0; k < 10; k++) {
             log.info("Iteration: " + k);
 
@@ -513,11 +528,13 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture<?> fut1 = GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+                    String cacheName = DEFAULT_CACHE_NAME + "-tmp";
 
                     Ignite ignite = ignite(START_NODES - 1);
 
                     while (!stop.get()) {
+                        CacheConfiguration ccfg = new CacheConfiguration(cacheName);
+
                         ignite.createCache(ccfg);
 
                         ignite.destroyCache(ccfg.getName());
@@ -590,7 +607,10 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testClientContinuousQueryCoordinatorStop() throws Exception {
+    @Test
+    public void testClientContinuousQueryCoordinatorStop() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10198");
+
         for (int k = 0; k < 10; k++) {
             log.info("Iteration: " + k);
 
@@ -659,7 +679,10 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testCustomEventNodeRestart() throws Exception {
+    @Test
+    public void testCustomEventNodeRestart() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10249");
+
         clientFlagGlobal = false;
 
         Ignite ignite = startGrid(0);

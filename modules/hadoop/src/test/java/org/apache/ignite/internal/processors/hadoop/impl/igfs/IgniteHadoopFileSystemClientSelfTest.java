@@ -139,7 +139,6 @@ public class IgniteHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testOutputStreamDeferredException() throws Exception {
         final byte[] data = "test".getBytes();
 
@@ -182,7 +181,6 @@ public class IgniteHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest
      * @param flag Flag state.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ConstantConditions")
     private void switchHandlerErrorFlag(boolean flag) throws Exception {
         IgfsProcessorAdapter igfsProc = ((IgniteKernal)grid(0)).context().igfs();
 

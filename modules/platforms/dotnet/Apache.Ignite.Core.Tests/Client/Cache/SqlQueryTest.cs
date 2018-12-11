@@ -150,9 +150,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             var cache = GetClientCache<Person>();
 
-            cache.PutAll(Enumerable.Range(1, 1000).ToDictionary(x => x, x => new Person(x)));
+            cache.PutAll(Enumerable.Range(1, 30000).ToDictionary(x => x, x => new Person(x)));
 
-            var qry = new SqlFieldsQuery("select * from Person p0, Person p1, Person p2'")
+            var qry = new SqlFieldsQuery("select * from Person where Name like '%ers%'")
             {
                 Timeout = TimeSpan.FromMilliseconds(1)
             };

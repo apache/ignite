@@ -35,6 +35,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
@@ -42,7 +45,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 /**
  * Partitioned affinity test.
  */
-@SuppressWarnings({"PointlessArithmeticExpression", "FieldCanBeLocal"})
+@RunWith(JUnit4.class)
 public abstract class AffinityFunctionExcludeNeighborsAbstractSelfTest extends GridCommonAbstractTest {
     /** Number of backups. */
     private int backups = 2;
@@ -108,6 +111,7 @@ public abstract class AffinityFunctionExcludeNeighborsAbstractSelfTest extends G
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityMultiNode() throws Exception {
         int grids = 9;
 
@@ -159,6 +163,7 @@ public abstract class AffinityFunctionExcludeNeighborsAbstractSelfTest extends G
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinitySingleNode() throws Exception {
         Ignite g = startGrid();
 

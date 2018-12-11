@@ -312,7 +312,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         Object val0;
 
         try {
-            CacheObject v = entry.peek(null);
+            CacheObject v = entry.peek();
 
             key0 = key.value(cache.context().cacheObjectContext(), false);
 
@@ -790,7 +790,6 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
         @Override protected Class<?> findClass(String name) throws ClassNotFoundException {
             // Try local deployment first.
             if (!isLocallyExcluded(name)) {

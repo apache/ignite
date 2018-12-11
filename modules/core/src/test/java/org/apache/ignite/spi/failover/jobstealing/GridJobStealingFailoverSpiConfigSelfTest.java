@@ -19,15 +19,20 @@ package org.apache.ignite.spi.failover.jobstealing;
 
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Job stealing failover SPI config test.
  */
 @GridSpiTest(spi = JobStealingFailoverSpi.class, group = "Collision SPI")
+@RunWith(JUnit4.class)
 public class GridJobStealingFailoverSpiConfigSelfTest extends GridSpiAbstractConfigTest<JobStealingFailoverSpi> {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeConfig() throws Exception {
         checkNegativeSpiProperty(new JobStealingFailoverSpi(), "maximumFailoverAttempts", -1);
     }

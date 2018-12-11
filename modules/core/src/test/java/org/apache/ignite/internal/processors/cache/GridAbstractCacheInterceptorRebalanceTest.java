@@ -37,9 +37,13 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -49,6 +53,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -57,10 +62,10 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     private static final String CACHE_NAME = "test_cache";
 
     /** */
-    private static final int CNT = 10_000;
+    private static final int CNT = SF.applyLB(10_000, 500);
 
     /** */
-    private static final int TEST_ITERATIONS = 5;
+    private static final int TEST_ITERATIONS = SF.applyLB(5, 2);
 
     /** */
     private static final int NODES = 5;
@@ -109,6 +114,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testRebalanceUpdate() throws Exception {
         interceptor = new RebalanceUpdateInterceptor();
 
@@ -122,6 +128,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testRebalanceUpdateInvoke() throws Exception {
         interceptor = new RebalanceUpdateInterceptor();
 
@@ -137,6 +144,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testRebalanceRemoveInvoke() throws Exception {
         interceptor = new RebalanceUpdateInterceptor();
 
@@ -152,6 +160,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testRebalanceRemove() throws Exception {
         interceptor = new RebalanceRemoveInterceptor();
 
@@ -165,6 +174,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testPutIfAbsent() throws Exception {
         interceptor = new RebalanceUpdateInterceptor();
 
@@ -178,6 +188,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testGetAndPut() throws Exception {
         interceptor = new RebalanceUpdateInterceptor();
 
@@ -195,7 +206,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
      * @throws Exception If fail.
      */
     private void testRebalance(final Operation operation) throws Exception {
-        long stopTime = System.currentTimeMillis() + 2 * 60_000;
+        long stopTime = System.currentTimeMillis() + SF.applyLB(2 * 60_000, 5_000);
 
         for (int iter = 0; iter < TEST_ITERATIONS && System.currentTimeMillis() < stopTime; iter++) {
             log.info("Iteration: " + iter);

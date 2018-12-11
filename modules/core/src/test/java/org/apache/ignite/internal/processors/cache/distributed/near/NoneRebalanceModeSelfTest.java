@@ -22,6 +22,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
@@ -29,9 +32,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 /**
  * Test none rebalance mode.
  */
+@RunWith(JUnit4.class)
 public class NoneRebalanceModeSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @SuppressWarnings({"ConstantConditions"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
@@ -46,12 +49,22 @@ public class NoneRebalanceModeSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGrid(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        super.afterTestsStopped();
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveAll() throws Exception {
         GridNearTransactionalCache cache = (GridNearTransactionalCache)((IgniteKernal)grid(0)).internalCache(DEFAULT_CACHE_NAME);
 

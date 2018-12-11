@@ -38,6 +38,7 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageSupport;
+import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
@@ -58,10 +59,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManager;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteHistoricalIterator;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
@@ -70,6 +71,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PagesAllocationRange;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionRecoverState;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionCountersIO;
@@ -111,6 +113,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /** */
     private ReuseListImpl reuseList;
 
+    /** Flag indicates that all group partitions have restored their state from page memory / disk. */
+    private volatile boolean partitionStatesRestored;
+
     /** {@inheritDoc} */
     @Override protected void initPendingTree(GridCacheContext cctx) throws IgniteCheckedException {
         // No-op. Per-partition PendingTree should be used.
@@ -137,6 +142,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             ctx.wal(),
             globalRemoveId(),
             grp.groupId(),
+            grp.sharedGroup(),
             PageIdAllocator.INDEX_PARTITION,
             PageIdAllocator.FLAG_IDX,
             reuseList,
@@ -393,6 +399,142 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
         else if (needSnapshot)
             tryAddEmptyPartitionToSnapshot(store, ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long restorePartitionStates(Map<GroupPartitionId, PartitionRecoverState> partitionRecoveryStates) throws IgniteCheckedException {
+        if (grp.isLocal() || !grp.affinityNode() || !grp.dataRegion().config().isPersistenceEnabled())
+            return 0;
+
+        if (partitionStatesRestored)
+            return 0;
+
+        long processed = 0;
+
+        PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
+
+        for (int p = 0; p < grp.affinity().partitions(); p++) {
+            PartitionRecoverState recoverState = partitionRecoveryStates.get(new GroupPartitionId(grp.groupId(), p));
+
+            if (ctx.pageStore().exists(grp.groupId(), p)) {
+                ctx.pageStore().ensure(grp.groupId(), p);
+
+                if (ctx.pageStore().pages(grp.groupId(), p) <= 1) {
+                    if (log.isDebugEnabled())
+                        log.debug("Skipping partition on recovery (pages less than 1) " +
+                            "[grp=" + grp.cacheOrGroupName() + ", p=" + p + "]");
+
+                    continue;
+                }
+
+                if (log.isDebugEnabled())
+                    log.debug("Creating partition on recovery (exists in page store) " +
+                        "[grp=" + grp.cacheOrGroupName() + ", p=" + p + "]");
+
+                processed++;
+
+                GridDhtLocalPartition part = grp.topology().forceCreatePartition(p);
+
+                onPartitionInitialCounterUpdated(p, 0);
+
+                ctx.database().checkpointReadLock();
+
+                try {
+                    long partMetaId = pageMem.partitionMetaPageId(grp.groupId(), p);
+                    long partMetaPage = pageMem.acquirePage(grp.groupId(), partMetaId);
+
+                    try {
+                        long pageAddr = pageMem.writeLock(grp.groupId(), partMetaId, partMetaPage);
+
+                        boolean changed = false;
+
+                        try {
+                            PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
+
+                            if (recoverState != null) {
+                                io.setPartitionState(pageAddr, (byte) recoverState.stateId());
+
+                                changed = updateState(part, recoverState.stateId());
+
+                                if (recoverState.stateId() == GridDhtPartitionState.OWNING.ordinal()
+                                    || (recoverState.stateId() == GridDhtPartitionState.MOVING.ordinal()
+                                    && part.initialUpdateCounter() < recoverState.updateCounter())) {
+                                    part.initialUpdateCounter(recoverState.updateCounter());
+
+                                    changed = true;
+                                }
+
+                                if (log.isDebugEnabled())
+                                    log.debug("Restored partition state (from WAL) " +
+                                        "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", state=" + part.state() +
+                                        ", updCntr=" + part.initialUpdateCounter() + "]");
+                            }
+                            else {
+                                int stateId = (int) io.getPartitionState(pageAddr);
+
+                                changed = updateState(part, stateId);
+
+                                if (log.isDebugEnabled())
+                                    log.debug("Restored partition state (from page memory) " +
+                                        "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", state=" + part.state() +
+                                        ", updCntr=" + part.initialUpdateCounter() + ", stateId=" + stateId + "]");
+                            }
+                        }
+                        finally {
+                            pageMem.writeUnlock(grp.groupId(), partMetaId, partMetaPage, null, changed);
+                        }
+                    }
+                    finally {
+                        pageMem.releasePage(grp.groupId(), partMetaId, partMetaPage);
+                    }
+                }
+                finally {
+                    ctx.database().checkpointReadUnlock();
+                }
+            }
+            else if (recoverState != null) {
+                GridDhtLocalPartition part = grp.topology().forceCreatePartition(p);
+
+                onPartitionInitialCounterUpdated(p, recoverState.updateCounter());
+
+                updateState(part, recoverState.stateId());
+
+                processed++;
+
+                if (log.isDebugEnabled())
+                    log.debug("Restored partition state (from WAL) " +
+                        "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", state=" + part.state() +
+                        ", updCntr=" + part.initialUpdateCounter() + "]");
+            }
+            else {
+                if (log.isDebugEnabled())
+                    log.debug("Skipping partition on recovery (no page store OR wal state) " +
+                        "[grp=" + grp.cacheOrGroupName() + ", p=" + p + "]");
+            }
+        }
+
+        partitionStatesRestored = true;
+
+        return processed;
+    }
+
+    /**
+     * @param part Partition to restore state for.
+     * @param stateId State enum ordinal.
+     * @return Updated flag.
+     */
+    private boolean updateState(GridDhtLocalPartition part, int stateId) {
+        if (stateId != -1) {
+            GridDhtPartitionState state = GridDhtPartitionState.fromOrdinal(stateId);
+
+            assert state != null;
+
+            part.restoreState(state == GridDhtPartitionState.EVICTED ? GridDhtPartitionState.RENTING : state);
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -694,19 +836,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
-    @Override public RootPage rootPageForIndex(int cacheId, String idxName) throws IgniteCheckedException {
-        if (grp.sharedGroup())
-            idxName = Integer.toString(cacheId) + "_" + idxName;
-
-        return indexStorage.getOrAllocateForTree(idxName);
+    @Override public RootPage rootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException {
+        return indexStorage.allocateCacheIndex(cacheId, idxName, segment);
     }
 
     /** {@inheritDoc} */
-    @Override public void dropRootPageForIndex(int cacheId, String idxName) throws IgniteCheckedException {
-        if (grp.sharedGroup())
-            idxName = Integer.toString(cacheId) + "_" + idxName;
-
-        indexStorage.dropRootPage(idxName);
+    @Override public void dropRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException {
+        indexStorage.dropCacheIndex(cacheId, idxName, segment);
     }
 
     /** {@inheritDoc} */
@@ -867,6 +1003,21 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             size += ((GridCacheDataStore)store).expiredSize();
 
         return size;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void preloadPartition(int part) throws IgniteCheckedException {
+        if (grp.isLocal()) {
+            dataStore(part).preload();
+
+            return;
+        }
+
+        GridDhtLocalPartition locPart = grp.topology().localPartition(part, AffinityTopologyVersion.NONE, false, false);
+
+        assert locPart != null && locPart.reservations() > 0;
+
+        locPart.dataStore().preload();
     }
 
     /**
@@ -1226,11 +1377,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         @Override public byte newMvccTxState() {
             return 0; // TODO IGNITE-7384
         }
-
-        /** {@inheritDoc} */
-        @Override public boolean isKeyAbsentBefore() {
-            return false;
-        }
     }
 
     /**
@@ -1393,11 +1539,36 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         @Override public PendingEntriesTree pendingTree() {
                             return pendingTree0;
                         }
+
+                        /** {@inheritDoc} */
+                        @Override public void preload() throws IgniteCheckedException {
+                            IgnitePageStoreManager pageStoreMgr = ctx.pageStore();
+
+                            if (pageStoreMgr == null)
+                                return;
+
+                            final int pages = pageStoreMgr.pages(grp.groupId(), partId);
+
+                            long pageId = pageMem.partitionMetaPageId(grp.groupId(), partId);
+
+                            // For each page sequentially pin/unpin.
+                            for (int pageNo = 0; pageNo < pages; pageId++, pageNo++) {
+                                long pagePointer = -1;
+
+                                try {
+                                    pagePointer = pageMem.acquirePage(grp.groupId(), pageId);
+                                }
+                                finally {
+                                    if (pagePointer != -1)
+                                        pageMem.releasePage(grp.groupId(), pageId, pagePointer);
+                                }
+                            }
+                        }
                     };
 
                     pendingTree = pendingTree0;
 
-                    if (!hasPendingEntries && pendingTree0.size() > 0)
+                    if (!hasPendingEntries && !pendingTree0.isEmpty())
                         hasPendingEntries = true;
 
                     int grpId = grp.groupId();
@@ -1594,6 +1765,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
+        @Override public boolean isEmpty() {
+            try {
+                CacheDataStore delegate0 = init0(true);
+
+                return delegate0 == null || delegate0.isEmpty();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
         @Override public long cacheSize(int cacheId) {
             try {
                 CacheDataStore delegate0 = init0(true);
@@ -1679,6 +1862,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                 if (delegate0 != null)
                     delegate0.updateCounter(start, delta);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridLongList finalizeUpdateCounters() {
+            try {
+                CacheDataStore delegate0 = init0(true);
+
+                return delegate0 != null ? delegate0.finalizeUpdateCounters() : null;
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -1825,11 +2020,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             boolean primary,
             boolean needHistory,
             boolean noCreate,
+            boolean needOldVal,
             boolean retVal) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
             return delegate.mvccUpdate(cctx, key, val, ver, expireTime, mvccVer, filter, entryProc, invokeArgs, primary,
-                needHistory, noCreate, retVal);
+                needHistory, noCreate, needOldVal, retVal);
         }
 
         /** {@inheritDoc} */
@@ -1840,10 +2036,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             CacheEntryPredicate filter,
             boolean primary,
             boolean needHistory,
+            boolean needOldVal,
             boolean retVal) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
-            return delegate.mvccRemove(cctx, key, mvccVer, filter, primary, needHistory, retVal);
+            return delegate.mvccRemove(cctx, key, mvccVer,filter,  primary, needHistory, needOldVal, retVal);
         }
 
         /** {@inheritDoc} */
@@ -1875,6 +2072,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             CacheDataStore delegate = init0(false);
 
             delegate.mvccRemoveAll(cctx, key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void mvccApplyUpdate(GridCacheContext cctx, KeyCacheObject key, CacheObject val, GridCacheVersion ver,
+            long expireTime, MvccVersion mvccVer) throws IgniteCheckedException {
+            CacheDataStore delegate = init0(false);
+
+            delegate.mvccApplyUpdate(cctx, key, val, ver, expireTime, mvccVer);
         }
 
         /** {@inheritDoc} */
@@ -2234,6 +2439,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void preload() throws IgniteCheckedException {
+            CacheDataStore delegate0 = init0(true);
+
+            if (delegate0 != null)
+                delegate0.preload();
         }
     }
 

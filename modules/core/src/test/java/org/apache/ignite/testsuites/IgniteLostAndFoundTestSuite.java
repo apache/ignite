@@ -17,12 +17,12 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.GridFactoryVmShutdownTest;
 import org.apache.ignite.internal.managers.GridManagerMxBeanIllegalArgumentHandleTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheMultiNodeDataStructureTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.GridCacheReplicatedPreloadUndeploysTest;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileDownloaderTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWriteThrottleSandboxTest;
 import org.apache.ignite.internal.processors.compute.GridComputeJobExecutionErrorToLogManualTest;
 import org.apache.ignite.internal.util.future.GridFutureQueueTest;
@@ -51,20 +51,20 @@ public class IgniteLostAndFoundTestSuite extends TestSuite {
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite List And Found Test Suite");
 
-        suite.addTestSuite(FileIOTest.class);
-        suite.addTestSuite(FileLocksTest.class);
-        suite.addTestSuite(GridComputeJobExecutionErrorToLogManualTest.class);
-        suite.addTestSuite(GridManagerMxBeanIllegalArgumentHandleTest.class);
-        suite.addTestSuite(GridRoundTripTest.class);
-        suite.addTestSuite(GridServletLoaderTest.class);
+        suite.addTest(new JUnit4TestAdapter(FileIOTest.class));
+        suite.addTest(new JUnit4TestAdapter(FileLocksTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridComputeJobExecutionErrorToLogManualTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridManagerMxBeanIllegalArgumentHandleTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridRoundTripTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridServletLoaderTest.class));
 
-        suite.addTestSuite(LinkedHashMapTest.class);
-        suite.addTestSuite(NetworkFailureTest.class);
-        suite.addTestSuite(PagesWriteThrottleSandboxTest.class);
-        suite.addTestSuite(QueueSizeCounterMultiThreadedTest.class);
-        suite.addTestSuite(ReadWriteLockMultiThreadedTest.class);
-        suite.addTestSuite(RegExpTest.class);
-        suite.addTestSuite(ServerSocketMultiThreadedTest.class);
+        suite.addTest(new JUnit4TestAdapter(LinkedHashMapTest.class));
+        suite.addTest(new JUnit4TestAdapter(NetworkFailureTest.class));
+        suite.addTest(new JUnit4TestAdapter(PagesWriteThrottleSandboxTest.class));
+        suite.addTest(new JUnit4TestAdapter(QueueSizeCounterMultiThreadedTest.class));
+        suite.addTest(new JUnit4TestAdapter(ReadWriteLockMultiThreadedTest.class));
+        suite.addTest(new JUnit4TestAdapter(RegExpTest.class));
+        suite.addTest(new JUnit4TestAdapter(ServerSocketMultiThreadedTest.class));
 
 
         // Non-JUnit classes with Test in name, which should be either converted to JUnit or removed in the future

@@ -50,6 +50,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -58,7 +61,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Checks basic multi-node transactional operations.
  */
-@SuppressWarnings({"PointlessBooleanExpression", "ConstantConditions", "PointlessArithmeticExpression"})
+@RunWith(JUnit4.class)
 public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTest {
     /** Debug flag. */
     private static final boolean DEBUG = false;
@@ -163,7 +166,6 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      * @param itemKey Item key.
      * @param retry Retry count.
      */
-    @SuppressWarnings("unchecked")
     private void onItemNear(boolean putCntr, Ignite ignite, String itemKey, int retry) {
         IgniteCache<String, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
@@ -214,7 +216,6 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      * @param itemKey Item key.
      * @param retry Retry count.
      */
-    @SuppressWarnings("unchecked")
     private void onItemPrimary(boolean putCntr, Ignite ignite, String itemKey, int retry) {
         IgniteCache<String, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
@@ -267,7 +268,6 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      * @param retry Retry count.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     private void onRemoveItemQueried(boolean putCntr, Ignite ignite, int retry) throws IgniteCheckedException {
         IgniteCache<String, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
@@ -356,7 +356,6 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      * @param ignite Grid.
      * @param retry Retry count.
      */
-    @SuppressWarnings("unchecked")
     private void onRemoveItemSimple(boolean putCntr, Ignite ignite, int retry) {
         IgniteCache<String, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
@@ -494,6 +493,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutOneEntryInTx() throws Exception {
 //        resetLog4j(Level.INFO, true, GridCacheTxManager.class.getName());
 
@@ -514,6 +514,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTwoEntriesInTx() throws Exception {
 //        resetLog4j(Level.INFO, true, GridCacheTxManager.class.getName());
 
@@ -538,6 +539,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutOneEntryInTxMultiThreaded() throws Exception {
 //        resetLog4j(Level.INFO, true, GridCacheTxManager.class.getName());
 
@@ -577,6 +579,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTwoEntryInTxMultiThreaded() throws Exception {
 //        resetLog4j(Level.INFO, true, GridCacheTxManager.class.getName());
 
@@ -617,6 +620,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveInTxQueried() throws Exception {
         //resetLog4j(Level.INFO, true, GridCacheTxManager.class.getPackage().getName());
 
@@ -659,6 +663,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveInTxSimple() throws Exception {
         startGrids(GRID_CNT);
 
@@ -705,6 +710,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveInTxQueriedMultiThreaded() throws Exception {
         //resetLog4j(Level.INFO, true, GridCacheTxManager.class.getPackage().getName());
 
@@ -808,7 +814,6 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public Integer call() throws IgniteCheckedException {
             assertNotNull(ignite);
 
@@ -835,7 +840,6 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public Integer call() throws IgniteCheckedException {
             assertNotNull(ignite);
 
@@ -862,7 +866,6 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public Integer call() throws IgniteCheckedException {
             assertNotNull(ignite);
 
@@ -889,7 +892,6 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public Integer call() throws IgniteCheckedException {
             assertNotNull(ignite);
 

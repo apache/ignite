@@ -57,6 +57,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -69,6 +72,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetectionTest {
     /** Ip finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -89,7 +93,6 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
     private static boolean client;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -131,6 +134,7 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksPartitioned() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocks(createCache(PARTITIONED, syncMode, false), ORDINAL_START_KEY);
@@ -141,6 +145,7 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksPartitionedNear() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocks(createCache(PARTITIONED, syncMode, true), ORDINAL_START_KEY);
@@ -151,6 +156,7 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksReplicated() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocks(createCache(REPLICATED, syncMode, false), ORDINAL_START_KEY);
@@ -161,6 +167,7 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksPartitionedNearTxOnPrimary() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocksTxOnPrimary(createCache(PARTITIONED, syncMode, true),  ORDINAL_START_KEY);

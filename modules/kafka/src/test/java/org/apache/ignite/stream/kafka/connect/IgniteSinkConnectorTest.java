@@ -90,7 +90,6 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
     private static Ignite grid;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected void beforeTest() throws Exception {
         kafkaBroker = new TestKafkaBroker();
 
@@ -128,7 +127,6 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected void beforeTestsStarted() throws Exception {
         IgniteConfiguration cfg = loadConfiguration("modules/kafka/src/test/resources/example-ignite.xml");
 
@@ -137,6 +135,9 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
         grid = startGrid("igniteServerNode", cfg);
     }
 
+    /**
+     * @throws Exception if failed.
+     */
     public void testSinkPutsWithoutTransformation() throws Exception {
         Map<String, String> sinkProps = makeSinkProps(Utils.join(TOPICS, ","));
 
@@ -145,6 +146,9 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
         testSinkPuts(sinkProps, false);
     }
 
+    /**
+     * @throws Exception if failed.
+     */
     public void testSinkPutsWithTransformation() throws Exception {
         testSinkPuts(makeSinkProps(Utils.join(TOPICS, ",")), true);
     }
@@ -291,7 +295,6 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
      * Test transformer.
      */
     static class TestExtractor implements StreamSingleTupleExtractor<SinkRecord, String, String> {
-
         /** {@inheritDoc} */
         @Override public Map.Entry<String, String> extract(SinkRecord msg) {
             String[] parts = ((String)msg.value()).split("_");

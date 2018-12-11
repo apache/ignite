@@ -46,6 +46,7 @@ import javax.cache.event.CacheEntryRemovedListener;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.CacheQueryEntryEvent;
@@ -57,15 +58,19 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFactoryFilterRandomOperationTest.NonSerializableFilter.isAccepted;
 import static org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryRandomOperationsTest.ContinuousDeploy.CLIENT;
 import static org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryRandomOperationsTest.ContinuousDeploy.SERVER;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
@@ -73,6 +78,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheContinuousQueryRandomOperationsTest {
     /** */
     private static final int NODES = 5;
@@ -89,6 +95,7 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInternalQuery() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             1,
@@ -274,8 +281,16 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
 
         Transaction tx = null;
 
-        if (cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL && rnd.nextBoolean())
-            tx = ignite.transactions().txStart(txRandomConcurrency(rnd), txRandomIsolation(rnd));
+        CacheAtomicityMode atomicityMode = cache.getConfiguration(CacheConfiguration.class).getAtomicityMode();
+
+        boolean mvccEnabled = atomicityMode == TRANSACTIONAL_SNAPSHOT;
+
+        if (atomicityMode != ATOMIC && rnd.nextBoolean()) {
+            TransactionConcurrency concurrency = mvccEnabled ? PESSIMISTIC : txRandomConcurrency(rnd);
+            TransactionIsolation isolation = mvccEnabled ? REPEATABLE_READ : txRandomIsolation(rnd);
+
+            tx = ignite.transactions().txStart(concurrency, isolation);
+        }
 
         try {
             // log.info("Random operation [key=" + key + ", op=" + op + ']');
@@ -287,7 +302,7 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
                     if (tx != null)
                         tx.commit();
 
-                    updatePartitionCounter(cache, key, partCntr);
+                    updatePartitionCounter(cache, key, partCntr, false);
 
                     waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, newVal, oldVal);
 
@@ -302,7 +317,7 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
                     if (tx != null)
                         tx.commit();
 
-                    updatePartitionCounter(cache, key, partCntr);
+                    updatePartitionCounter(cache, key, partCntr, false);
 
                     waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, newVal, oldVal);
 
@@ -312,12 +327,13 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
                 }
 
                 case 2: {
-                    cache.remove(key);
+                    boolean res = cache.remove(key);
 
                     if (tx != null)
                         tx.commit();
 
-                    updatePartitionCounter(cache, key, partCntr);
+                    // We don't update part counter if nothing was removed when MVCC enabled.
+                    updatePartitionCounter(cache, key, partCntr, mvccEnabled && !res);
 
                     waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, oldVal, oldVal);
 
@@ -327,12 +343,13 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
                 }
 
                 case 3: {
-                    cache.getAndRemove(key);
+                    Object res = cache.getAndRemove(key);
 
                     if (tx != null)
                         tx.commit();
 
-                    updatePartitionCounter(cache, key, partCntr);
+                    // We don't update part counter if nothing was removed when MVCC enabled.
+                    updatePartitionCounter(cache, key, partCntr, mvccEnabled && res == null);
 
                     waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, oldVal, oldVal);
 
@@ -347,7 +364,7 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
                     if (tx != null)
                         tx.commit();
 
-                    updatePartitionCounter(cache, key, partCntr);
+                    updatePartitionCounter(cache, key, partCntr, false);
 
                     waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, newVal, oldVal);
 
@@ -357,12 +374,15 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
                 }
 
                 case 5: {
-                    cache.invoke(key, new EntrySetValueProcessor(null, rnd.nextBoolean()));
+                    EntrySetValueProcessor proc = new EntrySetValueProcessor(null, rnd.nextBoolean());
+
+                    cache.invoke(key, proc);
 
                     if (tx != null)
                         tx.commit();
 
-                    updatePartitionCounter(cache, key, partCntr);
+                    // We don't update part counter if nothing was removed when MVCC enabled.
+                    updatePartitionCounter(cache, key, partCntr, mvccEnabled && proc.getOldVal() == null);
 
                     waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, oldVal, oldVal);
 
@@ -378,7 +398,7 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
                         tx.commit();
 
                     if (oldVal == null) {
-                        updatePartitionCounter(cache, key, partCntr);
+                        updatePartitionCounter(cache, key, partCntr, false);
 
                         waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, newVal, null);
 
@@ -397,7 +417,7 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
                         tx.commit();
 
                     if (oldVal == null) {
-                        updatePartitionCounter(cache, key, partCntr);
+                        updatePartitionCounter(cache, key, partCntr, false);
 
                         waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, newVal, null);
 
@@ -416,7 +436,7 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
                         tx.commit();
 
                     if (oldVal != null) {
-                        updatePartitionCounter(cache, key, partCntr);
+                        updatePartitionCounter(cache, key, partCntr, false);
 
                         waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, newVal, oldVal);
 
@@ -435,7 +455,7 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
                         tx.commit();
 
                     if (oldVal != null) {
-                        updatePartitionCounter(cache, key, partCntr);
+                        updatePartitionCounter(cache, key, partCntr, false);
 
                         waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, newVal, oldVal);
 
@@ -459,7 +479,7 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
                             if (tx != null)
                                 tx.commit();
 
-                            updatePartitionCounter(cache, key, partCntr);
+                            updatePartitionCounter(cache, key, partCntr, false);
 
                             waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, newVal, oldVal);
 
@@ -523,8 +543,10 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
      * @param cache Cache.
      * @param key Key
      * @param cntrs Partition counters.
+     * @param skipUpdCntr Skip update counter flag.
      */
-    private void updatePartitionCounter(IgniteCache<Object, Object> cache, Object key, Map<Integer, Long> cntrs) {
+    private void updatePartitionCounter(IgniteCache<Object, Object> cache, Object key, Map<Integer, Long> cntrs,
+        boolean skipUpdCntr) {
         Affinity<Object> aff = cache.unwrap(Ignite.class).affinity(cache.getName());
 
         int part = aff.partition(key);
@@ -534,7 +556,10 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
         if (partCntr == null)
             partCntr = 0L;
 
-        cntrs.put(part, ++partCntr);
+        if (!skipUpdCntr)
+            partCntr++;
+
+        cntrs.put(part, partCntr);
     }
 
     /**

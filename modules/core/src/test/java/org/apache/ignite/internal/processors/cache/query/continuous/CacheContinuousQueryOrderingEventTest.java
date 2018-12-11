@@ -59,17 +59,24 @@ import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTest {
     /** */
     public static final int LISTENER_CNT = 3;
@@ -130,6 +137,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicOnheapTwoBackup() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC, PRIMARY_SYNC);
 
@@ -139,6 +147,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxOnheapTwoBackup() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL, FULL_SYNC);
 
@@ -148,6 +157,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxOnheapWithoutBackup() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL, PRIMARY_SYNC);
 
@@ -157,8 +167,39 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxOnheapWithoutBackupFullSync() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL, FULL_SYNC);
+
+        doOrderingTest(ccfg, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMvccTxOnheapTwoBackup() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL_SNAPSHOT, FULL_SYNC);
+
+        doOrderingTest(ccfg, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMvccTxOnheapWithoutBackup() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL_SNAPSHOT, PRIMARY_SYNC);
+
+        doOrderingTest(ccfg, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMvccTxOnheapWithoutBackupFullSync() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL_SNAPSHOT, FULL_SYNC);
 
         doOrderingTest(ccfg, false);
     }
@@ -168,6 +209,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicOnheapTwoBackupAsync() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC, PRIMARY_SYNC);
 
@@ -177,6 +219,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicOnheapTwoBackupAsyncFullSync() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC, FULL_SYNC);
 
@@ -186,6 +229,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicReplicatedAsync() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED, 0, ATOMIC, PRIMARY_SYNC);
 
@@ -195,6 +239,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicReplicatedAsyncFullSync() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED, 0, ATOMIC, FULL_SYNC);
 
@@ -204,6 +249,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicOnheapWithoutBackupAsync() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, ATOMIC, PRIMARY_SYNC);
 
@@ -213,6 +259,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxOnheapTwoBackupAsync() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL, PRIMARY_SYNC);
 
@@ -222,6 +269,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxOnheapAsync() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL, PRIMARY_SYNC);
 
@@ -231,8 +279,39 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxOnheapAsyncFullSync() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL, FULL_SYNC);
+
+        doOrderingTest(ccfg, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMvccTxOnheapTwoBackupAsync() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL_SNAPSHOT, PRIMARY_SYNC);
+
+        doOrderingTest(ccfg, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMvccTxOnheapAsync() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL_SNAPSHOT, PRIMARY_SYNC);
+
+        doOrderingTest(ccfg, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMvccTxOnheapAsyncFullSync() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL_SNAPSHOT, FULL_SYNC);
 
         doOrderingTest(ccfg, true);
     }
@@ -298,46 +377,60 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
 
                         QueryTestKey key = new QueryTestKey(rnd.nextInt(KEYS));
 
-                        boolean startTx = cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() ==
-                            TRANSACTIONAL && rnd.nextBoolean();
+                        boolean startTx = cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() !=
+                            ATOMIC && rnd.nextBoolean();
 
                         Transaction tx = null;
 
-                        if (startTx)
-                            tx = cache.unwrap(Ignite.class).transactions().txStart();
+                        boolean committed = false;
 
-                        try {
-                            if ((cache.get(key) == null) || rnd.nextBoolean()) {
-                                cache.invoke(key, new CacheEntryProcessor<QueryTestKey, QueryTestValue, Object>() {
-                                    @Override public Object process(
-                                        MutableEntry<QueryTestKey, QueryTestValue> entry,
-                                        Object... arguments)
-                                        throws EntryProcessorException {
-                                        if (entry.exists())
-                                            entry.setValue(new QueryTestValue(entry.getValue().val1 + 1));
-                                        else
-                                            entry.setValue(new QueryTestValue(0));
+                        while (!committed && !Thread.currentThread().isInterrupted()) {
+                            try {
+                                if (startTx)
+                                    tx = cache.unwrap(Ignite.class).transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
-                                        return null;
-                                    }
-                                });
-                            }
-                            else {
-                                QueryTestValue val;
-                                QueryTestValue newVal;
+                                if ((cache.get(key) == null) || rnd.nextBoolean()) {
+                                    cache.invoke(key, new CacheEntryProcessor<QueryTestKey, QueryTestValue, Object>() {
+                                        @Override public Object process(
+                                            MutableEntry<QueryTestKey, QueryTestValue> entry,
+                                            Object... arguments)
+                                            throws EntryProcessorException {
+                                            if (entry.exists())
+                                                entry.setValue(new QueryTestValue(entry.getValue().val1 + 1));
+                                            else
+                                                entry.setValue(new QueryTestValue(0));
 
-                                do {
-                                    val = cache.get(key);
-
-                                    newVal = val == null ?
-                                        new QueryTestValue(0) : new QueryTestValue(val.val1 + 1);
+                                            return null;
+                                        }
+                                    });
                                 }
-                                while (!cache.replace(key, val, newVal));
+                                else {
+                                    QueryTestValue val;
+                                    QueryTestValue newVal;
+
+                                    do {
+                                        val = cache.get(key);
+
+                                        newVal = val == null ?
+                                            new QueryTestValue(0) : new QueryTestValue(val.val1 + 1);
+                                    }
+                                    while (!cache.replace(key, val, newVal));
+                                }
+
+                                if (tx != null)
+                                    tx.commit();
+
+                                committed = true;
                             }
-                        }
-                        finally {
-                            if (tx != null)
-                                tx.commit();
+                            catch (Exception e) {
+                                assertTrue(e.getMessage(), e.getMessage() != null &&
+                                    (e.getMessage().contains("Transaction has been rolled back") ||
+                                        e.getMessage().contains("Cannot serialize transaction due to write conflict")));
+                            }
+                            finally {
+                                if (tx != null)
+                                    tx.close();
+                            }
                         }
                     }
                 }

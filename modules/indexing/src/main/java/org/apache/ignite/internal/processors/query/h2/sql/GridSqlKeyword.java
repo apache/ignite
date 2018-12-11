@@ -28,7 +28,7 @@ public final class GridSqlKeyword extends GridSqlElement {
      * @see ValueExpression#getDefault()
      * @see Parser#parseUpdate()
      */
-    public final static GridSqlKeyword DEFAULT = new GridSqlKeyword("DEFAULT");
+    public static final GridSqlKeyword DEFAULT = new GridSqlKeyword("DEFAULT");
 
     /** Keyword to return as SQL. */
     private final String keyword;

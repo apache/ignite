@@ -27,6 +27,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -35,6 +36,7 @@ import org.apache.ignite.internal.visor.query.VisorQueryConfiguration;
 import org.apache.ignite.internal.visor.query.VisorQueryEntity;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
+
 
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactIterable;
@@ -166,6 +168,12 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     /** Dynamic deployment ID. */
     private IgniteUuid dynamicDeploymentId;
 
+    /** Disk page compression algorithm. */
+    private DiskPageCompression diskPageCompression;
+
+    /** Algorithm specific disk page compression level. */
+    private Integer diskPageCompressionLevel;
+
     /**
      * Default constructor.
      */
@@ -226,6 +234,9 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         readFromBackup = ccfg.isReadFromBackup();
         tmLookupClsName = ccfg.getTransactionManagerLookupClassName();
         topValidator = compactClass(ccfg.getTopologyValidator());
+
+        diskPageCompression = ccfg.getDiskPageCompression();
+        diskPageCompressionLevel = ccfg.getDiskPageCompressionLevel();
     }
 
     /**
@@ -489,8 +500,8 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return {@code true} if data can be read from backup node or {@code false} if data always
-     *      should be read from primary node and never from backup.
+     * @return {@code true} if data can be read from backup node or {@code false} if data always should be read from
+     * primary node and never from backup.
      */
     public boolean isReadFromBackup() {
         return readFromBackup;
@@ -516,6 +527,25 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
      */
     public IgniteUuid getDynamicDeploymentId() {
         return dynamicDeploymentId;
+    }
+
+    /**
+     * @return Disk page compression algorithm.
+     */
+    public DiskPageCompression getDiskPageCompression() {
+        return diskPageCompression;
+    }
+
+    /**
+     * @return Algorithm specific disk page compression level.
+     */
+    public Integer getDiskPageCompressionLevel() {
+        return diskPageCompressionLevel;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
     }
 
     /** {@inheritDoc} */
@@ -560,6 +590,10 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         U.writeString(out, tmLookupClsName);
         U.writeString(out, topValidator);
         U.writeGridUuid(out, dynamicDeploymentId);
+
+        // V2
+        U.writeEnum(out, diskPageCompression);
+        out.writeObject(diskPageCompressionLevel);
     }
 
     /** {@inheritDoc} */
@@ -604,6 +638,11 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         tmLookupClsName = U.readString(in);
         topValidator = U.readString(in);
         dynamicDeploymentId = U.readGridUuid(in);
+
+        if (protoVer > V1) {
+            diskPageCompression = DiskPageCompression.fromOrdinal(in.readByte());
+            diskPageCompressionLevel = (Integer) in.readObject();
+        }
     }
 
     /** {@inheritDoc} */

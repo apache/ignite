@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.PriorityQueue;
-import java.util.Queue;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.GridLongList;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -31,7 +31,7 @@ public class PartitionUpdateCounter {
     private IgniteLogger log;
 
     /** Queue of counter update tasks*/
-    private final Queue<Item> queue = new PriorityQueue<>();
+    private final TreeSet<Item> queue = new TreeSet<>();
 
     /** Counter. */
     private final AtomicLong cntr = new AtomicLong();
@@ -161,21 +161,51 @@ public class PartitionUpdateCounter {
      * @return Retrieves the minimum update counter task from queue.
      */
     private Item poll() {
-        return queue.poll();
+        return queue.pollFirst();
     }
 
     /**
      * @return Checks the minimum update counter task from queue.
      */
     private Item peek() {
-        return queue.peek();
+        return queue.isEmpty() ? null : queue.first();
+
     }
 
     /**
      * @param item Adds update task to priority queue.
      */
     private void offer(Item item) {
-        queue.offer(item);
+        queue.add(item);
+    }
+
+    /**
+     * Flushes pending update counters closing all possible gaps.
+     *
+     * @return Even-length array of pairs [start, end] for each gap.
+     */
+    public synchronized GridLongList finalizeUpdateCounters() {
+        Item item = poll();
+
+        GridLongList gaps = null;
+
+        while (item != null) {
+            if (gaps == null)
+                gaps = new GridLongList((queue.size() + 1) * 2);
+
+            long start = cntr.get() + 1;
+            long end = item.start;
+
+            gaps.add(start);
+            gaps.add(end);
+
+            // Close pending ranges.
+            update(item.start + item.delta);
+
+            item = poll();
+        }
+
+        return gaps;
     }
 
     /**
@@ -199,11 +229,7 @@ public class PartitionUpdateCounter {
 
         /** {@inheritDoc} */
         @Override public int compareTo(@NotNull Item o) {
-            int cmp = Long.compare(this.start, o.start);
-
-            assert cmp != 0;
-
-            return cmp;
+            return Long.compare(this.start, o.start);
         }
     }
 }

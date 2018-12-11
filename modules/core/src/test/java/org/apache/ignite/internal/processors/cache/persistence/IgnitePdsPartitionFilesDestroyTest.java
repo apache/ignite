@@ -45,12 +45,16 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Test class to check that partition files after eviction are destroyed correctly on next checkpoint or crash recovery.
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE = "cache";
@@ -145,6 +149,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionFileDestroyAfterCheckpoint() throws Exception {
         IgniteEx crd = (IgniteEx) startGrids(2);
 
@@ -177,6 +182,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionFileDestroyAndRecreate() throws Exception {
         IgniteEx crd = startGrid(0);
 
@@ -224,6 +230,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionFileDestroyCrashRecovery1() throws Exception {
         IgniteEx crd = startGrid(0);
 
@@ -277,6 +284,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionFileDestroyCrashRecovery2() throws Exception {
         IgniteEx crd = startGrid(0);
 
@@ -338,6 +346,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDestroyWhenPartitionsAreEmpty() throws Exception {
         IgniteEx crd = (IgniteEx) startGrids(2);
 
@@ -447,16 +456,6 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
          */
         private static boolean isPartitionFile(File file) {
             return file.getName().contains("part") && file.getName().endsWith("bin");
-        }
-
-        /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            FileIO delegate = delegateFactory.create(file);
-
-            if (isPartitionFile(file))
-                return new FailingFileIO(delegate);
-
-            return delegate;
         }
 
         /** {@inheritDoc} */

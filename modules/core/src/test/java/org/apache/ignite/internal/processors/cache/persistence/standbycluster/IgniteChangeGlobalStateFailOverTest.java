@@ -26,6 +26,9 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.lang.Thread.sleep;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -33,6 +36,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalStateAbstractTest {
     /** {@inheritDoc} */
     @Override protected int primaryNodes() {
@@ -57,6 +61,7 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivateDeActivateOnFixTopology() throws Exception {
         final Ignite igB1 = backUp(0);
         final Ignite igB2 = backUp(1);
@@ -143,6 +148,7 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivateDeActivateOnJoiningNode() throws Exception {
         final Ignite igB1 = backUp(0);
         final Ignite igB2 = backUp(1);
@@ -276,6 +282,7 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivateDeActivateOnFixTopologyWithPutValues() throws Exception {
         final Ignite igB1 = backUp(0);
         final Ignite igB2 = backUp(1);

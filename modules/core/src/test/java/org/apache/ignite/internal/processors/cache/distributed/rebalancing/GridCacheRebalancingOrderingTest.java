@@ -59,6 +59,9 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -102,9 +105,10 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *     </li>
  * </ol>
  */
+@RunWith(JUnit4.class)
 public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
     /** {@link Random} for test key generation. */
-    private final static Random RANDOM = new Random();
+    private static final Random RANDOM = new Random();
 
     /** Test cache name. */
     private static final String TEST_CACHE_NAME = "TestCache";
@@ -268,6 +272,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvents() throws Exception {
         Ignite ignite = startGrid(0);
 

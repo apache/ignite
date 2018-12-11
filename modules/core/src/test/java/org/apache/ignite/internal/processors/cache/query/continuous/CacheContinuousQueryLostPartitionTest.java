@@ -34,10 +34,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static javax.cache.configuration.FactoryBuilder.factoryOf;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
@@ -45,15 +49,19 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 /**
  * Test from https://issues.apache.org/jira/browse/IGNITE-2384.
  */
+@RunWith(JUnit4.class)
 public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTest {
     /** */
-    static public TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    public static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Cache name. */
     public static final String CACHE_NAME = "test_cache";
 
     /** Cache name. */
     public static final String TX_CACHE_NAME = "tx_test_cache";
+
+    /** Cache name. */
+    public static final String MVCC_TX_CACHE_NAME = "mvcc_tx_test_cache";
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -76,6 +84,7 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxEvent() throws Exception {
         testEvent(TX_CACHE_NAME, false);
     }
@@ -83,6 +92,15 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testMvccTxEvent() throws Exception {
+        testEvent(MVCC_TX_CACHE_NAME, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testAtomicEvent() throws Exception {
         testEvent(CACHE_NAME, false);
     }
@@ -90,6 +108,7 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxClientEvent() throws Exception {
         testEvent(TX_CACHE_NAME, true);
     }
@@ -97,6 +116,15 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testMvccTxClientEvent() throws Exception {
+        testEvent(MVCC_TX_CACHE_NAME, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testAtomicClientEvent() throws Exception {
         testEvent(CACHE_NAME, true);
     }
@@ -105,6 +133,7 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
      * @param cacheName Cache name.
      * @throws Exception If failed.
      */
+    @Test
     public void testEvent(String cacheName, boolean client) throws Exception {
         IgniteCache<Integer, String> cache1 = grid(0).getOrCreateCache(cacheName);
 
@@ -202,7 +231,7 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
         spi.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(spi);
-        cfg.setCacheConfiguration(cache(TX_CACHE_NAME), cache(CACHE_NAME));
+        cfg.setCacheConfiguration(cache(TX_CACHE_NAME), cache(CACHE_NAME), cache(MVCC_TX_CACHE_NAME));
 
         if (igniteInstanceName.endsWith("3"))
             cfg.setClientMode(true);
@@ -221,8 +250,10 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
 
         if (cacheName.equals(CACHE_NAME))
             cfg.setAtomicityMode(ATOMIC);
-        else
+        else if (cacheName.equals(TX_CACHE_NAME))
             cfg.setAtomicityMode(TRANSACTIONAL);
+        else
+            cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
         cfg.setRebalanceMode(SYNC);
         cfg.setWriteSynchronizationMode(PRIMARY_SYNC);

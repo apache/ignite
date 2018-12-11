@@ -33,6 +33,7 @@ import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheWriter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheInterceptor;
@@ -50,9 +51,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -60,7 +59,11 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.CachePluginConfiguration;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_COMPRESSION;
 
 /**
  * This class defines grid cache configuration. This configuration is passed to
@@ -73,7 +76,6 @@ import org.jetbrains.annotations.Nullable;
  * can be configured from Spring XML files (or other DI frameworks). <p> Note that absolutely all configuration
  * properties are optional, so users should only change what they need.
  */
-@SuppressWarnings("RedundantFieldInitialization")
 public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -318,7 +320,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private long rebalanceThrottle = DFLT_REBALANCE_THROTTLE;
 
     /** */
-    private CacheInterceptor<?, ?> interceptor;
+    private CacheInterceptor<K, V> interceptor;
 
     /** */
     private Class<?>[] sqlFuncCls;
@@ -384,6 +386,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     private boolean encryptionEnabled;
 
+    /** */
+    private DiskPageCompression diskPageCompression = IgniteSystemProperties.getEnum(
+        DiskPageCompression.class, IGNITE_DEFAULT_DISK_PAGE_COMPRESSION);
+
+    /** */
+    private Integer diskPageCompressionLevel;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -444,6 +453,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         nearCfg = cc.getNearConfiguration();
         nodeFilter = cc.getNodeFilter();
         onheapCache = cc.isOnheapCacheEnabled();
+        diskPageCompression = cc.getDiskPageCompression();
+        diskPageCompressionLevel = cc.getDiskPageCompressionLevel();
         partLossPlc = cc.getPartitionLossPolicy();
         pluginCfgs = cc.getPluginConfigurations();
         qryDetailMetricsSz = cc.getQueryDetailMetricsSize();
@@ -523,9 +534,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Cache name or {@code null} if not provided, then this will be considered a default
-     * cache which can be accessed via {@link Ignite#cache(String)} method. Otherwise, if name
-     * is provided, the cache will be accessed via {@link Ignite#cache(String)} method.
+     * Cache name. The cache will be accessed via {@link Ignite#cache(String)} method.
      *
      * @return Cache name.
      */
@@ -1630,9 +1639,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return Cache interceptor.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public CacheInterceptor<K, V> getInterceptor() {
-        return (CacheInterceptor<K, V>)interceptor;
+        return interceptor;
     }
 
     /**
@@ -2298,6 +2306,54 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     public CacheConfiguration<K, V> setEncryptionEnabled(boolean encryptionEnabled) {
         this.encryptionEnabled = encryptionEnabled;
         
+        return this;
+    }
+
+    /**
+     * Gets disk page compression algorithm.
+     * Makes sense only with enabled {@link DataRegionConfiguration#setPersistenceEnabled persistence}.
+     *
+     * @return Disk page compression algorithm.
+     * @see #getDiskPageCompressionLevel
+     */
+    public DiskPageCompression getDiskPageCompression() {
+        return diskPageCompression;
+    }
+
+    /**
+     * Sets disk page compression algorithm.
+     * Makes sense only with enabled {@link DataRegionConfiguration#setPersistenceEnabled persistence}.
+     *
+     * @param diskPageCompression Disk page compression algorithm.
+     * @return {@code this} for chaining.
+     * @see #setDiskPageCompressionLevel
+     */
+    public CacheConfiguration<K,V> setDiskPageCompression(DiskPageCompression diskPageCompression) {
+        this.diskPageCompression = diskPageCompression;
+
+        return this;
+    }
+
+    /**
+     * Gets {@link #getDiskPageCompression algorithm} specific disk page compression level.
+     *
+     * @return Disk page compression level or {@code null} for default.
+     */
+    public Integer getDiskPageCompressionLevel() {
+        return diskPageCompressionLevel;
+    }
+
+    /**
+     * Sets {@link #setDiskPageCompression algorithm} specific disk page compression level.
+     *
+     * @param diskPageCompressionLevel Disk page compression level or {@code null} to use default.
+     *                             {@link DiskPageCompression#ZSTD Zstd}: from {@code -131072} to {@code 22} (default {@code 3}).
+     *                             {@link DiskPageCompression#LZ4 LZ4}: from {@code 0} to {@code 17} (default {@code 0}).
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K,V> setDiskPageCompressionLevel(Integer diskPageCompressionLevel) {
+        this.diskPageCompressionLevel = diskPageCompressionLevel;
+
         return this;
     }
 

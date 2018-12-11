@@ -183,7 +183,6 @@ public class JdbcConnection implements Connection {
      * @param props Additional properties.
      * @throws SQLException In case Ignite node failed to start.
      */
-    @SuppressWarnings("unchecked")
     public JdbcConnection(String url, Properties props) throws SQLException {
         assert url != null;
         assert props != null;
@@ -195,7 +194,7 @@ public class JdbcConnection implements Connection {
         collocatedQry = Boolean.parseBoolean(props.getProperty(PROP_COLLOCATED));
         distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS));
         enforceJoinOrder = Boolean.parseBoolean(props.getProperty(PROP_ENFORCE_JOIN_ORDER));
-        lazy = Boolean.parseBoolean(props.getProperty(PROP_LAZY, "true"));
+        lazy = Boolean.parseBoolean(props.getProperty(PROP_LAZY));
         txAllowed = Boolean.parseBoolean(props.getProperty(PROP_TX_ALLOWED));
 
         stream = Boolean.parseBoolean(props.getProperty(PROP_STREAMING));
@@ -788,7 +787,6 @@ public class JdbcConnection implements Connection {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public String getSchema() throws SQLException {
         return schemaName;
     }

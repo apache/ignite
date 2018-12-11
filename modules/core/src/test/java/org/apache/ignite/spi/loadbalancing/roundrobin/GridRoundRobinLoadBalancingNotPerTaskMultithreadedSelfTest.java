@@ -33,11 +33,15 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Multithreaded tests for global load balancer.
  */
 @GridSpiTest(spi = RoundRobinLoadBalancingSpi.class, group = "Load Balancing SPI")
+@RunWith(JUnit4.class)
 public class GridRoundRobinLoadBalancingNotPerTaskMultithreadedSelfTest
     extends GridSpiAbstractTest<RoundRobinLoadBalancingSpi> {
     /** Thread count. */
@@ -73,6 +77,7 @@ public class GridRoundRobinLoadBalancingNotPerTaskMultithreadedSelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleTaskSessionsMultithreaded() throws Exception {
         final RoundRobinLoadBalancingSpi spi = getSpi();
 
