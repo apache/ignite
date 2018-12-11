@@ -2920,8 +2920,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         private void onCheckpointBegin() {
-            if (prevDestroyQueue != null)
+            if (prevDestroyQueue != null) {
                 pendingReqs.putAll(prevDestroyQueue.pendingReqs);
+
+                // Free reference to partition despry collection, ready for gc.
+                prevDestroyQueue = null;
+            }
         }
     }
 
@@ -4172,7 +4176,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          *
          */
         public boolean hasDestroyedPartitions() {
-            return !progress.destroyQueue.pendingReqs.isEmpty();
+            return !progress.destroyQueue.pendingReqs.isEmpty() ||
+                (progress.destroyQueue.prevDestroyQueue != null &&
+                    !progress.destroyQueue.prevDestroyQueue.pendingReqs.isEmpty());
         }
 
         /**
