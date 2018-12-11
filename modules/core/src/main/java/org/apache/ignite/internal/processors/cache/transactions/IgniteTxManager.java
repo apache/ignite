@@ -293,10 +293,16 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         cctx.gridIO().addMessageListener(TOPIC_TX, new DeadlockDetectionListener());
 
-        // todo gg-13416 unhardcode
-        this.logTxRecords = IgniteSystemProperties.getBoolean(IGNITE_WAL_LOG_TX_RECORDS, true);
-
         this.pendingTracker = new LocalPendingTransactionsTracker(cctx);
+
+        // todo gg-13416 unhardcode
+        this.logTxRecords = IgniteSystemProperties.getBoolean(IGNITE_WAL_LOG_TX_RECORDS, false);
+
+        if (!this.logTxRecords && this.pendingTracker.enabled()) {
+            this.logTxRecords = true;
+
+            U.warn(log, "Transaction wal logging is enabled, because pending transaction tracker is enabled.");
+        }
     }
 
     /**
