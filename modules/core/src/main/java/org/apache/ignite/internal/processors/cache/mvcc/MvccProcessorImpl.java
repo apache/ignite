@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -1987,8 +1986,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     private Optional<IgniteInternalTx> findBlockerTx(MvccVersion checkedTxVer) {
         // t0d0 multiple blocker txs seems to be possible
         return waitMap.entrySet().stream()
-            .filter(e -> e.getValue().waitQueue().stream()
-                .anyMatch(waitingVer -> DdCollaborator.belongToSameTx(waitingVer, checkedTxVer)))
+            .filter(e -> e.getValue().hasWaiting(checkedTxVer))
             .map(e -> e.getKey())
             .findAny()
             .flatMap(txKey -> ctx.cache().context().tm().activeTransactions().stream()
@@ -2095,8 +2093,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
          */
         boolean compound();
 
-        // t0d0 develop a good way for checking waiting transactions
-        Set<MvccVersion> waitQueue();
+        /**
+         * @param checkedVer Version of transaction under check.
+         * @return {@code True} if checked transaction is waiting in the queue.
+         */
+        boolean hasWaiting(MvccVersion checkedVer);
     }
 
     /** */
@@ -2144,8 +2145,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             return false;
         }
 
-        @Override public Set<MvccVersion> waitQueue() {
-            return Collections.singleton(blockedTxVer);
+        /** {@inheritDoc} */
+        @Override public boolean hasWaiting(MvccVersion checkedVer) {
+            return DdCollaborator.belongToSameTx(blockedTxVer, checkedVer);
         }
     }
 
@@ -2171,8 +2173,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             return false;
         }
 
-        @Override public Set<MvccVersion> waitQueue() {
-            return Collections.emptySet();
+        /** {@inheritDoc} */
+        @Override public boolean hasWaiting(MvccVersion checkedVer) {
+            return false;
         }
     }
 
@@ -2237,15 +2240,18 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             return true;
         }
 
-        @Override public Set<MvccVersion> waitQueue() {
+        /** {@inheritDoc} */
+        @Override public boolean hasWaiting(MvccVersion checkedVer) {
             if (inner.getClass() == ArrayList.class) {
-                return ((List<Waiter>)inner).stream()
-                    .map(Waiter::waitQueue)
-                    .flatMap(Collection::stream)
-                    .collect(Collectors.toSet());
+                for (Waiter waiter : (List<Waiter>)inner) {
+                    if (waiter.hasWaiting(checkedVer))
+                        return true;
+                }
+
+                return false;
             }
             else
-                return ((Waiter)inner).waitQueue();
+                return ((Waiter)inner).hasWaiting(checkedVer);
         }
     }
 
