@@ -25,19 +25,19 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
-import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.multiclass.MultiClassModel;
 import org.apache.ignite.ml.multiclass.OneVsRestTrainer;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
-import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
-import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationTrainer;
+import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
+import org.apache.ignite.ml.svm.SVMLinearClassificationTrainer;
+import org.apache.ignite.ml.util.MLSandboxDatasets;
+import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
  * Run One-vs-Rest multi-class classification trainer ({@link OneVsRestTrainer}) parametrized by binary SVM classifier
- * ({@link SVMLinearBinaryClassificationTrainer}) over distributed dataset
+ * ({@link SVMLinearClassificationTrainer}) over distributed dataset
  * to build two models: one with min-max scaling and one without min-max scaling.
  * <p>
  * Code in this example launches Ignite grid and fills the cache with test data points (preprocessed
@@ -65,15 +65,15 @@ public class OneVsRestClassificationExample {
             IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
                 .fillCacheWith(MLSandboxDatasets.GLASS_IDENTIFICATION);
 
-            OneVsRestTrainer<SVMLinearBinaryClassificationModel> trainer
-                = new OneVsRestTrainer<>(new SVMLinearBinaryClassificationTrainer()
+            OneVsRestTrainer<SVMLinearClassificationModel> trainer
+                = new OneVsRestTrainer<>(new SVMLinearClassificationTrainer()
                 .withAmountOfIterations(20)
                 .withAmountOfLocIterations(50)
                 .withLambda(0.2)
                 .withSeed(1234L)
             );
 
-            MultiClassModel<SVMLinearBinaryClassificationModel> mdl = trainer.fit(
+            MultiClassModel<SVMLinearClassificationModel> mdl = trainer.fit(
                 ignite,
                 dataCache,
                 (k, v) -> v.copyOfRange(1, v.size()),
@@ -91,7 +91,7 @@ public class OneVsRestClassificationExample {
                 (k, v) -> v.copyOfRange(1, v.size())
             );
 
-            MultiClassModel<SVMLinearBinaryClassificationModel> mdlWithScaling = trainer.fit(
+            MultiClassModel<SVMLinearClassificationModel> mdlWithScaling = trainer.fit(
                 ignite,
                 dataCache,
                 preprocessor,
