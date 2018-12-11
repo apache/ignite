@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2PlainRowFactory;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.jdbc.JdbcStatement;
 import org.h2.server.web.WebServer;
@@ -175,32 +174,10 @@ public class ConnectionManager {
     }
 
     /**
-     * Gets DB connection.
-     *
-     * @param schema Whether to set schema for connection or not.
-     * @return DB connection.
+     * @return H2 connection wrapper.
      */
-    public Connection connectionForThread(@Nullable String schema) {
-        H2ConnectionWrapper c = connCache.get().object();
-
-        if (c == null)
-            throw new IgniteSQLException("Failed to get DB connection for thread (check log for details).");
-
-        if (schema != null && !F.eq(c.schema(), schema)) {
-            try {
-                c.connection().setSchema(schema);
-                c.schema(schema);
-
-                if (log.isDebugEnabled())
-                    log.debug("Set schema: " + schema);
-            }
-            catch (SQLException e) {
-                throw new IgniteSQLException("Failed to set schema for DB connection for thread [schema=" +
-                    schema + "]", e);
-            }
-        }
-
-        return c.connection();
+    public H2ConnectionWrapper connectionForThread() {
+        return connCache.get().object();
     }
 
     /**
@@ -249,8 +226,6 @@ public class ConnectionManager {
     public H2StatementCache statementCacheForThread() {
         H2StatementCache statementCache = connCache.get().object().statementCache();
 
-        statementCache.updateLastUsage();
-
         return statementCache;
     }
 
@@ -267,7 +242,7 @@ public class ConnectionManager {
         Connection c = null;
 
         try {
-            c = connectionForThread(schema);
+            c = connectionForThread().connection(schema);
 
             stmt = c.createStatement();
 

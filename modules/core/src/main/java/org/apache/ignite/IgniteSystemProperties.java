@@ -494,7 +494,7 @@ public final class IgniteSystemProperties {
     /**
      *  Force all SQL queries to be processed lazily regardless of what clients request.
      *
-     * @deprecated Since version 2.7.
+     * @deprecated Since version 2.8.
      */
     @Deprecated
     public static final String IGNITE_SQL_FORCE_LAZY_RESULT_SET = "IGNITE_SQL_FORCE_LAZY_RESULT_SET";

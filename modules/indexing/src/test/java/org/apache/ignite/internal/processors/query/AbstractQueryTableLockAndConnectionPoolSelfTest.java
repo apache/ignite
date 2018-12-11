@@ -252,7 +252,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
     /**
      * @throws Exception If failed.
      */
-    public void testCloseResultOnRemovedTable() throws Exception {
+    public void testFetchFromRemovedTable() throws Exception {
         Ignite srv = startGrid(0);
 
         execute(srv, "CREATE TABLE TEST (id int primary key, val int)");
@@ -382,7 +382,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
      * @throws Exception If failed.
      */
     private void checkBaseOperations(Ignite node) throws Exception {
-        checkQuerySplitToSeveralMapQueries(node);
+//        checkQuerySplitToSeveralMapQueries(node);
 
         // Get full data.
         List<List<?>> rows = execute(node, baseQuery()).getAll();
@@ -394,6 +394,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
 
         assertBaseQueryResults(rows);
 
+
         // Test full iteration.
         rows = new ArrayList<>();
 
@@ -404,6 +405,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
 
         cursor.close();
 
+
         assertBaseQueryResults(rows);
 
         // Test partial iteration with cursor close.
@@ -413,6 +415,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
             for (int i = 0; i < 30; i++)
                 iter.next();
         }
+
 
         // Test execution of multiple queries at a time.
         List<Iterator<List<?>>> iters = new ArrayList<>();

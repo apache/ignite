@@ -233,7 +233,7 @@ public class SchemaManager {
 
         Connection conn = null;
         try {
-            conn = connMgr.connectionForThread(schema.schemaName());
+            conn = connMgr.connectionForThread().connection(schema.schemaName());
 
             GridH2Table h2tbl = createTable(schema.schemaName(), schema, tblDesc, conn);
 
@@ -462,7 +462,7 @@ public class SchemaManager {
         if (log.isDebugEnabled())
             log.debug("Removing query index table: " + tbl.fullTableName());
 
-        Connection c = connMgr.connectionForThread(tbl.schemaName());
+        Connection c = connMgr.connectionForThread().connection(tbl.schemaName());
 
         Statement stmt = null;
 

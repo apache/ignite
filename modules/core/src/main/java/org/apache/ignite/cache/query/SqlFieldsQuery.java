@@ -311,13 +311,13 @@ public class SqlFieldsQuery extends Query<List<?>> {
      * To compatibility with previous version behavior lazy mode may be switched off. In this case Ignite attempts
      * to fetch the whole query result set to memory and send it to the client.
      * <p>
-     * Since version 2.7 lazy mode is used by default.
+     * Since version 2.8 lazy mode is used by default.
      * Defaults to {@code true}, meaning that the result set is fetched lazily if it is possible.
      *
      * @param lazy Lazy query execution flag.
      * @return {@code this} For chaining.
      *
-     * @deprecated Since Ignite 2.7.
+     * @deprecated Since Ignite 2.8.
      */
     @Deprecated
     public SqlFieldsQuery setLazy(boolean lazy) {

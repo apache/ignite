@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.sql.Connection;
+import java.sql.SQLException;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -41,6 +44,9 @@ public class H2ConnectionWrapper implements AutoCloseable {
     /** */
     private volatile H2StatementCache statementCache;
 
+    /** */
+    private volatile IgniteH2Session sesWrp;
+
     /**
      * @param conn Connection to use.
      */
@@ -49,6 +55,8 @@ public class H2ConnectionWrapper implements AutoCloseable {
         initThread = Thread.currentThread();
 
         initStatementCache();
+
+        sesWrp = new IgniteH2Session(H2Utils.session(conn));
     }
 
     /**
@@ -66,6 +74,28 @@ public class H2ConnectionWrapper implements AutoCloseable {
     }
 
     /**
+     * Connection for schema.
+     *
+     * @param schema Schema name.
+     * @return Connection.
+     */
+    public Connection connection(@Nullable String schema) {
+        if (schema != null && !F.eq(this.schema, schema)) {
+            try {
+                conn.setSchema(schema);
+
+                this.schema = schema;
+            }
+            catch (SQLException e) {
+                throw new IgniteSQLException("Failed to set schema for DB connection for thread [schema=" +
+                    schema + "]", e);
+            }
+        }
+
+        return conn;
+    }
+
+    /**
      * @return Connection.
      */
     public Connection connection() {
@@ -76,6 +106,8 @@ public class H2ConnectionWrapper implements AutoCloseable {
      * @return Statement cache corresponding to connection.
      */
     public H2StatementCache statementCache() {
+        statementCache.updateLastUsage();
+
         return statementCache;
     }
 
@@ -115,6 +147,20 @@ public class H2ConnectionWrapper implements AutoCloseable {
     /** Closes wrapped connection */
     @Override
     public void close() {
-        U.closeQuiet(conn);
+        try {
+            sesWrp.lockTables();
+
+            U.closeQuiet(conn);
+        }
+        finally {
+            sesWrp.unlockTables();
+        }
+    }
+
+    /**
+     * @return Session wrapper.
+     */
+    public IgniteH2Session sessionWrapper() {
+        return sesWrp;
     }
 }

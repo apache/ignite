@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -72,6 +73,9 @@ public class GridH2Table extends TableBase {
     /** Insert hack flag. */
     private static final ThreadLocal<Boolean> INSERT_HACK = new ThreadLocal<>();
 
+    /** Exclusive lock constant. */
+    private static final long EXCLUSIVE_LOCK = -1;
+
     /** Cache context info. */
     private final GridCacheContextInfo cacheInfo;
 
@@ -97,10 +101,10 @@ public class GridH2Table extends TableBase {
     private volatile boolean destroyed;
 
     /** Map of sessions locks.
-     * Session -> Boolean.TRUE - for exclusive locks.
-     * Session -> (long)version - for shared locks.
+     * Session -> EXCLUSIVE_LOCK (-1) - for exclusive locks.
+     * Session -> (table version) - for shared locks.
      */
-    private final ConcurrentMap<Session, Object> sessions = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Session, Long> sessions = new ConcurrentHashMap<>();
 
     /** */
     private IndexColumn affKeyCol;
@@ -124,7 +128,7 @@ public class GridH2Table extends TableBase {
     private volatile boolean rmIndex;
 
     /** Table version. The version is changed when exclusive lock is acquired (DDL operation is started). */
-    private final LongAdder ver = new LongAdder();
+    private final AtomicLong ver = new AtomicLong();
 
     /**
      * Creates table.
@@ -273,13 +277,13 @@ public class GridH2Table extends TableBase {
     /** {@inheritDoc} */
     @Override public boolean lock(Session ses, boolean exclusive, boolean force) {
         // In accordance with base method semantics, we'll return true if we were already exclusively locked.
-        Object res = sessions.get(ses);
+        Long res = sessions.get(ses);
 
         if (res != null) {
-            if (Boolean.TRUE == res)
+            if (EXCLUSIVE_LOCK == res)
                 return true;
 
-            if(ver.longValue() != (long)res)
+            if(ver.longValue() != res)
                 throw new QueryRetryException(getName());
 
             return false;
@@ -295,19 +299,28 @@ public class GridH2Table extends TableBase {
         }
 
         // Mutate state.
-        sessions.put(ses, exclusive ? Boolean.TRUE : ver.longValue());
+        sessions.put(ses, exclusive ? EXCLUSIVE_LOCK : ver.longValue());
 
         ses.addLock(this);
 
         return false;
     }
 
+    ConcurrentHashMap<Session, Throwable> UNLOCK = new ConcurrentHashMap<>();
+
     /** {@inheritDoc} */
     @Override public void unlock(Session ses) {
-        Object res = sessions.remove(ses);
+        Long res = sessions.remove(ses);
+
+//        Throwable t = UNLOCK.put(ses, new Throwable());
+//
+//        if (t != null) {
+//            System.out.println(Thread.currentThread().getName() + "+++ PREV UNLOCK ");
+//            t.printStackTrace();
+//        }
 
         if (res != null)
-            unlock(Boolean.TRUE == res);
+            unlock(EXCLUSIVE_LOCK == res);
     }
 
     /**
@@ -317,11 +330,23 @@ public class GridH2Table extends TableBase {
         if (destroyed)
             return;
 
-        Object res = sessions.get(ses);
+        Long res = sessions.get(ses);
+
+//        if (res == null) {
+//            Throwable t =  UNLOCK.get(ses);
+//
+//            if (t == null)
+//                System.err.println("+++ NOT LOCKED");
+//            else
+//                t.printStackTrace();
+//        }
 
         // Check 'destroyed' flag again because changes at the sessions map and destroyed are not synchronized
         // at the destroy() method.
-        if (!destroyed && res != null)
+        assert destroyed || res != null && EXCLUSIVE_LOCK != res : "Invalid table lock [name=" + getName()+
+            ", destr=" + destroyed + ", lock=" + res + ']';
+
+        if (res != null)
             lock(false);
     }
 
@@ -332,9 +357,11 @@ public class GridH2Table extends TableBase {
         if (destroyed)
             throw new QueryRetryException(getName());
 
-        Object res = sessions.get(ses);
+        Long res = sessions.get(ses);
 
-        assert res != null && Boolean.TRUE != res : "Invalid table lock [lock=" + res + ']';
+        // Check 'destroyed' flag again because changes at the sessions map and destroyed are not synchronized
+        // at the destroy() method.
+        assert destroyed || res != null && EXCLUSIVE_LOCK != res : "Invalid table lock [name=" + getName()+ ", lock=" + res + ']';
 
         if(ver.longValue() != (long)res)
             throw new QueryRetryException(getName());
@@ -373,7 +400,7 @@ public class GridH2Table extends TableBase {
                         Thread.yield();
                 }
 
-                ver.increment();
+                ver.incrementAndGet();
             }
         }
         catch (InterruptedException e) {

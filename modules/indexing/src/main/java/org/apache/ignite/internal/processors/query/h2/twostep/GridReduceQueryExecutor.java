@@ -492,7 +492,7 @@ public class GridReduceQueryExecutor {
             }
 
             final ReduceQueryRun r = new ReduceQueryRun(qryReqId, qry.originalSql(), schemaName,
-                h2.connections().connectionForThread(schemaName), qry.mapQueries().size(), qry.pageSize(),
+                h2.connections().connectionForThread().connection(schemaName), qry.mapQueries().size(), qry.pageSize(),
                 U.currentTimeMillis(), sfuFut, cancel);
 
             ObjectPoolReusable<H2ConnectionWrapper> detachedConn = h2.connections().detachThreadConnection();
@@ -1373,13 +1373,6 @@ public class GridReduceQueryExecutor {
         }
 
         return res;
-    }
-
-    /**
-     * @return Kernal context.
-     */
-    public GridKernalContext context() {
-        return ctx;
     }
 
     /**

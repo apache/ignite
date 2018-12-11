@@ -119,11 +119,9 @@ class MapQueryResults {
      * @param qrySrcNodeId Query source node.
      * @param rs Result set.
      * @param params Query arguments.
-     * @param ses H2 Session.
      */
-    void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params,
-        IgniteH2Session ses) {
-        MapQueryResult res = new MapQueryResult(h2, rs, cctx, qrySrcNodeId, q, params, ses, log);
+    void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params) {
+        MapQueryResult res = new MapQueryResult(h2, rs, cctx, qrySrcNodeId, q, params, log);
 
         if (!results.compareAndSet(qry, null, res))
             throw new IllegalStateException();
@@ -176,9 +174,14 @@ class MapQueryResults {
     void closeResult(int idx) {
         MapQueryResult res = results.get(idx);
 
-        if (res != null) {
+        if (res != null && !res.closed()) {
+            IgniteH2Session ses = res.session();
+
             try {
-                res.session().lockTables();
+                // Session isn't set for lazy=false queries.
+                // Also session == null when result already closed.
+                if (ses != null)
+                    ses.lockTables();
 
                 synchronized (this) {
                     res.close();
@@ -189,7 +192,8 @@ class MapQueryResults {
                 }
             }
             finally {
-                res.session().unlockTables();
+                if (ses != null)
+                    ses.unlockTables();
             }
         }
     }
@@ -236,13 +240,6 @@ class MapQueryResults {
     /**
      */
     public void release() {
-        for (int i = 0; i < results.length(); i++) {
-            MapQueryResult res = results.get(i);
-
-            if (res != null)
-                res.session().release();
-        }
-
         GridH2QueryContext.clearThreadLocal();
 
         if (qctx.distributedJoinMode() == OFF)

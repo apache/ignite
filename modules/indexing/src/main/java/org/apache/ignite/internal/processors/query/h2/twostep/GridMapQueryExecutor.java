@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -71,6 +70,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshalla
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Session;
@@ -794,13 +794,17 @@ public class GridMapQueryExecutor {
             boolean evt = mainCctx != null && mainCctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED);
 
             for (GridCacheSqlQuery qry : qrys) {
-                Connection conn = h2.connections().connectionForThread(schemaName);
+                H2ConnectionWrapper connWrp = h2.connections().connectionForThread();
 
-                H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder, lazy);
+                H2Utils.setupConnection(
+                    connWrp.connection(schemaName),
+                    distributedJoinMode != OFF, enforceJoinOrder, lazy);
 
-                IgniteH2Session sesWrp = new IgniteH2Session(H2Utils.session(conn));
+                IgniteH2Session sesWrp = connWrp.sessionWrapper();
 
-                try {
+               try {
+                    sesWrp.lockTables();
+
                     boolean removeMapping = false;
                     ResultSet rs = null;
 
@@ -812,7 +816,7 @@ public class GridMapQueryExecutor {
                         PreparedStatement stmt;
 
                         try {
-                            stmt = h2.connections().prepareStatement(conn, sql);
+                            stmt = h2.connections().prepareStatement(connWrp.connection(), sql);
                         }
                         catch (SQLException e) {
                             throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
@@ -822,14 +826,20 @@ public class GridMapQueryExecutor {
 
                         if (GridSqlQueryParser.isForUpdateQuery(p)) {
                             sql = GridSqlQueryParser.rewriteQueryForUpdateIfNeeded(p, inTx);
-                            stmt = h2.connections().prepareStatement(conn, sql);
+                            stmt = h2.connections().prepareStatement(connWrp.connection(), sql);
                         }
 
                         h2.bindParameters(stmt, params0);
 
                         int opTimeout = IgniteH2Indexing.operationTimeout(timeout, tx);
 
-                        rs = h2.executeSqlQueryWithTimer(stmt, conn, sql, params0, opTimeout, qryResults.queryCancel(qryIdx));
+                        rs = h2.executeSqlQueryWithTimer(
+                            stmt,
+                            connWrp.connection(),
+                            sql,
+                            params0,
+                            opTimeout,
+                            qryResults.queryCancel(qryIdx));
 
                         if (inTx) {
                             ResultSetEnlistFuture enlistFut = ResultSetEnlistFuture.future(
@@ -875,7 +885,7 @@ public class GridMapQueryExecutor {
                         assert rs instanceof JdbcResultSet : rs.getClass();
                     }
 
-                    qryResults.addResult(qryIdx, qry, node.id(), rs, params, sesWrp);
+                    qryResults.addResult(qryIdx, qry, node.id(), rs, params);
 
                     if (qryResults.cancelled())
                         throw new QueryCancelledException();
@@ -1197,10 +1207,16 @@ public class GridMapQueryExecutor {
                 MapQueryResult res = qryResults.result(req.query());
                 assert res != null;
 
-                try {
-                    res.session().lockTables();
+                IgniteH2Session ses = res.session();
 
-                    res.session().checkTablesVersions();
+                try {
+                    // Session isn't set for lazy=false queries.
+                    // Also session == null when result already closed.
+                    if (ses != null) {
+                        ses.lockTables();
+
+                        ses.checkTablesVersions();
+                    }
 
                     GridQueryNextPageResponse msg = prepareNextPage(
                         nodeRess, node, qryResults, req.query(), req.segmentId(), req.pageSize(), false);
@@ -1213,7 +1229,8 @@ public class GridMapQueryExecutor {
                     if (qctxReduce != null)
                         GridH2QueryContext.set(qctxReduce);
 
-                    res.session().unlockTables();
+                    if (ses != null)
+                        ses.unlockTables();
                 }
             }
             catch (Exception e) {

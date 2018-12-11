@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.h2.engine.Session;
 
 /**
@@ -27,7 +28,7 @@ import org.h2.engine.Session;
  */
 public class IgniteH2Session {
     /** */
-    private Session ses;
+    private final Session ses;
 
     /** */
     private ReentrantLock lock = new ReentrantLock();
@@ -39,11 +40,6 @@ public class IgniteH2Session {
      */
     public IgniteH2Session(Session ses) {
         this.ses = ses;
-
-        // The first lock of the tables is happened inside H2 SQL executor.
-        // We have lock the session before obtain table lock to prevent
-        // concurrent close the ResultSet.
-        lock.lock();
     }
 
     /**
@@ -55,8 +51,7 @@ public class IgniteH2Session {
             if (!lock.isHeldByCurrentThread()) {
                 lock.lockInterruptibly();
 
-                if (ses != null)
-                    GridH2Table.readLockTables(ses);
+                GridH2Table.readLockTables(ses);
             }
         }
         catch (InterruptedException e) {
@@ -70,8 +65,7 @@ public class IgniteH2Session {
      *
      */
     public void unlockTables() {
-        if (ses != null)
-            GridH2Table.unlockTables(ses);
+        GridH2Table.unlockTables(ses);
 
         if (lock.isHeldByCurrentThread())
             lock.unlock();
@@ -85,10 +79,8 @@ public class IgniteH2Session {
             GridH2Table.checkTablesVersions(ses);
     }
 
-    /**
-     *
-     */
-    public void release() {
-        ses = null;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgniteH2Session.class, this);
     }
 }

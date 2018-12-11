@@ -108,9 +108,6 @@ class MapQueryResult {
      */
     private ObjectPoolReusable<H2ConnectionWrapper> detachedConn;
 
-    /** H2 session. */
-    private IgniteH2Session ses;
-
     /**
      * @param h2 H2 indexing.
      * @param rs Result set.
@@ -118,18 +115,16 @@ class MapQueryResult {
      * @param qrySrcNodeId Query source node.
      * @param qry Query.
      * @param params Query params.
-     * @param ses H2 session.
      * @param log Logger.
      */
     MapQueryResult(IgniteH2Indexing h2, ResultSet rs, @Nullable GridCacheContext cctx,
-        UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params, IgniteH2Session ses, IgniteLogger log) {
+        UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params, IgniteLogger log) {
         this.h2 = h2;
         this.cctx = cctx;
         this.qry = qry;
         this.params = params;
         this.qrySrcNodeId = qrySrcNodeId;
         this.cpNeeded = F.eq(h2.kernalContext().localNodeId(), qrySrcNodeId);
-        this.ses = ses;
         this.log = log;
 
         if (rs != null) {
@@ -279,10 +274,10 @@ class MapQueryResult {
 
         U.close(rs, log);
 
-        ses.release();
-
         if (detachedConn != null)
             detachedConn.recycle();
+
+        detachedConn = null;
     }
 
     /**
@@ -303,6 +298,9 @@ class MapQueryResult {
      * @return Session wrapper.
      */
     IgniteH2Session session() {
-        return ses;
+        if (detachedConn != null)
+            return detachedConn.object().sessionWrapper();
+        else
+            return null;
     }
 }
