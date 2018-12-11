@@ -47,11 +47,4 @@ public class IgniteCacheMvccTxInvokeTest extends IgniteCacheInvokeAbstractTest {
     @Override protected NearCacheConfiguration nearConfiguration() {
         return null;
     }
-
-    /** {@inheritDoc} */
-    @Override public void testInvokeAllAppliedOnceOnBinaryTypeRegistration() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10472");
-
-        super.testInvokeAllAppliedOnceOnBinaryTypeRegistration();
-    }
 }
