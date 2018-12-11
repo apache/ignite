@@ -27,6 +27,7 @@ import org.apache.ignite.examples.EventsExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.EventsExamplesSelfTest;
 import org.apache.ignite.examples.MessagingExamplesSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.AllTests;
 
@@ -39,14 +40,17 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
  */
 @RunWith(AllTests.class)
 public class IgniteExamplesJ8SelfTestSuite {
+    /** */
+    @BeforeClass
+    public static void init() {
+        System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
+            GridTestUtils.getNextMulticastGroup(IgniteExamplesMLTestSuite.class));
+    }
+
     /**
      * @return Suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
-        System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
-            GridTestUtils.getNextMulticastGroup(IgniteExamplesJ8SelfTestSuite.class));
-
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Examples Test Suite");
 
         suite.addTest(new JUnit4TestAdapter(CacheExamplesSelfTest.class));

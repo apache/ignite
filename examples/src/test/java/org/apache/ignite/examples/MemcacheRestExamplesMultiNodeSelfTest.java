@@ -19,11 +19,14 @@ package org.apache.ignite.examples;
 
 //import org.apache.ignite.examples.misc.client.memcache.*;
 
+import org.junit.Ignore;
+
 /**
  * MemcacheRestExample multi-node self test.
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-711")
 public class MemcacheRestExamplesMultiNodeSelfTest extends MemcacheRestExamplesSelfTest {
-    // TODO: IGNITE-711 next example(s) should be implemented for java 8 
+    // TODO: IGNITE-711 next example(s) should be implemented for java 8
     // or testing method(s) should be removed if example(s) does not applicable for java 8.
     /** {@inheritDoc} */
 //    @Override protected void beforeTest() throws Exception {

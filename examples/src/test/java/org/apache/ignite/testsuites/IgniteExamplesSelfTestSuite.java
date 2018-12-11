@@ -17,8 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.examples.BasicExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.BasicExamplesSelfTest;
 import org.apache.ignite.examples.CacheClientBinaryExampleTest;
@@ -50,65 +48,55 @@ import org.apache.ignite.examples.SqlExamplesSelfTest;
 import org.apache.ignite.examples.TaskExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.TaskExamplesSelfTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Examples test suite.
  * <p>
  * Contains all Ignite examples tests.</p>
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    CacheExamplesSelfTest.class,
+    SqlExamplesSelfTest.class,
+    BasicExamplesSelfTest.class,
+    ContinuationExamplesSelfTest.class,
+    ContinuousMapperExamplesSelfTest.class,
+    DeploymentExamplesSelfTest.class,
+    EventsExamplesSelfTest.class,
+    LifecycleExamplesSelfTest.class,
+    MessagingExamplesSelfTest.class,
+    MemcacheRestExamplesSelfTest.class,
+    MonteCarloExamplesSelfTest.class,
+    TaskExamplesSelfTest.class,
+    SpringBeanExamplesSelfTest.class,
+    SpringDataExampleSelfTest.class,
+    IgfsExamplesSelfTest.class,
+    CheckpointExamplesSelfTest.class,
+    ClusterGroupExampleSelfTest.class,
+    CacheContinuousQueryExamplesSelfTest.class,
+
+    // Multi-node.
+    CacheExamplesMultiNodeSelfTest.class,
+    BasicExamplesMultiNodeSelfTest.class,
+    ContinuationExamplesMultiNodeSelfTest.class,
+    ContinuousMapperExamplesMultiNodeSelfTest.class,
+    DeploymentExamplesMultiNodeSelfTest.class,
+    EventsExamplesMultiNodeSelfTest.class,
+    TaskExamplesMultiNodeSelfTest.class,
+    MemcacheRestExamplesMultiNodeSelfTest.class,
+    MonteCarloExamplesMultiNodeSelfTest.class,
+
+    // Binary.
+    CacheClientBinaryExampleTest.class,
+    ComputeClientBinaryExampleTest.class,
+
+    // ML Grid.
+    IgniteExamplesMLTestSuite.class,
+
+    // Encryption.
+    EncryptedCacheExampleSelfTest.class
+})
 public class IgniteExamplesSelfTestSuite {
-    /**
-     * @return Suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-//        System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
-//            GridTestUtils.getNextMulticastGroup(IgniteExamplesSelfTestSuite.class));
-
-        TestSuite suite = new TestSuite("Ignite Examples Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(CacheExamplesSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(SqlExamplesSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(BasicExamplesSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(ContinuationExamplesSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(ContinuousMapperExamplesSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(DeploymentExamplesSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(EventsExamplesSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(LifecycleExamplesSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(MessagingExamplesSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(MemcacheRestExamplesSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(MonteCarloExamplesSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(TaskExamplesSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(SpringBeanExamplesSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(SpringDataExampleSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgfsExamplesSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(CheckpointExamplesSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(ClusterGroupExampleSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheContinuousQueryExamplesSelfTest.class));
-
-        // Multi-node.
-        suite.addTest(new JUnit4TestAdapter(CacheExamplesMultiNodeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(BasicExamplesMultiNodeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(ContinuationExamplesMultiNodeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(ContinuousMapperExamplesMultiNodeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(DeploymentExamplesMultiNodeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(EventsExamplesMultiNodeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(TaskExamplesMultiNodeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(MemcacheRestExamplesMultiNodeSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(MonteCarloExamplesMultiNodeSelfTest.class));
-
-        // Binary.
-        suite.addTest(new JUnit4TestAdapter(CacheClientBinaryExampleTest.class));
-        suite.addTest(new JUnit4TestAdapter(ComputeClientBinaryExampleTest.class));
-
-        // ML Grid.
-        suite.addTest(IgniteExamplesMLTestSuite.suite());
-
-        // Encryption.
-        suite.addTest(new JUnit4TestAdapter(EncryptedCacheExampleSelfTest.class));
-
-        return suite;
-    }
+    // No-op.
 }

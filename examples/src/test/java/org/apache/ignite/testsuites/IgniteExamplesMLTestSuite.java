@@ -33,6 +33,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.examples.ml.util.MLExamplesCommonArgs;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.AllTests;
 
@@ -51,6 +52,13 @@ public class IgniteExamplesMLTestSuite {
     /** Test class name pattern. */
     private static final String clsNamePtrn = ".*Example$";
 
+    /** */
+    @BeforeClass
+    public static void init() {
+        System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
+            GridTestUtils.getNextMulticastGroup(IgniteExamplesMLTestSuite.class));
+    }
+
     /**
      * Creates test suite for Ignite ML examples.
      *
@@ -58,9 +66,6 @@ public class IgniteExamplesMLTestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
-            GridTestUtils.getNextMulticastGroup(IgniteExamplesMLTestSuite.class));
-
         TestSuite suite = new TestSuite("Ignite ML Examples Test Suite");
 
         for (Class clazz : getClasses(basePkgForTests))
@@ -82,7 +87,7 @@ public class IgniteExamplesMLTestSuite {
         ClassPool cp = ClassPool.getDefault();
         cp.insertClassPath(new ClassClassPath(IgniteExamplesMLTestSuite.class));
 
-        CtClass cl = cp.makeClass(basePkgForTests + "." + exampleCls.getSimpleName() + "SelfName");
+        CtClass cl = cp.makeClass(basePkgForTests + "." + exampleCls.getSimpleName() + "SelfTest");
 
         cl.setSuperclass(cp.get(GridAbstractExamplesTest.class.getName()));
 
