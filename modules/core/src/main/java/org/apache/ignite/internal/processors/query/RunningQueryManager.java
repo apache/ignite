@@ -166,7 +166,7 @@ public class RunningQueryManager {
      * @param duration Duration of long query.
      * @return List of queries which running longer than given duration.
      */
-    public Collection<GridRunningQueryInfo> longRunningUserQueries(long duration) {
+    public Collection<GridRunningQueryInfo> longRunningUserQueries(long duration, boolean includeSysQrys) {
         Collection<GridRunningQueryInfo> res = new ArrayList<>();
 
         long curTime = U.currentTimeMillis();
@@ -176,10 +176,11 @@ public class RunningQueryManager {
                 res.add(runningQryInfo);
         }
 
-        //ToDo: Now it required to testing purposes. Need to remove it
-        for (GridRunningQueryInfo runningQryInfo : sysQueriesRuns.values()) {
-            if (runningQryInfo.longQuery(curTime, duration))
-                res.add(runningQryInfo);
+        if (includeSysQrys) {
+            for (GridRunningQueryInfo runningQryInfo : sysQueriesRuns.values()) {
+                if (runningQryInfo.longQuery(curTime, duration))
+                    res.add(runningQryInfo);
+            }
         }
 
         return res;

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -316,21 +315,6 @@ public interface GridQueryIndexing {
      * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
      */
     public PreparedStatement prepareNativeStatement(String schemaName, String sql) throws SQLException;
-
-    /**
-     * Collect queries that already running more than specified duration.
-     *
-     * @param duration Duration to check.
-     * @return Collection of long running queries.
-     */
-    public Collection<GridRunningQueryInfo> runningQueries(long duration);
-
-    /**
-     * Cancel specified queries.
-     *
-     * @param queries Queries ID's to cancel.
-     */
-    public void cancelQueries(Collection<Long> queries);
 
     /**
      * Cancels all executing queries.

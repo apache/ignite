@@ -84,7 +84,7 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
 
         GridTestUtils.waitForCondition(() -> TestSQLFunctions.barrier.getNumberWaiting() == 1, 1000);
 
-        Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningQueries(-1);
+        Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningQueries(-1, true);
 
         TestSQLFunctions.barrier.await();
 
@@ -119,7 +119,7 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
 
         GridTestUtils.waitForCondition(() -> TestSQLFunctions.barrier.getNumberWaiting() == 1, 1000);
 
-        Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningQueries(-1);
+        Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningQueries(-1, true);
 
         TestSQLFunctions.barrier.await();
 

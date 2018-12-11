@@ -2555,21 +2555,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridRunningQueryInfo> runningQueries(long duration) {
-        return runningQueryMgr.longRunningUserQueries(duration);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void cancelQueries(Collection<Long> queries) {
-        if (!F.isEmpty(queries)) {
-            for (Long qryId : queries) {
-                runningQueryMgr.cancel(qryId);
-
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void onKernalStop() {
         mapQryExec.cancelLazyWorkers();
 

@@ -2313,8 +2313,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Collection of long running queries.
      */
     public Collection<GridRunningQueryInfo> runningQueries(long duration) {
+        return runningQueries(duration, false);
+    }
+
+    /**
+     * Collect queries that already running more than specified duration.
+     *
+     * @param duration Duration to check.
+     * @return Collection of long running queries.
+     */
+    public Collection<GridRunningQueryInfo> runningQueries(long duration, boolean includeSysQrys) {
         if (moduleEnabled())
-            return idx.runningQueryManager().longRunningUserQueries(duration);
+            return idx.runningQueryManager().longRunningUserQueries(duration, includeSysQrys);
 
         return Collections.emptyList();
     }
@@ -2325,8 +2335,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param queries Queries ID's to cancel.
      */
     public void cancelQueries(Collection<Long> queries) {
-        if (moduleEnabled())
-            idx.cancelQueries(queries);
+        if (moduleEnabled()) {
+            if (!F.isEmpty(queries)) {
+                for (Long qryId : queries) {
+                    idx.runningQueryManager().cancel(qryId);
+                }
+            }
+        }
     }
 
     /**

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -50,7 +49,6 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.RunningQueryManager;
@@ -401,16 +399,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public PreparedStatement prepareNativeStatement(String space, String sql) throws SQLException {
             return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<GridRunningQueryInfo> runningQueries(long duration) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void cancelQueries(Collection<Long> queries) {
-            // No-op
         }
 
         /** {@inheritDoc} */
