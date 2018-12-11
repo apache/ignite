@@ -122,7 +122,7 @@ public class StackedVectorTrainer<O, AM extends Model<Vector, O>, L>
      * output {@link Vector} is constructed by wrapping double value.
      *
      * @param trainer Submodel trainer.
-     * @param <M1> Type of submodel trainer.
+     * @param <M1> Type of submodel trainer model.
      * @return This object.
      */
     public <M1 extends Model<Vector, Double>> StackedVectorTrainer<O, AM, L> withAddedDoubleValuedTrainer(
@@ -135,7 +135,7 @@ public class StackedVectorTrainer<O, AM extends Model<Vector, O>, L>
      * input {@link Vector} is turned into {@code 1 x cols} {@link Matrix} and output is a first row of output {@link Matrix}.
      *
      * @param trainer Submodel trainer.
-     * @param <M1> Type of submodel trainer.
+     * @param <M1> Type of submodel trainer model.
      * @return This object.
      */
     public <M1 extends Model<Matrix, Matrix>> StackedVectorTrainer<O, AM, L> withAddedMatrixTrainer(
