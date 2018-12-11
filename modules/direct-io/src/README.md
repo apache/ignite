@@ -7,6 +7,9 @@ in O_DIRECT mode.
 
 OS gets the data and stores it in a file buffer cache (Page Cache).
 
+<!-- To edit picture please use
+https://docs.google.com/drawings/d/19xXbaWC2F2EBcd7F0T9wJ7wZO3DDR0PFR0tBqqIXjUI/edit?usp=sharing
+-->
 <img src="https://docs.google.com/drawings/d/e/2PACX-1vQBR0OoKFeQ1AOMyDK9QoQEBLDs4kbs7EY6Ed48HnRjlM0J1Ao3g_glD7AR3KZRtUcAVL6hQut6IPVw/pub?w=638&amp;h=499">
 
 Similarly, for every write operation,
@@ -45,7 +48,9 @@ Importing Direct I/O Pluging In Gradle Project
 -------------------------------------
 For gradle you can add compile dependency, where igniteVersion is actual Ignite version:
 
+```groovy
 compile group: 'org.apache.ignite', name: 'ignite-direct-io', version: igniteVersion
+```
 
 Additional setup is not required. Once plugin is available in classpath, it will be used for Durable Memory IO.
 
