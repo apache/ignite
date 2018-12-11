@@ -29,10 +29,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for disabled {@link IgniteAuthenticationProcessor}.
  */
+@RunWith(JUnit4.class)
 public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -96,6 +100,7 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerNodeJoinDisabled() throws Exception {
         checkNodeJoinDisabled(false);
     }
@@ -103,6 +108,7 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientNodeJoinDisabled() throws Exception {
         checkNodeJoinDisabled(true);
     }
@@ -110,6 +116,7 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerNodeJoinEnabled() throws Exception {
         checkNodeJoinEnabled(false);
     }
@@ -117,6 +124,7 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientNodeJoinEnabled() throws Exception {
         checkNodeJoinEnabled(true);
     }
@@ -160,6 +168,7 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDisabledAuthentication() throws Exception {
         startGrid(configuration(0, false, false));
 
@@ -205,6 +214,7 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEnableAuthenticationWithoutPersistence() throws Exception {
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {

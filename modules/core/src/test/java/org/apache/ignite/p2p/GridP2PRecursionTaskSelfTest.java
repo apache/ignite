@@ -32,12 +32,16 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @SuppressWarnings({"ProhibitedExceptionDeclared"})
 @GridCommonTest(group = "P2P")
+@RunWith(JUnit4.class)
 public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
     /**
      * Current deployment mode. Used in {@link #getConfiguration(String)}.
@@ -85,6 +89,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testPrivateMode() throws Exception {
         processTest(DeploymentMode.PRIVATE);
     }
@@ -94,6 +99,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testIsolatedMode() throws Exception {
         processTest(DeploymentMode.ISOLATED);
     }
@@ -103,6 +109,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testContinuousMode() throws Exception {
         processTest(DeploymentMode.CONTINUOUS);
     }
@@ -112,6 +119,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSharedMode() throws Exception {
         processTest(DeploymentMode.SHARED);
     }
