@@ -106,6 +106,13 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        super.afterTestsStopped();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -467,8 +474,6 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testMvccPessimisticOnePhaseCommit() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10483");
-
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 1).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
         doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
@@ -498,8 +503,6 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testMvccPessimisticOnePhaseCommitFullSync() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10483");
-
         CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 1).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
         doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
@@ -529,8 +532,6 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testMvccPessimistic() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10483");
-
         CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 2).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
         doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
@@ -560,8 +561,6 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testMvccPessimisticFullSync() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10483");
-
         CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 2).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
         doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
