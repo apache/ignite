@@ -21,6 +21,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 
+/**
+ * Partition join group.
+ */
+@SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class PartitionJoinGroup {
     /** Tables within a group. */
     private final Collection<PartitionJoinTable> tbls = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -45,18 +49,42 @@ public class PartitionJoinGroup {
         this.replicated = replicated;
     }
 
+    /**
+     * @return Tables in a group.
+     */
     public Collection<PartitionJoinTable> tables() {
         return tbls;
     }
 
+    /**
+     * Add table to the group.
+     *
+     * @param tbl Table.
+     * @return This for chaining.
+     */
+    public PartitionJoinGroup addTable(PartitionJoinTable tbl) {
+        tbls.add(tbl);
+
+        return this;
+    }
+
+    /**
+     * @return Outer tables.
+     */
     public Collection<PartitionJoinTable> outerTables() {
         return outerTbls;
     }
 
+    /**
+     * @return Affinity identifier.
+     */
     public PartitionJoinAffinityIdentifier affinityIdentifer() {
         return affIdentifier;
     }
 
+    /**
+     * @return Replicated flag.
+     */
     public boolean replicated() {
         return replicated;
     }

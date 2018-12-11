@@ -33,23 +33,50 @@ public class PartitionJoinTable {
     /** Whether table is left joined. */
     private boolean leftJoined;
 
-    public PartitionJoinTable(
-        String alias,
-        String cacheName,
-        PartitionJoinAffinityIdentifier affIdentifier,
-        String affColName,
-        boolean replicated,
-        boolean subquery
-    ) {
+    /**
+     * Constructor.
+     *
+     * @param alias Unique alias.
+     * @param cacheName Cache name.
+     * @param affColName Affinity column name.
+     */
+    public PartitionJoinTable(String alias, String cacheName, String affColName) {
         this.alias = alias;
         this.cacheName = cacheName;
         this.affColName = affColName;
     }
 
+    /**
+     * @return Alias.
+     */
+    public String alias() {
+        return alias;
+    }
+
+    /**
+     * @return Cache name.
+     */
+    public String cacheName() {
+        return cacheName;
+    }
+
+    /**
+     * @return Affinity column name.
+     */
+    public String affinityColName() {
+        return affColName;
+    }
+
+    /**
+     * @param leftJoined Whether table is left-joined.
+     */
     public void leftJoined(boolean leftJoined) {
         this.leftJoined = leftJoined;
     }
 
+    /**
+     * @return Whether table is left-joined.
+     */
     public boolean leftJoined() {
         return leftJoined;
     }

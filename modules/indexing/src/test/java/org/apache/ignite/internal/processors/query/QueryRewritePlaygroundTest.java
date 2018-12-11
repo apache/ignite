@@ -42,16 +42,22 @@ public class QueryRewritePlaygroundTest extends GridCommonAbstractTest {
      */
     public void testVarious() throws Exception {
         executeSql("CREATE TABLE dept (id BIGINT PRIMARY KEY, name VARCHAR)");
-        executeSql("CREATE TABLE emp (id BIGINT PRIMARY KEY, name VARCHAR, dept_id BIGINT, salary BIGINT)");
+        executeSql("CREATE TABLE emp (id BIGINT, name VARCHAR, dept_id BIGINT, salary BIGINT, PRIMARY KEY (id, dept_id)) WITH \"affinity_key=dept_id\"");
 
         //executeSql("SELECT emp.name, dept.name FROM emp, dept WHERE emp.dept_id=dept.id");
-        executeSql("SELECT emp.name, dept.name FROM emp INNER JOIN dept ON emp.dept_id=dept.id");
+//        executeSql("SELECT emp.name, dept.name FROM emp INNER JOIN dept ON emp.dept_id=dept.id");
 
 //        executeSql("" +
 //            "SELECT emp.name, (SELECT dept.name FROM dept WHERE emp.dept_id=dept.id)\n" +
 //            "FROM emp\n" +
 //            "WHERE emp.salary > 1000"
 //        );
+
+        executeSql("" +
+            "SELECT * FROM emp e " +
+            "   LEFT JOIN dept d ON e.dept_id = d.id " +
+            "   LEFT JOIN dept d2 ON e.dept_id > d2.id"
+        );
     }
 
     public static void executeSql(String sql) throws Exception {

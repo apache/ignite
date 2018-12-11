@@ -23,7 +23,6 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinCondition;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinGroup;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinModel;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
@@ -39,17 +38,14 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.table.Column;
-import org.h2.table.IndexColumn;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 
 /**
  * Partition tree extractor.
@@ -160,7 +156,7 @@ public class PartitionExtractor {
      * @return Join model.
      */
     private PartitionJoinModel prepareJoinModel(GridSqlAst from, GridSqlAst where) {
-        Map<String, PartitionJoinGroup> grps = new HashMap<>();
+        Collection<PartitionJoinGroup> grps = Collections.newSetFromMap(new IdentityHashMap<>());
         Collection<PartitionJoinCondition> conds = new HashSet<>();
 
         prepareJoinModelTables(from, grps, conds);
@@ -179,7 +175,7 @@ public class PartitionExtractor {
      */
     private boolean prepareJoinModelTables(
         GridSqlAst from,
-        Map<String, PartitionJoinGroup> grps,
+        Collection<PartitionJoinGroup> grps,
         Collection<PartitionJoinCondition> conds
     ) {
         if (from instanceof GridSqlJoin) {
@@ -210,15 +206,15 @@ public class PartitionExtractor {
             }
         }
 
-        String alias = null;
+        PartitionJoinGroup grp = PartitionExtractorUtils.joinGroupForTable(from);
 
-        if (from instanceof GridSqlAlias) {
-            alias = ((GridSqlAlias)from).alias();
+        if (grp != null) {
+            grps.add(grp);
 
-            from = from.child();
+            return true;
         }
 
-        return true;
+        return false;
     }
 
     /**
@@ -417,7 +413,7 @@ public class PartitionExtractor {
 
         GridH2Table tbl = (GridH2Table)leftCol.getTable();
 
-        if (!isAffinityKey(leftCol.getColumnId(), tbl))
+        if (!PartitionExtractorUtils.isAffinityKeyColumn(leftCol, tbl))
             return null;
 
         PartitionTableDescriptor tblDesc = descriptor(tbl);
@@ -431,32 +427,6 @@ public class PartitionExtractor {
             return new PartitionParameterNode(tblDesc, idx, rightParam.index(), leftCol.getType());
         else
             return null;
-    }
-
-    /**
-     *
-     * @param colId Column ID to check
-     * @param tbl H2 Table
-     * @return is affinity key or not
-     */
-    private static boolean isAffinityKey(int colId, GridH2Table tbl) {
-        GridH2RowDescriptor desc = tbl.rowDescriptor();
-
-        if (desc.isKeyColumn(colId))
-            return true;
-
-        IndexColumn affKeyCol = tbl.getAffinityKeyColumn();
-
-        try {
-            return
-                affKeyCol != null &&
-                colId >= DEFAULT_COLUMNS_COUNT &&
-                desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT) &&
-                colId == affKeyCol.column.getColumnId();
-        }
-        catch (IllegalStateException e) {
-            return false;
-        }
     }
 
     /**
