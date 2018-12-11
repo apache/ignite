@@ -74,7 +74,7 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
 
     /** {@inheritDoc} */
     @Override public void trackLogicalRead(long pageAddr) {
-        IndexPageType idxPageType = deriveIndexPageType(pageAddr);
+        IndexPageType idxPageType = PageIO.deriveIndexPageType(pageAddr);
 
         switch (idxPageType) {
             case INNER:
@@ -96,7 +96,7 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
 
     /** {@inheritDoc} */
     @Override public void trackPhysicalAndLogicalRead(long pageAddr) {
-        IndexPageType idxPageType = deriveIndexPageType(pageAddr);
+        IndexPageType idxPageType = PageIO.deriveIndexPageType(pageAddr);
 
         switch (idxPageType) {
             case INNER:
@@ -153,58 +153,6 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
         logicalReadInnerCtr.reset();
         physicalReadLeafCtr.reset();
         physicalReadInnerCtr.reset();
-    }
-
-    /**
-     * @param pageAddr Address of page.
-     * @return Index page type.
-     */
-    private IndexPageType deriveIndexPageType(long pageAddr) {
-        int pageIoType = PageIO.getType(pageAddr);
-        switch (pageIoType) {
-            case PageIO.T_DATA_REF_INNER:
-            case PageIO.T_DATA_REF_MVCC_INNER:
-            case PageIO.T_H2_REF_INNER:
-            case PageIO.T_H2_MVCC_REF_INNER:
-            case PageIO.T_CACHE_ID_AWARE_DATA_REF_INNER:
-            case PageIO.T_CACHE_ID_DATA_REF_MVCC_INNER:
-                return IndexPageType.INNER;
-
-            case PageIO.T_DATA_REF_LEAF:
-            case PageIO.T_DATA_REF_MVCC_LEAF:
-            case PageIO.T_H2_REF_LEAF:
-            case PageIO.T_H2_MVCC_REF_LEAF:
-            case PageIO.T_CACHE_ID_AWARE_DATA_REF_LEAF:
-            case PageIO.T_CACHE_ID_DATA_REF_MVCC_LEAF:
-                return IndexPageType.LEAF;
-
-            default:
-                if ((PageIO.T_H2_EX_REF_LEAF_START <= pageIoType && pageIoType <= PageIO.T_H2_EX_REF_LEAF_END) ||
-                    (PageIO.T_H2_EX_REF_MVCC_LEAF_START <= pageIoType && pageIoType <= PageIO.T_H2_EX_REF_MVCC_LEAF_END)
-                )
-                    return IndexPageType.LEAF;
-
-                if ((PageIO.T_H2_EX_REF_INNER_START <= pageIoType && pageIoType <= PageIO.T_H2_EX_REF_INNER_END) ||
-                    (PageIO.T_H2_EX_REF_MVCC_INNER_START <= pageIoType && pageIoType <= PageIO.T_H2_EX_REF_MVCC_INNER_END)
-                )
-                    return IndexPageType.INNER;
-        }
-
-        return IndexPageType.NOT_INDEX;
-    }
-
-    /**
-     *
-     */
-    enum IndexPageType {
-        /** */
-        LEAF,
-
-        /** */
-        INNER,
-
-        /** */
-        NOT_INDEX;
     }
 
     /** {@inheritDoc} */

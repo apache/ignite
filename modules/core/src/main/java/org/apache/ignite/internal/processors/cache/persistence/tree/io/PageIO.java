@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwa
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataLeafIO;
+import org.apache.ignite.internal.stat.IndexPageType;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
@@ -776,6 +777,44 @@ public abstract class PageIO {
         }
 
         throw new IgniteCheckedException("Unknown page IO type: " + type);
+    }
+
+    /**
+     * @param pageAddr Address of page.
+     * @return Index page type.
+     */
+    public static IndexPageType deriveIndexPageType(long pageAddr) {
+        int pageIoType = PageIO.getType(pageAddr);
+        switch (pageIoType) {
+            case PageIO.T_DATA_REF_INNER:
+            case PageIO.T_DATA_REF_MVCC_INNER:
+            case PageIO.T_H2_REF_INNER:
+            case PageIO.T_H2_MVCC_REF_INNER:
+            case PageIO.T_CACHE_ID_AWARE_DATA_REF_INNER:
+            case PageIO.T_CACHE_ID_DATA_REF_MVCC_INNER:
+                return IndexPageType.INNER;
+
+            case PageIO.T_DATA_REF_LEAF:
+            case PageIO.T_DATA_REF_MVCC_LEAF:
+            case PageIO.T_H2_REF_LEAF:
+            case PageIO.T_H2_MVCC_REF_LEAF:
+            case PageIO.T_CACHE_ID_AWARE_DATA_REF_LEAF:
+            case PageIO.T_CACHE_ID_DATA_REF_MVCC_LEAF:
+                return IndexPageType.LEAF;
+
+            default:
+                if ((PageIO.T_H2_EX_REF_LEAF_START <= pageIoType && pageIoType <= PageIO.T_H2_EX_REF_LEAF_END) ||
+                    (PageIO.T_H2_EX_REF_MVCC_LEAF_START <= pageIoType && pageIoType <= PageIO.T_H2_EX_REF_MVCC_LEAF_END)
+                )
+                    return IndexPageType.LEAF;
+
+                if ((PageIO.T_H2_EX_REF_INNER_START <= pageIoType && pageIoType <= PageIO.T_H2_EX_REF_INNER_END) ||
+                    (PageIO.T_H2_EX_REF_MVCC_INNER_START <= pageIoType && pageIoType <= PageIO.T_H2_EX_REF_MVCC_INNER_END)
+                )
+                    return IndexPageType.INNER;
+        }
+
+        return IndexPageType.NOT_INDEX;
     }
 
     /**
