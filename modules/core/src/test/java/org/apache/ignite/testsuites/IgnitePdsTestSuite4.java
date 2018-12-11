@@ -54,19 +54,12 @@ public class IgnitePdsTestSuite4 extends TestSuite {
         addRealPageStoreTestsNotForDirectIo(suite, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, FileDownloaderTest.class, ignoredTests);//
-
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsTaskCancelingTest.class, ignoredTests);//
-
         GridTestUtils.addTestIfNeeded(suite, IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse.class, ignoredTests);//
-
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsPartitionPreloadTest.class, ignoredTests);//
-
         GridTestUtils.addTestIfNeeded(suite, ResetLostPartitionTest.class, ignoredTests);//
-
         GridTestUtils.addTestIfNeeded(suite, IgniteRebalanceOnCachesStoppingOrDestroyingTest.class, ignoredTests);//
-
         GridTestUtils.addTestIfNeeded(suite, CachePageWriteLockUnlockTest.class, ignoredTests);//
-
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsCacheWalDisabledOnRebalancingTest.class, ignoredTests);
 
         return suite;
@@ -80,7 +73,6 @@ public class IgnitePdsTestSuite4 extends TestSuite {
      */
     private static void addRealPageStoreTestsNotForDirectIo(TestSuite suite, Collection<Class> ignoredTests) {
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsTransactionsHangTest.class, ignoredTests);//
-
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsPageEvictionDuringPartitionClearTest.class, ignoredTests);//
 
         // Rebalancing test

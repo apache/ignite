@@ -45,7 +45,6 @@ public class IgnitePdsMvccTestSuite4  extends TestSuite {
         ignoredTests.add(FileDownloaderTest.class);
         ignoredTests.add(IgnitePdsTaskCancelingTest.class);
 
-
         suite.addTest(IgnitePdsTestSuite4.suite(ignoredTests));
 
         return suite;
