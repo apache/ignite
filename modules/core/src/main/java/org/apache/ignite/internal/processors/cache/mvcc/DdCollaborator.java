@@ -46,9 +46,11 @@ public class DdCollaborator {
         Optional<IgniteInternalTx> waitingTx = cctx.tm().activeTransactions().stream()
             .filter(tx -> belongToSameTx(waiterVersion, tx.mvccSnapshot()))
             .findAny();
+
         Optional<IgniteInternalTx> blockerTx = cctx.tm().activeTransactions().stream()
             .filter(tx -> belongToSameTx(blockerVersion, tx.mvccSnapshot()))
             .findAny();
+
         if (waitingTx.isPresent() && blockerTx.isPresent()) {
             sendProbe(
                 waitingTx.get().nearXidVersion(),
@@ -61,40 +63,38 @@ public class DdCollaborator {
 
     public void handleDeadlockProbe(DeadlockProbe probe) {
         // a probe is simply discarded if next wait-for edge is not found
-        cctx.tm().activeTransactions().stream()
-            .filter(tx -> tx.nearXidVersion().equals(probe.blockerVersion()) && tx.near() && tx.local())
-            .map(GridNearTxLocal.class::cast)
-            .findAny()
-            .ifPresent(tx -> {
-                if (tx.nearXidVersion().equals(probe.initiatorVersion())) {
-                    // a deadlock found
-                    tx.rollbackAsync();
-                }
-                else {
-                    // probe each blocker
-                    // t0d0 check if holding some lock already
-                    // t0d0 first find all peers then send messages
-                    // t0d0 consider grouping (only if it will lead to correct results!)
-                    collectBlockers(tx).forEach(fut -> {
-                        fut.listen(fut0 -> {
-                            try {
-                                NearTxLocator blockerTx = fut.get();
+        GridNearTxLocal nearTx = cctx.tm().tx(probe.blockerVersion());
 
-                                if (blockerTx != null) {
-                                    sendProbe(
-                                        probe.initiatorVersion(),
-                                        tx.nearXidVersion(),
-                                        blockerTx.xidVersion(),
-                                        blockerTx.nodeId());
-                                }
+        if (nearTx != null) {
+            if (nearTx.nearXidVersion().equals(probe.initiatorVersion())) {
+                // a deadlock found
+                nearTx.rollbackAsync();
+            }
+            else {
+                // probe each blocker
+                // t0d0 check if holding some lock already
+                // t0d0 first find all peers then send messages
+                // t0d0 consider grouping (only if it will lead to correct results!)
+                collectBlockers(nearTx).forEach(fut -> {
+                    fut.listen(fut0 -> {
+                        try {
+                            NearTxLocator blockerTx = fut.get();
+
+                            if (blockerTx != null) {
+                                sendProbe(
+                                    probe.initiatorVersion(),
+                                    nearTx.nearXidVersion(),
+                                    blockerTx.xidVersion(),
+                                    blockerTx.nodeId());
                             }
-                            catch (IgniteCheckedException e) {
-                                e.printStackTrace();
-                            }
-                        });
+                        }
+                        catch (IgniteCheckedException e) {
+                            e.printStackTrace();
+                        }
                     });
-                }
-            });
+                });
+            }
+        }
     }
 
     private Collection<IgniteInternalFuture<NearTxLocator>> collectBlockers(GridNearTxLocal tx) {
