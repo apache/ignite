@@ -30,8 +30,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -40,12 +38,15 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractSelfTest {
     /** */
     private static final int NODE_CNT = 2;
@@ -94,14 +95,10 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testPutAllFailover() throws Exception {
         testPutAllFailover(Test.PUT_ALL);
     }
@@ -109,6 +106,7 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testPutAllFailoverPessimisticTx() throws Exception {
         if (atomicityMode() == CacheAtomicityMode.ATOMIC)
             return;
@@ -119,6 +117,7 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testPutAllFailoverAsync() throws Exception {
         testPutAllFailover(Test.PUT_ALL_ASYNC);
     }

@@ -35,11 +35,16 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  * Test for {@link Cache#loadAll(Set, boolean, CompletionListener)}.
  */
+@RunWith(JUnit4.class)
 public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstractTest {
     /** */
     private volatile boolean writeThrough = true;
@@ -48,6 +53,7 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
     private static ConcurrentHashMap<Object, Object> storeMap;
 
     /** {@inheritDoc} */
+    @Before
     @Override public void setUp() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
@@ -85,6 +91,7 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadAll() throws Exception {
         IgniteCache<Integer, String> cache0 = jcache(0);
 

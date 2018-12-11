@@ -24,17 +24,22 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests Round Robin load balancing for single node.
  */
 @GridSpiTest(spi = RoundRobinLoadBalancingSpi.class, group = "Load Balancing SPI", triggerDiscovery = true)
+@RunWith(JUnit4.class)
 public class GridRoundRobinLoadBalancingSpiLocalNodeSelfTest extends
     GridSpiAbstractTest<RoundRobinLoadBalancingSpi> {
     /**
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ObjectEquality"})
+    @Test
     public void testLocalNode() throws Exception {
         assert getDiscoverySpi().getRemoteNodes().isEmpty();
 

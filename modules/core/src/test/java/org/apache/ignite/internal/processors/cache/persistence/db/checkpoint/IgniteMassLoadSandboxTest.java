@@ -57,6 +57,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
@@ -64,6 +67,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
  * Sandbox test to measure progress of grid write operations. If no progress occur during period of time, then thread
  * dumps are generated.
  */
+@RunWith(JUnit4.class)
 public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     /** Cache name. Random to cover external stores possible problems. */
     public static final String CACHE_NAME = "partitioned" + new Random().nextInt(10000000);
@@ -173,6 +177,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testContinuousPutMultithreaded() throws Exception {
         try {
             // System.setProperty(IgniteSystemProperties.IGNITE_DIRTY_PAGES_PARALLEL, "true");
@@ -233,6 +238,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testDataStreamerContinuousPutMultithreaded() throws Exception {
         try {
             // System.setProperty(IgniteSystemProperties.IGNITE_DIRTY_PAGES_PARALLEL, "true");
@@ -309,6 +315,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testCoveredWalLogged() throws Exception {
         GridStringLogger log0 = null;
 
@@ -484,6 +491,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testPutRemoveMultithreaded() throws Exception {
         setWalArchAndWorkToSameVal = false;
         customWalMode = WALMode.LOG_ONLY;

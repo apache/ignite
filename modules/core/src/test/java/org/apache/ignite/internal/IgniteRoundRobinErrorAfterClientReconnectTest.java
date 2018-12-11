@@ -21,16 +21,18 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test to reproduce IGNITE-4060.
  */
+@RunWith(JUnit4.class)
 public class IgniteRoundRobinErrorAfterClientReconnectTest extends GridCommonAbstractTest {
     /** Server index. */
     private static final int SRV_IDX = 0;
@@ -64,14 +66,10 @@ public class IgniteRoundRobinErrorAfterClientReconnectTest extends GridCommonAbs
         return 60000;
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnect() throws Exception {
         final Ignite cli = grid(CLI_IDX);
 

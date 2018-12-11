@@ -36,10 +36,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test was added to check fix for IGNITE-4465.
  */
+@RunWith(JUnit4.class)
 public class CacheConcurrentReadThroughTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -84,6 +88,7 @@ public class CacheConcurrentReadThroughTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentReadThrough() throws Exception {
         startGrid(0);
 

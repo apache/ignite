@@ -277,6 +277,7 @@ public class LabeledVectorSetTest implements ExternalizableTest<LabeledVectorSet
     }
 
     /** */
+    @Test
     @Override public void testExternalization() {
         double[][] mtx =
             new double[][] {
