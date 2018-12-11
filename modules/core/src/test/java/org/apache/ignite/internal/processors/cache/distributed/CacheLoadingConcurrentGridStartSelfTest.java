@@ -37,8 +37,6 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
@@ -54,6 +52,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -63,6 +64,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 /**
  * Tests for cache data loading during simultaneous grids start.
  */
+@RunWith(JUnit4.class)
 public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractTest implements Serializable {
     /** Grids count */
     private static int GRIDS_CNT = 5;
@@ -83,10 +85,8 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     protected volatile boolean restarts;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
-        super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
@@ -143,14 +143,10 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
         stopAllGrids();
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * @throws Exception if failed
      */
+    @Test
     public void testLoadCacheWithDataStreamer() throws Exception {
         configured = true;
 
@@ -178,6 +174,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
+    @Test
     public void testLoadCacheFromStore() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-4210");
 
@@ -191,6 +188,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
+    @Test
     public void testLoadCacheWithDataStreamerSequentialClient() throws Exception {
         client = true;
 
@@ -205,6 +203,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
+    @Test
     public void testLoadCacheWithDataStreamerSequentialClientWithConfig() throws Exception {
         client = true;
         configured = true;
@@ -221,6 +220,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
+    @Test
     public void testLoadCacheWithDataStreamerSequential() throws Exception {
         loadCacheWithDataStreamerSequential();
     }
@@ -228,6 +228,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
+    @Test
     public void testLoadCacheWithDataStreamerSequentialWithConfigAndRestarts() throws Exception {
         restarts = true;
         configured = true;
@@ -244,6 +245,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
+    @Test
     public void testLoadCacheWithDataStreamerSequentialWithConfig() throws Exception {
         configured = true;
 

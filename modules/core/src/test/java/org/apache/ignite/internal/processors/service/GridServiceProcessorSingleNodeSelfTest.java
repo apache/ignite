@@ -19,10 +19,14 @@ package org.apache.ignite.internal.processors.service;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Single node services test.
  */
+@RunWith(JUnit4.class)
 public class GridServiceProcessorSingleNodeSelfTest extends GridServiceProcessorAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
@@ -32,6 +36,7 @@ public class GridServiceProcessorSingleNodeSelfTest extends GridServiceProcessor
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeSingletonNotDeployedProxy() throws Exception {
         String name = "testNodeSingletonNotDeployedProxy";
 

@@ -27,10 +27,14 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * This class tests that a client is able to connect to another server node without leaving the cluster.
  */
+@RunWith(JUnit4.class)
 public class TcpClientDiscoverySpiCoordinatorChangeTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -44,6 +48,7 @@ public class TcpClientDiscoverySpiCoordinatorChangeTest extends GridCommonAbstra
      *
      * @throws Exception If test fails.
      */
+    @Test
     public void testClientNotFailed() throws Exception {
         TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 

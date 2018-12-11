@@ -29,6 +29,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests check:
@@ -37,6 +40,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * <p/>
  * 2. Node deploys static services configuration on post-startup activation;
  */
+@RunWith(JUnit4.class)
 public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -85,6 +89,7 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRedeploymentsAfterActivationOnClients() throws Exception {
         checkRedeployment(2, 2, CLIENT_FILTER, 2, false);
     }
@@ -92,6 +97,7 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRedeploymentsAfterActivationOnServers() throws Exception {
         checkRedeployment(2, 0, F.alwaysTrue(), 2, false);
     }
@@ -99,6 +105,7 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRedeploymentsAfterActivationOnAllNodes() throws Exception {
         checkRedeployment(2, 2, F.alwaysTrue(), 4, false);
     }
@@ -106,6 +113,7 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeploymentsStaticConfigOnClients() throws Exception {
         checkRedeployment(2, 2, CLIENT_FILTER, 2, true);
     }
@@ -113,6 +121,7 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeploymentsStaticConfigOnServers() throws Exception {
         checkRedeployment(2, 0, F.alwaysTrue(), 2, true);
     }
@@ -120,6 +129,7 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeploymentsStaticConfigOnAllNodes() throws Exception {
         checkRedeployment(2, 2, F.alwaysTrue(), 4, true);
     }

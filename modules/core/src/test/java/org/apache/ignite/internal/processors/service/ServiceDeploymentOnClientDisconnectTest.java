@@ -34,6 +34,9 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 
@@ -41,6 +44,7 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
  * Test service deployment while client node disconnecting.
  */
 @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+@RunWith(JUnit4.class)
 public class ServiceDeploymentOnClientDisconnectTest extends GridCommonAbstractTest {
     /** */
     private static final long CLIENT_FAILURE_DETECTION_TIMEOUT = 5_000L;
@@ -79,6 +83,7 @@ public class ServiceDeploymentOnClientDisconnectTest extends GridCommonAbstractT
     /**
      * @throws Exception In case of an error.
      */
+    @Test
     public void testServiceDeploymentExchangeProcessingOnReconnect() throws Exception {
         IgniteEx client = client();
 
@@ -119,6 +124,7 @@ public class ServiceDeploymentOnClientDisconnectTest extends GridCommonAbstractT
     }
 
     /** */
+    @Test
     public void testInitiatorDeploymentFutureCompletionOnClientDisconnect() {
         IgniteFuture fut = client().services().deployNodeSingletonAsync("testService",
             new LongInitializedTestService(10_000L));
@@ -131,6 +137,7 @@ public class ServiceDeploymentOnClientDisconnectTest extends GridCommonAbstractT
     /**
      * @throws Exception In case of an error.
      */
+    @Test
     public void testThrowingExceptionOnDeployUsingPuplicApiWhileClientDisconnected() throws Exception {
         runTaskWhenDisconnected(() -> {
             GridTestUtils.assertThrowsWithCause(
@@ -142,6 +149,7 @@ public class ServiceDeploymentOnClientDisconnectTest extends GridCommonAbstractT
     /**
      * @throws Exception In case of an error.
      */
+    @Test
     public void testThrowingExceptionOnUndeployUsingPuplicApiWhileClientDisconnected() throws Exception {
         runTaskWhenDisconnected(() -> {
             GridTestUtils.assertThrowsWithCause(() -> client().services().cancelAll(),
@@ -152,6 +160,7 @@ public class ServiceDeploymentOnClientDisconnectTest extends GridCommonAbstractT
     /**
      * @throws Exception In case of an error.
      */
+    @Test
     public void testThrowingExceptionOnDeployUsingInternalApiWhileClientDisconnected() throws Exception {
         runTaskWhenDisconnected(() -> {
             GridTestUtils.assertThrowsWithCause(() -> client().context().service().deployNodeSingleton(
@@ -163,6 +172,7 @@ public class ServiceDeploymentOnClientDisconnectTest extends GridCommonAbstractT
     /**
      * @throws Exception In case of an error.
      */
+    @Test
     public void testThrowingExceptionOnUndeployUsingInternalApiWhileClientDisconnectedTest() throws Exception {
         runTaskWhenDisconnected(() -> {
             GridTestUtils.assertThrowsWithCause(() -> client().context().service().cancelAll().get(),

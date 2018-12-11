@@ -25,10 +25,14 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class NonSerializableStaticServiceDeploymentTest extends GridCommonAbstractTest {
     /** */
     private static final String TEST_SERVICE_NAME = "nonSerializableService";
@@ -56,6 +60,7 @@ public class NonSerializableStaticServiceDeploymentTest extends GridCommonAbstra
     /**
      * @throws Exception In case of an error.
      */
+    @Test
     public void testNonSerializableStaticServiceValidationFailure() throws Exception {
         LogListener lsnr = LogListener
             .matches(s -> s.startsWith("Failed to marshal service with configured marshaller [name=" + TEST_SERVICE_NAME))

@@ -38,10 +38,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -87,6 +91,7 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeRestart1() throws Exception {
         srvcCfg = serviceConfiguration();
 
@@ -132,6 +137,7 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeRestart2() throws Exception {
         startGrids(3);
 
@@ -160,6 +166,7 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeRestartRandom() throws Exception {
         final int NODES = 5;
 
@@ -193,6 +200,7 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testZombieAssignmentsCleanup() throws Exception {
         useStrLog = true;
 
@@ -252,6 +260,7 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeStopWhileThereAreCacheActivitiesInServiceProcessor() throws Exception {
         final int nodesCnt = 2;
         final int maxSvc = 1024;

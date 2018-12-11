@@ -31,6 +31,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -38,6 +41,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * Tests near-only cache.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** Grid cnt. */
     private static AtomicInteger gridCnt;
@@ -61,6 +65,12 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
 
         if (nearEnabled())
             grid(nearOnlyIgniteInstanceName).createNearCache(DEFAULT_CACHE_NAME, nearConfiguration());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        if (nearEnabled())
+            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
     }
 
     /** {@inheritDoc} */
@@ -113,6 +123,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutFromClientNode() throws Exception {
         IgniteCache<Object, Object> nearOnly = nearOnlyCache();
 
@@ -155,6 +166,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetFromClientNode() throws Exception {
         IgniteCache<Object, Object> dht = dhtCache();
 
@@ -194,6 +206,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearOnlyAffinity() throws Exception {
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);

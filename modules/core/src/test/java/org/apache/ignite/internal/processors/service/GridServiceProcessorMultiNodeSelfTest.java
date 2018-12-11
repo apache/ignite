@@ -26,10 +26,14 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Single node services test.
  */
+@RunWith(JUnit4.class)
 public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
@@ -39,6 +43,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingletonUpdateTopology() throws Exception {
         String name = "serviceSingletonUpdateTopology";
 
@@ -83,6 +88,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityDeployUpdateTopology() throws Exception {
         IgniteEx g = randomGrid();
 
@@ -121,6 +127,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployOnEachNodeButClientUpdateTopology() throws Exception {
         // Prestart client node.
         Ignite client = startGrid("client", getConfiguration("client").setClientMode(true));
@@ -186,6 +193,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployOnEachProjectionNodeUpdateTopology() throws Exception {
         // Prestart client node.
         Ignite client = startGrid("client", getConfiguration("client").setClientMode(true));
@@ -253,6 +261,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployOnEachNodeUpdateTopology() throws Exception {
         // Prestart client node.
         Ignite client = startGrid("client", getConfiguration("client").setClientMode(true));
@@ -330,6 +339,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
      * @throws Exception If failed.
      */
     @SuppressWarnings("deprecation")
+    @Test
     public void testDeployLimits() throws Exception {
         final String name = "serviceWithLimitsUpdateTopology";
 

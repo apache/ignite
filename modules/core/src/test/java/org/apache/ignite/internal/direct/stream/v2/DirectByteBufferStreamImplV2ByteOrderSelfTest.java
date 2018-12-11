@@ -29,6 +29,10 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.GridTestIoUtils.getCharByByteLE;
 import static org.apache.ignite.GridTestIoUtils.getDoubleByByteLE;
@@ -41,6 +45,7 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * {@link DirectByteBufferStreamImplV2} byte order sanity tests.
  */
+@RunWith(JUnit4.class)
 public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     /** Array length. */
     private static final int ARR_LEN = 16;
@@ -61,6 +66,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     private byte[] outArr;
 
     /** {@inheritDoc} */
+    @Before
     @Override public void setUp() throws Exception {
         super.setUp();
 
@@ -92,6 +98,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testShortArray() {
         short[] arr = new short[ARR_LEN];
 
@@ -111,6 +118,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testCharArray() {
         char[] arr = new char[ARR_LEN];
 
@@ -130,6 +138,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testIntArray() {
         int[] arr = new int[ARR_LEN];
 
@@ -149,6 +158,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testLongArray() {
         long[] arr = new long[ARR_LEN];
 
@@ -168,6 +178,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testFloatArray() {
         float[] arr = new float[ARR_LEN];
 
@@ -187,6 +198,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testDoubleArray() {
         double[] arr = new double[ARR_LEN];
 
@@ -206,6 +218,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testCharArrayInternal() {
         char[] arr = new char[ARR_LEN];
 
@@ -226,6 +239,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testShortArrayInternal() {
         short[] arr = new short[ARR_LEN];
 
@@ -246,6 +260,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testIntArrayInternal() {
         int[] arr = new int[ARR_LEN];
 
@@ -266,6 +281,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testLongArrayInternal() {
         long[] arr = new long[ARR_LEN];
 
@@ -286,6 +302,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testFloatArrayInternal() {
         float[] arr = new float[ARR_LEN];
 
@@ -306,6 +323,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testDoubleArrayInternal() {
         double[] arr = new double[ARR_LEN];
 

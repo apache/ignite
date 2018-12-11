@@ -23,12 +23,16 @@ import org.apache.ignite.internal.processors.service.inner.LongInitializedTestSe
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests that requests of change service's state won't be missed and will be handled correctly on a coordinator change.
  *
  * It uses {@link LongInitializedTestService} with long running #init method to delay requests processing.
  */
+@RunWith(JUnit4.class)
 public class ServiceDeploymentProcessingOnCoordinatorChangeTest extends GridCommonAbstractTest {
     /** Timeout to avoid tests hang. */
     private static final long TEST_FUTURE_WAIT_TIMEOUT = 60_000;
@@ -36,6 +40,7 @@ public class ServiceDeploymentProcessingOnCoordinatorChangeTest extends GridComm
     /**
      * @throws Exception In case of an error.
      */
+    @Test
     public void testDeploymentProcessingOnCoordinatorStop() throws Exception {
         try {
             startGrids(4);
@@ -73,6 +78,7 @@ public class ServiceDeploymentProcessingOnCoordinatorChangeTest extends GridComm
     /**
      * @throws Exception In case of an error.
      */
+    @Test
     public void testDeploymentProcessingOnCoordinatorStop2() throws Exception {
         try {
             startGrids(5);

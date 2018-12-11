@@ -20,16 +20,21 @@ package org.apache.ignite.util;
 import java.util.Iterator;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentLinkedDeque8;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.jsr166.ConcurrentLinkedDeque8.Node;
 
 /**
  * Tests for {@link org.jsr166.ConcurrentLinkedDeque8}.
  */
+@RunWith(JUnit4.class)
 public class GridConcurrentLinkedDequeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPoll() throws Exception {
         ConcurrentLinkedDeque8<Integer> deque = new ConcurrentLinkedDeque8<>();
 
@@ -66,6 +71,7 @@ public class GridConcurrentLinkedDequeSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testUnlink() {
         ConcurrentLinkedDeque8<Integer> deque = new ConcurrentLinkedDeque8<>();
 
@@ -116,6 +122,7 @@ public class GridConcurrentLinkedDequeSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testEmptyDeque() {
         ConcurrentLinkedDeque8<Integer> deque = new ConcurrentLinkedDeque8<>();
 
@@ -175,6 +182,7 @@ public class GridConcurrentLinkedDequeSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testUnlinkWithIterator() {
         ConcurrentLinkedDeque8<Integer> q = new ConcurrentLinkedDeque8<>();
 
@@ -211,6 +219,7 @@ public class GridConcurrentLinkedDequeSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testUnlinkLastWithIterator() {
         ConcurrentLinkedDeque8<Integer> q = new ConcurrentLinkedDeque8<>();
 
