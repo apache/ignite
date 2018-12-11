@@ -19,13 +19,13 @@
 
 #include <boost/test/unit_test.hpp>
 
+#define BOOST_TEST_MAIN
+
 #include <cassert>
 
 #include <ignite/common/platform_utils.h>
 
 #include "test_utils.h"
-
-#define BOOST_TEST_MAIN
 
 namespace ignite_test
 {

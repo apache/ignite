@@ -19,6 +19,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+#define BOOST_TEST_MAIN
+
 #include <cassert>
 
 #include "ignite/test_utils.h"
