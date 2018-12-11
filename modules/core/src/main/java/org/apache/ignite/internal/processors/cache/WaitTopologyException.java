@@ -15,34 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.datastructures;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 
 /**
- * Provides callback for marking object as removed.
+ * Exception which means that we should wait the given topology version before trying to make any progress.
  */
-public interface GridCacheRemovable {
-    /**
-     * Set status of data structure as removed.
-     *
-     * @return Current status.
-     */
-    public boolean onRemoved();
+public class WaitTopologyException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /**
      *
      */
-    public void needCheckNotRemoved();
+    private final AffinityTopologyVersion topologyVersion;
 
     /**
-     * Would suspend calls for this object.
+     * @param topologyVersion Topology version which we should wait.
      */
-    public void suspend();
+    public WaitTopologyException(AffinityTopologyVersion topologyVersion) {
+        this.topologyVersion = topologyVersion;
+    }
 
     /**
-     * Would return this object work to normal.
-     * @param cache To update with.
+     * @return Topology version which we should wait.
      */
-    public void restart(IgniteInternalCache cache);
+    public AffinityTopologyVersion topologyVersion() {
+        return topologyVersion;
+    }
 }

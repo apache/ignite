@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Serializable;
+import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -24,9 +26,6 @@ import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.Serializable;
-import java.util.UUID;
 
 /**
  * Cache start/stop request.
@@ -67,6 +66,9 @@ public class DynamicCacheChangeRequest implements Serializable {
 
     /** Restart flag. */
     private boolean restart;
+
+    /** Restart operation id. */
+    private IgniteUuid restartId;
 
     /** Cache active on start or not*/
     private boolean disabledAfterStart;
@@ -262,6 +264,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public void restart(boolean restart) {
         this.restart = restart;
+    }
+
+    /**
+     * @return Id of restart to allow only initiator start the restarting cache.
+     */
+    public IgniteUuid restartId() {
+        return restartId;
+    }
+
+    /**
+     * @param restartId Id of cache restart requester.
+     */
+    public void restartId(IgniteUuid restartId) {
+        this.restartId = restartId;
     }
 
     /**
