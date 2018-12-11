@@ -257,6 +257,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServiceProcessorModeProperty() throws Exception {
         doTestCompatibilityEnabled(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, true, false, true);
         doTestCompatibilityEnabled(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, false, true, true);
