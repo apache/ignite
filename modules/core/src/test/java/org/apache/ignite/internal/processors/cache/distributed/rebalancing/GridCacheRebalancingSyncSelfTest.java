@@ -55,6 +55,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
@@ -62,6 +65,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /** */
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -225,6 +229,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleRebalancing() throws Exception {
         IgniteKernal ignite = (IgniteKernal)startGrid(0);
 
@@ -276,6 +281,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadRebalancing() throws Exception {
         final Ignite ignite = startGrid(0);
 
@@ -464,6 +470,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testComplexRebalancing() throws Exception {
         final Ignite ignite = startGrid(0);
 

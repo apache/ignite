@@ -68,6 +68,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static javax.cache.event.EventType.CREATED;
@@ -81,6 +84,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAbstractTest {
     /** */
     private static volatile List<CacheEntryEvent<?, ?>> evts;
@@ -152,6 +156,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExceptionIgnored() throws Exception {
         CacheEntryListenerConfiguration<Object, Object> lsnrCfg = new MutableCacheEntryListenerConfiguration<>(
             new Factory<CacheEntryListener<Object, Object>>() {
@@ -211,6 +216,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoOldValue() throws Exception {
         CacheEntryListenerConfiguration<Object, Object> lsnrCfg = new MutableCacheEntryListenerConfiguration<>(
             new Factory<CacheEntryListener<Object, Object>>() {
@@ -242,6 +248,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSynchronousEventsObjectKeyValue() throws Exception {
         useObjects = true;
 
@@ -251,6 +258,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSynchronousEvents() throws Exception {
         final CacheEntryCreatedListener<Object, Object> lsnr = new CreateUpdateRemoveExpireListener() {
             @Override public void onRemoved(Iterable<CacheEntryEvent<?, ?>> evts) {
@@ -348,6 +356,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSynchronousEventsListenerNodeFailed() throws Exception {
         if (cacheMode() != PARTITIONED)
             return;
@@ -402,6 +411,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentRegisterDeregister() throws Exception {
         final int THREADS = 10;
 
@@ -438,6 +448,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSerialization() throws Exception {
         if (cacheMode() == LOCAL)
             return;
@@ -541,6 +552,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEventsObjectKeyValue() throws Exception {
         useObjects = true;
 
@@ -550,6 +562,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvents() throws Exception {
         IgniteCache<Object, Object> cache = jcache();
 

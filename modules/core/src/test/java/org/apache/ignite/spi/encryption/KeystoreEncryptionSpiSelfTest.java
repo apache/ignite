@@ -18,20 +18,24 @@
 package org.apache.ignite.spi.encryption;
 
 import java.nio.ByteBuffer;
-import junit.framework.TestCase;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PASSWORD;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PATH;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /** */
-public class KeystoreEncryptionSpiSelfTest extends TestCase {
+public class KeystoreEncryptionSpiSelfTest {
     /** @throws Exception If failed. */
+    @Test
     public void testCantStartWithEmptyParam() throws Exception {
         GridTestUtils.assertThrowsWithCause(() -> {
             EncryptionSpi encSpi = new KeystoreEncryptionSpi();
@@ -41,6 +45,7 @@ public class KeystoreEncryptionSpiSelfTest extends TestCase {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCantStartWithoutPassword() throws Exception {
         GridTestUtils.assertThrowsWithCause(() -> {
             KeystoreEncryptionSpi encSpi = new KeystoreEncryptionSpi();
@@ -52,6 +57,7 @@ public class KeystoreEncryptionSpiSelfTest extends TestCase {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCantStartKeystoreDoesntExists() throws Exception {
         GridTestUtils.assertThrowsWithCause(() -> {
             KeystoreEncryptionSpi encSpi = new KeystoreEncryptionSpi();
@@ -64,11 +70,12 @@ public class KeystoreEncryptionSpiSelfTest extends TestCase {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testEncryptDecrypt() throws Exception {
         EncryptionSpi encSpi = spi();
 
         KeystoreEncryptionKey k = GridTestUtils.getFieldValue(encSpi, "masterKey");
-        
+
         assertNotNull(k);
         assertNotNull(k.key());
 
@@ -79,7 +86,7 @@ public class KeystoreEncryptionSpiSelfTest extends TestCase {
 
         assertNotNull(cipherText);
         assertEquals(encSpi.encryptedSize(plainText.length), cipherText.length);
-        
+
         byte[] decryptedText = encSpi.decrypt(cipherText, k);
 
         assertNotNull(decryptedText);
@@ -89,9 +96,10 @@ public class KeystoreEncryptionSpiSelfTest extends TestCase {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testKeyEncryptDecrypt() throws Exception {
         EncryptionSpi encSpi = spi();
-        
+
         KeystoreEncryptionKey k = (KeystoreEncryptionKey)encSpi.create();
 
         assertNotNull(k);

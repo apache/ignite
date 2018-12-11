@@ -28,10 +28,14 @@ import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests cases when node connects to cluster with different set of cipher suites.
  */
+@RunWith(JUnit4.class)
 public class SslParametersTest extends GridCommonAbstractTest {
 
     public static final String TEST_CACHE_NAME = "TEST";
@@ -92,6 +96,7 @@ public class SslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSameCipherSuite() throws Exception {
         cipherSuites = new String[] {
             "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
@@ -116,6 +121,7 @@ public class SslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOneCommonCipherSuite() throws Exception {
         cipherSuites = new String[] {
             "TLS_RSA_WITH_AES_128_GCM_SHA256",
@@ -123,7 +129,7 @@ public class SslParametersTest extends GridCommonAbstractTest {
         };
 
         startGrid();
-        
+
         checkSuccessfulClientStart(
             new String[][] {
                 new String[] {
@@ -138,13 +144,14 @@ public class SslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoCommonCipherSuite() throws Exception {
         cipherSuites = new String[] {
             "TLS_RSA_WITH_AES_128_GCM_SHA256"
         };
 
         startGrid();
-        
+
         checkClientStartFailure(
             new String[][] {
                 new String[] {
@@ -159,13 +166,14 @@ public class SslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNonExistentCipherSuite() throws Exception {
         cipherSuites = new String[] {
             "TLS_RSA_WITH_AES_128_GCM_SHA256"
         };
 
         startGrid();
-        
+
         checkClientStartFailure(
             new String[][] {
                 new String[] {
@@ -182,6 +190,7 @@ public class SslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoCommonProtocols() throws Exception {
         protocols = new String[] {
             "TLSv1.1",
@@ -204,6 +213,7 @@ public class SslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNonExistentProtocol() throws Exception {
         protocols = new String[] {
             "SSLv3"
@@ -227,6 +237,7 @@ public class SslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSameProtocols() throws Exception {
         protocols = new String[] {
             "TLSv1.1",
@@ -248,6 +259,7 @@ public class SslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOneCommonProtocol() throws Exception {
         protocols = new String[] {
             "TLSv1",

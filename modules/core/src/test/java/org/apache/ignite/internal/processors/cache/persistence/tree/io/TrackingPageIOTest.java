@@ -51,6 +51,7 @@ public class TrackingPageIOTest {
     /**
      *
      */
+    @Test
     public void testBasics() throws Exception {
         ByteBuffer buf = createBuffer();
 
@@ -77,6 +78,7 @@ public class TrackingPageIOTest {
     /**
      *
      */
+    @Test
     public void testMarkingRandomly() throws Exception {
         ByteBuffer buf = createBuffer();
 
@@ -87,6 +89,7 @@ public class TrackingPageIOTest {
     /**
      *
      */
+    @Test
     public void testZeroingRandomly() throws Exception {
         ByteBuffer buf = createBuffer();
 
@@ -147,6 +150,7 @@ public class TrackingPageIOTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFindNextChangedPage() throws Exception {
         ByteBuffer buf = createBuffer();
 
@@ -202,6 +206,7 @@ public class TrackingPageIOTest {
     /**
      *
      */
+    @Test
     public void testMerging() throws Exception {
         ByteBuffer buf = createBuffer();
 
@@ -240,6 +245,7 @@ public class TrackingPageIOTest {
     /**
      *
      */
+    @Test
     public void testMerging_MarksShouldBeDropForSuccessfulBackup() throws Exception {
         ByteBuffer buf = createBuffer();
 
@@ -308,6 +314,7 @@ public class TrackingPageIOTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testThatWeDontFailIfSnapshotTagWasLost() throws Exception {
         ByteBuffer buf = createBuffer();
 

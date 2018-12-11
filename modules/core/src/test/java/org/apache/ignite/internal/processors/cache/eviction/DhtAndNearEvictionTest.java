@@ -36,12 +36,16 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Checking that DHT and near cache evictions work correctly when both are set.
  *
  * This is a regression test for IGNITE-9315.
  */
+@RunWith(JUnit4.class)
 public class DhtAndNearEvictionTest extends GridCommonAbstractTest {
     /** */
     public GridStringLogger strLog;
@@ -84,6 +88,7 @@ public class DhtAndNearEvictionTest extends GridCommonAbstractTest {
      *     <li>backups=1</li>
      * </ul>
      */
+    @Test
     public void testConcurrentWritesAndReadsWithReadThrough() throws Exception {
         startGrid(0);
         startGrid(1);
@@ -136,6 +141,7 @@ public class DhtAndNearEvictionTest extends GridCommonAbstractTest {
     /**
      * Checking rebalancing which used to be affected by IGNITE-9315.
      */
+    @Test
     public void testRebalancing() throws Exception {
         Ignite grid0 = startGrid(0);
 

@@ -20,6 +20,9 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -29,6 +32,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Topology validator test
  */
+@RunWith(JUnit4.class)
 public abstract class IgniteTopologyValidatorAbstractTxCacheGroupsTest
     extends IgniteTopologyValidatorCacheGroupsAbstractTest {
     /** {@inheritDoc} */
@@ -42,6 +46,7 @@ public abstract class IgniteTopologyValidatorAbstractTxCacheGroupsTest
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testTopologyValidator() throws Exception {
         try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
             putValid(CACHE_NAME_1);

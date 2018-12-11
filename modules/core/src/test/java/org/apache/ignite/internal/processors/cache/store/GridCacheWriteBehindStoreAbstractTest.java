@@ -38,10 +38,9 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -50,6 +49,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Basic store test.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAbstractTest {
     /** Flush frequency. */
     private static final int WRITE_FROM_BEHIND_FLUSH_FREQUENCY = 1000;
@@ -120,6 +120,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
     }
 
     /** @throws Exception If test fails. */
+    @Test
     public void testWriteThrough() throws Exception {
         IgniteCache<Integer, String> cache = jcache();
 
@@ -185,6 +186,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
     }
 
     /** @throws Exception If test failed. */
+    @Test
     public void testReadThrough() throws Exception {
         IgniteCache<Integer, String> cache = jcache();
 
@@ -277,6 +279,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMultithreaded() throws Exception {
         final ConcurrentMap<String, Set<Integer>> perThread = new ConcurrentHashMap<>();
 
@@ -285,7 +288,6 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
         final IgniteCache<Integer, String> cache = jcache();
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-            @SuppressWarnings({"NullableProblems"})
             @Override public void run() {
                 // Initialize key set for this thread.
                 Set<Integer> set = new HashSet<>();

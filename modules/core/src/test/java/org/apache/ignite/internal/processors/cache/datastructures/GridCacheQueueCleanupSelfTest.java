@@ -36,6 +36,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeaderKey;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -43,6 +46,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * Tests cleanup of orphaned queue items.
  */
+@RunWith(JUnit4.class)
 public class GridCacheQueueCleanupSelfTest extends IgniteCollectionAbstractTest {
     /** */
     private static final String QUEUE_NAME1 = "CleanupTestQueue1";
@@ -77,6 +81,7 @@ public class GridCacheQueueCleanupSelfTest extends IgniteCollectionAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCleanup() throws Exception {
         IgniteQueue<Integer> queue = grid(0).queue(QUEUE_NAME1, 0, config(false));
 

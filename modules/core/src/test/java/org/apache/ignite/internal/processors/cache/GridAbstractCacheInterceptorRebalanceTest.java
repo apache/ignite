@@ -40,6 +40,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -49,6 +52,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -109,6 +113,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testRebalanceUpdate() throws Exception {
         interceptor = new RebalanceUpdateInterceptor();
 
@@ -122,6 +127,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testRebalanceUpdateInvoke() throws Exception {
         interceptor = new RebalanceUpdateInterceptor();
 
@@ -137,6 +143,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testRebalanceRemoveInvoke() throws Exception {
         interceptor = new RebalanceUpdateInterceptor();
 
@@ -152,6 +159,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testRebalanceRemove() throws Exception {
         interceptor = new RebalanceRemoveInterceptor();
 
@@ -165,6 +173,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testPutIfAbsent() throws Exception {
         interceptor = new RebalanceUpdateInterceptor();
 
@@ -178,6 +187,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testGetAndPut() throws Exception {
         interceptor = new RebalanceUpdateInterceptor();
 

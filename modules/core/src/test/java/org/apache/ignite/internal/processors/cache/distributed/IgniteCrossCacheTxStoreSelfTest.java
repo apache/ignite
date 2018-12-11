@@ -40,10 +40,14 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
     /** */
     private static Map<String, CacheStore> firstStores = new ConcurrentHashMap<>();
@@ -119,6 +123,7 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSameStore() throws Exception {
         IgniteEx grid = grid(0);
 
@@ -171,6 +176,7 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDifferentStores() throws Exception {
         IgniteEx grid = grid(0);
 
@@ -226,6 +232,7 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNonPersistentCache() throws Exception {
         IgniteEx grid = grid(0);
 

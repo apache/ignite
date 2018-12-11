@@ -37,6 +37,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -44,6 +47,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Tests multiple parallel jobs execution.
  */
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int LOG_MOD = 100;
@@ -100,6 +104,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNotAffinityJobs() throws Exception {
         /* =========== Test properties =========== */
         int jobsNum = 5000;
@@ -111,6 +116,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testAffinityJobs() throws Exception {
         /* =========== Test properties =========== */
         int jobsNum = 5000;

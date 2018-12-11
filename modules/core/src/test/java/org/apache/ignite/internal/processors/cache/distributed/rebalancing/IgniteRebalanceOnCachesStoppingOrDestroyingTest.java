@@ -53,10 +53,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_1 = "cache_1";
@@ -131,6 +135,7 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
     /**
      *
      */
+    @Test
     public void testStopCachesOnDeactivation() throws Exception {
         performTest(ig -> {
             ig.cluster().active(false);
@@ -145,6 +150,7 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
     /**
      *
      */
+    @Test
     public void testDestroySpecificCachesInDifferentCacheGroups() throws Exception {
         performTest(ig -> {
             ig.destroyCaches(Arrays.asList(CACHE_1, CACHE_3));
@@ -156,6 +162,7 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
     /**
      *
      */
+    @Test
     public void testDestroySpecificCacheAndCacheGroup() throws Exception {
         performTest(ig -> {
             ig.destroyCaches(Arrays.asList(CACHE_1, CACHE_3, CACHE_4));

@@ -2009,7 +2009,7 @@ public final class GridTestUtils {
         if (ignoredTests != null && ignoredTests.contains(test))
             return;
 
-        suite.addTestSuite(test);
+        suite.addTest(new JUnit4TestAdapter(test));
     }
 
     /**

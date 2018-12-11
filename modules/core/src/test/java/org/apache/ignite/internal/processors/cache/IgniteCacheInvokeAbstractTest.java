@@ -48,6 +48,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -58,6 +61,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractTest {
     /** */
     private Integer lastKey = 0;
@@ -65,6 +69,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvoke() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache();
 
@@ -80,6 +85,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInternalInvokeNullable() throws Exception {
         IgniteInternalCache<Integer, Integer> cache = grid(0).cachex(DEFAULT_CACHE_NAME);
 
@@ -230,6 +236,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAll() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache();
 
@@ -305,6 +312,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAllAppliedOnceOnBinaryTypeRegistration() {
         IgniteCache<MyKey, Integer> cache = jcache();
 

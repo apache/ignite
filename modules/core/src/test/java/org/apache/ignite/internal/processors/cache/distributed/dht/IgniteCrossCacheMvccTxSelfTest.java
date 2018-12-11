@@ -14,34 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-package org.apache.ignite.testframework.junits;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
-import junit.framework.TestCase; // IMPL NOTE some old tests expect inherited deprecated assertions.
-import junit.framework.TestResult;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- * Supports compatibility with old tests based on configurations variations.
+ *
  */
-abstract class LegacyConfigVariationsSupport extends TestCase {
-    /**
-     * Fallback to superclass.
-     */
-    protected int countTestCasesFallback() {
-        return super.countTestCases();
+@RunWith(JUnit4.class)
+public class IgniteCrossCacheMvccTxSelfTest extends IgniteCrossCacheTxAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override public CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
     }
 
     /**
-     * Fallback to superclass.
+     * @throws Exception If failed.
      */
-    protected void runFallback(TestResult res) {
-        super.run(res);
-    }
-
-    /**
-     * Fallback to superclass.
-     */
-    protected String getNameFallback() {
-        return super.getName();
+    @Test
+    public void testPessimisticRepeatableRead() throws Exception {
+        checkTxsSingleOp(PESSIMISTIC, REPEATABLE_READ);
     }
 }

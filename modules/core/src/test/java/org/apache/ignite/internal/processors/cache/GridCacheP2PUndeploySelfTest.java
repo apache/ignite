@@ -37,6 +37,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -48,6 +51,7 @@ import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     /** Test p2p value. */
     private static final String TEST_VALUE = "org.apache.ignite.tests.p2p.GridCacheDeploymentTestValue3";
@@ -121,6 +125,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSwapP2PReplicated() throws Exception {
         offheap = false;
 
@@ -128,6 +133,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOffHeapP2PReplicated() throws Exception {
         offheap = true;
 
@@ -135,6 +141,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSwapP2PPartitioned() throws Exception {
         offheap = false;
 
@@ -142,6 +149,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOffheapP2PPartitioned() throws Exception {
         offheap = true;
 
@@ -149,6 +157,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSwapP2PReplicatedNoPreloading() throws Exception {
         mode = NONE;
         offheap = false;
@@ -157,6 +166,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOffHeapP2PReplicatedNoPreloading() throws Exception {
         mode = NONE;
         offheap = true;
@@ -165,6 +175,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSwapP2PPartitionedNoPreloading() throws Exception {
         mode = NONE;
         offheap = false;
@@ -173,6 +184,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOffHeapP2PPartitionedNoPreloading() throws Exception {
         mode = NONE;
         offheap = true;

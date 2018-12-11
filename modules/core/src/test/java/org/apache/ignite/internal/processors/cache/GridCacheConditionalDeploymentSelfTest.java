@@ -31,6 +31,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -40,6 +43,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Cache + conditional deployment test.
  */
+@RunWith(JUnit4.class)
 public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -105,6 +109,7 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testNoDeploymentInfo() throws Exception {
         GridCacheIoManager ioMgr = cacheIoManager();
 
@@ -122,6 +127,7 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testAddedDeploymentInfo() throws Exception {
         GridCacheContext ctx = cacheContext();
 
@@ -145,6 +151,7 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testAddedDeploymentInfo2() throws Exception {
         GridCacheContext ctx = cacheContext();
 

@@ -53,10 +53,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheMetricsManageTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -79,6 +83,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJmxNoPdsStatisticsEnable() throws Exception {
         testJmxStatisticsEnable(false);
     }
@@ -86,6 +91,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJmxPdsStatisticsEnable() throws Exception {
         testJmxStatisticsEnable(true);
     }
@@ -93,6 +99,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheManagerStatisticsEnable() throws Exception {
         final CacheManager mgr1 = Caching.getCachingProvider().getCacheManager();
         final CacheManager mgr2 = Caching.getCachingProvider().getCacheManager();
@@ -132,6 +139,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testPublicApiStatisticsEnable() throws Exception {
         Ignite ig1 = startGrid(1);
         startGrid(2);
@@ -159,6 +167,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testMultiThreadStatisticsEnable() throws Exception {
         startGrids(5);
 
@@ -215,6 +224,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCacheApiClearStatistics() throws Exception {
         startGrids(3);
 
@@ -232,6 +242,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testClearStatisticsAfterDisableStatistics() throws Exception {
         startGrids(3);
 
@@ -253,6 +264,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testClusterApiClearStatistics() throws Exception {
         startGrids(3);
 
@@ -277,6 +289,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testJmxApiClearStatistics() throws Exception {
         startGrids(3);
 

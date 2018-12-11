@@ -25,10 +25,14 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link IgniteAuthenticationProcessor}.
  */
+@RunWith(JUnit4.class)
 public class AuthenticationOnNotActiveClusterTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -79,6 +83,7 @@ public class AuthenticationOnNotActiveClusterTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultUser() throws Exception {
         startGrids(NODES_COUNT);
 
@@ -93,6 +98,7 @@ public class AuthenticationOnNotActiveClusterTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotDefaultUser() throws Exception {
         startGrids(NODES_COUNT + 1);
 

@@ -51,10 +51,14 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Cache group JMX metrics test.
  */
+@RunWith(JUnit4.class)
 public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implements Serializable {
     /** */
     private boolean pds = false;
@@ -234,6 +238,7 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheGroupMetrics() throws Exception {
         pds = false;
 
@@ -336,6 +341,7 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
     /**
      * Test allocated pages counts for cache groups.
      */
+    @Test
     public void testAllocatedPages() throws Exception {
         pds = true;
 
