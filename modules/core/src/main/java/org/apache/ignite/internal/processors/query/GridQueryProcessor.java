@@ -2137,6 +2137,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param qryType Real query type.
      * @return Cursor.
      */
+    // TODO: Add nullable GridQueryCancel
     public List<FieldsQueryCursor<List<?>>> querySqlFields(
         @Nullable final GridCacheContext<?, ?> cctx,
         final SqlFieldsQuery qry,

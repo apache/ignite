@@ -558,6 +558,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 synchronized (cancellationProcessingMux) {
                     if (req.isCancellationSupported() && !requestRegister.contains(req.requestId()))
+                        // TODO: Cursors are not closed
                         return exceptionToResult(new QueryCancelledException(), req.requestId());
                     else
                         jdbcCursors.put(cur.cursorId(), cur);
@@ -606,16 +607,17 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                     cursors.add(cursor);
 
+                    // TODO: TODO: Why DML is ignored?
                     if (cursor.isQuery()) {
                         queryCursors.put(cursor.cursorId(), cursor);
 
                         currQueryCursorIds.add(cursor.cursorId());
                     }
-
                 }
 
                 synchronized (cancellationProcessingMux) {
                     if (req.isCancellationSupported() && !requestRegister.contains(req.requestId()))
+                        // TODO: Cursors are not closed.
                         return exceptionToResult(new QueryCancelledException(), req.requestId());
                     else
                         jdbcCursors.putAll(queryCursors);
@@ -649,6 +651,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             }
         }
         catch (Exception e) {
+            // TODO: Make sure that all already opened cursors are closed.
+
+            // TODO: Incorrect map operation
             jdbcCursors.entrySet().removeAll(currQueryCursorIds);
 
             unregisterRequest(req.requestId());
@@ -668,6 +673,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Execute query request.
      * @return Response.
      */
+    // TODO: Don't we need to execute close synchronously as well?
     private JdbcResponse closeQuery(JdbcQueryCloseRequest req) {
         JdbcCursor removedCur = null;
 
@@ -692,6 +698,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             return exceptionToResult(e, req.requestId());
         }
         finally {
+            // TODO: Need to close when all request result sets are closed.
             unregisterRequest(removedCur.requestId());
         }
     }
@@ -1220,10 +1227,12 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         synchronized (cancellationProcessingMux) {
             // Request was already cancelled.
             if (!requestRegister.contains(req.requestIdToBeCancelled()))
+                // TODO: Why throwing exception here?
                 return exceptionToResult(new QueryCancelledException(), req.requestIdToBeCancelled());
             else {
                 unregisterRequest(req.requestIdToBeCancelled());
 
+                // TODO: When cursors will be cleared here?
                 for (JdbcCursor cursor: jdbcCursors.values()) {
 
                     if (cursor.requestId() == req.requestIdToBeCancelled()) {

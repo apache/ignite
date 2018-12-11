@@ -282,6 +282,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                     if (connCtx.handler().isCancellationCommand(cmdType))
                         proceedMessageReceived(ses, msg);
                     else {
+                        // TODO: Looks like we should register onlt query execution requests.
                         connCtx.handler().registerRequest(reqId);
 
                         super.onMessageReceived(ses, msg);
