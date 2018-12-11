@@ -4439,6 +4439,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             prevCpPages = previousCheckpointPages;
         }
 
+        private void addCheckpointPages(
+            T2<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> markChpBeginTup
+        ) {
+            markChpBeginPages = markChpBeginTup.get1();
+            markChpBeginPagesCnt = markChpBeginTup.get2();
+        }
+
         private void onCheckpointBegin() {
             // Init array for all checkpoint page Ids.
             pageIds = new FullPageId[checkpointPages()];
@@ -4503,13 +4510,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     }
                 });
             }
-        }
-
-        private void addCheckpointPages(
-            T2<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> markChpBeginTup
-        ) {
-            markChpBeginPages = markChpBeginTup.get1();
-            markChpBeginPagesCnt = markChpBeginTup.get2();
         }
 
         @Override public int checkpointPages() {
