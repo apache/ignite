@@ -42,8 +42,6 @@ using namespace ignite_test;
 
 using namespace boost::unit_test;
 
-using ignite::impl::binary::BinaryUtils;
-
 /**
  * Test setup fixture.
  */
