@@ -687,13 +687,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheDataRow mvccRead(GridCacheContext cctx, KeyCacheObject key, MvccSnapshot ver)
+    @Nullable @Override public CacheDataRow mvccRead(GridCacheContext cctx, KeyCacheObject key, MvccSnapshot mvccSnapshot)
         throws IgniteCheckedException {
-        assert ver != null;
+        assert mvccSnapshot != null;
 
         CacheDataStore dataStore = dataStore(cctx, key);
 
-        CacheDataRow row = dataStore != null ? dataStore.mvccFind(cctx, key, ver) : null;
+        CacheDataRow row = dataStore != null ? dataStore.mvccFind(cctx, key, mvccSnapshot) : null;
 
         assert row == null || row.value() != null : row;
 
@@ -812,21 +812,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         return 0;
     }
 
-    /**
-     * @param primary {@code True} if need return primary entries.
-     * @param backup {@code True} if need return backup entries.
-     * @param topVer Topology version to use.
-     * @return Entries iterator.
-     * @throws IgniteCheckedException If failed.
-     */
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <K, V> GridCloseableIterator<Cache.Entry<K, V>> cacheEntriesIterator(
         final GridCacheContext cctx,
         final boolean primary,
         final boolean backup,
         final AffinityTopologyVersion topVer,
-        final boolean keepBinary) throws IgniteCheckedException {
-        final Iterator<CacheDataRow> it = cacheIterator(cctx.cacheId(), primary, backup, topVer, null);
+        final boolean keepBinary,
+        @Nullable final MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
+        final Iterator<CacheDataRow> it = cacheIterator(cctx.cacheId(), primary, backup, topVer, mvccSnapshot);
 
         return new GridCloseableIteratorAdapter<Cache.Entry<K, V>>() {
             /** */
