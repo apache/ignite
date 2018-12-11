@@ -31,9 +31,13 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionOptimisticException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE = "cache";
@@ -54,6 +58,7 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
         stopAllGrids();
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -94,6 +99,7 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
     /**
      *
      */
+    @Test
     public void testOptimisticSerializableTxInvokeSequentialCall() throws Exception {
         transactionInvokeSequentialCallOnPrimaryNode(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE);
 
@@ -103,6 +109,7 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
     /**
      *
      */
+    @Test
     public void testOptimisticRepeatableReadTxInvokeSequentialCall() throws Exception {
         transactionInvokeSequentialCallOnPrimaryNode(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ);
 
@@ -112,6 +119,7 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
     /**
      *
      */
+    @Test
     public void testOptimisticReadCommittedTxInvokeSequentialCall() throws Exception {
         transactionInvokeSequentialCallOnPrimaryNode(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED);
 
@@ -121,6 +129,7 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
     /**
      *
      */
+    @Test
     public void testPessimisticSerializableTxInvokeSequentialCall() throws Exception {
         transactionInvokeSequentialCallOnPrimaryNode(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE);
 
@@ -130,6 +139,7 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
     /**
      *
      */
+    @Test
     public void testPessimisticRepeatableReadTxInvokeSequentialCall() throws Exception {
         transactionInvokeSequentialCallOnPrimaryNode(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
 
@@ -139,6 +149,7 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
     /**
      *
      */
+    @Test
     public void testPessimisticReadCommittedTxInvokeSequentialCall() throws Exception {
         transactionInvokeSequentialCallOnPrimaryNode(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED);
 
@@ -148,6 +159,7 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
     /**
      *
      */
+    @Test
     public void testMvccTxInvokeSequentialCall() throws Exception {
         cacheName = MVCC_CACHE;
 
@@ -243,6 +255,7 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
      * Test for sequential entry processor invocation. During transaction value is changed externally, which leads to
      * optimistic conflict exception.
      */
+    @Test
     @SuppressWarnings("ThrowableNotThrown")
     public void testTxInvokeSequentialOptimisticConflict() throws Exception {
         TestKey key = new TestKey(1L);

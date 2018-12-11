@@ -35,6 +35,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -46,6 +49,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 /**
  * Simple cache test.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTest {
     /** Grid 1. */
     private static Ignite ignite1;
@@ -74,11 +78,6 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
-
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-7952");
-
         startGridsMultiThreaded(3);
 
         ignite1 = grid(0);
@@ -95,6 +94,11 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-7952");
+
         for (Ignite g : G.allGrids())
             g.cache(DEFAULT_CACHE_NAME).clear();
     }
@@ -103,6 +107,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
      *
      * @throws Exception If error occur.
      */
+    @Test
     public void testBasicOps() throws Exception {
         CountDownLatch latch = new CountDownLatch(3);
 
@@ -178,6 +183,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If test fails.
      */
+    @Test
     public void testBasicOpsAsync() throws Exception {
         CountDownLatch latch = new CountDownLatch(3);
 
@@ -258,6 +264,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
      *
      * @throws IgniteCheckedException If test fails.
      */
+    @Test
     public void testOptimisticTransaction() throws Exception {
         CountDownLatch latch = new CountDownLatch(9);
 
@@ -332,6 +339,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testPutWithExpiration() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
 

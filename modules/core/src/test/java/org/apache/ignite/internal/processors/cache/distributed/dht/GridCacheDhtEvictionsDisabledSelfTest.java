@@ -25,6 +25,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -33,6 +36,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test cache closure execution.
  */
+@RunWith(JUnit4.class)
 public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTest {
     /** */
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -73,6 +77,7 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOneNode() throws Exception {
         checkNodes(startGridsMultiThreaded(1));
 
@@ -81,6 +86,7 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testTwoNodes() throws Exception {
         checkNodes(startGridsMultiThreaded(2));
 
@@ -89,6 +95,7 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testThreeNodes() throws Exception {
         checkNodes(startGridsMultiThreaded(3));
 

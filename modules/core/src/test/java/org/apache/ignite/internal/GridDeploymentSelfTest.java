@@ -40,6 +40,9 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_TASK_DEPLOYED;
 import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
@@ -48,6 +51,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
  * Task deployment tests.
  */
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     /** */
     private TestDeploymentSpi depSpi;
@@ -108,6 +112,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeploy() throws Exception {
         Ignite ignite = startGrid(getTestIgniteInstanceName());
 
@@ -134,6 +139,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIgnoreDeploymentSpi() throws Exception {
         // If peer class loading is disabled and local deployment SPI
         // is configured, SPI should be ignored.
@@ -160,6 +166,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRedeploy() throws Exception {
         Ignite ignite = startGrid(getTestIgniteInstanceName());
 
@@ -255,6 +262,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"BusyWait"})
+    @Test
     public void testDeployOnTwoNodes() throws Exception {
         Ignite ignite1 = startGrid(getTestIgniteInstanceName() + '1');
         Ignite ignite2 = startGrid(getTestIgniteInstanceName() + '2');
@@ -297,6 +305,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployEvents() throws Exception {
         Ignite ignite = startGrid(getTestIgniteInstanceName());
 

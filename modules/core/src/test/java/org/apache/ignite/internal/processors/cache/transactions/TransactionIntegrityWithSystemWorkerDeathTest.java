@@ -26,10 +26,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersControlMXBeanImpl;
 import org.apache.ignite.mxbean.WorkersControlMXBean;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class TransactionIntegrityWithSystemWorkerDeathTest extends AbstractTransactionIntergrityTest {
     /** {@inheritDoc}. */
     @Override protected long getTestTimeout() {
@@ -42,6 +46,7 @@ public class TransactionIntegrityWithSystemWorkerDeathTest extends AbstractTrans
     }
 
     /** */
+    @Test
     public void testFailoverWithDiscoWorkerTermination() throws Exception {
         doTestTransferAmount(new FailoverScenario() {
             static final int failedNodeIdx = 1;
