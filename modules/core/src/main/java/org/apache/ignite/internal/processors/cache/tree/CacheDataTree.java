@@ -130,7 +130,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
         long startPageId = ((PageMemoryEx)pageMem).partitionMetaPageId(grp.groupId(), partId);
 
-        class DataPageScanCursor implements GridCursor<CacheDataRow> {
+        final class DataPageScanCursor implements GridCursor<CacheDataRow> {
             /** */
             int pagesCnt = pageStore.pages();
 
@@ -145,35 +145,45 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
             /** {@inheritDoc} */
             @Override public boolean next() throws IgniteCheckedException {
+                if (rows == null)
+                    return false;
+
                 if (++curRow < rows.length && rows[curRow] != null)
                     return true;
 
-                return fetchNextPage();
+                return readNextDataPage();
             }
 
             /**
              * @return {@code true} If new rows were fetched.
              * @throws IgniteCheckedException If failed.
              */
-            private boolean fetchNextPage() throws IgniteCheckedException {
+            private boolean readNextDataPage() throws IgniteCheckedException {
                 for (;;) {
-                    if (++curPage == pagesCnt) {
+                    if (++curPage >= pagesCnt) {
+                        // Reread number of pages when we reach it.
                         int newPagesCnt = pageStore.pages();
 
-                        if (newPagesCnt <= pagesCnt)
+                        if (newPagesCnt <= pagesCnt) {
+                            rows = null;
                             return false;
+                        }
 
                         pagesCnt = newPagesCnt;
                     }
 
                     long pageId = startPageId + curPage;
                     long page = pageMem.acquirePage(grpId, pageId);
-                    long pageAddr = ((PageMemoryEx)pageMem).readLock(page, pageId, true, false);
 
                     try {
-                        PageIO io = PageIO.getPageIO(pageAddr);
+                        long pageAddr = ((PageMemoryEx)pageMem).readLock(page, pageId, true, false);
 
-                        if (io instanceof DataPageIO) {
+                        try {
+                            PageIO io = PageIO.getPageIO(pageAddr);
+
+                            if (!(io instanceof DataPageIO))
+                                continue;
+
                             DataPageIO iox = (DataPageIO)io;
 
                             int rowsCnt = iox.getRowsCount(pageAddr);
@@ -193,16 +203,18 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                             curRow = 0;
                             return true;
                         }
+                        finally {
+                            pageMem.readUnlock(grpId, pageId, page);
+                        }
                     }
-                    finally {
-                        pageMem.readUnlock(grpId, pageId, page);
+                    finally{
                         pageMem.releasePage(grpId, pageId, page);
                     }
                 }
             }
 
             /** {@inheritDoc} */
-            @Override public CacheDataRow get() throws IgniteCheckedException {
+            @Override public CacheDataRow get() {
                 return rows[curRow];
             }
         }
