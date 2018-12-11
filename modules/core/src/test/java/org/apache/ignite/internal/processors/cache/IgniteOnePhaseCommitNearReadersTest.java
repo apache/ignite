@@ -35,6 +35,9 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -43,6 +46,7 @@ import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteOnePhaseCommitNearReadersTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -80,6 +84,7 @@ public class IgniteOnePhaseCommitNearReadersTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutReadersUpdate1() throws Exception {
         putReadersUpdate(1);
     }
@@ -87,6 +92,7 @@ public class IgniteOnePhaseCommitNearReadersTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutReadersUpdate2() throws Exception {
         putReadersUpdate(0);
     }
@@ -145,6 +151,7 @@ public class IgniteOnePhaseCommitNearReadersTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutReaderUpdatePrimaryFails1() throws Exception {
         putReaderUpdatePrimaryFails(1);
     }
@@ -152,6 +159,7 @@ public class IgniteOnePhaseCommitNearReadersTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutReaderUpdatePrimaryFails2() throws Exception {
         putReaderUpdatePrimaryFails(0);
     }

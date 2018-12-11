@@ -23,10 +23,14 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link TcpDiscoveryNode#consistentId()}
  */
+@RunWith(JUnit4.class)
 public class TcpDiscoveryNodeConsistentIdSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -55,6 +59,7 @@ public class TcpDiscoveryNodeConsistentIdSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConsistentId() throws Exception {
         Object id0 = grid(0).localNode().consistentId();
 

@@ -40,6 +40,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -47,6 +50,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * Unit tests for dht entry.
  */
+@RunWith(JUnit4.class)
 public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 2;
@@ -79,8 +83,6 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(GRID_CNT);
@@ -89,6 +91,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @SuppressWarnings({"SizeReplaceableByIsEmpty"})
     @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
         for (int i = 0; i < GRID_CNT; i++) {
             assert near(grid(i)).size() == 0 : "Near cache size is not zero for grid: " + i;
             assert dht(grid(i)).size() == 0 : "DHT cache size is not zero for grid: " + i;
@@ -144,6 +148,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testClearWithReaders() throws Exception {
         Integer key = 1;
 
@@ -192,6 +197,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testRemoveWithReaders() throws Exception {
         Integer key = 1;
 
@@ -240,6 +246,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testEvictWithReaders() throws Exception {
         Integer key = 1;
 

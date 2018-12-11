@@ -17,6 +17,9 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -27,6 +30,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteCrossCacheTxSelfTest extends IgniteCrossCacheTxAbstractSelfTest {
     /** {@inheritDoc} */
     @Override public CacheAtomicityMode atomicityMode() {
@@ -36,6 +40,7 @@ public class IgniteCrossCacheTxSelfTest extends IgniteCrossCacheTxAbstractSelfTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticReadCommitted() throws Exception {
         checkTxsSingleOp(PESSIMISTIC, READ_COMMITTED);
     }
@@ -43,6 +48,7 @@ public class IgniteCrossCacheTxSelfTest extends IgniteCrossCacheTxAbstractSelfTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticRepeatableRead() throws Exception {
         checkTxsSingleOp(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -50,6 +56,7 @@ public class IgniteCrossCacheTxSelfTest extends IgniteCrossCacheTxAbstractSelfTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticReadCommitted() throws Exception {
         checkTxsSingleOp(OPTIMISTIC, READ_COMMITTED);
     }
@@ -57,6 +64,7 @@ public class IgniteCrossCacheTxSelfTest extends IgniteCrossCacheTxAbstractSelfTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticRepeatableRead() throws Exception {
         checkTxsSingleOp(OPTIMISTIC, REPEATABLE_READ);
     }
@@ -64,6 +72,7 @@ public class IgniteCrossCacheTxSelfTest extends IgniteCrossCacheTxAbstractSelfTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticSerializable() throws Exception {
         checkTxsSingleOp(OPTIMISTIC, SERIALIZABLE);
     }

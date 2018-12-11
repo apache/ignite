@@ -48,8 +48,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -90,6 +88,9 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.lang.Thread.interrupted;
 import static java.lang.Thread.yield;
@@ -107,6 +108,7 @@ import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 /**
  * Tests an ability to async rollback near transactions.
  */
+@RunWith(JUnit4.class)
 public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /** */
     public static final int DURATION = SF.applyLB(60_000, 5_000);
@@ -194,11 +196,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * @return Started client.
      * @throws Exception If f nodeailed.
@@ -219,6 +216,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRollbackSimple() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-7952");
@@ -326,6 +324,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testSynchronousRollback() throws Exception {
         Ignite client = startClient();
 
@@ -476,6 +475,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testEnlistManyRead() throws Exception {
         testEnlistMany(false, REPEATABLE_READ, PESSIMISTIC);
     }
@@ -483,6 +483,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testEnlistManyWrite() throws Exception {
         testEnlistMany(true, REPEATABLE_READ, PESSIMISTIC);
     }
@@ -490,6 +491,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testEnlistManyReadOptimistic() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
             return; // Optimistic transactions are not supported by MVCC.
@@ -500,6 +502,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testEnlistManyWriteOptimistic() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
             return; // Optimistic transactions are not supported by MVCC.
@@ -547,6 +550,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      * Rollback tx while near lock request is delayed.
      */
+    @Test
     public void testRollbackDelayNearLockRequest() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-9470");
@@ -594,6 +598,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      * Tests rollback with concurrent commit.
      */
+    @Test
     public void testRollbackDelayFinishRequest() throws Exception {
         final Ignite client = startClient();
 
@@ -653,6 +658,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testMixedAsyncRollbackTypes() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-10434");
@@ -838,6 +844,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      * Tests proxy object returned by {@link IgniteTransactions#localActiveTransactions()}
      */
+    @Test
     public void testRollbackProxy() throws Exception {
         final CountDownLatch keyLocked = new CountDownLatch(1);
 
@@ -926,6 +933,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRollbackOnTopologyLockPessimistic() throws Exception {
         final Ignite client = startClient();
 

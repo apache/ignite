@@ -20,17 +20,22 @@ package org.apache.ignite.internal.sql;
 import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for SQL parser: CREATE INDEX.
  */
 @SuppressWarnings({"UnusedReturnValue"})
+@RunWith(JUnit4.class)
 public class SqlParserUserSelfTest extends SqlParserAbstractSelfTest {
     /**
      * Tests for CREATE USER command.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateUser() throws Exception {
         // Base.
         parseValidateCreate("CREATE USER test WITH PASSWORD 'test'", "TEST", "test");
@@ -51,6 +56,7 @@ public class SqlParserUserSelfTest extends SqlParserAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAlterUser() throws Exception {
         // Base.
         parseValidateAlter("ALTER USER test WITH PASSWORD 'test'", "TEST", "test");
@@ -71,6 +77,7 @@ public class SqlParserUserSelfTest extends SqlParserAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDropUser() throws Exception {
         // Base.
         parseValidateDrop("DROP USER test", "TEST");

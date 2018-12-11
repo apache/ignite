@@ -23,6 +23,9 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -31,6 +34,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Metrics test for partitioned cache with disabled near cache.
  */
+@RunWith(JUnit4.class)
 public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static final int GRID_CNT = 2;
@@ -77,6 +81,7 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGettingRemovedKey() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-819");
 

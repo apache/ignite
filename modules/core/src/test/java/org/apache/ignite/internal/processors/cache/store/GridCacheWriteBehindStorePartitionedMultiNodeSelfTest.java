@@ -38,6 +38,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -46,6 +49,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Tests write-behind store with near and dht commit option.
  */
+@RunWith(JUnit4.class)
 public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridCommonAbstractTest {
     /** Grids to start. */
     private static final int GRID_CNT = 5;
@@ -94,10 +98,8 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
-        super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
@@ -122,6 +124,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleWritesOnDhtNode() throws Exception {
         checkSingleWrites();
     }
@@ -129,6 +132,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBatchWritesOnDhtNode() throws Exception {
         checkBatchWrites();
     }
@@ -136,6 +140,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxWritesOnDhtNode() throws Exception {
         checkTxWrites();
     }
