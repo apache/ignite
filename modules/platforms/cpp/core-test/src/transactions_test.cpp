@@ -349,7 +349,7 @@ BOOST_AUTO_TEST_CASE(TransactionsMetricsNe)
     IgniteError err;
 
     TransactionMetrics metrics = transactions.GetMetrics(err);
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     BOOST_REQUIRE(metrics.IsValid());
@@ -370,29 +370,29 @@ BOOST_AUTO_TEST_CASE(TransactionCommitNe)
     BOOST_REQUIRE(!tx.IsValid());
 
     tx = transactions.TxStart(err);
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     BOOST_REQUIRE(transactions.GetTx().IsValid());
 
     cache.Put(1, 1, err);
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     cache.Put(2, 2, err);
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     tx.Commit(err);
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     BOOST_CHECK_EQUAL(1, cache.Get(1, err));
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     BOOST_CHECK_EQUAL(2, cache.Get(2, err));
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     tx = transactions.GetTx();
@@ -407,11 +407,11 @@ BOOST_AUTO_TEST_CASE(TransactionRollbackNe)
     IgniteError err;
 
     cache.Put(1, 1, err);
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     cache.Put(2, 2, err);
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     Transactions transactions = grid.GetTransactions();
@@ -420,29 +420,29 @@ BOOST_AUTO_TEST_CASE(TransactionRollbackNe)
     BOOST_REQUIRE(!tx.IsValid());
 
     tx = transactions.TxStart(err);
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     BOOST_REQUIRE(transactions.GetTx().IsValid());
 
     cache.Put(1, 10, err);
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     cache.Put(2, 20, err);
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     tx.Rollback(err);
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     BOOST_CHECK_EQUAL(1, cache.Get(1, err));
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     BOOST_CHECK_EQUAL(2, cache.Get(2, err));
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     tx = transactions.GetTx();
@@ -457,11 +457,11 @@ BOOST_AUTO_TEST_CASE(TransactionCloseNe)
     IgniteError err;
 
     cache.Put(1, 1, err);
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     cache.Put(2, 2, err);
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     Transactions transactions = grid.GetTransactions();
@@ -470,29 +470,29 @@ BOOST_AUTO_TEST_CASE(TransactionCloseNe)
     BOOST_REQUIRE(!tx.IsValid());
 
     tx = transactions.TxStart(err);
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     BOOST_REQUIRE(transactions.GetTx().IsValid());
 
     cache.Put(1, 10, err);
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     cache.Put(2, 20, err);
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     tx.Close(err);
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     BOOST_CHECK_EQUAL(1, cache.Get(1, err));
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     BOOST_CHECK_EQUAL(2, cache.Get(2, err));
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     tx = transactions.GetTx();
@@ -519,7 +519,7 @@ BOOST_AUTO_TEST_CASE(TransactionRollbackOnlyNe)
     BOOST_CHECK(!tx.IsRollbackOnly());
 
     tx.SetRollbackOnly(err);
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     BOOST_CHECK(tx.IsRollbackOnly());
@@ -528,7 +528,7 @@ BOOST_AUTO_TEST_CASE(TransactionRollbackOnlyNe)
     BOOST_REQUIRE(err.GetCode() != IgniteError::IGNITE_SUCCESS);
 
     tx.Close(err);
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     BOOST_CHECK_EQUAL(TransactionState::ROLLED_BACK, tx.GetState());
@@ -556,7 +556,7 @@ BOOST_AUTO_TEST_CASE(TransactionAttributesNe)
     tx = transactions.TxStart(TransactionConcurrency::OPTIMISTIC,
         TransactionIsolation::SERIALIZABLE, 1000, 100, err);
 
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     BOOST_REQUIRE(transactions.GetTx().IsValid());
@@ -577,7 +577,7 @@ BOOST_AUTO_TEST_CASE(TransactionAttributesNe)
     tx = transactions.TxStart(TransactionConcurrency::PESSIMISTIC,
         TransactionIsolation::READ_COMMITTED, 2000, 10, err);
 
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     BOOST_REQUIRE(transactions.GetTx().IsValid());
@@ -598,7 +598,7 @@ BOOST_AUTO_TEST_CASE(TransactionAttributesNe)
     tx = transactions.TxStart(TransactionConcurrency::OPTIMISTIC,
         TransactionIsolation::REPEATABLE_READ, 3000, 0, err);
 
-    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     BOOST_REQUIRE(transactions.GetTx().IsValid());
