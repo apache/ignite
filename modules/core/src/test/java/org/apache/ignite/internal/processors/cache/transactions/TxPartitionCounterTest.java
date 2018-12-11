@@ -8,6 +8,8 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+
 /**
  */
 public class TxPartitionCounterTest extends TxSinglePartitionAbstractTest {
@@ -19,7 +21,7 @@ public class TxPartitionCounterTest extends TxSinglePartitionAbstractTest {
         runOnPartition(0, 2, 3, new TxCallback() {
             @Override public boolean onBeforePrimaryPrepare(IgniteEx node, IgniteUuid ver,
                 GridFutureAdapter<?> proceedFut) {
-                GridTestUtils.runAsync(new Runnable() {
+                runAsync(new Runnable() {
                     @Override public void run() {
                         futs.put(ver, proceedFut);
 
@@ -37,27 +39,14 @@ public class TxPartitionCounterTest extends TxSinglePartitionAbstractTest {
             @Override public boolean onAfterPrimaryPrepare(IgniteEx node, IgniteInternalTx tx,
                 GridFutureAdapter<?> proceedFut) {
 
-                GridTestUtils.runAsync(new Runnable() {
+                runAsync(new Runnable() {
                     @Override public void run() {
-                        switch (futs.size()) {
-                            case 3:
-                                assertEquals(txMap.get(2), tx.nearXidVersion().asGridUuid());
-                                futs.remove(txMap.get(2));
-                                futs.get(txMap.get(1)).onDone();
+                        int size = futs.size();
 
-                                break;
-                            case 2:
-                                assertEquals(txMap.get(1), tx.nearXidVersion().asGridUuid());
-                                futs.remove(txMap.get(1));
-                                futs.get(txMap.get(0)).onDone();
-
-                                break;
-                            case 1:
-                                assertEquals(txMap.get(0), tx.nearXidVersion().asGridUuid());
-                                futs.remove(txMap.get(0));
-
-                                break;
-                        }
+                        assertEquals(txMap.get(size - 1), tx.nearXidVersion().asGridUuid());
+                        futs.remove(txMap.get(size - 1));
+                        if (size - 2 >= 0)
+                            futs.get(txMap.get(size - 2)).onDone();
                     }
                 });
 
@@ -72,9 +61,7 @@ public class TxPartitionCounterTest extends TxSinglePartitionAbstractTest {
             @Override public void onTxStart(Transaction tx, int idx) {
                 txMap.put(idx, tx.xid());
             }
-        }
-
-            , 5, 7, 3);
+        }, 5, 7, 3);
 
         int size = grid("client").cache(DEFAULT_CACHE_NAME).size();
 
