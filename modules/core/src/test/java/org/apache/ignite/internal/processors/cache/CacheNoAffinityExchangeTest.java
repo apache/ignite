@@ -46,10 +46,14 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
     /** */
     private volatile boolean startClient;
@@ -96,6 +100,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoAffinityChangeOnClientJoin() throws Exception {
         Ignite ig = startGrids(4);
 
@@ -153,6 +158,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoAffinityChangeOnClientLeft() throws Exception {
         Ignite ig = startGrids(4);
 
@@ -212,6 +218,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoAffinityChangeOnClientLeftWithMergedExchanges() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_EXCHANGE_MERGE_DELAY, "1000");
 

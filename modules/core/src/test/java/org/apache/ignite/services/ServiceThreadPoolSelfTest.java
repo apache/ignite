@@ -24,10 +24,14 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test verifying that services thread pool is properly used.
  */
+@RunWith(JUnit4.class)
 public class ServiceThreadPoolSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -49,6 +53,7 @@ public class ServiceThreadPoolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultPoolSize() throws Exception {
         Ignite ignite = startGrid("grid", new IgniteConfiguration());
 
@@ -61,6 +66,7 @@ public class ServiceThreadPoolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInheritedPoolSize() throws Exception {
         Ignite ignite = startGrid("grid", new IgniteConfiguration().setPublicThreadPoolSize(42));
 
@@ -73,6 +79,7 @@ public class ServiceThreadPoolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCustomPoolSize() throws Exception {
         Ignite ignite = startGrid("grid", new IgniteConfiguration().setServiceThreadPoolSize(42));
 
@@ -85,6 +92,7 @@ public class ServiceThreadPoolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExecution() throws Exception {
         startGrid(0); // Server.
 

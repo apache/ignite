@@ -27,11 +27,15 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * ODBC configuration validation tests.
  */
 @SuppressWarnings("deprecation")
+@RunWith(JUnit4.class)
 public class OdbcConfigurationValidationSelfTest extends GridCommonAbstractTest {
     /** Node index generator. */
     private static final AtomicInteger NODE_IDX_GEN = new AtomicInteger();
@@ -46,6 +50,7 @@ public class OdbcConfigurationValidationSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddressDefault() throws Exception {
         check(new OdbcConfiguration(), true);
     }
@@ -55,6 +60,7 @@ public class OdbcConfigurationValidationSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddressHostOnly() throws Exception {
         check(new OdbcConfiguration().setEndpointAddress("127.0.0.1"), true);
     }
@@ -64,6 +70,7 @@ public class OdbcConfigurationValidationSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddressHostAndPort() throws Exception {
         check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:9999"), true);
 
@@ -76,6 +83,7 @@ public class OdbcConfigurationValidationSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddressHostAndPortRange() throws Exception {
         check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:9999..10000"), true);
         check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:9999..10000"), true);
@@ -89,6 +97,7 @@ public class OdbcConfigurationValidationSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddressInvalidHost() throws Exception {
         check(new OdbcConfiguration().setEndpointAddress("126.0.0.1"), false);
     }
@@ -98,6 +107,7 @@ public class OdbcConfigurationValidationSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddressInvalidFormat() throws Exception {
         check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:"), false);
 
@@ -121,6 +131,7 @@ public class OdbcConfigurationValidationSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionParams() throws Exception {
         check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:9998..10000")
             .setSocketSendBufferSize(4 * 1024), true);
@@ -140,6 +151,7 @@ public class OdbcConfigurationValidationSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testThreadPoolSize() throws Exception {
         check(new OdbcConfiguration().setThreadPoolSize(0), false);
         check(new OdbcConfiguration().setThreadPoolSize(-1), false);
