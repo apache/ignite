@@ -3270,16 +3270,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             CheckpointProgress cpProgress = chp.progress;
 
-            int splitFactor = asyncRunner == null ? 1 : asyncRunner.getPoolSize();
+            int parts = asyncRunner == null ? 1 : asyncRunner.getPoolSize();
 
-            CountDownFuture doneWriteFut = new CountDownFuture(splitFactor);
+            CountDownFuture doneWriteFut = new CountDownFuture(parts);
 
             chp.metrics.onPagesWriteStart();
 
             if (asyncRunner != null) {
                 updateHeartbeat();
 
-                CheckpointPages[] splittedCpPages = cpProgress.cpPages.split(splitFactor);
+                CheckpointPages[] splittedCpPages = cpProgress.cpPages.split(parts);
 
                 for (int i = 0; i < splittedCpPages.length; i++) {
                     Runnable write = new WriteCheckpointPages(
@@ -4307,7 +4307,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         protected List<FullPageId> retryPageIds = new ArrayList<>();
 
-        protected int totalCpPages;
+        protected int totalCpPages = -1;
 
         protected int written;
 
@@ -4401,7 +4401,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         private CheckpointPages[] splittedCheckpointPages;
 
-        private T2<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> markChpBeginTup;
+        private Collection<GridMultiCollectionWrapper<FullPageId>> markChpBeginPages;
+
+        private int markChpBeginPagesCnt;
 
         private CheckpointBeginPages(CheckpointWriteOrder order) {
             writeOrder = order;
@@ -4412,16 +4414,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         private void onCheckpointBegin() {
+            // Init array for all checkpoint page Ids.
             pageIds = new FullPageId[checkpointPages()];
 
-            // No need merge previous checkpoin. standard flow.
-            if (prevCpPages == null) {
-                for (GridMultiCollectionWrapper<FullPageId> memoryPages : markChpBeginTup.get1()) {
-                    addPages(memoryPages);
-                }
-            }
-            else {
-                // Merge all not written pages.
+            // Add all pages from current checkpoint.
+            markChpBeginPages.forEach(this::addPages);
+
+            if (prevCpPages != null) {
+                // Merge all not written page Ids from previous checkpoint.
                 if (prevCpPages.splittedCheckpointPages == null) {
                     // TODO check page count.
                     // If not all pages was written in previous checkpoint.
@@ -4461,6 +4461,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
             }
 
+            // Sort page Ids if write mod SEQUENTIAL.
             if (writeOrder == CheckpointWriteOrder.SEQUENTIAL) {
                 Arrays.parallelSort(pageIds, new Comparator<FullPageId>() {
                     @Override public int compare(FullPageId pageId1, FullPageId pageId2) {
@@ -4475,13 +4476,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
         }
 
-        private void addCheckpointPages(T2<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> markChpBeginTup) {
-            this.markChpBeginTup = markChpBeginTup;
+        private void addCheckpointPages(
+            T2<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> markChpBeginTup
+        ) {
+            markChpBeginPages = markChpBeginTup.get1();
+            markChpBeginPagesCnt = markChpBeginTup.get2();
         }
 
         @Override public int checkpointPages() {
-            if (totalCpPages == 0) {
-                int total = markChpBeginTup.get2();
+            if (totalCpPages == -1) {
+                int total = markChpBeginPagesCnt;
 
                 if (prevCpPages != null)
                     total += prevCpPages.totalCpPages;
