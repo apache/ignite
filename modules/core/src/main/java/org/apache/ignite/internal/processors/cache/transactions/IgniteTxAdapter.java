@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.processor.EntryProcessor;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -37,8 +39,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import javax.cache.expiry.ExpiryPolicy;
-import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -288,6 +288,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     @GridToStringExclude
     private volatile TxCounters txCounters;
 
+    /** Transaction from which this transaction was copied by(if it was). */
+    private GridNearTxLocal parentTx;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -404,6 +407,13 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             log = U.logger(cctx.kernalContext(), logRef, this);
 
         consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
+    }
+
+    /**
+     * @param parentTx Transaction from which this transaction was copied by.
+     */
+    public void setParentTx(GridNearTxLocal parentTx) {
+        this.parentTx = parentTx;
     }
 
     /**
@@ -1046,6 +1056,19 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** {@inheritDoc} */
     @Override public boolean state(TransactionState state) {
         return state(state, false);
+    }
+
+    /**
+     * Changing state for this transaction as well as chained(parent) transactions.
+     *
+     * @param state Transaction state.
+     * @return {@code True} if transition was valid, {@code false} otherwise.
+     */
+    public boolean chainState(TransactionState state) {
+        if (parentTx != null)
+            parentTx.state(state);
+
+        return state(state);
     }
 
     /** {@inheritDoc} */

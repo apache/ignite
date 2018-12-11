@@ -3919,16 +3919,23 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 fut.listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
                     @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut0) {
                         if (FINISH_FUT_UPD.compareAndSet(tx, fut, rollbackFut)) {
-                            if (tx.state() == COMMITTED) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Failed to rollback, transaction is already committed: " + tx);
+                            switch (tx.state()) {
+                                case COMMITTED:
+                                    if (log.isDebugEnabled())
+                                        log.debug("Failed to rollback, transaction is already committed: " + tx);
 
-                                rollbackFut.forceFinish();
+                                    // Fall-through.
 
-                                assert rollbackFut.isDone() : rollbackFut;
+                                case ROLLED_BACK:
+                                    rollbackFut.forceFinish();
+
+                                    assert rollbackFut.isDone() : rollbackFut;
+
+                                    break;
+
+                                default: // First finish attempt was unsuccessful. Try again.
+                                    rollbackFut.finish(false, clearThreadMap, onTimeout);
                             }
-                            else // First finish attempt was unsuccessful. Try again.
-                                rollbackFut.finish(false, clearThreadMap, onTimeout);
                         }
                         else {
                             finishFut.listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {

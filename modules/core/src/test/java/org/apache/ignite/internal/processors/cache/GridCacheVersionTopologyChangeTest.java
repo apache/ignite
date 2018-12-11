@@ -39,6 +39,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -76,6 +77,13 @@ public class GridCacheVersionTopologyChangeTest extends GridCommonAbstractTest {
      */
     public void testVersionIncreaseTx() throws Exception {
         checkVersionIncrease(cacheConfigurations(TRANSACTIONAL));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testVersionIncreaseMvccTx() throws Exception {
+        checkVersionIncrease(cacheConfigurations(TRANSACTIONAL_SNAPSHOT));
     }
 
     /**

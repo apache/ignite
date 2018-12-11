@@ -252,6 +252,29 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception if failed.
+     */
+    public void testIsEmpty() throws Exception {
+        TestTree tree = createTestTree(true);
+
+        assertTrue(tree.isEmpty());
+
+        for (long i = 1; i <= 500; i++) {
+            tree.put(i);
+
+            assertFalse(tree.isEmpty());
+        }
+
+        for (long i = 1; i <= 500; i++) {
+            assertFalse(tree.isEmpty());
+
+            tree.remove(i);
+        }
+
+        assertTrue(tree.isEmpty());
+    }
+
+    /**
      * @throws IgniteCheckedException If failed.
      */
     public void testFindWithClosure() throws IgniteCheckedException {

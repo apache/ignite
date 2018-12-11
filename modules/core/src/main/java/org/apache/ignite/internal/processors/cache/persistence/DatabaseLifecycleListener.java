@@ -51,20 +51,24 @@ public interface DatabaseLifecycleListener {
     /**
      * Callback executed when binary memory has fully restored and WAL logging is resumed.
      *
-     * @param binaryState Result of binary recovery.
+     *
+     * @param mgr Database shared manager.
+     * @param restoreState Result of binary recovery.
      * @throws IgniteCheckedException If failed.
      */
-    public default void afterBinaryMemoryRestore(GridCacheDatabaseSharedManager.RestoreBinaryState binaryState)
-        throws IgniteCheckedException {}
+    public default void afterBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr,
+        GridCacheDatabaseSharedManager.RestoreBinaryState restoreState) throws IgniteCheckedException {}
 
     /**
      * Callback executed when all logical updates were applied and page memory become to fully consistent state.
      *
-     * @param logicalState Result of logical recovery.
+     *
+     * @param mgr Database shared manager.
+     * @param restoreState Result of logical recovery.
      * @throws IgniteCheckedException If failed.
      */
-    public default void afterLogicalUpdatesApplied(GridCacheDatabaseSharedManager.RestoreLogicalState logicalState)
-        throws IgniteCheckedException {}
+    public default void afterLogicalUpdatesApplied(IgniteCacheDatabaseSharedManager mgr,
+        GridCacheDatabaseSharedManager.RestoreLogicalState restoreState) throws IgniteCheckedException {}
 
     /**
      * Callback executed when all physical updates are applied and we are ready to write new physical records

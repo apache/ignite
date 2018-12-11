@@ -415,7 +415,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         if (msg.requestId().equals(state.transitionRequestId())) {
             log.info("Received state change finish message: " + msg.clusterActive());
 
-            globalState = globalState.finish(msg.success());
+            globalState = state.finish(msg.success());
 
             afterStateChangeFinished(msg.id(), msg.success());
 
@@ -905,15 +905,19 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             forceChangeBaselineTopology,
             System.currentTimeMillis());
 
+        IgniteInternalFuture<?> resFut = wrapStateChangeFuture(startedFut, msg);
+
         try {
             if (log.isInfoEnabled())
                 U.log(log, "Sending " + prettyStr(activate) + " request with BaselineTopology " + blt);
 
             ctx.discovery().sendCustomEvent(msg);
 
-            if (ctx.isStopping())
-                startedFut.onDone(new IgniteCheckedException("Failed to execute " + prettyStr(activate) + " request, " +
-                    "node is stopping."));
+            if (ctx.isStopping()) {
+                String errMsg = "Failed to execute " + prettyStr(activate) + " request, node is stopping.";
+
+                startedFut.onDone(new IgniteCheckedException(errMsg));
+            }
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send global state change request: " + activate, e);
@@ -921,7 +925,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             startedFut.onDone(e);
         }
 
-        return wrapStateChangeFuture(startedFut, msg);
+        return resFut;
     }
 
     /** {@inheritDoc} */

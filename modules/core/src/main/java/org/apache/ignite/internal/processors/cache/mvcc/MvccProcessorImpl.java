@@ -80,6 +80,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
@@ -349,6 +350,20 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         txLogPageStoreInit(mgr);
     }
 
+    /** {@inheritDoc} */
+    @Override public void afterBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr,
+        GridCacheDatabaseSharedManager.RestoreBinaryState restoreState) throws IgniteCheckedException {
+
+        boolean hasMvccCaches = ctx.cache().persistentCaches().stream()
+            .anyMatch(c -> c.cacheConfiguration().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT);
+
+        if (hasMvccCaches) {
+            txLog = new TxLog(ctx, mgr);
+
+            mvccEnabled = true;
+        }
+    }
+
     /**
      * @param mgr Database shared manager.
      * @throws IgniteCheckedException If failed.
@@ -358,15 +373,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         ctx.cache().context().pageStore().initialize(TX_LOG_CACHE_ID, 1,
             TX_LOG_CACHE_NAME, mgr.dataRegion(TX_LOG_CACHE_NAME).memoryMetrics());
-
-        boolean hasMvccCaches = ctx.cache().cacheGroups().stream().filter(CacheGroupContext::persistenceEnabled)
-            .anyMatch(g -> g.config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT);
-
-        if (hasMvccCaches) {
-            txLog = new TxLog(ctx, mgr);
-
-            mvccEnabled = true;
-        }
     }
 
     /** {@inheritDoc} */
