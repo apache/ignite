@@ -19,15 +19,20 @@ package org.apache.ignite.spi.failover.always;
 
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Always-failover SPI config test.
  */
 @GridSpiTest(spi = AlwaysFailoverSpi.class, group = "Collision SPI")
+@RunWith(JUnit4.class)
 public class GridAlwaysFailoverSpiConfigSelfTest extends GridSpiAbstractConfigTest<AlwaysFailoverSpi> {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeConfig() throws Exception {
         checkNegativeSpiProperty(new AlwaysFailoverSpi(), "maximumFailoverAttempts", -1);
     }

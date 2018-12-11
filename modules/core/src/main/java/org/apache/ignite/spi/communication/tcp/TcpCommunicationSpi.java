@@ -65,6 +65,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
@@ -153,6 +154,7 @@ import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConnecti
 import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationNodeConnectionCheckFuture;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage2;
+import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
@@ -165,6 +167,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
+import static org.apache.ignite.plugin.extensions.communication.Message.DIRECT_TYPE_SIZE;
 import static org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConnectionCheckFuture.SES_FUT_META;
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.ALREADY_CONNECTED;
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.NEED_WAIT;
@@ -390,6 +393,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** Handshake message type. */
     public static final short HANDSHAKE_MSG_TYPE = -3;
 
+    /** Handshake wait message type. */
+    public static final short HANDSHAKE_WAIT_MSG_TYPE = -28;
+
     /** */
     private ConnectGateway connectGate;
 
@@ -428,11 +434,19 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         log.info("Accepted incoming communication connection [locAddr=" + ses.localAddress() +
                             ", rmtAddr=" + ses.remoteAddress() + ']');
 
-                    if (log.isDebugEnabled())
-                        log.debug("Sending local node ID to newly accepted session: " + ses);
-
                     try {
-                        ses.sendNoFuture(nodeIdMessage(), null);
+                        if (ctxInitLatch.getCount() == 0 || !isHandshakeWaitSupported()) {
+                            if (log.isDebugEnabled())
+                                log.debug("Sending local node ID to newly accepted session: " + ses);
+
+                            ses.sendNoFuture(nodeIdMessage(), null);
+                        }
+                        else {
+                            if (log.isDebugEnabled())
+                                log.debug("Sending handshake wait message to newly accepted session: " + ses);
+
+                            ses.sendNoFuture(new HandshakeWaitMessage(), null);
+                        }
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to send message: " + e, e);
@@ -2347,12 +2361,19 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 };
 
                 GridNioMessageReaderFactory readerFactory = new GridNioMessageReaderFactory() {
+                    private IgniteSpiContext context;
+
                     private MessageFormatter formatter;
 
                     @Override public MessageReader reader(GridNioSession ses, MessageFactory msgFactory)
                         throws IgniteCheckedException {
-                        if (formatter == null)
-                            formatter = getSpiContext().messageFormatter();
+                        final IgniteSpiContext ctx = TcpCommunicationSpi.super.getSpiContext();
+
+                        if (formatter == null || context != ctx) {
+                            context = ctx;
+
+                            formatter = context.messageFormatter();
+                        }
 
                         assert formatter != null;
 
@@ -2363,11 +2384,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 };
 
                 GridNioMessageWriterFactory writerFactory = new GridNioMessageWriterFactory() {
+                    private IgniteSpiContext context;
+
                     private MessageFormatter formatter;
 
                     @Override public MessageWriter writer(GridNioSession ses) throws IgniteCheckedException {
-                        if (formatter == null)
-                            formatter = getSpiContext().messageFormatter();
+                        final IgniteSpiContext ctx = TcpCommunicationSpi.super.getSpiContext();
+
+                        if (formatter == null || context != ctx) {
+                            context = ctx;
+
+                            formatter = context.messageFormatter();
+                        }
 
                         assert formatter != null;
 
@@ -3952,6 +3980,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                 ByteBuffer handBuff = sslHnd.applicationBuffer();
 
+                if (handBuff.remaining() >= DIRECT_TYPE_SIZE) {
+                    short msgType = makeMessageType(handBuff.get(0), handBuff.get(1));
+
+                    if (msgType == HANDSHAKE_WAIT_MSG_TYPE)
+                        return NEED_WAIT;
+                }
+
                 if (handBuff.remaining() < NodeIdMessage.MESSAGE_FULL_SIZE) {
                     buf = ByteBuffer.allocate(1000);
 
@@ -3963,6 +3998,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     buf.flip();
 
                     buf = sslHnd.decode(buf);
+
+                    if (handBuff.remaining() >= DIRECT_TYPE_SIZE) {
+                        short msgType = makeMessageType(handBuff.get(0), handBuff.get(1));
+
+                        if (msgType == HANDSHAKE_WAIT_MSG_TYPE)
+                            return NEED_WAIT;
+                    }
                 }
                 else
                     buf = handBuff;
@@ -3975,6 +4017,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     if (read == -1)
                         throw new HandshakeException("Failed to read remote node ID (connection closed).");
+
+                    if (read >= DIRECT_TYPE_SIZE) {
+                        short msgType = makeMessageType(buf.get(0), buf.get(1));
+
+                        if (msgType == HANDSHAKE_WAIT_MSG_TYPE)
+                            return NEED_WAIT;
+                    }
 
                     i += read;
                 }
@@ -4342,6 +4391,17 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         return this;
     }
 
+    /**
+     * Checks whether remote nodes support {@link HandshakeWaitMessage}.
+     *
+     * @return {@code True} if remote nodes support {@link HandshakeWaitMessage}.
+     */
+    private boolean isHandshakeWaitSupported() {
+        Collection<ClusterNode> nodes = ignite().configuration().getDiscoverySpi().getRemoteNodes();
+
+        return IgniteFeatures.allNodesSupports(nodes, IgniteFeatures.TCP_COMMUNICATION_SPI_HANDSHAKE_WAIT_MESSAGE);
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpCommunicationSpi.class, this);
@@ -4413,6 +4473,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     public static void writeMessageType(ByteBuffer buf, short type) {
         buf.put((byte)(type & 0xFF));
         buf.put((byte)((type >> 8) & 0xFF));
+    }
+
+    /**
+     * Concatenates the two parameter bytes to form a message type value.
+     *
+     * @param b0 The first byte.
+     * @param b1 The second byte.
+     */
+    public static short makeMessageType(byte b0, byte b1) {
+        return (short)((b1 & 0xFF) << 8 | b0 & 0xFF);
     }
 
     /**

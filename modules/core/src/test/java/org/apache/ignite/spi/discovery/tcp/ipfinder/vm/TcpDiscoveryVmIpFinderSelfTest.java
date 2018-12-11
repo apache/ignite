@@ -27,12 +27,16 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryObjectsAbstractSelfTest.IP_FINDER;
 
 /**
  * GridTcpDiscoveryVmIpFinder test.
  */
+@RunWith(JUnit4.class)
 public class TcpDiscoveryVmIpFinderSelfTest
     extends TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryVmIpFinder> {
     /**
@@ -56,6 +60,7 @@ public class TcpDiscoveryVmIpFinderSelfTest
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testAddressesInitialization() throws Exception {
         TcpDiscoveryVmIpFinder finder = ipFinder();
 
@@ -125,6 +130,7 @@ public class TcpDiscoveryVmIpFinderSelfTest
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testIpV6AddressesInitialization() throws Exception {
         TcpDiscoveryVmIpFinder finder = ipFinder();
 
@@ -202,6 +208,7 @@ public class TcpDiscoveryVmIpFinderSelfTest
     /**
      *
      */
+    @Test
     public void testUnregistration() throws Exception {
         Ignition.start(config("server1", false, false));
 

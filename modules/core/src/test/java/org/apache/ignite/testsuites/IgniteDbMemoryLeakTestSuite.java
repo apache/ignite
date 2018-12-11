@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.cache.LargeEntryUpdateTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakLargeObjectsTest;
@@ -31,18 +32,17 @@ import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakWithExpi
 public class IgniteDbMemoryLeakTestSuite extends TestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Db Memory Leaks Test Suite");
 
-        suite.addTestSuite(IgniteDbMemoryLeakTest.class);
-        suite.addTestSuite(IgniteDbMemoryLeakWithExpirationTest.class);
-        suite.addTestSuite(IgniteDbMemoryLeakLargePagesTest.class);
-        suite.addTestSuite(IgniteDbMemoryLeakLargeObjectsTest.class);
-        suite.addTestSuite(IgniteDbMemoryLeakNonTransactionalTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteDbMemoryLeakTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteDbMemoryLeakWithExpirationTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteDbMemoryLeakLargePagesTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteDbMemoryLeakLargeObjectsTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteDbMemoryLeakNonTransactionalTest.class));
 
-        suite.addTestSuite(LargeEntryUpdateTest.class);
+        suite.addTest(new JUnit4TestAdapter(LargeEntryUpdateTest.class));
 
         return suite;
     }

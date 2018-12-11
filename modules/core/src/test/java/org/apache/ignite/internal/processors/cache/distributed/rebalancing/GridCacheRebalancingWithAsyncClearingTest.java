@@ -39,10 +39,14 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "cache";
@@ -107,6 +111,7 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionClearingNotBlockExchange() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, "1");
 
@@ -203,6 +208,7 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCorrectRebalancingCurrentlyRentingPartitions() throws Exception {
         IgniteEx ignite = (IgniteEx) startGrids(3);
         ignite.cluster().active(true);

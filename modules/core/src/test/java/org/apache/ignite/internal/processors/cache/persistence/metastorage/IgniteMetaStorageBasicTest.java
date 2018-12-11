@@ -42,10 +42,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Single place to add for basic MetaStorage tests.
  */
+@RunWith(JUnit4.class)
 public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -92,6 +96,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testMetaStorageMassivePutFixed() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -129,6 +134,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testMetaStorageMassivePutRandom() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -435,6 +441,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMetaStorageMassivePutUpdateRestart() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -459,6 +466,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testRecoveryOfMetastorageWhenNodeNotInBaseline() throws Exception {
         IgniteEx ig0 = startGrid(0);
 

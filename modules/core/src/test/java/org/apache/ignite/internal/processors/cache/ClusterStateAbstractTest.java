@@ -42,10 +42,14 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
     /** Entry count. */
     public static final int ENTRY_CNT = 5000;
@@ -105,6 +109,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testDynamicCacheStart() throws Exception {
         activeOnStart = false;
 
@@ -134,6 +139,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testNoRebalancing() throws Exception {
         activeOnStart = false;
 
@@ -215,6 +221,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testActivationFromClient() throws Exception {
         forbidden.add(GridDhtPartitionSupplyMessage.class);
         forbidden.add(GridDhtPartitionDemandMessage.class);
@@ -273,6 +280,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
      *
      * @throws Exception If fails.
      */
+    @Test
     public void testDeactivationWithPendingLock() throws Exception {
         startGrids(GRID_CNT);
 
@@ -297,6 +305,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeactivationWithPendingTransaction() throws Exception {
         startGrids(GRID_CNT);
 
