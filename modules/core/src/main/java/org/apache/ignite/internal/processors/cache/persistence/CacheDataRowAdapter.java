@@ -168,7 +168,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
             // Initialize the remaining part of the large row from other pages.
             long nextLink = incomplete.getNextLink();
 
-            doInitFromLink(nextLink, sharedCtx, coctx, pageMem, grpId, readCacheId, rowData, incomplete);
+            if (nextLink != 0L)
+                doInitFromLink(nextLink, sharedCtx, coctx, pageMem, grpId, readCacheId, rowData, incomplete);
         }
     }
 
