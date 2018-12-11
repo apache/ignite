@@ -120,7 +120,6 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
      * @return size of statement cache.
      */
     private static int getStatementCacheSize(GridQueryProcessor qryProcessor) {
-
         IgniteH2Indexing h2Idx = (IgniteH2Indexing)qryProcessor.getIndexing();
 
         ConcurrentMap<Thread, ConcurrentMap<Connection, H2ConnectionWrapper>> conns = h2Idx.connections().connectionsForThread();

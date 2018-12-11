@@ -106,8 +106,6 @@ public class H2ConnectionWrapper implements AutoCloseable {
      * @return Statement cache corresponding to connection.
      */
     public H2StatementCache statementCache() {
-        statementCache.updateLastUsage();
-
         return statementCache;
     }
 

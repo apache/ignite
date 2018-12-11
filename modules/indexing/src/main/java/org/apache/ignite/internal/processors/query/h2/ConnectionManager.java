@@ -226,6 +226,8 @@ public class ConnectionManager {
     public H2StatementCache statementCacheForThread() {
         H2StatementCache statementCache = connCache.get().object().statementCache();
 
+        statementCache.updateLastUsage();
+
         return statementCache;
     }
 
@@ -493,7 +495,7 @@ public class ConnectionManager {
      * Called periodically to clean up the statement cache.
      */
     private void cleanupStatements() {
-        long now = U.currentTimeMillis();
+        final long now = U.currentTimeMillis();
 
         threadConns.values().forEach(map -> map.values().forEach(connWrp -> {
             if (now - connWrp.statementCache().lastUsage() > stmtTimeout)
