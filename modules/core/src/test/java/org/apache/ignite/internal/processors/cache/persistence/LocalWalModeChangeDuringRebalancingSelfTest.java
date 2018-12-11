@@ -157,12 +157,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         cfg.setConsistentId(igniteInstanceName);
 
-        System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING,
-            Boolean.toString(disableWalDuringRebalancing));
-
-        System.setProperty(IgniteSystemProperties.IGNITE_PENDING_TX_TRACKER_ENABLED,
-            Boolean.toString(enablePendingTxTracker));
-
         return cfg;
     }
 
@@ -171,6 +165,12 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         super.beforeTestsStarted();
 
         cleanPersistenceDir();
+
+        System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING,
+            Boolean.toString(disableWalDuringRebalancing));
+
+        System.setProperty(IgniteSystemProperties.IGNITE_PENDING_TX_TRACKER_ENABLED,
+            Boolean.toString(enablePendingTxTracker));
     }
 
     /** {@inheritDoc} */
