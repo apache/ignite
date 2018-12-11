@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processor.security.client;
 
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientAuthorizationException;
@@ -36,6 +34,7 @@ import org.apache.ignite.internal.processor.security.TestSecurityData;
 import org.apache.ignite.internal.processor.security.TestSecurityPluginConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 
+import static java.util.Collections.singletonMap;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
@@ -154,11 +153,8 @@ public class ThinClientSecurityTest extends AbstractSecurityTest {
         executeOperation(CLIENT, c -> c.cache(CACHE).put("key", "value"));
         executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).put("key", "value"));
 
-        Map<String, String> map = new HashMap<>();
-
-        map.put("key", "value");
-        executeOperation(CLIENT, c -> c.cache(CACHE).putAll(map));
-        executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).putAll(map));
+        executeOperation(CLIENT, c -> c.cache(CACHE).putAll(singletonMap("key", "value")));
+        executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).putAll(singletonMap("key", "value")));
 
         executeOperation(CLIENT, c -> c.cache(CACHE).get("key"));
         executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).get("key"));

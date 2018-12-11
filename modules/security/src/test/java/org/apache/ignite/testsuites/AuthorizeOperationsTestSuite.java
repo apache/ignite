@@ -22,6 +22,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processor.security.cache.ClientNodeCachePermissionsTest;
 import org.apache.ignite.internal.processor.security.cache.EntryProcessorSecurityTest;
 import org.apache.ignite.internal.processor.security.cache.ServerNodeCachePermissionsTest;
+import org.apache.ignite.internal.processor.security.datastreamer.ClientNodeDataStreamerCachePermissionTest;
 import org.apache.ignite.internal.processor.security.datastreamer.IgniteDataStreamerSecurityTest;
 import org.apache.ignite.internal.processor.security.cache.LoadCacheSecurityTest;
 import org.apache.ignite.internal.processor.security.cache.ScanQuerySecurityTest;
@@ -29,6 +30,7 @@ import org.apache.ignite.internal.processor.security.client.ThinClientSecurityTe
 import org.apache.ignite.internal.processor.security.compute.ComputeTaskSecurityTest;
 import org.apache.ignite.internal.processor.security.compute.DistributedClosureSecurityTest;
 import org.apache.ignite.internal.processor.security.compute.ExecuteServiceTaskSecurityTest;
+import org.apache.ignite.internal.processor.security.datastreamer.ServerNodeDataStreamerCachePermissionTest;
 import org.apache.ignite.internal.processor.security.messaging.IgniteMessagingTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -62,6 +64,8 @@ public class AuthorizeOperationsTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgniteMessagingTest.class));
         suite.addTest(new TestSuite(ClientNodeCachePermissionsTest.class));
         suite.addTest(new TestSuite(ServerNodeCachePermissionsTest.class));
+        suite.addTest(new TestSuite(ClientNodeDataStreamerCachePermissionTest.class));
+        suite.addTest(new TestSuite(ServerNodeDataStreamerCachePermissionTest.class));
 
         return suite;
     }
