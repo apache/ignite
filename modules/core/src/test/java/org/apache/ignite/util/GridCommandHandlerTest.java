@@ -102,6 +102,7 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionState;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
@@ -1097,6 +1098,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://ggsystems.atlassian.net/browse/GG-18828")
     public void testCacheIdleVerifyNodeFilter() throws Exception {
         IgniteEx ignite = startGrids(3);
 
