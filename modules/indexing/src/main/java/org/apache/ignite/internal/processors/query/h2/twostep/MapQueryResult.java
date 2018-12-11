@@ -139,6 +139,10 @@ class MapQueryResult {
 
             rowCnt = (res instanceof LazyResult) ? -1 : res.getRowCount();
             cols = res.getVisibleColumnCount();
+
+            // Detach connection while result set is alive.
+            // The session must be available from other thread to lock on session when concurrent cancel is happen.
+            detachedConn = h2.connections().detachThreadConnection();
         }
         else {
             this.rs = null;

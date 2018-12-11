@@ -1293,11 +1293,6 @@ public class GridMapQueryExecutor {
                 qr.close();
             }
         }
-        else {
-            // Detach connection if the result set greater than one page.
-            if (!res.isConnectionDetached())
-                res.detachedConnection(h2.connections().detachThreadConnection());
-        }
 
         boolean loc = node.isLocal();
 
