@@ -634,7 +634,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
     /**
      * A batch of rows
      */
-    public static class Batch {
+    private static class Batch {
         /** Node ID. */
         @GridToStringExclude
         private final ClusterNode node;
