@@ -603,17 +603,18 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
 
         assert res != null;
 
-        if (res.result().invokeResult()) {
-            if(this.res == null)
-                RES_UPD.compareAndSet(this, null, new GridCacheReturn(true, true));
+        if(this.res == null)
+            RES_UPD.compareAndSet(this, null, new GridCacheReturn(true, true));
 
-            if (err != null && res.result().success())
+        if (res.result().invokeResult())
+            this.res.mergeEntryProcessResults(res.result());
+        else {
+            if (this.res.success() && !res.result().success())
                 this.res.success(false);
 
-            this.res.mergeEntryProcessResults(res.result());
+            if (needRes) // Single getAnd*update* operation. (not putAll)
+                this.res = res.result();
         }
-        else
-            this.res = res.result();
 
         assert this.res != null && (this.res.emptyResult() || needRes || this.res.invokeResult() || !this.res.success());
 
