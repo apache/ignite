@@ -33,6 +33,9 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -40,6 +43,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteDbPutGetWithCacheStoreTest extends GridCommonAbstractTest {
     /** */
     private static Map<Object, Object> storeMap = new ConcurrentHashMap<>();
@@ -101,6 +105,7 @@ public class IgniteDbPutGetWithCacheStoreTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWriteThrough() throws Exception {
         checkWriteThrough(ATOMIC);
         checkWriteThrough(TRANSACTIONAL);
@@ -109,6 +114,7 @@ public class IgniteDbPutGetWithCacheStoreTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testReadThrough() throws Exception {
         checkReadThrough(ATOMIC);
         checkReadThrough(TRANSACTIONAL);

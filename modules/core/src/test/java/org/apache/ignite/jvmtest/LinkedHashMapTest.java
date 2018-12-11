@@ -21,12 +21,17 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import junit.framework.TestCase;
 import org.apache.ignite.internal.util.typedef.X;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link LinkedHashMap}.
  */
+@RunWith(JUnit4.class)
 public class LinkedHashMapTest extends TestCase {
     /** @throws Exception If failed. */
+    @Test
     public void testAccessOrder1() throws Exception {
         X.println(">>> testAccessOrder1 <<<");
 
@@ -52,6 +57,7 @@ public class LinkedHashMapTest extends TestCase {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAccessOrder2() throws Exception {
         X.println(">>> testAccessOrder2 <<<");
 
@@ -69,6 +75,7 @@ public class LinkedHashMapTest extends TestCase {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAccessOrder3() throws Exception {
         X.println(">>> testAccessOrder3 <<<");
 

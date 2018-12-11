@@ -23,15 +23,20 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaC
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * PureJavaCrc32 previous crc algo realization vs java.util.zip.crc32 test.
  */
+@RunWith(JUnit4.class)
 public class IgnitePureJavaCrcCompatibility extends TestCase {
     /**
      * Test crc algo equality results.
      * @throws Exception
      */
+    @Test
     public void testAlgoEqual() throws Exception {
         ByteBuffer buf = ByteBuffer.allocate(1024);
 

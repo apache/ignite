@@ -65,10 +65,14 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
@@ -146,6 +150,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWalTxSimple() throws Exception {
         Ignite ignite = startGrid();
 
@@ -221,6 +226,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWalRecoveryRemoves() throws Exception {
         Ignite ignite = startGrid();
 
@@ -309,6 +315,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testHistoricalRebalanceIterator() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
 
@@ -473,6 +480,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWalAfterPreloading() throws Exception {
         Ignite ignite = startGrid();
 
@@ -515,6 +523,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryRandomPutRemove() throws Exception {
         try {
             pageSize = 1024;
@@ -572,6 +581,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryNoPageLost1() throws Exception {
         recoveryNoPageLost(false);
     }
@@ -579,6 +589,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryNoPageLost2() throws Exception {
         recoveryNoPageLost(true);
     }
@@ -588,6 +599,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryNoPageLost3() throws Exception {
         try {
             pageSize = 1024;
@@ -723,6 +735,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFreeListRecovery() throws Exception {
         try {
             pageSize = 1024;

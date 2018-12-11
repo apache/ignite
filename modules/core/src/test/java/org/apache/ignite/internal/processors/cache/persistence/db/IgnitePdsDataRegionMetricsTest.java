@@ -51,6 +51,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
@@ -62,6 +65,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -128,6 +132,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testMemoryUsageSingleNode() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-10591");
@@ -174,6 +179,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testMemoryUsageMultipleNodes() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-10583");
@@ -228,6 +234,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckpointBufferSize() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -245,6 +252,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUsedCheckpointBuffer() throws Exception {
         IgniteEx ig = startGrid(0);
 

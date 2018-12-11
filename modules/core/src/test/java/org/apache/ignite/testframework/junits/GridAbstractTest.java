@@ -62,6 +62,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -170,9 +171,6 @@ public abstract class GridAbstractTest extends TestCase {
 
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
-
-    /** Show that test is currently running. */
-    public static volatile boolean testIsRunning = false;
 
     /** Supports obtaining test name for JUnit4 cases. */
     @Rule public transient TestName nameRule = new TestName();
@@ -1738,7 +1736,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Failure handler implementation.
      */
     protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new TestFailingFailureHandler();
+        return new NoOpFailureHandler();
     }
 
     /**
@@ -2114,8 +2112,6 @@ public abstract class GridAbstractTest extends TestCase {
 
         Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
             @Override public void run() {
-                testIsRunning = true;
-
                 try {
                     if (forceFailure)
                         fail("Forced failure: " + forceFailureMsg);
@@ -2126,8 +2122,6 @@ public abstract class GridAbstractTest extends TestCase {
                     IgniteClosure<Throwable, Throwable> hnd = errorHandler();
 
                     ex.set(hnd != null ? hnd.apply(e) : e);
-                } finally {
-                    testIsRunning = false;
                 }
             }
         });

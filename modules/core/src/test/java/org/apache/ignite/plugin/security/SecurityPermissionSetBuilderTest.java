@@ -25,6 +25,9 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_VIEW;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
@@ -43,10 +46,12 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 /**
  * Test for check correct work {@link SecurityPermissionSetBuilder permission builder}
  */
+@RunWith(JUnit4.class)
 public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
     /**
      */
     @SuppressWarnings({"ThrowableNotThrown"})
+    @Test
     public void testPermissionBuilder() {
         SecurityBasicPermissionSet exp = new SecurityBasicPermissionSet();
 

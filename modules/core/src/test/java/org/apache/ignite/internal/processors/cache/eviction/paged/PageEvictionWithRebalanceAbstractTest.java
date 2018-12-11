@@ -23,14 +23,19 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class PageEvictionWithRebalanceAbstractTest extends PageEvictionAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionWithRebalance() throws Exception {
         checkEvictionWithRebalance(CacheAtomicityMode.ATOMIC);
     }
@@ -38,6 +43,7 @@ public abstract class PageEvictionWithRebalanceAbstractTest extends PageEviction
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionWithRebalanceMvcc() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10448");
 

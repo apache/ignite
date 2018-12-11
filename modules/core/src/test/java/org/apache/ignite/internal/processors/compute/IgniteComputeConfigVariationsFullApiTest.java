@@ -50,11 +50,15 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Full API compute test.
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariationsAbstractTest {
     /** Max job count. */
     private static final int MAX_JOB_COUNT = 10;
@@ -177,6 +181,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExecuteTaskClass() throws Exception {
         runTest(jobFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -201,6 +206,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExecuteTaskClassAsync() throws Exception {
         runTest(jobFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -225,6 +231,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExecuteTask() throws Exception {
         runTest(jobFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -248,6 +255,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExecuteTaskAsync() throws Exception {
         runTest(jobFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -271,6 +279,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBroadcastClosure() throws Exception {
         runTest(closureFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -294,6 +303,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBroadcastClosureAsync() throws Exception {
         runTest(closureFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -317,6 +327,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBroadcastCallable() throws Exception {
         runTest(callableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -346,6 +357,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBroadcastCallableAsync() throws Exception {
         runTest(callableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -375,6 +387,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBroadcastRunnable() throws Exception {
         runTest(runnableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -389,6 +402,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBroadcastRunnableAsync() throws Exception {
         runTest(runnableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -405,6 +419,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRun() throws Exception {
         runTest(runnableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -427,6 +442,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRunAsync() throws Exception {
         runTest(runnableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -453,6 +469,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testApplyAsync() throws Exception {
         runTest(closureFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -480,6 +497,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testApply() throws Exception {
         runTest(closureFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -499,6 +517,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testApplyForCollection() throws Exception {
         runTest(closureFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -524,6 +543,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testApplyForCollectionAsync() throws Exception {
         runTest(closureFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -550,6 +570,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testApplyForCollectionWithReducer() throws Exception {
         runTest(closureFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -585,6 +606,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testApplyForCollectionWithReducerAsync() throws Exception {
         runTest(closureFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -620,6 +642,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCallAsync() throws Exception {
         runTest(callableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -648,6 +671,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCall() throws Exception {
         runTest(callableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -668,6 +692,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCallCollection() throws Exception {
         runTest(callableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -690,6 +715,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCallCollectionAsync() throws Exception {
         runTest(callableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -712,6 +738,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCallCollectionWithReducer() throws Exception {
         runTest(callableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -746,6 +773,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCallCollectionWithReducerAsync() throws Exception {
         runTest(callableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -780,6 +808,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityCall() throws Exception {
         runTest(callableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -806,6 +835,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityCallAsync() throws Exception {
         runTest(callableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -834,6 +864,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiCacheAffinityCall() throws Exception {
         runTest(callableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -861,6 +892,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiCacheAffinityCallAsync() throws Exception {
         runTest(callableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -890,6 +922,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiCacheByPartIdAffinityCall() throws Exception {
         runTest(callableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -917,6 +950,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiCacheByPartIdAffinityCallAsync() throws Exception {
         runTest(callableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -946,6 +980,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityRun() throws Exception {
         runTest(runnableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -965,6 +1000,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityRunAsync() throws Exception {
         runTest(runnableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -986,6 +1022,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiCacheAffinityRun() throws Exception {
         runTest(runnableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -1006,6 +1043,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiCacheAffinityRunAsync() throws Exception {
         runTest(runnableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -1028,6 +1066,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiCacheByPartIdAffinityRun() throws Exception {
         runTest(runnableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -1048,6 +1087,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiCacheByPartIdAffinityRunAsync() throws Exception {
         runTest(runnableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -1070,6 +1110,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployExecuteByName() throws Exception {
         runTest(jobFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -1127,7 +1168,8 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param ignite Ignite instance to use.
          * @throws Exception If failed.
          */
-        public void test(Factory factory, Ignite ignite) throws Exception;
+        @Test
+    public void test(Factory factory, Ignite ignite) throws Exception;
     }
 
     /**

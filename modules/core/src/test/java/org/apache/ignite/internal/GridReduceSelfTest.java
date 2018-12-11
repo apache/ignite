@@ -26,10 +26,14 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test reduce with long operations.
  */
+@RunWith(JUnit4.class)
 public class GridReduceSelfTest extends GridCommonAbstractTest {
     /** Number of nodes in the grid. */
     private static final int GRID_CNT = 3;
@@ -37,6 +41,7 @@ public class GridReduceSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReduce() throws Exception {
         startGrids(GRID_CNT);
 
@@ -79,6 +84,7 @@ public class GridReduceSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReduceAsync() throws Exception {
         startGrids(GRID_CNT);
 
