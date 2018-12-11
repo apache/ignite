@@ -844,8 +844,18 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
         if (topVer != null) {
             for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()) {
-                if (fut.isDone() && fut.exchangeDone() && fut.topologyVersion().equals(topVer)){
-                    Throwable err = fut.validateCache(cctx, recovery, read, null, keys);
+                if (fut.exchangeDone() && fut.topologyVersion().equals(topVer)){
+                    Throwable err = null;
+
+                    // Before cache validation, make sure that this topology future is already completed.
+                    try {
+                        fut.get();
+                    }
+                    catch (IgniteCheckedException e) {
+                        err = fut.error();
+                    }
+
+                    err = (err == null)? fut.validateCache(cctx, recovery, read, null, keys): err;
 
                     if (err != null) {
                         onDone(err);

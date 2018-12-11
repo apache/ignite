@@ -1723,9 +1723,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param completionCb Completion callback.
      */
     private void updateAllAsyncInternal0(
-        ClusterNode node,
-        GridNearAtomicAbstractUpdateRequest req,
-        UpdateReplyClosure completionCb
+        final ClusterNode node,
+        final GridNearAtomicAbstractUpdateRequest req,
+        final UpdateReplyClosure completionCb
     ) {
         GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(),
             node.id(),
@@ -1795,9 +1795,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                         for (int i = 0; i < futs.size(); ++i) {
                                             GridDhtPartitionsExchangeFuture fut = futs.get(i);
 
-                                            if (fut.isDone() && fut.exchangeDone() &&
-                                                fut.topologyVersion().equals(req.topologyVersion())) {
+                                            if (fut.topologyVersion().equals(req.topologyVersion())) {
                                                 topFut = fut;
+
+                                                if (!topFut.isDone()) {
+                                                    topFut.listen(f -> updateAllAsyncInternal0(node, req, completionCb));
+
+                                                    return;
+                                                }
 
                                                 break;
                                             }
