@@ -32,14 +32,19 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class NetworkFailureTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNetworkFailure() throws Exception {
         final AtomicBoolean done = new AtomicBoolean();
 
@@ -141,6 +146,7 @@ public class NetworkFailureTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadTimeout() throws Exception {
         final InetAddress addr = InetAddress.getByName("192.168.3.10");
 
@@ -223,6 +229,7 @@ public class NetworkFailureTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSocketCloseOnTimeout() throws Exception {
         final AtomicBoolean done = new AtomicBoolean();
 
@@ -323,6 +330,7 @@ public class NetworkFailureTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionTime() throws Exception {
         X.println("Unexistent host.");
         checkConnection(InetAddress.getByName("192.168.0.222"));

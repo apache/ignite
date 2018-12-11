@@ -23,8 +23,12 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /** Tests equal paths to WAL storage and WAL archive. */
+@RunWith(JUnit4.class)
 public class WalPathsTest extends GridCommonAbstractTest {
     /** WalPath and WalArchivePath. */
     private File walDir;
@@ -67,6 +71,7 @@ public class WalPathsTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testWalStoreAndArchivePathsEquality() throws Exception {
         IgniteConfiguration cfg = getConfig(false);
 
@@ -78,6 +83,7 @@ public class WalPathsTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testWalStoreAndArchiveAbsolutAndRelativePathsEquality() throws Exception {
         final IgniteConfiguration cfg = getConfig(true);
 

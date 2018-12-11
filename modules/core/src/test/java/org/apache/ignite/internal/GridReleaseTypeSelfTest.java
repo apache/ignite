@@ -27,10 +27,14 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test grids starting with non compatible release types.
  */
+@RunWith(JUnit4.class)
 public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -74,6 +78,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOsEditionDoesNotSupportRollingUpdates() throws Exception {
         nodeVer = "1.0.0";
 
@@ -101,6 +106,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOsEditionDoesNotSupportRollingUpdatesClientMode() throws Exception {
         nodeVer = "1.0.0";
 

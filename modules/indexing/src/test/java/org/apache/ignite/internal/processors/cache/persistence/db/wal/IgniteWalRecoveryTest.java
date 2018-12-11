@@ -246,11 +246,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * @throws Exception if failed.
      */

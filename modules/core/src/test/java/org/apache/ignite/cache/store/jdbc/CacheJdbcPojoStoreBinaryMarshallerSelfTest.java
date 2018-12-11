@@ -19,10 +19,14 @@ package org.apache.ignite.cache.store.jdbc;
 
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link CacheJdbcPojoStore} with binary marshaller.
  */
+@RunWith(JUnit4.class)
 public class CacheJdbcPojoStoreBinaryMarshallerSelfTest extends CacheJdbcPojoStoreAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected Marshaller marshaller(){
@@ -32,6 +36,7 @@ public class CacheJdbcPojoStoreBinaryMarshallerSelfTest extends CacheJdbcPojoSto
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheNoKeyClasses() throws Exception {
         startTestGrid(false, true, false, false, 512);
 
@@ -41,6 +46,7 @@ public class CacheJdbcPojoStoreBinaryMarshallerSelfTest extends CacheJdbcPojoSto
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheNoKeyClassesTx() throws Exception {
         startTestGrid(false, true, false, true, 512);
 
@@ -50,6 +56,7 @@ public class CacheJdbcPojoStoreBinaryMarshallerSelfTest extends CacheJdbcPojoSto
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheNoValueClasses() throws Exception {
         startTestGrid(false, false, true, false, 512);
 
@@ -59,6 +66,7 @@ public class CacheJdbcPojoStoreBinaryMarshallerSelfTest extends CacheJdbcPojoSto
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheNoValueClassesTx() throws Exception {
         startTestGrid(false, false, true, true, 512);
 
@@ -68,6 +76,7 @@ public class CacheJdbcPojoStoreBinaryMarshallerSelfTest extends CacheJdbcPojoSto
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheNoKeyAndValueClasses() throws Exception {
         startTestGrid(false, true, true, false, 512);
 
@@ -77,6 +86,7 @@ public class CacheJdbcPojoStoreBinaryMarshallerSelfTest extends CacheJdbcPojoSto
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheNoKeyAndValueClassesTx() throws Exception {
         startTestGrid(false, true, true, true, 512);
 
