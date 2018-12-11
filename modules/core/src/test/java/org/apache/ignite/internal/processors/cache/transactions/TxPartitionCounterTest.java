@@ -2,6 +2,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgniteUuid;
@@ -18,6 +19,8 @@ public class TxPartitionCounterTest extends TxSinglePartitionAbstractTest {
 
         Map<IgniteUuid, GridFutureAdapter<?>> futs = new ConcurrentHashMap<>();
 
+        AtomicInteger cnt = new AtomicInteger();
+
         runOnPartition(0, 2, 3, new TxCallback() {
             @Override public boolean onBeforePrimaryPrepare(IgniteEx node, IgniteUuid ver,
                 GridFutureAdapter<?> proceedFut) {
@@ -27,8 +30,9 @@ public class TxPartitionCounterTest extends TxSinglePartitionAbstractTest {
 
                         // Order prepares.
                         if (futs.size() == 3) {
-                            GridFutureAdapter<?> fut = futs.get(txMap.get(2));
-                            fut.onDone();
+                            int idx = cnt.getAndIncrement();
+
+                            futs.remove(txMap.get(idx)).onDone();
                         }
                     }
                 });
@@ -41,12 +45,9 @@ public class TxPartitionCounterTest extends TxSinglePartitionAbstractTest {
 
                 runAsync(new Runnable() {
                     @Override public void run() {
-                        int size = futs.size();
+                        int idx = cnt.getAndIncrement();
 
-                        assertEquals(txMap.get(size - 1), tx.nearXidVersion().asGridUuid());
-                        futs.remove(txMap.get(size - 1));
-                        if (size - 2 >= 0)
-                            futs.get(txMap.get(size - 2)).onDone();
+                        futs.remove(txMap.get(idx)).onDone();
                     }
                 });
 
