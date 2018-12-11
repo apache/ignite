@@ -218,7 +218,7 @@ public abstract class GridAbstractTest extends TestCase {
      * Shared static IP finder. Will be used in configuration at nodes startup <b>for all test methods in class</b> if
      * {@link #useMulticastIpFinder()} is {@code false} (by default).
      */
-    protected final transient TcpDiscoveryIpFinder sharedStaticIpFinder;
+    protected static TcpDiscoveryIpFinder sharedStaticIpFinder;
 
     /**
      *
@@ -268,7 +268,6 @@ public abstract class GridAbstractTest extends TestCase {
         log = new GridTestLog4jLogger();
 
         this.startGrid = startGrid;
-        this.sharedStaticIpFinder = new TcpDiscoveryVmIpFinder(true);
     }
 
     /** {@inheritDoc} */
@@ -627,6 +626,8 @@ public abstract class GridAbstractTest extends TestCase {
         }
 
         if (isFirstTest()) {
+            sharedStaticIpFinder = new TcpDiscoveryVmIpFinder(true);
+
             info(">>> Starting test class: " + testClassDescription() + " <<<");
 
             if (isSafeTopology())
@@ -1702,8 +1703,11 @@ public abstract class GridAbstractTest extends TestCase {
         cfg.setMetricsUpdateFrequency(1000);
 
         if (!isMultiJvm()) {
-            if (!useMulticastIpFinder())
+            if (!useMulticastIpFinder()) {
+                assert sharedStaticIpFinder != null : "Shared static IP finder should be initialized at this point.";
+
                 discoSpi.setIpFinder(sharedStaticIpFinder);
+            }
             else {
                 TcpDiscoveryMulticastIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
 

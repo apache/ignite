@@ -143,11 +143,6 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected boolean useMulticastIpFinder() {
-        return true;
-    }
-
     /**
      * @return Marshaller.
      */
