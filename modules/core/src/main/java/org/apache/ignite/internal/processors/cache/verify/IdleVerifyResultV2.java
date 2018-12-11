@@ -70,6 +70,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     public IdleVerifyResultV2() {
     }
 
+    /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
         return V2;
     }
@@ -189,7 +190,6 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
                 printer.accept("Exception message:" + "\n");
                 printer.accept(e.getValue().getMessage() + "\n");
             }
-
         }
     }
 

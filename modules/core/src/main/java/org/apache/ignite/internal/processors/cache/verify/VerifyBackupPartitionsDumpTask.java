@@ -121,8 +121,9 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
         return writeHashes(partitions, delegate.reduce(results), skippedRecords);
     }
 
-    @Override
-    public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteException {
+    /** {@inheritDoc} */
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws
+        IgniteException {
         ComputeJobResultPolicy superRes = super.result(res, rcvd);
 
         // Deny failover.
