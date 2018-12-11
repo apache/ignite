@@ -332,10 +332,6 @@ public class IgniteNode implements BenchmarkServer {
 
             Collections.sort(toDisplay);
 
-            if(!adrList.isEmpty() && adrList.get(0).contains("127.0.0.1"))
-                BenchmarkUtils.println("WARNING! Host list from SERVER_HOSTS property does not contain any " +
-                    "'127.0.0.1' or 'localhost' addresses.");
-
             BenchmarkUtils.println("Setting SERVER_HOSTS addresses for IpFinder configuration.");
 
             BenchmarkUtils.println(String.format("Replacing list: \n %s \n to list: \n %s",
