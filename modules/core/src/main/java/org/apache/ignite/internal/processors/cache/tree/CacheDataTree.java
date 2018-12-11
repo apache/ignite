@@ -48,6 +48,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.MVCC_INFO_SIZE;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
 import static org.apache.ignite.internal.util.GridArrays.clearTail;
 
 /**
@@ -181,14 +182,12 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                         long pageAddr = ((PageMemoryEx)pageMem).readLock(page, pageId, true, false);
 
                         try {
-                            PageIO io = PageIO.getPageIO(pageAddr);
-
-                            if (!(io instanceof DataPageIO))
+                            if (PageIO.getType(pageAddr) != T_DATA)
                                 continue;
 
-                            DataPageIO iox = (DataPageIO)io;
+                            DataPageIO io = PageIO.getPageIO(T_DATA, PageIO.getVersion(pageAddr));
 
-                            int rowsCnt = iox.getRowsCount(pageAddr);
+                            int rowsCnt = io.getRowsCount(pageAddr);
 
                             if (rowsCnt == 0)
                                 continue;
@@ -200,7 +199,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
                             for (int i = 0; i < rowsCnt; i++) {
                                 DataRow row = grp.mvccEnabled() ? new MvccDataRow() : new DataRow();
-                                row.initFromDataPage(iox, pageAddr, i, grp, shared, pageMem, rowData);
+                                row.initFromDataPage(io, pageAddr, i, grp, shared, pageMem, rowData);
                                 rows[i] = row;
                             }
 
