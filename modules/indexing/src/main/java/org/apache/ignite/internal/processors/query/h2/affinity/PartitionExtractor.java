@@ -20,6 +20,9 @@ package org.apache.ignite.internal.processors.query.h2.affinity;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinCondition;
+import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinGroup;
+import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinModel;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
@@ -27,6 +30,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlJoin;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperation;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlParameter;
@@ -38,8 +42,11 @@ import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
@@ -72,6 +79,8 @@ public class PartitionExtractor {
             return null;
 
         GridSqlSelect select = (GridSqlSelect)qry;
+
+        prepareJoinModel(select.from(), select.where());
 
         // Currently we can extract data only from a single table.
         GridSqlTable tbl = unwrapTable(select.from());
@@ -144,12 +153,81 @@ public class PartitionExtractor {
     }
 
     /**
+     * Prepare join model.
+     *
+     * @param from FROM clause.
+     * @param where WHERE clause.
+     * @return Join model.
+     */
+    private PartitionJoinModel prepareJoinModel(GridSqlAst from, GridSqlAst where) {
+        Map<String, PartitionJoinGroup> grps = new HashMap<>();
+        Collection<PartitionJoinCondition> conds = new HashSet<>();
+
+        prepareJoinModelTables(from, grps, conds);
+
+        // TODO
+        return null;
+    }
+
+    /**
+     * Prepare tables which will be used in join model.
+     *
+     * @param from From flag.
+     * @param grps Groups.
+     * @param conds Conditions.
+     * @return {@code True} if extracted tables successfully, {@code false} if failed to extract.
+     */
+    private boolean prepareJoinModelTables(
+        GridSqlAst from,
+        Map<String, PartitionJoinGroup> grps,
+        Collection<PartitionJoinCondition> conds
+    ) {
+        if (from instanceof GridSqlJoin) {
+            // Process JOIN recursively.
+            GridSqlJoin join = (GridSqlJoin)from;
+
+            if (!prepareJoinModelTables(join.leftTable(), grps, conds))
+                return false;
+
+            if (!prepareJoinModelTables(join.rightTable(), grps, conds))
+                return false;
+
+            // Make sure that ON condition is simple equality. Stop process otherwise.
+            GridSqlElement on = join.on();
+
+            boolean onSimple = false;
+
+            if (on instanceof GridSqlOperation) {
+                GridSqlOperation on0 = (GridSqlOperation)on;
+
+                if (on0.operationType() == GridSqlOperationType.EQUAL) {
+                    GridSqlColumn left = unwrapColumn(on0.child(0));
+                    GridSqlColumn right = unwrapColumn(on0.child(1));
+
+                    // TODO
+                    System.out.println(left + " " + right);
+                }
+            }
+        }
+
+        String alias = null;
+
+        if (from instanceof GridSqlAlias) {
+            alias = ((GridSqlAlias)from).alias();
+
+            from = from.child();
+        }
+
+        return true;
+    }
+
+    /**
      * Try unwrapping the table.
      *
      * @param from From.
      * @return Table or {@code null} if not a table.
      */
-   @Nullable private static GridSqlTable unwrapTable(GridSqlAst from) {
+    @Nullable private static GridSqlTable unwrapTable(GridSqlAst from) {
         if (from instanceof GridSqlAlias)
             from = from.child();
 
@@ -240,11 +318,9 @@ public class PartitionExtractor {
         // Left operand should be column.
         GridSqlAst left = op.child();
 
-        GridSqlColumn leftCol;
+        GridSqlColumn leftCol = unwrapColumn(left);
 
-        if (left instanceof GridSqlColumn)
-            leftCol = (GridSqlColumn)left;
-        else
+        if (leftCol == null)
             return PartitionAllNode.INSTANCE;
 
         // Can work only with Ignite tables.
@@ -273,7 +349,7 @@ public class PartitionExtractor {
                 // set globally. Hence, returning null.
                 return PartitionAllNode.INSTANCE;
 
-            // Do extract.
+            // Extract.
             PartitionSingleNode part = extractSingle(leftCol.column(), rightConst, rightParam);
 
             // Same thing as above: single unknown partition in disjunction defeats optimization.
@@ -298,11 +374,9 @@ public class PartitionExtractor {
         GridSqlElement left = op.child(0);
         GridSqlElement right = op.child(1);
 
-        GridSqlColumn leftCol;
+        GridSqlColumn leftCol = unwrapColumn(left);
 
-        if (left instanceof GridSqlColumn)
-            leftCol = (GridSqlColumn)left;
-        else
+        if (leftCol == null)
             return PartitionAllNode.INSTANCE;
 
         if (!(leftCol.column().getTable() instanceof GridH2Table))
@@ -393,5 +467,18 @@ public class PartitionExtractor {
      */
     private static PartitionTableDescriptor descriptor(GridH2Table tbl) {
         return new PartitionTableDescriptor(tbl.cacheName(), tbl.getName());
+    }
+
+    /**
+     * Unwrap column if possible.
+     *
+     * @param ast AST.
+     * @return Column or {@code null} if not a column.
+     */
+    @Nullable private static GridSqlColumn unwrapColumn(GridSqlAst ast) {
+        if (ast instanceof GridSqlAlias)
+            ast = ast.child();
+
+        return ast instanceof GridSqlColumn ? (GridSqlColumn)ast : null;
     }
 }
