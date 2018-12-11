@@ -756,7 +756,7 @@ public class ZookeeperDiscoveryImpl {
                 internalLsnr.beforeJoin(locNode, log);
 
             if (locNode.isClient() && reconnect)
-                locNode.setAttributes(spi.getSpiContext().nodeAttributes());
+                locNode.setAttributes(spi.getLocNodeAttrs());
 
             marshalCredentialsOnJoin(locNode);
 
