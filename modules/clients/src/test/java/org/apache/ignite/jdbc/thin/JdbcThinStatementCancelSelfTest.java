@@ -419,6 +419,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
                     }
                 }
             });
+
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     // Execute long running query
@@ -432,6 +433,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
                     return null;
                 }
             }, java.sql.SQLException.class, "The query was cancelled while executing");
+
             assert rs.next() : "The other cursor mustn't be closed";
         }
     }

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import java.io.Closeable;
 import java.io.IOException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteIllegalStateException;
@@ -73,15 +72,12 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchR
  * {@link JdbcBulkLoadBatchRequest#CMD_FINISHED_ERROR} and the processing
  * is aborted on the both sides.
  */
-public class JdbcBulkLoadProcessor implements Closeable {
+public class JdbcBulkLoadProcessor extends JdbcCursor {
     /** A core processor that handles incoming data packets. */
     private final BulkLoadProcessor processor;
 
     /** Next batch index (for a very simple check that all batches were delivered to us). */
     protected long nextBatchIdx;
-
-    /** Id of the request that created given processor. */
-    private long reqId;
 
     /**
      * Creates a JDBC-specific adapter for bulk load processor.
@@ -90,9 +86,9 @@ public class JdbcBulkLoadProcessor implements Closeable {
      * @param reqId Id of the request that created given processor.
      */
     public JdbcBulkLoadProcessor(BulkLoadProcessor processor, long reqId) {
+        super(reqId);
         this.processor = processor;
         nextBatchIdx = 0;
-        this.reqId = reqId;
     }
 
     /**
@@ -151,12 +147,5 @@ public class JdbcBulkLoadProcessor implements Closeable {
      */
     public long updateCnt() {
         return processor.outputStreamer().updateCnt();
-    }
-
-    /**
-     * @return Id of the request that created given processor.
-     */
-    public long requestId() {
-        return reqId;
     }
 }

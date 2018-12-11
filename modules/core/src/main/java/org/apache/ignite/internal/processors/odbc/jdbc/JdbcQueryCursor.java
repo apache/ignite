@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import java.io.Closeable;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -28,10 +27,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 /**
  * SQL listener query fetch result.
  */
-class JdbcQueryCursor implements Closeable {
-    /** Cursor ID. */
-    private final long cursorId;
-
+class JdbcQueryCursor extends JdbcCursor {
     /** Fetch size. */
     private int pageSize;
 
@@ -47,22 +43,17 @@ class JdbcQueryCursor implements Closeable {
     /** Query results iterator. */
     private Iterator<List<Object>> iter;
 
-    /** Id of the request that created given cursor. */
-    private long reqId;
-
     /**
-     * @param cursorId Cursor ID.
      * @param pageSize Fetch size.
      * @param maxRows Max rows.
      * @param cur Query cursor.
      * @param reqId Id of the request that created given cursor.
      */
-    JdbcQueryCursor(long cursorId, int pageSize, int maxRows, QueryCursorImpl<List<Object>> cur, long reqId) {
-        this.cursorId = cursorId;
+    JdbcQueryCursor(int pageSize, int maxRows, QueryCursorImpl<List<Object>> cur, long reqId) {
+        super(reqId);
         this.pageSize = pageSize;
         this.maxRows = maxRows;
         this.cur = cur;
-        this.reqId = reqId;
     }
 
     /**
@@ -125,13 +116,6 @@ class JdbcQueryCursor implements Closeable {
     }
 
     /**
-     * @return Cursor ID.
-     */
-    public long cursorId() {
-        return cursorId;
-    }
-
-    /**
      * Close the cursor.
      */
     @Override public void close() {
@@ -151,12 +135,5 @@ class JdbcQueryCursor implements Closeable {
      */
     public boolean isQuery() {
         return cur.isQuery();
-    }
-
-    /**
-     * @return Id of the request that created given cursor.
-     */
-    public long requestId() {
-        return reqId;
     }
 }

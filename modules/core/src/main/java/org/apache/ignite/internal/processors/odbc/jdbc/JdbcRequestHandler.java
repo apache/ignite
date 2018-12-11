@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import java.io.Closeable;
 import java.sql.BatchUpdateException;
 import java.sql.ParameterMetaData;
 import java.sql.Statement;
@@ -33,7 +32,6 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -98,12 +96,6 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_ME
  * JDBC request handler.
  */
 public class JdbcRequestHandler implements ClientListenerRequestHandler {
-    /** Query ID sequence. */
-    private static final AtomicLong CURSOR_ID_GEN = new AtomicLong();
-
-    /** Empty list stub. */
-    private static final List<Closeable> EMPTY_CURSORS = Collections.emptyList();
-
     /** Kernel context. */
     private final GridKernalContext ctx;
 
@@ -122,11 +114,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Maximum allowed cursors. */
     private final int maxCursors;
 
-    /** Current queries cursors. */
-    private final ConcurrentHashMap<Long, JdbcQueryCursor> qryCursors = new ConcurrentHashMap<>();
-
-    /** Current bulk load processors. */
-    private final ConcurrentHashMap<Long, JdbcBulkLoadProcessor> bulkLoadRequests = new ConcurrentHashMap<>();
+    /** Current Jdbc cursors. */
+    private final ConcurrentHashMap<Long, JdbcCursor> jdbcCursors = new ConcurrentHashMap<>();
 
     /** Ordered batches queue. */
     private final PriorityQueue<JdbcOrderedBatchExecuteRequest> orderedBatchesQueue = new PriorityQueue<>();
@@ -152,11 +141,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Authentication context */
     private AuthorizationContext actx;
 
-    /** Mapping query to cursors using corresponding IDs. */
-    // TODO: Need to review how we use it: duplication
-    private Map<Long, List<Closeable>> requestToCursorMapping = new HashMap<>();
-
-    private AtomicLong c = new AtomicLong(0);
+    /** Register that keeps non-cancelled requests. */
+    private Set<Long> requestRegister = ConcurrentHashMap.newKeySet();
 
     /**
      * Constructor.
@@ -240,34 +226,15 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public ClientListenerResponse handleSynchronously(ClientListenerRequest req0) {
-        assert req0 != null;
-
-        assert req0 instanceof JdbcRequest;
-
-        JdbcRequest req = (JdbcRequest)req0;
-
-        return doHandle(req);
-    }
-
-    /** {@inheritDoc} */
     @Override public void registerRequest(long reqId) {
-        synchronized (cancellationProcessingMux) {
-            if (reqId != 0)
-                requestToCursorMapping.put(reqId, EMPTY_CURSORS);
-        }
+        if (reqId != 0)
+            requestRegister.add(reqId);
     }
 
     /** {@inheritDoc} */
     @Override public void unregisterRequest(long reqId) {
-        synchronized (cancellationProcessingMux) {
-            if (reqId != 0) {
-                List<Closeable> cursors = requestToCursorMapping.get(reqId);
-
-                if (cursors == null || cursors.isEmpty())
-                    requestToCursorMapping.remove(reqId);
-            }
-        }
+        if (reqId != 0)
+            requestRegister.remove(reqId);
     }
 
     /**
@@ -292,7 +259,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             AuthorizationContext.context(actx);
 
         try {
-            if (req.type() != QRY_CANCEL && !requestToCursorMapping.containsKey(req.requestId()))
+            if (req.type() != QRY_CANCEL && !requestRegister.contains(req.requestId()))
                 return exceptionToResult(new QueryCancelledException(), req.requestId());
 
             switch (req.type()) {
@@ -406,7 +373,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Response to send to the client.
      */
     private ClientListenerResponse processBulkLoadFileBatch(JdbcBulkLoadBatchRequest req) {
-        JdbcBulkLoadProcessor processor = bulkLoadRequests.get(req.cursorId());
+        JdbcBulkLoadProcessor processor = (JdbcBulkLoadProcessor) jdbcCursors.get(req.cursorId());
 
         if (ctx == null)
             return new JdbcResponse(IgniteQueryErrorCode.UNEXPECTED_OPERATION, "Unknown query ID: "
@@ -418,9 +385,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             switch (req.cmd()) {
                 case CMD_FINISHED_ERROR:
                 case CMD_FINISHED_EOF:
-                    JdbcBulkLoadProcessor removedProcessor = bulkLoadRequests.remove(req.cursorId());
+                    JdbcCursor removedProcessor = jdbcCursors.remove(req.cursorId());
 
-                    cleanupRequestToCursorMapping(removedProcessor);
+                    unregisterRequest(removedProcessor.cursorId());
 
                     processor.close();
 
@@ -476,24 +443,12 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             }
         }
 
-        for (JdbcQueryCursor cursor : qryCursors.values())
-            cursor.close();
+        for (JdbcCursor cursor : jdbcCursors.values())
+            U.close(cursor, log);
 
-        for (JdbcBulkLoadProcessor processor : bulkLoadRequests.values()) {
-            try {
-                processor.close();
-            }
-            catch (Exception e) {
-                U.error(null, "Error closing JDBC bulk load processor.", e);
-            }
-        }
+        jdbcCursors.clear();
 
-        bulkLoadRequests.clear();
-
-        // TODO: Either mutex or change to CHM
-        requestToCursorMapping.values().forEach(lst -> lst.forEach(c -> U.close(c, log)));
-
-        requestToCursorMapping.clear();
+        requestRegister.clear();
 
         U.close(cliCtx, log);
     }
@@ -506,7 +461,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     @SuppressWarnings("unchecked")
     private JdbcResponse executeQuery(JdbcQueryExecuteRequest req) {
-        int cursorCnt = qryCursors.size();
+        int cursorCnt = jdbcCursors.size();
 
         if (maxCursors > 0 && cursorCnt >= maxCursors)
             return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Too many open cursors (either close other " +
@@ -514,9 +469,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 "ClientConnectorConfiguration.maxOpenCursorsPerConnection) [maximum=" + maxCursors +
                 ", current=" + cursorCnt + ']', req.requestId());
 
-        long cursorId = CURSOR_ID_GEN.getAndIncrement();
-
         assert !cliCtx.isStream();
+
+        Set<Long> currQueryCursorIds = new HashSet<>();
 
         try {
             String sql = req.sqlQuery();
@@ -566,7 +521,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             qry.setSchema(schemaName);
 
-            // TODO: Query cancel check most probably should be here.
+            if (req.isCancellationSupported() && !requestRegister.contains(req.requestId()))
+                return exceptionToResult(new QueryCancelledException(), req.requestId());
 
             List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFields(null, qry, cliCtx, true,
                 protocolVer.compareTo(VER_2_3_0) < 0);
@@ -582,45 +538,39 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 JdbcBulkLoadProcessor processor = new JdbcBulkLoadProcessor(blProcessor, req.requestId());
 
                 synchronized (cancellationProcessingMux) {
-                    if (req.isCancellationSupported()) {
-                        if (!requestToCursorMapping.containsKey(req.requestId()))
-                            return exceptionToResult(new QueryCancelledException(), req.requestId());
-                        else
-                            requestToCursorMapping.put(req.requestId(),
-                                new ArrayList<>(Collections.singletonList(processor)));
+                    if (req.isCancellationSupported() && !requestRegister.contains(req.requestId()))
+                        return exceptionToResult(new QueryCancelledException(), req.requestId());
+                    else {
+                        jdbcCursors.put(processor.cursorId(), processor);
+
+                        currQueryCursorIds.add(processor.cursorId());
+
+                        // responces for the same query on the client side
+                        return new JdbcResponse(new JdbcBulkLoadAckResult(processor.cursorId(), clientParams), req.requestId());
                     }
                 }
-
-                bulkLoadRequests.put(cursorId, processor);
-
-                // responces for the same query on the client side
-                return new JdbcResponse(new JdbcBulkLoadAckResult(cursorId, clientParams), req.requestId());
             }
 
             if (results.size() == 1) {
 
-                JdbcQueryCursor cur = new JdbcQueryCursor(cursorId, req.pageSize(), req.maxRows(),
+                JdbcQueryCursor cur = new JdbcQueryCursor(req.pageSize(), req.maxRows(),
                     (QueryCursorImpl)fieldsCur, req.requestId());
 
-                // TODO: Can we avoid duplication here?
                 synchronized (cancellationProcessingMux) {
-                    if (req.isCancellationSupported()) {
-                        if (!requestToCursorMapping.containsKey(req.requestId()))
-                            return exceptionToResult(new QueryCancelledException(), req.requestId());
-                        else
-                            requestToCursorMapping.put(req.requestId(),
-                                new ArrayList<>(Collections.singletonList(cur)));
-                    }
+                    if (req.isCancellationSupported() && !requestRegister.contains(req.requestId()))
+                        return exceptionToResult(new QueryCancelledException(), req.requestId());
+                    else
+                        jdbcCursors.put(cur.cursorId(), cur);
                 }
 
-                qryCursors.put(cursorId, cur);
+                currQueryCursorIds.add(cur.cursorId());
 
                 cur.openIterator();
 
                 JdbcQueryExecuteResult res;
 
                 if (cur.isQuery())
-                    res = new JdbcQueryExecuteResult(cursorId, cur.fetchRows(), !cur.hasNext());
+                    res = new JdbcQueryExecuteResult(cur.cursorId(), cur.fetchRows(), !cur.hasNext());
                 else {
                     List<List<Object>> items = cur.fetchRows();
 
@@ -629,13 +579,13 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                         "Invalid result set for not-SELECT query. [qry=" + sql +
                             ", res=" + S.toString(List.class, items) + ']';
 
-                    res = new JdbcQueryExecuteResult(cursorId, (Long)items.get(0).get(0));
+                    res = new JdbcQueryExecuteResult(cur.cursorId(), (Long)items.get(0).get(0));
                 }
 
                 if (res.last() && (!res.isQuery() || autoCloseCursors)) {
-                    qryCursors.remove(cursorId);
+                    jdbcCursors.remove(cur.cursorId());
 
-                    cleanupRequestToCursorMapping(cur, req.requestId());
+                    unregisterRequest(req.requestId());
 
                     cur.close();
                 }
@@ -651,26 +601,25 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 Map<Long, JdbcQueryCursor> queryCursors = new HashMap<>();
 
                 for (FieldsQueryCursor<List<?>> c : results) {
-                    JdbcQueryCursor cursor = new JdbcQueryCursor(CURSOR_ID_GEN.getAndIncrement(), req.pageSize(), req.maxRows(),
+                    JdbcQueryCursor cursor = new JdbcQueryCursor(req.pageSize(), req.maxRows(),
                         (QueryCursorImpl) c, req.requestId());
 
                     cursors.add(cursor);
 
-                    if (cursor.isQuery())
+                    if (cursor.isQuery()) {
                         queryCursors.put(cursor.cursorId(), cursor);
-                }
 
-                // TODO: Can we avoid duplication here?
-                synchronized (cancellationProcessingMux) {
-                    if (req.isCancellationSupported()) {
-                        if (!requestToCursorMapping.containsKey(req.requestId()))
-                            return exceptionToResult(new QueryCancelledException(), req.requestId());
-                        else
-                            requestToCursorMapping.put(req.requestId(), (List<Closeable>)(Object)cursors);
+                        currQueryCursorIds.add(cursor.cursorId());
                     }
+
                 }
 
-                qryCursors.putAll(queryCursors);
+                synchronized (cancellationProcessingMux) {
+                    if (req.isCancellationSupported() && !requestRegister.contains(req.requestId()))
+                        return exceptionToResult(new QueryCancelledException(), req.requestId());
+                    else
+                        jdbcCursors.putAll(queryCursors);
+                }
 
                 for (JdbcQueryCursor cur : cursors) {
 
@@ -700,9 +649,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             }
         }
         catch (Exception e) {
-            JdbcQueryCursor removedCur = qryCursors.remove(cursorId);
+            jdbcCursors.entrySet().removeAll(currQueryCursorIds);
 
-            cleanupRequestToCursorMapping(removedCur);
+            unregisterRequest(req.requestId());
 
             U.error(log, "Failed to execute SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
@@ -720,10 +669,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Response.
      */
     private JdbcResponse closeQuery(JdbcQueryCloseRequest req) {
-        JdbcQueryCursor removedCur = null;
+        JdbcCursor removedCur = null;
 
         try {
-            JdbcQueryCursor cur = qryCursors.remove(req.cursorId());
+            JdbcCursor cur = jdbcCursors.remove(req.cursorId());
 
             removedCur = cur;
 
@@ -736,14 +685,14 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             return new JdbcResponse(null, req.requestId());
         }
         catch (Exception e) {
-            removedCur = qryCursors.remove(req.cursorId());
+            removedCur = jdbcCursors.remove(req.cursorId());
 
             U.error(log, "Failed to close SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
             return exceptionToResult(e, req.requestId());
         }
         finally {
-            cleanupRequestToCursorMapping(removedCur);
+            unregisterRequest(removedCur.requestId());
         }
     }
 
@@ -755,7 +704,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private JdbcResponse fetchQuery(JdbcQueryFetchRequest req) {
         try {
-            JdbcQueryCursor cur = qryCursors.get(req.cursorId());
+            JdbcQueryCursor cur = (JdbcQueryCursor) jdbcCursors.get(req.cursorId());
 
             if (cur == null)
                 return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
@@ -770,9 +719,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             JdbcQueryFetchResult res = new JdbcQueryFetchResult(cur.fetchRows(), !cur.hasNext());
 
             if (res.last() && (!cur.isQuery() || autoCloseCursors)) {
-                JdbcQueryCursor removedCur = qryCursors.remove(req.cursorId());
+                JdbcCursor removedCur = jdbcCursors.remove(req.cursorId());
 
-                cleanupRequestToCursorMapping(removedCur);
+                unregisterRequest(req.cursorId());
 
                 cur.close();
             }
@@ -795,7 +744,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private JdbcResponse getQueryMeta(JdbcQueryMetadataRequest req) {
         try {
-            JdbcQueryCursor cur = qryCursors.get(req.cursorId());
+            JdbcQueryCursor cur = (JdbcQueryCursor) jdbcCursors.get(req.cursorId());
 
             if (cur == null)
                 return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
@@ -1269,20 +1218,26 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         boolean exceptionFound = false;
 
         synchronized (cancellationProcessingMux) {
-            List<Closeable> prevCursors = requestToCursorMapping.remove(req.requestIdToBeCancelled());
-
-            if (prevCursors == null)
-                return exceptionToResult(new QueryCancelledException(), req.requestId());
+            // Request was already cancelled.
+            if (!requestRegister.contains(req.requestIdToBeCancelled()))
+                return exceptionToResult(new QueryCancelledException(), req.requestIdToBeCancelled());
             else {
-                for (Closeable cursor : prevCursors)
-                    try {
-                        cursor.close();
-                    }
-                    catch (Exception e) {
-                        U.error(log, "Failed to close cursor [reqId=" + req.requestId() + ", cursor=" + cursor + ']', e);
+                unregisterRequest(req.requestIdToBeCancelled());
 
-                        exceptionFound = true;
+                for (JdbcCursor cursor: jdbcCursors.values()) {
+
+                    if (cursor.requestId() == req.requestIdToBeCancelled()) {
+                        try {
+                            cursor.close();
+                        }
+                        catch (Exception e) {
+                            U.error(log, "Failed to close cursor [reqId=" + req.requestId() +
+                                ", cursor=" + cursor + ']', e);
+
+                            exceptionFound = true;
+                        }
                     }
+                }
             }
 
             if (exceptionFound)
@@ -1291,42 +1246,5 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             else
                 return exceptionToResult(new QueryCancelledException(), req.requestIdToBeCancelled());
         }
-    }
-
-    /**
-     * Removes given cursor from requestToCursorMapping and unregisters given request.
-     *
-     * @param cursor Cursor to remove.
-     * @param reqId Request Id.
-     */
-    private void cleanupRequestToCursorMapping(Closeable cursor, Long reqId) {
-        synchronized (cancellationProcessingMux) {
-            List<Closeable> processors = requestToCursorMapping.get(reqId);
-
-            if (processors != null)
-                processors.remove(cursor);
-
-            unregisterRequest(reqId);
-        }
-    }
-
-    /**
-     * Removes given cursor from requestToCursorMapping and unregisters given request.
-     *
-     * @param cursor Cursor to remove.
-     */
-    private void cleanupRequestToCursorMapping(JdbcQueryCursor cursor) {
-        if (cursor != null)
-            cleanupRequestToCursorMapping(cursor, cursor.requestId());
-    }
-
-    /**
-     * Removes given processor from requestToCursorMapping and unregisters given request.
-     *
-     * @param processor Bulk load processor to remove.
-     */
-    private void cleanupRequestToCursorMapping(JdbcBulkLoadProcessor processor) {
-        if (processor != null)
-            cleanupRequestToCursorMapping(processor, processor.requestId());
     }
 }

@@ -75,7 +75,7 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     static final byte QRY_CANCEL = 15;
 
     /** Request Id generator. */
-    static final AtomicLong REQ_ID_GENERATOR = new AtomicLong();
+    private static final AtomicLong REQ_ID_GENERATOR = new AtomicLong();
 
     /** Request type. */
     private byte type;

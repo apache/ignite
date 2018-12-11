@@ -80,6 +80,9 @@ public final class IgniteQueryErrorCode {
     /** Conversion failure. */
     public static final int CONVERSION_FAILED = 3013;
 
+    /** Query canceled. */
+    public static final int QUERY_CANCELED = 3014;
+
     /* 4xxx - cache related runtime errors */
 
     /** Attempt to INSERT a key that is already in cache. */
@@ -128,9 +131,6 @@ public final class IgniteQueryErrorCode {
 
     /** Transaction serialization error. */
     public static final int TRANSACTION_SERIALIZATION_ERROR = 5005;
-
-    /** Query canceled. */
-    public final static int QUERY_CANCELED = 57014;
 
     /** */
     private IgniteQueryErrorCode() {

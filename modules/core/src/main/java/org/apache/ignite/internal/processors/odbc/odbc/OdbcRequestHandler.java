@@ -201,10 +201,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         }
     }
 
-    @Override public ClientListenerResponse handleSynchronously(ClientListenerRequest req0) {
-        throw new UnsupportedOperationException("Synchronous handling is not supported");
-    }
-
     /**
      * Start worker, if it's present.
      */

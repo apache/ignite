@@ -56,14 +56,6 @@ public interface ClientListenerRequestHandler {
     boolean isCancellationCommand(int cmdId);
 
     /**
-     * Handle request synchronously
-     *
-     * @param req Request
-     * @return Response
-     */
-    ClientListenerResponse handleSynchronously(ClientListenerRequest req);
-
-    /**
      * Registers request for futher cancellation if any.
      * @param reqId Request Id.
      */
