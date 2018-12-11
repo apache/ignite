@@ -37,13 +37,14 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
@@ -57,6 +58,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Checks that no future hangs on non-serializable exceptions and values.
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheFailedUpdateResponseTest extends GridCommonAbstractTest {
     /** Atomic cache. */
     private static final String ATOMIC_CACHE = "atomic";
@@ -114,14 +116,10 @@ public class IgniteCacheFailedUpdateResponseTest extends GridCommonAbstractTest 
         mvccTxCache = grid("client").cache(MVCC_TX_CACHE);
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAtomic() throws Exception {
         testInvoke(atomicCache);
         testInvokeAll(atomicCache);
@@ -130,6 +128,7 @@ public class IgniteCacheFailedUpdateResponseTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeTx() throws Exception {
         testInvoke(txCache);
         testInvokeAll(txCache);
@@ -156,6 +155,7 @@ public class IgniteCacheFailedUpdateResponseTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeMvccTx() throws Exception {
         testInvoke(mvccTxCache);
         testInvokeAll(mvccTxCache);

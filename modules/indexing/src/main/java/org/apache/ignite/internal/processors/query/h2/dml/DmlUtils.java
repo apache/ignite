@@ -102,7 +102,7 @@ public class DmlUtils {
                 return newArr;
             }
 
-            Object res = H2Utils.convert(val, desc, type);
+            Object res = H2Utils.convert(val, desc.indexing(), type);
 
             if (res instanceof Date && res.getClass() != Date.class && expCls == Date.class) {
                 // We can get a Timestamp instead of Date when converting a String to Date

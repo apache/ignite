@@ -31,8 +31,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -42,6 +40,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -51,6 +52,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -118,14 +120,10 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
         return TEST_TIME + 3 * 60_000;
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetRestartReplicated() throws Exception {
         CacheConfiguration<Object, Object> cache = cacheConfiguration(REPLICATED, 0, false);
 
@@ -135,6 +133,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetRestartPartitioned1() throws Exception {
         CacheConfiguration<Object, Object> cache = cacheConfiguration(PARTITIONED, 1, false);
 
@@ -144,6 +143,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetRestartPartitioned2() throws Exception {
         CacheConfiguration<Object, Object> cache = cacheConfiguration(PARTITIONED, 2, false);
 
@@ -153,6 +153,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetRestartPartitionedNearEnabled() throws Exception {
         CacheConfiguration<Object, Object> cache = cacheConfiguration(PARTITIONED, 1, true);
 

@@ -33,6 +33,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteCollectionAbstractTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -46,6 +49,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteCollectionAbstractTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -107,6 +111,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteColl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueCreation() throws Exception {
         final AtomicInteger idx = new AtomicInteger();
 
@@ -161,6 +166,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteColl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTx() throws Exception {
         if (cacheConfiguration().getAtomicityMode() != TRANSACTIONAL)
             return;

@@ -57,6 +57,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_JOB_STARTED;
 
@@ -64,6 +67,7 @@ import static org.apache.ignite.events.EventType.EVT_JOB_STARTED;
  * Abstract test for {@link org.apache.ignite.cluster.ClusterGroup}
  */
 @SuppressWarnings("deprecation")
+@RunWith(JUnit4.class)
 public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest implements Externalizable {
     /** VM ip finder for TCP discovery. */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -184,6 +188,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     /**
      * Test for projection on not existing node IDs.
      */
+    @Test
     public void testInvalidProjection() {
         Collection<UUID> ids = new HashSet<>();
 
@@ -198,6 +203,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testProjection() throws Exception {
         assert prj != null;
 
@@ -217,6 +223,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testRemoteNodes() throws Exception {
         Collection<UUID> remoteNodeIds = remoteNodeIds();
 
@@ -247,6 +254,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testRemoteProjection() throws Exception {
         Collection<UUID> remoteNodeIds = remoteNodeIds();
 
@@ -277,6 +285,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testExecution() throws Exception {
         String name = "oneMoreGrid";
 

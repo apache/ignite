@@ -24,6 +24,9 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange.RANGE_STATUS_INITIAL;
 import static org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange.RANGE_STATUS_MOVED;
@@ -32,10 +35,12 @@ import static org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange.R
 /**
  * File map self test.
  */
+@RunWith(JUnit4.class)
 public class IgfsFileMapSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRanges() throws Exception {
         IgfsFileMap map = new IgfsFileMap();
 
@@ -69,6 +74,7 @@ public class IgfsFileMapSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddUpdateAdd() throws Exception {
         IgfsFileMap map = new IgfsFileMap();
 
@@ -94,6 +100,7 @@ public class IgfsFileMapSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRangeUpdate1() throws Exception {
         IgfsFileMap map = new IgfsFileMap();
 
@@ -141,6 +148,7 @@ public class IgfsFileMapSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRangeUpdate2() throws Exception {
         IgfsFileMap map = new IgfsFileMap();
 
@@ -244,6 +252,7 @@ public class IgfsFileMapSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvalidRangeUpdates() throws Exception {
         final IgfsFileMap map = new IgfsFileMap();
 
@@ -291,6 +300,7 @@ public class IgfsFileMapSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRangeSplit() throws Exception {
         IgniteUuid affKey = IgniteUuid.randomUuid();
 
