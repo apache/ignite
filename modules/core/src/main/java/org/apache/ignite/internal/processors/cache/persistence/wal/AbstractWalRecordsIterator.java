@@ -190,7 +190,7 @@ public abstract class AbstractWalRecordsIterator
     }
 
     /** {@inheritDoc} */
-    public Optional<WALPointer> lastRead() {
+    @Override public Optional<WALPointer> lastRead() {
         return Optional.ofNullable(lastRead);
     }
 

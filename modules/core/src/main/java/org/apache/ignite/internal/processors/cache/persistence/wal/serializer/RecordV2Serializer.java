@@ -122,7 +122,7 @@ public class RecordV2Serializer implements RecordSerializer {
                     ", expected pointer [idx=" + exp.index() + ", offset=" + exp.fileOffset() + "]");
             }
 
-            if (recType.purpose() != WALRecord.RecordPurpose.SYSTEM
+            if (recType.purpose() != WALRecord.RecordPurpose.INTERNAL
                 && recordFilter != null && !recordFilter.apply(recType, ptr)) {
                 int toSkip = ptr.length() - REC_TYPE_SIZE - FILE_WAL_POINTER_SIZE - CRC_SIZE;
 

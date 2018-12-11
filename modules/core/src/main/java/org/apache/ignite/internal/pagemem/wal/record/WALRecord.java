@@ -47,7 +47,7 @@ public abstract class WALRecord {
         CHECKPOINT_RECORD (PHYSICAL),
 
         /** WAL segment header record. */
-        HEADER_RECORD (SYSTEM),
+        HEADER_RECORD (INTERNAL),
 
         // Delta records.
 
@@ -133,7 +133,7 @@ public abstract class WALRecord {
         PARTITION_META_PAGE_UPDATE_COUNTERS (PHYSICAL),
 
         /** Memory recovering start marker */
-        MEMORY_RECOVERY (SYSTEM),
+        MEMORY_RECOVERY,
 
         /** */
         TRACKING_PAGE_DELTA (PHYSICAL),
@@ -163,7 +163,7 @@ public abstract class WALRecord {
          *  that one byte in the end,then we write SWITCH_SEGMENT_RECORD as marker end of segment.
          *  No need write CRC or WAL pointer for this record. It is byte marker record.
          *  */
-        SWITCH_SEGMENT_RECORD (SYSTEM),
+        SWITCH_SEGMENT_RECORD (INTERNAL),
 
         /** */
         DATA_PAGE_UPDATE_RECORD (PHYSICAL),
@@ -213,7 +213,7 @@ public abstract class WALRecord {
         /**
          * When you're adding a new record don't forget to choose record purpose explicitly
          * if record is needed for physical or logical recovery.
-         * By default the purpose of record is {@link RecordPurpose#CUSTOM} and this record will be not participated in recovery process.
+         * By default the purpose of record is {@link RecordPurpose#CUSTOM} and this record will not be used in recovery process.
          * For more information read description of {@link RecordPurpose}.
          */
         private final RecordPurpose purpose;
@@ -260,9 +260,10 @@ public abstract class WALRecord {
      */
     public enum RecordPurpose {
         /**
-         * System records are needed for correct iterating over WAL.
+         * Internal records are needed for correct iterating over WAL structure.
+         * These records will never be returned to user during WAL iteration.
          */
-        SYSTEM,
+        INTERNAL,
         /**
          * Physical records are needed for correct recovering physical state of {@link org.apache.ignite.internal.pagemem.PageMemory}.
          * {@link org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager#restoreBinaryMemory(org.apache.ignite.lang.IgnitePredicate, org.apache.ignite.lang.IgniteBiPredicate)}.

@@ -144,7 +144,7 @@ public class RecordV1Serializer implements RecordSerializer {
 
             rec.position(ptr);
 
-            if (recType.purpose() != WALRecord.RecordPurpose.SYSTEM
+            if (recType.purpose() != WALRecord.RecordPurpose.INTERNAL
                 && recordFilter != null && !recordFilter.apply(rec.type(), ptr))
                 return FilteredRecord.INSTANCE;
             else if (marshalledMode) {
