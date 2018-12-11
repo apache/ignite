@@ -62,22 +62,10 @@ public class EntryProcessorSecurityTest extends AbstractCacheSecurityTest {
     private void assertForbidden(IgniteEx initiator, IgniteEx remote) {
         assert !remote.localNode().isClient();
 
-        forbiddenCall(() -> invoke(initiator, remote));
-        forbiddenCall(() -> invokeAll(initiator, remote));
-        forbiddenCall(() -> invokeAsync(initiator, remote));
-        forbiddenCall(() -> invokeAllAsync(initiator, remote));
-    }
-
-    /**
-     * @param r Runnable.
-     */
-    private void forbiddenCall(Runnable r) {
-        try {
-            r.run();
-        }
-        catch (Throwable e) {
-            assertCauseSecurityException(e);
-        }
+        forbiddenRun(() -> invoke(initiator, remote));
+        forbiddenRun(() -> invokeAll(initiator, remote));
+        forbiddenRun(() -> invokeAsync(initiator, remote));
+        forbiddenRun(() -> invokeAllAsync(initiator, remote));
     }
 
     /**

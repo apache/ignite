@@ -19,7 +19,9 @@ package org.apache.ignite.testsuites;
 
 import java.util.Set;
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processor.security.cache.ClientNodeCachePermissionsTest;
 import org.apache.ignite.internal.processor.security.cache.EntryProcessorSecurityTest;
+import org.apache.ignite.internal.processor.security.cache.ServerNodeCachePermissionsTest;
 import org.apache.ignite.internal.processor.security.datastreamer.IgniteDataStreamerSecurityTest;
 import org.apache.ignite.internal.processor.security.cache.LoadCacheSecurityTest;
 import org.apache.ignite.internal.processor.security.cache.ScanQuerySecurityTest;
@@ -33,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Security test suite.
  */
-public class ResolveSecurityContextTestSuite extends TestSuite {
+public class AuthorizeOperationsTestSuite extends TestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
@@ -58,6 +60,8 @@ public class ResolveSecurityContextTestSuite extends TestSuite {
         suite.addTest(new TestSuite(LoadCacheSecurityTest.class));
         suite.addTest(new TestSuite(ThinClientSecurityTest.class));
         suite.addTest(new TestSuite(IgniteMessagingTest.class));
+        suite.addTest(new TestSuite(ClientNodeCachePermissionsTest.class));
+        suite.addTest(new TestSuite(ServerNodeCachePermissionsTest.class));
 
         return suite;
     }

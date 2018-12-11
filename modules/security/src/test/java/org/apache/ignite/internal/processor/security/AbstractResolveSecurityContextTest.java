@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processor.security;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -29,20 +28,12 @@ import org.apache.ignite.plugin.security.SecurityException;
 
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertThat;
 
 /**
  *
  */
 public class AbstractResolveSecurityContextTest extends AbstractSecurityTest {
-    /** Cache name for tests. */
-    protected static final String CACHE_NAME = "TEST_CACHE";
-
-    /** Values. */
-    protected AtomicInteger values = new AtomicInteger(0);
-
     /** Sever node that has all permissions for TEST_CACHE. */
     protected IgniteEx srvAllPerms;
 
@@ -83,39 +74,18 @@ public class AbstractResolveSecurityContextTest extends AbstractSecurityTest {
                 .setReadFromBackup(false));
     }
 
-    private T2<String, Integer> entry(){
-        int val = values.incrementAndGet();
-
-        return new T2<>("key_" + val, -1 * val);
-    }
-
     /**
      * @param c Consumer.
      */
     protected void assertAllowed(Consumer<T2<String, Integer>> c) {
-        T2<String, Integer> entry = entry();
-
-        c.accept(entry);
-
-        assertThat(srvAllPerms.cache(CACHE_NAME).get(entry.getKey()), is(entry.getValue()));
+        assertAllowed(srvAllPerms, CACHE_NAME, c);
     }
 
     /**
      * @param c Consumer.
      */
     protected void assertForbidden(Consumer<T2<String, Integer>> c) {
-        T2<String, Integer> entry = entry();
-
-        try {
-            c.accept(entry);
-
-            fail("Should not happen");
-        }
-        catch (Throwable e) {
-            assertThat(X.cause(e, SecurityException.class), notNullValue());
-        }
-
-        assertThat(srvAllPerms.cache(CACHE_NAME).get(entry.getKey()), nullValue());
+        assertForbidden(srvAllPerms, CACHE_NAME, c);
     }
 
     /**
