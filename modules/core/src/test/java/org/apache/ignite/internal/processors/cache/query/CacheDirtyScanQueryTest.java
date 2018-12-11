@@ -34,10 +34,14 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE;
 
+@RunWith(JUnit4.class)
 public class CacheDirtyScanQueryTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE = "test";
@@ -89,6 +93,7 @@ public class CacheDirtyScanQueryTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
+    @Test
     public void testDirtyScan() throws Exception {
         IgniteEx ignite = startGrid(0);
         ignite.cluster().active(true);
