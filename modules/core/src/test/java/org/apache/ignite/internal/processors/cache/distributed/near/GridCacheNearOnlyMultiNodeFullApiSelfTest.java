@@ -50,6 +50,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_LOCKED;
@@ -58,6 +61,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitionedMultiNodeFullApiSelfTest {
     /** */
     private static AtomicInteger cnt;
@@ -175,6 +179,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testSize() throws Exception {
         IgniteCache<String, Integer> nearCache = jcache();
 
@@ -204,6 +209,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testLoadAll() throws Exception {
         // Not needed for near-only cache.
     }
@@ -211,6 +217,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReaderTtlTx() throws Exception {
         // IgniteProcessProxy#transactions is not implemented.
         if (isMultiJvm() || !txShouldBeUsed())
@@ -222,6 +229,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReaderTtlNoTx() throws Exception {
         checkReaderTtl(false);
     }
@@ -431,6 +439,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testClear() throws Exception {
         IgniteCache<String, Integer> nearCache = jcache();
         IgniteCache<String, Integer> primary = fullCache();
@@ -483,6 +492,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testLocalClearKeys() throws Exception {
         IgniteCache<String, Integer> nearCache = jcache();
         IgniteCache<String, Integer> primary = fullCache();
@@ -550,6 +560,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
     /** {@inheritDoc} */
     @SuppressWarnings("BusyWait")
+    @Test
     @Override public void testLockUnlock() throws Exception {
         if (lockingEnabled()) {
             final CountDownLatch lockCnt = new CountDownLatch(1);

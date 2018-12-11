@@ -38,7 +38,7 @@ public class IgniteCacheTestSuite8 extends TestSuite {
     public static TestSuite suite() {
         return suite(null);
     }
-    
+
     /**
      * @return IgniteCache test suite.
      */

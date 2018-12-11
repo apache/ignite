@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.binary.BinaryArrayIdentityResolverSelfTest;
 import org.apache.ignite.internal.binary.BinaryBasicIdMapperSelfTest;
@@ -79,84 +80,83 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteBinaryMetad
 public class IgniteBinaryObjectsTestSuite extends TestSuite {
     /**
      * @return Suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Binary Objects Test Suite");
 
-        suite.addTestSuite(BinarySimpleNameTestPropertySelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(BinarySimpleNameTestPropertySelfTest.class));
 
-        suite.addTestSuite(BinaryBasicIdMapperSelfTest.class);
-        suite.addTestSuite(BinaryBasicNameMapperSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(BinaryBasicIdMapperSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinaryBasicNameMapperSelfTest.class));
 
-        suite.addTestSuite(BinaryTreeSelfTest.class);
-        suite.addTestSuite(BinaryMarshallerSelfTest.class);
-        suite.addTestSuite(BinaryObjectExceptionSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(BinaryTreeSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinaryMarshallerSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinaryObjectExceptionSelfTest.class));
 
-        suite.addTestSuite(BinarySerialiedFieldComparatorSelfTest.class);
-        suite.addTestSuite(BinaryArrayIdentityResolverSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(BinarySerialiedFieldComparatorSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinaryArrayIdentityResolverSelfTest.class));
 
-        suite.addTestSuite(BinaryConfigurationConsistencySelfTest.class);
-        suite.addTestSuite(BinaryConfigurationCustomSerializerSelfTest.class);
-        suite.addTestSuite(GridBinaryMarshallerCtxDisabledSelfTest.class);
-        suite.addTestSuite(BinaryObjectBuilderDefaultMappersSelfTest.class);
-        suite.addTestSuite(BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest.class);
-        suite.addTestSuite(BinaryObjectBuilderAdditionalSelfTest.class);
-        //suite.addTestSuite(BinaryFieldExtractionSelfTest.class);
-        suite.addTestSuite(BinaryFieldsHeapSelfTest.class);
-        suite.addTestSuite(BinaryFieldsOffheapSelfTest.class);
-        suite.addTestSuite(BinaryFooterOffsetsHeapSelfTest.class);
-        suite.addTestSuite(BinaryFooterOffsetsOffheapSelfTest.class);
-        suite.addTestSuite(BinaryEnumsSelfTest.class);
-        suite.addTestSuite(GridDefaultBinaryMappersBinaryMetaDataSelfTest.class);
-        suite.addTestSuite(GridSimpleLowerCaseBinaryMappersBinaryMetaDataSelfTest.class);
-        suite.addTestSuite(GridBinaryAffinityKeySelfTest.class);
-        suite.addTestSuite(GridBinaryWildcardsSelfTest.class);
-        suite.addTestSuite(BinaryObjectToStringSelfTest.class);
-        suite.addTestSuite(BinaryObjectTypeCompatibilityTest.class);
+        suite.addTest(new JUnit4TestAdapter(BinaryConfigurationConsistencySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinaryConfigurationCustomSerializerSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridBinaryMarshallerCtxDisabledSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinaryObjectBuilderDefaultMappersSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinaryObjectBuilderAdditionalSelfTest.class));
+        //suite.addTest(new JUnit4TestAdapter(BinaryFieldExtractionSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinaryFieldsHeapSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinaryFieldsOffheapSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinaryFooterOffsetsHeapSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinaryFooterOffsetsOffheapSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinaryEnumsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridDefaultBinaryMappersBinaryMetaDataSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridSimpleLowerCaseBinaryMappersBinaryMetaDataSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridBinaryAffinityKeySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridBinaryWildcardsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinaryObjectToStringSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinaryObjectTypeCompatibilityTest.class));
 
         // Tests for objects with non-compact footers.
-        suite.addTestSuite(BinaryMarshallerNonCompactSelfTest.class);
-        suite.addTestSuite(BinaryObjectBuilderNonCompactDefaultMappersSelfTest.class);
-        suite.addTestSuite(BinaryObjectBuilderNonCompactSimpleNameLowerCaseMappersSelfTest.class);
-        suite.addTestSuite(BinaryObjectBuilderAdditionalNonCompactSelfTest.class);
-        suite.addTestSuite(BinaryFieldsHeapNonCompactSelfTest.class);
-        suite.addTestSuite(BinaryFieldsOffheapNonCompactSelfTest.class);
-        suite.addTestSuite(BinaryFooterOffsetsHeapNonCompactSelfTest.class);
-        suite.addTestSuite(BinaryFooterOffsetsOffheapNonCompactSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(BinaryMarshallerNonCompactSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinaryObjectBuilderNonCompactDefaultMappersSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinaryObjectBuilderNonCompactSimpleNameLowerCaseMappersSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinaryObjectBuilderAdditionalNonCompactSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinaryFieldsHeapNonCompactSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinaryFieldsOffheapNonCompactSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinaryFooterOffsetsHeapNonCompactSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinaryFooterOffsetsOffheapNonCompactSelfTest.class));
 
-        suite.addTestSuite(GridCacheBinaryObjectsLocalSelfTest.class);
-        //suite.addTestSuite(GridCacheBinaryObjectsLocalOnheapSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryObjectsAtomicLocalSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryObjectsReplicatedSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryObjectsPartitionedSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryObjectsPartitionedNearDisabledSelfTest.class);
-        //suite.addTestSuite(GridCacheBinaryObjectsPartitionedNearDisabledOnheapSelfTest.class);
-        //suite.addTestSuite(GridCacheBinaryObjectsPartitionedOnheapSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryObjectsAtomicSelfTest.class);
-        //suite.addTestSuite(GridCacheBinaryObjectsAtomicOnheapSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryObjectsAtomicNearDisabledSelfTest.class);
-        //suite.addTestSuite(GridCacheBinaryObjectsAtomicNearDisabledOnheapSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridCacheBinaryObjectsLocalSelfTest.class));
+        //suite.addTest(new JUnit4TestAdapter(GridCacheBinaryObjectsLocalOnheapSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheBinaryObjectsAtomicLocalSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheBinaryObjectsReplicatedSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheBinaryObjectsPartitionedSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheBinaryObjectsPartitionedNearDisabledSelfTest.class));
+        //suite.addTest(new JUnit4TestAdapter(GridCacheBinaryObjectsPartitionedNearDisabledOnheapSelfTest.class));
+        //suite.addTest(new JUnit4TestAdapter(GridCacheBinaryObjectsPartitionedOnheapSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheBinaryObjectsAtomicSelfTest.class));
+        //suite.addTest(new JUnit4TestAdapter(GridCacheBinaryObjectsAtomicOnheapSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheBinaryObjectsAtomicNearDisabledSelfTest.class));
+        //suite.addTest(new JUnit4TestAdapter(GridCacheBinaryObjectsAtomicNearDisabledOnheapSelfTest.class));
 
-        suite.addTestSuite(GridCacheBinaryStoreObjectsSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryStoreBinariesDefaultMappersSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryStoreBinariesSimpleNameMappersSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridCacheBinaryStoreObjectsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheBinaryStoreBinariesDefaultMappersSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheBinaryStoreBinariesSimpleNameMappersSelfTest.class));
 
-        suite.addTestSuite(GridCacheClientNodeBinaryObjectMetadataTest.class);
-        suite.addTestSuite(GridCacheBinaryObjectMetadataExchangeMultinodeTest.class);
-        suite.addTestSuite(BinaryMetadataUpdatesFlowTest.class);
-        suite.addTestSuite(GridCacheClientNodeBinaryObjectMetadataMultinodeTest.class);
-        suite.addTestSuite(IgniteBinaryMetadataUpdateChangingTopologySelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridCacheClientNodeBinaryObjectMetadataTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheBinaryObjectMetadataExchangeMultinodeTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinaryMetadataUpdatesFlowTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheClientNodeBinaryObjectMetadataMultinodeTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteBinaryMetadataUpdateChangingTopologySelfTest.class));
 
-        suite.addTestSuite(BinaryTxCacheLocalEntriesSelfTest.class);
-        suite.addTestSuite(BinaryAtomicCacheLocalEntriesSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(BinaryTxCacheLocalEntriesSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinaryAtomicCacheLocalEntriesSelfTest.class));
 
         // Byte order
-        suite.addTestSuite(BinaryHeapStreamByteOrderSelfTest.class);
-        suite.addTestSuite(BinaryAbstractOutputStreamTest.class);
-        suite.addTestSuite(BinaryOffheapStreamByteOrderSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(BinaryHeapStreamByteOrderSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinaryAbstractOutputStreamTest.class));
+        suite.addTest(new JUnit4TestAdapter(BinaryOffheapStreamByteOrderSelfTest.class));
 
-        suite.addTestSuite(GridCacheBinaryObjectUserClassloaderSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridCacheBinaryObjectUserClassloaderSelfTest.class));
 
         return suite;
     }

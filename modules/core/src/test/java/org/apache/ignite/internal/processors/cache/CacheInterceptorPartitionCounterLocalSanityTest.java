@@ -47,6 +47,9 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -61,6 +64,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES = 1;
@@ -105,6 +109,7 @@ public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocal() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(ATOMIC,false);
 
@@ -114,6 +119,7 @@ public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalWithStore() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(ATOMIC,true);
 
@@ -123,6 +129,7 @@ public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalTx() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(TRANSACTIONAL,false);
 
@@ -132,6 +139,7 @@ public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalTxWithStore() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(TRANSACTIONAL,true);
 
@@ -141,6 +149,7 @@ public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalMvccTx() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9530");
 
@@ -152,6 +161,7 @@ public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalMvccTxWithStore() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9530");
 

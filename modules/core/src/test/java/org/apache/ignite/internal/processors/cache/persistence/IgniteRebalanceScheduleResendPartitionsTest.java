@@ -50,12 +50,16 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteRebalanceScheduleResendPartitionsTest extends GridCommonAbstractTest {
     /** */
     public static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -112,6 +116,7 @@ public class IgniteRebalanceScheduleResendPartitionsTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-10421");

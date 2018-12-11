@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.GridCachePutAllFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicPutAllFailoverSelfTest;
@@ -31,22 +32,21 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.Ignite
 public class IgniteCacheRestartTestSuite2 extends TestSuite {
     /**
      * @return Suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Cache Restart Test Suite2");
 
-        suite.addTestSuite(IgniteCacheAtomicNodeRestartTest.class);
-        suite.addTestSuite(IgniteCacheAtomicReplicatedNodeRestartSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheAtomicNodeRestartTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheAtomicReplicatedNodeRestartSelfTest.class));
 
-        suite.addTestSuite(IgniteCacheAtomicPutAllFailoverSelfTest.class);
-        suite.addTestSuite(IgniteCachePutAllRestartTest.class);
-        suite.addTestSuite(GridCachePutAllFailoverSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheAtomicPutAllFailoverSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCachePutAllRestartTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCachePutAllFailoverSelfTest.class));
 
         // TODO IGNITE-4768.
-        //suite.addTestSuite(IgniteBinaryMetadataUpdateNodeRestartTest.class);
+        //suite.addTest(new JUnit4TestAdapter(IgniteBinaryMetadataUpdateNodeRestartTest.class));
 
-        suite.addTestSuite(IgniteCacheGetRestartTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheGetRestartTest.class));
 
         return suite;
     }

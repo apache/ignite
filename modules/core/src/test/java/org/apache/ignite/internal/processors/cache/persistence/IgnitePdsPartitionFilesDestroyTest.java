@@ -46,12 +46,16 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Test class to check that partition files after eviction are destroyed correctly on next checkpoint or crash recovery.
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
     /** Partitions count. */
     private static final int PARTS_CNT = 32;
@@ -146,6 +150,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionFileDestroyAfterCheckpoint() throws Exception {
         IgniteEx crd = (IgniteEx) startGrids(2);
 
@@ -178,6 +183,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionFileDestroyAndRecreate() throws Exception {
         IgniteEx crd = startGrid(0);
 
@@ -225,6 +231,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionFileDestroyCrashRecovery1() throws Exception {
         IgniteEx crd = startGrid(0);
 
@@ -278,6 +285,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionFileDestroyCrashRecovery2() throws Exception {
         IgniteEx crd = startGrid(0);
 
@@ -339,6 +347,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDestroyWhenPartitionsAreEmpty() throws Exception {
         IgniteEx crd = (IgniteEx) startGrids(2);
 

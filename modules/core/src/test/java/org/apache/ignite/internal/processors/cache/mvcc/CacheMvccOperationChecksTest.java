@@ -32,6 +32,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -39,6 +42,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     /** Empty Class[]. */
     private static final Class[] E = new Class[]{};
@@ -61,6 +65,7 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testClearOperationsUnsupported() throws Exception {
         checkOperationUnsupported("clear", m("Clear"), E);
 
@@ -79,6 +84,7 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testLoadOperationsUnsupported() throws Exception {
         checkOperationUnsupported("loadCache", m("Load"), t(IgniteBiPredicate.class, Object[].class),
             P, new Object[]{ 1 });
@@ -96,6 +102,7 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testLockOperationsUnsupported() throws Exception {
         checkOperationUnsupported("lock", m("Lock"), t(Object.class), 1);
 
@@ -105,6 +112,7 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testEvictOperationsUnsupported() throws Exception {
         checkOperationUnsupported("localEvict", m("Evict"), t(Collection.class), Collections.singleton(1));
     }
@@ -112,6 +120,7 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWithExpiryPolicyUnsupported() throws Exception {
         checkOperationUnsupported("withExpiryPolicy", m("withExpiryPolicy"), t(ExpiryPolicy.class),
             EternalExpiryPolicy.factoryOf().create());

@@ -32,10 +32,14 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * This class tests handling exceptions from {@link CacheStore#write(Cache.Entry)}.
  */
+@RunWith(JUnit4.class)
 public class CacheStoreWriteErrorTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE_NAME = "cache";
@@ -60,6 +64,7 @@ public class CacheStoreWriteErrorTest extends GridCommonAbstractTest {
     /**
      * Checks primary error while saving batch with one entry.
      */
+    @Test
     public void testPrimaryErrorForBatchSize1() {
         checkPrimaryError(1);
     }
@@ -67,6 +72,7 @@ public class CacheStoreWriteErrorTest extends GridCommonAbstractTest {
     /**
      * Checks primary error while saving batch with two entries.
      */
+    @Test
     public void testPrimaryErrorForBatchSize2() {
         checkPrimaryError(2);
     }
