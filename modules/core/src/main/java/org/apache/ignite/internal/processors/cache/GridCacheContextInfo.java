@@ -50,6 +50,9 @@ public class GridCacheContextInfo<K, V> {
     /** Cache ID. */
     private final int cacheId;
 
+    /** Affinity node. */
+    private final boolean affNode;
+
     /**
      * Constructor of full cache context.
      *
@@ -63,6 +66,7 @@ public class GridCacheContextInfo<K, V> {
         this.dynamicDeploymentId = gridCacheContext.dynamicDeploymentId();
         this.groupId = gridCacheContext.groupId();
         this.cacheId = gridCacheContext.cacheId();
+        this.affNode = gridCacheContext.affinityNode();
         this.clientCache = clientCache;
     }
 
@@ -78,51 +82,51 @@ public class GridCacheContextInfo<K, V> {
         this.groupId = cacheDesc.groupId();
         this.ctx = ctx;
         this.clientCache = true;
+        this.affNode = false;
 
         this.cacheId = CU.cacheId(config.getName());
-
     }
 
     /**
      * @return Cache configuration.
      */
     public CacheConfiguration config() {
-        return isCacheContextInited() ? gridCacheContext.config() : config;
+        return config;
     }
 
     /**
      * @return Cache name.
      */
     public String name() {
-        return isCacheContextInited() ? gridCacheContext.name() : config.getName();
+        return config.getName();
     }
 
     /**
      * @return {@code true} in case cache use custom affinity mapper.
      */
     public boolean customAffinityMapper() {
-        return isCacheContextInited() && gridCacheContext.customAffinityMapper();
+        return config.getAffinityMapper() != null;
     }
 
     /**
      * @return Cache group id.
      */
     public int groupId() {
-        return isCacheContextInited() ? gridCacheContext.groupId() : groupId;
+        return groupId;
     }
 
     /**
      * @return Cache id.
      */
     public int cacheId() {
-        return isCacheContextInited() ? gridCacheContext.cacheId() : cacheId;
+        return cacheId;
     }
 
     /**
      * @return {@code true} in case affinity node.
      */
     public boolean affinityNode() {
-        return isCacheContextInited() && gridCacheContext.affinityNode();
+        return affNode;
     }
 
     /**
