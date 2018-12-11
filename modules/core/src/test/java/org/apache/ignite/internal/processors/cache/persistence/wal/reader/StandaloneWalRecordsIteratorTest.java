@@ -59,12 +59,16 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 
 /**
  * The test check, that StandaloneWalRecordsIterator correctly close file descriptors associated with WAL files.
  */
+@RunWith(JUnit4.class)
 public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -340,6 +344,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
      *
      * @throws Exception if test failed.
      */
+    @Test
     public void testCorrectClosingFileDescriptors() throws Exception {
 
         // Iterate by all archived WAL segments.
@@ -356,6 +361,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
      *
      * @throws Exception if test failed.
      */
+    @Test
     public void testStrictBounds() throws Exception {
         String dir = createWalFiles();
 

@@ -2126,7 +2126,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     grp.topology().onExchangeDone(this, grp.affinity().readyAffinity(res), false);
             }
 
-            cctx.walState().changeLocalStatesOnExchangeDone(res);
+            if (changedAffinity())
+                cctx.walState().changeLocalStatesOnExchangeDone(res, changedBaseline());
         }
 
         final Throwable err0 = err;
@@ -3578,10 +3579,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * failed to send update counter deltas to backup.
      */
     private void finalizePartitionCounters() {
-        int parallelismLvl = cctx.kernalContext().config().getSystemThreadPoolSize();
-
         // Reserve at least 2 threads for system operations.
-        parallelismLvl = Math.max(1, parallelismLvl - 2);
+        int parallelismLvl = U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2);
 
         long time = System.currentTimeMillis();
 
@@ -4010,10 +4009,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         long time = System.currentTimeMillis();
 
-        int parallelismLvl = cctx.kernalContext().config().getSystemThreadPoolSize();
-
         // Reserve at least 2 threads for system operations.
-        parallelismLvl = Math.max(1, parallelismLvl - 2);
+        int parallelismLvl = U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2);
 
         try {
             doInParallel(

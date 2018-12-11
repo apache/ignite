@@ -1935,7 +1935,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (reserved)
                 return segmentToCompress;
             else {
-                segmentAware.removeFromCurrentlyCompressedList(segmentToCompress);
+                segmentAware.onSegmentCompressed(segmentToCompress);
 
                 return -1;
             }
@@ -1952,12 +1952,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 long segIdx = -1L;
 
                 try {
-                    segIdx = tryReserveNextSegmentOrWait();
-
-                    if (segIdx <= segmentAware.lastCompressedIdx()) {
+                    if ((segIdx = tryReserveNextSegmentOrWait()) == -1) {
                         if (segIdx != -1)
                             segmentAware.removeFromCurrentlyCompressedList(segIdx);
-
                         continue;
                     }
 
@@ -1977,21 +1974,19 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     Files.move(tmpZip.toPath(), zip.toPath());
 
-                    if (mode != WALMode.NONE) {
-                        try (FileIO f0 = ioFactory.create(zip, CREATE, READ, WRITE)) {
-                            f0.force();
-                        }
-
-                        if (evt.isRecordable(EVT_WAL_SEGMENT_COMPACTED) && !cctx.kernalContext().recoveryMode()) {
-                            evt.record(new WalSegmentCompactedEvent(
-                                    cctx.localNode(),
-                                    segIdx,
-                                    zip.getAbsoluteFile())
-                            );
-                        }
+                    try (FileIO f0 = ioFactory.create(zip, CREATE, READ, WRITE)) {
+                        f0.force();
                     }
 
                     segmentAware.onSegmentCompressed(segIdx);
+
+                    if (evt.isRecordable(EVT_WAL_SEGMENT_COMPACTED) && !cctx.kernalContext().recoveryMode()) {
+                        evt.record(new WalSegmentCompactedEvent(
+                                cctx.localNode(),
+                                segIdx,
+                                zip.getAbsoluteFile())
+                        );
+                    }
                 }
                 catch (IgniteInterruptedCheckedException ignore) {
                     Thread.currentThread().interrupt();

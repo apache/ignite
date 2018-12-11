@@ -261,6 +261,8 @@ public final class IgniteSystemProperties {
 
     /**
      * System property to enable pending transaction tracker.
+     * Affects impact of {@link IgniteSystemProperties#IGNITE_DISABLE_WAL_DURING_REBALANCING} property:
+     * if this property is set, WAL anyway won't be disabled during rebalancing triggered by baseline topology change.
      */
     public static final String IGNITE_PENDING_TX_TRACKER_ENABLED = "IGNITE_PENDING_TX_TRACKER_ENABLED";
 
@@ -1048,6 +1050,16 @@ public final class IgniteSystemProperties {
      * Sets default {@link DataStorageConfiguration#setPageSize storage page size}.
      */
     public static final String IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE = "IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE";
+
+    /**
+     * When set to {@code true}, cache metrics are not included into the discovery metrics update message (in this
+     * case message contains only cluster metrics). By default cache metrics are included into the message and
+     * calculated each time the message is sent.
+     * <p>
+     * Cache metrics sending can also be turned off by disabling statistics per each cache, but in this case some cache
+     * metrics will be unavailable via JMX too.
+     */
+    public static final String IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE = "IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE";
 
     /**
      * Enforces singleton.

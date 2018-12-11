@@ -30,13 +30,18 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Checks that CacheProjection.reload() operations are performed correctly.
  */
+@RunWith(JUnit4.class)
 public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
     /** Maximum allowed number of cache entries. */
     public static final int MAX_CACHE_ENTRIES = 500;
@@ -52,6 +57,26 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
 
     /** Near enabled flag. */
     private boolean nearEnabled = true;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+
+        if (nearEnabled)
+            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+
+        if (nearEnabled)
+            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -118,7 +143,10 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testReloadEvictionLocalCache() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         cacheMode = CacheMode.LOCAL;
 
         doTest();
@@ -130,6 +158,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testReloadEvictionPartitionedCacheNearEnabled() throws Exception {
         cacheMode = PARTITIONED;
 
@@ -142,6 +171,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testReloadEvictionPartitionedCacheNearDisabled() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = false;
@@ -154,6 +184,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testReloadEvictionReplicatedCache() throws Exception {
         cacheMode = CacheMode.REPLICATED;
 

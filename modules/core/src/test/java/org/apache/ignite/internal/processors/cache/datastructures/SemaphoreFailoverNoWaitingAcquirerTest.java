@@ -27,13 +27,16 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.util.concurrent.TimeUnit;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  *
- * Class to test the retrieval of a permit on a semaphore after initial semaphore owner has been closed. 
+ * Class to test the retrieval of a permit on a semaphore after initial semaphore owner has been closed.
  *
  * IGNITE-7090
  *
@@ -42,6 +45,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  * </pre></b>
  *
  */
+@RunWith(JUnit4.class)
 public class SemaphoreFailoverNoWaitingAcquirerTest extends GridCommonAbstractTest {
     /** */
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -74,6 +78,7 @@ public class SemaphoreFailoverNoWaitingAcquirerTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReleasePermitsPartitioned() throws Exception {
         atomicsCacheMode = PARTITIONED;
 
@@ -83,6 +88,7 @@ public class SemaphoreFailoverNoWaitingAcquirerTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReleasePermitsReplicated() throws Exception {
         atomicsCacheMode = REPLICATED;
 

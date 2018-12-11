@@ -111,6 +111,14 @@ export default class Caches {
         {value: 'OFFHEAP_VALUES', label: 'OFFHEAP_VALUES'}
     ];
 
+    diskPageCompression = [
+        {value: 'SKIP_GARBAGE', label: 'SKIP_GARBAGE'},
+        {value: 'ZSTD', label: 'ZSTD'},
+        {value: 'LZ4', label: 'LZ4'},
+        {value: 'SNAPPY', label: 'SNAPPY'},
+        {value: null, label: 'Disabled'}
+    ];
+
     offHeapMode = {
         _val(cache) {
             return (cache.offHeapMode === null || cache.offHeapMode === void 0) ? -1 : cache.offHeapMode;

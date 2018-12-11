@@ -45,10 +45,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class OptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * @return Marshaller.
@@ -68,6 +72,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
      *
      * @throws IgniteCheckedException If marshalling failed.
      */
+    @Test
     public void testNonSerializable() throws IgniteCheckedException {
         OptimizedMarshaller marsh = marshaller();
 
@@ -83,6 +88,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
      *
      * @throws IgniteCheckedException If marshalling failed.
      */
+    @Test
     public void testNonSerializable1() throws IgniteCheckedException {
         OptimizedMarshaller marsh = marshaller();
 
@@ -104,6 +110,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
      *
      * @throws IgniteCheckedException If marshalling failed.
      */
+    @Test
     public void testNonSerializable2() throws IgniteCheckedException {
         OptimizedMarshaller marsh = marshaller();
 
@@ -137,6 +144,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
      *
      * @throws IgniteCheckedException If marshalling failed.
      */
+    @Test
     public void testNonSerializable3() throws IgniteCheckedException {
         OptimizedMarshaller marsh = marshaller();
 
@@ -149,11 +157,12 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
         assertFalse(ipFinder.isShared());
     }
 
-     /**
+    /**
      * Tests ability to marshal non-serializable objects.
      *
      * @throws IgniteCheckedException If marshalling failed.
      */
+    @Test
     public void testNonSerializable4() throws IgniteCheckedException {
         OptimizedMarshaller marsh = marshaller();
 
@@ -168,11 +177,12 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
         assertTrue(bean.isFlag());
     }
 
-     /**
+    /**
      * Tests ability to marshal non-serializable objects.
      *
      * @throws IgniteCheckedException If marshalling failed.
      */
+    @Test
     public void testNonSerializable5() throws IgniteCheckedException {
         Marshaller marsh = marshaller();
 
@@ -188,6 +198,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
      *
      * @throws IgniteCheckedException If marshalling failed.
      */
+    @Test
     public void testSerializable() throws IgniteCheckedException {
         Marshaller marsh = marshaller();
 
@@ -199,6 +210,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testSerializableAfterChangingValue() throws IgniteCheckedException {
         Marshaller marsh = marshaller();
 
@@ -220,6 +232,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
      *
      * @throws IgniteCheckedException If marshalling failed.
      */
+    @Test
     public void testExternalizable() throws IgniteCheckedException {
         Marshaller marsh = marshaller();
 
@@ -233,6 +246,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * Tests {@link OptimizedMarshaller#setRequireSerializable(boolean)}.
      */
+    @Test
     public void testRequireSerializable() {
         OptimizedMarshaller marsh = marshaller();
 
@@ -253,6 +267,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
      *
      * @throws IgniteCheckedException If marshalling failed.
      */
+    @Test
     public void testProxy() throws IgniteCheckedException {
         OptimizedMarshaller marsh = marshaller();
 
@@ -286,6 +301,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDescriptorCache() throws Exception {
         try {
             Ignite ignite = startGridsMultiThreaded(2);
@@ -322,6 +338,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPerformance() throws Exception {
         System.gc();
 

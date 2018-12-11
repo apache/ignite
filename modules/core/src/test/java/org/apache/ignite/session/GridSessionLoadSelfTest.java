@@ -44,11 +44,15 @@ import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Task session load self test.
  */
 @GridCommonTest(group = "Task Session")
+@RunWith(JUnit4.class)
 public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int THREAD_CNT = 40;
@@ -82,6 +86,7 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSessionLoad() throws Exception {
         locMarsh = true;
 
@@ -91,6 +96,7 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSessionLoadNoLocalMarshalling() throws Exception {
         locMarsh = false;
 

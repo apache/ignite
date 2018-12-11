@@ -252,6 +252,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STORAGE_
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JIT_NAME;
@@ -1094,6 +1095,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             IgniteInternalFuture<Boolean> transitionWaitFut = joinData.transitionWaitFuture();
 
+            // Notify discovery manager the first to make sure that topology is discovered.
+            // Active flag is not used in managers, so it is safe to pass true.
+            ctx.discovery().onKernalStart(true);
+
+            // Notify IO manager the second so further components can send and receive messages.
+            // Must notify the IO manager before transition state await to make sure IO connection can be established.
+            ctx.io().onKernalStart(true);
+
             boolean active;
 
             if (transitionWaitFut != null) {
@@ -1106,12 +1115,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }
             else
                 active = joinData.active();
-
-            // Notify discovery manager the first to make sure that topology is discovered.
-            ctx.discovery().onKernalStart(active);
-
-            // Notify IO manager the second so further components can send and receive messages.
-            ctx.io().onKernalStart(active);
 
             boolean recon = false;
 
@@ -1624,6 +1627,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Save transactions configuration.
         add(ATTR_TX_CONFIG, cfg.getTransactionConfiguration());
 
+        // Supported features.
+        add(ATTR_IGNITE_FEATURES, IgniteFeatures.allFeatures());
+
         // Stick in SPI versions and classes attributes.
         addSpiAttributes(cfg.getCollisionSpi());
         addSpiAttributes(cfg.getDiscoverySpi());
@@ -2112,12 +2118,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                         pdsUsedSummary += pdsUsed;
 
-                        // TODO https://issues.apache.org/jira/browse/IGNITE-9455
-                        // TODO Print actual value for meta store region when issue will be fixed.
-                        boolean metastore =
-                            GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME.equals(region.config().getName());
-
-                        String pdsUsedSize = metastore ? "unknown" : dblFmt.format(pdsUsedMBytes) + "MB";
+                        String pdsUsedSize = dblFmt.format(pdsUsedMBytes) + "MB";
 
                         pdsRegionsInfo.append("    ^--   ")
                             .append(region.config().getName()).append(" region")
@@ -3013,7 +3014,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @Override public <K, V> IgniteBiTuple<IgniteCache<K, V>, Boolean> getOrCreateCache0(
         CacheConfiguration<K, V> cacheCfg, boolean sql) {
         A.notNull(cacheCfg, "cacheCfg");
-        CU.validateNewCacheName(cacheCfg.getName());
+        String cacheName = cacheCfg.getName();
+
+        CU.validateNewCacheName(cacheName);
 
         guard();
 
@@ -3022,18 +3025,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             Boolean res = false;
 
-            if (ctx.cache().cache(cacheCfg.getName()) == null) {
+            if (ctx.cache().cache(cacheName) == null) {
                 res =
                     sql ? ctx.cache().dynamicStartSqlCache(cacheCfg).get() :
                         ctx.cache().dynamicStartCache(cacheCfg,
-                            cacheCfg.getName(),
+                            cacheName,
                             null,
                             false,
                             true,
                             true).get();
             }
 
-            return new IgniteBiTuple<>((IgniteCache<K, V>)ctx.cache().publicJCache(cacheCfg.getName()), res);
+            return new IgniteBiTuple<>(ctx.cache().publicJCache(cacheName), res);
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);

@@ -28,6 +28,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -35,6 +38,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgnitePartitionedQueueNoBackupsTest extends GridCachePartitionedQueueApiSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode collectionCacheMode() {
@@ -58,6 +62,7 @@ public class IgnitePartitionedQueueNoBackupsTest extends GridCachePartitionedQue
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollocation() throws Exception {
         IgniteQueue<Integer> queue = grid(0).queue("queue", 0, config(true));
 
