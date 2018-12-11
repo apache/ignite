@@ -64,7 +64,6 @@ public class StackedVectorDatasetTrainer<O, AM extends Model<Vector, O>, L>
     }
 
     //TODO: IGNITE-10441 -- Look for options to avoid boilerplate overrides.
-
     /** {@inheritDoc} */
     @Override public StackedVectorDatasetTrainer<O, AM, L> withAggregatorTrainer(
         DatasetTrainer<AM, L> aggregatorTrainer) {
