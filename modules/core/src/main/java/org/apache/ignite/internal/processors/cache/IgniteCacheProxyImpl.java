@@ -1810,36 +1810,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /** {@inheritDoc} */
-    @Override public void preloadPartition(int part) {
-        try {
-            delegate.preloadPartition(part);
-        }
-        catch (IgniteCheckedException e) {
-            throw cacheException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> preloadPartitionAsync(int part) {
-        try {
-            return (IgniteFuture<Void>)createFuture(delegate.preloadPartitionAsync(part));
-        }
-        catch (IgniteCheckedException e) {
-            throw cacheException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean localPreloadPartition(int part) {
-        try {
-            return delegate.localPreloadPartition(part);
-        }
-        catch (IgniteCheckedException e) {
-            throw cacheException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(ctx);
 

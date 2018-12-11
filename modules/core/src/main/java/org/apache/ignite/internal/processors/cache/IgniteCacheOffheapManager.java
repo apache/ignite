@@ -21,8 +21,8 @@ import java.util.Map;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
@@ -350,14 +350,6 @@ public interface IgniteCacheOffheapManager {
     public long totalPartitionEntriesCount(int part);
 
     /**
-     * Preload a partition. Must be called under partition reservation for DHT caches.
-     *
-     * @param part Partition.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void preloadPartition(int part) throws IgniteCheckedException;
-
-    /**
      *
      */
     interface OffheapInvokeClosure extends IgniteTree.InvokeClosure<CacheDataRow> {
@@ -548,7 +540,7 @@ public interface IgniteCacheOffheapManager {
         /**
          * @param cntr Counter.
          */
-        public void updateInitialCounter(long cntr);
+        void updateInitialCounter(long cntr);
 
         /**
          * Inject rows cache cleaner.
@@ -564,7 +556,5 @@ public interface IgniteCacheOffheapManager {
          * @throws IgniteCheckedException
          */
         PendingEntriesTree pendingTree();
-
-        public void preload() throws IgniteCheckedException;
     }
 }

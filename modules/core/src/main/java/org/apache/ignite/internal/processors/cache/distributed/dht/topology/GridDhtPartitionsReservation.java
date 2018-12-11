@@ -179,7 +179,7 @@ public class GridDhtPartitionsReservation implements GridReservable {
      */
     private static void tryEvict(GridDhtLocalPartition[] parts) {
         if (parts == null)  // Can be not initialized yet.
-            return;
+            return ;
 
         for (GridDhtLocalPartition part : parts)
             tryEvict(part);

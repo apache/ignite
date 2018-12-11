@@ -232,27 +232,4 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     @Override public long localSizeLong(int part, CachePeekMode[] peekModes) throws IgniteCheckedException {
         return localSizeLong(peekModes);
     }
-
-    /** {@inheritDoc} */
-    @Override public void preloadPartition(int part) throws IgniteCheckedException {
-        ctx.offheap().preloadPartition(part);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> preloadPartitionAsync(int part) throws IgniteCheckedException {
-        return ctx.closures().callLocalSafe(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                preloadPartition(part);
-
-                return null;
-            }
-        });
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean localPreloadPartition(int part) throws IgniteCheckedException {
-        ctx.offheap().preloadPartition(part);
-
-        return true;
-    }
 }
