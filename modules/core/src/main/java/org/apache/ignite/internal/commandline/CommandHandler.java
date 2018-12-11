@@ -2778,8 +2778,13 @@ public class CommandHandler {
 
                         tryConnectMaxCount--;
                     }
-                    else
+                    else {
+                        if (tryConnectMaxCount == 0)
+                            throw new GridClientAuthenticationException("Authentication error, maximum number of " +
+                                "retries exceeded");
+
                         throw e;
+                    }
                 }
             }
 
