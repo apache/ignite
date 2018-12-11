@@ -325,10 +325,12 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
             throw new IllegalStateException("There should be at least one way for submodels " +
                 "input to be propageted to aggregator.");
 
-        if (submodelOutput2VectorConverter == null || vector2SubmodelInputConverter == null) {
+        if (submodelOutput2VectorConverter == null || vector2SubmodelInputConverter == null)
             throw new IllegalStateException("There should be a specified way to convert vectors to submodels " +
                 "input and submodels output to vector");
-        }
+
+        if (aggregatingInputMerger == null)
+            throw new IllegalStateException("Binary operator used to convert outputs of submodels is not specified");
 
         List<IgniteSupplier<Model<IS, IA>>> mdlSuppliers = taskSupplier.apply(submodelsTrainers);
 
