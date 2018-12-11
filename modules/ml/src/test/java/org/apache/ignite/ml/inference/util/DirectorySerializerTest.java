@@ -63,10 +63,11 @@ public class DirectorySerializerTest {
             assertEquals(1, files.length);
             assertEquals("test.txt", files[0].getName());
 
-            Scanner scanner = new Scanner(files[0]);
-            assertTrue(scanner.hasNextLine());
-            assertEquals("Hello, world!", scanner.nextLine());
-            assertFalse(scanner.hasNextLine());
+            try (Scanner scanner = new Scanner(files[0])) {
+                assertTrue(scanner.hasNextLine());
+                assertEquals("Hello, world!", scanner.nextLine());
+                assertFalse(scanner.hasNextLine());
+            }
         }
         finally {
             DirectorySerializer.deleteDirectory(src);
@@ -111,10 +112,11 @@ public class DirectorySerializerTest {
             assertEquals(1, files.length);
             assertEquals("test.txt", files[0].getName());
 
-            Scanner scanner = new Scanner(files[0]);
-            assertTrue(scanner.hasNextLine());
-            assertEquals("Hello, world!", scanner.nextLine());
-            assertFalse(scanner.hasNextLine());
+            try (Scanner scanner = new Scanner(files[0])) {
+                assertTrue(scanner.hasNextLine());
+                assertEquals("Hello, world!", scanner.nextLine());
+                assertFalse(scanner.hasNextLine());
+            }
         }
         finally {
             DirectorySerializer.deleteDirectory(src);

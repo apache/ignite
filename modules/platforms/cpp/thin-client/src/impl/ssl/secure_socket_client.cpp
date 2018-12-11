@@ -24,11 +24,14 @@
 
 #include "impl/net/tcp_socket_client.h"
 #include "impl/ssl/secure_socket_client.h"
-#include "impl/ssl/ssl_bindings.h"
+
+#include "impl/ssl/ssl_gateway.h"
 
 #ifndef SOCKET_ERROR
 #   define SOCKET_ERROR (-1)
 #endif // SOCKET_ERROR
+
+enum { OPERATION_SUCCESS = 1 };
 
 namespace ignite
 {
@@ -55,12 +58,14 @@ namespace ignite
                     CloseInteral();
 
                     if (context)
-                        ssl::SSL_CTX_free(reinterpret_cast<SSL_CTX*>(context));
+                        SslGateway::GetInstance().SSL_CTX_free_(reinterpret_cast<SSL_CTX*>(context));
                 }
 
                 bool SecureSocketClient::Connect(const char* hostname, uint16_t port, int32_t timeout)
                 {
-                    assert(SslGateway::GetInstance().Loaded());
+                    SslGateway &sslGateway = SslGateway::GetInstance();
+
+                    assert(sslGateway.Loaded());
 
                     if (!context)
                     {
@@ -77,34 +82,34 @@ namespace ignite
                     if (!ssl0)
                         return false;
 
-                    int res = ssl::SSL_set_tlsext_host_name_(ssl0, hostname);
+                    int res = sslGateway.SSL_set_tlsext_host_name_(ssl0, hostname);
                     if (res != OPERATION_SUCCESS)
                     {
-                        ssl::SSL_free_(ssl0);
+                        sslGateway.SSL_free_(ssl0);
 
                         std::string err = "Can not set host name for secure connection: " + GetSslError(ssl0, res);
 
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, err.c_str());
                     }
 
-                    ssl::SSL_set_connect_state_(ssl0);
+                    sslGateway.SSL_set_connect_state_(ssl0);
 
                     bool connected = CompleteConnectInternal(ssl0, timeout);
 
                     if (!connected)
                     {
-                        ssl::SSL_free_(ssl0);
+                        sslGateway.SSL_free_(ssl0);
 
                         return false;
                     }
 
                     // Verify a server certificate was presented during the negotiation
-                    X509* cert = ssl::SSL_get_peer_certificate(ssl0);
+                    X509* cert = sslGateway.SSL_get_peer_certificate_(ssl0);
                     if (cert)
-                        ssl::X509_free(cert);
+                        sslGateway.X509_free_(cert);
                     else
                     {
-                        ssl::SSL_free_(ssl0);
+                        sslGateway.SSL_free_(ssl0);
 
 //                        std::string err = "Remote host did not provide certificate: " + GetSslError(ssl0, res);
 
@@ -113,10 +118,10 @@ namespace ignite
 
                     // Verify the result of chain verification
                     // Verification performed according to RFC 4158
-                    res = ssl::SSL_get_verify_result(ssl0);
+                    res = sslGateway.SSL_get_verify_result_(ssl0);
                     if (X509_V_OK != res)
                     {
-                        ssl::SSL_free_(ssl0);
+                        sslGateway.SSL_free_(ssl0);
 
 //                        std::string err = "Certificate chain verification failed: " + GetSslError(ssl0, res);
 
@@ -135,7 +140,9 @@ namespace ignite
 
                 int SecureSocketClient::Send(const int8_t* data, size_t size, int32_t timeout)
                 {
-                    assert(SslGateway::GetInstance().Loaded());
+                    SslGateway &sslGateway = SslGateway::GetInstance();
+
+                    assert(sslGateway.Loaded());
 
                     if (!ssl)
                     {
@@ -145,14 +152,16 @@ namespace ignite
 
                     SSL* ssl0 = reinterpret_cast<SSL*>(ssl);
 
-                    int res = ssl::SSL_write_(ssl0, data, static_cast<int>(size));
+                    int res = sslGateway.SSL_write_(ssl0, data, static_cast<int>(size));
 
                     return res;
                 }
 
                 int SecureSocketClient::Receive(int8_t* buffer, size_t size, int32_t timeout)
                 {
-                    assert(SslGateway::GetInstance().Loaded());
+                    SslGateway &sslGateway = SslGateway::GetInstance();
+
+                    assert(sslGateway.Loaded());
 
                     if (!ssl)
                     {
@@ -164,7 +173,7 @@ namespace ignite
 
                     int res = 0;
 
-                    if (!blocking && ssl::SSL_pending_(ssl0) == 0)
+                    if (!blocking && sslGateway.SSL_pending_(ssl0) == 0)
                     {
                         res = WaitOnSocket(ssl, timeout, true);
 
@@ -172,7 +181,7 @@ namespace ignite
                             return res;
                     }
 
-                    res = ssl::SSL_read_(ssl0, buffer, static_cast<int>(size));
+                    res = sslGateway.SSL_read_(ssl0, buffer, static_cast<int>(size));
 
                     return res;
                 }
@@ -185,76 +194,58 @@ namespace ignite
                 void* SecureSocketClient::MakeContext(const std::string& certPath, const std::string& keyPath,
                     const std::string& caPath)
                 {
-                    assert(SslGateway::GetInstance().Loaded());
+                    SslGateway &sslGateway = SslGateway::GetInstance();
 
-                    static bool sslLibInited = false;
-                    static common::concurrent::CriticalSection sslCs;
+                    assert(sslGateway.Loaded());
 
-                    if (!sslLibInited)
-                    {
-                        common::concurrent::CsLockGuard lock(sslCs);
-
-                        if (!sslLibInited)
-                        {
-                            (void)SSL_library_init();
-
-                            SSL_load_error_strings();
-
-                            OPENSSL_config(0);
-
-                            sslLibInited = true;
-                        }
-                    }
-
-                    const SSL_METHOD* method = ssl::SSLv23_client_method_();
+                    const SSL_METHOD* method = sslGateway.SSLv23_client_method_();
                     if (!method)
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not get SSL method");
 
-                    SSL_CTX* ctx = ssl::SSL_CTX_new(method);
+                    SSL_CTX* ctx = sslGateway.SSL_CTX_new_(method);
                     if (!ctx)
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not create new SSL context");
 
-                    ssl::SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, 0);
+                    sslGateway.SSL_CTX_set_verify_(ctx, SSL_VERIFY_PEER, 0);
 
-                    ssl::SSL_CTX_set_verify_depth(ctx, 8);
+                    sslGateway.SSL_CTX_set_verify_depth_(ctx, 8);
 
-                    const long flags = SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_COMPRESSION;
-                    ssl::SSL_CTX_ctrl(ctx, SSL_CTRL_OPTIONS, flags, NULL);
+                    sslGateway.SSL_CTX_set_options_(ctx, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_COMPRESSION);
 
                     const char* cCaPath = caPath.empty() ? 0 : caPath.c_str();
 
-                    long res = ssl::SSL_CTX_load_verify_locations(ctx, cCaPath, 0);
+                    long res = sslGateway.SSL_CTX_load_verify_locations_(ctx, cCaPath, 0);
                     if (res != OPERATION_SUCCESS)
                     {
-                        ssl::SSL_CTX_free(ctx);
+                        sslGateway.SSL_CTX_free_(ctx);
 
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                             "Can not set Certificate Authority path for secure connection");
                     }
 
-                    res = ssl::SSL_CTX_use_certificate_chain_file(ctx, certPath.c_str());
+                    res = sslGateway.SSL_CTX_use_certificate_chain_file_(ctx, certPath.c_str());
                     if (res != OPERATION_SUCCESS)
                     {
-                        ssl::SSL_CTX_free(ctx);
+                        sslGateway.SSL_CTX_free_(ctx);
 
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                             "Can not set client certificate file for secure connection");
                     }
 
-                    res = ssl::SSL_CTX_use_RSAPrivateKey_file(ctx, keyPath.c_str(), SSL_FILETYPE_PEM);
+                    res = sslGateway.SSL_CTX_use_RSAPrivateKey_file_(ctx, keyPath.c_str(), SSL_FILETYPE_PEM);
                     if (res != OPERATION_SUCCESS)
                     {
-                        ssl::SSL_CTX_free(ctx);
+                        sslGateway.SSL_CTX_free_(ctx);
 
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                             "Can not set private key file for secure connection");
                     }
 
                     const char* const PREFERRED_CIPHERS = "HIGH:!aNULL:!kRSA:!PSK:!SRP:!MD5:!RC4";
-                    res = ssl::SSL_CTX_set_cipher_list(ctx, PREFERRED_CIPHERS);
+                    res = sslGateway.SSL_CTX_set_cipher_list_(ctx, PREFERRED_CIPHERS);
                     if (res != OPERATION_SUCCESS)
                     {
-                        ssl::SSL_CTX_free(ctx);
+                        sslGateway.SSL_CTX_free_(ctx);
 
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                             "Can not set ciphers list for secure connection");
@@ -265,30 +256,34 @@ namespace ignite
 
                 void* SecureSocketClient::MakeSsl(void* context, const char* hostname, uint16_t port, bool& blocking)
                 {
-                    BIO* bio = ssl::BIO_new_ssl_connect(reinterpret_cast<SSL_CTX*>(context));
+                    SslGateway &sslGateway = SslGateway::GetInstance();
+
+                    assert(sslGateway.Loaded());
+
+                    BIO* bio = sslGateway.BIO_new_ssl_connect_(reinterpret_cast<SSL_CTX*>(context));
                     if (!bio)
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not create SSL connection.");
 
-                    blocking = ssl::BIO_set_nbio_(bio, 1) != OPERATION_SUCCESS;
+                    blocking = sslGateway.BIO_set_nbio_(bio, 1) != OPERATION_SUCCESS;
 
                     std::stringstream stream;
                     stream << hostname << ":" << port;
 
                     std::string address = stream.str();
 
-                    long res = ssl::BIO_set_conn_hostname_(bio, address.c_str());
+                    long res = sslGateway.BIO_set_conn_hostname_(bio, address.c_str());
                     if (res != OPERATION_SUCCESS)
                     {
-                        ssl::BIO_free_all(bio);
+                        sslGateway.BIO_free_all_(bio);
 
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not set SSL connection hostname.");
                     }
 
                     SSL* ssl = 0;
-                    ssl::BIO_get_ssl_(bio, &ssl);
+                    sslGateway.BIO_get_ssl_(bio, &ssl);
                     if (!ssl)
                     {
-                        ssl::BIO_free_all(bio);
+                        sslGateway.BIO_free_all_(bio);
 
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not get SSL instance from BIO.");
                     }
@@ -298,21 +293,25 @@ namespace ignite
 
                 bool SecureSocketClient::CompleteConnectInternal(void* ssl, int timeout)
                 {
+                    SslGateway &sslGateway = SslGateway::GetInstance();
+
+                    assert(sslGateway.Loaded());
+
                     SSL* ssl0 = reinterpret_cast<SSL*>(ssl);
 
                     while (true)
                     {
-                        int res = ssl::SSL_connect_(ssl0);
+                        int res = sslGateway.SSL_connect_(ssl0);
 
                         if (res == OPERATION_SUCCESS)
                             return true;
 
-                        int sslError = ssl::SSL_get_error_(ssl0, res);
+                        int sslError = sslGateway.SSL_get_error_(ssl0, res);
 
                         if (IsActualError(sslError))
                             return false;
 
-                        int want = ssl::SSL_want_(ssl0);
+                        int want = sslGateway.SSL_want_(ssl0);
 
                         res = WaitOnSocket(ssl, timeout, want == SSL_READING);
 
@@ -326,9 +325,13 @@ namespace ignite
 
                 std::string SecureSocketClient::GetSslError(void* ssl, int ret)
                 {
+                    SslGateway &sslGateway = SslGateway::GetInstance();
+
+                    assert(sslGateway.Loaded());
+
                     SSL* ssl0 = reinterpret_cast<SSL*>(ssl);
 
-                    int sslError = ssl::SSL_get_error_(ssl0, ret);
+                    int sslError = sslGateway.SSL_get_error_(ssl0, ret);
 
                     switch (sslError)
                     {
@@ -345,11 +348,11 @@ namespace ignite
                             return std::string("SSL error: ") + common::LexicalCast<std::string>(sslError);
                     }
 
-                    long error = ssl::ERR_get_error_();
+                    long error = sslGateway.ERR_get_error_();
 
                     char errBuf[1024] = { 0 };
 
-                    ssl::ERR_error_string_n_(error, errBuf, sizeof(errBuf));
+                    sslGateway.ERR_error_string_n_(error, errBuf, sizeof(errBuf));
 
                     return std::string(errBuf);
                 }
@@ -373,11 +376,13 @@ namespace ignite
 
                 void SecureSocketClient::CloseInteral()
                 {
-                    assert(SslGateway::GetInstance().Loaded());
+                    SslGateway &sslGateway = SslGateway::GetInstance();
+
+                    assert(sslGateway.Loaded());
 
                     if (ssl)
                     {
-                        ssl::SSL_free_(reinterpret_cast<SSL*>(ssl));
+                        sslGateway.SSL_free_(reinterpret_cast<SSL*>(ssl));
 
                         ssl = 0;
                     }
@@ -385,13 +390,17 @@ namespace ignite
 
                 int SecureSocketClient::WaitOnSocket(void* ssl, int32_t timeout, bool rd)
                 {
+                    SslGateway &sslGateway = SslGateway::GetInstance();
+
+                    assert(sslGateway.Loaded());
+
                     int ready = 0;
                     int lastError = 0;
                     SSL* ssl0 = reinterpret_cast<SSL*>(ssl);
 
                     fd_set fds;
 
-                    int fd = ssl::SSL_get_fd_(ssl0);
+                    int fd = sslGateway.SSL_get_fd_(ssl0);
 
                     if (fd < 0)
                     {

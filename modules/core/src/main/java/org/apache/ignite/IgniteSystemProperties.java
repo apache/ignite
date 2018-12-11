@@ -260,6 +260,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT = "IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT";
 
     /**
+     * System property to enable pending transaction tracker.
+     * Affects impact of {@link IgniteSystemProperties#IGNITE_DISABLE_WAL_DURING_REBALANCING} property:
+     * if this property is set, WAL anyway won't be disabled during rebalancing triggered by baseline topology change.
+     */
+    public static final String IGNITE_PENDING_TX_TRACKER_ENABLED = "IGNITE_PENDING_TX_TRACKER_ENABLED";
+
+    /**
      * System property to override multicast group taken from configuration.
      * Used for testing purposes.
      */
@@ -589,21 +596,6 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT =
         "IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT";
-
-    /**
-     * Manages backward compatibility of {@link IgniteServices}. All nodes in cluster must have identical value
-     * of this property.
-     * <p>
-     * If property is {@code false} then node is not required to have service implementation class if service is not
-     * deployed on this node.
-     * <p>
-     * If the property is {@code true} then service implementation class is required on node even if service
-     * is not deployed on this node.
-     * <p>
-     * If the property is not set ({@code null}) then Ignite will automatically detect which compatibility mode
-     * should be used.
-     */
-    public static final String IGNITE_SERVICES_COMPATIBILITY_MODE = "IGNITE_SERVICES_COMPATIBILITY_MODE";
 
     /**
      * Manages backward compatibility of {@link StreamTransformer#from(CacheEntryProcessor)} method.
@@ -1039,6 +1031,9 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_ALLOW_START_CACHES_IN_PARALLEL = "IGNITE_ALLOW_START_CACHES_IN_PARALLEL";
 
+    /** For test purposes only. Force Mvcc mode. */
+    public static final String IGNITE_FORCE_MVCC_MODE_IN_TESTS = "IGNITE_FORCE_MVCC_MODE_IN_TESTS";
+
     /**
      * Allows to log additional information about all restored partitions after binary and logical recovery phases.
      *
@@ -1055,6 +1050,16 @@ public final class IgniteSystemProperties {
      * Sets default {@link DataStorageConfiguration#setPageSize storage page size}.
      */
     public static final String IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE = "IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE";
+
+    /**
+     * When set to {@code true}, cache metrics are not included into the discovery metrics update message (in this
+     * case message contains only cluster metrics). By default cache metrics are included into the message and
+     * calculated each time the message is sent.
+     * <p>
+     * Cache metrics sending can also be turned off by disabling statistics per each cache, but in this case some cache
+     * metrics will be unavailable via JMX too.
+     */
+    public static final String IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE = "IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE";
 
     /**
      * Enforces singleton.

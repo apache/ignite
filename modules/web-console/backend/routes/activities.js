@@ -24,8 +24,8 @@ const express = require('express');
 module.exports = {
     implements: 'routes/activities',
     inject: ['services/activities'],
+
     /**
-     * @param express
      * @param {ActivitiesService} activitiesService
      * @returns {Promise}
      */
@@ -35,7 +35,7 @@ module.exports = {
 
             // Post user activities to page.
             router.post('/page', (req, res) => {
-                activitiesService.merge(req.user._id, req.body)
+                activitiesService.merge(req.user, req.body)
                     .then(res.api.ok)
                     .catch(res.api.error);
             });

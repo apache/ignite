@@ -554,7 +554,7 @@ export default class AgentManager {
                 if (err instanceof CancellationError)
                     return;
 
-                return err;
+                throw err;
             });
     }
 

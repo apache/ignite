@@ -19,6 +19,7 @@ package org.apache.ignite.ml.tree;
 
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.impurity.ImpurityMeasureCalculator;
 import org.apache.ignite.ml.tree.impurity.mse.MSEImpurityMeasure;
@@ -68,5 +69,10 @@ public class DecisionTreeRegressionTrainer extends DecisionTree<MSEImpurityMeasu
         Dataset<EmptyContext, DecisionTreeData> dataset) {
 
         return new MSEImpurityMeasureCalculator(usingIdx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public DecisionTreeRegressionTrainer withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        return (DecisionTreeRegressionTrainer)super.withEnvironmentBuilder(envBuilder);
     }
 }
