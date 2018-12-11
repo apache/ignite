@@ -29,12 +29,16 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgnitePessimisticTxSuspendResumeTest extends GridCommonAbstractTest {
     /**
      * Creates new cache configuration.
@@ -64,6 +68,7 @@ public class IgnitePessimisticTxSuspendResumeTest extends GridCommonAbstractTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSuspendPessimisticTx() throws Exception {
         try (Ignite g = startGrid()) {
             IgniteCache<Integer, String> cache = jcache();

@@ -47,11 +47,15 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Multithreaded job stealing test.
  */
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest {
     /** */
     private Ignite ignite;
@@ -81,6 +85,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testTwoJobsMultithreaded() throws Exception {
         final AtomicReference<Exception> fail = new AtomicReference<>(null);
 
@@ -136,6 +141,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testJoinedNodeCanStealJobs() throws Exception {
         final AtomicReference<Exception> fail = new AtomicReference<>(null);
 

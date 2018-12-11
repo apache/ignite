@@ -53,6 +53,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.compute.ComputeJobResultPolicy.FAILOVER;
 import static org.apache.ignite.compute.ComputeJobResultPolicy.WAIT;
@@ -80,6 +83,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
  * Test event storage.
  */
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTest {
     /** */
     private static Ignite ignite;
@@ -132,6 +136,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testCheckpointEvents() throws Exception {
         long tstamp = startTimestamp();
 
@@ -158,6 +163,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testTaskUndeployEvents() throws Exception {
         final long tstamp = startTimestamp();
 
@@ -201,6 +207,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testSuccessTask() throws Exception {
         generateEvents(null, new GridAllEventsSuccessTestJob()).get();
 
@@ -228,6 +235,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testFailoverJobTask() throws Exception {
         startGrid(0);
 
@@ -269,6 +277,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testFailTask() throws Exception {
         long tstamp = startTimestamp();
 
@@ -300,6 +309,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testTimeoutTask() throws Exception {
         long tstamp = startTimestamp();
 

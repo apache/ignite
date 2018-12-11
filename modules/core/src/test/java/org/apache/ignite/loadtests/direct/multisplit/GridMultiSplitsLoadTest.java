@@ -31,11 +31,15 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Multi-splits load test.
  */
 @GridCommonTest(group = "Load Test")
+@RunWith(JUnit4.class)
 public class GridMultiSplitsLoadTest extends GridCommonAbstractTest {
     /** */
     public GridMultiSplitsLoadTest() {
@@ -87,6 +91,7 @@ public class GridMultiSplitsLoadTest extends GridCommonAbstractTest {
      *
      * @throws Exception If task execution failed.
      */
+    @Test
     public void testLoad() throws Exception {
         final Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
