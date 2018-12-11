@@ -1,6 +1,8 @@
 
 Speed Based Throttling
 ----------------------
+For introduction please see
+[wiki PagesWriteThrottling](https://cwiki.apache.org/confluence/display/IGNITE/Ignite+Persistent+Store+-+under+the+hood#IgnitePersistentStore-underthehood-PagesWriteThrottling)
 
 If throttling is enabled in User configuration then Speed based throttlign is applied.
 
