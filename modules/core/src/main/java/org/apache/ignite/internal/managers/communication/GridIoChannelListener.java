@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.util.UUID;
 import org.apache.ignite.internal.util.nio.channel.GridNioSocketChannel;
-import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
 
 /**
  * Listener for connections established from remote nodes.
@@ -28,8 +26,7 @@ public interface GridIoChannelListener {
     /**
      * Handle {@link GridNioSocketChannel} creation event from remote connection.
      *
-     * @param connKey Node from which connection has been initiated.
      * @param ch Local created channel endpoint.
      */
-    public void onChannelCreated(ConnectionKey connKey, GridNioSocketChannel ch);
+    public void onChannelCreated(GridNioSocketChannel ch);
 }

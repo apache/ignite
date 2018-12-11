@@ -51,10 +51,9 @@ public interface CommunicationListener<T extends Serializable> extends EventList
     /**
      * Handle {@link GridNioSocketChannel} creation event from remote connection.
      *
-     * @param connKey Remote nodeId.
      * @param ch Local created channel endpoint.
      */
-    public default void onChannelCreated(ConnectionKey connKey, GridNioSocketChannel ch) {
+    public default void onChannelCreated(GridNioSocketChannel ch) {
         // No-op.
     }
 }
