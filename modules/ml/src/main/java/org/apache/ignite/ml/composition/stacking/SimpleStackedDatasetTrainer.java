@@ -19,7 +19,7 @@ package org.apache.ignite.ml.composition.stacking;
 
 import java.util.ArrayList;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.composition.stacking.StackedDatasetTrainer;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -33,7 +33,7 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
  * @param <AM> Type of aggregator model.
  * @param <L> Type of labels.
  */
-public class SimpleStackedModelTrainer<I, O, AM extends Model<I, O>, L> extends StackedDatasetTrainer<I, I, O, AM, L> {
+public class SimpleStackedDatasetTrainer<I, O, AM extends Model<I, O>, L> extends StackedDatasetTrainer<I, I, O, AM, L> {
     /**
      * Construct instance of this class.
      *SS
@@ -42,7 +42,7 @@ public class SimpleStackedModelTrainer<I, O, AM extends Model<I, O>, L> extends 
      * @param submodelInput2AggregatingInputConverter Function used to convert input of submodel to output of submodel
      * this function is used if user chooses to keep original features.
      */
-    public SimpleStackedModelTrainer(DatasetTrainer<AM, L> aggregatingTrainer,
+    public SimpleStackedDatasetTrainer(DatasetTrainer<AM, L> aggregatingTrainer,
         IgniteBinaryOperator<I> aggregatingInputMerger,
         IgniteFunction<I, I> submodelInput2AggregatingInputConverter,
         IgniteFunction<Vector, I> vector2SubmodelInputConverter,
@@ -56,21 +56,59 @@ public class SimpleStackedModelTrainer<I, O, AM extends Model<I, O>, L> extends 
     }
 
     /**
-     * Constructs instance of this class.
-     */
-    public SimpleStackedModelTrainer() {
-        super();
-    }
-
-    /**
      * Construct instance of this class.
      *
      * @param aggregatingTrainer Aggregator trainer.
      * @param aggregatingInputMerger Function used to merge submodels outputs into one.
      */
-    public SimpleStackedModelTrainer(DatasetTrainer<AM, L> aggregatingTrainer,
+    public SimpleStackedDatasetTrainer(DatasetTrainer<AM, L> aggregatingTrainer,
         IgniteBinaryOperator<I> aggregatingInputMerger) {
         super(aggregatingTrainer, aggregatingInputMerger, IgniteFunction.identity());
+    }
+
+    /**
+     * Constructs instance of this class.
+     */
+    public SimpleStackedDatasetTrainer() {
+        super();
+    }
+
+    //TODO: IGNITE-10441 -- Look for options to avoid boilerplate overrides.
+    @Override public <M1 extends Model<I, I>> SimpleStackedDatasetTrainer<I, O, AM, L> addTrainer(
+        DatasetTrainer<M1, L> trainer) {
+        return (SimpleStackedDatasetTrainer<I, O, AM, L>)super.addTrainer(trainer);
+    }
+
+    /** {@inheritDoc} */
+    @Override public SimpleStackedDatasetTrainer<I, O, AM, L> withAggregatorTrainer(
+        DatasetTrainer<AM, L> aggregatorTrainer) {
+        return (SimpleStackedDatasetTrainer<I, O, AM, L>)super.withAggregatorTrainer(aggregatorTrainer);
+    }
+
+    /** {@inheritDoc} */
+    @Override public SimpleStackedDatasetTrainer<I, O, AM, L> withOriginalFeaturesDropped() {
+        return (SimpleStackedDatasetTrainer<I, O, AM, L>)super.withOriginalFeaturesDropped();
+    }
+
+    @Override public SimpleStackedDatasetTrainer<I, O, AM, L> withOriginalFeaturesKept(
+        IgniteFunction<I, I> submodelInput2AggregatingInputConverter) {
+        return (SimpleStackedDatasetTrainer<I, O, AM, L>)super.withOriginalFeaturesKept(
+            submodelInput2AggregatingInputConverter);
+    }
+
+    @Override public SimpleStackedDatasetTrainer<I, O, AM, L> withAggregatorInputMerger(IgniteBinaryOperator<I> merger) {
+        return (SimpleStackedDatasetTrainer<I, O, AM, L>)super.withAggregatorInputMerger(merger);
+    }
+
+    /** {@inheritDoc} */
+    @Override public SimpleStackedDatasetTrainer<I, O, AM, L> withEnvironmentBuilder(
+        LearningEnvironmentBuilder envBuilder) {
+        return (SimpleStackedDatasetTrainer<I, O, AM, L>)super.withEnvironmentBuilder(envBuilder);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <L1> SimpleStackedDatasetTrainer<I, O, AM, L1> withConvertedLabels(IgniteFunction<L1, L> new2Old) {
+        return (SimpleStackedDatasetTrainer<I, O, AM, L1>)super.withConvertedLabels(new2Old);
     }
 
     /**
@@ -78,7 +116,7 @@ public class SimpleStackedModelTrainer<I, O, AM extends Model<I, O>, L> extends 
      *
      * @return This object.
      */
-    public StackedDatasetTrainer<I, I, O, AM, L> withOriginalFeaturesKept() {
-        return super.withOriginalFeaturesKept(IgniteFunction.identity());
+    public SimpleStackedDatasetTrainer<I, O, AM, L> withOriginalFeaturesKept() {
+        return (SimpleStackedDatasetTrainer<I, O, AM, L>)super.withOriginalFeaturesKept(IgniteFunction.identity());
     }
 }

@@ -35,14 +35,14 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
  * @param <L> Type of labels.
  * @param <AM> Type of aggregator model.
  */
-public class StackedVectorTrainer<O, AM extends Model<Vector, O>, L>
-    extends SimpleStackedModelTrainer<Vector, O, AM, L> {
+public class StackedVectorDatasetTrainer<O, AM extends Model<Vector, O>, L>
+    extends SimpleStackedDatasetTrainer<Vector, O, AM, L> {
     /**
      * Constructs instance of this class.
      *
      * @param aggregatingTrainer Aggregator trainer.
      */
-    public StackedVectorTrainer(DatasetTrainer<AM, L> aggregatingTrainer) {
+    public StackedVectorDatasetTrainer(DatasetTrainer<AM, L> aggregatingTrainer) {
         super(aggregatingTrainer,
             VectorUtils::concat,
             IgniteFunction.identity(),
@@ -53,67 +53,71 @@ public class StackedVectorTrainer<O, AM extends Model<Vector, O>, L>
     /**
      * Constructs instance of this class.
      */
-    public StackedVectorTrainer() {
+    public StackedVectorDatasetTrainer() {
         this(null);
     }
 
     /** {@inheritDoc} */
-    @Override public <M1 extends Model<Vector, Vector>> StackedVectorTrainer<O, AM, L> addTrainer(
+    @Override public <M1 extends Model<Vector, Vector>> StackedVectorDatasetTrainer<O, AM, L> addTrainer(
         DatasetTrainer<M1, L> trainer) {
-        return (StackedVectorTrainer<O, AM, L>)super.addTrainer(trainer);
+        return (StackedVectorDatasetTrainer<O, AM, L>)super.addTrainer(trainer);
     }
 
     //TODO: IGNITE-10441 -- Look for options to avoid boilerplate overrides.
+
     /** {@inheritDoc} */
-    @Override public StackedVectorTrainer<O, AM, L> withAggregatorTrainer(
+    @Override public StackedVectorDatasetTrainer<O, AM, L> withAggregatorTrainer(
         DatasetTrainer<AM, L> aggregatorTrainer) {
-        return (StackedVectorTrainer<O, AM, L>)super.withAggregatorTrainer(aggregatorTrainer);
+        return (StackedVectorDatasetTrainer<O, AM, L>)super.withAggregatorTrainer(aggregatorTrainer);
     }
 
     /** {@inheritDoc} */
-    @Override public StackedVectorTrainer<O, AM, L> withOriginalFeaturesKept() {
-        return (StackedVectorTrainer<O, AM, L>)super.withOriginalFeaturesKept();
+    @Override public StackedVectorDatasetTrainer<O, AM, L> withOriginalFeaturesKept() {
+        return (StackedVectorDatasetTrainer<O, AM, L>)super.withOriginalFeaturesKept();
     }
 
     /** {@inheritDoc} */
-    @Override public StackedVectorTrainer<O, AM, L> withOriginalFeaturesDropped() {
-        return (StackedVectorTrainer<O, AM, L>)super.withOriginalFeaturesDropped();
+    @Override public StackedVectorDatasetTrainer<O, AM, L> withOriginalFeaturesDropped() {
+        return (StackedVectorDatasetTrainer<O, AM, L>)super.withOriginalFeaturesDropped();
     }
 
     /** {@inheritDoc} */
-    @Override public StackedVectorTrainer<O, AM, L> withOriginalFeaturesKept(
+    @Override public StackedVectorDatasetTrainer<O, AM, L> withOriginalFeaturesKept(
         IgniteFunction<Vector, Vector> submodelInput2AggregatingInputConverter) {
-        return (StackedVectorTrainer<O, AM, L>)super.withOriginalFeaturesKept(submodelInput2AggregatingInputConverter);
+        return (StackedVectorDatasetTrainer<O, AM, L>)super.withOriginalFeaturesKept(
+            submodelInput2AggregatingInputConverter);
     }
 
     /** {@inheritDoc} */
-    @Override public StackedVectorTrainer<O, AM, L> withSubmodelOutput2VectorConverter(
+    @Override public StackedVectorDatasetTrainer<O, AM, L> withSubmodelOutput2VectorConverter(
         IgniteFunction<Vector, Vector> submodelOutput2VectorConverter) {
-        return (StackedVectorTrainer<O, AM, L>)super.withSubmodelOutput2VectorConverter(submodelOutput2VectorConverter);
+        return (StackedVectorDatasetTrainer<O, AM, L>)super.withSubmodelOutput2VectorConverter(
+            submodelOutput2VectorConverter);
     }
 
     /** {@inheritDoc} */
-    @Override public StackedVectorTrainer<O, AM, L> withVector2SubmodelInputConverter(
+    @Override public StackedVectorDatasetTrainer<O, AM, L> withVector2SubmodelInputConverter(
         IgniteFunction<Vector, Vector> vector2SubmodelInputConverter) {
-        return (StackedVectorTrainer<O, AM, L>)super.withVector2SubmodelInputConverter(vector2SubmodelInputConverter);
+        return (StackedVectorDatasetTrainer<O, AM, L>)super.withVector2SubmodelInputConverter(
+            vector2SubmodelInputConverter);
     }
 
     /** {@inheritDoc} */
-    @Override public StackedVectorTrainer<O, AM, L> withAggregatorInputMerger(
+    @Override public StackedVectorDatasetTrainer<O, AM, L> withAggregatorInputMerger(
         IgniteBinaryOperator<Vector> merger) {
-        return (StackedVectorTrainer<O, AM, L>)super.withAggregatorInputMerger(merger);
+        return (StackedVectorDatasetTrainer<O, AM, L>)super.withAggregatorInputMerger(merger);
     }
 
     /** {@inheritDoc} */
-    @Override public StackedVectorTrainer<O, AM, L> withEnvironmentBuilder(
+    @Override public StackedVectorDatasetTrainer<O, AM, L> withEnvironmentBuilder(
         LearningEnvironmentBuilder envBuilder) {
-        return (StackedVectorTrainer<O, AM, L>)super.withEnvironmentBuilder(envBuilder);
+        return (StackedVectorDatasetTrainer<O, AM, L>)super.withEnvironmentBuilder(envBuilder);
     }
 
     /** {@inheritDoc} */
-    @Override public <L1> StackedVectorTrainer<O, AM, L1> withConvertedLabels(
+    @Override public <L1> StackedVectorDatasetTrainer<O, AM, L1> withConvertedLabels(
         IgniteFunction<L1, L> new2Old) {
-        return (StackedVectorTrainer<O, AM, L1>)super.withConvertedLabels(new2Old);
+        return (StackedVectorDatasetTrainer<O, AM, L1>)super.withConvertedLabels(new2Old);
     }
 
     /**
@@ -124,7 +128,7 @@ public class StackedVectorTrainer<O, AM extends Model<Vector, O>, L>
      * @param <M1> Type of submodel trainer model.
      * @return This object.
      */
-    public <M1 extends Model<Vector, Double>> StackedVectorTrainer<O, AM, L> addTrainerWithDoubleOutput(
+    public <M1 extends Model<Vector, Double>> StackedVectorDatasetTrainer<O, AM, L> addTrainerWithDoubleOutput(
         DatasetTrainer<M1, L> trainer) {
         return addTrainer(AdaptableDatasetTrainer.of(trainer).afterTrainedModel(VectorUtils::num2Vec));
     }
@@ -137,7 +141,7 @@ public class StackedVectorTrainer<O, AM extends Model<Vector, O>, L>
      * @param <M1> Type of submodel trainer model.
      * @return This object.
      */
-    public <M1 extends Model<Matrix, Matrix>> StackedVectorTrainer<O, AM, L> addMatrix2MatrixTrainer(
+    public <M1 extends Model<Matrix, Matrix>> StackedVectorDatasetTrainer<O, AM, L> addMatrix2MatrixTrainer(
         DatasetTrainer<M1, L> trainer) {
         AdaptableDatasetTrainer<Vector, Vector, Matrix, Matrix, M1, L> adapted = AdaptableDatasetTrainer.of(trainer)
             .beforeTrainedModel((Vector v) -> new DenseMatrix(v.asArray(), 1))

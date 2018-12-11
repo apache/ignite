@@ -21,7 +21,7 @@ import java.util.Arrays;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
-import org.apache.ignite.ml.composition.stacking.StackedVectorTrainer;
+import org.apache.ignite.ml.composition.stacking.StackedVectorDatasetTrainer;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
@@ -115,8 +115,8 @@ public class StackingTest extends TrainerTest {
      */
     @Test
     public void testSimpleVectorStack() {
-        StackedVectorTrainer<Double, LinearRegressionModel, Double> trainer =
-            new StackedVectorTrainer<>();
+        StackedVectorDatasetTrainer<Double, LinearRegressionModel, Double> trainer =
+            new StackedVectorDatasetTrainer<>();
 
         UpdatesStrategy<SmoothParametrized, SimpleGDParameterUpdate> updatesStgy = new UpdatesStrategy<>(
             new SimpleGDUpdateCalculator(0.2),
