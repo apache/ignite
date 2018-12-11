@@ -25,12 +25,15 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @SuppressWarnings({"ProhibitedExceptionDeclared"})
 @GridCommonTest(group = "P2P")
+@RunWith(JUnit4.class)
 public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
     /** Task name. */
     private static final String TASK_NAME = "org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1";
