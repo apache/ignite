@@ -92,7 +92,7 @@ public class GridThreadPoolExecutorServiceSelfTest extends GridCommonAbstractTes
      */
     @Test
     public void testGridThreadPoolExecutor() throws Exception {
-        IgniteThreadPoolExecutor exec = new IgniteThreadPoolExecutor("", "", 1, 1, 0, new LinkedBlockingQueue<Runnable>());
+        IgniteThreadPoolExecutor exec = new IgniteThreadPoolExecutor("", "", 1, 1, 0, new LinkedBlockingQueue<>());
 
         exec.submit(new InterruptingRunnable()).get();
 
@@ -109,7 +109,7 @@ public class GridThreadPoolExecutorServiceSelfTest extends GridCommonAbstractTes
      */
     @Test
     public void testGridThreadPoolExecutorRejection() throws Exception {
-        IgniteThreadPoolExecutor exec = new IgniteThreadPoolExecutor("", "", 1, 1, 0, new LinkedBlockingQueue<Runnable>());
+        IgniteThreadPoolExecutor exec = new IgniteThreadPoolExecutor("", "", 1, 1, 0, new LinkedBlockingQueue<>());
 
         for (int i = 0; i < 10; i++)
             exec.submit(new TestRunnable());
@@ -130,7 +130,7 @@ public class GridThreadPoolExecutorServiceSelfTest extends GridCommonAbstractTes
 
         IgniteThreadPoolExecutor exec = new IgniteThreadPoolExecutor(
             THREAD_CNT, THREAD_CNT, Long.MAX_VALUE,
-            new LinkedBlockingQueue<Runnable>(),
+                new LinkedBlockingQueue<>(),
             new ThreadFactory() {
                 @Override public Thread newThread(final Runnable r) {
                     return new Thread(new Runnable() {

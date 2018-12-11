@@ -1200,7 +1200,7 @@ public class GridSqlQuerySplitter {
      * @return New identity hash set.
      */
     private static <X> Set<X> newIdentityHashSet() {
-        return Collections.newSetFromMap(new IdentityHashMap<X,Boolean>());
+        return Collections.newSetFromMap(new IdentityHashMap<>());
     }
 
     /**

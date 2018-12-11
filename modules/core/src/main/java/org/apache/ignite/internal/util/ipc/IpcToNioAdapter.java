@@ -170,7 +170,7 @@ public class IpcToNioAdapter<T> {
             metricsLsnr.onBytesSent(cnt);
         }
         catch (IOException | IgniteCheckedException e) {
-            return new GridNioFinishedFuture<Object>(e);
+            return new GridNioFinishedFuture<>(e);
         }
 
         return new GridNioFinishedFuture<>((Object)null);

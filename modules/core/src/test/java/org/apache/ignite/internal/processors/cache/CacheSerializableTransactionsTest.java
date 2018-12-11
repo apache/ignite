@@ -3110,9 +3110,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             Ignite client2 = ignite(SRVS + 1);
 
             IgniteCache<Integer, Integer> cache1 = client1.createNearCache(cacheName,
-                new NearCacheConfiguration<Integer, Integer>());
+                    new NearCacheConfiguration<>());
             IgniteCache<Integer, Integer> cache2 = client2.createNearCache(cacheName,
-                new NearCacheConfiguration<Integer, Integer>());
+                    new NearCacheConfiguration<>());
 
             Integer key = primaryKey(ignite(0).cache(cacheName));
 
@@ -3174,7 +3174,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             Ignite ignite = ignite(SRVS);
 
             IgniteCache<Integer, Integer> cache = ignite.createNearCache(cacheName,
-                new NearCacheConfiguration<Integer, Integer>());
+                    new NearCacheConfiguration<>());
 
             IgniteTransactions txs = ignite.transactions();
 
@@ -3262,7 +3262,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             Ignite ignite = ignite(SRVS);
 
             IgniteCache<Integer, Integer> cache = ignite.createNearCache(cacheName,
-                new NearCacheConfiguration<Integer, Integer>());
+                    new NearCacheConfiguration<>());
 
             IgniteTransactions txs = ignite.transactions();
 
@@ -3738,7 +3738,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
             for (Ignite client : clients) {
                 if (nearCache)
-                    caches.add(client.createNearCache(cacheName, new NearCacheConfiguration<Integer, Integer>()));
+                    caches.add(client.createNearCache(cacheName, new NearCacheConfiguration<>()));
                 else
                     caches.add(client.<Integer, Integer>cache(cacheName));
             }
@@ -3852,7 +3852,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
             for (Ignite client : clients) {
                 if (nearCache)
-                    caches.add(client.createNearCache(cacheName, new NearCacheConfiguration<Integer, Integer>()));
+                    caches.add(client.createNearCache(cacheName, new NearCacheConfiguration<>()));
                 else
                     caches.add(client.<Integer, Integer>cache(cacheName));
             }
@@ -3986,7 +3986,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
             for (Ignite client : clients) {
                 if (nearCache)
-                    caches.add(client.createNearCache(cacheName, new NearCacheConfiguration<Integer, Integer>()));
+                    caches.add(client.createNearCache(cacheName, new NearCacheConfiguration<>()));
                 else
                     caches.add(client.<Integer, Integer>cache(cacheName));
             }
@@ -5160,7 +5160,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         }
 
         if (nearCache)
-            ccfg.setNearConfiguration(new NearCacheConfiguration<Integer, Integer>());
+            ccfg.setNearConfiguration(new NearCacheConfiguration<>());
 
         return ccfg;
     }

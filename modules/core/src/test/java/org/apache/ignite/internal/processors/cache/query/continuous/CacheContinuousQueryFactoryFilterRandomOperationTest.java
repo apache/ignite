@@ -226,7 +226,7 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
 
             grid(nodeIdx).cache(cacheName).registerCacheEntryListener((CacheEntryListenerConfiguration)lsnrCfg);
 
-            lsnrCfgs.add(new T2<Integer, MutableCacheEntryListenerConfiguration>(nodeIdx, lsnrCfg));
+            lsnrCfgs.add(new T2<>(nodeIdx, lsnrCfg));
         }
         else {
             ContinuousQuery<QueryTestKey, QueryTestValue> qry = new ContinuousQuery<>();

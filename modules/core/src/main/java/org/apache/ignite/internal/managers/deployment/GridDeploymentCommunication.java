@@ -139,7 +139,7 @@ class GridDeploymentCommunication {
 
                 Collection<UUID> nodeIds = req.nodeIds();
 
-                nodeIds = nodeIds == null ? new HashSet<UUID>() : new HashSet<>(nodeIds);
+                nodeIds = nodeIds == null ? new HashSet<>() : new HashSet<>(nodeIds);
 
                 boolean b = nodeIds.add(nodeId);
 

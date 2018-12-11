@@ -38,7 +38,7 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
             Assert.assertEquals("getVal1", jedis.get("getKey1"));
             Assert.assertNull(jedis.get("wrongKey"));
 
-            jcache().put("setDataTypeKey", new HashSet<String>(Arrays.asList("1", "2")));
+            jcache().put("setDataTypeKey", new HashSet<>(Arrays.asList("1", "2")));
 
             try {
                 jedis.get("setDataTypeKey");
@@ -61,7 +61,7 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
             Assert.assertEquals("1", jedis.getSet("getSetKey1", "0"));
             Assert.assertNull(jedis.get("getSetNonExistingKey"));
 
-            jcache().put("setDataTypeKey", new HashSet<String>(Arrays.asList("1", "2")));
+            jcache().put("setDataTypeKey", new HashSet<>(Arrays.asList("1", "2")));
 
             try {
                 jedis.getSet("setDataTypeKey", "0");
@@ -287,7 +287,7 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
             Assert.assertEquals(5, (long)jedis.append("appendKey1", "Hello"));
             Assert.assertEquals(12, (long)jedis.append("appendKey1", " World!"));
 
-            jcache().put("setDataTypeKey", new HashSet<String>(Arrays.asList("1", "2")));
+            jcache().put("setDataTypeKey", new HashSet<>(Arrays.asList("1", "2")));
 
             try {
                 jedis.append("setDataTypeKey", "");
@@ -311,7 +311,7 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
 
             Assert.assertEquals(3, (long)jedis.strlen("strlenKey"));
 
-            jcache().put("setDataTypeKey", new HashSet<String>(Arrays.asList("1", "2")));
+            jcache().put("setDataTypeKey", new HashSet<>(Arrays.asList("1", "2")));
 
             try {
                 jedis.strlen("setDataTypeKey");
@@ -386,7 +386,7 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
             Assert.assertEquals("This is a string", jedis.getrange("getRangeKey", 0, -1));
             Assert.assertEquals("string", jedis.getrange("getRangeKey", 10, 100));
 
-            jcache().put("setDataTypeKey", new HashSet<String>(Arrays.asList("1", "2")));
+            jcache().put("setDataTypeKey", new HashSet<>(Arrays.asList("1", "2")));
 
             try {
                 jedis.getrange("setDataTypeKey", 0, 1);

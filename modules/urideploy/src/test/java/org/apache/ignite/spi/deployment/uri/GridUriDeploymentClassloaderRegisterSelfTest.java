@@ -44,7 +44,7 @@ import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 public class GridUriDeploymentClassloaderRegisterSelfTest extends GridSpiAbstractTest<UriDeploymentSpi> {
     /** */
     private static Map<ClassLoader, Set<Class<? extends ComputeTask<?, ?>>>> tasks =
-        Collections.synchronizedMap(new HashMap<ClassLoader, Set<Class<? extends ComputeTask<?, ?>>>>());
+        Collections.synchronizedMap(new HashMap<>());
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {

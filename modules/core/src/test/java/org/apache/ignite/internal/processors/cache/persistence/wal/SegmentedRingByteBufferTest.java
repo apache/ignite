@@ -534,7 +534,7 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
 
         final CyclicBarrier barrier = new CyclicBarrier(producerCnt);
 
-        final Set<TestObject> items = Collections.newSetFromMap(new ConcurrentHashMap<TestObject, Boolean>());
+        final Set<TestObject> items = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
         IgniteInternalFuture<Long> fut;
 

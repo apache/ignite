@@ -201,7 +201,7 @@ public class PlatformJavaObjectFactoryProxySelfTest extends GridCommonAbstractTe
 
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return proxyForCustom(null, new HashMap<String, Object>()).factory(ctx).create();
+                return proxyForCustom(null, new HashMap<>()).factory(ctx).create();
             }
         }, IgniteException.class, null);
     }

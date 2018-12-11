@@ -760,9 +760,9 @@ public class GridBasicPerformanceTest {
     private static void testLinkedBlockingQueue() throws Exception {
         X.println("Linked blocking queue...");
 
-        testQueue(new LinkedBlockingQueue<Integer>());
+        testQueue(new LinkedBlockingQueue<>());
 
-        testQueueMultiThreaded(new LinkedBlockingQueue<Integer>());
+        testQueueMultiThreaded(new LinkedBlockingQueue<>());
     }
 
     /**
@@ -771,9 +771,9 @@ public class GridBasicPerformanceTest {
     private static void testLinkedBlockingDeque() throws Exception {
         X.println("Linked blocking deque...");
 
-        testQueue(new LinkedBlockingDeque<Integer>());
+        testQueue(new LinkedBlockingDeque<>());
 
-        testQueueMultiThreaded(new LinkedBlockingDeque<Integer>());
+        testQueueMultiThreaded(new LinkedBlockingDeque<>());
     }
 
     /**
@@ -782,9 +782,9 @@ public class GridBasicPerformanceTest {
     private static void testGridDeque() throws Exception {
         X.println("Grid deque...");
 
-        testQueue(new ConcurrentLinkedDeque8<Integer>());
+        testQueue(new ConcurrentLinkedDeque8<>());
 
-        testQueueMultiThreaded(new ConcurrentLinkedDeque8<Integer>());
+        testQueueMultiThreaded(new ConcurrentLinkedDeque8<>());
     }
 
     /**
@@ -793,9 +793,9 @@ public class GridBasicPerformanceTest {
     private static void testConcurrentQueue() throws Exception {
         X.println("Concurrent queue...");
 
-        testQueue(new ConcurrentLinkedQueue<Integer>());
+        testQueue(new ConcurrentLinkedQueue<>());
 
-        testQueueMultiThreaded(new ConcurrentLinkedQueue<Integer>());
+        testQueueMultiThreaded(new ConcurrentLinkedQueue<>());
     }
 
     /**

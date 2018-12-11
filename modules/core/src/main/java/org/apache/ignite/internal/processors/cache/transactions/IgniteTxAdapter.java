@@ -1385,7 +1385,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     protected void sessionEnd(final Collection<CacheStoreManager> stores, boolean commit) throws IgniteCheckedException {
         Iterator<CacheStoreManager> it = stores.iterator();
 
-        Set<CacheStore> visited = new GridSetWrapper<>(new IdentityHashMap<CacheStore, Object>());
+        Set<CacheStore> visited = new GridSetWrapper<>(new IdentityHashMap<>());
 
         while (it.hasNext()) {
             CacheStoreManager store = it.next();

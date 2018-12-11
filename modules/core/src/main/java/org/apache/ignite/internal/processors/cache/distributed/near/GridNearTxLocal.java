@@ -2649,7 +2649,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             // First time access within transaction.
             else {
                 if (lockKeys == null && !skipVals)
-                    lockKeys = single ? Collections.singleton(key) : new ArrayList<KeyCacheObject>(keysCnt);
+                    lockKeys = single ? Collections.singleton(key) : new ArrayList<>(keysCnt);
 
                 if (!single && !skipVals)
                     lockKeys.add(key);

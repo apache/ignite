@@ -194,7 +194,7 @@ public final class GridCacheAtomicReferenceImpl<T> extends AtomicDataStructurePr
         try {
             if (ctx.dataStructures().knownType(expVal) && ctx.dataStructures().knownType(newVal)) {
                 EntryProcessorResult<T> res =
-                    cacheView.invoke(key, new ReferenceCompareAndSetAndGetEntryProcessor<T>(expVal, newVal));
+                    cacheView.invoke(key, new ReferenceCompareAndSetAndGetEntryProcessor<>(expVal, newVal));
 
                 assert res != null;
 
@@ -358,7 +358,7 @@ public final class GridCacheAtomicReferenceImpl<T> extends AtomicDataStructurePr
             T curVal = val.get();
 
             if (F.eq(expVal, curVal)) {
-                e.setValue(new GridCacheAtomicReferenceValue<T>(newVal));
+                e.setValue(new GridCacheAtomicReferenceValue<>(newVal));
 
                 return true;
             }
@@ -406,7 +406,7 @@ public final class GridCacheAtomicReferenceImpl<T> extends AtomicDataStructurePr
             T curVal = val.get();
 
             if (F.eq(expVal, curVal))
-                e.setValue(new GridCacheAtomicReferenceValue<T>(newVal));
+                e.setValue(new GridCacheAtomicReferenceValue<>(newVal));
 
             return curVal;
         }

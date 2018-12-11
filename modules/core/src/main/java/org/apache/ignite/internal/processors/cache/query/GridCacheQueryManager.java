@@ -763,7 +763,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             },
             new IgniteClosure<Map.Entry, Object>() {
                 @Override public Object apply(Map.Entry entry) {
-                    return new IgniteBiTuple<K, V>((K)((SetItemKey)entry.getKey()).item(), (V)Boolean.TRUE);
+                    return new IgniteBiTuple<>((K) ((SetItemKey) entry.getKey()).item(), (V) Boolean.TRUE);
                 }
             },
             qry.partition(),

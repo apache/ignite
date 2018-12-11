@@ -876,7 +876,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         try {
             commitRemoteTx();
 
-            return new GridFinishedFuture<IgniteInternalTx>(this);
+            return new GridFinishedFuture<>(this);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
@@ -950,7 +950,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     @Override public IgniteInternalFuture<IgniteInternalTx> rollbackAsync() {
         rollbackRemoteTx();
 
-        return new GridFinishedFuture<IgniteInternalTx>(this);
+        return new GridFinishedFuture<>(this);
     }
 
     /** {@inheritDoc} */

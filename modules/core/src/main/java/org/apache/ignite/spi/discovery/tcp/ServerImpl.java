@@ -339,7 +339,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             0,
             1,
             2000,
-            new LinkedBlockingQueue<Runnable>());
+                new LinkedBlockingQueue<>());
 
         if (debugMode) {
             if (!log.isInfoEnabled())

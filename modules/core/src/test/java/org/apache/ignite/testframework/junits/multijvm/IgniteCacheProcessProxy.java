@@ -205,7 +205,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public Iterable<Entry<K, V>> localEntries(CachePeekMode... peekModes) throws CacheException {
-        return compute.call(new LocalEntriesTask<K, V>(cacheName, isAsync, peekModes));
+        return compute.call(new LocalEntriesTask<>(cacheName, isAsync, peekModes));
     }
 
     /** {@inheritDoc} */
@@ -235,7 +235,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public V localPeek(K key, CachePeekMode... peekModes) {
-        return compute.call(new LocalPeekTask<K, V>(cacheName, isAsync, key, peekModes));
+        return compute.call(new LocalPeekTask<>(cacheName, isAsync, key, peekModes));
     }
 
     /** {@inheritDoc} */
@@ -296,52 +296,52 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public V get(K key) {
-        return compute.call(new GetTask<K, V>(cacheName, isAsync, key));
+        return compute.call(new GetTask<>(cacheName, isAsync, key));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> getAsync(K key) {
-        return compute.callAsync(new GetTask<K, V>(cacheName, isAsync, key));
+        return compute.callAsync(new GetTask<>(cacheName, isAsync, key));
     }
 
     /** {@inheritDoc} */
     @Override public CacheEntry<K, V> getEntry(K key) {
-        return compute.call(new GetEntryTask<K, V>(cacheName, isAsync, key));
+        return compute.call(new GetEntryTask<>(cacheName, isAsync, key));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<CacheEntry<K, V>> getEntryAsync(K key) {
-        return compute.callAsync(new GetEntryTask<K, V>(cacheName, isAsync, key));
+        return compute.callAsync(new GetEntryTask<>(cacheName, isAsync, key));
     }
 
     /** {@inheritDoc} */
     @Override public Map<K, V> getAll(Set<? extends K> keys) {
-        return compute.call(new GetAllTask<K, V>(cacheName, isAsync, keys));
+        return compute.call(new GetAllTask<>(cacheName, isAsync, keys));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Map<K, V>> getAllAsync(Set<? extends K> keys) {
-        return compute.callAsync(new GetAllTask<K, V>(cacheName, isAsync, keys));
+        return compute.callAsync(new GetAllTask<>(cacheName, isAsync, keys));
     }
 
     /** {@inheritDoc} */
     @Override public Collection<CacheEntry<K, V>> getEntries(Set<? extends K> keys) {
-        return compute.call(new GetEntriesTask<K, V>(cacheName, isAsync, keys));
+        return compute.call(new GetEntriesTask<>(cacheName, isAsync, keys));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Collection<CacheEntry<K, V>>> getEntriesAsync(Set<? extends K> keys) {
-        return compute.callAsync(new GetEntriesTask<K, V>(cacheName, isAsync, keys));
+        return compute.callAsync(new GetEntriesTask<>(cacheName, isAsync, keys));
     }
 
     /** {@inheritDoc} */
     @Override public Map<K, V> getAllOutTx(Set<? extends K> keys) {
-        return compute.call(new GetAllOutTxTask<K, V>(cacheName, isAsync, keys));
+        return compute.call(new GetAllOutTxTask<>(cacheName, isAsync, keys));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Map<K, V>> getAllOutTxAsync(Set<? extends K> keys) {
-        return compute.callAsync(new GetAllOutTxTask<K, V>(cacheName, isAsync, keys));
+        return compute.callAsync(new GetAllOutTxTask<>(cacheName, isAsync, keys));
     }
 
     /** {@inheritDoc} */
@@ -431,12 +431,12 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public V getAndRemove(K key) {
-        return compute.call(new GetAndRemoveTask<K, V>(cacheName, isAsync, key));
+        return compute.call(new GetAndRemoveTask<>(cacheName, isAsync, key));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> getAndRemoveAsync(K key) {
-        return compute.callAsync(new GetAndRemoveTask<K, V>(cacheName, isAsync, key));
+        return compute.callAsync(new GetAndRemoveTask<>(cacheName, isAsync, key));
     }
 
     /** {@inheritDoc} */

@@ -510,11 +510,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCollection() throws Exception {
-        testCollection(new ArrayList<Integer>(3));
-        testCollection(new LinkedHashSet<Integer>());
-        testCollection(new HashSet<Integer>());
-        testCollection(new TreeSet<Integer>());
-        testCollection(new ConcurrentSkipListSet<Integer>());
+        testCollection(new ArrayList<>(3));
+        testCollection(new LinkedHashSet<>());
+        testCollection(new HashSet<>());
+        testCollection(new TreeSet<>());
+        testCollection(new ConcurrentSkipListSet<>());
     }
 
     /**
@@ -533,11 +533,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMap() throws Exception {
-        testMap(new HashMap<Integer, String>());
-        testMap(new LinkedHashMap<Integer, String>());
-        testMap(new TreeMap<Integer, String>());
-        testMap(new ConcurrentHashMap<Integer, String>());
-        testMap(new ConcurrentHashMap<Integer, String>());
+        testMap(new HashMap<>());
+        testMap(new LinkedHashMap<>());
+        testMap(new TreeMap<>());
+        testMap(new ConcurrentHashMap<>());
+        testMap(new ConcurrentHashMap<>());
     }
 
     /**
@@ -2138,7 +2138,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         assertEquals(obj, copy.deserialize());
 
-        copy = copy(po, new HashMap<String, Object>());
+        copy = copy(po, new HashMap<>());
 
         assertEquals(obj, copy.deserialize());
 

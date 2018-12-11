@@ -475,7 +475,7 @@ public class CacheOptimisticTransactionsWithFilterTest extends GridCommonAbstrac
             ccfg.setBackups(backups);
 
         if (nearCache)
-            ccfg.setNearConfiguration(new NearCacheConfiguration<Integer, Integer>());
+            ccfg.setNearConfiguration(new NearCacheConfiguration<>());
 
         return ccfg;
     }

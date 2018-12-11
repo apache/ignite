@@ -46,7 +46,7 @@ public class GridSqlAlias extends GridSqlElement {
      * @param useAs Use 'AS' keyword.
      */
     public GridSqlAlias(String alias, GridSqlAst expr, boolean useAs) {
-        super(new ArrayList<GridSqlAst>(1));
+        super(new ArrayList<>(1));
 
         addChild(expr);
 

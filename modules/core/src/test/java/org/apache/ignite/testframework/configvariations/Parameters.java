@@ -158,7 +158,7 @@ public class Parameters {
      */
     @SuppressWarnings("unchecked")
     public static <T> ConfigParameter<T> complexParameter(ConfigParameter<T>... params) {
-        return new ComplexParameter<T>(params);
+        return new ComplexParameter<>(params);
     }
 
     /**
@@ -260,7 +260,7 @@ public class Parameters {
                         mtd = cfg.getClass().getMethod(mtdName, paramCls);
 
                         if (failed)
-                            paramClassesCache.put(new T2<Class, String>(cfg.getClass(), mtdName), paramCls);
+                            paramClassesCache.put(new T2<>(cfg.getClass(), mtdName), paramCls);
 
                         break;
                     }

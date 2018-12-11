@@ -215,7 +215,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         Runtime.getRuntime().availableProcessors(),
         30L,
         TimeUnit.SECONDS,
-        new ArrayBlockingQueue<Runnable>(Runtime.getRuntime().availableProcessors()));
+            new ArrayBlockingQueue<>(Runtime.getRuntime().availableProcessors()));
 
     /** Page store manager. */
     private IgnitePageStoreManager storeMgr;

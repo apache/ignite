@@ -47,7 +47,7 @@ import org.junit.runners.JUnit4;
 public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<LocalDeploymentSpi> {
     /** */
     private static Map<ClassLoader, Set<Class<? extends ComputeTask<?, ?>>>> tasks =
-        Collections.synchronizedMap(new HashMap<ClassLoader, Set<Class<? extends ComputeTask<?, ?>>>>());
+        Collections.synchronizedMap(new HashMap<>());
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {

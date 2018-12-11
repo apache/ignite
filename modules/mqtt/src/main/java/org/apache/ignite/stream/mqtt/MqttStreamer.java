@@ -149,9 +149,9 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
             throw new IgniteException("Attempted to start an already started MQTT Streamer");
 
         // For simplicity, if these are null initialize to empty lists.
-        topics = topics == null ? new ArrayList<String>() : topics;
+        topics = topics == null ? new ArrayList<>() : topics;
 
-        qualitiesOfService = qualitiesOfService == null ? new ArrayList<Integer>() : qualitiesOfService;
+        qualitiesOfService = qualitiesOfService == null ? new ArrayList<>() : qualitiesOfService;
 
         try {
             Map<String, Object> logValues = new HashMap<>();

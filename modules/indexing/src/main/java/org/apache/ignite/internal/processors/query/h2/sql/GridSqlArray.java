@@ -29,7 +29,7 @@ public class GridSqlArray extends GridSqlElement {
      * @param size Array size.
      */
     public GridSqlArray(int size) {
-        super(size == 0 ? Collections.<GridSqlAst>emptyList() : new ArrayList<GridSqlAst>(size));
+        super(size == 0 ? Collections.<GridSqlAst>emptyList() : new ArrayList<>(size));
     }
 
     /** {@inheritDoc} */

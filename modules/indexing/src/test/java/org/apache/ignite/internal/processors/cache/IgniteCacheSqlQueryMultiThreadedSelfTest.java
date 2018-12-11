@@ -98,7 +98,7 @@ public class IgniteCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstract
             @Override public Void call() throws Exception {
                 for (int i = 0; i < 100; i++) {
                     QueryCursor<Cache.Entry<Integer, Person>> qry =
-                        cache.query(new SqlQuery<Integer, Person>("Person", "age >= 0"));
+                        cache.query(new SqlQuery<>("Person", "age >= 0"));
 
                     int cnt = 0;
 

@@ -184,7 +184,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
 
             ctx.put(start(), this);
 
-            return toString(ctx, new IdentityHashMap<BinaryObject, Integer>());
+            return toString(ctx, new IdentityHashMap<>());
         }
         catch (BinaryObjectException e) {
             throw new IgniteException("Failed to create string representation of binary object.", e);
@@ -354,7 +354,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
 
             ctx.put(start(), this);
 
-            return hasCircularReferences(ctx, new IdentityHashMap<BinaryObject, Integer>());
+            return hasCircularReferences(ctx, new IdentityHashMap<>());
         }
         catch (BinaryObjectException e) {
             throw new IgniteException("Failed to check binary object for circular references", e);

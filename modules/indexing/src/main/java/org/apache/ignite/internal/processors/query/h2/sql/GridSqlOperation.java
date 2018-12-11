@@ -32,8 +32,8 @@ public class GridSqlOperation extends GridSqlElement {
      * @param opType Operation type.
      */
     public GridSqlOperation(GridSqlOperationType opType) {
-        super(opType == IN ? new ArrayList<GridSqlAst>() :
-            new ArrayList<GridSqlAst>(opType.childrenCount()));
+        super(opType == IN ? new ArrayList<>() :
+                new ArrayList<>(opType.childrenCount()));
 
         this.opType = opType;
     }

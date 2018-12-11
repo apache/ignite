@@ -119,7 +119,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         ccfg.setAtomicityMode(atomicityMode);
 
         if (near)
-            ccfg.setNearConfiguration(new NearCacheConfiguration<KeyClass, ValueClass>());
+            ccfg.setNearConfiguration(new NearCacheConfiguration<>());
 
         return ccfg;
     }

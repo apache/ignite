@@ -372,7 +372,7 @@ public class HadoopJobTracker extends HadoopComponent {
             Map<UUID, IgniteBiTuple<Collection<HadoopInputSplit>, int[]>> map = new HashMap<>();
 
             for (UUID nodeId : plan.mapperNodeIds())
-                map.put(nodeId, new IgniteBiTuple<Collection<HadoopInputSplit>, int[]>(plan.mappers(nodeId), null));
+                map.put(nodeId, new IgniteBiTuple<>(plan.mappers(nodeId), null));
 
             for (UUID nodeId : plan.reducerNodeIds()) {
                 int[] reducers = plan.reducers(nodeId);
@@ -380,7 +380,7 @@ public class HadoopJobTracker extends HadoopComponent {
                 IgniteBiTuple<Collection<HadoopInputSplit>, int[]> entry = map.get(nodeId);
 
                 if (entry == null)
-                    map.put(nodeId, new IgniteBiTuple<Collection<HadoopInputSplit>, int[]>(null, reducers));
+                    map.put(nodeId, new IgniteBiTuple<>(null, reducers));
                 else
                     entry.set2(reducers);
             }
@@ -489,7 +489,7 @@ public class HadoopJobTracker extends HadoopComponent {
             }
 
             GridFutureAdapter<HadoopJobId> fut = F.addIfAbsent(activeFinishFuts, jobId,
-                new GridFutureAdapter<HadoopJobId>());
+                    new GridFutureAdapter<>());
 
             // Get meta from cache one more time to close the window.
             meta = jobMetaCache().get(jobId);
@@ -1116,7 +1116,7 @@ public class HadoopJobTracker extends HadoopComponent {
     @Nullable public HadoopJobEx job(HadoopJobId jobId, @Nullable HadoopJobInfo jobInfo) throws IgniteCheckedException {
         GridFutureAdapter<HadoopJobEx> fut = jobs.get(jobId);
 
-        if (fut != null || (fut = jobs.putIfAbsent(jobId, new GridFutureAdapter<HadoopJobEx>())) != null)
+        if (fut != null || (fut = jobs.putIfAbsent(jobId, new GridFutureAdapter<>())) != null)
             return fut.get();
 
         fut = jobs.get(jobId);
@@ -1600,7 +1600,7 @@ public class HadoopJobTracker extends HadoopComponent {
             Map<Integer, HadoopProcessDescriptor> oldMap = meta.reducersAddresses();
 
             Map<Integer, HadoopProcessDescriptor> rdcMap = oldMap == null ?
-                new HashMap<Integer, HadoopProcessDescriptor>() : new HashMap<>(oldMap);
+                    new HashMap<>() : new HashMap<>(oldMap);
 
             for (Integer r : rdc)
                 rdcMap.put(r, desc);

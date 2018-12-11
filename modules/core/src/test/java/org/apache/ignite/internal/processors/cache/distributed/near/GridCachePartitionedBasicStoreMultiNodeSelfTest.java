@@ -84,7 +84,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        stores = Collections.synchronizedList(new ArrayList<GridCacheTestStore>());
+        stores = Collections.synchronizedList(new ArrayList<>());
 
         startGridsMultiThreaded(GRID_CNT);
     }

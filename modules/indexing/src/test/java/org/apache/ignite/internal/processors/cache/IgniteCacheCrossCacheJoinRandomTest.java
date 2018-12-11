@@ -226,7 +226,7 @@ public class IgniteCacheCrossCacheJoinRandomTest extends AbstractH2CompareQueryT
      * @throws Exception If failed.
      */
     private void testJoin(int caches, List<T2<CacheMode, Integer>> allModes) throws Exception {
-        checkJoin(cachesData, allModes, new Stack<T2<CacheMode, Integer>>(), caches);
+        checkJoin(cachesData, allModes, new Stack<>(), caches);
     }
 
     /**

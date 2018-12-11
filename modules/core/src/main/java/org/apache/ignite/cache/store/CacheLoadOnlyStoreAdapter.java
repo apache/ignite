@@ -135,7 +135,7 @@ public abstract class CacheLoadOnlyStoreAdapter<K, V, I> implements CacheStore<K
             threadsCnt,
             0L,
             MILLISECONDS,
-            new ArrayBlockingQueue<Runnable>(batchQueueSize),
+                new ArrayBlockingQueue<>(batchQueueSize),
             new BlockingRejectedExecutionHandler());
 
         Iterator<I> iter = inputIterator(args);

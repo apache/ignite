@@ -907,7 +907,7 @@ public class GridFunc {
      * @return Iterable over the elements of the inner collections.
      */
     public static <T> GridIterator<T> flat(@Nullable final Iterable<? extends Iterable<T>> c) {
-        return isEmpty(c) ? GridFunc.<T>emptyIterator() : new FlatIterator<T>(c);
+        return isEmpty(c) ? GridFunc.<T>emptyIterator() : new FlatIterator<>(c);
     }
 
     /**
@@ -919,7 +919,7 @@ public class GridFunc {
      * @return Iterator over the elements of given iterators.
      */
     public static <T> Iterator<T> flatIterators(@Nullable final Iterable<Iterator<T>> c) {
-        return isEmpty(c) ? GridFunc.<T>emptyIterator() : new FlatIterator<T>(c);
+        return isEmpty(c) ? GridFunc.<T>emptyIterator() : new FlatIterator<>(c);
     }
 
     /**

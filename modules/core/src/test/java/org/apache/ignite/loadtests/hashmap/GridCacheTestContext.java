@@ -74,9 +74,9 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
                 new WalStateManager(null),
                 new IgniteCacheDatabaseSharedManager(),
                 new IgniteCacheSnapshotManager(),
-                new GridCacheDeploymentManager<K, V>(),
-                new GridCachePartitionExchangeManager<K, V>(),
-                new CacheAffinitySharedManager<K, V>(),
+                    new GridCacheDeploymentManager<>(),
+                    new GridCachePartitionExchangeManager<>(),
+                    new CacheAffinitySharedManager<>(),
                 new GridCacheIoManager(),
                 new GridCacheSharedTtlCleanupManager(),
                 new PartitionsEvictManager(),
@@ -95,16 +95,16 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             new GridCacheEventManager(),
             new CacheOsStoreManager(null, new CacheConfiguration()),
             new GridCacheEvictionManager(),
-            new GridCacheLocalQueryManager<K, V>(),
+                new GridCacheLocalQueryManager<>(),
             new CacheContinuousQueryManager(),
             new CacheDataStructuresManager(),
             new GridCacheTtlManager(),
             new GridOsCacheDrManager(),
-            new CacheOsConflictResolutionManager<K, V>(),
+                new CacheOsConflictResolutionManager<>(),
             new CachePluginManager(ctx, new CacheConfiguration()),
             new GridCacheAffinityManager()
         );
 
-        store().initialize(null, new IdentityHashMap<CacheStore, ThreadLocal>());
+        store().initialize(null, new IdentityHashMap<>());
     }
 }

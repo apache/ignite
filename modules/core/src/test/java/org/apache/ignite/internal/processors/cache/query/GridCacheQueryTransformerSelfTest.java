@@ -99,7 +99,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
                     }
                 };
 
-            List<Integer> keys = cache.query(new ScanQuery<Integer, String>(), transformer).getAll();
+            List<Integer> keys = cache.query(new ScanQuery<>(), transformer).getAll();
 
             assertEquals(50, keys.size());
 
@@ -169,7 +169,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
                     }
                 };
 
-            List<Integer> res = cache.query(new ScanQuery<Integer, Value>(), transformer).getAll();
+            List<Integer> res = cache.query(new ScanQuery<>(), transformer).getAll();
 
             assertEquals(50, res.size());
 
@@ -282,7 +282,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
                     }
                 };
 
-            List<Integer> res = binaryCache.query(new ScanQuery<Integer, BinaryObject>(), transformer).getAll();
+            List<Integer> res = binaryCache.query(new ScanQuery<>(), transformer).getAll();
 
             assertEquals(50, res.size());
 
@@ -535,7 +535,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
                 log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
-                        cache.query(new SqlQuery<Integer, Integer>(Integer.class, "clause"), transformer);
+                        cache.query(new SqlQuery<>(Integer.class, "clause"), transformer);
 
                         return null;
                     }
@@ -565,7 +565,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
                 log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
-                        cache.query(new TextQuery<Integer, Integer>(Integer.class, "clause"), transformer);
+                        cache.query(new TextQuery<>(Integer.class, "clause"), transformer);
 
                         return null;
                     }
@@ -578,7 +578,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
                 log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
-                        cache.query(new SpiQuery<Integer, Integer>(), transformer);
+                        cache.query(new SpiQuery<>(), transformer);
 
                         return null;
                     }
@@ -591,7 +591,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
                 log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
-                        cache.query(new ContinuousQuery<Integer, Integer>(), transformer);
+                        cache.query(new ContinuousQuery<>(), transformer);
 
                         return null;
                     }

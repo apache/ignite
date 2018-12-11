@@ -202,7 +202,7 @@ public class ComputeTaskInternalFuture<R> extends GridFutureAdapter<R> {
             }
 
             @Override public IgniteFuture<?> mapFuture() {
-                return new IgniteFinishedFutureImpl<Object>();
+                return new IgniteFinishedFutureImpl<>();
             }
         };
 

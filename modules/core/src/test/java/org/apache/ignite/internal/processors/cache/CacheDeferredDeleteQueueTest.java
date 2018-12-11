@@ -108,7 +108,7 @@ public class CacheDeferredDeleteQueueTest extends GridCommonAbstractTest {
         ccfg.setBackups(1);
 
         if (nearCache)
-            ccfg.setNearConfiguration(new NearCacheConfiguration<Integer, Integer>());
+            ccfg.setNearConfiguration(new NearCacheConfiguration<>());
 
         IgniteCache<Integer, Integer> cache = ignite(0).createCache(ccfg);
 

@@ -41,7 +41,7 @@ public class HadoopExecutorService {
     private final LinkedBlockingQueue<Callable<?>> queue;
 
     /** */
-    private final Collection<GridWorker> workers = newSetFromMap(new ConcurrentHashMap<GridWorker, Boolean>());
+    private final Collection<GridWorker> workers = newSetFromMap(new ConcurrentHashMap<>());
 
     /** */
     private final AtomicInteger active = new AtomicInteger();

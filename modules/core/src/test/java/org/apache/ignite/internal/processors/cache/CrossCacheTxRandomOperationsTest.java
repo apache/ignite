@@ -333,8 +333,8 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
                 cache1.removeAll();
                 cache2.removeAll();
 
-                checkData(caches1, keys, new HashMap<TestKey, TestValue>());
-                checkData(caches2, keys, new HashMap<TestKey, TestValue>());
+                checkData(caches1, keys, new HashMap<>());
+                checkData(caches2, keys, new HashMap<>());
             }
         }
         finally {

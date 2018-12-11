@@ -65,7 +65,7 @@ class ZkDiscoveryEventsData implements Serializable {
             UUID.randomUUID(),
             clusterStartTime,
             1L,
-            new TreeMap<Long, ZkDiscoveryEventData>()
+                new TreeMap<>()
         );
     }
 

@@ -99,7 +99,7 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        expData = Collections.synchronizedList(new ArrayList<ExpectedData>());
+        expData = Collections.synchronizedList(new ArrayList<>());
 
         super.beforeTestsStarted();
     }

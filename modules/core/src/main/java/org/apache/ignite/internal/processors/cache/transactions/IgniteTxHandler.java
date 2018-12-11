@@ -916,7 +916,7 @@ public class IgniteTxHandler {
 
         // Transaction on local cache only.
         if (locTx != null && !locTx.nearLocallyMapped() && !locTx.colocatedLocallyMapped())
-            return new GridFinishedFuture<IgniteInternalTx>(locTx);
+            return new GridFinishedFuture<>(locTx);
 
         if (log.isDebugEnabled())
             log.debug("Processing near tx finish request [nodeId=" + nodeId + ", req=" + req + "]");

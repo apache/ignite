@@ -827,7 +827,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             return field;
         }
         else {
-            affKeyFields.putIfAbsent(typeId, new T1<BinaryField>(null));
+            affKeyFields.putIfAbsent(typeId, new T1<>(null));
 
             return null;
         }

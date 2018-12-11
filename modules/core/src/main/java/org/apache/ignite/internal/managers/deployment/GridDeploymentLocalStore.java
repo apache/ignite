@@ -90,7 +90,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
         Map<String, Collection<GridDeployment>> cp;
 
         synchronized (mux) {
-            cp = new HashMap<String, Collection<GridDeployment>>(cache);
+            cp = new HashMap<>(cache);
 
             for (Entry<String, Collection<GridDeployment>> entry : cp.entrySet())
                 entry.setValue(new ArrayList<>(entry.getValue()));

@@ -102,7 +102,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
 
             for (Map.Entry<PartitionKey, PartitionHashRecord> e : nodeHashes.entrySet()) {
                 if (!clusterHashes.containsKey(e.getKey()))
-                    clusterHashes.put(e.getKey(), new ArrayList<PartitionHashRecord>());
+                    clusterHashes.put(e.getKey(), new ArrayList<>());
 
                 clusterHashes.get(e.getKey()).add(e.getValue());
             }

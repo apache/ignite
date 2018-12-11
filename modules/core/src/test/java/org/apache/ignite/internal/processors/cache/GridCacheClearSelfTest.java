@@ -189,7 +189,7 @@ public class GridCacheClearSelfTest extends GridCommonAbstractTest {
             cfg.setCacheMode(cacheMode);
 
             IgniteCache<Integer, Integer> cache1 = near ?
-                client1.createCache(cfg, new NearCacheConfiguration<Integer, Integer>()) :
+                client1.createCache(cfg, new NearCacheConfiguration<>()) :
                 client1.createCache(cfg);
 
             IgniteCache<Integer, Integer> cache2 = near ?

@@ -143,7 +143,7 @@ public class IgnitePdsBinarySortObjectFieldsTest extends GridCommonAbstractTest 
                 ignite.active(true);
 
                 IgniteCache<Long, Value> cache = ignite.getOrCreateCache(
-                    new CacheConfiguration<Long, Value>(CACHE_NAME)
+                        new CacheConfiguration<>(CACHE_NAME)
                 );
 
                 cache.put(1L, new Value(1L));

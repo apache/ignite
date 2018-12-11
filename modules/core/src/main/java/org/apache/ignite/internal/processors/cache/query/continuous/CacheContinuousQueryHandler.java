@@ -808,13 +808,13 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 return Collections.emptyList();
             else
                 return F.<CacheEntryEvent<? extends K, ? extends V>>
-                    asList(new CacheContinuousQueryEvent<K, V>(cache, cctx, e));
+                    asList(new CacheContinuousQueryEvent<>(cache, cctx, e));
         }
 
         // Initial query entry or evicted entry. These events should be fired immediately.
         if (e.updateCounter() == -1L) {
             return !e.isFiltered() ? F.<CacheEntryEvent<? extends K, ? extends V>>asList(
-                new CacheContinuousQueryEvent<K, V>(cache, cctx, e)) :
+                    new CacheContinuousQueryEvent<>(cache, cctx, e)) :
                 Collections.<CacheEntryEvent<? extends K, ? extends V>>emptyList();
         }
 

@@ -113,110 +113,113 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
 
         doTestIgniteOperationOnDisconnect(client, Arrays.asList(
             // Check atomic long.
-            new T2<Callable, C1<Object, Boolean>>(
-                new Callable() {
-                    @Override public Object call() throws Exception {
-                        boolean failed = false;
+                new T2<>(
+                        new Callable() {
+                            @Override
+                            public Object call() throws Exception {
+                                boolean failed = false;
 
-                        try {
-                            client.atomicLong("testAtomic", 41, true);
+                                try {
+                                    client.atomicLong("testAtomic", 41, true);
+                                } catch (IgniteClientDisconnectedException e) {
+                                    failed = true;
+
+                                    checkAndWait(e);
+                                }
+
+                                assertTrue(failed);
+
+                                return client.atomicLong("testAtomic", 41, true);
+                            }
+                        },
+                        new C1<Object, Boolean>() {
+                            @Override
+                            public Boolean apply(Object o) {
+                                assertNotNull(o);
+
+                                IgniteAtomicLong atomicLong = (IgniteAtomicLong) o;
+
+                                assertEquals(42, atomicLong.incrementAndGet());
+
+                                return true;
+                            }
                         }
-                        catch (IgniteClientDisconnectedException e) {
-                            failed = true;
-
-                            checkAndWait(e);
-                        }
-
-                        assertTrue(failed);
-
-                        return client.atomicLong("testAtomic", 41, true);
-                    }
-                },
-                new C1<Object, Boolean>() {
-                    @Override public Boolean apply(Object o) {
-                        assertNotNull(o);
-
-                        IgniteAtomicLong atomicLong = (IgniteAtomicLong)o;
-
-                        assertEquals(42, atomicLong.incrementAndGet());
-
-                        return true;
-                    }
-                }
-            ),
+                ),
             // Check set.
-            new T2<Callable, C1<Object, Boolean>>(
-                new Callable() {
-                    @Override public Object call() throws Exception {
-                        boolean failed = false;
+                new T2<>(
+                        new Callable() {
+                            @Override
+                            public Object call() throws Exception {
+                                boolean failed = false;
 
-                        try {
-                            client.set("testSet", getCollectionConfiguration());
+                                try {
+                                    client.set("testSet", getCollectionConfiguration());
+                                } catch (IgniteClientDisconnectedException e) {
+                                    failed = true;
+
+                                    checkAndWait(e);
+                                }
+
+                                assertTrue(failed);
+
+                                return client.set("testSet", getCollectionConfiguration());
+                            }
+                        },
+                        new C1<Object, Boolean>() {
+                            @Override
+                            public Boolean apply(Object o) {
+                                assertNotNull(o);
+
+                                IgniteSet set = (IgniteSet) o;
+
+                                String val = "testVal";
+
+                                set.add(val);
+
+                                assertEquals(1, set.size());
+                                assertTrue(set.contains(val));
+
+                                return true;
+                            }
                         }
-                        catch (IgniteClientDisconnectedException e) {
-                            failed = true;
-
-                            checkAndWait(e);
-                        }
-
-                        assertTrue(failed);
-
-                        return client.set("testSet", getCollectionConfiguration());
-                    }
-                },
-                new C1<Object, Boolean>() {
-                    @Override public Boolean apply(Object o) {
-                        assertNotNull(o);
-
-                        IgniteSet set = (IgniteSet)o;
-
-                        String val = "testVal";
-
-                        set.add(val);
-
-                        assertEquals(1, set.size());
-                        assertTrue(set.contains(val));
-
-                        return true;
-                    }
-                }
-            ),
+                ),
             // Check ignite queue.
-            new T2<Callable, C1<Object, Boolean>>(
-                new Callable() {
-                    @Override public Object call() throws Exception {
-                        boolean failed = false;
+                new T2<>(
+                        new Callable() {
+                            @Override
+                            public Object call() throws Exception {
+                                boolean failed = false;
 
-                        try {
-                            client.queue("TestQueue", 10, getCollectionConfiguration());
+                                try {
+                                    client.queue("TestQueue", 10, getCollectionConfiguration());
+                                } catch (IgniteClientDisconnectedException e) {
+                                    failed = true;
+
+                                    checkAndWait(e);
+                                }
+
+                                assertTrue(failed);
+
+                                return client.queue("TestQueue", 10, getCollectionConfiguration());
+                            }
+                        },
+                        new C1<Object, Boolean>() {
+                            @Override
+                            public Boolean apply(Object o) {
+                                assertNotNull(o);
+
+                                IgniteQueue queue = (IgniteQueue) o;
+
+                                String val = "Test";
+
+                                queue.add(val);
+
+                                assertEquals(val, queue.poll());
+
+                                return true;
+                            }
                         }
-                        catch (IgniteClientDisconnectedException e) {
-                            failed = true;
-
-                            checkAndWait(e);
-                        }
-
-                        assertTrue(failed);
-
-                        return client.queue("TestQueue", 10, getCollectionConfiguration());
-                    }
-                },
-                new C1<Object, Boolean>() {
-                    @Override public Boolean apply(Object o) {
-                        assertNotNull(o);
-
-                        IgniteQueue queue = (IgniteQueue)o;
-
-                        String val = "Test";
-
-                        queue.add(val);
-
-                        assertEquals(val, queue.poll());
-
-                        return true;
-                    }
-                }
-            )
+                )
         ));
 
         clientMode = false;
@@ -237,303 +240,314 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
 
         doTestIgniteOperationOnDisconnect(client, Arrays.asList(
             // Check put and get operation.
-            new T2<Callable, C1<Object, Boolean>>(
-                new Callable() {
-                    @Override public Object call() throws Exception {
-                        boolean failed = false;
+                new T2<>(
+                        new Callable() {
+                            @Override
+                            public Object call() throws Exception {
+                                boolean failed = false;
 
-                        try {
-                            dfltCache.getAndPut(9999, 9999);
-                        }
-                        catch (CacheException e) {
-                            failed = true;
+                                try {
+                                    dfltCache.getAndPut(9999, 9999);
+                                } catch (CacheException e) {
+                                    failed = true;
 
-                            checkAndWait(e);
-                        }
-
-                        assertTrue(failed);
-
-                        return dfltCache.getAndPut(9999, 9999);
-                    }
-                },
-                new C1<Object, Boolean>() {
-                    @Override public Boolean apply(Object o) {
-                        assertNull(o);
-
-                        assertEquals(9999, dfltCache.get(9999));
-
-                        return true;
-                    }
-                }
-            ),
-            // Check put operation.
-            new T2<Callable, C1<Object, Boolean>>(
-                new Callable() {
-                    @Override public Object call() throws Exception {
-                        boolean failed = false;
-
-                        try {
-                            dfltCache.put(10000, 10000);
-                        }
-                        catch (CacheException e) {
-                            failed = true;
-
-                            checkAndWait(e);
-                        }
-
-                        assertTrue(failed);
-
-                        dfltCache.put(10000, 10000);
-
-                        return true;
-                    }
-                },
-                new C1<Object, Boolean>() {
-                    @Override public Boolean apply(Object o) {
-                        assertTrue((Boolean)o);
-
-                        assertEquals(10000, dfltCache.get(10000));
-
-                        return true;
-                    }
-                }
-            ),
-            // Check get operation.
-            new T2<Callable, C1<Object, Boolean>>(
-                new Callable() {
-                    @Override public Object call() throws Exception {
-                        boolean failed = false;
-
-                        try {
-                            dfltCache.get(10001);
-                        }
-                        catch (CacheException e) {
-                            failed = true;
-
-                            checkAndWait(e);
-                        }
-
-                        assertTrue(failed);
-
-                        return dfltCache.get(10001);
-                    }
-                },
-                new C1<Object, Boolean>() {
-                    @Override public Boolean apply(Object o) {
-                        assertNull(o);
-
-                        return true;
-                    }
-                }
-            ),
-            // Check put and invoke operation.
-            new T2<Callable, C1<Object, Boolean>>(
-                new Callable() {
-                    @Override public Object call() throws Exception {
-                        boolean failed = false;
-
-                        try {
-                            dfltCache.put(CACHE_PUT_INVOKE_KEY, 10000);
-                            dfltCache.invoke(CACHE_PUT_INVOKE_KEY, new CacheEntryProcessor<Object, Object, Object>() {
-                                @Override public Object process(MutableEntry<Object, Object> entry,
-                                    Object... arguments) throws EntryProcessorException {
-                                    assertTrue(entry.exists());
-
-                                    return (int)entry.getValue() * 2;
+                                    checkAndWait(e);
                                 }
-                            });
-                        }
-                        catch (CacheException e) {
-                            failed = true;
 
-                            checkAndWait(e);
-                        }
+                                assertTrue(failed);
 
-                        assertTrue(failed);
-
-                        dfltCache.put(CACHE_PUT_INVOKE_KEY, 10000);
-                        return dfltCache.invoke(CACHE_PUT_INVOKE_KEY, new CacheEntryProcessor<Object, Object, Object>() {
-                            @Override public Object process(MutableEntry<Object, Object> entry,
-                                Object... arguments) throws EntryProcessorException {
-                                assertTrue(entry.exists());
-
-                                return (int)entry.getValue() * 2;
+                                return dfltCache.getAndPut(9999, 9999);
                             }
-                        });
-                    }
-                },
-                new C1<Object, Boolean>() {
-                    @Override public Boolean apply(Object o) {
-                        assertNotNull(o);
+                        },
+                        new C1<Object, Boolean>() {
+                            @Override
+                            public Boolean apply(Object o) {
+                                assertNull(o);
 
-                        assertEquals(20000, (int)o);
+                                assertEquals(9999, dfltCache.get(9999));
 
-                        return true;
-                    }
-                }
-            ),
+                                return true;
+                            }
+                        }
+                ),
+            // Check put operation.
+                new T2<>(
+                        new Callable() {
+                            @Override
+                            public Object call() throws Exception {
+                                boolean failed = false;
+
+                                try {
+                                    dfltCache.put(10000, 10000);
+                                } catch (CacheException e) {
+                                    failed = true;
+
+                                    checkAndWait(e);
+                                }
+
+                                assertTrue(failed);
+
+                                dfltCache.put(10000, 10000);
+
+                                return true;
+                            }
+                        },
+                        new C1<Object, Boolean>() {
+                            @Override
+                            public Boolean apply(Object o) {
+                                assertTrue((Boolean) o);
+
+                                assertEquals(10000, dfltCache.get(10000));
+
+                                return true;
+                            }
+                        }
+                ),
+            // Check get operation.
+                new T2<>(
+                        new Callable() {
+                            @Override
+                            public Object call() throws Exception {
+                                boolean failed = false;
+
+                                try {
+                                    dfltCache.get(10001);
+                                } catch (CacheException e) {
+                                    failed = true;
+
+                                    checkAndWait(e);
+                                }
+
+                                assertTrue(failed);
+
+                                return dfltCache.get(10001);
+                            }
+                        },
+                        new C1<Object, Boolean>() {
+                            @Override
+                            public Boolean apply(Object o) {
+                                assertNull(o);
+
+                                return true;
+                            }
+                        }
+                ),
+            // Check put and invoke operation.
+                new T2<>(
+                        new Callable() {
+                            @Override
+                            public Object call() throws Exception {
+                                boolean failed = false;
+
+                                try {
+                                    dfltCache.put(CACHE_PUT_INVOKE_KEY, 10000);
+                                    dfltCache.invoke(CACHE_PUT_INVOKE_KEY, new CacheEntryProcessor<Object, Object, Object>() {
+                                        @Override
+                                        public Object process(MutableEntry<Object, Object> entry,
+                                                              Object... arguments) throws EntryProcessorException {
+                                            assertTrue(entry.exists());
+
+                                            return (int) entry.getValue() * 2;
+                                        }
+                                    });
+                                } catch (CacheException e) {
+                                    failed = true;
+
+                                    checkAndWait(e);
+                                }
+
+                                assertTrue(failed);
+
+                                dfltCache.put(CACHE_PUT_INVOKE_KEY, 10000);
+                                return dfltCache.invoke(CACHE_PUT_INVOKE_KEY, new CacheEntryProcessor<Object, Object, Object>() {
+                                    @Override
+                                    public Object process(MutableEntry<Object, Object> entry,
+                                                          Object... arguments) throws EntryProcessorException {
+                                        assertTrue(entry.exists());
+
+                                        return (int) entry.getValue() * 2;
+                                    }
+                                });
+                            }
+                        },
+                        new C1<Object, Boolean>() {
+                            @Override
+                            public Boolean apply(Object o) {
+                                assertNotNull(o);
+
+                                assertEquals(20000, (int) o);
+
+                                return true;
+                            }
+                        }
+                ),
             // Check put async operation.
-            new T2<Callable, C1<Object, Boolean>>(
-                new Callable() {
-                    @Override public Object call() throws Exception {
-                        boolean failed = false;
+                new T2<>(
+                        new Callable() {
+                            @Override
+                            public Object call() throws Exception {
+                                boolean failed = false;
 
-                        try {
-                            dfltCache.putAsync(10002, 10002).get();
+                                try {
+                                    dfltCache.putAsync(10002, 10002).get();
+                                } catch (CacheException e) {
+                                    failed = true;
+
+                                    checkAndWait(e);
+                                }
+
+                                assertTrue(failed);
+
+                                return dfltCache.putAsync(10002, 10002).get();
+                            }
+                        },
+                        new C1<Object, Boolean>() {
+                            @Override
+                            public Boolean apply(Object o) {
+                                assertNull(o);
+
+                                assertEquals(10002, dfltCache.get(10002));
+
+                                return true;
+                            }
                         }
-                        catch (CacheException e) {
-                            failed = true;
-
-                            checkAndWait(e);
-                        }
-
-                        assertTrue(failed);
-
-                        return dfltCache.putAsync(10002, 10002).get();
-                    }
-                },
-                new C1<Object, Boolean>() {
-                    @Override public Boolean apply(Object o) {
-                        assertNull(o);
-
-                        assertEquals(10002, dfltCache.get(10002));
-
-                        return true;
-                    }
-                }
-            ),
+                ),
             // Check transaction.
-            new T2<Callable, C1<Object, Boolean>>(
-                new Callable() {
-                    @Override public Object call() throws Exception {
-                        boolean failed = false;
+                new T2<>(
+                        new Callable() {
+                            @Override
+                            public Object call() throws Exception {
+                                boolean failed = false;
 
-                        try {
-                            client.transactions();
+                                try {
+                                    client.transactions();
+                                } catch (IgniteClientDisconnectedException e) {
+                                    failed = true;
+
+                                    checkAndWait(e);
+                                }
+
+                                assertTrue(failed);
+
+                                return client.transactions();
+                            }
+                        },
+                        new C1<Object, Boolean>() {
+                            @Override
+                            public Boolean apply(Object o) {
+                                IgniteTransactions txs = (IgniteTransactions) o;
+
+                                assertNotNull(txs);
+
+                                return true;
+                            }
                         }
-                        catch (IgniteClientDisconnectedException e) {
-                            failed = true;
-
-                            checkAndWait(e);
-                        }
-
-                        assertTrue(failed);
-
-                        return client.transactions();
-                    }
-                },
-                new C1<Object, Boolean>() {
-                    @Override public Boolean apply(Object o) {
-                        IgniteTransactions txs = (IgniteTransactions)o;
-
-                        assertNotNull(txs);
-
-                        return true;
-                    }
-                }
-            ),
+                ),
             // Check get cache.
-            new T2<Callable, C1<Object, Boolean>>(
-                new Callable() {
-                    @Override public Object call() throws Exception {
-                        boolean failed = false;
+                new T2<>(
+                        new Callable() {
+                            @Override
+                            public Object call() throws Exception {
+                                boolean failed = false;
 
-                        try {
-                            client.cache(DEFAULT_CACHE_NAME);
+                                try {
+                                    client.cache(DEFAULT_CACHE_NAME);
+                                } catch (IgniteClientDisconnectedException e) {
+                                    failed = true;
+
+                                    checkAndWait(e);
+                                }
+
+                                assertTrue(failed);
+
+                                return client.cache(DEFAULT_CACHE_NAME);
+                            }
+                        },
+                        new C1<Object, Boolean>() {
+                            @Override
+                            public Boolean apply(Object o) {
+                                IgniteCache<Object, Object> cache0 = (IgniteCache<Object, Object>) o;
+
+                                assertNotNull(cache0);
+
+                                cache0.put(1, 1);
+
+                                assertEquals(1, cache0.get(1));
+
+                                return true;
+                            }
                         }
-                        catch (IgniteClientDisconnectedException e) {
-                            failed = true;
-
-                            checkAndWait(e);
-                        }
-
-                        assertTrue(failed);
-
-                        return client.cache(DEFAULT_CACHE_NAME);
-                    }
-                },
-                new C1<Object, Boolean>() {
-                    @Override public Boolean apply(Object o) {
-                        IgniteCache<Object, Object> cache0 = (IgniteCache<Object, Object>)o;
-
-                        assertNotNull(cache0);
-
-                        cache0.put(1, 1);
-
-                        assertEquals(1, cache0.get(1));
-
-                        return true;
-                    }
-                }
-            ),
+                ),
             // Check streamer.
-            new T2<Callable, C1<Object, Boolean>>(
-                new Callable() {
-                    @Override public Object call() throws Exception {
-                        boolean failed = false;
+                new T2<>(
+                        new Callable() {
+                            @Override
+                            public Object call() throws Exception {
+                                boolean failed = false;
 
-                        try {
-                            client.dataStreamer(DEFAULT_CACHE_NAME);
+                                try {
+                                    client.dataStreamer(DEFAULT_CACHE_NAME);
+                                } catch (IgniteClientDisconnectedException e) {
+                                    failed = true;
+
+                                    checkAndWait(e);
+                                }
+
+                                assertTrue(failed);
+
+                                return client.dataStreamer(DEFAULT_CACHE_NAME);
+                            }
+                        },
+                        new C1<Object, Boolean>() {
+                            @Override
+                            public Boolean apply(Object o) {
+                                IgniteDataStreamer<Object, Object> streamer = (IgniteDataStreamer<Object, Object>) o;
+
+                                streamer.addData(2, 2);
+
+                                streamer.close();
+
+                                assertEquals(2, client.cache(DEFAULT_CACHE_NAME).get(2));
+
+                                return true;
+                            }
                         }
-                        catch (IgniteClientDisconnectedException e) {
-                            failed = true;
-
-                            checkAndWait(e);
-                        }
-
-                        assertTrue(failed);
-
-                        return client.dataStreamer(DEFAULT_CACHE_NAME);
-                    }
-                },
-                new C1<Object, Boolean>() {
-                    @Override public Boolean apply(Object o) {
-                        IgniteDataStreamer<Object, Object> streamer = (IgniteDataStreamer<Object, Object>)o;
-
-                        streamer.addData(2, 2);
-
-                        streamer.close();
-
-                        assertEquals(2, client.cache(DEFAULT_CACHE_NAME).get(2));
-
-                        return true;
-                    }
-                }
-            ),
+                ),
             // Check create cache.
-            new T2<Callable, C1<Object, Boolean>>(
-                new Callable() {
-                    @Override public Object call() throws Exception {
-                        boolean failed = false;
+                new T2<>(
+                        new Callable() {
+                            @Override
+                            public Object call() throws Exception {
+                                boolean failed = false;
 
-                        try {
-                            client.createCache("test_cache");
+                                try {
+                                    client.createCache("test_cache");
+                                } catch (IgniteClientDisconnectedException e) {
+                                    failed = true;
+
+                                    checkAndWait(e);
+                                }
+
+                                assertTrue(failed);
+
+                                return client.createCache("test_cache");
+                            }
+                        },
+                        new C1<Object, Boolean>() {
+                            @Override
+                            public Boolean apply(Object o) {
+                                IgniteCache<Object, Object> cache = (IgniteCache<Object, Object>) o;
+
+                                assertNotNull(cache);
+
+                                cache.put(1, 1);
+
+                                assertEquals(1, cache.get(1));
+
+                                return true;
+                            }
                         }
-                        catch (IgniteClientDisconnectedException e) {
-                            failed = true;
-
-                            checkAndWait(e);
-                        }
-
-                        assertTrue(failed);
-
-                        return client.createCache("test_cache");
-                    }
-                },
-                new C1<Object, Boolean>() {
-                    @Override public Boolean apply(Object o) {
-                        IgniteCache<Object, Object> cache = (IgniteCache<Object, Object>)o;
-
-                        assertNotNull(cache);
-
-                        cache.put(1, 1);
-
-                        assertEquals(1, cache.get(1));
-
-                        return true;
-                    }
-                }
-            )
+                )
 
         ));
 
@@ -557,216 +571,226 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
 
         doTestIgniteOperationOnDisconnect(client, Arrays.asList(
             // Check compute.
-            new T2<Callable, C1<Object, Boolean>>(
-                new Callable() {
-                    @Override public Object call() throws Exception {
-                        boolean failed = false;
+                new T2<>(
+                        new Callable() {
+                            @Override
+                            public Object call() throws Exception {
+                                boolean failed = false;
 
-                        try {
-                            client.compute();
-                        }
-                        catch (IgniteClientDisconnectedException e) {
-                            failed = true;
+                                try {
+                                    client.compute();
+                                } catch (IgniteClientDisconnectedException e) {
+                                    failed = true;
 
-                            checkAndWait(e);
-                        }
+                                    checkAndWait(e);
+                                }
 
-                        assertTrue(failed);
+                                assertTrue(failed);
 
-                        return client.compute();
-                    }
-                },
-                new C1<Object, Boolean>() {
-                    @Override public Boolean apply(Object o) {
-                        IgniteCompute comp = (IgniteCompute)o;
-
-                        Collection<UUID> uuids = comp.broadcast(new IgniteCallable<UUID>() {
-                            @IgniteInstanceResource
-                            private Ignite ignite;
-
-                            @Override public UUID call() throws Exception {
-                                return ignite.cluster().localNode().id();
+                                return client.compute();
                             }
-                        });
+                        },
+                        new C1<Object, Boolean>() {
+                            @Override
+                            public Boolean apply(Object o) {
+                                IgniteCompute comp = (IgniteCompute) o;
 
-                        assertFalse(uuids.isEmpty());
+                                Collection<UUID> uuids = comp.broadcast(new IgniteCallable<UUID>() {
+                                    @IgniteInstanceResource
+                                    private Ignite ignite;
 
-                        for (UUID uuid : uuids)
-                            assertNotNull(uuid);
+                                    @Override
+                                    public UUID call() throws Exception {
+                                        return ignite.cluster().localNode().id();
+                                    }
+                                });
 
-                        return true;
-                    }
-                }
-            ),
+                                assertFalse(uuids.isEmpty());
+
+                                for (UUID uuid : uuids)
+                                    assertNotNull(uuid);
+
+                                return true;
+                            }
+                        }
+                ),
 
             // Check ping node.
-            new T2<Callable, C1<Object, Boolean>>(
-                new Callable() {
-                    @Override public Object call() throws Exception {
-                        boolean failed = false;
+                new T2<>(
+                        new Callable() {
+                            @Override
+                            public Object call() throws Exception {
+                                boolean failed = false;
 
-                        try {
-                            client.cluster().pingNode(new UUID(0, 0));
+                                try {
+                                    client.cluster().pingNode(new UUID(0, 0));
+                                } catch (IgniteClientDisconnectedException e) {
+                                    failed = true;
+
+                                    checkAndWait(e);
+                                }
+
+                                assertTrue(failed);
+
+                                return client.cluster().pingNode(new UUID(0, 0));
+                            }
+                        },
+                        new C1<Object, Boolean>() {
+                            @Override
+                            public Boolean apply(Object o) {
+                                Boolean pingNode = (Boolean) o;
+
+                                assertFalse(pingNode);
+
+                                return true;
+                            }
                         }
-                        catch (IgniteClientDisconnectedException e) {
-                            failed = true;
-
-                            checkAndWait(e);
-                        }
-
-                        assertTrue(failed);
-
-                        return client.cluster().pingNode(new UUID(0, 0));
-                    }
-                },
-                new C1<Object, Boolean>() {
-                    @Override public Boolean apply(Object o) {
-                        Boolean pingNode = (Boolean)o;
-
-                        assertFalse(pingNode);
-
-                        return true;
-                    }
-                }
-            ),
+                ),
             // Check register remote listener.
-            new T2<Callable, C1<Object, Boolean>>(
-                new Callable() {
-                    @Override public Object call() throws Exception {
-                        boolean failed = false;
+                new T2<>(
+                        new Callable() {
+                            @Override
+                            public Object call() throws Exception {
+                                boolean failed = false;
 
-                        try {
-                            client.events().remoteListen(null, new IgnitePredicate<Event>() {
-                                @Override public boolean apply(Event event) {
-                                    return true;
+                                try {
+                                    client.events().remoteListen(null, new IgnitePredicate<Event>() {
+                                        @Override
+                                        public boolean apply(Event event) {
+                                            return true;
+                                        }
+                                    });
+                                } catch (IgniteClientDisconnectedException e) {
+                                    failed = true;
+
+                                    checkAndWait(e);
                                 }
-                            });
-                        }
-                        catch (IgniteClientDisconnectedException e) {
-                            failed = true;
 
-                            checkAndWait(e);
-                        }
+                                assertTrue(failed);
 
-                        assertTrue(failed);
+                                return client.events().remoteListen(null, new IgnitePredicate<Event>() {
+                                    @Override
+                                    public boolean apply(Event event) {
+                                        return true;
+                                    }
+                                });
+                            }
+                        },
+                        new C1<Object, Boolean>() {
+                            @Override
+                            public Boolean apply(Object o) {
+                                UUID remoteId = (UUID) o;
 
-                        return client.events().remoteListen(null, new IgnitePredicate<Event>() {
-                            @Override public boolean apply(Event event) {
+                                assertNotNull(remoteId);
+
+                                client.events().stopRemoteListen(remoteId);
+
                                 return true;
                             }
-                        });
-                    }
-                },
-                new C1<Object, Boolean>() {
-                    @Override public Boolean apply(Object o) {
-                        UUID remoteId = (UUID)o;
-
-                        assertNotNull(remoteId);
-
-                        client.events().stopRemoteListen(remoteId);
-
-                        return true;
-                    }
-                }
-            ),
+                        }
+                ),
             // Check message operation.
-            new T2<Callable, C1<Object, Boolean>>(
-                new Callable() {
-                    @Override public Object call() throws Exception {
-                        boolean failed = false;
+                new T2<>(
+                        new Callable() {
+                            @Override
+                            public Object call() throws Exception {
+                                boolean failed = false;
 
-                        try {
-                            client.message().remoteListen(null, new IgniteBiPredicate<UUID, Object>() {
-                                @Override public boolean apply(UUID uuid, Object o) {
-                                    if (o.equals("Test message."))
-                                        recvLatch.countDown();
+                                try {
+                                    client.message().remoteListen(null, new IgniteBiPredicate<UUID, Object>() {
+                                        @Override
+                                        public boolean apply(UUID uuid, Object o) {
+                                            if (o.equals("Test message."))
+                                                recvLatch.countDown();
 
-                                    return true;
+                                            return true;
+                                        }
+                                    });
+                                } catch (IgniteClientDisconnectedException e) {
+                                    failed = true;
+
+                                    checkAndWait(e);
                                 }
-                            });
-                        }
-                        catch (IgniteClientDisconnectedException e) {
-                            failed = true;
 
-                            checkAndWait(e);
-                        }
+                                assertTrue(failed);
 
-                        assertTrue(failed);
+                                return client.message().remoteListen(null, new IgniteBiPredicate<UUID, Object>() {
+                                    @Override
+                                    public boolean apply(UUID uuid, Object o) {
+                                        if (o.equals("Test message."))
+                                            recvLatch.countDown();
 
-                        return client.message().remoteListen(null, new IgniteBiPredicate<UUID, Object>() {
-                            @Override public boolean apply(UUID uuid, Object o) {
-                                if (o.equals("Test message."))
-                                    recvLatch.countDown();
+                                        return true;
+                                    }
+                                });
+                            }
+                        },
+                        new C1<Object, Boolean>() {
+                            @Override
+                            public Boolean apply(Object o) {
+                                assertNotNull(o);
+
+                                IgniteMessaging msg = client.message();
+
+                                msg.send(null, "Test message.");
+
+                                try {
+                                    assertTrue(recvLatch.await(2, SECONDS));
+                                } catch (InterruptedException ignored) {
+                                    fail("Message wasn't received.");
+                                }
 
                                 return true;
                             }
-                        });
-                    }
-                },
-                new C1<Object, Boolean>() {
-                    @Override public Boolean apply(Object o) {
-                        assertNotNull(o);
-
-                        IgniteMessaging msg = client.message();
-
-                        msg.send(null, "Test message.");
-
-                        try {
-                            assertTrue(recvLatch.await(2, SECONDS));
                         }
-                        catch (InterruptedException ignored) {
-                            fail("Message wasn't received.");
-                        }
-
-                        return true;
-                    }
-                }
-            ),
+                ),
             // Check executor.
-            new T2<Callable, C1<Object, Boolean>>(
-                new Callable() {
-                    @Override public Object call() throws Exception {
-                        boolean failed = false;
+                new T2<>(
+                        new Callable() {
+                            @Override
+                            public Object call() throws Exception {
+                                boolean failed = false;
 
-                        try {
-                            client.executorService().submit(new Callable<Integer>() {
-                                @Override public Integer call() throws Exception {
-                                    return 42;
+                                try {
+                                    client.executorService().submit(new Callable<Integer>() {
+                                        @Override
+                                        public Integer call() throws Exception {
+                                            return 42;
+                                        }
+                                    });
+                                } catch (IgniteClientDisconnectedException e) {
+                                    failed = true;
+
+                                    checkAndWait(e);
                                 }
-                            });
-                        }
-                        catch (IgniteClientDisconnectedException e) {
-                            failed = true;
 
-                            checkAndWait(e);
-                        }
+                                assertTrue(failed);
 
-                        assertTrue(failed);
-
-                        return client.executorService().submit(new Callable<Integer>() {
-                            @Override public Integer call() throws Exception {
-                                return 42;
+                                return client.executorService().submit(new Callable<Integer>() {
+                                    @Override
+                                    public Integer call() throws Exception {
+                                        return 42;
+                                    }
+                                });
                             }
-                        });
-                    }
-                },
-                new C1<Object, Boolean>() {
-                    @Override public Boolean apply(Object o) {
-                        assertNotNull(o);
+                        },
+                        new C1<Object, Boolean>() {
+                            @Override
+                            public Boolean apply(Object o) {
+                                assertNotNull(o);
 
-                        Future<Integer> fut = (Future<Integer>)o;
+                                Future<Integer> fut = (Future<Integer>) o;
 
-                        try {
-                            assertEquals(42, (int)fut.get());
+                                try {
+                                    assertEquals(42, (int) fut.get());
+                                } catch (Exception ignored) {
+                                    fail("Failed submit task.");
+                                }
+
+                                return true;
+                            }
                         }
-                        catch (Exception ignored) {
-                            fail("Failed submit task.");
-                        }
-
-                        return true;
-                    }
-                }
-            )
+                )
         ));
 
         clientMode = false;

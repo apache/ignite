@@ -287,7 +287,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         ByteBuffer input = checkMessage(ses, msg);
 
         if (!input.hasRemaining())
-            return new GridNioFinishedFuture<Object>(null);
+            return new GridNioFinishedFuture<>(null);
 
         GridNioSslHandler hnd = sslHandler(ses);
 
@@ -295,8 +295,8 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
 
         try {
             if (hnd.isOutboundDone())
-                return new GridNioFinishedFuture<Object>(new IOException("Failed to send data (secure session was " +
-                    "already closed): " + ses));
+                return new GridNioFinishedFuture<>(new IOException("Failed to send data (secure session was " +
+                        "already closed): " + ses));
 
             if (hnd.isHandshakeFinished()) {
                 hnd.encrypt(input);

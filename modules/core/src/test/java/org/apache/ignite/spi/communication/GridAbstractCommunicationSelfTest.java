@@ -165,7 +165,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
             for (ClusterNode node : nodes) {
                 synchronized (mux) {
                     if (!msgDestMap.containsKey(entry.getKey()))
-                        msgDestMap.put(entry.getKey(), new HashSet<UUID>());
+                        msgDestMap.put(entry.getKey(), new HashSet<>());
 
                     msgDestMap.get(entry.getKey()).add(node.id());
                 }
@@ -211,7 +211,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
             for (ClusterNode node : nodes) {
                 synchronized (mux) {
                     if (!msgDestMap.containsKey(sndId))
-                        msgDestMap.put(sndId, new HashSet<UUID>());
+                        msgDestMap.put(sndId, new HashSet<>());
 
                     msgDestMap.get(sndId).add(node.id());
                 }

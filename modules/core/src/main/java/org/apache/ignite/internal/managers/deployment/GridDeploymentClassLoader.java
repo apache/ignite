@@ -177,9 +177,9 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
         nodeLdrMap = singleNode ? Collections.unmodifiableMap(map) : map;
 
         missedRsrcs = missedResourcesCacheSize > 0 ?
-            new GridBoundedLinkedHashSet<String>(missedResourcesCacheSize) : null;
+                new GridBoundedLinkedHashSet<>(missedResourcesCacheSize) : null;
 
-        byteMap = clsBytesCacheEnabled ? new ConcurrentHashMap<String, byte[]>() : null;
+        byteMap = clsBytesCacheEnabled ? new ConcurrentHashMap<>() : null;
 
         this.quiet = quiet;
     }
@@ -249,9 +249,9 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
         nodeLdrMap = new HashMap<>(participants);
 
         missedRsrcs = missedResourcesCacheSize > 0 ?
-            new GridBoundedLinkedHashSet<String>(missedResourcesCacheSize) : null;
+                new GridBoundedLinkedHashSet<>(missedResourcesCacheSize) : null;
 
-        byteMap = clsBytesCacheEnabled ? new ConcurrentHashMap<String, byte[]>() : null;
+        byteMap = clsBytesCacheEnabled ? new ConcurrentHashMap<>() : null;
 
         this.quiet = quiet;
     }

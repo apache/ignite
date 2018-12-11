@@ -100,7 +100,7 @@ public class PageIdDistributionTest extends GridCommonAbstractTest {
         List<Map<Integer, Integer>> collisionsPerSegment = new ArrayList<>(segments);
 
         for (int i = 0; i < segments; i++)
-            collisionsPerSegment.add(new HashMap<Integer, Integer>(allIds / segments, 1.0f));
+            collisionsPerSegment.add(new HashMap<>(allIds / segments, 1.0f));
 
         int[] numInSegment = new int[segments];
 

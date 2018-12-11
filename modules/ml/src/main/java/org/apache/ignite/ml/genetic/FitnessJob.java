@@ -75,7 +75,7 @@ public class FitnessJob extends ComputeJobAdapter {
 
         long[] geneKeys = chromosome.getGenes();
 
-        List<Gene> genes = new ArrayList<Gene>();
+        List<Gene> genes = new ArrayList<>();
 
         for (int i = 0; i < geneKeys.length; i++) {
             long aKey = geneKeys[i];

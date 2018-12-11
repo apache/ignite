@@ -553,7 +553,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
         locSeq.batchSize(batchSize);
 
         // Result set.
-        final Set<Long> resSet = Collections.synchronizedSet(new HashSet<Long>());
+        final Set<Long> resSet = Collections.synchronizedSet(new HashSet<>());
 
         // Get sequence value and try to put it result set.
         for (int i = 0; i < MAX_LOOPS_NUM; i++) {

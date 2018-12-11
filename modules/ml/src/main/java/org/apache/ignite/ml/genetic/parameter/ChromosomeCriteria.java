@@ -26,7 +26,7 @@ import java.util.List;
  */
 public class ChromosomeCriteria {
     /** List of criteria for a Chromosome */
-    private List<String> criteria = new ArrayList<String>();
+    private List<String> criteria = new ArrayList<>();
 
     /**
      * Retrieve criteria

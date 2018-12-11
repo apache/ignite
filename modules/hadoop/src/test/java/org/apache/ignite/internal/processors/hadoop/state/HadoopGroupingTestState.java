@@ -29,7 +29,7 @@ import java.util.UUID;
 public class HadoopGroupingTestState {
     /** Values. */
     private static final GridConcurrentHashSet<UUID> vals = HadoopSharedMap.map(HadoopGroupingTestState.class)
-        .put("vals", new GridConcurrentHashSet<UUID>());
+        .put("vals", new GridConcurrentHashSet<>());
 
     /**
      * @return Values.

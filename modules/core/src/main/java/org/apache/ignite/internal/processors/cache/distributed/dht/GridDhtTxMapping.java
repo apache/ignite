@@ -59,7 +59,7 @@ public class GridDhtTxMapping {
                 backups.add(nodes.get(i).id());
         }
         else
-            txNodes.put(primary.id(), new GridLeanSet<UUID>());
+            txNodes.put(primary.id(), new GridLeanSet<>());
     }
 
     /**

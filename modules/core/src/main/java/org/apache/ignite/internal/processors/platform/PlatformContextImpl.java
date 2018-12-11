@@ -101,7 +101,7 @@ public class PlatformContextImpl implements PlatformContext {
     private final CacheObjectBinaryProcessorImpl cacheObjProc;
 
     /** Node ids that has been sent to native platform. */
-    private final Set<UUID> sentNodes = Collections.newSetFromMap(new ConcurrentHashMap<UUID, Boolean>());
+    private final Set<UUID> sentNodes = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     /** Platform name. */
     private final String platform;

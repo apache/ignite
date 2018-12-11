@@ -1287,7 +1287,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
-                        conn.setTypeMap(new HashMap<String, Class<?>>());
+                        conn.setTypeMap(new HashMap<>());
 
                         return null;
                     }
@@ -1313,7 +1313,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
-                        conn.setTypeMap(new HashMap<String, Class<?>>());
+                        conn.setTypeMap(new HashMap<>());
 
                         return null;
                     }

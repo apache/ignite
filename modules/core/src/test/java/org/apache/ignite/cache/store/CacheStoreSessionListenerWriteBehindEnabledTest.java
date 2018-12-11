@@ -64,7 +64,7 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
     private static final int WRITE_BEHIND_FLUSH_FREQUENCY = 1000;
 
     /** */
-    private static final List<OperationType> operations = Collections.synchronizedList(new ArrayList<OperationType>());
+    private static final List<OperationType> operations = Collections.synchronizedList(new ArrayList<>());
 
     /** */
     private static final AtomicInteger entryCnt = new AtomicInteger();

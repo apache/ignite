@@ -177,7 +177,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private ClusterNode crd;
 
     /** Registered cache names. */
-    private final Collection<String> cacheNames = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+    private final Collection<String> cacheNames = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     /** ID history for index create/drop discovery messages. */
     private final GridBoundedConcurrentLinkedHashSet<IgniteUuid> dscoMsgIdHist =

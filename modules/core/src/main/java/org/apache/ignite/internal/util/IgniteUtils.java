@@ -6157,7 +6157,7 @@ public abstract class IgniteUtils {
                             f.setAccessible(true);
 
                             if (tup.get2() == null)
-                                tup.set2(new LinkedList<Field>());
+                                tup.set2(new LinkedList<>());
 
                             tup.get2().add(f);
                         }
@@ -9689,7 +9689,7 @@ public abstract class IgniteUtils {
     public static <T extends R, R> List<R> arrayList(Collection<T> c) {
         assert c != null;
 
-        return new ArrayList<R>(c);
+        return new ArrayList<>(c);
     }
 
     /**

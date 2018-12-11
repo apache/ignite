@@ -353,7 +353,7 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
         if (v != null)
             return new IgniteFinishedFutureImpl<>("immediately");
 
-        final IgniteFuture<String> promise = new IgniteFutureImpl<>(new GridFutureAdapter<String>());
+        final IgniteFuture<String> promise = new IgniteFutureImpl<>(new GridFutureAdapter<>());
 
         final CacheEntryListenerConfiguration<Integer, String> cfg =
             createCacheListener(key, promise, id);

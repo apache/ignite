@@ -224,7 +224,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         metricsUpdateFreq = ctx.config().getMetricsUpdateFrequency();
 
-        activeJobs = jobAlwaysActivate ? new ConcurrentHashMap<IgniteUuid, GridJobWorker>() :
+        activeJobs = jobAlwaysActivate ? new ConcurrentHashMap<>() :
             new JobsMap(1024, 0.75f, 256);
 
         passiveJobs = jobAlwaysActivate ? null : new JobsMap(1024, 0.75f, 256);

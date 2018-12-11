@@ -711,7 +711,7 @@ public abstract class GridMergeIndex extends BaseIndex {
             mask = maxBlockSize - 1;
 
             blocks = new ArrayList<>();
-            blocks.add(new ArrayList<Z>());
+            blocks.add(new ArrayList<>());
         }
 
         /** {@inheritDoc} */
@@ -728,7 +728,7 @@ public abstract class GridMergeIndex extends BaseIndex {
             lastBlock.add(z);
 
             if (lastBlock.size() == maxBlockSize)
-                blocks.add(new ArrayList<Z>());
+                blocks.add(new ArrayList<>());
 
             return true;
         }

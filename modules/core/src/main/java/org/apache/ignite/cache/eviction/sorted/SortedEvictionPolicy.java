@@ -109,7 +109,7 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
         setMaxSize(max);
         setBatchSize(batchSize);
 
-        this.comp = comp == null ? new DefaultHolderComparator<K, V>() : new HolderComparator<>(comp);
+        this.comp = comp == null ? new DefaultHolderComparator<>() : new HolderComparator<>(comp);
         this.set = new GridConcurrentSkipListSetEx<>(this.comp);
     }
 
@@ -119,7 +119,7 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
      * @param comp Entries comparator.
      */
     public SortedEvictionPolicy(@Nullable Comparator<EvictableEntry<K, V>> comp) {
-        this.comp = comp == null ? new DefaultHolderComparator<K, V>() : new HolderComparator<>(comp);
+        this.comp = comp == null ? new DefaultHolderComparator<>() : new HolderComparator<>(comp);
         this.set = new GridConcurrentSkipListSetEx<>(this.comp);
     }
 

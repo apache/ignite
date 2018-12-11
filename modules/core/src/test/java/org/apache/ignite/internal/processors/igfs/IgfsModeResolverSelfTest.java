@@ -104,7 +104,7 @@ public class IgfsModeResolverSelfTest extends TestCase {
         try {
             IgfsUtils.preparePathModes(DUAL_SYNC, Arrays.asList(
                 new T2<>(new IgfsPath("/a/"), PRIMARY),
-                new T2<>(new IgfsPath("/a/b/"), DUAL_ASYNC)), new HashSet<IgfsPath>());
+                new T2<>(new IgfsPath("/a/b/"), DUAL_ASYNC)), new HashSet<>());
 
             fail("IgniteCheckedException expected");
         }
@@ -117,7 +117,7 @@ public class IgfsModeResolverSelfTest extends TestCase {
             if (m != IgfsMode.PRIMARY) {
                 try {
                     IgfsUtils.preparePathModes(PRIMARY, Arrays.asList(new T2<>(new IgfsPath("/a/"), DUAL_ASYNC)),
-                        new HashSet<IgfsPath>());
+                            new HashSet<>());
 
                     fail("IgniteCheckedException expected");
                 }
@@ -132,7 +132,7 @@ public class IgfsModeResolverSelfTest extends TestCase {
             new T2<>(new IgfsPath("/a"), PRIMARY),
             new T2<>(new IgfsPath("/c/d/"), PRIMARY),
             new T2<>(new IgfsPath("/c/d/e/f"), PRIMARY)
-        ), new HashSet<IgfsPath>());
+        ), new HashSet<>());
         assertNotNull(modes);
         assertEquals(2, modes.size());
         assertEquals(modes, Arrays.asList(
@@ -145,7 +145,7 @@ public class IgfsModeResolverSelfTest extends TestCase {
             new T2<>(new IgfsPath("/a/b"), DUAL_ASYNC),
             new T2<>(new IgfsPath("/a/b/c"), DUAL_SYNC),
             new T2<>(new IgfsPath("/a/b/c/d"), DUAL_ASYNC)
-        ), new HashSet<IgfsPath>());
+        ), new HashSet<>());
         assertNotNull(modes);
         assertEquals(modes.size(), 3);
         assertEquals(modes, Arrays.asList(

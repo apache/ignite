@@ -231,7 +231,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
             QueryEntity i2i = new QueryEntity(Integer.class.getName(), Integer.class.getName());
 
-            i2i.setFields(new LinkedHashMap<String, String>());
+            i2i.setFields(new LinkedHashMap<>());
 
             i2i.setIndexes(Collections.<QueryIndex>emptyList());
 

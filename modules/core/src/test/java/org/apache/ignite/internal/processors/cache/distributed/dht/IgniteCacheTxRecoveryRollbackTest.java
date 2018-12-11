@@ -164,10 +164,10 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
         final Integer key = primaryKey(srv0.cache(DEFAULT_CACHE_NAME));
 
         final IgniteCache<Integer, Integer> cache1 =
-            client1.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<Integer, Integer>());
+            client1.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
 
         final IgniteCache<Integer, Integer> cache2 =
-            client2.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<Integer, Integer>());
+            client2.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
 
         cache1.put(key, 1);
 
@@ -264,10 +264,10 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
         final Integer key = primaryKey(srv0.cache(DEFAULT_CACHE_NAME));
 
         final IgniteCache<Integer, Integer> cache1 =
-            client1.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<Integer, Integer>());
+            client1.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
 
         final IgniteCache<Integer, Integer> cache2 =
-            client2.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<Integer, Integer>());
+            client2.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
 
         cache1.put(key, 1);
 

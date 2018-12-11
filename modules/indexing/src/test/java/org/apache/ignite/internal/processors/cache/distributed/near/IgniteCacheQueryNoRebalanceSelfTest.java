@@ -68,7 +68,7 @@ public class IgniteCacheQueryNoRebalanceSelfTest extends GridCommonAbstractTest 
         cache.put(1, 1);
 
         QueryCursor<Cache.Entry<Integer, Integer>> qry =
-            cache.query(new SqlQuery<Integer, Integer>(Integer.class, "_key >= 0"));
+            cache.query(new SqlQuery<>(Integer.class, "_key >= 0"));
 
         assertEquals("Bad results count", 1, qry.getAll().size());
     }

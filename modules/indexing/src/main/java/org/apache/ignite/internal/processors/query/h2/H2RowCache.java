@@ -51,11 +51,11 @@ public class H2RowCache implements GridQueryRowCacheCleaner {
     public H2RowCache(CacheGroupContext grpCtx, int maxSize) {
         this.grpCtx = grpCtx;
 
-        rows = new ConcurrentLinkedHashMap<Long, GridH2KeyValueRowOnheap>(
-            DFLT_INIT_CAP,
-            DFLT_LOAD_FACTOR,
-            Runtime.getRuntime().availableProcessors(),
-            maxSize
+        rows = new ConcurrentLinkedHashMap<>(
+                DFLT_INIT_CAP,
+                DFLT_LOAD_FACTOR,
+                Runtime.getRuntime().availableProcessors(),
+                maxSize
         );
     }
 

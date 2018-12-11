@@ -997,7 +997,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         if (list == null) {
             list = F.addIfAbsent(customEvtLsnrs, msgCls,
-                new CopyOnWriteArrayList<CustomEventListener<DiscoveryCustomMessage>>());
+                    new CopyOnWriteArrayList<>());
         }
 
         list.add((CustomEventListener<DiscoveryCustomMessage>)lsnr);

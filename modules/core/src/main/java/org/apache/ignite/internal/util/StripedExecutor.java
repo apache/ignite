@@ -625,7 +625,7 @@ public class StripedExecutor implements ExecutorService {
 
             this.others = others;
 
-            this.queue = others == null ? new ConcurrentLinkedQueue<Runnable>() : new ConcurrentLinkedDeque<Runnable>();
+            this.queue = others == null ? new ConcurrentLinkedQueue<>() : new ConcurrentLinkedDeque<>();
         }
 
         /** {@inheritDoc} */

@@ -114,14 +114,14 @@ public class VisorThreadInfo extends VisorDataTransferObject {
         stackTrace = Arrays.asList(ti.getStackTrace());
 
         locks = ti.getLockedSynchronizers() != null ?
-            new ArrayList<VisorThreadLockInfo>(ti.getLockedSynchronizers().length) : null;
+                new ArrayList<>(ti.getLockedSynchronizers().length) : null;
 
         if (ti.getLockedSynchronizers() != null)
             for (int i = 0; i < ti.getLockedSynchronizers().length; i++)
                 locks.add(new VisorThreadLockInfo(ti.getLockedSynchronizers()[i]));
 
         lockedMonitors = ti.getLockedMonitors() != null ?
-            new ArrayList<VisorThreadMonitorInfo>(ti.getLockedMonitors().length) : null;
+                new ArrayList<>(ti.getLockedMonitors().length) : null;
 
         if (ti.getLockedMonitors() != null)
             for (int i = 0; i < ti.getLockedMonitors().length; i++)

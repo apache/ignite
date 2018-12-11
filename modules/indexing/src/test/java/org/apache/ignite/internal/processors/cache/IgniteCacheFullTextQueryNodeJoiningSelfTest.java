@@ -122,7 +122,7 @@ public class IgniteCacheFullTextQueryNodeJoiningSelfTest extends GridCommonAbstr
 
                 for (int i = 0; i < 100; i++) {
                     QueryCursor<Cache.Entry<AffinityKey<Integer>, IndexedEntity>> res = started.cache(DEFAULT_CACHE_NAME)
-                        .query(new TextQuery<AffinityKey<Integer>, IndexedEntity>(IndexedEntity.class, "indexed"));
+                        .query(new TextQuery<>(IndexedEntity.class, "indexed"));
 
                     assertEquals("Failed iteration: " + i, 1000, res.getAll().size());
                 }

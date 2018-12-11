@@ -40,10 +40,10 @@ public class GridPerformanceSuggestions {
     private static final boolean disabled = Boolean.getBoolean(IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED);
 
     /** */
-    private final Collection<String> perfs = !disabled ? new LinkedHashSet<String>() : null;
+    private final Collection<String> perfs = !disabled ? new LinkedHashSet<>() : null;
 
     /** */
-    private final Collection<String> suppressed = !disabled ? new HashSet<String>() : null;
+    private final Collection<String> suppressed = !disabled ? new HashSet<>() : null;
 
     /**
      * @param suggestions Suggestions to add.

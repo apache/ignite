@@ -156,7 +156,7 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     /** */
     private void initializeCaches() {
-        allCaches.add(new CombinedMap(new ConcurrentHashMap<Integer, MappedName>(), sysTypesMap));
+        allCaches.add(new CombinedMap(new ConcurrentHashMap<>(), sysTypesMap));
     }
 
     /** */

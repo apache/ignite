@@ -49,7 +49,7 @@ public class GAGrid {
     /** Gene cache */
     private IgniteCache<Long, Gene> geneCache;
     /** population keys */
-    private List<Long> populationKeys = new ArrayList<Long>();
+    private List<Long> populationKeys = new ArrayList<>();
 
     /**
      * @param cfg GAConfiguration
@@ -129,7 +129,7 @@ public class GAGrid {
      */
     private Chromosome createChromosome(int numOfGenes) {
         long[] genes = new long[numOfGenes];
-        List<Long> keys = new ArrayList<Long>();
+        List<Long> keys = new ArrayList<>();
         int k = 0;
         while (k < numOfGenes) {
             long key = selectGene(k);
@@ -217,7 +217,7 @@ public class GAGrid {
      * @return List of primary keys for chromosomes.
      */
     private List<Long> getChromosomesByFittest() {
-        List<Long> orderChromKeysByFittest = new ArrayList<Long>();
+        List<Long> orderChromKeysByFittest = new ArrayList<>();
         String orderDirection = "desc";
 
         if (!cfg.isHigherFitnessValFitter())

@@ -41,5 +41,5 @@ public class HadoopJobTrackerSelfTestState {
     public static final AtomicInteger combineExecCnt = m.put("combineExecCnt", new AtomicInteger());
 
     /** */
-    public static final Map<String, CountDownLatch> latch = m.put("latch", new HashMap<String, CountDownLatch>());
+    public static final Map<String, CountDownLatch> latch = m.put("latch", new HashMap<>());
 }

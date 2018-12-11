@@ -115,7 +115,7 @@ public class GridNioSessionImpl implements GridNioSession {
         catch (IgniteCheckedException e) {
             close();
 
-            return new GridNioFinishedFuture<Object>(e);
+            return new GridNioFinishedFuture<>(e);
         }
     }
 
@@ -140,7 +140,7 @@ public class GridNioSessionImpl implements GridNioSession {
         catch (IgniteCheckedException e) {
             close();
 
-            return new GridNioFinishedFuture<Object>(e);
+            return new GridNioFinishedFuture<>(e);
         }
     }
 
@@ -152,7 +152,7 @@ public class GridNioSessionImpl implements GridNioSession {
         catch (IgniteCheckedException e) {
             close();
 
-            return new GridNioFinishedFuture<Object>(e);
+            return new GridNioFinishedFuture<>(e);
         }
     }
 

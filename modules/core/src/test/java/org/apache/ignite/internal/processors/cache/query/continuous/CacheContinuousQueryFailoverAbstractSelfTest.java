@@ -1951,7 +1951,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         final List<List<T3<Object, Object, Object>>> expEvts = new ArrayList<>(THREAD + 5);
 
         for (int i = 0; i < THREAD; i++)
-            expEvts.add(i, new ArrayList<T3<Object, Object, Object>>());
+            expEvts.add(i, new ArrayList<>());
 
         final AtomicReference<CyclicBarrier> checkBarrier = new AtomicReference<>();
 
@@ -2508,7 +2508,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
          * @param saveAll Save all events flag.
          */
         CacheEventListener1(boolean saveAll) {
-            allEvts = saveAll ? new CopyOnWriteArrayList<CacheEntryEvent<?, ?>>() : null;
+            allEvts = saveAll ? new CopyOnWriteArrayList<>() : null;
         }
 
         /** {@inheritDoc} */
@@ -2605,7 +2605,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                         List<CacheEntryEvent<?, ?>> keyEvts = this.evts.get(key);
 
                         if (keyEvts == null) {
-                            keyEvts = Collections.synchronizedList(new ArrayList<CacheEntryEvent<?, ?>>());
+                            keyEvts = Collections.synchronizedList(new ArrayList<>());
 
                             this.evts.put(key, keyEvts);
                         }

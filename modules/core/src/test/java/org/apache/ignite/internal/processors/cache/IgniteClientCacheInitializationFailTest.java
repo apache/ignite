@@ -242,7 +242,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
                 if (NEAR_ATOMIC_CACHE_NAME.equals(cacheName) || NEAR_TX_CACHE_NAME.equals(cacheName) ||
                     NEAR_MVCC_TX_CACHE_NAME.equals(cacheName)) {
                     CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<Integer, String>(cacheName)
-                        .setNearConfiguration(new NearCacheConfiguration<Integer, String>());
+                        .setNearConfiguration(new NearCacheConfiguration<>());
 
                     if (NEAR_TX_CACHE_NAME.equals(cacheName))
                         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);

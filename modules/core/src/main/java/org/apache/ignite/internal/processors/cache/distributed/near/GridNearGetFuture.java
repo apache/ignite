@@ -625,7 +625,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
     ) {
         boolean empty = F.isEmpty(keys);
 
-        Map<K, V> map = empty ? Collections.<K, V>emptyMap() : new GridLeanMap<K, V>(keys.size());
+        Map<K, V> map = empty ? Collections.<K, V>emptyMap() : new GridLeanMap<>(keys.size());
 
         if (!empty) {
             boolean atomic = cctx.atomic();
