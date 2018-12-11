@@ -46,6 +46,7 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.KEY_ONLY;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.LINK_WITH_HEADER;
 
 /**
@@ -122,26 +123,83 @@ public class CacheDataRowAdapter implements CacheDataRow {
         @Nullable CacheGroupContext grp,
         GridCacheSharedContext<?, ?> sharedCtx,
         PageMemory pageMem,
-        RowData rowData)
-        throws IgniteCheckedException {
+        RowData rowData
+    ) throws IgniteCheckedException {
+        // Group is null if try evict page, with persistence evictions should be disabled.
+        assert grp != null || pageMem instanceof PageMemoryNoStoreImpl;
+
+        CacheObjectContext coctx = grp != null ?  grp.cacheObjectContext() : null;
+        boolean readCacheId = grp == null || grp.storeCacheIdInDataPage();
+        int grpId = grp != null ? grp.groupId() : 0;
+
+        doInitFromLink(link, sharedCtx, coctx, pageMem, grpId, readCacheId, rowData, null);
+    }
+
+    /**
+     * @param pageAddr Data page address.
+     * @param itemId Row item Id.
+     * @param io Data page IO.
+     * @param grp Cache group.
+     * @param sharedCtx Cache shared context.
+     * @param pageMem Page memory.
+     * @param rowData Required row data.
+     * @throws IgniteCheckedException If failed.
+     */
+    public final void initFromDataPage(
+        long pageAddr,
+        int itemId,
+        DataPageIO io,
+        @Nullable CacheGroupContext grp,
+        GridCacheSharedContext<?, ?> sharedCtx,
+        PageMemory pageMem,
+        RowData rowData
+    ) throws IgniteCheckedException {
+        // Group is null if try evict page, with persistence evictions should be disabled.
+        assert grp != null || pageMem instanceof PageMemoryNoStoreImpl;
+
+        CacheObjectContext coctx = grp != null ?  grp.cacheObjectContext() : null;
+        boolean readCacheId = grp == null || grp.storeCacheIdInDataPage();
+        int grpId = grp != null ? grp.groupId() : 0;
+
+        IncompleteObject<?> incomplete = readIncomplete(null, sharedCtx, coctx, pageMem,
+            grpId, pageAddr, itemId, io, rowData, readCacheId);
+
+        if (incomplete != null) {
+            // Initialize the remaining part of the large row from other pages.
+            long nextLink = incomplete.getNextLink();
+
+            doInitFromLink(nextLink, sharedCtx, coctx, pageMem, grpId, readCacheId, rowData, incomplete);
+        }
+    }
+
+    /**
+     * @param link Link.
+     * @param sharedCtx Cache shared context.
+     * @param coctx Cache object context.
+     * @param pageMem Page memory.
+     * @param grpId Cache group Id.
+     * @param readCacheId {@code true} If need to read cache ID.
+     * @param rowData Required row data.
+     * @param incomplete Incomplete object.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void doInitFromLink(
+        long link,
+        GridCacheSharedContext<?, ?> sharedCtx,
+        CacheObjectContext coctx,
+        PageMemory pageMem,
+        int grpId,
+        boolean readCacheId,
+        RowData rowData,
+        IncompleteObject<?> incomplete
+    ) throws IgniteCheckedException {
         assert link != 0 : "link";
         assert key == null : "key";
 
-        CacheObjectContext coctx = grp != null ?  grp.cacheObjectContext() : null;
-
-        boolean readCacheId = grp == null || grp.storeCacheIdInDataPage();
-
         long nextLink = link;
-        IncompleteObject<?> incomplete = null;
-        boolean first = true;
 
         do {
             final long pageId = pageId(nextLink);
-
-            // Group is null if try evict page, with persistence evictions should be disabled.
-            assert grp != null || pageMem instanceof PageMemoryNoStoreImpl;
-
-            int grpId = grp != null ? grp.groupId() : 0;
 
             final long page = pageMem.acquirePage(grpId, pageId);
 
@@ -153,45 +211,15 @@ public class CacheDataRowAdapter implements CacheDataRow {
                 try {
                     DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
 
-                    DataPagePayload data = io.readPayload(pageAddr,
-                        itemId(nextLink),
-                        pageMem.realPageSize(grpId));
+                    int itemId = itemId(nextLink);
 
-                    nextLink = data.nextLink();
+                    incomplete = readIncomplete(incomplete, sharedCtx, coctx, pageMem,
+                        grpId, pageAddr, itemId, io, rowData, readCacheId);
 
-                    int hdrLen = 0;
-
-                    if (first) {
-                        if (nextLink == 0) {
-                            // Fast path for a single page row.
-                            readFullRow(sharedCtx, coctx, pageAddr + data.offset(), rowData, readCacheId);
-
-                            return;
-                        }
-
-                        first = false;
-
-                        // Assume that row header is always located entirely on the very first page.
-                        hdrLen = readHeader(pageAddr, data.offset());
-
-                        if (rowData == LINK_WITH_HEADER)
-                            return;
-                    }
-
-                    ByteBuffer buf = pageMem.pageBuffer(pageAddr);
-
-                    int off = data.offset() + hdrLen;
-                    int payloadSize = data.payloadSize() - hdrLen;
-
-                    buf.position(off);
-                    buf.limit(off + payloadSize);
-
-                    boolean keyOnly = rowData == RowData.KEY_ONLY;
-
-                    incomplete = readFragment(sharedCtx, coctx, buf, keyOnly, readCacheId, incomplete);
-
-                    if (keyOnly && key != null)
+                    if (incomplete == null || (rowData == KEY_ONLY && key != null))
                         return;
+
+                    nextLink = incomplete.getNextLink();
                 }
                 finally {
                     pageMem.readUnlock(grpId, pageId, page);
@@ -204,6 +232,70 @@ public class CacheDataRowAdapter implements CacheDataRow {
         while(nextLink != 0);
 
         assert isReady() : "ready";
+    }
+
+    /**
+     * @param incomplete Incomplete object.
+     * @param sharedCtx Cache shared context.
+     * @param coctx Cache object context.
+     * @param pageMem Page memory.
+     * @param grpId Cache group Id.
+     * @param pageAddr Page address.
+     * @param io Page IO.
+     * @param nextLink Next data page link for fragmented rows.
+     * @param rowData Required row data.
+     * @param readCacheId {@code true} If need to read cache ID.
+     * @return Incomplete object.
+     * @throws IgniteCheckedException If failed.
+     */
+    private IncompleteObject<?> readIncomplete(
+        IncompleteObject<?> incomplete,
+        GridCacheSharedContext<?, ?> sharedCtx,
+        CacheObjectContext coctx,
+        PageMemory pageMem,
+        int grpId,
+        long pageAddr,
+        int itemId,
+        DataPageIO io,
+        RowData rowData,
+        boolean readCacheId
+    ) throws IgniteCheckedException {
+        DataPagePayload data = io.readPayload(pageAddr, itemId, pageMem.realPageSize(grpId));
+
+        long nextLink = data.nextLink();
+
+        int hdrLen = 0;
+
+        if (incomplete == null) {
+            if (nextLink == 0) {
+                // Fast path for a single page row.
+                readFullRow(sharedCtx, coctx, pageAddr + data.offset(), rowData, readCacheId);
+
+                return null;
+            }
+
+            // Assume that row header is always located entirely on the very first page.
+            hdrLen = readHeader(pageAddr, data.offset());
+
+            if (rowData == LINK_WITH_HEADER)
+                return null;
+        }
+
+        ByteBuffer buf = pageMem.pageBuffer(pageAddr);
+
+        int off = data.offset() + hdrLen;
+        int payloadSize = data.payloadSize() - hdrLen;
+
+        buf.position(off);
+        buf.limit(off + payloadSize);
+
+        boolean keyOnly = rowData == RowData.KEY_ONLY;
+
+        incomplete = readFragment(sharedCtx, coctx, buf, keyOnly, readCacheId, incomplete);
+
+        incomplete.setNextLink(nextLink);
+
+        return incomplete;
     }
 
     /**

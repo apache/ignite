@@ -122,6 +122,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     private GridCursor<CacheDataRow> scanDataPages(CacheDataRowAdapter.RowData rowData) throws IgniteCheckedException {
         assert rowData != null;
         assert grp.persistenceEnabled();
+        assert !grp.sharedGroup();
 
         int partId = rowStore.getPartitionId();
 
@@ -172,6 +173,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                         pagesCnt = newPagesCnt;
                     }
 
+                    int rowsCnt = 0;
+
                     long pageId = startPageId + curPage;
                     long page = pageMem.acquirePage(grpId, pageId);
 
@@ -186,18 +189,18 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
                             DataPageIO iox = (DataPageIO)io;
 
-                            int rowsCnt = iox.getRowsCount(pageAddr);
+                            rowsCnt = iox.getRowsCount(pageAddr);
 
                             if (rowsCnt == 0)
                                 continue;
 
                             if (rowsCnt > rows.length)
                                 rows = new CacheDataRow[rowsCnt];
-                            else
-                                clearTail(rows, rowsCnt);
 
                             for (int i = 0; i < rowsCnt; i++) {
-                                rows[i] = null; // TODO
+                                DataRow row = grp.mvccEnabled() ? new MvccDataRow() : new DataRow();
+                                row.initFromDataPage(pageAddr, i, iox, grp, grp.shared(), pageMem, rowData);
+                                rows[i] = row;
                             }
 
                             curRow = 0;
@@ -209,6 +212,9 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                     }
                     finally{
                         pageMem.releasePage(grpId, pageId, page);
+
+                        if (rowsCnt != 0)
+                            clearTail(rows, rowsCnt);
                     }
                 }
             }

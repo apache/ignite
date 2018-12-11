@@ -24,6 +24,9 @@ import java.nio.ByteBuffer;
  */
 public class IncompleteObject<T> {
     /** */
+    private long nextLink;
+
+    /** */
     protected byte[] data;
 
     /** */
@@ -85,5 +88,19 @@ public class IncompleteObject<T> {
         buf.get(data, off, len);
 
         off += len;
+    }
+
+    /**
+     * @return Next data page link for fragmented rows.
+     */
+    public long getNextLink() {
+        return nextLink;
+    }
+
+    /**
+     * @param nextLink Next data page link for fragmented rows.
+     */
+    public void setNextLink(long nextLink) {
+        this.nextLink = nextLink;
     }
 }
