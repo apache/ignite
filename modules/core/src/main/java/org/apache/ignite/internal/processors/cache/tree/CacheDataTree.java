@@ -200,7 +200,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
                             for (int i = 0; i < rowsCnt; i++) {
                                 DataRow row = grp.mvccEnabled() ? new MvccDataRow() : new DataRow();
-                                row.initFromDataPage(pageAddr, i, iox, grp, shared, pageMem, rowData);
+                                row.initFromDataPage(iox, pageAddr, i, grp, shared, pageMem, rowData);
                                 rows[i] = row;
                             }
 

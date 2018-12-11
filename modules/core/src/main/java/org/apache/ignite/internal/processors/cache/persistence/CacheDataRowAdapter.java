@@ -136,9 +136,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /**
+     * @param io Data page IO.
      * @param pageAddr Data page address.
      * @param itemId Row item Id.
-     * @param io Data page IO.
      * @param grp Cache group.
      * @param sharedCtx Cache shared context.
      * @param pageMem Page memory.
@@ -146,9 +146,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @throws IgniteCheckedException If failed.
      */
     public final void initFromDataPage(
+        DataPageIO io,
         long pageAddr,
         int itemId,
-        DataPageIO io,
         @Nullable CacheGroupContext grp,
         GridCacheSharedContext<?, ?> sharedCtx,
         PageMemory pageMem,
