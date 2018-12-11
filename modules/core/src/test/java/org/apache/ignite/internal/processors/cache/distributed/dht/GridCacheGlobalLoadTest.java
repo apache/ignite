@@ -32,8 +32,12 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -42,6 +46,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Load cache test.
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
     /** */
     private static ConcurrentMap<String, Object[]> map;
@@ -69,9 +74,17 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
         return new NearCacheConfiguration();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        super.beforeTestsStarted();
+    }
+
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCache() throws Exception {
         loadCache(false, false);
     }
@@ -79,6 +92,7 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheAsyncOld() throws Exception {
         loadCache(true, true);
     }
@@ -86,6 +100,7 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheAsync() throws Exception {
         loadCache(true, false);
     }

@@ -137,6 +137,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.CountDownFuture;
@@ -173,6 +174,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_FILE_MATCHER;
 import static org.apache.ignite.internal.util.IgniteUtils.checkpointBufferSize;
 
 /**
@@ -536,10 +538,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     @Override public void cleanupTempCheckpointDirectory() throws IgniteCheckedException {
         try {
-            try (DirectoryStream<Path> files = Files.newDirectoryStream(
-                cpDir.toPath(),
-                path -> path.endsWith(FilePageStoreManager.TMP_SUFFIX))
-            ) {
+            try (DirectoryStream<Path> files = Files.newDirectoryStream(cpDir.toPath(), TMP_FILE_MATCHER::matches)) {
                 for (Path path : files)
                     Files.delete(path);
             }
@@ -943,7 +942,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             cctx.wal().resumeLogging(restored);
 
             for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
-                lsnr.afterBinaryMemoryRestore(binaryState);
+                lsnr.afterBinaryMemoryRestore(this, binaryState);
 
             if (log.isInfoEnabled())
                 log.info("Binary recovery performed in " + (System.currentTimeMillis() - time) + " ms.");
@@ -1342,16 +1341,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void rebuildIndexesIfNeeded(GridDhtPartitionsExchangeFuture fut) {
-        if (cctx.kernalContext().query().moduleEnabled()) {
+        GridQueryProcessor qryProc = cctx.kernalContext().query();
+
+        if (qryProc.moduleEnabled()) {
             for (final GridCacheContext cacheCtx : (Collection<GridCacheContext>)cctx.cacheContexts()) {
                 if (cacheCtx.startTopologyVersion().equals(fut.initialVersion())) {
                     final int cacheId = cacheCtx.cacheId();
                     final GridFutureAdapter<Void> usrFut = idxRebuildFuts.get(cacheId);
 
-                    if (!cctx.pageStore().hasIndexStore(cacheCtx.groupId()) && cacheCtx.affinityNode()
-                        && cacheCtx.group().persistenceEnabled()) {
-                        IgniteInternalFuture<?> rebuildFut = cctx.kernalContext().query()
-                            .rebuildIndexesFromHash(Collections.singleton(cacheCtx.cacheId()));
+                    IgniteInternalFuture<?> rebuildFut = qryProc.rebuildIndexesFromHash(cacheCtx);
+
+                    if (rebuildFut != null) {
+                        log().info("Started indexes rebuilding for cache [name=" + cacheCtx.name()
+                            + ", grpName=" + cacheCtx.group().name() + ']');
 
                         assert usrFut != null : "Missing user future for cache: " + cacheCtx.name();
 
@@ -2468,7 +2470,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 ", time=" + (U.currentTimeMillis() - start) + " ms]");
 
         for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
-            lsnr.afterLogicalUpdatesApplied(restoreLogicalState);
+            lsnr.afterLogicalUpdatesApplied(this, restoreLogicalState);
 
         return restoreLogicalState;
     }
@@ -4709,7 +4711,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             cctx.pageStore().initializeForMetastorage();
         }
 
-        @Override public void afterBinaryMemoryRestore(RestoreBinaryState binaryState) throws IgniteCheckedException {
+        @Override public void afterBinaryMemoryRestore(
+            IgniteCacheDatabaseSharedManager mgr,
+            RestoreBinaryState restoreState) throws IgniteCheckedException {
             assert metaStorage == null;
 
             metaStorage = createMetastorage(false);

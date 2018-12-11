@@ -84,6 +84,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
@@ -352,6 +353,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /** {@inheritDoc} */
     @Override public void beforeBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
         txLogPageStoreInit(mgr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void afterBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr,
+        GridCacheDatabaseSharedManager.RestoreBinaryState restoreState) throws IgniteCheckedException {
 
         boolean hasMvccCaches = ctx.cache().persistentCaches().stream()
             .anyMatch(c -> c.cacheConfiguration().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT);
@@ -2320,7 +2326,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                     if (e instanceof Error)
                         throw (Error) e;
 
-                    U.error(log, "Vacuum error.", e);
+                    if (log.isDebugEnabled())
+                        U.warn(log, "Failed to perform vacuum.", e);
                 }
 
                 long delay = nextScheduledTime - U.currentTimeMillis();
@@ -2579,9 +2586,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
                         if (rest != null) {
                             if (rest.getClass() == ArrayList.class) {
-                                for (MvccDataRow row : ((List<MvccDataRow>) rest)) {
+                                for (MvccDataRow row : ((List<MvccDataRow>) rest))
                                     part.dataStore().updateTxState(cctx, row);
-                                }
                             } else
                                 part.dataStore().updateTxState(cctx, (MvccDataRow) rest);
                         }

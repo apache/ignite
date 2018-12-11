@@ -36,9 +36,13 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /** */
 @SuppressWarnings("unused")
+@RunWith(JUnit4.class)
 public class GridCacheContinuousQueryNodesFilteringTest extends GridCommonAbstractTest implements Serializable {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -51,6 +55,7 @@ public class GridCacheContinuousQueryNodesFilteringTest extends GridCommonAbstra
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testNodeWithoutAttributeExclusion() throws Exception {
         try (Ignite node1 = startNodeWithCache()) {
             try (Ignite node2 = startGrid("node2", getConfiguration("node2", false, null))) {
@@ -64,6 +69,7 @@ public class GridCacheContinuousQueryNodesFilteringTest extends GridCommonAbstra
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testNodeWithAttributeFailure() throws Exception {
         try (Ignite node1 = startNodeWithCache()) {
             GridStringLogger log = new GridStringLogger();

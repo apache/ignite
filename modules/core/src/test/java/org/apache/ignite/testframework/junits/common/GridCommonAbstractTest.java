@@ -116,6 +116,8 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.After;
+import org.junit.Before;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
@@ -481,6 +483,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Before
     @Override public void setUp() throws Exception {
         // Disable SSL hostname verifier.
         HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
@@ -495,6 +498,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @After
     @Override public void tearDown() throws Exception {
         getTestCounters().incrementStopped();
 
@@ -1399,7 +1403,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param key Key.
      */
     protected static <K, V> V localPeek(GridCacheAdapter<K, V> cache, K key) throws IgniteCheckedException {
-        return cache.localPeek(key, null, null);
+        return cache.localPeek(key, null);
     }
 
     /**
@@ -1407,7 +1411,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param key Key.
      */
     protected static <K, V> V localPeekOnHeap(GridCacheAdapter<K, V> cache, K key) throws IgniteCheckedException {
-        return cache.localPeek(key, new CachePeekMode[] {CachePeekMode.ONHEAP}, null);
+        return cache.localPeek(key, new CachePeekMode[] {CachePeekMode.ONHEAP});
     }
 
     /**

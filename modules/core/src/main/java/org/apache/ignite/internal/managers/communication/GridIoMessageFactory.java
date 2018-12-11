@@ -199,6 +199,7 @@ import org.apache.ignite.spi.collision.jobstealing.JobStealingRequest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage2;
+import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
 
@@ -348,6 +349,11 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case TcpCommunicationSpi.HANDSHAKE_MSG_TYPE:
                 msg = new HandshakeMessage();
+
+                break;
+
+            case TcpCommunicationSpi.HANDSHAKE_WAIT_MSG_TYPE:
+                msg = new HandshakeWaitMessage();
 
                 break;
 
@@ -1132,7 +1138,7 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-                // [-3..119] [124..129] [-23..-27] [-36..-55]- this
+            // [-3..119] [124..129] [-23..-28] [-36..-55] - this
             // [120..123] - DR
             // [-4..-22, -30..-35] - SQL
             // [2048..2053] - Snapshots

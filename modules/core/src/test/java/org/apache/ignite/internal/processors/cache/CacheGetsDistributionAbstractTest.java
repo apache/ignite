@@ -40,6 +40,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
@@ -49,6 +52,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Tests of replicated cache's 'get' requests distribution.
  */
+@RunWith(JUnit4.class)
 public abstract class CacheGetsDistributionAbstractTest extends GridCommonAbstractTest {
     /** Client nodes instance's name. */
     private static final String CLIENT_NAME = "client";
@@ -176,6 +180,7 @@ public abstract class CacheGetsDistributionAbstractTest extends GridCommonAbstra
      * @throws Exception In case of an error.
      * @see #runTestBalancingDistribution(boolean)
      */
+    @Test
     public void testGetRequestsGeneratorDistribution() throws Exception {
         runTestBalancingDistribution(false);
     }
@@ -186,6 +191,7 @@ public abstract class CacheGetsDistributionAbstractTest extends GridCommonAbstra
      * @throws Exception In case of an error.
      * @see #runTestBalancingDistribution(boolean)
      */
+    @Test
     public void testGetAllRequestsGeneratorDistribution() throws Exception {
         runTestBalancingDistribution(true);
     }
@@ -263,6 +269,7 @@ public abstract class CacheGetsDistributionAbstractTest extends GridCommonAbstra
      * @throws Exception In case of an error.
      * @see #runTestSameHostDistribution(UUID, boolean)
      */
+    @Test
     public void testGetRequestsDistribution() throws Exception {
         UUID destId = grid(0).localNode().id();
 
@@ -275,6 +282,7 @@ public abstract class CacheGetsDistributionAbstractTest extends GridCommonAbstra
      * @throws Exception In case of an error.
      * @see #runTestSameHostDistribution(UUID, boolean)
      */
+    @Test
     public void testGetAllRequestsDistribution() throws Exception {
         UUID destId = grid(gridCount() - 1).localNode().id();
 

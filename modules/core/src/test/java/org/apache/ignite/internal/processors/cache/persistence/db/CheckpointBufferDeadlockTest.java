@@ -59,10 +59,14 @@ import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
     /** Ip finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -146,6 +150,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testFourCheckpointThreads() throws Exception {
         checkpointThreads = 4;
 
@@ -155,6 +160,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testOneCheckpointThread() throws Exception {
         checkpointThreads = 1;
 

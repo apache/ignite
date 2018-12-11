@@ -35,16 +35,21 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  * Tests that cache handles {@code setAllowEmptyEntries} flag correctly.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -121,6 +126,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFifo() throws Exception {
         FifoEvictionPolicy plc = new FifoEvictionPolicy();
         plc.setMaxSize(50);
@@ -171,6 +177,9 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
 
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
                 txIsolation = isolation;
+
+                if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, isolation))
+                    continue;
 
                 Ignite g = startGrids();
 

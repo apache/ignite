@@ -17,9 +17,12 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.cache.ResetLostPartitionTest;
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse;
+import org.apache.ignite.internal.processors.cache.distributed.CachePageWriteLockUnlockTest;
+import org.apache.ignite.internal.processors.cache.distributed.rebalancing.IgniteRebalanceOnCachesStoppingOrDestroyingTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRecoveryAfterFileCorruptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTaskCancelingTest;
@@ -41,17 +44,21 @@ public class IgnitePdsTestSuite4 extends TestSuite {
 
         addRealPageStoreTestsNotForDirectIo(suite);
 
-        suite.addTestSuite(FileDownloaderTest.class);
+        suite.addTest(new JUnit4TestAdapter(FileDownloaderTest.class));
 
-        suite.addTestSuite(IgnitePdsTaskCancelingTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsTaskCancelingTest.class));
 
-        suite.addTestSuite(IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse.class));
 
-        suite.addTestSuite(IgnitePdsPartitionPreloadTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsPartitionPreloadTest.class));
 
-        suite.addTestSuite(ResetLostPartitionTest.class);
+        suite.addTest(new JUnit4TestAdapter(ResetLostPartitionTest.class));
 
-        suite.addTestSuite(IgnitePdsCacheWalDisabledOnRebalancingTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteRebalanceOnCachesStoppingOrDestroyingTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(CachePageWriteLockUnlockTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsCacheWalDisabledOnRebalancingTest.class));
 
         return suite;
     }
@@ -62,14 +69,14 @@ public class IgnitePdsTestSuite4 extends TestSuite {
      * @param suite suite to add tests into.
      */
     private static void addRealPageStoreTestsNotForDirectIo(TestSuite suite) {
-        suite.addTestSuite(IgnitePdsTransactionsHangTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsTransactionsHangTest.class));
 
-        suite.addTestSuite(IgnitePdsPageEvictionDuringPartitionClearTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsPageEvictionDuringPartitionClearTest.class));
 
         // Rebalancing test
-        suite.addTestSuite(IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes.class);
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes.class));
 
         // Integrity test.
-        suite.addTestSuite(IgnitePdsRecoveryAfterFileCorruptionTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsRecoveryAfterFileCorruptionTest.class));
     }
 }

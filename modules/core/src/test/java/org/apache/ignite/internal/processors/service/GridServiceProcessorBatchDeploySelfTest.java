@@ -41,12 +41,16 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
  * Test for deployment of multiple configurations at a time.
  */
+@RunWith(JUnit4.class)
 public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractTest {
     /** Number of services to be deployed. */
     private static final int NUM_SERVICES = 100;
@@ -91,6 +95,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployAll() throws Exception {
         Ignite client = grid(CLIENT_NODE_NAME);
 
@@ -110,6 +115,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployAllAsync() throws Exception {
         Ignite client = grid(CLIENT_NODE_NAME);
 
@@ -131,6 +137,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployAllTopologyChange() throws Exception {
         Ignite client = grid(CLIENT_NODE_NAME);
 
@@ -183,6 +190,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployAllTopologyChangeFail() throws Exception {
         final Ignite client = grid(CLIENT_NODE_NAME);
 
@@ -260,6 +268,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployAllFail() throws Exception {
         deployAllFail(false);
     }
@@ -267,6 +276,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployAllAsyncFail() throws Exception {
         deployAllFail(true);
     }
@@ -298,6 +308,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClashingNames() throws Exception {
         Ignite client = grid(CLIENT_NODE_NAME);
 
@@ -324,6 +335,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClashingNamesFail() throws Exception {
         Ignite client = grid(CLIENT_NODE_NAME);
 
@@ -356,6 +368,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClashingNameDifferentConfig() throws Exception {
         Ignite client = grid(CLIENT_NODE_NAME);
 
@@ -390,6 +403,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCancelAll() throws Exception {
         Ignite client = grid(CLIENT_NODE_NAME);
 
@@ -411,6 +425,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCancelAllAsync() throws Exception {
         Ignite client = grid(CLIENT_NODE_NAME);
 
@@ -434,6 +449,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCancelAllTopologyChange() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10021");
 
@@ -486,6 +502,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCancelAllClashingNames() throws Exception {
         Ignite client = grid(CLIENT_NODE_NAME);
 

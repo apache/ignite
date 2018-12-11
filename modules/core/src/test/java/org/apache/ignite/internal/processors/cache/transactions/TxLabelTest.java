@@ -20,10 +20,14 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests transaction labels.
  */
+@RunWith(JUnit4.class)
 public class TxLabelTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -42,6 +46,7 @@ public class TxLabelTest extends GridCommonAbstractTest {
     /**
      * Tests transaction labels.
      */
+    @Test
     public void testLabel() {
         testLabel0(grid(0), "lbl0");
         testLabel0(grid(0), "lbl1");

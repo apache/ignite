@@ -41,6 +41,9 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -57,6 +60,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Test getEntry and getEntries methods.
  */
+@RunWith(JUnit4.class)
 public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTest {
     /** */
     private static final String UPDATED_ENTRY_ERR = "Impossible to get version for entry updated in transaction";
@@ -97,6 +101,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNear() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -112,6 +117,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearTransactional() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -127,6 +133,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitioned() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -141,6 +148,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedTransactional() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -155,6 +163,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocal() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -169,9 +178,8 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalTransactional() throws Exception {
-        // TODO: fails since d13520e9a05bd9e9b987529472d6317951b72f96, need to review changes.
-
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -185,6 +193,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicated() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -199,6 +208,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedTransactional() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -214,7 +224,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
      * @param cfg Cache configuration.
      * @throws Exception If failed.
      */
-    private void test(CacheConfiguration cfg) throws Exception {
+    protected void test(CacheConfiguration cfg) throws Exception {
         test(cfg, true);
 
         test(cfg, false);

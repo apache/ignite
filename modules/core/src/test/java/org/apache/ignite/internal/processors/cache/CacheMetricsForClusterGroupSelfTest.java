@@ -31,13 +31,18 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 
 /**
  * Test for cluster wide cache metrics.
  */
+@RunWith(JUnit4.class)
 public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 3;
@@ -64,6 +69,13 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
     private boolean daemon;
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.METRICS);
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -75,6 +87,7 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
     /**
      * Test cluster group metrics in case of statistics enabled.
      */
+    @Test
     public void testMetricsStatisticsEnabled() throws Exception {
         startGrids();
 
@@ -110,6 +123,7 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMetricsStatisticsDisabled() throws Exception {
         startGrids();
 
@@ -143,6 +157,7 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
     /**
      * Tests that only local metrics are updating if discovery updates disabled.
      */
+    @Test
     public void testMetricsDiscoveryUpdatesDisabled() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE, "true");
 

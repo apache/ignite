@@ -37,10 +37,14 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for query with BinaryMarshaller and different serialization modes and with reflective serializer.
  */
+@RunWith(JUnit4.class)
 public class CacheTxNotAllowReadFromBackupTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -77,6 +81,7 @@ public class CacheTxNotAllowReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupConsistencyReplicated() throws Exception {
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>("test-cache");
 
@@ -105,6 +110,7 @@ public class CacheTxNotAllowReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupConsistencyReplicatedFullSync() throws Exception {
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>("test-cache");
 
@@ -133,6 +139,7 @@ public class CacheTxNotAllowReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupConsistencyPartitioned() throws Exception {
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>("test-cache");
 
@@ -162,6 +169,7 @@ public class CacheTxNotAllowReadFromBackupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupConsistencyPartitionedFullSync() throws Exception {
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>("test-cache");
 
@@ -186,6 +194,76 @@ public class CacheTxNotAllowReadFromBackupTest extends GridCommonAbstractTest {
         checkBackupConsistencyGetAll(cfg, TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED);
         checkBackupConsistencyGetAll(cfg, TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ);
         checkBackupConsistencyGetAll(cfg, TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBackupConsistencyReplicatedMvcc() throws Exception {
+        CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>("test-cache");
+
+        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+        cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
+        cfg.setCacheMode(CacheMode.REPLICATED);
+        cfg.setReadFromBackup(false);
+
+        checkBackupConsistency(cfg, TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
+
+        checkBackupConsistencyGetAll(cfg, TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBackupConsistencyReplicatedFullSyncMvcc() throws Exception {
+        CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>("test-cache");
+
+        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+        cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        cfg.setCacheMode(CacheMode.REPLICATED);
+        cfg.setReadFromBackup(false);
+
+        checkBackupConsistency(cfg, TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
+
+        checkBackupConsistencyGetAll(cfg, TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBackupConsistencyPartitionedMvcc() throws Exception {
+        CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>("test-cache");
+
+        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+        cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
+        cfg.setCacheMode(CacheMode.PARTITIONED);
+        cfg.setBackups(NODES - 1);
+        cfg.setReadFromBackup(false);
+
+        checkBackupConsistency(cfg, TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
+
+        checkBackupConsistencyGetAll(cfg, TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBackupConsistencyPartitionedFullSyncMvcc() throws Exception {
+        CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>("test-cache");
+
+        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+        cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        cfg.setCacheMode(CacheMode.PARTITIONED);
+        cfg.setBackups(NODES - 1);
+        cfg.setReadFromBackup(false);
+
+        checkBackupConsistency(cfg, TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
+
+        checkBackupConsistencyGetAll(cfg, TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
     }
 
     /**

@@ -192,6 +192,9 @@ public class ZookeeperDiscoveryImpl {
     /** */
     private final ZookeeperDiscoveryStatistics stats;
 
+    /** Last listener future. */
+    private IgniteFuture<?> lastCustomEvtLsnrFut;
+
     /**
      * @param spi Discovery SPI.
      * @param igniteInstanceName Instance name.
@@ -737,7 +740,7 @@ public class ZookeeperDiscoveryImpl {
                 internalLsnr.beforeJoin(locNode, log);
 
             if (locNode.isClient() && reconnect)
-                locNode.setAttributes(spi.getSpiContext().nodeAttributes());
+                locNode.setAttributes(spi.getLocNodeAttrs());
 
             marshalCredentialsOnJoin(locNode);
 
@@ -2752,6 +2755,8 @@ public class ZookeeperDiscoveryImpl {
     private boolean processBulkJoin(ZkDiscoveryEventsData evtsData, ZkDiscoveryNodeJoinEventData evtData)
         throws Exception
     {
+        waitForLastListenerFuture();
+
         boolean evtProcessed = false;
 
         for (int i = 0; i < evtData.joinedNodes.size(); i++) {
@@ -3430,6 +3435,8 @@ public class ZookeeperDiscoveryImpl {
 
         if (msg != null && msg.isMutable())
             fut.get();
+        else
+            lastCustomEvtLsnrFut = fut;
     }
 
     /**
@@ -3984,6 +3991,20 @@ public class ZookeeperDiscoveryImpl {
         }
 
         return out.toByteArray();
+    }
+
+    /**
+     * Wait for all the listeners from previous discovery message to be completed.
+     */
+    private void waitForLastListenerFuture() {
+        if (lastCustomEvtLsnrFut != null) {
+            try {
+                lastCustomEvtLsnrFut.get();
+            }
+            finally {
+                lastCustomEvtLsnrFut = null;
+            }
+        }
     }
 
     /**
