@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
@@ -48,8 +49,11 @@ public class LabelPartitionDataBuilderOnHeap<K, V, C extends Serializable>
     }
 
     /** {@inheritDoc} */
-    @Override public LabelPartitionDataOnHeap build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize,
-                                        C ctx) {
+    @Override public LabelPartitionDataOnHeap build(
+        LearningEnvironment env,
+        Iterator<UpstreamEntry<K, V>> upstreamData,
+        long upstreamDataSize,
+        C ctx) {
         double[] y = new double[Math.toIntExact(upstreamDataSize)];
 
         int ptr = 0;

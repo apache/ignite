@@ -19,6 +19,7 @@ package org.apache.ignite.ml.dataset.primitive;
 
 import java.io.Serializable;
 import org.apache.ignite.ml.dataset.Dataset;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
@@ -46,13 +47,13 @@ public class DatasetWrapper<C extends Serializable, D extends AutoCloseable> imp
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R computeWithCtx(IgniteTriFunction<C, D, Integer, R> map, IgniteBinaryOperator<R> reduce,
+    @Override public <R> R computeWithCtx(IgniteTriFunction<C, D, LearningEnvironment, R> map, IgniteBinaryOperator<R> reduce,
         R identity) {
         return delegate.computeWithCtx(map, reduce, identity);
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R compute(IgniteBiFunction<D, Integer, R> map, IgniteBinaryOperator<R> reduce, R identity) {
+    @Override public <R> R compute(IgniteBiFunction<D, LearningEnvironment, R> map, IgniteBinaryOperator<R> reduce, R identity) {
         return delegate.compute(map, reduce, identity);
     }
 

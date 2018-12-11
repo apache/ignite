@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -71,6 +72,7 @@ public class GridCacheRebalancingCancelTest extends GridCommonAbstractTest {
                 .setRebalanceMode(CacheRebalanceMode.ASYNC)
                 .setBackups(1)
                 .setRebalanceOrder(2)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                 .setAffinity(new RendezvousAffinityFunction(false)));
 
         for (int i = 0; i < 2048; i++)

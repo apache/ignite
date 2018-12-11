@@ -187,32 +187,41 @@ public class GridCacheWriteBehindStoreMultithreadedSelfTest extends GridCacheWri
         // 50 milliseconds should be enough.
         delegate.setOperationDelay(50);
 
-        initStore(2, writeCoalescing);
+        Set<Integer> exp = null;
 
-        Set<Integer> exp;
+        int start = 0;
+        int end = 0;
 
-        int start = store.getWriteBehindTotalCriticalOverflowCount();
+        long startTime = System.currentTimeMillis();
 
-        try {
-            //We will have in total 5 * CACHE_SIZE keys that should be enough to grow map size to critical value.
-            exp = runPutGetRemoveMultithreaded(5, CACHE_SIZE);
-        }
-        finally {
-            log.info(">>> Done inserting, shutting down the store");
+        while (end - start == 0 && System.currentTimeMillis() - startTime < getTestTimeout()) {
+            initStore(2, writeCoalescing);
 
-            shutdownStore();
+            start = store.getWriteBehindTotalCriticalOverflowCount();
+
+            try {
+                //We will have in total 5 * CACHE_SIZE keys that should be enough to grow map size to critical value.
+                exp = runPutGetRemoveMultithreaded(5, CACHE_SIZE);
+            }
+            finally {
+                log.info(">>> Done inserting, shutting down the store");
+
+                shutdownStore();
+            }
+
+            end = store.getWriteBehindTotalCriticalOverflowCount();
         }
 
         // Restore delay.
         delegate.setOperationDelay(0);
 
-        Map<Integer, String> map = delegate.getMap();
-
-        int end = store.getWriteBehindTotalCriticalOverflowCount();
+        assertNotNull(exp);
 
         log.info(">>> There are " + exp.size() + " keys in store, " + (end - start) + " overflows detected");
 
         assertTrue("No cache overflows detected (a bug or too few keys or too few delay?)", end > start);
+
+        Map<Integer, String> map = delegate.getMap();
 
         Collection<Integer> extra = new HashSet<>(map.keySet());
 

@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.Iterator;
 import java.util.stream.Stream;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
@@ -43,11 +44,12 @@ public interface PartitionContextBuilder<K, V, C extends Serializable> extends S
      * constraint. This constraint is omitted to allow upstream data transformers in {@link DatasetBuilder} replicating
      * entries. For example it can be useful for bootstrapping.
      *
+     * @param env Learning environment.
      * @param upstreamData Partition {@code upstream} data.
      * @param upstreamDataSize Partition {@code upstream} data size.
      * @return Partition {@code context}.
      */
-    public C build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize);
+    public C build(LearningEnvironment env, Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize);
 
 
     /**
@@ -57,12 +59,13 @@ public interface PartitionContextBuilder<K, V, C extends Serializable> extends S
      * constraint. This constraint is omitted to allow upstream data transformers in {@link DatasetBuilder} replicating
      * entries. For example it can be useful for bootstrapping.
      *
+     * @param env Learning environment.
      * @param upstreamData Partition {@code upstream} data.
      * @param upstreamDataSize Partition {@code upstream} data size.
      * @return Partition {@code context}.
      */
-    public default C build(Stream<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize) {
-        return build(upstreamData.iterator(), upstreamDataSize);
+    public default C build(LearningEnvironment env, Stream<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize) {
+        return build(env, upstreamData.iterator(), upstreamDataSize);
     }
 
     /**
@@ -74,6 +77,6 @@ public interface PartitionContextBuilder<K, V, C extends Serializable> extends S
      * @return Composed partition {@code context} builder.
      */
     public default <C2 extends Serializable> PartitionContextBuilder<K, V, C2> andThen(IgniteFunction<C, C2> fun) {
-        return (upstreamData, upstreamDataSize) -> fun.apply(build(upstreamData, upstreamDataSize));
+        return (env, upstreamData, upstreamDataSize) -> fun.apply(build(env, upstreamData, upstreamDataSize));
     }
 }
