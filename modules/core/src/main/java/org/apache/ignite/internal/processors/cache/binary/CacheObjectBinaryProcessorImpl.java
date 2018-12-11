@@ -43,10 +43,12 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.binary.Compressor;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.CompressionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -868,6 +870,15 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         boolean binaryEnabled = marsh instanceof BinaryMarshaller && !GridCacheUtils.isSystemCache(cfg.getName()) &&
             !GridCacheUtils.isIgfsCache(ctx.config(), cfg.getName());
 
+        CompressionConfiguration compressionCfg = cfg.getCompressionConfiguration();
+
+        Compressor compressor = null;
+
+        if (compressionCfg != null && compressionCfg.isEnabled()) {
+            compressor = compressionCfg.getCompressorFactory().create();
+            compressor.configure(compressionCfg);
+        }
+
         CacheObjectContext ctx0 = super.contextForCache(cfg);
 
         CacheObjectContext res = new CacheObjectBinaryContext(ctx,
@@ -875,7 +886,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             ctx0.copyOnGet(),
             ctx0.storeValue(),
             binaryEnabled,
-            ctx0.addDeploymentInfo());
+            ctx0.addDeploymentInfo(),
+            compressor);
 
         ctx.resource().injectGeneric(res.defaultAffMapper());
 
@@ -957,6 +969,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             return new BinaryObjectImpl(binaryContext(), bytes, 0);
         else if (type == BinaryObjectImpl.TYPE_BINARY_ENUM)
             return new BinaryEnumObjectImpl(binaryContext(), bytes);
+        else if (type == BinaryObjectImpl.TYPE_BINARY_COMPRESSED)
+            return new BinaryObjectImpl(binaryContext(), ctx.compressor().decompress(bytes), 0);
 
         return super.toCacheObject(ctx, type, bytes);
     }
@@ -966,6 +980,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         throws IgniteCheckedException {
         if (type == BinaryObjectImpl.TYPE_BINARY)
             return new BinaryObjectImpl(binaryContext(), bytes, 0);
+        else if (type == BinaryObjectImpl.TYPE_BINARY_COMPRESSED)
+            return new BinaryObjectImpl(binaryContext(), ctx.compressor().decompress(bytes), 0);
 
         return super.toKeyCacheObject(ctx, type, bytes);
     }

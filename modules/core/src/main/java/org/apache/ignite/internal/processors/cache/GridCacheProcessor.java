@@ -55,6 +55,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.CompressionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
@@ -618,6 +619,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         "cacheName=" + cc.getName() + ", schemaName=" + cc.getSqlSchema() + ']');
                 }
             }
+        }
+
+        CompressionConfiguration compressionCfg = cc.getCompressionConfiguration();
+        if (compressionCfg != null && compressionCfg.isEnabled()) {
+            if (compressionCfg.isUseDictionary()) {
+                if (compressionCfg.getDictionarySize() <= 0 || compressionCfg.getDictionaryTrainBufferLength() <= 0 ||
+                    compressionCfg.getDictionaryTrainSamples() <= 0) {
+                    throw new IgniteCheckedException("When dictionary compression enabled, dictionary " +
+                        "bounds should be non-negative integers [cacheName=" + cc.getName() +
+                        ", dictionarySize=" + compressionCfg.getDictionarySize() +
+                        ", dictionaryTrainSamples=" + compressionCfg.getDictionaryTrainSamples() +
+                        ", dictionaryTrainBufferLength=" + compressionCfg.getDictionaryTrainBufferLength() + "]");
+                }
+            }
+
+            assertParameter(compressionCfg.getCompressorFactory() != null, "compressor factory is null");
         }
 
         if (cc.isEncryptionEnabled() && !ctx.clientNode()) {

@@ -71,7 +71,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @param cctx Cache context.
      * @return Object to be store in cache.
      */
-    @Nullable public CacheObject prepareForCache(@Nullable CacheObject obj, GridCacheContext cctx);
+    @Nullable public CacheObject prepareForCache(@Nullable CacheObject obj, GridCacheContext cctx) throws IgniteCheckedException;
 
     /**
      * Checks whether object is binary object.

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.binary;
 
+import org.apache.ignite.binary.Compressor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
@@ -30,20 +31,25 @@ public class CacheObjectBinaryContext extends CacheObjectContext {
     /** */
     private boolean binaryEnabled;
 
+    /** */
+    private final Compressor compressor;
+
     /**
      * @param kernalCtx Kernal context.
      * @param ccfg Cache configuration.
-     * @param binaryEnabled Binary enabled flag.
      * @param cpyOnGet Copy on get flag.
      * @param storeVal {@code True} if should store unmarshalled value in cache.
+     * @param binaryEnabled Binary enabled flag.
      * @param depEnabled {@code true} if deployment is enabled for the given cache.
+     * @param compressor Compression implementation to use when enabled.
      */
     public CacheObjectBinaryContext(GridKernalContext kernalCtx,
         CacheConfiguration ccfg,
         boolean cpyOnGet,
         boolean storeVal,
         boolean binaryEnabled,
-        boolean depEnabled) {
+        boolean depEnabled,
+        Compressor compressor) {
         super(kernalCtx,
             ccfg.getName(),
             binaryEnabled ? new CacheDefaultBinaryAffinityKeyMapper(ccfg.getKeyConfiguration()) :
@@ -53,10 +59,16 @@ public class CacheObjectBinaryContext extends CacheObjectContext {
             depEnabled);
 
         this.binaryEnabled = binaryEnabled;
+        this.compressor = compressor;
     }
 
     /** {@inheritDoc} */
     @Override public boolean binaryEnabled() {
         return binaryEnabled;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Compressor compressor() {
+        return compressor;
     }
 }

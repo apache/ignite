@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import org.apache.ignite.binary.Compressor;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -60,5 +61,9 @@ public class CacheQueryObjectValueContext implements CacheObjectValueContext {
     /** {@inheritDoc} */
     @Override public boolean binaryEnabled() {
         return ctx.config().getMarshaller() instanceof BinaryMarshaller;
+    }
+
+    @Override public Compressor compressor() {
+        return null;
     }
 }

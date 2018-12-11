@@ -38,6 +38,9 @@ public interface CacheObject extends Message {
     /** */
     public static final byte TYPE_BINARY_ENUM = 101;
 
+    /** */
+    public static final byte TYPE_BINARY_COMPRESSED = -TYPE_BINARY;
+
     /**
      * @param ctx Context.
      * @param cpy If {@code true} need to copy value.
@@ -104,7 +107,7 @@ public interface CacheObject extends Message {
      * @param ctx Cache context.
      * @return Instance to store in cache.
      */
-    public CacheObject prepareForCache(CacheObjectContext ctx);
+    public CacheObject prepareForCache(CacheObjectContext ctx) throws IgniteCheckedException;
 
     /**
      * @param ctx Context.

@@ -149,7 +149,9 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
+    @Override public CacheObject prepareForCache(CacheObjectContext ctx) throws IgniteCheckedException {
+        valueBytes(ctx);
+
         return this;
     }
 }

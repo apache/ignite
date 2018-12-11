@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.binary.Compressor;
 import org.apache.ignite.internal.GridKernalContext;
 
 /**
@@ -47,4 +48,9 @@ public interface CacheObjectValueContext {
      * @return Binary enabled flag.
      */
     public boolean binaryEnabled();
+
+    /**
+     * @return Compressor for this context, or {@code null} when compression not needed.
+     */
+    public Compressor compressor();
 }

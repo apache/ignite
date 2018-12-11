@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.binary.Compressor;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.internal.GridKernalContext;
 
@@ -100,6 +101,11 @@ public class CacheObjectContext implements CacheObjectValueContext {
     /** {@inheritDoc} */
     @Override public boolean binaryEnabled() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Compressor compressor() {
+        return null;
     }
 
     /**
