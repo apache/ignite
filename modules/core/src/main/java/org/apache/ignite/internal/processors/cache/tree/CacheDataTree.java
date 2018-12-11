@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -125,8 +126,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         assert !grp.sharedGroup();
 
         int partId = rowStore.getPartitionId();
-
-        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)grp.shared().database();
+        GridCacheSharedContext shared = grp.shared();
+        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)shared.database();
         PageStore pageStore = db.getPageStore(grpId, partId);
 
         long startPageId = ((PageMemoryEx)pageMem).partitionMetaPageId(grp.groupId(), partId);
@@ -173,8 +174,6 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                         pagesCnt = newPagesCnt;
                     }
 
-                    int rowsCnt = 0;
-
                     long pageId = startPageId + curPage;
                     long page = pageMem.acquirePage(grpId, pageId);
 
@@ -189,17 +188,19 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
                             DataPageIO iox = (DataPageIO)io;
 
-                            rowsCnt = iox.getRowsCount(pageAddr);
+                            int rowsCnt = iox.getRowsCount(pageAddr);
 
                             if (rowsCnt == 0)
                                 continue;
 
                             if (rowsCnt > rows.length)
                                 rows = new CacheDataRow[rowsCnt];
+                            else
+                                clearTail(rows, rowsCnt);
 
                             for (int i = 0; i < rowsCnt; i++) {
                                 DataRow row = grp.mvccEnabled() ? new MvccDataRow() : new DataRow();
-                                row.initFromDataPage(pageAddr, i, iox, grp, grp.shared(), pageMem, rowData);
+                                row.initFromDataPage(pageAddr, i, iox, grp, shared, pageMem, rowData);
                                 rows[i] = row;
                             }
 
@@ -212,9 +213,6 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                     }
                     finally{
                         pageMem.releasePage(grpId, pageId, page);
-
-                        if (rowsCnt != 0)
-                            clearTail(rows, rowsCnt);
                     }
                 }
             }
