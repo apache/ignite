@@ -25,10 +25,14 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbstractTest {
     /** Cache modes. */
     private static final CacheMode[] CACHE_MODES = {CacheMode.PARTITIONED, CacheMode.REPLICATED};
@@ -73,6 +77,7 @@ public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPageEviction() throws Exception {
         for (int i = 0; i < CACHE_MODES.length; i++) {
             for (int j = 0; j < ATOMICITY_MODES.length; j++) {
@@ -91,6 +96,7 @@ public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPageEvictionMvcc() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10448");
 

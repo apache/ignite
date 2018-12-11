@@ -20,10 +20,14 @@ package org.apache.ignite.internal.processors.cache.eviction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test allow empty entries flag on partitioned cache.
  */
+@RunWith(JUnit4.class)
 public class GridCacheEmptyEntriesPartitionedSelfTest extends GridCacheEmptyEntriesAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected Ignite startGrids() throws Exception {
@@ -36,14 +40,13 @@ public class GridCacheEmptyEntriesPartitionedSelfTest extends GridCacheEmptyEntr
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testFifo() throws Exception {
         super.testFifo();
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
-        super.beforeTestsStarted();
     }
 }
