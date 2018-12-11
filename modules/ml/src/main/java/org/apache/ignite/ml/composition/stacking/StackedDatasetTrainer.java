@@ -215,7 +215,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
      * @param trainer Submodel trainer.
      * @return This object.
      */
-    public <M1 extends Model<IS, IA>> StackedDatasetTrainer<IS, IA, O, AM, L> withAddedTrainer(
+    public <M1 extends Model<IS, IA>> StackedDatasetTrainer<IS, IA, O, AM, L> addTrainer(
         DatasetTrainer<M1, L> trainer) {
         submodelsTrainers.add(new DatasetTrainer<Model<IS, IA>, L>() {
             /** {@inheritDoc} */

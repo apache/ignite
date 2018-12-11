@@ -93,7 +93,7 @@ public class StackingTest extends TrainerTest {
 
         StackedModel<Vector, Vector, Double, LinearRegressionModel> mdl = trainer
             .withAggregatorTrainer(new LinearRegressionLSQRTrainer().withConvertedLabels(x -> x * factor))
-            .withAddedTrainer(mlpTrainer)
+            .addTrainer(mlpTrainer)
             .withAggregatorInputMerger(VectorUtils::concat)
             .withSubmodelOutput2VectorConverter(IgniteFunction.identity())
             .withVector2SubmodelInputConverter(IgniteFunction.identity())
@@ -142,7 +142,7 @@ public class StackingTest extends TrainerTest {
 
         StackedModel<Vector, Vector, Double, LinearRegressionModel> mdl = trainer
             .withAggregatorTrainer(new LinearRegressionLSQRTrainer().withConvertedLabels(x -> x * factor))
-            .withAddedMatrixTrainer(mlpTrainer)
+            .addMatrix2MatrixTrainer(mlpTrainer)
             .withEnvironmentBuilder(TestUtils.testEnvBuilder())
             .fit(getCacheMock(xor),
                 parts,

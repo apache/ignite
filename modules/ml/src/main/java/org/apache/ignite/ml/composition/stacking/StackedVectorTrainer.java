@@ -25,7 +25,6 @@ import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.trainers.AdaptableDatasetModel;
 import org.apache.ignite.ml.trainers.AdaptableDatasetTrainer;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 
@@ -59,9 +58,9 @@ public class StackedVectorTrainer<O, AM extends Model<Vector, O>, L>
     }
 
     /** {@inheritDoc} */
-    @Override public <M1 extends Model<Vector, Vector>> StackedVectorTrainer<O, AM, L> withAddedTrainer(
+    @Override public <M1 extends Model<Vector, Vector>> StackedVectorTrainer<O, AM, L> addTrainer(
         DatasetTrainer<M1, L> trainer) {
-        return (StackedVectorTrainer<O, AM, L>)super.withAddedTrainer(trainer);
+        return (StackedVectorTrainer<O, AM, L>)super.addTrainer(trainer);
     }
 
     //TODO: IGNITE-10441 -- Look for options to avoid boilerplate overrides.
@@ -125,9 +124,9 @@ public class StackedVectorTrainer<O, AM extends Model<Vector, O>, L>
      * @param <M1> Type of submodel trainer model.
      * @return This object.
      */
-    public <M1 extends Model<Vector, Double>> StackedVectorTrainer<O, AM, L> withAddedDoubleValuedTrainer(
+    public <M1 extends Model<Vector, Double>> StackedVectorTrainer<O, AM, L> addTrainerWithDoubleOutput(
         DatasetTrainer<M1, L> trainer) {
-        return withAddedTrainer(AdaptableDatasetTrainer.of(trainer).afterTrainedModel(VectorUtils::num2Vec));
+        return addTrainer(AdaptableDatasetTrainer.of(trainer).afterTrainedModel(VectorUtils::num2Vec));
     }
 
     /**
@@ -138,12 +137,12 @@ public class StackedVectorTrainer<O, AM extends Model<Vector, O>, L>
      * @param <M1> Type of submodel trainer model.
      * @return This object.
      */
-    public <M1 extends Model<Matrix, Matrix>> StackedVectorTrainer<O, AM, L> withAddedMatrixTrainer(
+    public <M1 extends Model<Matrix, Matrix>> StackedVectorTrainer<O, AM, L> addMatrix2MatrixTrainer(
         DatasetTrainer<M1, L> trainer) {
         AdaptableDatasetTrainer<Vector, Vector, Matrix, Matrix, M1, L> adapted = AdaptableDatasetTrainer.of(trainer)
             .beforeTrainedModel((Vector v) -> new DenseMatrix(v.asArray(), 1))
             .afterTrainedModel((Matrix mtx) -> mtx.getRow(0));
 
-        return withAddedTrainer(adapted);
+        return addTrainer(adapted);
     }
 }
