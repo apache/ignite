@@ -500,6 +500,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             false,
             null,
             false,
+            false,
             DFLT_ALLOW_ATOMIC_OPS_IN_TX);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
@@ -520,6 +521,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             false,
             null,
             false,
+            false,
             DFLT_ALLOW_ATOMIC_OPS_IN_TX);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
@@ -534,6 +536,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             null,
             false,
             null,
+            false,
             false,
             DFLT_ALLOW_ATOMIC_OPS_IN_TX);
 
@@ -557,6 +560,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             false,
             null,
             false,
+            false,
             DFLT_ALLOW_ATOMIC_OPS_IN_TX);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
@@ -572,6 +576,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             true,
             null,
             false,
+            false,
             DFLT_ALLOW_ATOMIC_OPS_IN_TX);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
@@ -586,6 +591,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             null,
             false,
             null,
+            false,
             false,
             DFLT_ALLOW_ATOMIC_OPS_IN_TX);
 
@@ -738,6 +744,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /*task name*/null,
             /*deserialize binary*/false,
             opCtx != null && opCtx.recovery(),
+            opCtx != null && opCtx.consistency(),
             /*skip values*/true,
             /*need ver*/false).chain(new CX1<IgniteInternalFuture<Map<K, V>>, Boolean>() {
             @Override public Boolean applyx(IgniteInternalFuture<Map<K, V>> fut) throws IgniteCheckedException {
@@ -1387,6 +1394,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             taskName,
             /*deserialize cache objects*/true,
             opCtx != null && opCtx.recovery(),
+            opCtx != null && opCtx.consistency(),
             /*skip values*/false,
             /*need ver*/false).get().get(key);
     }
@@ -1405,6 +1413,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             taskName,
             true,
             opCtx != null && opCtx.recovery(),
+            opCtx != null && opCtx.consistency(),
             /*skip vals*/false,
             /*can remap*/false).chain(new CX1<IgniteInternalFuture<Map<K, V>>, V>() {
             @Override public V applyx(IgniteInternalFuture<Map<K, V>> e) throws IgniteCheckedException {
@@ -1431,6 +1440,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             taskName,
             !(opCtx != null && opCtx.isKeepBinary()),
             opCtx != null && opCtx.recovery(),
+            opCtx != null && opCtx.consistency(),
             /*skip values*/false,
             /*need ver*/false);
     }
@@ -1638,6 +1648,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             taskName,
             !(opCtx != null && opCtx.isKeepBinary()),
             opCtx != null && opCtx.recovery(),
+            opCtx != null && opCtx.consistency(),
             /*skip vals*/false,
             /*need ver*/false);
 
@@ -1676,6 +1687,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 taskName,
                 !(opCtx != null && opCtx.isKeepBinary()),
                 opCtx != null && opCtx.recovery(),
+                opCtx != null && opCtx.consistency(),
                 /*skip vals*/false,
                 /*need ver*/true));
 
@@ -1821,6 +1833,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             taskName,
             deserializeBinary,
             opCtx != null && opCtx.recovery(),
+            opCtx != null && opCtx.consistency(),
             skipVals,
             needVer).chain(
             new CX1<IgniteInternalFuture<Map<K, V>>, V>() {
@@ -1861,6 +1874,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
+        boolean consistency,
         boolean skipVals,
         final boolean needVer
     ) {
@@ -1876,6 +1890,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             taskName,
             deserializeBinary,
             opCtx != null && opCtx.recovery(),
+            opCtx != null && opCtx.consistency(),
             forcePrimary,
             skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
             skipVals,
@@ -1906,6 +1921,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final String taskName,
         final boolean deserializeBinary,
         final boolean recovery,
+        final boolean consistency,
         final boolean forcePrimary,
         @Nullable IgniteCacheExpiryPolicy expiry,
         final boolean skipVals,
@@ -1927,6 +1943,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             skipVals,
             /*keep cache objects*/false,
             recovery,
+            consistency,
             needVer,
             null,
             null); // TODO IGNITE-7371
@@ -1960,6 +1977,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final boolean skipVals,
         final boolean keepCacheObjects,
         final boolean recovery,
+        final boolean consistency,
         final boolean needVer,
         @Nullable String txLbl,
         MvccSnapshot mvccSnapshot
@@ -2313,6 +2331,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         false,
                         !readThrough,
                         recovery,
+                        consistency,
                         needVer);
                 }
             }, ctx.operationContextPerCall(), /*retry*/false);
@@ -4791,6 +4810,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             taskName,
             deserializeBinary,
             opCtx != null && opCtx.recovery(),
+            opCtx != null && opCtx.consistency(),
             /*skip vals*/false,
             needVer).get();
     }
@@ -4805,6 +4825,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         @Nullable Collection<? extends K> keys,
         boolean deserializeBinary,
         boolean recovery,
+        boolean consistency,
         boolean needVer
     ) {
         String taskName = ctx.kernalContext().job().currentTaskName();
@@ -4816,6 +4837,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             taskName,
             deserializeBinary,
             recovery,
+            consistency,
             /*skip vals*/false,
             needVer);
     }

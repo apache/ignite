@@ -339,6 +339,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         final String taskName,
         final boolean deserializeBinary,
         boolean recovery,
+        boolean consistency,
         final boolean skipVals,
         final boolean needVer
     ) {
@@ -542,6 +543,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             taskName,
             deserializeBinary,
             opCtx != null && opCtx.recovery(),
+            opCtx != null && opCtx.consistency(),
             /*force primary*/false,
             expiry,
             skipVals,

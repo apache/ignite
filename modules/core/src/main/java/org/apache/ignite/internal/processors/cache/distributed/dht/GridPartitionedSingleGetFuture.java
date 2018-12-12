@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils.BackupPostProcessingClosure;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersionedValue;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
@@ -137,6 +138,9 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     private boolean recovery;
 
     /** */
+    private boolean consistency;
+
+    /** */
     @GridToStringInclude
     private ClusterNode node;
 
@@ -168,6 +172,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param keepCacheObjects Keep cache objects flag.
+     * @param consistency Read with recover.
      * @param txLbl Transaction label.
      */
     public GridPartitionedSingleGetFuture(
@@ -184,6 +189,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         boolean needVer,
         boolean keepCacheObjects,
         boolean recovery,
+        boolean consistency,
         String txLbl,
         @Nullable MvccSnapshot mvccSnapshot
     ) {
@@ -212,6 +218,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         this.needVer = needVer;
         this.keepCacheObjects = keepCacheObjects;
         this.recovery = recovery;
+        this.consistency = consistency;
         this.topVer = topVer;
         this.mvccSnapshot = mvccSnapshot;
 
@@ -274,6 +281,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                     expiryPlc,
                     skipVals,
                     recovery,
+                    consistency,
                     txLbl,
                     mvccSnapshot
                 );
@@ -294,6 +302,9 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                         GridCacheEntryInfo info = f.get();
 
                         setResult(info);
+                    }
+                    catch (IgniteConsistencyViolationException e){
+                        onDone(e);
                     }
                     catch (Exception e) {
                         U.error(log, "Failed to get values from dht cache [fut=" + fut + "]", e);
@@ -340,6 +351,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 needVer,
                 cctx.deploymentEnabled(),
                 recovery,
+                consistency,
                 txLbl,
                 mvccSnapshot
             );
@@ -376,7 +388,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         if (tryLocalGet(key, part, topVer, affNodes))
             return null;
 
-        ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, getInvalidNodes(), part, canRemap);
+        ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, getInvalidNodes(), part, canRemap, consistency);
 
         // Failed if none balanced node found.
         if (affNode == null) {
@@ -404,7 +416,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         // Local get cannot be used with MVCC as local node can contain some visible version which is not latest.
         boolean fastLocGet = !cctx.mvccEnabled() &&
             (!forcePrimary || affNodes.get(0).isLocal()) &&
-            cctx.reserveForFastLocalGet(part, topVer);
+            cctx.reserveForFastLocalGet(part, topVer) &&
+            !consistency;
 
         if (fastLocGet) {
             try {

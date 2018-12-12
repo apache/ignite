@@ -121,6 +121,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         String taskName,
         final boolean deserializeBinary,
         final boolean recovery,
+        final boolean consistency,
         final boolean skipVals,
         final boolean needVer
     ) {
@@ -149,6 +150,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                         false,
                         skipStore,
                         recovery,
+                        consistency,
                         needVer);
                 }
             }, opCtx, /*retry*/false);
@@ -163,6 +165,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             taskName,
             deserializeBinary,
             recovery,
+            consistency,
             skipVals ? null : opCtx != null ? opCtx.expiry() : null,
             skipVals,
             skipStore,
@@ -185,6 +188,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         boolean readThrough,
         boolean deserializeBinary,
         boolean recovery,
+        boolean consistency,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer) {
@@ -202,7 +206,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             skipVals,
             needVer,
             /*keepCacheObjects*/true,
-            recovery);
+            recovery,
+            consistency);
 
         // init() will register future for responses if it has remote mappings.
         fut.init(topVer);

@@ -121,6 +121,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     private final boolean recovery;
 
     /** */
+    private final boolean consistency;
+
+    /** */
     private final boolean addReaders;
 
     /** Transaction label. */
@@ -155,6 +158,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean recovery,
+        boolean consistency,
         boolean addReaders,
         @Nullable String txLbl,
         MvccSnapshot mvccSnapshot
@@ -175,6 +179,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         this.expiryPlc = expiryPlc;
         this.skipVals = skipVals;
         this.recovery = recovery;
+        this.consistency = consistency;
         this.addReaders = addReaders;
         this.txLbl = txLbl;
         this.mvccSnapshot = mvccSnapshot;
@@ -461,8 +466,11 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                 expiryPlc,
                 skipVals,
                 recovery,
+                consistency,
+                expiryPlc,
                 txLbl,
-                mvccSnapshot);
+                mvccSnapshot,
+                topVer);
         }
         else {
             final ReaderArguments args = readerArgs;
@@ -486,8 +494,11 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                             expiryPlc,
                             skipVals,
                             recovery,
+                            consistency,
+                            expiryPlc,
                             txLbl,
-                            mvccSnapshot);
+                            mvccSnapshot,
+                            topVer);
                     }
                 }
             );

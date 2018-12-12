@@ -129,6 +129,9 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
     protected final boolean recovery;
 
     /** */
+    protected final boolean consistency;
+
+    /** */
     protected Map<AffinityTopologyVersion, Map<Integer, Set<ClusterNode>>> invalidNodes = Collections.emptyMap();
 
 
@@ -158,7 +161,8 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
         boolean skipVals,
         boolean needVer,
         boolean keepCacheObjects,
-        boolean recovery
+        boolean recovery,
+        boolean consistency
     ) {
         super(CU.<K, V>mapsReducer(keys.size()));
 
@@ -176,6 +180,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
         this.needVer = needVer;
         this.keepCacheObjects = keepCacheObjects;
         this.recovery = recovery;
+        this.consistency = consistency;
 
         futId = IgniteUuid.randomUuid();
     }

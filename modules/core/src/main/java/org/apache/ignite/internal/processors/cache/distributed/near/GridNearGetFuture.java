@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CacheDistributedGetFutureAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -92,7 +93,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         boolean skipVals,
         boolean needVer,
         boolean keepCacheObjects,
-        boolean recovery
+        boolean recovery,
+        boolean consistency
     ) {
         super(
             cctx,
@@ -106,7 +108,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             skipVals,
             needVer,
             keepCacheObjects,
-            recovery
+            recovery,
+            consistency
         );
 
         assert !F.isEmpty(keys);
@@ -247,6 +250,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         expiryPlc,
                         skipVals,
                         recovery,
+                        consistency,
                         null,
                         null
                     ); // TODO IGNITE-7371
@@ -276,6 +280,11 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 add(fut.chain(f -> {
                     try {
                         return loadEntries(n.id(), mappedKeys.keySet(), f.get(), saved, topVer);
+                    }
+                    catch (IgniteConsistencyViolationException e){
+                        onDone(e);
+
+                        return Collections.emptyMap();
                     }
                     catch (Exception e) {
                         U.error(log, "Failed to get values from dht cache [fut=" + fut + "]", e);
@@ -400,7 +409,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
 
                     Set<ClusterNode> invalidNodesSet = getInvalidNodes(part, topVer);
 
-                    ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, invalidNodesSet, part, canRemap);
+                    ClusterNode affNode =
+                        cctx.selectAffinityNodeBalanced(affNodes, invalidNodesSet, part, canRemap, consistency);
 
                     if (affNode == null) {
                         onDone(serverNotFoundError(part, topVer));
@@ -758,6 +768,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 skipVals,
                 cctx.deploymentEnabled(),
                 recovery,
+                consistency,
                 null,
                 null
             ); // TODO IGNITE-7371

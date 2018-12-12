@@ -48,11 +48,11 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedUn
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtEmbeddedFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFinishedFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTransactionalCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
@@ -194,6 +194,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         final boolean recovery = opCtx != null && opCtx.recovery();
+        final boolean consistency = opCtx != null && opCtx.consistency();
 
         // Get operation bypass Tx in Mvcc mode.
         if (!ctx.mvccEnabled() && tx != null && !tx.implicit() && !skipTx) {
@@ -207,6 +208,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         false,
                         opCtx != null && opCtx.skipStore(),
                         recovery,
+                        consistency,
                         needVer);
 
                     return fut.chain(new CX1<IgniteInternalFuture<Map<Object, Object>>, V>() {
@@ -267,6 +269,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             needVer,
             /*keepCacheObjects*/false,
             opCtx != null && opCtx.recovery(),
+            opCtx != null && opCtx.consistency(),
             null,
             mvccSnapshot);
 
@@ -295,6 +298,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         String taskName,
         final boolean deserializeBinary,
         final boolean recovery,
+        final boolean consistency,
         final boolean skipVals,
         final boolean needVer
     ) {
@@ -323,6 +327,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         false,
                         opCtx != null && opCtx.skipStore(),
                         recovery,
+                        consistency,
                         needVer);
                 }
             }, opCtx, /*retry*/false);
@@ -361,6 +366,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             taskName,
             deserializeBinary,
             recovery,
+            consistency,
             skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
             skipVals,
             needVer,
@@ -406,6 +412,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
+        boolean consistency,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
@@ -417,6 +424,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             taskName,
             deserializeBinary,
             recovery,
+            consistency,
             expiryPlc,
             skipVals,
             needVer,
@@ -453,6 +461,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean needVer,
         boolean keepCacheObj,
         boolean recovery,
+        boolean consistency,
         @Nullable MvccSnapshot mvccSnapshot,
         @Nullable String txLbl
     ) {
@@ -469,6 +478,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             needVer,
             keepCacheObj,
             recovery,
+            consistency,
             txLbl,
             mvccSnapshot);
 
@@ -502,6 +512,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
+        boolean consistency,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
@@ -519,7 +530,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         // Optimization: try to resolve value locally and escape 'get future' creation. Not applcable for MVCC,
         // because local node may contain a visible version which is no the most recent one.
-        if (!ctx.mvccEnabled() && !forcePrimary && ctx.affinityNode()) {
+        if (!ctx.mvccEnabled() && !forcePrimary && !consistency && ctx.affinityNode()) {
             try {
                 Map<K, V> locVals = null;
 
@@ -695,12 +706,14 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             taskName,
             deserializeBinary,
             recovery,
+            consistency,
             expiryPlc,
             skipVals,
             needVer,
             keepCacheObj,
             txLbl,
-            mvccSnapshot);
+            mvccSnapshot,
+            null);
 
         fut.init(topVer);
 
@@ -740,7 +753,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             CU.empty0(),
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
-            opCtx != null && opCtx.recovery());
+            opCtx != null && opCtx.recovery(),
+            opCtx != null && opCtx.consistency());
 
         // Future will be added to mvcc only if it was mapped to remote nodes.
         fut.map();
@@ -1004,7 +1018,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final long accessTtl,
         @Nullable final CacheEntryPredicate[] filter,
         final boolean skipStore,
-        final boolean keepBinary
+        final boolean keepBinary,
+        final boolean consistency
     ) {
         assert keys != null;
 
@@ -1029,7 +1044,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 accessTtl,
                 filter,
                 skipStore,
-                keepBinary);
+                keepBinary,
+                consistency);
         }
         else {
             return new GridEmbeddedFuture<>(keyFut,
@@ -1051,7 +1067,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             accessTtl,
                             filter,
                             skipStore,
-                            keepBinary);
+                            keepBinary,
+                            consistency);
                     }
                 }
             );
@@ -1088,7 +1105,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final long accessTtl,
         @Nullable final CacheEntryPredicate[] filter,
         boolean skipStore,
-        boolean keepBinary) {
+        boolean keepBinary,
+        boolean consistency) {
         int cnt = keys.size();
 
         if (tx == null) {
@@ -1174,7 +1192,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 createTtl,
                 accessTtl,
                 skipStore,
-                keepBinary);
+                keepBinary,
+                consistency);
 
             return new GridDhtEmbeddedFuture<>(
                 new C2<GridCacheReturn, Exception, Exception>() {

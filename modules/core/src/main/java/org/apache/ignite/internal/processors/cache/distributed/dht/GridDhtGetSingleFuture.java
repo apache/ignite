@@ -112,6 +112,9 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     /** Recovery context flag. */
     private final boolean recovery;
 
+    /** Consistency check flag. */
+    private final boolean consistency;
+
     /** Transaction label. */
     private final String txLbl;
 
@@ -146,6 +149,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean recovery,
+        boolean consistency,
         @Nullable String txLbl,
         @Nullable MvccSnapshot mvccSnapshot
     ) {
@@ -164,6 +168,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         this.expiryPlc = expiryPlc;
         this.skipVals = skipVals;
         this.recovery = recovery;
+        this.consistency = consistency;
         this.txLbl = txLbl;
         this.mvccSnapshot = mvccSnapshot;
 
@@ -405,8 +410,11 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                 expiryPlc,
                 skipVals,
                 recovery,
+                consistency,
+                expiryPlc,
                 txLbl,
-                mvccSnapshot);
+                mvccSnapshot,
+                topVer);
         }
         else {
             final ReaderArguments args = readerArgs;
@@ -432,8 +440,11 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                                 expiryPlc,
                                 skipVals,
                                 recovery,
+                                consistency,
+                                expiryPlc,
                                 null,
-                                mvccSnapshot);
+                                mvccSnapshot,
+                                topVer);
 
                         fut0.listen(createGetFutureListener());
                     }

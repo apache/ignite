@@ -138,6 +138,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteCache<K, V> withPartitionRecover();
 
     /**
+     *
+     */
+    public IgniteCache<K, V> withConsistencyCheck();
+
+    /**
      * Returns cache that will operate with binary objects.
      * <p>
      * Cache returned by this method will not be forced to deserialize binary objects,

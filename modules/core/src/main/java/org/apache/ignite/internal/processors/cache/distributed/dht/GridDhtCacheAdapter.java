@@ -59,6 +59,8 @@ import org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdat
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
+import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.GridDhtConsistencyCheckFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
@@ -761,6 +763,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
+        boolean consistency,
         boolean skipVals,
         boolean needVer
     ) {
@@ -774,6 +777,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             taskName,
             deserializeBinary,
             opCtx != null && opCtx.recovery(),
+            opCtx != null && opCtx.consistency(),
             forcePrimary,
             null,
             skipVals,
@@ -801,10 +805,13 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
         boolean recovery,
+        boolean consistency,
+        IgniteCacheExpiryPolicy expiryPlc,
         @Nullable String txLbl,
-        MvccSnapshot mvccSnapshot
+        MvccSnapshot mvccSnapshot,
+        AffinityTopologyVersion topVer
     ) {
-        return getAllAsync0(keys,
+        IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> fut = getAllAsync0(keys,
             readerArgs,
             readThrough,
             /*don't check local tx. */false,
@@ -815,9 +822,33 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             skipVals,
             /*keep cache objects*/true,
             recovery,
+            false,
             /*need version*/true,
             txLbl,
             mvccSnapshot);
+
+        if (!consistency)
+            return fut;
+        else {
+            GridDhtConsistencyCheckFuture cFut = new GridDhtConsistencyCheckFuture(
+                topVer,
+                fut,
+                ctx,
+                keys,
+                readThrough,
+                subjId,
+                taskName,
+                false,
+                recovery,
+                expiryPlc,
+                skipVals,
+                txLbl,
+                mvccSnapshot);
+
+            cFut.init();
+
+            return cFut;
+        }
     }
 
     /**
@@ -846,6 +877,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
         boolean recovery,
+        boolean consistency,
         @Nullable String txLbl,
         MvccSnapshot mvccSnapshot
     ) {
@@ -860,6 +892,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             expiry,
             skipVals,
             recovery,
+            consistency,
             addReaders,
             txLbl,
             mvccSnapshot);
@@ -896,6 +929,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
         boolean recovery,
+        boolean consistency,
         String txLbl,
         MvccSnapshot mvccSnapshot
     ) {
@@ -912,6 +946,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             expiry,
             skipVals,
             recovery,
+            consistency,
             txLbl,
             mvccSnapshot);
 
@@ -942,6 +977,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 expiryPlc,
                 req.skipValues(),
                 req.recovery(),
+                req.consistency(),
                 req.txLabel(),
                 req.mvccSnapshot());
 
@@ -997,6 +1033,19 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 catch (NodeStoppingException ignored) {
                     return;
                 }
+                catch (IgniteConsistencyViolationException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Consistency violation detected during processing get request: " + req);
+
+                    res = new GridNearSingleGetResponse(ctx.cacheId(),
+                        req.futureId(),
+                        req.topologyVersion(),
+                        null,
+                        false,
+                        req.addDeploymentInfo());
+
+                    res.error(e);
+                }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed processing get request: " + req, e);
 
@@ -1048,6 +1097,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 expiryPlc,
                 req.skipValues(),
                 req.recovery(),
+                req.consistency(),
                 req.txLabel(),
                 req.mvccSnapshot());
 
@@ -1069,6 +1119,12 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 }
                 catch (NodeStoppingException ignored) {
                     return;
+                }
+                catch (IgniteConsistencyViolationException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Consistency violation detected during processing get request: " + req);
+
+                    res.error(e);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed processing get request: " + req, e);

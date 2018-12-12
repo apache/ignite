@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
@@ -62,7 +63,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAdapter<K, V>
     implements MvccSnapshotResponseListener {
-
     /** Transaction label. */
     protected final String txLbl;
 
@@ -71,6 +71,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
     /** */
     private MvccQueryTracker mvccTracker;
+
+    /** Premapped node (always backup). */
+    private ClusterNode premapped;
 
     /**
      * @param cctx Context.
@@ -98,12 +101,14 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
+        boolean consistency,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
         boolean keepCacheObjects,
         @Nullable String txLbl,
-        @Nullable MvccSnapshot mvccSnapshot
+        @Nullable MvccSnapshot mvccSnapshot,
+        @Nullable ClusterNode premapped
     ) {
         super(
             cctx,
@@ -117,14 +122,15 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             skipVals,
             needVer,
             keepCacheObjects,
-            recovery
+            recovery,
+            consistency
         );
 
         assert mvccSnapshot == null || cctx.mvccEnabled();
 
         this.mvccSnapshot = mvccSnapshot;
-
         this.txLbl = txLbl;
+        this.premapped = premapped;
 
         initLogger(GridPartitionedGetFuture.class);
     }
@@ -292,6 +298,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         expiryPlc,
                         skipVals,
                         recovery,
+                        consistency,
                         txLbl,
                         mvccSnapshot()
                     );
@@ -321,6 +328,11 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 add(fut.chain(f -> {
                     try {
                         return createResultMap(f.get());
+                    }
+                    catch (IgniteConsistencyViolationException e){
+                        onDone(e);
+
+                        return Collections.emptyMap();
                     }
                     catch (Exception e) {
                         U.error(log, "Failed to get values from dht cache [fut=" + fut + "]", e);
@@ -379,13 +391,16 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         }
 
         // Try to read key localy if we can.
-        if (tryLocalGet(key, part, topVer, affNodes, locVals))
+        if (premapped == null && !consistency && tryLocalGet(key, part, topVer, affNodes, locVals))
             return false;
 
         Set<ClusterNode> invalidNodeSet = getInvalidNodes(part, topVer);
 
+        assert premapped == null || !invalidNodeSet.contains(premapped);
+
         // Get remote node for request for this key.
-        ClusterNode node = cctx.selectAffinityNodeBalanced(affNodes, invalidNodeSet, part, canRemap);
+        ClusterNode node = (premapped != null) ? premapped :
+            cctx.selectAffinityNodeBalanced(affNodes, invalidNodeSet, part, canRemap, consistency);
 
         // Failed if none remote node found.
         if (node == null) {
@@ -705,6 +720,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 skipVals,
                 cctx.deploymentEnabled(),
                 recovery,
+                consistency,
                 txLbl,
                 mvccSnapshot()
             );

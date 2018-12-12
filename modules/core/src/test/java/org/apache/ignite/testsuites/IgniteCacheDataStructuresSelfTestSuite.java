@@ -20,6 +20,11 @@ package org.apache.ignite.testsuites;
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.AtomicCacheAffinityConfigurationTest;
+import org.apache.ignite.internal.processors.cache.consistency.CacheConsistencyCheckExplicitTransactionalLockFreeTest;
+import org.apache.ignite.internal.processors.cache.consistency.CacheConsistencyCheckExplicitTransactionalUnderLocksSingleBackupTest;
+import org.apache.ignite.internal.processors.cache.consistency.CacheConsistencyCheckExplicitTransactionalUnderLocksTest;
+import org.apache.ignite.internal.processors.cache.consistency.CacheConsistencyCheckImplicitAtomicTest;
+import org.apache.ignite.internal.processors.cache.consistency.CacheConsistencyCheckImplicitTransactionalTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueCleanupSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueClientDisconnectTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueMultiNodeConsistencySelfTest;
@@ -189,6 +194,12 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(IgniteSequenceInternalCleanupTest.class));
 
         suite.addTest(new JUnit4TestAdapter(AtomicCacheAffinityConfigurationTest.class));
+
+        suite.addTestSuite(CacheConsistencyCheckImplicitAtomicTest.class);
+        suite.addTestSuite(CacheConsistencyCheckImplicitTransactionalTest.class);
+        suite.addTestSuite(CacheConsistencyCheckExplicitTransactionalLockFreeTest.class);
+        suite.addTestSuite(CacheConsistencyCheckExplicitTransactionalUnderLocksTest.class);
+        suite.addTestSuite(CacheConsistencyCheckExplicitTransactionalUnderLocksSingleBackupTest.class);
 
         return suite;
     }
