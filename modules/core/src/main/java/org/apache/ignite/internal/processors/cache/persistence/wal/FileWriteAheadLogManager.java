@@ -147,13 +147,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** */
     private static final FileDescriptor[] EMPTY_DESCRIPTORS = new FileDescriptor[0];
 
-    /** */
+    /** Zero-filled buffer for file formatting. */
     private static final byte[] FILL_BUF = new byte[1024 * 1024];
 
-    /** Pattern for segment file names */
+    /** Pattern for segment file names. */
     public static final Pattern WAL_NAME_PATTERN = Pattern.compile("\\d{16}\\.wal");
 
-    /** */
+    /** Pattern for WAL temp files - these files will be cleared at startup. */
     public static final Pattern WAL_TEMP_NAME_PATTERN = Pattern.compile("\\d{16}\\.wal\\.tmp");
 
     /** WAL segment file filter, see {@link #WAL_NAME_PATTERN} */
@@ -163,7 +163,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
     };
 
-    /** */
+    /** WAL segment temporary file filter, see {@link #WAL_TEMP_NAME_PATTERN} */
     private static final FileFilter WAL_SEGMENT_TEMP_FILE_FILTER = new FileFilter() {
         @Override public boolean accept(File file) {
             return !file.isDirectory() && WAL_TEMP_NAME_PATTERN.matcher(file.getName()).matches();
@@ -1275,9 +1275,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /**
      * Fills the file header for a new segment. Calling this method signals we are done with the segment and it can be
-     * archived. If we don't have prepared file yet and achiever is busy this method blocks
+     * archived. If we don't have prepared file yet and achiever is busy this method blocks.
      *
-     * @param cur Current file write handle released by WAL writer
+     * @param cur Current file write handle released by WAL writer.
      * @return Initialized file handle.
      * @throws IgniteCheckedException If exception occurred.
      */
@@ -1345,7 +1345,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * Deletes temp files, creates and prepares new; Creates first segment if necessary
+     * Deletes temp files creates and prepares new; Creates the first segment if necessary.
      *
      * @throws StorageException If failed.
      */
