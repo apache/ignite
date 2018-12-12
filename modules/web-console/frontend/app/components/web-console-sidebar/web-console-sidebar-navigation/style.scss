@@ -31,6 +31,12 @@ web-console-sidebar-navigation {
         }
     }
 
+    .web-console-sidebar-navigation__link-icon {
+        width: 20px;
+        height: auto;
+        color: inherit;
+    }
+
     .web-console-sidebar-navigation__link-narrow {
         height: var(--width-narrow);
         width: var(--width-narrow);
@@ -59,13 +65,8 @@ web-console-sidebar-navigation {
                 background: var(--active-link-color);
             }
         }
-
         .web-console-sidebar-navigation__link-content {
             display: none;
-        }
-        .web-console-sidebar-navigation__link-icon {
-            width: 20px;
-            height: auto;
         }
     }
     .web-console-sidebar-navigation__link-wide {
@@ -75,6 +76,8 @@ web-console-sidebar-navigation {
         font-size: 16px;
         padding: 10px 27px 11px;
         width: var(--width-wide);
+        display: inline-flex;
+        align-items: center;
 
         &:hover, &:focus {
             color: var(--active-link-color);
@@ -84,7 +87,7 @@ web-console-sidebar-navigation {
             background: var(--active-link-color);
         }
         .web-console-sidebar-navigation__link-icon {
-            display: none;
+            margin-right: 12px;
         }
     }
 }
