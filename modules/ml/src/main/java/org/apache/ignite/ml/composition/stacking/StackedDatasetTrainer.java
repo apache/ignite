@@ -261,19 +261,6 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> StackedModel<IS, IA, O, AM> updateModel(StackedModel<IS, IA, O, AM> mdl,
-        DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, L> lbExtractor) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean checkState(StackedModel<IS, IA, O, AM> mdl) {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public <K, V> StackedModel<IS, IA, O, AM> update(StackedModel<IS, IA, O, AM> mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor) {
@@ -289,7 +276,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
                 }
                 return res;
             },
-            (at, extr) -> at.fit(datasetBuilder, extr, lbExtractor),
+            (at, extr) -> at.update(mdl.aggregatorModel(), datasetBuilder, extr, lbExtractor),
             featureExtractor
         );
     }
@@ -359,7 +346,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
 
         return res;
     }
-    
+
     /**
      * Get feature extractor which will be used for aggregator trainer from original feature extractor.
      * This method is static to make sure that we will not grab context of instance in serialization.
@@ -406,5 +393,19 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
         IgniteFunction<Vector, IS> vector2SubmodelInputConverter,
         Vector v) {
         return vector2SubmodelInputConverter.andThen(mdl).andThen(submodelOutput2VectorConverter).apply(v);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected <K, V> StackedModel<IS, IA, O, AM> updateModel(StackedModel<IS, IA, O, AM> mdl,
+        DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, L> lbExtractor) {
+        // This method is never called, we override "update" instead.
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(StackedModel<IS, IA, O, AM> mdl) {
+        return true;
     }
 }
