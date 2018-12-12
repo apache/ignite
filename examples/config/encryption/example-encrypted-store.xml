@@ -28,6 +28,8 @@
                 <property name="defaultDataRegionConfiguration">
                     <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
                         <property name="persistenceEnabled" value="true"/>
+
+                        <property name="maxSize" value="#{128 * 1024 * 1024}"/>
                     </bean>
                 </property>
             </bean>
