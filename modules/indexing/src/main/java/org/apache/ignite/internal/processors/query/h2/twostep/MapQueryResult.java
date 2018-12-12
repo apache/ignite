@@ -285,20 +285,6 @@ class MapQueryResult {
     }
 
     /**
-     * @param conn Detached connection.
-     */
-    void detachedConnection(ObjectPoolReusable<H2ConnectionWrapper> conn) {
-        detachedConn = conn;
-    }
-
-    /**
-     * @return {@code true} if the connection is pulled from connection pool and not use for next incoming requests.
-     */
-    boolean isConnectionDetached() {
-        return detachedConn != null;
-    }
-
-    /**
      * @return Session wrapper.
      */
     IgniteH2Session session() {

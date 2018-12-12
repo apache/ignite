@@ -141,9 +141,6 @@ public class GridMapQueryExecutor {
     /** */
     private final ConcurrentMap<MapReservationKey, GridReservable> reservations = new ConcurrentHashMap<>();
 
-    /** Stop guard. */
-    private final AtomicBoolean stopGuard = new AtomicBoolean();
-
     /**
      * @param busyLock Busy lock.
      */
@@ -202,9 +199,6 @@ public class GridMapQueryExecutor {
      * Stop query map executor, cleanup resources.
      */
     public void stop() {
-        if (!stopGuard.compareAndSet(false, true))
-            return;
-
         for (MapNodeResults res : qryRess.values())
             res.cancelAll();
     }
@@ -1316,9 +1310,7 @@ public class GridMapQueryExecutor {
      * @param node Node.
      * @param msg Message to send.
      */
-    private void sendNextPage(
-        ClusterNode node,
-        GridQueryNextPageResponse msg) {
+    private void sendNextPage(ClusterNode node, GridQueryNextPageResponse msg) {
         try {
             if (msg != null) {
                 if (node.isLocal())
