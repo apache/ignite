@@ -74,6 +74,9 @@ import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.events.EventType.EVTS_CACHE;
@@ -81,6 +84,7 @@ import static org.apache.ignite.events.EventType.EVTS_CACHE;
 /**
  * Common test for marshallers.
  */
+@RunWith(JUnit4.class)
 public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest implements Serializable {
     /** */
     private static final String CACHE_NAME = "namedCache";
@@ -157,6 +161,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultCache() throws Exception {
         IgniteCache<String, String> cache = grid().cache(DEFAULT_CACHE_NAME);
 
@@ -187,6 +192,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNamedCache() throws Exception {
         IgniteCache<String, String> cache = grid().cache(CACHE_NAME);
 
@@ -219,6 +225,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testMarshalling() throws Exception {
         GridMarshallerTestBean inBean = newTestBean(new Object());
 
@@ -246,6 +253,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testMarshallingAnonymousClassInstance() throws Exception {
         final Ignite g = grid();
 
@@ -283,6 +291,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testMarshallingLocalClassInstance() throws Exception {
         /**
          * Local class.
@@ -320,6 +329,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testMarshallingNestedClassInstance() throws Exception {
         GridMarshallerTestBean inBean = newTestBean(new NestedClass());
 
@@ -347,6 +357,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testMarshallingStaticNestedClassInstance() throws Exception {
         GridMarshallerTestBean inBean = newTestBean(new StaticNestedClass());
 
@@ -374,6 +385,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testMarshallingNullObject() throws Exception {
         GridMarshallerTestBean inBean = newTestBean(null);
 
@@ -397,6 +409,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws IgniteCheckedException If marshalling failed.
      */
     @SuppressWarnings({"ZeroLengthArrayAllocation"})
+    @Test
     public void testMarshallingArrayOfPrimitives() throws IgniteCheckedException {
         char[] inChars = "vasya".toCharArray();
 
@@ -429,6 +442,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testExternalClassesMarshalling() throws Exception {
         ClassLoader tstClsLdr = new GridTestClassLoader(
             Collections.singletonMap("org/apache/ignite/p2p/p2p.properties", "resource=loaded"),
@@ -452,6 +466,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testGridKernalMarshalling() throws Exception {
         GridMarshallerTestBean inBean = newTestBean(grid());
 
@@ -477,6 +492,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testSubgridMarshalling() throws Exception {
         final Ignite ignite = grid();
 
@@ -507,6 +523,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testLoggerMarshalling() throws Exception {
         GridMarshallerTestBean inBean = newTestBean(grid().log());
 
@@ -532,6 +549,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If test failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testNodeLocalMarshalling() throws Exception {
         ConcurrentMap<String, String> loc = grid().cluster().nodeLocalMap();
 
@@ -568,6 +586,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testExecutorServiceMarshalling() throws Exception {
         ExecutorService inSrvc = grid().executorService();
 
@@ -599,6 +618,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testKernalContext() throws Exception {
         GridMarshallerTestBean inBean = newTestBean(GridKernalTestUtils.context(grid()));
 
@@ -621,6 +641,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testScheduler() throws Exception {
         IgniteScheduler scheduler = grid().scheduler();
 
@@ -653,6 +674,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCompute() throws Exception {
         IgniteConfiguration cfg = optimize(getConfiguration("g1"));
 
@@ -693,6 +715,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvents() throws Exception {
         IgniteConfiguration cfg = optimize(getConfiguration("g1"));
 
@@ -735,6 +758,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMessaging() throws Exception {
         IgniteConfiguration cfg = optimize(getConfiguration("g1"));
 
@@ -771,6 +795,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServices() throws Exception {
         IgniteConfiguration cfg = optimize(getConfiguration("g1"));
 
@@ -878,6 +903,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadArray() throws Exception {
         byte[] arr = new byte[10];
 
@@ -894,6 +920,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadFully() throws Exception {
         byte[] arr = new byte[10];
 

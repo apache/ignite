@@ -27,10 +27,14 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for the eviction policy JMX beans registered by the kernal.
  */
+@RunWith(JUnit4.class)
 public class GridEvictionPolicyMBeansTest extends GridCommonAbstractTest {
     /** Create test and auto-start the grid */
     public GridEvictionPolicyMBeansTest() {
@@ -99,6 +103,7 @@ public class GridEvictionPolicyMBeansTest extends GridCommonAbstractTest {
     }
 
     /** Check that eviction bean is available */
+    @Test
     public void testEvictionPolicyBeans() throws Exception{
         checkBean("cache1", "org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy", "MaxSize", 100);
         checkBean("cache1", "org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy", "BatchSize", 10);

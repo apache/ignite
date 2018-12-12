@@ -32,10 +32,14 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Abstract restart test.
  */
+@RunWith(JUnit4.class)
 public abstract class CacheAbstractRestartSelfTest extends IgniteCacheAbstractTest {
     /** */
     private volatile CountDownLatch cacheCheckedLatch = new CountDownLatch(1);
@@ -72,6 +76,7 @@ public abstract class CacheAbstractRestartSelfTest extends IgniteCacheAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestart() throws Exception {
         final int clientGrid = gridCount() - 1;
 

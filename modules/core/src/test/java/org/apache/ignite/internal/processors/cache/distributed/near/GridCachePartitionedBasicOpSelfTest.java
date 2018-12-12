@@ -22,6 +22,9 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheBasicOpAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -29,6 +32,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * Simple cache test.
  */
+@RunWith(JUnit4.class)
 public class GridCachePartitionedBasicOpSelfTest extends GridCacheBasicOpAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -48,21 +52,25 @@ public class GridCachePartitionedBasicOpSelfTest extends GridCacheBasicOpAbstrac
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testBasicOps() throws Exception {
         super.testBasicOps();
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testBasicOpsAsync() throws Exception {
         super.testBasicOpsAsync();
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testOptimisticTransaction() throws Exception {
         super.testOptimisticTransaction();
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testPutWithExpiration() throws Exception {
         super.testPutWithExpiration();
     }

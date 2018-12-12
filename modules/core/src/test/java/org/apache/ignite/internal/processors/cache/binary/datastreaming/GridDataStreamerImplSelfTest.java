@@ -41,6 +41,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -48,6 +51,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests for {@code IgniteDataStreamerImpl}.
  */
+@RunWith(JUnit4.class)
 public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -100,6 +104,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddDataFromMap() throws Exception {
         try {
             binaries = false;
@@ -148,6 +153,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddMissingBinary() throws Exception {
         try {
             binaries = true;
@@ -183,6 +189,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddBinaryDataFromMap() throws Exception {
         try {
             binaries = true;
@@ -242,6 +249,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddBinaryCreatedWithBuilder() throws Exception {
         try {
             binaries = true;

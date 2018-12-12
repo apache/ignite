@@ -30,12 +30,16 @@ import junit.framework.TestCase;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.findCycle;
 
 /**
  * DFS test for search cycle in wait-for-graph.
  */
+@RunWith(JUnit4.class)
 public class DepthFirstSearchTest extends TestCase {
     /** Tx 1. */
     private static final GridCacheVersion T1 = new GridCacheVersion(1, 0, 0);
@@ -62,6 +66,7 @@ public class DepthFirstSearchTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoCycle() throws Exception {
         assertNull(findCycle(Collections.<GridCacheVersion, Set<GridCacheVersion>>emptyMap(), T1));
 
@@ -115,6 +120,7 @@ public class DepthFirstSearchTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFindCycle2() throws Exception {
         Map<GridCacheVersion, Set<GridCacheVersion>> wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
             put(T1, Collections.singleton(T2));
@@ -180,6 +186,7 @@ public class DepthFirstSearchTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFindCycle3() throws Exception {
         Map<GridCacheVersion, Set<GridCacheVersion>> wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
             put(T1, Collections.singleton(T2));
@@ -240,6 +247,7 @@ public class DepthFirstSearchTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFindCycle4() throws Exception {
         Map<GridCacheVersion, Set<GridCacheVersion>> wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
             put(T1, Collections.singleton(T2));
@@ -255,6 +263,7 @@ public class DepthFirstSearchTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomNoExceptions() throws Exception {
         int maxNodesCnt = 100;
         int minNodesCnt = 10;

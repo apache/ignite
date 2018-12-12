@@ -33,10 +33,14 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.log4j.Level;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /** */
     public static final String TOPOLOGY_SNAPSHOT = "Topology snapshot";
@@ -86,6 +90,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerLogs() throws Exception {
         MockLogger log = new MockLogger();
 
@@ -97,6 +102,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerDebugLogs() throws Exception {
         MockLogger log = new MockLogger();
 
@@ -138,6 +144,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerAndClientLogs() throws Exception {
         MockLogger log = new MockLogger();
 
@@ -149,6 +156,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerAndClientDebugLogs() throws Exception {
         MockLogger log = new MockLogger();
 
@@ -192,6 +200,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForceServerAndClientLogs() throws Exception {
         MockLogger log = new MockLogger();
 
@@ -203,6 +212,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForceServerAndClientDebugLogs() throws Exception {
         MockLogger log = new MockLogger();
 
