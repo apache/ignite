@@ -144,6 +144,7 @@ public class StripedExecutorTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStarvationDetected() throws Exception {
         final int stripeIdx = 0;
 
