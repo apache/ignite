@@ -2130,13 +2130,27 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 long updSeq = updateSeq.incrementAndGet();
 
                 for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
-                    for (Map.Entry<Integer, GridDhtPartitionState> e0 : e.getValue().entrySet()) {
-                        if (e0.getValue() != LOST)
+                    GridDhtPartitionMap partMap = e.getValue();
+
+                    for (Map.Entry<Integer, GridDhtPartitionState> e0 : partMap.entrySet()) {
+                        GridDhtPartitionState state = e0.getValue();
+
+                        int part = e0.getKey();
+
+                        if (state != LOST)
+                            continue;
+
+                        AffinityAssignment assignment = grp.affinity().cachedAffinity(resTopVer);
+
+                        if (!assignment.idealAssignment().get(part).contains(ctx.discovery().node(e.getKey())))
                             continue;
 
                         e0.setValue(OWNING);
 
-                        GridDhtLocalPartition locPart = localPartition(e0.getKey(), resTopVer, false);
+                        if (!ctx.localNodeId().equals(e.getKey()))
+                            continue;;
+
+                        GridDhtLocalPartition locPart = localPartition(part, resTopVer, false);
 
                         if (locPart != null && locPart.state() == LOST) {
                             boolean marked = locPart.own();

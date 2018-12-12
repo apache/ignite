@@ -3249,8 +3249,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                         Set<String> caches = exchActions.cachesToResetLostPartitions();
 
-                        if (!F.isEmpty(caches))
+                        if (!F.isEmpty(caches)) {
                             resetLostPartitions(caches);
+
+                            cctx.exchange().refreshPartitions();
+                        }
                     }
                 }
                 else if (discoveryCustomMessage instanceof SnapshotDiscoveryMessage
