@@ -130,7 +130,13 @@ public class ReducePartitionMapper {
      * @return Cache context.
      */
     private GridCacheContext<?,?> cacheContext(Integer cacheId) {
-        return ctx.cache().context().cacheContext(cacheId);
+        GridCacheContext<?, ?> cctx = ctx.cache().context().cacheContext(cacheId);
+
+        if (cctx == null)
+            throw new CacheException(String.format("Cache not found on local node (was concurrently destroyed?) " +
+                "[cacheId=%d]", cacheId));
+
+        return cctx;
     }
 
     /**
@@ -139,9 +145,6 @@ public class ReducePartitionMapper {
      */
     private boolean isPreloadingActive(List<Integer> cacheIds) {
         for (Integer cacheId : cacheIds) {
-            if (null == cacheContext(cacheId))
-                throw new CacheException(String.format("Cache not found on local node [cacheId=%d]", cacheId));
-
             if (hasMovingPartitions(cacheContext(cacheId)))
                 return true;
         }
