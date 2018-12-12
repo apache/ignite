@@ -5,6 +5,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.IntStream;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
@@ -26,6 +27,16 @@ public class TxSinglePartitionOnePrimaryOnlyTest extends TxSinglePartitionAbstra
     /** */
     public void testPrimaryPrepareCommitReorder3TxsSkipCheckpointOnNodeStopNoCheckpointBeforeCommit() throws Exception {
         doTestPrimaryPrepareCommitReorder3Txs(true, -1);
+    }
+
+    /** */
+    public void testPrimaryPrepareCommitReorder3TxsNoCheckpointBeforeCommitCheckpointAfterCommit() throws Exception {
+        doTestPrimaryPrepareCommitReorder3Txs(false, 2);
+    }
+
+    /** */
+    public void testPrimaryPrepareCommitReorder3TxsSkipCheckpointOnNodeStopCheckpointAfterCommit() throws Exception {
+        doTestPrimaryPrepareCommitReorder3Txs(true, 2);
     }
 
     /** */
@@ -57,6 +68,15 @@ public class TxSinglePartitionOnePrimaryOnlyTest extends TxSinglePartitionAbstra
             }
 
             @Override protected void onCommitted(IgniteEx node, int idx) {
+                if (idx == checkpointAfterCommitIdx) {
+                    try {
+                        forceCheckpoint();
+                    }
+                    catch (IgniteCheckedException e) {
+                        fail();
+                    }
+                }
+
                 log.info("TX: Committed [node=" + node.name() + ", order=" + idx + ", cntr=" + counter(partId));
             }
 
@@ -85,7 +105,7 @@ public class TxSinglePartitionOnePrimaryOnlyTest extends TxSinglePartitionAbstra
 
         stopGrid(0, skipCheckpointOnStop);
 
-        IgniteEx ex = startGrid(0);
+        startGrid(0);
 
         cntr = counter(partId);
 
