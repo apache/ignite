@@ -21,7 +21,6 @@ import java.io.File;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
@@ -38,8 +37,7 @@ public class GridLog4jLoggingFileTest {
     private File xml;
 
     /** */
-    @Before
-    public void setUp() throws Exception {
+    private void setUp() throws Exception {
         xml = GridTestUtils.resolveIgnitePath("modules/core/src/test/config/log4j-test.xml");
 
         assert xml != null;
@@ -52,7 +50,9 @@ public class GridLog4jLoggingFileTest {
      * Tests log4j logging SPI.
      */
     @Test
-    public void testLog() {
+    public void testLog() throws Exception {
+        setUp();
+
         System.out.println(log.toString());
 
         assertTrue(log.toString().contains("Log4JLogger"));

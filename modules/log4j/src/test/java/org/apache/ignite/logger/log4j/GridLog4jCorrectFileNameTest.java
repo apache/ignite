@@ -31,8 +31,6 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.varia.LevelRangeFilter;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertNotNull;
@@ -47,8 +45,7 @@ public class GridLog4jCorrectFileNameTest {
     private Log4jRollingFileAppender appender;
 
     /** */
-    @Before
-    public void setUp() throws Exception {
+    private void setUp() {
         Logger root = Logger.getRootLogger();
 
         for (Enumeration appenders = root.getAllAppenders(); appenders.hasMoreElements(); ) {
@@ -62,8 +59,7 @@ public class GridLog4jCorrectFileNameTest {
     }
 
     /** */
-    @After
-    public void tearDown() {
+    private void tearDown() {
         if (appender != null) {
             Logger.getRootLogger().removeAppender(Log4jRollingFileAppender.class.getSimpleName());
 
@@ -78,8 +74,10 @@ public class GridLog4jCorrectFileNameTest {
      */
     @Test
     public void testLogFilesTwoNodes() throws Exception {
+        setUp();
         checkOneNode(0);
         checkOneNode(1);
+        tearDown();
     }
 
     /**
@@ -110,9 +108,8 @@ public class GridLog4jCorrectFileNameTest {
      *
      * @param igniteInstanceName Ignite instance name.
      * @return Grid configuration.
-     * @throws Exception If error occurred.
      */
-    private static IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+    private static IgniteConfiguration getConfiguration(String igniteInstanceName) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setIgniteInstanceName(igniteInstanceName);
@@ -136,9 +133,8 @@ public class GridLog4jCorrectFileNameTest {
      * Creates new GridLog4jRollingFileAppender.
      *
      * @return GridLog4jRollingFileAppender.
-     * @throws Exception If error occurred.
      */
-    private static Log4jRollingFileAppender createAppender() throws Exception {
+    private static Log4jRollingFileAppender createAppender() {
         Log4jRollingFileAppender appender = new Log4jRollingFileAppender();
 
         appender.setLayout(new PatternLayout("[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"));
