@@ -217,11 +217,21 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
      */
     public <M1 extends Model<IS, IA>> StackedDatasetTrainer<IS, IA, O, AM, L> addTrainer(
         DatasetTrainer<M1, L> trainer) {
+        // Unsafely coerce DatasetTrainer<M1, L> to Dataset<Model<IS, IA>, L>, but we fully control
+        // usages of this unsafely coerced object, on the other hand this makes work with
+        // submodelTrainers easier.
         submodelsTrainers.add(new DatasetTrainer<Model<IS, IA>, L>() {
             /** {@inheritDoc} */
             @Override public <K, V> Model<IS, IA> fit(DatasetBuilder<K, V> datasetBuilder,
                 IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
                 return trainer.fit(datasetBuilder, featureExtractor, lbExtractor);
+            }
+
+            /** {@inheritDoc} */
+            @Override public <K, V> Model<IS, IA> update(Model<IS, IA> mdl, DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+                DatasetTrainer<Model<IS, IA>, L> trainer1 = (DatasetTrainer<Model<IS, IA>, L>)trainer;
+                return trainer1.update(mdl, datasetBuilder, featureExtractor, lbExtractor);
             }
 
             /** {@inheritDoc} */
@@ -233,13 +243,6 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
             @Override protected <K, V> Model<IS, IA> updateModel(Model<IS, IA> mdl, DatasetBuilder<K, V> datasetBuilder,
                 IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
                 return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public <K, V> Model<IS, IA> update(Model<IS, IA> mdl, DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-                DatasetTrainer<Model<IS, IA>, L> trainer1 = (DatasetTrainer<Model<IS, IA>, L>)trainer;
-                return trainer1.update(mdl, datasetBuilder, featureExtractor, lbExtractor);
             }
         });
 
