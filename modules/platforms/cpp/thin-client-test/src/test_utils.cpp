@@ -15,11 +15,9 @@
  * limitations under the License.
  */
 
-#define BOOST_TEST_MAIN
+#define BOOST_TEST_MODULE thin_client_test
 
 #include <boost/test/unit_test.hpp>
-
-#define BOOST_TEST_MAIN
 
 #include <cassert>
 
