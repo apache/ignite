@@ -42,25 +42,31 @@ public class CacheObjectContext implements CacheObjectValueContext {
     /** */
     private boolean addDepInfo;
 
+    /** Boinary enabled flag. */
+    private boolean binaryEnabled;
+
     /**
      * @param kernalCtx Kernal context.
      * @param dfltAffMapper Default affinity mapper.
      * @param cpyOnGet Copy on get flag.
      * @param storeVal {@code True} if should store unmarshalled value in cache.
      * @param addDepInfo {@code true} if deployment info should be associated with the objects of this cache.
+     * @param binaryEnabled Binary enabled flag.
      */
     public CacheObjectContext(GridKernalContext kernalCtx,
         String cacheName,
         AffinityKeyMapper dfltAffMapper,
         boolean cpyOnGet,
         boolean storeVal,
-        boolean addDepInfo) {
+        boolean addDepInfo,
+        boolean binaryEnabled) {
         this.kernalCtx = kernalCtx;
         this.cacheName = cacheName;
         this.dfltAffMapper = dfltAffMapper;
         this.cpyOnGet = cpyOnGet;
         this.storeVal = storeVal;
         this.addDepInfo = addDepInfo;
+        this.binaryEnabled = binaryEnabled;
     }
 
     /**
@@ -99,7 +105,7 @@ public class CacheObjectContext implements CacheObjectValueContext {
 
     /** {@inheritDoc} */
     @Override public boolean binaryEnabled() {
-        return false;
+        return binaryEnabled;
     }
 
     /**

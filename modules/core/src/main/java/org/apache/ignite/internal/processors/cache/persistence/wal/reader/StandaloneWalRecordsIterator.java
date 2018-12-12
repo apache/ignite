@@ -401,7 +401,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         IgniteCacheObjectProcessor processor
     ) throws IgniteCheckedException {
         final CacheObjectContext fakeCacheObjCtx = new CacheObjectContext(
-            kernalCtx, null, null, false, false, false);
+            kernalCtx, null, null, false, false, false, false);
 
         final List<DataEntry> entries = dataRec.writeEntries();
         final List<DataEntry> postProcessedEntries = new ArrayList<>(entries.size());

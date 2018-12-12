@@ -37,12 +37,12 @@ public class IgniteBinaryImpl implements IgniteBinary {
     private GridKernalContext ctx;
 
     /** */
-    private CacheObjectBinaryProcessor proc;
+    private IgniteCacheObjectProcessor proc;
 
     /**
      * @param ctx Context.
      */
-    public IgniteBinaryImpl(GridKernalContext ctx, CacheObjectBinaryProcessor proc) {
+    public IgniteBinaryImpl(GridKernalContext ctx, IgniteCacheObjectProcessor proc) {
         this.ctx = ctx;
 
         this.proc = proc;

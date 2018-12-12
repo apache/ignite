@@ -19,10 +19,13 @@ package org.apache.ignite.internal.processors.cache.binary;
 
 import java.io.File;
 import java.io.Serializable;
+import java.math.BigDecimal;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -67,14 +70,25 @@ import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
+import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
+import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessorImpl;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectByteArrayImpl;
+import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectImpl;
+import org.apache.ignite.internal.processors.cacheobject.UserKeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.MutableSingletonList;
@@ -90,6 +104,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
@@ -108,8 +123,10 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
 /**
  * Binary processor implementation.
  */
-public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorImpl implements
-    CacheObjectBinaryProcessor {
+public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter implements IgniteCacheObjectProcessor {
+    /** Immutable classes. */
+    private static final Collection<Class<?>> IMMUTABLE_CLS = new HashSet<>();
+
     /** */
     private volatile boolean discoveryStarted;
 
@@ -139,7 +156,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     private long waitSchemaTimeout = IgniteSystemProperties.getLong(IGNITE_WAIT_SCHEMA_UPDATE, 30_000);
 
     /** For tests. */
-    public static boolean useTestBinaryCtx = false;
+    @SuppressWarnings("PublicField")
+    public static boolean useTestBinaryCtx;
 
     /** */
     @GridToStringExclude
@@ -154,9 +172,28 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** Cached affinity key field names. */
     private final ConcurrentHashMap<Integer, T1<BinaryField>> affKeyFields = new ConcurrentHashMap<>();
 
+    /*
+     * Static initializer
+     */
+    static {
+        IMMUTABLE_CLS.add(String.class);
+        IMMUTABLE_CLS.add(Boolean.class);
+        IMMUTABLE_CLS.add(Byte.class);
+        IMMUTABLE_CLS.add(Short.class);
+        IMMUTABLE_CLS.add(Character.class);
+        IMMUTABLE_CLS.add(Integer.class);
+        IMMUTABLE_CLS.add(Long.class);
+        IMMUTABLE_CLS.add(Float.class);
+        IMMUTABLE_CLS.add(Double.class);
+        IMMUTABLE_CLS.add(UUID.class);
+        IMMUTABLE_CLS.add(IgniteUuid.class);
+        IMMUTABLE_CLS.add(BigDecimal.class);
+    }
+
     /**
      * @param ctx Kernal context.
      */
+    @SuppressWarnings("deprecation")
     public CacheObjectBinaryProcessorImpl(GridKernalContext ctx) {
         super(ctx);
 
@@ -277,7 +314,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
         this.reconnectFut = reconnectFut;
 
         if (transport != null)
@@ -291,7 +328,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
-        this.reconnectFut = null;
+        reconnectFut = null;
 
         return super.onReconnected(clusterRestarted);
     }
@@ -304,11 +341,31 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public CacheObject prepareForCache(@Nullable CacheObject obj, GridCacheContext cctx) {
+        if (obj == null)
+            return null;
+
+        return obj.prepareForCache(cctx.cacheObjectContext());
+    }
+
+    /** {@inheritDoc} */
     @Override public int typeId(String typeName) {
         if (binaryCtx == null)
-            return super.typeId(typeName);
+            return 0;
 
         return binaryCtx.typeId(typeName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean immutable(Object obj) {
+        assert obj != null;
+
+        return IMMUTABLE_CLS.contains(obj.getClass());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onContinuousProcessorStarted(GridKernalContext ctx) {
+        // No-op.
     }
 
     /**
@@ -462,7 +519,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Override public void addMeta(final int typeId, final BinaryType newMeta, boolean failIfUnregistered) throws BinaryObjectException {
+    @Override public void addMeta(final int typeId, final BinaryType newMeta, boolean failIfUnregistered)
+        throws BinaryObjectException {
         assert newMeta != null;
         assert newMeta instanceof BinaryTypeImpl;
 
@@ -827,7 +885,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             return field;
         }
         else {
-            affKeyFields.putIfAbsent(typeId, new T1<BinaryField>(null));
+            affKeyFields.putIfAbsent(typeId, new T1<>(null));
 
             return null;
         }
@@ -846,7 +904,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         if (obj == null)
             return null;
 
-        return isBinaryObject(obj) ? ((BinaryObject)obj).field(fieldName) : super.field(obj, fieldName);
+        return isBinaryObject(obj) ? ((BinaryObject)obj).field(fieldName) : null;
     }
 
     /** {@inheritDoc} */
@@ -862,20 +920,25 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObjectContext contextForCache(CacheConfiguration cfg) throws IgniteCheckedException {
-        assert cfg != null;
+    @Override public CacheObjectContext contextForCache(CacheConfiguration ccfg) throws IgniteCheckedException {
+        assert ccfg != null;
 
-        boolean binaryEnabled = marsh instanceof BinaryMarshaller && !GridCacheUtils.isSystemCache(cfg.getName()) &&
-            !GridCacheUtils.isIgfsCache(ctx.config(), cfg.getName());
+        boolean storeVal = !ccfg.isCopyOnRead() || (!isBinaryEnabled(ccfg) &&
+            (QueryUtils.isEnabled(ccfg) || ctx.config().isPeerClassLoadingEnabled()));
 
-        CacheObjectContext ctx0 = super.contextForCache(cfg);
+        boolean binaryEnabled = marsh instanceof BinaryMarshaller && !GridCacheUtils.isSystemCache(ccfg.getName()) &&
+            !GridCacheUtils.isIgfsCache(ctx.config(), ccfg.getName());
 
-        CacheObjectContext res = new CacheObjectBinaryContext(ctx,
-            cfg,
-            ctx0.copyOnGet(),
-            ctx0.storeValue(),
-            binaryEnabled,
-            ctx0.addDeploymentInfo());
+        CacheObjectContext res = new CacheObjectContext(ctx,
+            ccfg.getName(),
+            // TODO: Set proper mapper.
+            binaryEnabled ? new CacheDefaultBinaryAffinityKeyMapper(ccfg.getKeyConfiguration()) :
+                new GridCacheDefaultAffinityKeyMapper(),
+            ccfg.isCopyOnRead(),
+            storeVal,
+            ctx.config().isPeerClassLoadingEnabled() && !isBinaryEnabled(ccfg),
+            binaryEnabled
+        );
 
         ctx.resource().injectGeneric(res.defaultAffMapper());
 
@@ -885,7 +948,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** {@inheritDoc} */
     @Override public byte[] marshal(CacheObjectValueContext ctx, Object val) throws IgniteCheckedException {
         if (!ctx.binaryEnabled() || binaryMarsh == null)
-            return super.marshal(ctx, val);
+            return CU.marshal(ctx.kernalContext().cache().context(), ctx.addDeploymentInfo(), val);
 
         byte[] arr = binaryMarsh.marshal(val, false);
 
@@ -898,7 +961,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     @Override public Object unmarshal(CacheObjectValueContext ctx, byte[] bytes, ClassLoader clsLdr)
         throws IgniteCheckedException {
         if (!ctx.binaryEnabled() || binaryMarsh == null)
-            return super.unmarshal(ctx, bytes, clsLdr);
+            return U.unmarshal(ctx.kernalContext(), bytes, U.resolveClassLoader(clsLdr, ctx.kernalContext().config()));
 
         return binaryMarsh.unmarshal(bytes, clsLdr);
     }
@@ -906,8 +969,19 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** {@inheritDoc} */
     @Override public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, @Nullable GridCacheContext cctx,
         Object obj, boolean userObj) {
-        if (!ctx.binaryEnabled())
-            return super.toCacheKeyObject(ctx, cctx, obj, userObj);
+        if (!ctx.binaryEnabled()) {
+            if (obj instanceof KeyCacheObject) {
+                KeyCacheObject key = (KeyCacheObject)obj;
+
+                if (key.partition() == -1)
+                    // Assume all KeyCacheObjects except BinaryObject can not be reused for another cache.
+                    key.partition(partition(ctx, cctx, key));
+
+                return (KeyCacheObject)obj;
+            }
+
+            return toCacheKeyObject0(ctx, cctx, obj, userObj);
+        }
 
         if (obj instanceof KeyCacheObject) {
             KeyCacheObject key = (KeyCacheObject)obj;
@@ -926,7 +1000,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         obj = toBinary(obj, false);
 
         if (obj instanceof BinaryObjectImpl) {
-            ((BinaryObjectImpl)obj).partition(partition(ctx, cctx, obj));
+            ((KeyCacheObject) obj).partition(partition(ctx, cctx, obj));
 
             return (KeyCacheObject)obj;
         }
@@ -934,11 +1008,33 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         return toCacheKeyObject0(ctx, cctx, obj, userObj);
     }
 
+    /**
+     * @param obj Object.
+     * @param userObj If {@code true} then given object is object provided by user and should be copied
+     *        before stored in cache.
+     * @return Key cache object.
+     */
+    protected KeyCacheObject toCacheKeyObject0(CacheObjectContext ctx,
+        @Nullable GridCacheContext cctx,
+        Object obj,
+        boolean userObj) {
+        int part = partition(ctx, cctx, obj);
+
+        if (!userObj)
+            return new KeyCacheObjectImpl(obj, null, part);
+
+        return new UserKeyCacheObjectImpl(obj, part);
+    }
+
     /** {@inheritDoc} */
     @Nullable @Override public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj,
         boolean userObj, boolean failIfUnregistered) {
-        if (!ctx.binaryEnabled())
-            return super.toCacheObject(ctx, obj, userObj, failIfUnregistered);
+        if (!ctx.binaryEnabled()) {
+            if (obj == null || obj instanceof CacheObject)
+                return (CacheObject)obj;
+
+            return toCacheObject0(obj, userObj);
+        }
 
         if (obj == null || obj instanceof CacheObject)
             return (CacheObject)obj;
@@ -951,23 +1047,137 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         return toCacheObject0(obj, userObj);
     }
 
+    /**
+     * @param obj Object.
+     * @param userObj If {@code true} then given object is object provided by user and should be copied
+     *        before stored in cache.
+     * @return Cache object.
+     */
+    private CacheObject toCacheObject0(@Nullable Object obj, boolean userObj) {
+        assert obj != null;
+
+        if (obj instanceof byte[]) {
+            if (!userObj)
+                return new CacheObjectByteArrayImpl((byte[])obj);
+
+            return new UserCacheObjectByteArrayImpl((byte[])obj);
+        }
+
+        if (!userObj)
+            return new CacheObjectImpl(obj, null);
+
+        return new UserCacheObjectImpl(obj, null);
+    }
+
+    /**
+     * @param ctx Cache objects context.
+     * @param cctx Cache context.
+     * @param obj Object.
+     * @return Object partition.
+     */
+    private int partition(CacheObjectContext ctx, @Nullable GridCacheContext cctx, Object obj) {
+        try {
+            return cctx != null ?
+                cctx.affinity().partition(obj, false) :
+                ctx.kernalContext().affinity().partition0(ctx.cacheName(), obj, null);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to get partition", e);
+
+            return  -1;
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public CacheObject toCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) {
-        if (type == BinaryObjectImpl.TYPE_BINARY)
-            return new BinaryObjectImpl(binaryContext(), bytes, 0);
-        else if (type == BinaryObjectImpl.TYPE_BINARY_ENUM)
-            return new BinaryEnumObjectImpl(binaryContext(), bytes);
+        switch (type) {
+            case BinaryObjectImpl.TYPE_BINARY:
+                return new BinaryObjectImpl(binaryContext(), bytes, 0);
 
-        return super.toCacheObject(ctx, type, bytes);
+            case BinaryObjectImpl.TYPE_BINARY_ENUM:
+                return new BinaryEnumObjectImpl(binaryContext(), bytes);
+
+            case CacheObject.TYPE_BYTE_ARR:
+                return new CacheObjectByteArrayImpl(bytes);
+
+            case CacheObject.TYPE_REGULAR:
+                return new CacheObjectImpl(null, bytes);
+        }
+
+        throw new IllegalArgumentException("Invalid object type: " + type);
     }
 
     /** {@inheritDoc} */
     @Override public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, byte type, byte[] bytes)
         throws IgniteCheckedException {
-        if (type == BinaryObjectImpl.TYPE_BINARY)
-            return new BinaryObjectImpl(binaryContext(), bytes, 0);
+        switch (type) {
+            case BinaryObjectImpl.TYPE_BINARY:
+                return new BinaryObjectImpl(binaryContext(), bytes, 0);
 
-        return super.toKeyCacheObject(ctx, type, bytes);
+            case CacheObject.TYPE_BYTE_ARR:
+                throw new IllegalArgumentException("Byte arrays cannot be used as cache keys.");
+
+            case CacheObject.TYPE_REGULAR:
+                return new KeyCacheObjectImpl(ctx.kernalContext().cacheObjects().unmarshal(ctx, bytes, null), bytes, -1);
+        }
+
+        throw new IllegalArgumentException("Invalid object type: " + type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObject toCacheObject(CacheObjectContext ctx, ByteBuffer buf) {
+        int len = buf.getInt();
+
+        assert len >= 0 : len;
+
+        byte type = buf.get();
+
+        byte[] data = new byte[len];
+
+        buf.get(data);
+
+        return toCacheObject(ctx, type, data);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IncompleteCacheObject toCacheObject(CacheObjectContext ctx, ByteBuffer buf,
+        @Nullable IncompleteCacheObject incompleteObj) {
+        if (incompleteObj == null)
+            incompleteObj = new IncompleteCacheObject(buf);
+
+        if (incompleteObj.isReady())
+            return incompleteObj;
+
+        incompleteObj.readData(buf);
+
+        if (incompleteObj.isReady())
+            incompleteObj.object(toCacheObject(ctx, incompleteObj.type(), incompleteObj.data()));
+
+        return incompleteObj;
+    }
+
+    // TODO: DUplicates?
+    /** {@inheritDoc} */
+    @Override public IncompleteCacheObject toKeyCacheObject(CacheObjectContext ctx, ByteBuffer buf,
+        @Nullable IncompleteCacheObject incompleteObj) throws IgniteCheckedException {
+        if (incompleteObj == null)
+            incompleteObj = new IncompleteCacheObject(buf);
+
+        if (incompleteObj.isReady())
+            return incompleteObj;
+
+        incompleteObj.readData(buf);
+
+        if (incompleteObj.isReady())
+            incompleteObj.object(toKeyCacheObject(ctx, incompleteObj.type(), incompleteObj.data()));
+
+        return incompleteObj;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj,
+        boolean userObj) {
+        return toCacheObject(ctx, obj, userObj, false);
     }
 
     /** {@inheritDoc} */
@@ -1177,6 +1387,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** */
+    @SuppressWarnings("PublicInnerClass")
     public static class TestBinaryContext extends BinaryContext {
         /** */
         private List<TestBinaryContextListener> listeners;
