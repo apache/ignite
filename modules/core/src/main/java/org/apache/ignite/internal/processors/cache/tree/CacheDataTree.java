@@ -124,7 +124,6 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     private GridCursor<CacheDataRow> scanDataPages(CacheDataRowAdapter.RowData rowData) throws IgniteCheckedException {
         assert rowData != null;
         assert grp.persistenceEnabled();
-        assert !grp.sharedGroup();
 
         int partId = rowStore.getPartitionId();
         GridCacheSharedContext shared = grp.shared();

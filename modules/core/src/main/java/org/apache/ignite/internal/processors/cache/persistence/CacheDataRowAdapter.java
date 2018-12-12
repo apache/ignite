@@ -294,7 +294,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         incomplete = readFragment(sharedCtx, coctx, buf, keyOnly, readCacheId, incomplete);
 
-        incomplete.setNextLink(nextLink);
+        if (incomplete != null)
+            incomplete.setNextLink(nextLink);
 
         return incomplete;
     }
