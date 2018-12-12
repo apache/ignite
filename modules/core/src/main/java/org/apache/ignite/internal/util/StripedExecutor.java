@@ -38,7 +38,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -48,14 +47,10 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_STRIPED_POOL_STARVATION_THRESHOLD;
-
 /**
  * Striped executor.
  */
 public class StripedExecutor implements ExecutorService {
-    /** Default threshold for starvation check */
-    private static final long DEFAULT_THRESHOLD = 30 * 1000;
 
     /** Stripes. */
     private final Stripe[] stripes;
@@ -80,9 +75,10 @@ public class StripedExecutor implements ExecutorService {
         String poolName,
         final IgniteLogger log,
         IgniteInClosure<Throwable> errHnd,
-        GridWorkerListener gridWorkerLsnr
+        GridWorkerListener gridWorkerLsnr,
+        long failureDetectionTimeout
     ) {
-        this(cnt, igniteInstanceName, poolName, log, errHnd, false, gridWorkerLsnr);
+        this(cnt, igniteInstanceName, poolName, log, errHnd, false, gridWorkerLsnr, failureDetectionTimeout);
     }
 
     /**
@@ -101,7 +97,8 @@ public class StripedExecutor implements ExecutorService {
         final IgniteLogger log,
         IgniteInClosure<Throwable> errHnd,
         boolean stealTasks,
-        GridWorkerListener gridWorkerLsnr
+        GridWorkerListener gridWorkerLsnr,
+        long failureDetectionTimeout
     ) {
         A.ensure(cnt > 0, "cnt > 0");
 
@@ -109,8 +106,7 @@ public class StripedExecutor implements ExecutorService {
 
         stripes = new Stripe[cnt];
 
-        final String thresholdStr = IgniteSystemProperties.getString(IGNITE_STRIPED_POOL_STARVATION_THRESHOLD);
-        threshold = F.isEmpty(thresholdStr) ? DEFAULT_THRESHOLD : Long.parseLong(thresholdStr);
+        threshold = failureDetectionTimeout;
 
         this.log = log;
 
@@ -143,28 +139,21 @@ public class StripedExecutor implements ExecutorService {
     }
 
     /**
-     * Checks starvation in striped pool.
-     */
-    public void checkStarvation() {
-        isStarvationDetected();
-    }
-
-    /**
      * Check starvation in striped pool. Maybe too verbose
      * but this is needed to faster debug possible issues.
      *
      * @return Flag representing presence of possible starvation in striped pool.
      */
     public boolean isStarvationDetected() {
-        boolean retVal = false;
+        boolean starvationDetected = false;
 
         for (Stripe stripe : stripes) {
             boolean active = stripe.active;
 
             long lastStartedTs = stripe.lastStartedTs;
 
-            if (lastStartedTs + threshold < U.currentTimeMillis() && active) {
-                retVal = true;
+            if (active && lastStartedTs + threshold < U.currentTimeMillis()) {
+                starvationDetected = true;
                 boolean deadlockPresent = U.deadlockPresent();
 
                 GridStringBuilder sb = new GridStringBuilder();
@@ -184,7 +173,7 @@ public class StripedExecutor implements ExecutorService {
                 U.warn(log, msg);
             }
         }
-        return retVal;
+        return starvationDetected;
     }
 
     /**

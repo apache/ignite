@@ -40,7 +40,7 @@ public class StripedExecutorMXBeanAdapter implements StripedExecutorMXBean {
 
     /** {@inheritDoc} */
     @Override public void checkStarvation() {
-        exec.checkStarvation();
+        exec.isStarvationDetected();
     }
 
     /** {@inheritDoc} */
