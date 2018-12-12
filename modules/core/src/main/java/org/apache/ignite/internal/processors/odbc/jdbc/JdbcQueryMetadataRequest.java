@@ -39,9 +39,10 @@ public class JdbcQueryMetadataRequest extends JdbcRequest {
 
     /**
      * @param cursorId Cursor ID.
+     * @param initialReqId The ID of the initial request.
      */
-    public JdbcQueryMetadataRequest(long cursorId) {
-        super(QRY_META);
+    public JdbcQueryMetadataRequest(long cursorId, long initialReqId) {
+        super(QRY_META, initialReqId);
 
         this.cursorId = cursorId;
     }

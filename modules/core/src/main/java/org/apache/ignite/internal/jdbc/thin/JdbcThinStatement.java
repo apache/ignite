@@ -183,13 +183,13 @@ public class JdbcThinStatement implements Statement {
         lock.lock();
 
         try {
+            closeResults();
+
             canceled = false;
 
             SqlCommand nativeCmd = null;
 
             ensureAlive();
-
-            closeResults();
 
             if (sql == null || sql.isEmpty())
                 throw new SQLException("SQL query is empty.");
@@ -237,9 +237,9 @@ public class JdbcThinStatement implements Statement {
             if (res0 instanceof JdbcQueryExecuteResult) {
                 JdbcQueryExecuteResult res = (JdbcQueryExecuteResult)res0;
 
-                resultSets = Collections.singletonList(new JdbcThinResultSet(this, res.cursorId(), pageSize,
-                    res.last(), res.items(), res.isQuery(), conn.autoCloseServerCursor(), res.updateCount(),
-                    closeOnCompletion));
+                resultSets = Collections.singletonList(new JdbcThinResultSet(this, res.cursorId(),
+                    res.initialReqId(), pageSize, res.last(), res.items(), res.isQuery(), conn.autoCloseServerCursor(),
+                    res.updateCount(), closeOnCompletion));
             }
             else if (res0 instanceof JdbcQueryExecuteMultipleStatementsResult) {
                 JdbcQueryExecuteMultipleStatementsResult res = (JdbcQueryExecuteMultipleStatementsResult)res0;
@@ -257,13 +257,13 @@ public class JdbcThinStatement implements Statement {
                         if (firstRes) {
                             firstRes = false;
 
-                            resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize,
-                                res.isLast(), res.items(), true,
+                            resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), res.initialReqId(),
+                                pageSize, res.isLast(), res.items(), true,
                                 conn.autoCloseServerCursor(), -1, closeOnCompletion));
                         }
                         else {
-                            resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize,
-                                false, null, true,
+                            resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), res.initialReqId(),
+                                pageSize,false, null, true,
                                 conn.autoCloseServerCursor(), -1, closeOnCompletion));
                         }
                     }
@@ -295,7 +295,7 @@ public class JdbcThinStatement implements Statement {
      * @return Result set for given update counter.
      */
     private JdbcThinResultSet resultSetForUpdate(long cnt) {
-        return new JdbcThinResultSet(this, -1, pageSize,
+        return new JdbcThinResultSet(this, -1, -1, pageSize,
             true, Collections.<List<Object>>emptyList(), false,
             conn.autoCloseServerCursor(), cnt, closeOnCompletion);
     }
@@ -701,11 +701,11 @@ public class JdbcThinStatement implements Statement {
         lock.lock();
 
         try {
+            closeResults();
+
             canceled = false;
 
             ensureAlive();
-
-            closeResults();
 
             checkStatementBatchEmpty();
 

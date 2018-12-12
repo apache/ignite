@@ -83,6 +83,9 @@ public class JdbcThinResultSet implements ResultSet {
     /** Cursor ID. */
     private final Long cursorId;
 
+    /** Initial request ID. */
+    private final Long initialReqId;
+
     /** Metadata. */
     private List<JdbcColumnMeta> meta;
 
@@ -141,6 +144,7 @@ public class JdbcThinResultSet implements ResultSet {
         stmt = null;
         fetchSize = 0;
         cursorId = -1L;
+        initialReqId = -1L;
         finished = true;
         isQuery = true;
         updCnt = -1;
@@ -161,6 +165,7 @@ public class JdbcThinResultSet implements ResultSet {
      *
      * @param stmt Statement.
      * @param cursorId Cursor ID.
+     * @param initialReqId Initial request ID.
      * @param fetchSize Fetch size.
      * @param finished Finished flag.
      * @param rows Rows.
@@ -169,13 +174,14 @@ public class JdbcThinResultSet implements ResultSet {
      * @param updCnt Update count.
      * @param closeStmt Close statement on the result set close.
      */
-    JdbcThinResultSet(JdbcThinStatement stmt, long cursorId, int fetchSize, boolean finished,
+    JdbcThinResultSet(JdbcThinStatement stmt, long cursorId, long initialReqId, int fetchSize, boolean finished,
         List<List<Object>> rows, boolean isQuery, boolean autoClose, long updCnt, boolean closeStmt) {
         assert stmt != null;
         assert fetchSize > 0;
 
         this.stmt = stmt;
         this.cursorId = cursorId;
+        this.initialReqId = initialReqId;
         this.fetchSize = fetchSize;
         this.finished = finished;
         this.isQuery = isQuery;
@@ -197,7 +203,8 @@ public class JdbcThinResultSet implements ResultSet {
         ensureAlive();
 
         if ((rowsIter == null || !rowsIter.hasNext()) && !finished) {
-            JdbcQueryFetchResult res = stmt.conn.sendRequest(new JdbcQueryFetchRequest(cursorId, fetchSize));
+            JdbcQueryFetchResult res = stmt.conn.sendRequest(new JdbcQueryFetchRequest(cursorId, initialReqId,
+                fetchSize));
 
             rows = res.items();
             finished = res.last();
@@ -241,7 +248,7 @@ public class JdbcThinResultSet implements ResultSet {
 
         try {
             if (!(stmt != null && stmt.cancelled()) && (!finished || (isQuery && !autoClose)))
-                stmt.conn.sendRequest(new JdbcQueryCloseRequest(cursorId));
+                stmt.conn.sendRequest(new JdbcQueryCloseRequest(cursorId, initialReqId));
         }
         finally {
             closed = true;
@@ -1884,7 +1891,7 @@ public class JdbcThinResultSet implements ResultSet {
             throw new SQLException("Server cursor is already closed.", SqlStateCode.INVALID_CURSOR_STATE);
 
         if (!metaInit) {
-          JdbcQueryMetadataResult res = stmt.conn.sendRequest(new JdbcQueryMetadataRequest(cursorId));
+          JdbcQueryMetadataResult res = stmt.conn.sendRequest(new JdbcQueryMetadataRequest(cursorId, initialReqId));
 
            meta = res.meta();
 

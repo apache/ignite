@@ -42,10 +42,11 @@ public class JdbcQueryFetchRequest extends JdbcRequest {
 
     /**
      * @param cursorId Cursor ID.
+     * @param initialReqId The ID of the initial request.
      * @param pageSize Fetch size.
      */
-    public JdbcQueryFetchRequest(long cursorId, int pageSize) {
-        super(QRY_FETCH);
+    public JdbcQueryFetchRequest(long cursorId, long initialReqId, int pageSize) {
+        super(QRY_FETCH, initialReqId);
 
         this.cursorId = cursorId;
         this.pageSize = pageSize;

@@ -23,6 +23,8 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_8_0;
+
 /**
  * JDBC response result.
  */
@@ -78,6 +80,9 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /** Success status. */
     private byte type;
 
+    /** Initial request ID. */
+    private long initialReqId;
+
     /**
      * Constructs result.
      *
@@ -85,18 +90,35 @@ public class JdbcResult implements JdbcRawBinarylizable {
      */
     public JdbcResult(byte type) {
         this.type = type;
+        this.initialReqId = -1;
+    }
+
+    /**
+     * Constructs result.
+     *
+     * @param type Type of results.
+     * @param initialReqId Initial request ID.
+     */
+    public JdbcResult(byte type, long initialReqId) {
+        this.type = type;
+        this.initialReqId = initialReqId;
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer,
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
         writer.writeByte(type);
+
+        if (ver.compareTo(VER_2_8_0) >= 0)
+            writer.writeLong(initialReqId);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader,
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
-        // No-op.
+
+        if (ver.compareTo(VER_2_8_0) >= 0)
+            initialReqId = reader.readLong();
     }
 
     /**
@@ -198,5 +220,12 @@ public class JdbcResult implements JdbcRawBinarylizable {
         res.readBinary(reader, ver);
 
         return res;
+    }
+
+    /**
+     * @return Initial request ID.
+     */
+    public long initialReqId() {
+        return initialReqId;
     }
 }

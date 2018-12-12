@@ -130,7 +130,6 @@ public class JdbcBulkLoadProcessor extends JdbcCursor {
      * Closes the underlying objects.
      * Currently we don't handle normal termination vs. abort.
      */
-    // TODO: Close is not thread safe.
     @Override public void close() throws IOException {
         try {
             processor.close();

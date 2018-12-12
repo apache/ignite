@@ -306,7 +306,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void registerRequest(long reqId) {
+    @Override public void registerRequest(long reqId, int cmdType) {
         // No-op.
     }
 

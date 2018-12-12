@@ -58,8 +58,9 @@ public interface ClientListenerRequestHandler {
     /**
      * Registers request for futher cancellation if any.
      * @param reqId Request Id.
+     * @param cmdType Command Type.
      */
-    void registerRequest(long reqId);
+    void registerRequest(long reqId, int cmdType);
 
     /**
      * Try to unregister request.

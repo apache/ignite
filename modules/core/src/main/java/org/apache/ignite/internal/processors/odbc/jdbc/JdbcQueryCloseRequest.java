@@ -38,9 +38,10 @@ public class JdbcQueryCloseRequest extends JdbcRequest {
 
     /**
      * @param cursorId Cursor ID.
+     * @param initialReqId The ID of the initial request.
      */
-    public JdbcQueryCloseRequest(long cursorId) {
-        super(QRY_CLOSE);
+    public JdbcQueryCloseRequest(long cursorId, long initialReqId) {
+        super(QRY_CLOSE, initialReqId);
 
         this.cursorId = cursorId;
     }

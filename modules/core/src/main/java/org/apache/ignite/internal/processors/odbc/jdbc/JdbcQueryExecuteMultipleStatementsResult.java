@@ -47,13 +47,15 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
     }
 
     /**
+     * @param initialReqId Initial request ID.
      * @param results Statements results.
      * @param items Query result rows for the first query.
      * @param last Flag indicating the query has no unfetched results for the first query.
      */
-    public JdbcQueryExecuteMultipleStatementsResult(List<JdbcResultInfo> results,
+    public JdbcQueryExecuteMultipleStatementsResult(long initialReqId, List<JdbcResultInfo> results,
         List<List<Object>> items, boolean last) {
-        super(QRY_EXEC_MULT);
+        super(QRY_EXEC_MULT, initialReqId);
+
         this.results = results;
         this.items = items;
         this.last = last;

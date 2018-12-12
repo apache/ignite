@@ -32,6 +32,8 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -55,6 +57,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryGetColumnsMetaRequest;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -77,6 +80,7 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchR
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_3_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_4_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_7_0;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_8_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC_ORDERED;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BULK_LOAD_BATCH;
@@ -123,8 +127,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Ordered batches mutex. */
     private final Object orderedBatchesMux = new Object();
 
-    /** Cancellation processing mutex. */
-    private final Object cancellationProcessingMux = new Object();
+    /** Request mutex. */
+    private final Object reqMux = new Object();
 
     /** Response sender. */
     private final ClientListenerResponseSender sender;
@@ -142,7 +146,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private AuthorizationContext actx;
 
     /** Register that keeps non-cancelled requests. */
-    private Set<Long> requestRegister = ConcurrentHashMap.newKeySet();
+    private Map<Long, JdbcQueryDescriptor> reqRegister = new HashMap<>();
 
     /**
      * Constructor.
@@ -226,15 +230,23 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void registerRequest(long reqId) {
-        if (reqId != 0)
-            requestRegister.add(reqId);
+    @Override public void registerRequest(long reqId, int cmdType) {
+        assert reqId != 0;
+
+        synchronized (reqMux) {
+            if (isCancellationSupported() && (cmdType == QRY_EXEC || cmdType == BATCH_EXEC))
+                reqRegister.put(reqId, null);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void unregisterRequest(long reqId) {
-        if (reqId != 0)
-            requestRegister.remove(reqId);
+        assert reqId != 0;
+
+        synchronized (reqMux) {
+            if (isCancellationSupported())
+                reqRegister.remove(reqId);
+        }
     }
 
     /**
@@ -259,9 +271,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             AuthorizationContext.context(actx);
 
         try {
-            if (req.type() != QRY_CANCEL && !requestRegister.contains(req.requestId()))
-                return exceptionToResult(new QueryCancelledException(), req.requestId());
-
             switch (req.type()) {
                 case QRY_EXEC:
                     return executeQuery((JdbcQueryExecuteRequest)req);
@@ -373,7 +382,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Response to send to the client.
      */
     private ClientListenerResponse processBulkLoadFileBatch(JdbcBulkLoadBatchRequest req) {
-        JdbcBulkLoadProcessor processor = (JdbcBulkLoadProcessor) jdbcCursors.get(req.cursorId());
+        JdbcBulkLoadProcessor processor = (JdbcBulkLoadProcessor)jdbcCursors.get(req.cursorId());
 
         if (ctx == null)
             return new JdbcResponse(IgniteQueryErrorCode.UNEXPECTED_OPERATION, "Unknown query ID: "
@@ -385,9 +394,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             switch (req.cmd()) {
                 case CMD_FINISHED_ERROR:
                 case CMD_FINISHED_EOF:
-                    JdbcCursor removedProcessor = jdbcCursors.remove(req.cursorId());
-
-                    unregisterRequest(removedProcessor.cursorId());
+                    jdbcCursors.remove(req.cursorId());
 
                     processor.close();
 
@@ -399,8 +406,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 default:
                     throw new IllegalArgumentException();
             }
-
-            return new JdbcResponse(new JdbcQueryExecuteResult(req.cursorId(), processor.updateCnt()), req.requestId());
+            return new JdbcResponse(new JdbcQueryExecuteResult(req.cursorId(), req.initialReqId(),
+                processor.updateCnt()), req.requestId());
         }
         catch (Exception e) {
             U.error(null, "Error processing file batch", e);
@@ -448,7 +455,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
         jdbcCursors.clear();
 
-        requestRegister.clear();
+
+        synchronized (reqMux) {
+            reqRegister.clear();
+        }
 
         U.close(cliCtx, log);
     }
@@ -461,19 +471,38 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     @SuppressWarnings("unchecked")
     private JdbcResponse executeQuery(JdbcQueryExecuteRequest req) {
-        int cursorCnt = jdbcCursors.size();
+        GridQueryCancel cancel = null;
 
-        if (maxCursors > 0 && cursorCnt >= maxCursors)
-            return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Too many open cursors (either close other " +
-                "open cursors or increase the limit through " +
-                "ClientConnectorConfiguration.maxOpenCursorsPerConnection) [maximum=" + maxCursors +
-                ", current=" + cursorCnt + ']', req.requestId());
+        Lock lock = null;
 
-        assert !cliCtx.isStream();
+        boolean unregisterReq = false;
 
-        Set<Long> currQueryCursorIds = new HashSet<>();
+        if (isCancellationSupported()) {
+            synchronized (reqMux) {
+                if (!reqRegister.containsKey(req.requestId()))
+                    return null;
 
+                cancel = new GridQueryCancel();
+
+                lock = new ReentrantLock();
+
+                reqRegister.put(req.requestId(), new JdbcQueryDescriptor(cancel, lock));
+            }
+        }
+
+        if (isCancellationSupported())
+            lock.lock();
         try {
+            int cursorCnt = jdbcCursors.size();
+
+            if (maxCursors > 0 && cursorCnt >= maxCursors)
+                return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Too many open cursors (either close other " +
+                    "open cursors or increase the limit through " +
+                    "ClientConnectorConfiguration.maxOpenCursorsPerConnection) [maximum=" + maxCursors +
+                    ", current=" + cursorCnt + ']', req.requestId());
+
+            assert !cliCtx.isStream();
+
             String sql = req.sqlQuery();
 
             SqlFieldsQueryEx qry;
@@ -521,11 +550,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             qry.setSchema(schemaName);
 
-            if (req.isCancellationSupported() && !requestRegister.contains(req.requestId()))
-                return exceptionToResult(new QueryCancelledException(), req.requestId());
-
             List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFields(null, qry, cliCtx, true,
-                protocolVer.compareTo(VER_2_3_0) < 0);
+                protocolVer.compareTo(VER_2_3_0) < 0, cancel);
 
             FieldsQueryCursor<List<?>> fieldsCur = results.get(0);
 
@@ -537,18 +563,12 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 JdbcBulkLoadProcessor processor = new JdbcBulkLoadProcessor(blProcessor, req.requestId());
 
-                synchronized (cancellationProcessingMux) {
-                    if (req.isCancellationSupported() && !requestRegister.contains(req.requestId()))
-                        return exceptionToResult(new QueryCancelledException(), req.requestId());
-                    else {
-                        jdbcCursors.put(processor.cursorId(), processor);
+                jdbcCursors.put(processor.cursorId(), processor);
 
-                        currQueryCursorIds.add(processor.cursorId());
+                // responces for the same query on the client side
+                return new JdbcResponse(new JdbcBulkLoadAckResult(processor.cursorId(), clientParams),
+                    req.requestId());
 
-                        // responces for the same query on the client side
-                        return new JdbcResponse(new JdbcBulkLoadAckResult(processor.cursorId(), clientParams), req.requestId());
-                    }
-                }
             }
 
             if (results.size() == 1) {
@@ -556,22 +576,14 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 JdbcQueryCursor cur = new JdbcQueryCursor(req.pageSize(), req.maxRows(),
                     (QueryCursorImpl)fieldsCur, req.requestId());
 
-                synchronized (cancellationProcessingMux) {
-                    if (req.isCancellationSupported() && !requestRegister.contains(req.requestId()))
-                        // TODO: Cursors are not closed
-                        return exceptionToResult(new QueryCancelledException(), req.requestId());
-                    else
-                        jdbcCursors.put(cur.cursorId(), cur);
-                }
-
-                currQueryCursorIds.add(cur.cursorId());
+                jdbcCursors.put(cur.cursorId(), cur);
 
                 cur.openIterator();
 
                 JdbcQueryExecuteResult res;
 
                 if (cur.isQuery())
-                    res = new JdbcQueryExecuteResult(cur.cursorId(), cur.fetchRows(), !cur.hasNext());
+                    res = new JdbcQueryExecuteResult(cur.cursorId(), req.requestId(), cur.fetchRows(), !cur.hasNext());
                 else {
                     List<List<Object>> items = cur.fetchRows();
 
@@ -580,13 +592,13 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                         "Invalid result set for not-SELECT query. [qry=" + sql +
                             ", res=" + S.toString(List.class, items) + ']';
 
-                    res = new JdbcQueryExecuteResult(cur.cursorId(), (Long)items.get(0).get(0));
+                    res = new JdbcQueryExecuteResult(cur.cursorId(), req.requestId(), (Long)items.get(0).get(0));
                 }
 
                 if (res.last() && (!res.isQuery() || autoCloseCursors)) {
                     jdbcCursors.remove(cur.cursorId());
 
-                    unregisterRequest(req.requestId());
+                    unregisterReq = true;
 
                     cur.close();
                 }
@@ -598,36 +610,16 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 List<List<Object>> items = null;
                 boolean last = true;
 
-                List<JdbcQueryCursor> cursors = new ArrayList<>();
-                Map<Long, JdbcQueryCursor> queryCursors = new HashMap<>();
-
                 for (FieldsQueryCursor<List<?>> c : results) {
-                    JdbcQueryCursor cursor = new JdbcQueryCursor(req.pageSize(), req.maxRows(),
-                        (QueryCursorImpl) c, req.requestId());
-
-                    cursors.add(cursor);
-
-                    // TODO: TODO: Why DML is ignored?
-                    if (cursor.isQuery()) {
-                        queryCursors.put(cursor.cursorId(), cursor);
-
-                        currQueryCursorIds.add(cursor.cursorId());
-                    }
-                }
-
-                synchronized (cancellationProcessingMux) {
-                    if (req.isCancellationSupported() && !requestRegister.contains(req.requestId()))
-                        // TODO: Cursors are not closed.
-                        return exceptionToResult(new QueryCancelledException(), req.requestId());
-                    else
-                        jdbcCursors.putAll(queryCursors);
-                }
-
-                for (JdbcQueryCursor cur : cursors) {
+                    QueryCursorImpl qryCur = (QueryCursorImpl)c;
 
                     JdbcResultInfo jdbcRes;
 
-                    if (cur.isQuery()) {
+                    JdbcQueryCursor cur = new JdbcQueryCursor(req.pageSize(), req.maxRows(), qryCur, req.requestId());
+
+                    jdbcCursors.put(cur.cursorId(), cur);
+
+                    if (qryCur.isQuery()) {
                         jdbcRes = new JdbcResultInfo(true, -1, cur.cursorId());
 
                         cur.openIterator();
@@ -638,25 +630,41 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                         }
                     }
                     else {
-                        jdbcRes = new JdbcResultInfo(false, cur.updateCount(), -1);
+                        jdbcRes = new JdbcResultInfo(false, (Long)((List<?>)qryCur.getAll().get(0)).get(0),
+                            -1);
 
                         cur.close();
+
+                        jdbcCursors.remove(cur.cursorId());
                     }
 
                     jdbcResults.add(jdbcRes);
                 }
 
-                return new JdbcResponse(new JdbcQueryExecuteMultipleStatementsResult(jdbcResults, items, last),
+                return new JdbcResponse(new JdbcQueryExecuteMultipleStatementsResult(req.requestId(), jdbcResults, items, last),
                     req.requestId());
             }
         }
         catch (Exception e) {
-            // TODO: Make sure that all already opened cursors are closed.
+            // Trying to close all cursors of current request.
+            for (Iterator<Map.Entry<Long, JdbcCursor>> it = jdbcCursors.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<Long, JdbcCursor> entry = it.next();
 
-            // TODO: Incorrect map operation
-            jdbcCursors.entrySet().removeAll(currQueryCursorIds);
+                JdbcCursor cursor = entry.getValue();
 
-            unregisterRequest(req.requestId());
+                if (cursor.requestId() == req.requestId()) {
+                    try {
+                        cursor.close();
+                    }
+                    catch (Exception currClosingException) {
+                        U.error(log, "Failed to close cursor [reqId=" + req.requestId() +
+                            ", cursor=" + cursor + ']', e);
+                    }
+                    it.remove();
+                }
+            }
+
+            unregisterReq = true;
 
             U.error(log, "Failed to execute SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
@@ -664,6 +672,14 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 return exceptionToResult(new QueryCancelledException(), req.requestId());
             else
                 return exceptionToResult(e, req.requestId());
+        }
+        finally {
+            if (isCancellationSupported()) {
+                lock.unlock();
+
+                if (unregisterReq)
+                    unregisterRequest(req.requestId());
+            }
         }
     }
 
@@ -673,14 +689,22 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Execute query request.
      * @return Response.
      */
-    // TODO: Don't we need to execute close synchronously as well?
     private JdbcResponse closeQuery(JdbcQueryCloseRequest req) {
-        JdbcCursor removedCur = null;
+        Lock lock = null;
+
+        if (isCancellationSupported()) {
+            synchronized (reqMux) {
+                if (!reqRegister.containsKey(req.initialReqId()))
+                    return null;
+
+                lock = reqRegister.get(req.initialReqId()).lockHook();
+
+                lock.lock();
+            }
+        }
 
         try {
             JdbcCursor cur = jdbcCursors.remove(req.cursorId());
-
-            removedCur = cur;
 
             if (cur == null)
                 return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
@@ -691,15 +715,18 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             return new JdbcResponse(null, req.requestId());
         }
         catch (Exception e) {
-            removedCur = jdbcCursors.remove(req.cursorId());
+            jdbcCursors.remove(req.cursorId());
 
             U.error(log, "Failed to close SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
             return exceptionToResult(e, req.requestId());
         }
         finally {
-            // TODO: Need to close when all request result sets are closed.
-            unregisterRequest(removedCur.requestId());
+            if (isCancellationSupported()) {
+                lock.unlock();
+
+                tryUnregisterRequest(req.initialReqId());
+            }
         }
     }
 
@@ -710,6 +737,21 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Response.
      */
     private JdbcResponse fetchQuery(JdbcQueryFetchRequest req) {
+        Lock lock = null;
+
+        boolean unregisterReq = false;
+
+        if (isCancellationSupported()) {
+            synchronized (reqMux) {
+                if (!reqRegister.containsKey(req.initialReqId()))
+                    return null;
+
+                lock = reqRegister.get(req.initialReqId()).lockHook();
+
+                lock.lock();
+            }
+        }
+
         try {
             JdbcQueryCursor cur = (JdbcQueryCursor) jdbcCursors.get(req.cursorId());
 
@@ -726,9 +768,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             JdbcQueryFetchResult res = new JdbcQueryFetchResult(cur.fetchRows(), !cur.hasNext());
 
             if (res.last() && (!cur.isQuery() || autoCloseCursors)) {
-                JdbcCursor removedCur = jdbcCursors.remove(req.cursorId());
+                jdbcCursors.remove(req.cursorId());
 
-                unregisterRequest(req.cursorId());
+                unregisterReq = true;
 
                 cur.close();
             }
@@ -743,6 +785,14 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             else
                 return exceptionToResult(e, req.requestId());
         }
+        finally {
+            if (isCancellationSupported()) {
+                lock.unlock();
+
+                if (unregisterReq)
+                    unregisterRequest(req.initialReqId());
+            }
+        }
     }
 
     /**
@@ -750,6 +800,19 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Response.
      */
     private JdbcResponse getQueryMeta(JdbcQueryMetadataRequest req) {
+        Lock lock = null;
+
+        if (isCancellationSupported()) {
+            synchronized (reqMux) {
+                if (!reqRegister.containsKey(req.initialReqId()))
+                    return null;
+
+                lock = reqRegister.get(req.initialReqId()).lockHook();
+
+                lock.lock();
+            }
+        }
+
         try {
             JdbcQueryCursor cur = (JdbcQueryCursor) jdbcCursors.get(req.cursorId());
 
@@ -767,6 +830,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             return exceptionToResult(e, req.requestId());
         }
+        finally {
+            if(isCancellationSupported())
+                lock.unlock();
+        }
     }
 
     /**
@@ -774,69 +841,105 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Response.
      */
     private ClientListenerResponse executeBatch(JdbcBatchExecuteRequest req) {
-        String schemaName = req.schemaName();
+        GridQueryCancel cancel = null;
 
-        if (F.isEmpty(schemaName))
-            schemaName = QueryUtils.DFLT_SCHEMA;
+        Lock lock = null;
 
-        int qryCnt = req.queries().size();
+        if (isCancellationSupported()) {
+            synchronized (reqMux) {
+                if (!reqRegister.containsKey(req.requestId()))
+                    return null;
 
-        List<Integer> updCntsAcc = new ArrayList<>(qryCnt);
+                cancel = new GridQueryCancel();
 
-        // Send back only the first error. Others will be written to the log.
-        IgniteBiTuple<Integer, String> firstErr = new IgniteBiTuple<>();
+                lock = new ReentrantLock();
 
-        SqlFieldsQueryEx qry = null;
-
-        for (JdbcQuery q : req.queries()) {
-            if (q.sql() != null) { // If we have a new query string in the batch,
-                if (qry != null) // then execute the previous sub-batch and create a new SqlFieldsQueryEx.
-                    executeBatchedQuery(qry, updCntsAcc, firstErr);
-
-                qry = new SqlFieldsQueryEx(q.sql(), false);
-
-                qry.setDistributedJoins(cliCtx.isDistributedJoins());
-                qry.setEnforceJoinOrder(cliCtx.isEnforceJoinOrder());
-                qry.setCollocated(cliCtx.isCollocated());
-                qry.setReplicatedOnly(cliCtx.isReplicatedOnly());
-                qry.setLazy(cliCtx.isLazy());
-                qry.setNestedTxMode(nestedTxMode);
-                qry.setAutoCommit(req.autoCommit());
-
-                qry.setSchema(schemaName);
+                reqRegister.put(req.requestId(), new JdbcQueryDescriptor(cancel, lock));
             }
 
-            assert qry != null;
-
-            qry.addBatchedArgs(q.args());
+            lock.lock();
         }
 
-        if (qry != null)
-            executeBatchedQuery(qry, updCntsAcc, firstErr);
+        try {
+            String schemaName = req.schemaName();
 
-        if (req.isLastStreamBatch())
-            cliCtx.disableStreaming();
+            if (F.isEmpty(schemaName))
+                schemaName = QueryUtils.DFLT_SCHEMA;
 
-        int updCnts[] = U.toIntArray(updCntsAcc);
+            int qryCnt = req.queries().size();
 
-        if (firstErr.isEmpty())
-            return new JdbcResponse(new JdbcBatchExecuteResult(updCnts, ClientListenerResponse.STATUS_SUCCESS, null),
-                req.requestId());
-        else
-            return new JdbcResponse(new JdbcBatchExecuteResult(updCnts, firstErr.getKey(), firstErr.getValue()),
-                req.requestId());
+            List<Integer> updCntsAcc = new ArrayList<>(qryCnt);
+
+            // Send back only the first error. Others will be written to the log.
+            IgniteBiTuple<Integer, String> firstErr = new IgniteBiTuple<>();
+
+            SqlFieldsQueryEx qry = null;
+
+            for (JdbcQuery q : req.queries()) {
+                if (q.sql() != null) { // If we have a new query string in the batch,
+                    if (qry != null) // then execute the previous sub-batch and create a new SqlFieldsQueryEx.
+                        executeBatchedQuery(req.requestId(), qry, updCntsAcc, firstErr, cancel);
+
+                    qry = new SqlFieldsQueryEx(q.sql(), false);
+
+                    qry.setDistributedJoins(cliCtx.isDistributedJoins());
+                    qry.setEnforceJoinOrder(cliCtx.isEnforceJoinOrder());
+                    qry.setCollocated(cliCtx.isCollocated());
+                    qry.setReplicatedOnly(cliCtx.isReplicatedOnly());
+                    qry.setLazy(cliCtx.isLazy());
+                    qry.setNestedTxMode(nestedTxMode);
+                    qry.setAutoCommit(req.autoCommit());
+
+                    qry.setSchema(schemaName);
+                }
+
+                assert qry != null;
+
+                qry.addBatchedArgs(q.args());
+            }
+
+            if (qry != null)
+                executeBatchedQuery(req.requestId(), qry, updCntsAcc, firstErr, cancel);
+
+            if (req.isLastStreamBatch())
+                cliCtx.disableStreaming();
+
+            int updCnts[] = U.toIntArray(updCntsAcc);
+
+            if (firstErr.isEmpty())
+                return new JdbcResponse(new JdbcBatchExecuteResult(updCnts, ClientListenerResponse.STATUS_SUCCESS, null),
+                    req.requestId());
+            else
+                return new JdbcResponse(new JdbcBatchExecuteResult(updCnts, firstErr.getKey(), firstErr.getValue()),
+                    req.requestId());
+        }
+        catch (QueryCancelledException e){
+            return exceptionToResult(e, req.requestId());
+        }
+        finally {
+            if (isCancellationSupported()) {
+                lock.unlock();
+
+                unregisterRequest(req.requestId());
+            }
+        }
     }
 
     /**
      * Executes query and updates result counters.
      *
+     * @param reqId Request ID.
      * @param qry Query.
      * @param updCntsAcc Per query rows updates counter.
      * @param firstErr First error data - code and message.
+     * @param cancel Hook for query cancellation.
+     * @throws QueryCancelledException If query was cancelled during execution.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
-    private void executeBatchedQuery(SqlFieldsQueryEx qry, List<Integer> updCntsAcc,
-        IgniteBiTuple<Integer, String> firstErr) {
+    @SuppressWarnings({"ForLoopReplaceableByForEach", "unchecked"})
+    private void executeBatchedQuery(long reqId,  SqlFieldsQueryEx qry, List<Integer> updCntsAcc,
+        IgniteBiTuple<Integer, String> firstErr, GridQueryCancel cancel) throws QueryCancelledException {
+        List<FieldsQueryCursor<List<?>>> qryRes = null;
+
         try {
             if (cliCtx.isStream()) {
                 List<Long> cnt = ctx.query().streamBatchedUpdateQuery(qry.getSchema(), cliCtx, qry.getSql(),
@@ -848,13 +951,17 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 return;
             }
 
-            List<FieldsQueryCursor<List<?>>> qryRes = ctx.query().querySqlFields(null, qry, cliCtx, true, true);
+           qryRes = ctx.query().querySqlFields(null, qry, cliCtx, true, true, cancel);
 
             for (FieldsQueryCursor<List<?>> cur : qryRes) {
                 if (cur instanceof BulkLoadContextCursor)
                     throw new IgniteSQLException("COPY command cannot be executed in batch mode.");
 
                 assert !((QueryCursorImpl)cur).isQuery();
+
+                JdbcQueryCursor batchQryCur = new JdbcQueryCursor(0, 0, (QueryCursorImpl)cur, reqId);
+
+                jdbcCursors.put(batchQryCur.cursorId(), batchQryCur);
 
                 Iterator<List<?>> it = cur.iterator();
 
@@ -863,6 +970,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                     updCntsAcc.add(val);
                 }
+                cur.close();
+
+                jdbcCursors.remove(batchQryCur.cursorId());
             }
         }
         catch (Exception e) {
@@ -870,7 +980,16 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             String msg;
 
-            if (e instanceof IgniteSQLException) {
+            assert qryRes != null;
+
+            // Close all cursors of given batched query.
+            for (FieldsQueryCursor<List<?>> cur : qryRes) {
+                cur.close();
+            }
+
+            if (X.cause(e, QueryCancelledException.class) != null)
+                throw new QueryCancelledException();
+            else if (e instanceof IgniteSQLException) {
                 BatchUpdateException batchCause = X.cause(e, BatchUpdateException.class);
 
                 if (batchCause != null) {
@@ -1222,38 +1341,102 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return <code>QueryCancelledException</code> wrapped with <code>JdbcResponse</code>
      */
     private JdbcResponse cancelQuery(JdbcQueryCancelRequest req) {
-        boolean exceptionFound = false;
+        boolean eFound = false;
 
-        synchronized (cancellationProcessingMux) {
-            // Request was already cancelled.
-            if (!requestRegister.contains(req.requestIdToBeCancelled()))
-                // TODO: Why throwing exception here?
-                return exceptionToResult(new QueryCancelledException(), req.requestIdToBeCancelled());
-            else {
-                unregisterRequest(req.requestIdToBeCancelled());
+        Lock lock;
 
-                // TODO: When cursors will be cleared here?
-                for (JdbcCursor cursor: jdbcCursors.values()) {
+        synchronized (reqMux) {
+            // Query already executed.
+            if (!reqRegister.containsKey(req.requestIdToBeCancelled()))
+                return null;
 
-                    if (cursor.requestId() == req.requestIdToBeCancelled()) {
-                        try {
-                            cursor.close();
-                        }
-                        catch (Exception e) {
-                            U.error(log, "Failed to close cursor [reqId=" + req.requestId() +
-                                ", cursor=" + cursor + ']', e);
+            JdbcQueryDescriptor qryDesc = reqRegister.remove(req.requestIdToBeCancelled());
 
-                            exceptionFound = true;
-                        }
+            qryDesc.cancelHook().cancel();
+
+            lock = qryDesc.lockHook();
+
+            lock.lock();
+        }
+
+        try {
+            for (Iterator<Map.Entry<Long, JdbcCursor>> it = jdbcCursors.entrySet().iterator(); it.hasNext();) {
+                Map.Entry<Long, JdbcCursor> entry = it.next();
+
+                JdbcCursor cursor = entry.getValue();
+
+                if (cursor.requestId() == req.requestIdToBeCancelled()) {
+                    try {
+                        cursor.close();
                     }
+                    catch (Exception e) {
+                        U.error(log, "Failed to close cursor [reqId=" + req.requestId() +
+                            ", cursor=" + cursor + ']', e);
+
+                        eFound = true;
+                    }
+                    it.remove();
                 }
             }
 
-            if (exceptionFound)
+            if (eFound)
                 return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
                     "Failed to cancel request [reqId=" + req.requestIdToBeCancelled() + ']', req.requestId());
             else
                 return exceptionToResult(new QueryCancelledException(), req.requestIdToBeCancelled());
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Checks whether query cancellation is supported whithin given version of protocal.
+     *
+     * @return True if supported, false otherwise.
+     */
+    private boolean isCancellationSupported() {
+        return (protocolVer.compareTo(VER_2_8_0) >= 0);
+    }
+
+    /**
+     * Unregisters request if there are no cursors binded to it.
+     *
+     * @param reqId Reuest to unregist.
+     */
+    private void tryUnregisterRequest(long reqId) {
+        Lock lock;
+
+        boolean unregisterReq = true;
+
+        synchronized (reqMux) {
+            JdbcQueryDescriptor qryDesc = reqRegister.get(reqId);
+
+            if (qryDesc == null)
+                return;
+            else {
+                lock = qryDesc.lockHook();
+
+                lock.lock();
+            }
+        }
+
+        try {
+            for (JdbcCursor cursor : jdbcCursors.values()) {
+                if (cursor.requestId() == reqId) {
+                    unregisterReq = false;
+
+                    break;
+                }
+            }
+        }
+        finally {
+            if (isCancellationSupported()) {
+                lock.unlock();
+
+                if (unregisterReq)
+                    unregisterRequest(reqId);
+            }
         }
     }
 }

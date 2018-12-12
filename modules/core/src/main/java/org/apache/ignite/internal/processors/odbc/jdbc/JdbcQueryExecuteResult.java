@@ -52,11 +52,12 @@ public class JdbcQueryExecuteResult extends JdbcResult {
 
     /**
      * @param cursorId Cursor ID.
+     * @param initialReqId Initial request ID.
      * @param items Query result rows.
      * @param last Flag indicates the query has no unfetched results.
      */
-    JdbcQueryExecuteResult(long cursorId, List<List<Object>> items, boolean last) {
-        super(QRY_EXEC);
+    JdbcQueryExecuteResult(long cursorId, long initialReqId, List<List<Object>> items, boolean last) {
+        super(QRY_EXEC, initialReqId);
 
         this.cursorId = cursorId;
         this.items = items;
@@ -66,10 +67,11 @@ public class JdbcQueryExecuteResult extends JdbcResult {
 
     /**
      * @param cursorId Cursor ID.
+     * @param initialReqId Initial request ID.
      * @param updateCnt Update count for DML queries.
      */
-    public JdbcQueryExecuteResult(long cursorId, long updateCnt) {
-        super(QRY_EXEC);
+    public JdbcQueryExecuteResult(long cursorId, long initialReqId, long updateCnt) {
+        super(QRY_EXEC, initialReqId);
 
         this.cursorId = cursorId;
         this.last = true;

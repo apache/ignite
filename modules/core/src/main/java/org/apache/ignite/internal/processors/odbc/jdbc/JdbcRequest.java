@@ -83,12 +83,25 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     /** Request id. */
     private long reqId;
 
+    /** The ID of the initial request. */
+    private long initialReqId;
+
     /**
      * @param type Command type.
      */
     public JdbcRequest(byte type) {
         this.type = type;
         this.reqId = REQ_ID_GENERATOR.incrementAndGet();
+        this.initialReqId = -1;
+    }
+
+    /**
+     * @param type Command type.
+     */
+    public JdbcRequest(byte type, long initialReqId) {
+        this.type = type;
+        this.reqId = REQ_ID_GENERATOR.incrementAndGet();
+        this.initialReqId = initialReqId;
     }
 
     /** {@inheritDoc} */
@@ -96,17 +109,20 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
         writer.writeByte(type);
 
-        if (ver.compareTo(VER_2_8_0) >= 0)
+        if (ver.compareTo(VER_2_8_0) >= 0){
             writer.writeLong(reqId);
-
+            writer.writeLong(initialReqId);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader,
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
 
-        if (ver.compareTo(VER_2_8_0) >= 0)
+        if (ver.compareTo(VER_2_8_0) >= 0) {
             reqId = reader.readLong();
+            initialReqId = reader.readLong();
+        }
     }
 
     /** {@inheritDoc} */
@@ -239,5 +255,14 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
         }
 
         return reader.readLong();
+    }
+
+    /**
+     * Returns initial requestId .
+     *
+     * @return The ID of the initial batch request.
+     */
+    public long initialReqId() {
+        return initialReqId;
     }
 }
