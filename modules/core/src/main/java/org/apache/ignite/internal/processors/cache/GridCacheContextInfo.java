@@ -105,7 +105,7 @@ public class GridCacheContextInfo<K, V> {
      * @return {@code true} in case cache use custom affinity mapper.
      */
     public boolean customAffinityMapper() {
-        return config.getAffinityMapper() != null;
+        return !(config.getAffinityMapper() instanceof GridCacheDefaultAffinityKeyMapper);
     }
 
     /**
