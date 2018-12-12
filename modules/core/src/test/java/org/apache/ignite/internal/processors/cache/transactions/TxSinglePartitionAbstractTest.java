@@ -438,13 +438,6 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
             txMap.put(idx, tx.xid());
             revTxMap.put(tx.xid(), idx);
         }
-
-        /**
-         * @param partId Partition id.
-         */
-        protected PartitionUpdateCounter counter(int partId) {
-            return internalCache(0).context().topology().localPartition(partId).dataStore().partUpdateCounter();
-        }
     }
 
     protected abstract class OrderingTxCallbackAdapter extends TxCallbackAdapter {
@@ -558,5 +551,12 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
         IgniteInternalFuture fut = GridTestUtils.runAsync(r);
 
         taskFuts.add(fut);
+    }
+
+    /**
+     * @param partId Partition id.
+     */
+    protected PartitionUpdateCounter counter(int partId) {
+        return internalCache(0).context().topology().localPartition(partId).dataStore().partUpdateCounter();
     }
 }
