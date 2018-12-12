@@ -203,6 +203,17 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
         }
 
+        syncMetadata(execSvc, ctx, needSnapshot);
+    }
+
+    /**
+     * Syncs and saves meta-information of all data structures to page memory.
+     *
+     * @param execSvc Executor service to run save process
+     * @param ctx Checkpoint listener context.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void syncMetadata(Executor execSvc, Context ctx, boolean needSnapshot) throws IgniteCheckedException {
         if (execSvc == null) {
             reuseList.saveMetadata();
 
