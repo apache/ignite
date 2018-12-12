@@ -86,7 +86,7 @@ public class ConnectionManager {
         @Override protected ObjectPool<H2ConnectionWrapper> initialValue() {
             return new ObjectPool<>(
                 ConnectionManager.this::newConnectionWrapper,
-                50,
+                8,
                 ConnectionManager.this::closePooledConnectionWrapper);
         }
     };
@@ -369,14 +369,14 @@ public class ConnectionManager {
      * Cancel all queries.
      */
     public void onKernalStop() {
-        threadConns.values().forEach(map -> map.keySet().forEach(c -> {U.close(c, log);}));
+        threadConns.values().forEach(map -> map.values().forEach(c -> {U.close(c, log);}));
     }
 
     /**
      * Close executor.
      */
     public void stop() {
-        threadConns.values().forEach(map -> map.keySet().forEach(c -> {U.close(c, log);}));
+        threadConns.values().forEach(map -> map.values().forEach(c -> {U.close(c, log);}));
 
         threadConns.clear();
 

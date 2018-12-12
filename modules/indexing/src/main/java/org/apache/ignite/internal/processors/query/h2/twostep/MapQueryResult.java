@@ -254,7 +254,7 @@ class MapQueryResult {
             rows.add(res.currentRow());
         }
 
-        if (res.hasNext())
+        if (detachedConn == null && res.hasNext())
             detachedConn = h2.connections().detachThreadConnection();
 
         return !res.hasNext();
