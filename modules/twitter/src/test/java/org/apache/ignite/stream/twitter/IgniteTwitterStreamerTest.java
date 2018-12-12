@@ -31,9 +31,6 @@ import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Rule;
-import org.junit.Test;
-import org.junit.internal.runners.JUnit38ClassRunner;
-import org.junit.runner.RunWith;
 import twitter4j.Status;
 import twitter4j.TwitterException;
 import twitter4j.TwitterObjectFactory;
@@ -47,7 +44,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 /**
  * Test for {@link TwitterStreamer}. Tests Public Status streaming API https://dev.twitter.com/streaming/public.
  */
-@RunWith(JUnit38ClassRunner.class) // IGNITE-10177 Make this test pass with JUnit 4.
 public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
     /** Cache entries count. */
     private static final int CACHE_ENTRY_COUNT = 100;
@@ -95,7 +91,6 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Test exception.
      */
-    @Test
     public void testStatusesFilterEndpointOAuth1() throws Exception {
         try (IgniteDataStreamer<Long, String> dataStreamer = grid().dataStreamer(DEFAULT_CACHE_NAME)) {
             TwitterStreamerImpl streamer = newStreamerInstance(dataStreamer);
