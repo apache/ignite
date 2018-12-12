@@ -4755,14 +4755,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     *
+     * @return Cache group predicate that passes only Metastorage cache group id.
      */
     private IgnitePredicate<Integer> onlyMetastorageGroup() {
         return groupId -> MetaStorage.METASTORAGE_CACHE_ID == groupId;
     }
 
     /**
-     *
+     * @return Cache group predicate that passes only cache groups with enabled WAL.
      */
     private IgnitePredicate<Integer> groupsWithEnabledWal() {
         return groupId -> !initiallyGlobalWalDisabledGrps.contains(groupId)
@@ -4770,14 +4770,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     *
+     * @return WAL records predicate that passes only Metastorage data records.
      */
     private IgniteBiPredicate<WALRecord.RecordType, WALPointer> onlyMetastorageRecords() {
         return (type, ptr) -> type == METASTORE_DATA_RECORD;
     }
 
     /**
-     *
+     * @return WAL records predicate that passes only physical and mixed WAL records.
      */
     private IgniteBiPredicate<WALRecord.RecordType, WALPointer> physicalRecords() {
         return (type, ptr) -> type.purpose() == WALRecord.RecordPurpose.PHYSICAL
@@ -4785,7 +4785,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     *
+     * @return WAL records predicate that passes only logical and mixed WAL records.
      */
     private IgniteBiPredicate<WALRecord.RecordType, WALPointer> logicalRecords() {
         return (type, ptr) -> type.purpose() == WALRecord.RecordPurpose.LOGICAL
@@ -4793,7 +4793,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * Abstract class for create restore context.
+     * Abstract class to create restore context.
      */
     private abstract class RestoreStateContext {
         /** Last archived segment. */
@@ -4808,8 +4808,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /**
          * @param iterator WAL iterator.
          * @param lastArchivedSegment Last archived segment index.
+         * @param cacheGroupPredicate Cache groups predicate.
          */
-        public RestoreStateContext(WALIterator iterator, long lastArchivedSegment, IgnitePredicate<Integer> cacheGroupPredicate) {
+        protected RestoreStateContext(
+            WALIterator iterator,
+            long lastArchivedSegment,
+            IgnitePredicate<Integer> cacheGroupPredicate
+        ) {
             this.iterator = iterator;
             this.lastArchivedSegment = lastArchivedSegment;
             this.cacheGroupPredicate = cacheGroupPredicate;
@@ -4870,7 +4875,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
-         * @param record Record.
+         * Filter outs data entries from given data record that not satisfy {@link #cacheGroupPredicate}.
+         *
+         * @param record Original data record.
+         * @return Data record with filtered data entries.
          */
         private DataRecord filterEntriesByGroupId(DataRecord record) {
             List<DataEntry> filteredEntries = record.writeEntries().stream()
@@ -4917,7 +4925,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @param lastArchivedSegment Last archived segment index.
          * @param cacheGroupsPredicate Cache groups predicate.
          */
-        public RestoreBinaryState(CheckpointStatus status, WALIterator iterator, long lastArchivedSegment, IgnitePredicate<Integer> cacheGroupsPredicate) {
+        public RestoreBinaryState(
+            CheckpointStatus status,
+            WALIterator iterator,
+            long lastArchivedSegment,
+            IgnitePredicate<Integer> cacheGroupsPredicate
+        ) {
             super(iterator, lastArchivedSegment, cacheGroupsPredicate);
 
             this.status = status;
