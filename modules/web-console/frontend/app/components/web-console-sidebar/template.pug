@@ -16,4 +16,7 @@
 
 web-console-sidebar-overflow
     web-console-sidebar-navigation(opened='$ctrl.sidebarOpened$|async:this' ng-if='$ctrl.showNavigation')
-web-console-footer(ng-if='$ctrl.sidebarOpened$|async:this')
+web-console-footer(ng-class=`{
+    "web-console-footer__sidebar-opened": ($ctrl.sidebarOpened$|async:this),
+    "web-console-footer__sidebar-closed": !($ctrl.sidebarOpened$|async:this)
+}`)

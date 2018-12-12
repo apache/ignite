@@ -18,7 +18,6 @@
 web-console-sidebar-navigation {
     display: flex;
     flex-direction: column;
-    --active-link-color: #ee2b27;
     padding-top: 14px;
 
     nav {
@@ -40,7 +39,7 @@ web-console-sidebar-navigation {
     .web-console-sidebar-navigation__link-narrow {
         height: var(--width-narrow);
         width: var(--width-narrow);
-        color: #757575;
+        color: var(--inactive-link-color);
         display: flex;
         justify-content: center;
         align-items: center;
