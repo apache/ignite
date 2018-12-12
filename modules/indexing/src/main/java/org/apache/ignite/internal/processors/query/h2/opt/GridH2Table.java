@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -102,8 +101,6 @@ public class GridH2Table extends TableBase {
 
     /** */
     private final IndexColumn affKeyCol;
-
-    private final HashSet<Integer> affKeyColIds;
 
     /** Affinity key column ID. */
     private final int affKeyColId;
