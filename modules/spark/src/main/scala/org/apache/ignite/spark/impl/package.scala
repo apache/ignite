@@ -159,7 +159,7 @@ package object impl {
 		val currentFieldMap = new util.LinkedHashMap[String, String]
 		ctx.cache.publicCacheNames.foreach(cacheName => ctx.query.types(cacheName).foreach(table =>
 			if (table.schemaName.equalsIgnoreCase(schemaName) && table.tableName.equalsIgnoreCase(tabName))
-				table.fields.foreach(field => currentFieldMap.put(field._1, JdbcThinUtils.typeName(field._2.getName)))))
+				table.fields.foreach(field => currentFieldMap.put(field._1, field._2.getName))))
 		currentFieldMap
 	}
 
