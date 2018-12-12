@@ -28,7 +28,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -48,7 +47,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
@@ -105,14 +103,20 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(memCfg);
 
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            .setCacheMode(CacheMode.PARTITIONED)
-            .setBackups(1);
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration();
 
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
+    }
+
+    /**
+     * @return Ignite cache configuration.
+     */
+    protected CacheConfiguration<Object, Object> cacheConfiguration() {
+        return (CacheConfiguration<Object, Object>)new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setBackups(1);
     }
 
     /** {@inheritDoc} */
@@ -134,9 +138,6 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testMemoryUsageSingleNode() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10591");
-
         DataRegionMetrics initMetrics = null;
 
         for (int iter = 0; iter < ITERATIONS; iter++) {
@@ -181,9 +182,6 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testMemoryUsageMultipleNodes() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10583");
-
         IgniteEx node0 = startGrid(0);
         IgniteEx node1 = startGrid(1);
 
