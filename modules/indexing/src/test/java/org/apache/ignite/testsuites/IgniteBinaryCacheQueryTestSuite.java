@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.cache.BinarySerializationQueryWithR
 import org.apache.ignite.internal.processors.cache.CacheIteratorScanQueryTest;
 import org.apache.ignite.internal.processors.cache.CacheLocalQueryDetailMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheLocalQueryMetricsSelfTest;
-import org.apache.ignite.internal.processors.cache.CacheOffheapBatchIndexingBaseTest;
 import org.apache.ignite.internal.processors.cache.CacheOffheapBatchIndexingMultiTypeTest;
 import org.apache.ignite.internal.processors.cache.CacheOffheapBatchIndexingSingleTypeTest;
 import org.apache.ignite.internal.processors.cache.CachePartitionedQueryDetailMetricsDistributedSelfTest;
@@ -112,7 +111,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheP
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCachePartitionedQueryP2PDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCachePartitionedQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCachePartitionedSnapshotEnabledQuerySelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryAbstractDistributedJoinSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryNoRebalanceSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedFieldsQueryJoinNoPrimaryPartitionsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedFieldsQueryP2PEnabledSelfTest;
@@ -333,7 +331,6 @@ public class IgniteBinaryCacheQueryTestSuite {
         suite.addTest(new JUnit4TestAdapter(IgniteErrorOnRebalanceTest.class));
         suite.addTest(new JUnit4TestAdapter(CacheQueryBuildValueTest.class));
         suite.addTest(new JUnit4TestAdapter(CacheOffheapBatchIndexingMultiTypeTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheOffheapBatchIndexingBaseTest.class));
 
         suite.addTest(new JUnit4TestAdapter(IgniteCacheQueryIndexSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteCacheCollocatedQuerySelfTest.class));
@@ -343,8 +340,6 @@ public class IgniteBinaryCacheQueryTestSuite {
         suite.addTest(new JUnit4TestAdapter(IgniteSqlBigIntegerKeyTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteCacheOffheapEvictQueryTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteCacheOffheapIndexScanTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheQueryAbstractDistributedJoinSelfTest.class));
 
         suite.addTest(new JUnit4TestAdapter(GridCacheCrossCacheQuerySelfTest.class));
         suite.addTest(new JUnit4TestAdapter(GridCacheQuerySerializationSelfTest.class));
