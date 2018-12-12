@@ -61,9 +61,6 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /** */
     protected volatile DataMode dataMode = DataMode.PLANE_OBJECT;
 
-    /** */
-    protected volatile boolean isEventDrivenServiceProcessorEnabled;
-
     /**
      * @param testsCfg Tests configuration.
      */
@@ -83,8 +80,6 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         assert testsCfg != null;
-
-        isEventDrivenServiceProcessorEnabled = isEventDrivenServiceProcessorEnabled();
 
         if (Ignition.allGrids().size() != testsCfg.gridCount()) {
             info("All nodes will be stopped, new " + testsCfg.gridCount() + " nodes will be started.");
