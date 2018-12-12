@@ -23,6 +23,8 @@ import org.apache.ignite.IgniteCheckedException;
  *
  */
 public class IgniteConsistencyViolationException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
     /**
      * @param msg Message.
      */
