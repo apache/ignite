@@ -19,24 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousBatchAckTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFilterListenerTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryOperationP2PTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryOrderingEventTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryRandomOperationsTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousWithTransformerPartitionedSelfTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousWithTransformerRandomOperationsTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheKeepBinaryIterationNearEnabledTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheKeepBinaryIterationStoreEnabledTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheKeepBinaryIterationTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.ContinuousQueryMarshallerTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryLocalAtomicSelfTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryMultiNodesFilteringTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryPartitionAtomicOneNodeTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryPartitionedOnlySelfTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryReplicatedAtomicOneNodeTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryReplicatedAtomicSelfTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryClientTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.AllTests;
 
@@ -51,25 +34,8 @@ public class IgniteCacheQuerySelfTestSuite6 {
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Cache Continuous Queries Test Suite 3");
 
-        // Continuous queries 3.
-        suite.addTest(new JUnit4TestAdapter(GridCacheContinuousQueryPartitionAtomicOneNodeTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheContinuousWithTransformerPartitionedSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheContinuousQueryLocalAtomicSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheContinuousQueryReplicatedAtomicOneNodeTest.class));
-        suite.addTest(new JUnit4TestAdapter(ContinuousQueryMarshallerTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheContinuousQueryReplicatedAtomicSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheKeepBinaryIterationTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheContinuousQueryMultiNodesFilteringTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheKeepBinaryIterationStoreEnabledTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheKeepBinaryIterationNearEnabledTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCacheContinuousQueryPartitionedOnlySelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheContinuousQueryOperationP2PTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheContinuousBatchAckTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheContinuousQueryOrderingEventTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheContinuousQueryClientTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheContinuousQueryAsyncFilterListenerTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheContinuousWithTransformerRandomOperationsTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheContinuousQueryRandomOperationsTest.class));
+        for (int i = 0; i < 100; i++)
+            suite.addTest(new JUnit4TestAdapter(CacheContinuousQueryOrderingEventTest.class));
 
         return suite;
     }
