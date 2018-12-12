@@ -83,6 +83,7 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
         SslContextFactory factory = (SslContextFactory)GridTestUtils.sslFactory();
 
         factory.setCipherSuites(cipherSuites);
+
         factory.setProtocols(protocols);
 
         return factory;
@@ -95,6 +96,7 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
         GridSslBasicContextFactory factory = (GridSslBasicContextFactory)GridTestUtils.sslContextFactory();
 
         factory.setCipherSuites(cipherSuites);
+
         factory.setProtocols(protocols);
 
         return factory;
@@ -105,6 +107,7 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         protocols = null;
+
         cipherSuites = null;
     }
 
@@ -249,7 +252,8 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
 
         startGrid();
 
-        checkSuccessfulClientStart(null,
+        checkSuccessfulClientStart(
+            null,
             new String[] {
                 "TLSv1.1",
                 "TLSv1.2"
@@ -270,7 +274,8 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
 
         startGrid();
 
-        checkSuccessfulClientStart(null,
+        checkSuccessfulClientStart(
+            null,
             new String[] {
                 "TLSv1.1",
                 "SSLv3"
@@ -287,13 +292,11 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
         this.cipherSuites = F.isEmpty(cipherSuites) ? null : cipherSuites;
         this.protocols = F.isEmpty(protocols) ? null : protocols;
 
-        GridClient client = GridClientFactory.start(getClientConfiguration());
+        try (GridClient client = GridClientFactory.start(getClientConfiguration())) {
+            List<GridClientNode> top = client.compute().refreshTopology(false, false);
 
-        List<GridClientNode> top = client.compute().refreshTopology(false, false);
-
-        assertEquals(1, top.size());
-
-        client.close();
+            assertEquals(1, top.size());
+        }
     }
 
     /**
@@ -313,15 +316,20 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
         this.cipherSuites = F.isEmpty(cipherSuites) ? null : cipherSuites;
         this.protocols = F.isEmpty(protocols) ? null : protocols;
 
-        GridTestUtils.assertThrows(null, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                GridClient client = GridClientFactory.start(getClientConfiguration());
+        GridTestUtils.assertThrows(
+            null,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    GridClient client = GridClientFactory.start(getClientConfiguration());
 
-                client.compute().refreshTopology(false, false);
+                    client.compute().refreshTopology(false, false);
 
-                return null;
-            }
-        }, GridClientException.class, msg);
+                    return null;
+                }
+            },
+            GridClientException.class,
+            msg
+            );
     }
 
 }

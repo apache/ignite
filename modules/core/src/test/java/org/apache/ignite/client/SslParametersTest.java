@@ -101,7 +101,7 @@ public class SslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
+        @Test
     public void testSameCipherSuite() throws Exception {
         cipherSuites = new String[] {
             "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
@@ -277,11 +277,9 @@ public class SslParametersTest extends GridCommonAbstractTest {
         this.cipherSuites = F.isEmpty(cipherSuites) ? null : cipherSuites;
         this.protocols = F.isEmpty(protocols) ? null : protocols;
 
-        IgniteClient client = Ignition.startClient(getClientConfiguration());
-
-        client.getOrCreateCache(TEST_CACHE_NAME);
-
-        client.close();
+        try (IgniteClient client = Ignition.startClient(getClientConfiguration())) {
+            client.getOrCreateCache(TEST_CACHE_NAME);
+        }
     }
 
     /**
@@ -312,12 +310,17 @@ public class SslParametersTest extends GridCommonAbstractTest {
         this.cipherSuites = F.isEmpty(cipherSuites) ? null : cipherSuites;
         this.protocols = F.isEmpty(protocols) ? null : protocols;
 
-        GridTestUtils.assertThrows(null, new Callable<Object>() {
-            @Override public Object call() {
-                Ignition.startClient(getClientConfiguration());
+        GridTestUtils.assertThrows(
+            null,
+            new Callable<Object>() {
+                @Override public Object call() {
+                    Ignition.startClient(getClientConfiguration());
 
-                return null;
-            }
-        }, ex, msg);
+                    return null;
+                }
+            },
+            ex,
+            msg
+        );
     }
 }
