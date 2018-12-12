@@ -73,7 +73,6 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
     /** Function used for conversion of submodel output to {@link Vector}. */
     private IgniteFunction<IA, Vector> submodelOutput2VectorConverter;
 
-
     /**
      * Create instance of this class.
      *
@@ -122,7 +121,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
      * Constructs instance of this class.
      */
     public StackedDatasetTrainer() {
-        this(null,null,null, new ArrayList<>(), null, null);
+        this(null, null, null, new ArrayList<>(), null, null);
     }
 
     /**
@@ -254,14 +253,8 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
     @Override public <K, V> StackedModel<IS, IA, O, AM> fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor) {
-        return runOnSubmodels(
-            ensemble ->
-                ensemble.stream()
-                    .map(tc -> (IgniteSupplier<Model<IS, IA>>)(() -> tc.fit(datasetBuilder, featureExtractor, lbExtractor)))
-                    .collect(Collectors.toList()),
-            (at, extr) -> at.fit(datasetBuilder, extr, lbExtractor),
-            featureExtractor
-        );
+
+        return update(null, datasetBuilder, featureExtractor, lbExtractor);
     }
 
     /** {@inheritDoc} */
@@ -270,17 +263,21 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
         IgniteBiFunction<K, V, L> lbExtractor) {
         return runOnSubmodels(
             ensemble -> {
-                int i = 0;
                 List<IgniteSupplier<Model<IS, IA>>> res = new ArrayList<>();
-                for (Model<IS, IA> submodel : mdl.submodels()) {
-                    // Trick to pass 'i' into lambda.
-                    int j = i;
-                    res.add(() -> ensemble.get(j).update(submodel, datasetBuilder, featureExtractor, lbExtractor));
-                    i++;
+                for (int i = 0; i < ensemble.size(); i++) {
+                    final int j = i;
+                    res.add(() -> {
+                        DatasetTrainer<Model<IS, IA>, L> trainer = ensemble.get(j);
+                        return mdl == null ?
+                            trainer.fit(datasetBuilder, featureExtractor, lbExtractor) :
+                            trainer.update(mdl.submodels().get(j), datasetBuilder, featureExtractor, lbExtractor);
+                    });
                 }
                 return res;
             },
-            (at, extr) -> at.update(mdl.aggregatorModel(), datasetBuilder, extr, lbExtractor),
+            (at, extr) -> mdl == null ?
+                at.fit(datasetBuilder, extr, lbExtractor) :
+                at.update(mdl.aggregatorModel(), datasetBuilder, extr, lbExtractor),
             featureExtractor
         );
     }
@@ -299,7 +296,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
      * <pre>
      * 1. Obtain models produced by running specified tasks;
      * 2. run other specified task on dataset augmented with results of models from step 2.
-     *</pre>
+     * </pre>
      *
      * @param taskSupplier Function used to generate tasks for first step.
      * @param aggregatorProcessor Function used
