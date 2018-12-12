@@ -1,24 +1,15 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
@@ -52,12 +43,12 @@ public class TxPartitionCounterTest extends TxSinglePartitionAbstractTest {
         int backups = 2;
         int nodes = 2;
 
-        runOnPartition(partId, backups, nodes, new TxCallback() {
-            @Override public boolean onBeforePrimaryPrepare(IgniteEx node, IgniteUuid ver,
+        runOnPartition(partId, backups, nodes, new TxCallbackAdapter() {
+            @Override public boolean beforePrimaryPrepare(IgniteEx node, IgniteUuid nearXidVer,
                 GridFutureAdapter<?> proceedFut) {
                 runAsync(new Runnable() {
                     @Override public void run() {
-                        futs.put(ver, proceedFut);
+                        futs.put(nearXidVer, proceedFut);
 
                         // Order prepares.
                         if (futs.size() == prepOrder.size()) {// Wait until all prep requests queued and force prepare order.
@@ -69,7 +60,7 @@ public class TxPartitionCounterTest extends TxSinglePartitionAbstractTest {
                 return true;
             }
 
-            @Override public boolean onAfterPrimaryPrepare(IgniteEx node, IgniteInternalTx tx,
+            @Override public boolean beforeBackupPrepare(IgniteEx prim, IgniteEx backup, IgniteInternalTx primaryTx,
                 GridFutureAdapter<?> proceedFut) {
 
                 runAsync(new Runnable() {
@@ -96,7 +87,7 @@ public class TxPartitionCounterTest extends TxSinglePartitionAbstractTest {
                 return false;
             }
 
-            @Override public boolean onBeforePrimaryFinish(IgniteEx n, IgniteInternalTx tx, GridFutureAdapter<?>
+            @Override public boolean beforePrimaryFinish(IgniteEx primaryNode, IgniteInternalTx tx, GridFutureAdapter<?>
                 proceedFut) {
                 runAsync(new Runnable() {
                     @Override public void run() {
@@ -112,7 +103,7 @@ public class TxPartitionCounterTest extends TxSinglePartitionAbstractTest {
                 return true;
             }
 
-            @Override public boolean onAfterPrimaryFinish(IgniteEx n, IgniteUuid ver, GridFutureAdapter<?> proceedFut) {
+            @Override public boolean afterPrimaryFinish(IgniteEx primaryNode, IgniteUuid nearXidVer, GridFutureAdapter<?> proceedFut) {
                 runAsync(new Runnable() {
                     @Override public void run() {
                         if (commitOrder.isEmpty())
