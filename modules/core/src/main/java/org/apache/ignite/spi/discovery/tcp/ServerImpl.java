@@ -207,6 +207,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private RingMessageWorker msgWorker;
 
+    /** Thread executing message worker */
+    private Thread msgWorkerThread;
+
     /** Client message workers. */
     protected ConcurrentMap<UUID, ClientMessageWorker> clientMsgWorkers = new ConcurrentHashMap<>();
 
@@ -357,7 +360,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         msgWorker = new RingMessageWorker(log);
 
-        new MessageWorkerDiscoveryThread(msgWorker, log).start();
+        msgWorkerThread = new MessageWorkerDiscoveryThread(msgWorker, log);
+        msgWorkerThread.start();
 
         if (tcpSrvr == null)
             tcpSrvr = new TcpServer(log);
@@ -390,6 +394,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         spi.stats.onJoinStarted();
 
         joinTopology();
+
+        if (locNode.order() == 1)
+            U.enhanceThreadName(msgWorkerThread, "crd");
 
         spi.stats.onJoinFinished();
 
@@ -2875,8 +2882,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         + ":" + sock.getPort() + (isLocalNodeCoordinator() ? " crd" : ""));
                 }
             }
-            else
-                U.enhanceThreadName("crd");
 
             spi.stats.onMessageProcessingFinished(msg);
         }
@@ -6552,6 +6557,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (log.isInfoEnabled())
                     log.info("Finished serving remote node connection [rmtAddr=" + rmtAddr +
                         ", rmtPort=" + sock.getPort());
+
+                if (isLocalNodeCoordinator())
+                    U.enhanceThreadName(msgWorkerThread, "crd");
             }
         }
 
