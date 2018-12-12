@@ -23,16 +23,21 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Multithreaded tests for {@link org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore}.
  */
+@RunWith(JUnit4.class)
 public class GridCacheWriteBehindStoreMultithreadedSelfTest extends GridCacheWriteBehindStoreAbstractSelfTest {
     /**
      * This test performs complex set of operations on store with coalescing from multiple threads.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetRemoveWithCoalescing() throws Exception {
         testPutGetRemove(true);
     }
@@ -42,6 +47,7 @@ public class GridCacheWriteBehindStoreMultithreadedSelfTest extends GridCacheWri
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetRemoveWithoutCoalescing() throws Exception {
         testPutGetRemove(false);
     }
@@ -86,6 +92,7 @@ public class GridCacheWriteBehindStoreMultithreadedSelfTest extends GridCacheWri
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testStoreFailureWithCoalescing() throws Exception {
         testStoreFailure(true);
     }
@@ -95,6 +102,7 @@ public class GridCacheWriteBehindStoreMultithreadedSelfTest extends GridCacheWri
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testStoreFailureWithoutCoalescing() throws Exception {
         testStoreFailure(false);
     }
@@ -162,6 +170,7 @@ public class GridCacheWriteBehindStoreMultithreadedSelfTest extends GridCacheWri
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFlushFromTheSameThreadWithCoalescing() throws Exception {
         testFlushFromTheSameThread(true);
     }
@@ -172,6 +181,7 @@ public class GridCacheWriteBehindStoreMultithreadedSelfTest extends GridCacheWri
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFlushFromTheSameThreadWithoutCoalescing() throws Exception {
         testFlushFromTheSameThread(false);
     }
@@ -187,32 +197,41 @@ public class GridCacheWriteBehindStoreMultithreadedSelfTest extends GridCacheWri
         // 50 milliseconds should be enough.
         delegate.setOperationDelay(50);
 
-        initStore(2, writeCoalescing);
+        Set<Integer> exp = null;
 
-        Set<Integer> exp;
+        int start = 0;
+        int end = 0;
 
-        int start = store.getWriteBehindTotalCriticalOverflowCount();
+        long startTime = System.currentTimeMillis();
 
-        try {
-            //We will have in total 5 * CACHE_SIZE keys that should be enough to grow map size to critical value.
-            exp = runPutGetRemoveMultithreaded(5, CACHE_SIZE);
-        }
-        finally {
-            log.info(">>> Done inserting, shutting down the store");
+        while (end - start == 0 && System.currentTimeMillis() - startTime < getTestTimeout()) {
+            initStore(2, writeCoalescing);
 
-            shutdownStore();
+            start = store.getWriteBehindTotalCriticalOverflowCount();
+
+            try {
+                //We will have in total 5 * CACHE_SIZE keys that should be enough to grow map size to critical value.
+                exp = runPutGetRemoveMultithreaded(5, CACHE_SIZE);
+            }
+            finally {
+                log.info(">>> Done inserting, shutting down the store");
+
+                shutdownStore();
+            }
+
+            end = store.getWriteBehindTotalCriticalOverflowCount();
         }
 
         // Restore delay.
         delegate.setOperationDelay(0);
 
-        Map<Integer, String> map = delegate.getMap();
-
-        int end = store.getWriteBehindTotalCriticalOverflowCount();
+        assertNotNull(exp);
 
         log.info(">>> There are " + exp.size() + " keys in store, " + (end - start) + " overflows detected");
 
         assertTrue("No cache overflows detected (a bug or too few keys or too few delay?)", end > start);
+
+        Map<Integer, String> map = delegate.getMap();
 
         Collection<Integer> extra = new HashSet<>(map.keySet());
 

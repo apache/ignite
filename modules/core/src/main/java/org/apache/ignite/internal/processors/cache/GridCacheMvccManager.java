@@ -422,11 +422,26 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param err Error.
      */
     private void cancelClientFutures(IgniteCheckedException err) {
-        for (GridCacheFuture<?> fut : activeFutures())
-            ((GridFutureAdapter)fut).onDone(err);
+        cancelFuturesWithException(err, activeFutures());
+        cancelFuturesWithException(err, atomicFuts.values());
+    }
 
-        for (GridCacheAtomicFuture<?> future : atomicFuts.values())
-            ((GridFutureAdapter)future).onDone(err);
+    /**
+     * @param err Error to complete future with.
+     * @param futures Collection of futures.
+     */
+    private void cancelFuturesWithException(
+        IgniteCheckedException err,
+        Collection<? extends IgniteInternalFuture<?>> futures
+    ) {
+        for (IgniteInternalFuture<?> fut : futures) {
+            try {
+                ((GridFutureAdapter)fut).onDone(err);
+            }
+            catch (Exception e) {
+                U.warn(log, "Failed to complete future on node stop (will ignore): " + fut, e);
+            }
+        }
     }
 
     /**

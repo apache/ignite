@@ -21,6 +21,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.TaskEventSubjectIdSelfTest;
 import org.apache.ignite.internal.client.ClientDefaultCacheSelfTest;
 import org.apache.ignite.internal.client.ClientReconnectionSelfTest;
+import org.apache.ignite.internal.client.ClientSslParametersTest;
 import org.apache.ignite.internal.client.ClientTcpMultiThreadedSelfTest;
 import org.apache.ignite.internal.client.ClientTcpSslAuthenticationSelfTest;
 import org.apache.ignite.internal.client.ClientTcpSslMultiThreadedSelfTest;
@@ -168,6 +169,9 @@ public class IgniteClientTestSuite extends TestSuite {
         suite.addTestSuite(ClientFailedInitSelfTest.class);
 
         suite.addTestSuite(ClientTcpTaskExecutionAfterTopologyRestartSelfTest.class);
+
+        // SSL params.
+        suite.addTestSuite(ClientSslParametersTest.class);
 
         return suite;
     }

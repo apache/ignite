@@ -101,6 +101,7 @@ import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTask;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
+import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
 import org.apache.ignite.internal.visor.verify.IndexIntegrityCheckIssue;
 import org.apache.ignite.internal.visor.verify.IndexValidationIssue;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesPartitionResult;
@@ -195,6 +196,9 @@ public class CommandHandler {
     /** */
     private static final String CMD_SKIP_ZEROS = "--skipZeros";
 
+    /** Cache filter. */
+    private static final String CACHE_FILTER = "--cacheFilter";
+
     /** */
     private static final String CMD_USER_ATTRIBUTES = "--user-attributes";
 
@@ -202,6 +206,9 @@ public class CommandHandler {
 
     /** */
     private static final String CMD_SSL_PROTOCOL = "--ssl-protocol";
+
+    /** */
+    private static final String CMD_SSL_CIPHER_SUITES = "--ssl-cipher-suites";
 
     /** */
     private static final String CMD_SSL_KEY_ALGORITHM = "--ssl-key-algorithm";
@@ -229,21 +236,29 @@ public class CommandHandler {
 
     static {
         AUX_COMMANDS.add(CMD_HELP);
+
         AUX_COMMANDS.add(CMD_HOST);
         AUX_COMMANDS.add(CMD_PORT);
+
         AUX_COMMANDS.add(CMD_PASSWORD);
         AUX_COMMANDS.add(CMD_USER);
+
         AUX_COMMANDS.add(CMD_AUTO_CONFIRMATION);
+
         AUX_COMMANDS.add(CMD_PING_INTERVAL);
         AUX_COMMANDS.add(CMD_PING_TIMEOUT);
+
         AUX_COMMANDS.add(CMD_SSL_PROTOCOL);
+        AUX_COMMANDS.add(CMD_SSL_CIPHER_SUITES);
+
         AUX_COMMANDS.add(CMD_SSL_KEY_ALGORITHM);
+        AUX_COMMANDS.add(CMD_KEYSTORE_TYPE);
         AUX_COMMANDS.add(CMD_KEYSTORE);
         AUX_COMMANDS.add(CMD_KEYSTORE_PASSWORD);
-        AUX_COMMANDS.add(CMD_KEYSTORE_TYPE);
+
+        AUX_COMMANDS.add(CMD_TRUSTSTORE_TYPE);
         AUX_COMMANDS.add(CMD_TRUSTSTORE);
         AUX_COMMANDS.add(CMD_TRUSTSTORE_PASSWORD);
-        AUX_COMMANDS.add(CMD_TRUSTSTORE_TYPE);
     }
 
     /** Broadcast uuid. */
@@ -352,13 +367,14 @@ public class CommandHandler {
     private static final String UTILITY_NAME = "control.sh";
 
     /** Common options. */
-    private static final String COMMON_OPTIONS = String.join(" ", op(CMD_HOST, "HOST_OR_IP"),
-        op(CMD_PORT, "PORT"), op(CMD_USER, "USER"), op(CMD_PASSWORD, "PASSWORD"),
+    private static final String COMMON_OPTIONS = String.join(" ", op(CMD_HOST, "HOST_OR_IP"), op(CMD_PORT, "PORT"),
+        op(CMD_USER, "USER"), op(CMD_PASSWORD, "PASSWORD"),
         op(CMD_PING_INTERVAL, "PING_INTERVAL"), op(CMD_PING_TIMEOUT, "PING_TIMEOUT"),
-        op(CMD_SSL_PROTOCOL, "SSL_PROTOCOL"), op(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM"),
-        op(CMD_KEYSTORE, "KEYSTORE"), op(CMD_KEYSTORE_TYPE, "KEYSTORE_TYPE"),
-        op(CMD_KEYSTORE_PASSWORD, "KEYSTORE_PASSWORD"), op(CMD_TRUSTSTORE, "TRUSTSTORE"),
-        op(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE"), op(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD"));
+        op(CMD_SSL_PROTOCOL, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ...]"),
+        op(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1[, SSL_CIPHER_2, ...]"),
+        op(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM"),
+        op(CMD_KEYSTORE_TYPE, "KEYSTORE_TYPE"), op(CMD_KEYSTORE, "KEYSTORE"), op(CMD_KEYSTORE_PASSWORD, "KEYSTORE_PASSWORD"),
+        op(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE"), op(CMD_TRUSTSTORE, "TRUSTSTORE"), op(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD"));
 
     /** Utility name with common options. */
     private static final String UTILITY_NAME_WITH_COMMON_OPTIONS = String.join(" ", UTILITY_NAME, COMMON_OPTIONS);
@@ -809,10 +825,14 @@ public class CommandHandler {
         nl();
         log(i("Subcommands:"));
 
-        usageCache(LIST, "regexPattern", "[groups|seq]", "[nodeId]", op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE.text()));
-        usageCache(CONTENTION, "minQueueSize", "[nodeId]", "[maxPrint]");
-        usageCache(IDLE_VERIFY, op(CMD_DUMP), op(CMD_SKIP_ZEROS), "[cache1,...,cacheN]");
-        usageCache(VALIDATE_INDEXES, "[cache1,...,cacheN]", "[nodeId]", op(or(VI_CHECK_FIRST + " N", VI_CHECK_THROUGH + " K")));
+        usageCache(LIST, "regexPattern", op(or("groups","seq")), op("nodeId"), op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE
+            .text()));
+        usageCache(CONTENTION, "minQueueSize", op("nodeId"), op("maxPrint"));
+        usageCache(IDLE_VERIFY, op(CMD_DUMP), op(CMD_SKIP_ZEROS), "[cache1,...,cacheN]",
+            op(CACHE_FILTER, or(CacheFilterEnum.ALL.toString(), CacheFilterEnum.SYSTEM.toString(), CacheFilterEnum.PERSISTENT.toString(),
+                CacheFilterEnum.NOT_PERSISTENT.toString())));
+        usageCache(VALIDATE_INDEXES, "[cache1,...,cacheN]", op("nodeId"), op(or(VI_CHECK_FIRST + " N",
+            VI_CHECK_THROUGH + " K")));
         usageCache(DISTRIBUTION, or("nodeId", NULL), "[cacheName1,...,cacheNameN]", op(CMD_USER_ATTRIBUTES, "attName1,...,attrNameN"));
         usageCache(RESET_LOST_PARTITIONS, "cacheName1,...,cacheNameN");
         nl();
@@ -1032,10 +1052,9 @@ public class CommandHandler {
             executeTaskByNameOnNode(client, VisorCacheConfigurationCollectorTask.class.getName(), taskArg, nodeId);
 
         Map<String, Integer> cacheToMapped =
-            viewRes.cacheInfos().stream().collect(Collectors.toMap(x -> x.getCacheName(), x -> x.getMapped()));
+            viewRes.cacheInfos().stream().collect(Collectors.toMap(CacheInfo::getCacheName, CacheInfo::getMapped));
 
         printCachesConfig(res, cacheArgs.outputFormat(), cacheToMapped);
-
     }
 
     /**
@@ -1133,7 +1152,7 @@ public class CommandHandler {
         String path = executeTask(
             client,
             VisorIdleVerifyDumpTask.class,
-            new VisorIdleVerifyDumpTaskArg(cacheArgs.caches(), cacheArgs.isSkipZeros())
+            new VisorIdleVerifyDumpTaskArg(cacheArgs.caches(), cacheArgs.isSkipZeros(), cacheArgs.getCacheFilterEnum())
         );
 
         log("VisorIdleVerifyDumpTask successfully written output to '" + path + "'");
@@ -1820,17 +1839,19 @@ public class CommandHandler {
 
         String sslProtocol = SslContextFactory.DFLT_SSL_PROTOCOL;
 
-        String sslKeyAlgorithm = SslContextFactory.DFLT_KEY_ALGORITHM;
+        String sslCipherSuites = "";
 
-        String sslKeyStorePath = null;
+        String sslKeyAlgorithm = SslContextFactory.DFLT_KEY_ALGORITHM;
 
         String sslKeyStoreType = SslContextFactory.DFLT_STORE_TYPE;
 
+        String sslKeyStorePath = null;
+
         char sslKeyStorePassword[] = null;
 
-        String sslTrustStorePath = null;
-
         String sslTrustStoreType = SslContextFactory.DFLT_STORE_TYPE;
+
+        String sslTrustStorePath = null;
 
         char sslTrustStorePassword[] = null;
 
@@ -1951,38 +1972,43 @@ public class CommandHandler {
 
                         break;
 
+                    case CMD_SSL_CIPHER_SUITES:
+                        sslCipherSuites = nextArg("Expected SSL cipher suites");
+
+                        break;
+
                     case CMD_SSL_KEY_ALGORITHM:
                         sslKeyAlgorithm = nextArg("Expected SSL key algorithm");
 
                         break;
 
                     case CMD_KEYSTORE:
-                        sslKeyStorePath = nextArg("Expected keystore path");
+                        sslKeyStorePath = nextArg("Expected SSL key store path");
 
                         break;
 
                     case CMD_KEYSTORE_PASSWORD:
-                        sslKeyStorePassword = nextArg("Expected keystore password").toCharArray();
+                        sslKeyStorePassword = nextArg("Expected SSL key store password").toCharArray();
 
                         break;
 
                     case CMD_KEYSTORE_TYPE:
-                        sslKeyStoreType = nextArg("Expected keystore type");
+                        sslKeyStoreType = nextArg("Expected SSL key store type");
 
                         break;
 
                     case CMD_TRUSTSTORE:
-                        sslTrustStorePath = nextArg("Expected truststore path");
+                        sslTrustStorePath = nextArg("Expected SSL trust store path");
 
                         break;
 
                     case CMD_TRUSTSTORE_PASSWORD:
-                        sslTrustStorePassword = nextArg("Expected truststore password").toCharArray();
+                        sslTrustStorePassword = nextArg("Expected SSL trust store password").toCharArray();
 
                         break;
 
                     case CMD_TRUSTSTORE_TYPE:
-                        sslTrustStoreType = nextArg("Expected truststore type");
+                        sslTrustStoreType = nextArg("Expected SSL trust store type");
 
                         break;
 
@@ -2007,9 +2033,13 @@ public class CommandHandler {
 
         Command cmd = commands.get(0);
 
-        return new Arguments(cmd, host, port, user, pwd, baselineAct, baselineArgs, txArgs, cacheArgs, walAct, walArgs,
+        return new Arguments(cmd, host, port, user, pwd,
+            baselineAct, baselineArgs,
+            txArgs, cacheArgs,
+            walAct, walArgs,
             pingTimeout, pingInterval, autoConfirmation,
-            sslProtocol, sslKeyAlgorithm, sslKeyStorePath, sslKeyStorePassword, sslKeyStoreType,
+            sslProtocol, sslCipherSuites,
+            sslKeyAlgorithm, sslKeyStorePath, sslKeyStorePassword, sslKeyStoreType,
             sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType);
     }
 
@@ -2049,6 +2079,12 @@ public class CommandHandler {
                         cacheArgs.dump(true);
                     else if (CMD_SKIP_ZEROS.equals(nextArg))
                         cacheArgs.skipZeros(true);
+                    else if (CACHE_FILTER.equals(nextArg)) {
+                        String filter = nextArg("The cache filter should be specified. The following values can be " +
+                            "used: " + Arrays.toString(CacheFilterEnum.values()) + '.').toUpperCase();
+
+                        cacheArgs.setCacheFilterEnum(CacheFilterEnum.valueOf(filter));
+                    }
                     else
                         parseCacheNames(nextArg, cacheArgs);
                 }
@@ -2492,6 +2528,23 @@ public class CommandHandler {
     }
 
     /**
+     * Split string into items.
+     *
+     * @param s String to process.
+     * @param delim Delimiter.
+     * @return List with items.
+     */
+    private List<String> split(String s, String delim) {
+        if (F.isEmpty(s))
+            return Collections.emptyList();
+
+        return Arrays.stream(s.split(delim))
+            .map(String::trim)
+            .filter(item -> !item.isEmpty())
+            .collect(Collectors.toList());
+    }
+
+    /**
      * Parse and execute command.
      *
      * @param rawArgs Arguments to parse and execute.
@@ -2537,8 +2590,8 @@ public class CommandHandler {
                 log(i("PING_TIMEOUT=" + DFLT_PING_TIMEOUT, 2));
                 log(i("SSL_PROTOCOL=" + SslContextFactory.DFLT_SSL_PROTOCOL, 2));
                 log(i("SSL_KEY_ALGORITHM=" + SslContextFactory.DFLT_KEY_ALGORITHM, 2));
-                log(i("KEYSTORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
-                log(i("TRUSTSTORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
+                log(i("KEY_STORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
+                log(i("TRUST_STORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
                 nl();
 
                 log("Exit codes:");
@@ -2575,7 +2628,7 @@ public class CommandHandler {
 
             boolean tryConnectAgain = true;
 
-            int tryConnectMaxCount=3;
+            int tryConnectMaxCount = 3;
 
             while (tryConnectAgain) {
                 tryConnectAgain = false;
@@ -2597,9 +2650,20 @@ public class CommandHandler {
                 if (!F.isEmpty(args.sslKeyStorePath())) {
                     GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
 
-                    factory.setProtocol(args.sslProtocol());
+                    List<String> sslProtocols = split(args.sslProtocol(), ",");
 
+                    String sslProtocol = F.isEmpty(sslProtocols) ? SslContextFactory.DFLT_SSL_PROTOCOL : sslProtocols.get(0);
+
+                    factory.setProtocol(sslProtocol);
                     factory.setKeyAlgorithm(args.sslKeyAlgorithm());
+
+                    if (sslProtocols.size() > 1)
+                        factory.setProtocols(sslProtocols);
+
+                    factory.setCipherSuites(split(args.getSslCipherSuites(), ","));
+
+                    if (args.sslKeyStorePath() == null)
+                        throw new IllegalArgumentException("SSL key store location is not specified.");
 
                     factory.setKeyStoreFilePath(args.sslKeyStorePath());
 
@@ -2662,7 +2726,7 @@ public class CommandHandler {
                 }
                 catch (Throwable e) {
                     if (tryConnectMaxCount > 0 && isAuthError(e)) {
-                        System.out.println("Authentication error, try connection again.");
+                        log("Authentication error, try connection again.");
 
                         final Console console = System.console();
 
@@ -2675,13 +2739,13 @@ public class CommandHandler {
                         else {
                             Scanner scanner = new Scanner(System.in);
 
-                            if (F.isEmpty(args.getUserName())){
-                                System.out.println("user: ");
+                            if (F.isEmpty(args.getUserName())) {
+                                log("user: ");
 
                                 args.setUserName(scanner.next());
                             }
 
-                            System.out.println("password: ");
+                            log("password: ");
 
                             args.setPassword(scanner.next());
                         }
@@ -2690,8 +2754,13 @@ public class CommandHandler {
 
                         tryConnectMaxCount--;
                     }
-                    else
+                    else {
+                        if (tryConnectMaxCount == 0)
+                            throw new GridClientAuthenticationException("Authentication error, maximum number of " +
+                                "retries exceeded");
+
                         throw e;
+                    }
                 }
             }
             return EXIT_CODE_OK;

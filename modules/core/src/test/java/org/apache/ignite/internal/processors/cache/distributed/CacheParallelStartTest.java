@@ -33,10 +33,14 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test covers parallel start and stop of caches.
  */
+@RunWith(JUnit4.class)
 public class CacheParallelStartTest extends GridCommonAbstractTest {
     /** */
     private static final int CACHES_COUNT = 500;
@@ -128,6 +132,7 @@ public class CacheParallelStartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testParallelStartAndStop() throws Exception {
         testParallelStartAndStop(true);
     }
@@ -135,6 +140,7 @@ public class CacheParallelStartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testSequentialStartAndStop() throws Exception {
         testParallelStartAndStop(false);
     }
