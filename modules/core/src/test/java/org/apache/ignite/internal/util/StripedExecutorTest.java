@@ -21,6 +21,8 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -34,6 +36,7 @@ public class StripedExecutorTest extends GridCommonAbstractTest {
     private StripedExecutor stripedExecSvc;
 
     /** {@inheritDoc} */
+    @Before
     @Override public void beforeTest() {
         stripedExecSvc = new StripedExecutor(3, "foo name", "pool name", new JavaLogger(),
             new IgniteInClosure<Throwable>() {
@@ -42,6 +45,7 @@ public class StripedExecutorTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @After
     @Override public void afterTest() {
         stripedExecSvc.shutdown();
     }
@@ -149,7 +153,10 @@ public class StripedExecutorTest extends GridCommonAbstractTest {
         final int stripeIdx = 0;
 
         stripedExecSvc.execute(stripeIdx, new TestRunnable(true));
-        assertFalse(GridTestUtils.waitForCondition(() -> stripedExecSvc.activeStripesCount() == 0, 3000));
+
+        sleepASec();
+
+        assertFalse(GridTestUtils.waitForCondition(() -> stripedExecSvc.activeStripesCount() == 0, 2000));
 
         stripedExecSvc.execute(stripeIdx, new TestRunnable());
         assertTrue(GridTestUtils.waitForCondition(() -> stripedExecSvc.activeStripesCount() == 1, 10000));

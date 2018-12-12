@@ -51,7 +51,6 @@ import org.jetbrains.annotations.NotNull;
  * Striped executor.
  */
 public class StripedExecutor implements ExecutorService {
-
     /** Stripes. */
     private final Stripe[] stripes;
 
