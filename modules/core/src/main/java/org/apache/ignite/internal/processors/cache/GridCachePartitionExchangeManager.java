@@ -2861,6 +2861,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 }
                             }
 
+                            exchFut.timeBag().finishGlobalStage("Waiting in exchange queue");
+
                             exchFut.init(newCrd);
 
                             int dumpCnt = 0;

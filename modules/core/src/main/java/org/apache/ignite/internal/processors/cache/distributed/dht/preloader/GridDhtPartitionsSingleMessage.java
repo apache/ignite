@@ -102,6 +102,9 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     @GridDirectCollection(Integer.class)
     private Collection<Integer> grpsAffRequest;
 
+    /** Start time of exchange on node which sent this message in nanoseconds. */
+    private long exchangeTimeStart;
+
     /**
      * Exchange finish message, sent to new coordinator when it tries to
      * restore state after previous coordinator failed during exchange.
@@ -314,6 +317,20 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      */
     @Nullable public Exception getError() {
         return err;
+    }
+
+    /**
+     * Start time of exchange on node which sent this message.
+     */
+    public long exchangeTimeStart() {
+        return exchangeTimeStart;
+    }
+
+    /**
+     * @param exchangeTimeStart Start time of exchange.
+     */
+    public void exchangeTimeStart(long exchangeTimeStart) {
+        this.exchangeTimeStart = exchangeTimeStart;
     }
 
     /** {@inheritDoc}
