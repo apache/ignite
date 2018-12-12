@@ -17,8 +17,6 @@
 
 package org.apache.ignite.spark
 
-import java.net.Inet4Address
-import java.sql.{Connection, DriverManager}
 import java.util
 
 import org.apache.commons.lang.StringUtils.equalsIgnoreCase
@@ -28,12 +26,10 @@ import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.internal.IgniteEx
 import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils
 import org.apache.ignite.internal.processors.query.QueryUtils.normalizeSchemaName
-import org.apache.ignite.internal.util.IgniteUtils
 import org.apache.ignite.internal.util.lang.GridFunc.contains
 import org.apache.ignite.{Ignite, Ignition}
 import org.apache.spark.Partition
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog
-import org.h2.value.DataType
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
