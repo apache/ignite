@@ -16,11 +16,15 @@
  */
 
 /**
- * Package with Apache Ignite internal Processors.
- * Processor is Ignite component with lifecycle associated with node lifecycle.
+ * This package contains page memory implementation for case persitence is enabled.
+ * Contained clasees with <ul>
+ *  <li>Page Memory implementation {@link org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl}.</li>
+ *  <li>Page Write Throttling.</li>
+ *  <li>Mapping of full Page IDs to place in memory segment.</li>
+ *  <li>Pages replacement with disk.</li>
+ * </ul>
  *
  * See also
- * <a href='https://github.com/apache/ignite/tree/master/modules/core/src/main/java/org/apache/ignite/internal/processors/'>Package Readme</a>
- *
+ * <a href="https://github.com/apache/ignite/tree/master/modules/core/src/main/java/org/apache/ignite/internal/processors/cache/persistence/pagemem">Package description</a>
  */
-package org.apache.ignite.internal.processors;
+package org.apache.ignite.internal.processors.cache.persistence.pagemem;
