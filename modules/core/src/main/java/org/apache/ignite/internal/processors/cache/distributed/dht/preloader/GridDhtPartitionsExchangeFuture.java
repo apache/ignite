@@ -3243,15 +3243,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 if (discoveryCustomMessage instanceof DynamicCacheChangeBatch) {
                     if (exchActions != null) {
-                        assignPartitionsStates();
-
                         Set<String> caches = exchActions.cachesToResetLostPartitions();
 
-                        if (!F.isEmpty(caches)) {
+                        boolean resetPartitions = !F.isEmpty(caches);
+
+                        if (resetPartitions)
                             resetLostPartitions(caches);
 
-                            cctx.exchange().refreshPartitions();
-                        }
+                        assignPartitionsStates();
+
+                        if (resetPartitions)
+                            cctx.exchange().scheduleResendPartitions();
                     }
                 }
                 else if (discoveryCustomMessage instanceof SnapshotDiscoveryMessage

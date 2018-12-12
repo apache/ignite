@@ -2129,54 +2129,26 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             try {
                 long updSeq = updateSeq.incrementAndGet();
 
-                Set<Integer> hasOwners = new HashSet<>();
-
                 for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
-                    GridDhtPartitionMap partMap = e.getValue();
-
-                    for (Map.Entry<Integer, GridDhtPartitionState> e0 : partMap.entrySet()) {
-                        GridDhtPartitionState state = e0.getValue();
-
-                        int part = e0.getKey();
-
-                        if (state == OWNING)
-                            hasOwners.add(part);
-
-                        if (state != LOST)
-                            continue;
-
-                        AffinityAssignment assignment = grp.affinity().cachedAffinity(resTopVer);
-
-                        if (!assignment.idealAssignment().get(part).contains(ctx.discovery().node(e.getKey())))
+                    for (Map.Entry<Integer, GridDhtPartitionState> e0 : e.getValue().entrySet()) {
+                        if (e0.getValue() != LOST)
                             continue;
 
                         e0.setValue(OWNING);
-                    }
-                }
 
-                // Reset local partitions.
-                GridDhtPartitionMap locPartMap = node2part.get(ctx.localNodeId());
-
-                if (locPartMap != null) {
-                    for (Map.Entry<Integer, GridDhtPartitionState> e : locPartMap.entrySet()){
-                        GridDhtLocalPartition locPart = localPartition(e.getKey(), resTopVer, false);
+                        GridDhtLocalPartition locPart = localPartition(e0.getKey(), resTopVer, false);
 
                         if (locPart != null && locPart.state() == LOST) {
-                            long updateCntr = locPart.updateCounter();
-
-                            if (updateCntr == 0 && e.getValue() != OWNING)
-                                continue;
-
                             boolean marked = locPart.own();
 
                             if (marked) {
                                 updateLocal(locPart.id(), locPart.state(), updSeq, resTopVer);
 
-                                if (!hasOwners.contains(e.getKey())) {
-                                    //Set update counters to 0, for full rebalance.
-                                    locPart.updateCounter(updateCntr, -updateCntr);
-                                    locPart.initialUpdateCounter(0);
-                                }
+                                long updateCntr = locPart.updateCounter();
+
+                                //Set update counters to 0, for full rebalance.
+                                locPart.updateCounter(updateCntr, -updateCntr);
+                                locPart.initialUpdateCounter(0);
                             }
                         }
                     }
