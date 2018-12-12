@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.service;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 
@@ -41,9 +40,6 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
     /** */
     private byte[] srvcBytes;
 
-    /** */
-    private boolean usedJdkMarshaller;
-
     /**
      * Default constructor.
      */
@@ -56,15 +52,6 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
      * @param srvcBytes Marshaller service.
      */
     public LazyServiceConfiguration(ServiceConfiguration cfg, byte[] srvcBytes) {
-        this(cfg, srvcBytes, false);
-    }
-
-    /**
-     * @param cfg Configuration.
-     * @param srvcBytes Marshaller service.
-     * @param usedJdkMarshaller Whenever {@link JdkMarshaller} has been used for service marshalling.
-     */
-    public LazyServiceConfiguration(ServiceConfiguration cfg, byte[] srvcBytes, boolean usedJdkMarshaller) {
         assert cfg.getService() != null : cfg;
         assert srvcBytes != null;
 
@@ -77,7 +64,6 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         this.srvcBytes = srvcBytes;
         srvc = cfg.getService();
         srvcClsName = srvc.getClass().getName();
-        this.usedJdkMarshaller = usedJdkMarshaller;
     }
 
     /**
@@ -92,13 +78,6 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
      */
     public String serviceClassName() {
         return srvcClsName;
-    }
-
-    /**
-     * @return Whenever {@link JdkMarshaller} has been used for service marshalling.
-     */
-    public boolean isUsedJdkMarshaller() {
-        return usedJdkMarshaller;
     }
 
     /** {@inheritDoc} */

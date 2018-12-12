@@ -180,7 +180,7 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public class TestServiceImpl implements Service, TestService {
+    public static class TestServiceImpl implements Service, TestService {
         /** Serial version UID. */
         private static final long serialVersionUID = 0L;
 

@@ -145,6 +145,9 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     private final ThreadFactory threadFactory = new IgniteThreadFactory(ctx.igniteInstanceName(), "service",
         new OomExceptionHandler(ctx));
 
+    /** Marshaller for serialization/deserialization of service's instance. */
+    private final Marshaller marsh = new JdkMarshaller();
+
     /** Services deployment manager. */
     private volatile ServicesDeploymentManager depMgr = new ServicesDeploymentManager(ctx);
 
@@ -510,13 +513,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         IgnitePredicate<ClusterNode> dfltNodeFilter) {
         List<ServiceConfiguration> cfgsCp = new ArrayList<>(cfgs.size());
 
-        // At node startup routine, if node has not been joined yet, 'BinaryMarshaller' and 'OptimizedMarshaler' can not
-        // be used, because for a class registration they use 'GridMarshallerMappingProcessor' which is not ready at
-        // the moment. In this case 'JdkMarshaller' has to be used.
-        boolean useJdkMarshaller = !ctx.discovery().localJoinFuture().isDone();
-
-        Marshaller marsh = !useJdkMarshaller ? ctx.config().getMarshaller() : new JdkMarshaller();
-
         List<GridServiceDeploymentFuture<IgniteUuid>> failedFuts = null;
 
         for (ServiceConfiguration cfg : cfgs) {
@@ -544,7 +540,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 try {
                     byte[] srvcBytes = U.marshal(marsh, cfg.getService());
 
-                    cfgsCp.add(new LazyServiceConfiguration(cfg, srvcBytes, useJdkMarshaller));
+                    cfgsCp.add(new LazyServiceConfiguration(cfg, srvcBytes));
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to marshal service with configured marshaller " +
@@ -1208,12 +1204,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      */
     @SuppressWarnings("deprecation")
     private Service copyAndInject(ServiceConfiguration cfg) throws IgniteCheckedException {
-        boolean lazySrvcCfg = cfg instanceof LazyServiceConfiguration;
-
-        Marshaller marsh = lazySrvcCfg && ((LazyServiceConfiguration)cfg).isUsedJdkMarshaller() ?
-            new JdkMarshaller() : ctx.config().getMarshaller();
-
-        if (lazySrvcCfg) {
+        if (cfg instanceof LazyServiceConfiguration) {
             byte[] bytes = ((LazyServiceConfiguration)cfg).serviceBytes();
 
             Service srvc = U.unmarshal(marsh, bytes, U.resolveClassLoader(null, ctx.config()));
