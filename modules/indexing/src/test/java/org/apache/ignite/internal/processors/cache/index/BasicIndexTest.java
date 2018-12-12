@@ -821,56 +821,6 @@ public class BasicIndexTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class Val2 {
-        /** */
-        private String valStr;
-
-        /** */
-        private long valLong;
-
-        /** */
-        private Pojo valPojo;
-
-        /** */
-        private Val2(String str, long aLong, Pojo pojo) {
-            valStr = str;
-            valLong = aLong;
-            valPojo = pojo;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            Val2 val = (Val2) o;
-
-            return valLong == val.valLong &&
-                Objects.equals(valStr, val.valStr) &&
-                Objects.equals(valPojo, val.valPojo);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override public int hashCode() {
-            return Objects.hash(valStr, valLong, valPojo);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override public String toString() {
-            return S.toString(Val2.class, this);
-        }
-    }
-
-    /** */
     private static class Pojo {
         /** */
         private long pojoLong;
