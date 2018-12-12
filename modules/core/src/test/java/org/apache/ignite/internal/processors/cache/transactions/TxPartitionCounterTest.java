@@ -40,7 +40,7 @@ public class TxPartitionCounterTest extends TxSinglePartitionAbstractTest {
             commitOrder.add(commitOrd[i]);
 
         int partId = 0;
-        int backups = 2;
+        int backups = 1;
         int nodes = 2;
 
         runOnPartition(partId, backups, nodes, new TxCallbackAdapter() {
