@@ -1823,9 +1823,17 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     @Override public IgniteInternalFuture<NearTxLocator> checkWaiting(UUID nodeId, MvccVersion mvccVer) {
-        // t0d0 employ local check without futures and messagses
+        if (ctx.localNodeId().equals(nodeId)) {
+            return findBlockerTx(mvccVer)
+                .map(tx -> new NearTxLocator(tx.eventNodeId(), tx.nearXidVersion()))
+                .map(GridFinishedFuture::new)
+                .orElseGet(GridFinishedFuture::new);
+        }
+
         LockWaitCheckFuture fut = new LockWaitCheckFuture(nodeId, mvccVer, ctx.cache().context());
+
         fut.init();
+
         return fut;
     }
 
