@@ -558,10 +558,6 @@ public class QueryUtils {
         Map<String, Integer> precision  = qryEntity.getFieldsPrecision();
         Map<String, Integer> scale = qryEntity.getFieldsScale();
 
-        // We have to distinguish between empty and null keyFields when the key is not of SQL type -
-        // when a key is not of SQL type, absence of a field in nonnull keyFields tell us that this field
-        // is a value field, and null keyFields tells us that current configuration
-        // does not tell us anything about this field's ownership.
         boolean hasKeyFields = (keyFields != null);
 
         boolean isKeyClsSqlType = isSqlType(d.keyClass());
@@ -576,12 +572,14 @@ public class QueryUtils {
         }
 
         for (Map.Entry<String, String> entry : fields.entrySet()) {
-            Boolean isKeyField;
+            boolean isKeyField;
 
-            if (isKeyClsSqlType) // We don't care about keyFields in this case - it might be null, or empty, or anything
+            // Currently we are using only QueryBinaryProperties even if key or value is not of binary type.
+            // In case of key we just set key property to false and hope, that value() method will never be called.
+            if (isKeyClsSqlType)
                 isKeyField = false;
             else
-                isKeyField = (hasKeyFields ? keyFields.contains(entry.getKey()) : null);
+                isKeyField = (hasKeyFields && keyFields.contains(entry.getKey()));
 
             boolean notNull = notNulls != null && notNulls.contains(entry.getKey());
 
@@ -794,7 +792,7 @@ public class QueryUtils {
      * @return Binary property.
      */
     public static QueryBinaryProperty buildBinaryProperty(GridKernalContext ctx, String pathStr,
-        Class<?> resType, Map<String, String> aliases, @Nullable Boolean isKeyField, boolean notNull, Object dlftVal,
+        Class<?> resType, Map<String, String> aliases, boolean isKeyField, boolean notNull, Object dlftVal,
         int precision, int scale) {
         String[] path = pathStr.split("\\.");
 
