@@ -126,4 +126,11 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
 
         return authCtx;
     }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected() {
+        if (ctx.security().enabled())
+            ctx.security().onSessionExpired(secCtx.subject().id());
+    }
+
 }
