@@ -256,7 +256,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             },
             EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_JOINED);
 
-        ctx.io().addMessageListener(TOPIC_CACHE_COORDINATOR, new CoordinatorMessageListener());
+        ctx.io().addMessageListener(TOPIC_CACHE_COORDINATOR, new MvccMessageListener());
 
         ctx.discovery().setCustomEventListener(DynamicCacheChangeBatch.class,
             new CustomEventListener<DynamicCacheChangeBatch>() {
@@ -1898,7 +1898,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /**
      *
      */
-    private class CoordinatorMessageListener implements GridMessageListener {
+    private class MvccMessageListener implements GridMessageListener {
         /** {@inheritDoc} */
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             // t0d0 setup message handler in proper place
@@ -1973,7 +1973,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return "CoordinatorMessageListener[]";
+            return "MvccMessageListener[]";
         }
     }
 
