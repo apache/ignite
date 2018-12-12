@@ -33,7 +33,7 @@ public class IgnitePdsNativeIoTestSuite {
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite (with Direct IO)");
 
-        IgnitePdsTestSuite.addRealPageStoreTests(suite);
+        IgnitePdsTestSuite.addRealPageStoreTests(suite, null);
 
         //long running test by design with light parameters
         suite.addTest(new JUnit4TestAdapter(IgnitePdsReplacementNativeIoTest.class));
