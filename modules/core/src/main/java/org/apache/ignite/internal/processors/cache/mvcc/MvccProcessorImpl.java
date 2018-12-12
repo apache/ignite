@@ -647,10 +647,12 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         if ((state == TxState.ABORTED || state == TxState.COMMITTED)
             && !waiter.hasLocalTransaction() && (waiter = waitMap.remove(key)) != null)
             waiter.run(ctx);
+        else {
+            DdCollaborator.DeferredDeadlockComputation deferredComputation
+                = new DdCollaborator(ctx.cache().context()).initDeferredComputation(blockedVersion, locked);
 
-        // t0d0 watch for exact falling asleep condition
-        new DdCollaborator(ctx.cache().context())
-            .startComputation(blockedVersion, locked);
+            fut.listen(fut0 -> deferredComputation.cancel());
+        }
 
         return fut;
     }

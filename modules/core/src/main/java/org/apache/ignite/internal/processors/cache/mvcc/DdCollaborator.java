@@ -30,6 +30,8 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxAb
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_COORDINATOR;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
@@ -42,16 +44,20 @@ public class DdCollaborator {
         this.cctx = cctx;
     }
 
-    public void startComputation(MvccVersion waiterVersion, MvccVersion blockerVersion) {
+    public DeferredDeadlockComputation initDeferredComputation(MvccVersion waiterVer, MvccVersion blockerVer) {
+        return new DeferredDeadlockComputation(waiterVer, blockerVer, 500);
+    }
+
+    public void startComputation(MvccVersion waiterVer, MvccVersion blockerVer) {
         // t0d0 filter out non-mvcc transactions where needed
         Optional<IgniteInternalTx> waitingTx = cctx.tm().activeTransactions().stream()
             .filter(tx -> tx.mvccSnapshot() != null)
-            .filter(tx -> belongToSameTx(waiterVersion, tx.mvccSnapshot()))
+            .filter(tx -> belongToSameTx(waiterVer, tx.mvccSnapshot()))
             .findAny();
 
         Optional<IgniteInternalTx> blockerTx = cctx.tm().activeTransactions().stream()
             .filter(tx -> tx.mvccSnapshot() != null)
-            .filter(tx -> belongToSameTx(blockerVersion, tx.mvccSnapshot()))
+            .filter(tx -> belongToSameTx(blockerVer, tx.mvccSnapshot()))
             .findAny();
 
         if (waitingTx.isPresent() && blockerTx.isPresent()) {
@@ -132,5 +138,23 @@ public class DdCollaborator {
 
     public static boolean belongToSameTx(MvccVersion v1, MvccVersion v2) {
         return v1.coordinatorVersion() == v2.coordinatorVersion() && v1.counter() == v2.counter();
+    }
+
+    public class DeferredDeadlockComputation {
+        private final GridTimeoutObject computation;
+
+        private DeferredDeadlockComputation(MvccVersion waiterVer, MvccVersion blockerVer, long timeout) {
+            computation = new GridTimeoutObjectAdapter(timeout) {
+                @Override public void onTimeout() {
+                    startComputation(waiterVer, blockerVer);
+                }
+            };
+
+            cctx.kernalContext().timeout().addTimeoutObject(computation);
+        }
+
+        public void cancel() {
+            cctx.kernalContext().timeout().removeTimeoutObject(computation);
+        }
     }
 }
