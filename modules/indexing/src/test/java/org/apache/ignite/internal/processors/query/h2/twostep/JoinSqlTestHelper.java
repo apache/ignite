@@ -18,7 +18,11 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+
+import java.util.Collection;
+import java.util.Collections;
 
 /**
  * Join sql test helper
@@ -39,6 +43,30 @@ public class JoinSqlTestHelper {
         "and lower(org.name) = lower(?)";
 
     /**
+     * @return Query entity for Organization.
+     */
+    static Collection<QueryEntity> organizationQueryEntity() {
+        QueryEntity entity = new QueryEntity(String.class, Organization.class);
+
+        entity.setKeyFieldName("ID");
+        entity.getFields().put("ID", String.class.getName());
+
+        return Collections.singletonList(entity);
+    }
+
+    /**
+     * @return Query entity for Organization.
+     */
+    static Collection<QueryEntity> personQueryEntity() {
+        QueryEntity entity = new QueryEntity(String.class, Person.class);
+
+        entity.setKeyFieldName("ID");
+        entity.getFields().put("ID", String.class.getName());
+
+        return Collections.singletonList(entity);
+    }
+
+    /**
      * Populate organization cache with test data
      * @param cache @{IgniteCache}
      */
@@ -46,11 +74,9 @@ public class JoinSqlTestHelper {
         for (int i = 0; i < ORG_COUNT; i++) {
             Organization org = new Organization();
 
-            org.setId(ORG + i);
-
             org.setName("Organization #" + i);
 
-            cache.put(org.getId(), org);
+            cache.put(ORG + i, org);
         }
     }
 
@@ -62,22 +88,16 @@ public class JoinSqlTestHelper {
         int personId = 0;
 
         for (int i = 0; i < ORG_COUNT; i++) {
-            Organization org = new Organization();
-
-            org.setId(ORG + i);
-
-            org.setName("Organization #" + i);
+            String orgId = ORG + i;
 
             for (int j = 0; j < PERSON_PER_ORG_COUNT; j++) {
                 Person prsn = new Person();
 
-                prsn.setId("pers" + personId);
-
-                prsn.setOrgId(org.getId());
+                prsn.setOrgId(orgId);
 
                 prsn.setName("Person name #" + personId);
 
-                cache.put(prsn.getId(), prsn);
+                cache.put("pers" + personId, prsn);
 
                 personId++;
             }
@@ -90,25 +110,11 @@ public class JoinSqlTestHelper {
     public static class Person {
         /** */
         @QuerySqlField(index = true)
-        private String id;
-
-        /** */
-        @QuerySqlField(index = true)
         private String orgId;
 
         /** */
         @QuerySqlField(index = true)
         private String name;
-
-        /** */
-        public String getId() {
-            return id;
-        }
-
-        /** */
-        public void setId(String id) {
-            this.id = id;
-        }
 
         /** */
         public String getOrgId() {
@@ -137,21 +143,7 @@ public class JoinSqlTestHelper {
     public static class Organization {
         /** */
         @QuerySqlField(index = true)
-        private String id;
-
-        /** */
-        @QuerySqlField(index = true)
         private String name;
-
-        /** */
-        public void setId(String id) {
-            this.id = id;
-        }
-
-        /** */
-        public String getId() {
-            return id;
-        }
 
         /** */
         public String getName() {

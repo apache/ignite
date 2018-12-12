@@ -107,6 +107,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** */
     private String affKey;
 
+    /** Whether custom affinity mapper is used. */
+    private boolean customAffMapper;
+
     /** */
     private String keyFieldName;
 
@@ -123,7 +126,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     private List<GridQueryProperty> propsWithDefaultValue;
 
     /** */
-    @Nullable private CacheObjectContext coCtx;
+    private final CacheObjectContext coCtx;
 
     /**
      * Constructor.
@@ -131,7 +134,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * @param cacheName Cache name.
      * @param coCtx Cache object context.
      */
-    public QueryTypeDescriptorImpl(String cacheName, @Nullable CacheObjectContext coCtx) {
+    public QueryTypeDescriptorImpl(String cacheName, CacheObjectContext coCtx) {
         this.cacheName = cacheName;
         this.coCtx = coCtx;
     }
@@ -481,6 +484,18 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         this.affKey = affKey;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean customAffinityMapper() {
+        return customAffMapper;
+    }
+
+    /**
+     * @param customAffMapper Whether custom affinity mapper is used.
+     */
+    public void customAffinityMapper(boolean customAffMapper) {
+        this.customAffMapper = customAffMapper;
+    }
+
     /**
      * @return Aliases.
      */
@@ -564,14 +579,12 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             boolean isKey = false;
 
             if (F.eq(prop.name(), keyFieldName) || (keyFieldName == null && F.eq(prop.name(), KEY_FIELD_NAME))) {
-                propVal = key instanceof KeyCacheObject && coCtx != null ?
-                    ((KeyCacheObject)key).value(coCtx, true) : key;
+                propVal = key instanceof KeyCacheObject ? ((CacheObject) key).value(coCtx, true) : key;
 
                 isKey = true;
             }
             else if (F.eq(prop.name(), valFieldName) || (valFieldName == null && F.eq(prop.name(), VAL_FIELD_NAME))) {
-                propVal = val instanceof CacheObject && coCtx != null ?
-                    ((CacheObject)val).value(coCtx, true) : val;
+                propVal = val instanceof CacheObject ? ((CacheObject)val).value(coCtx, true) : val;
             }
             else {
                 propVal = prop.value(key, val);

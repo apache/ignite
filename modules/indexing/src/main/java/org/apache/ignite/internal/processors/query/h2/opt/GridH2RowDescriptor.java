@@ -44,6 +44,9 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueR
  * Row descriptor.
  */
 public class GridH2RowDescriptor {
+    /** Non existent column. */
+    public static final int COL_NOT_EXISTS = -1;
+
     /** Table descriptor. */
     private final H2TableDescriptor tbl;
 
@@ -119,11 +122,11 @@ public class GridH2RowDescriptor {
 
         List<String> fieldsList = Arrays.asList(fields);
 
-        keyAliasColId =
-            (type.keyFieldName() != null) ? DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.keyFieldAlias()) : -1;
+        keyAliasColId = (type.keyFieldName() != null) ?
+            DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.keyFieldAlias()) : COL_NOT_EXISTS;
 
-        valAliasColId =
-            (type.valueFieldName() != null) ? DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.valueFieldAlias()) : -1;
+        valAliasColId = (type.valueFieldName() != null) ?
+            DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.valueFieldAlias()) : COL_NOT_EXISTS;
     }
 
     /**
@@ -277,6 +280,13 @@ public class GridH2RowDescriptor {
     public boolean isKeyAliasColumn(int colId) {
         assert colId >= 0;
         return colId == keyAliasColId;
+    }
+
+    /**
+     * @return Key alias column ID.
+     */
+    public int keyAliasColumn() {
+        return keyAliasColId;
     }
 
     /**

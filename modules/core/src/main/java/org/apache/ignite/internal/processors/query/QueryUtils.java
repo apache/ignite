@@ -412,7 +412,7 @@ public class QueryUtils {
 
         boolean binaryEnabled = ctx.cacheObjects().isBinaryEnabled(ccfg);
 
-        CacheObjectContext coCtx = binaryEnabled ? ctx.cacheObjects().contextForCache(ccfg) : null;
+        CacheObjectContext coCtx = ctx.cacheObjects().contextForCache(ccfg);
 
         QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(cacheName, coCtx);
 
@@ -490,13 +490,13 @@ public class QueryUtils {
             if (valCls != null)
                 altTypeId = new QueryTypeIdKey(cacheName, valCls);
 
-            String affField = null;
-
             // Need to setup affinity key for distributed joins.
-            String keyType = qryEntity.getKeyType();
+            if (!coCtx.customAffinityMapper()) {
+                String affField = KEY_FIELD_NAME;
 
-            if (coCtx != null) {
-                if (!coCtx.customAffinityMapper() && keyType != null) {
+                String keyType = qryEntity.getKeyType();
+
+                if (keyType != null) {
                     CacheDefaultBinaryAffinityKeyMapper mapper =
                         (CacheDefaultBinaryAffinityKeyMapper)coCtx.defaultAffMapper();
 
@@ -505,9 +505,7 @@ public class QueryUtils {
                     if (field != null)
                         affField = field.name();
                 }
-            }
 
-            if (affField != null) {
                 if (!escape)
                     affField = normalizeObjectName(affField, false);
 

@@ -106,12 +106,12 @@ public class DisappearedCacheWasNotFoundMessageSelfTest extends GridCommonAbstra
         startGridsMultiThreaded(NODES_COUNT, false);
 
         personCache = ignite(0).getOrCreateCache(new CacheConfiguration<String, Person>("pers")
-            .setIndexedTypes(String.class, JoinSqlTestHelper.Person.class)
+            .setQueryEntities(JoinSqlTestHelper.personQueryEntity())
         );
 
         orgCache = ignite(0).getOrCreateCache(new CacheConfiguration<String, Organization>(ORG)
                 .setCacheMode(CacheMode.REPLICATED)
-                .setIndexedTypes(String.class, Organization.class)
+                .setQueryEntities(JoinSqlTestHelper.organizationQueryEntity())
         );
 
         awaitPartitionMapExchange();

@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
@@ -79,7 +80,7 @@ public class InOperationExtractPartitionSelfTest extends GridCommonAbstractTest 
 
         orgCache = ignite(0).getOrCreateCache(new CacheConfiguration<String, JoinSqlTestHelper.Organization>(ORG)
             .setCacheMode(CacheMode.PARTITIONED)
-            .setIndexedTypes(String.class, JoinSqlTestHelper.Organization.class)
+            .setQueryEntities(JoinSqlTestHelper.organizationQueryEntity())
         );
 
         awaitPartitionMapExchange();
@@ -183,7 +184,7 @@ public class InOperationExtractPartitionSelfTest extends GridCommonAbstractTest 
     private void testInOperator(List<String> cnst, Object[] args, long expRes, int maxReq) {
         int curIdx = cnt.intValue();
 
-        String toIn = cnst.size() == 0 ? "" : String.valueOf("'" + String.join("','", cnst) + "'")
+        String toIn = cnst.isEmpty() ? "" : String.valueOf("'" + String.join("','", cnst) + "'")
             .replace("'?'", "?");
 
         try (FieldsQueryCursor<List<?>> cur = orgCache.query(new SqlFieldsQuery(

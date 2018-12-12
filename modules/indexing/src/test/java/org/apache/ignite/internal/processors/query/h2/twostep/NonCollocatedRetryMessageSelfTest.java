@@ -94,14 +94,14 @@ public class NonCollocatedRetryMessageSelfTest extends GridCommonAbstractTest {
         CacheConfiguration<String, JoinSqlTestHelper.Person> ccfg1 = new CacheConfiguration<>("pers");
 
         ccfg1.setBackups(1);
-        ccfg1.setIndexedTypes(String.class, JoinSqlTestHelper.Person.class);
+        ccfg1.setQueryEntities(JoinSqlTestHelper.personQueryEntity());
 
         personCache = ignite(0).getOrCreateCache(ccfg1);
 
         CacheConfiguration<String, JoinSqlTestHelper.Organization> ccfg2 = new CacheConfiguration<>(ORG);
 
         ccfg2.setBackups(1);
-        ccfg2.setIndexedTypes(String.class, JoinSqlTestHelper.Organization.class);
+        ccfg2.setQueryEntities(JoinSqlTestHelper.organizationQueryEntity());
 
         IgniteCache<String, JoinSqlTestHelper.Organization> orgCache = ignite(0).getOrCreateCache(ccfg2);
 

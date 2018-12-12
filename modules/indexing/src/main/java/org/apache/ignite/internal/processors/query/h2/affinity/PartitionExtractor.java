@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.affinity;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
@@ -35,14 +34,11 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.table.Column;
-import org.h2.table.IndexColumn;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 
 /**
  * Partition tree extractor.
@@ -102,6 +98,7 @@ public class PartitionExtractor {
      * @param qrys Queries.
      * @return Partition result or {@code null} if nothing is resolved.
      */
+    @SuppressWarnings("IfMayBeConditional")
     public PartitionResult merge(List<GridCacheSqlQuery> qrys) {
         // Check if merge is possible.
         PartitionTableDescriptor desc = null;
@@ -149,7 +146,7 @@ public class PartitionExtractor {
      * @param from From.
      * @return Table or {@code null} if not a table.
      */
-   @Nullable private static GridSqlTable unwrapTable(GridSqlAst from) {
+    @Nullable private static GridSqlTable unwrapTable(GridSqlAst from) {
         if (from instanceof GridSqlAlias)
             from = from.child();
 
@@ -165,6 +162,7 @@ public class PartitionExtractor {
      * @param expr Expression.
      * @return Partition tree.
      */
+    @SuppressWarnings("EnumSwitchStatementWhichMissesCases")
     private PartitionNode extractFromExpression(GridSqlAst expr) throws IgniteCheckedException {
         PartitionNode res = PartitionAllNode.INSTANCE;
 
@@ -343,7 +341,7 @@ public class PartitionExtractor {
 
         GridH2Table tbl = (GridH2Table)leftCol.getTable();
 
-        if (!isAffinityKey(leftCol.getColumnId(), tbl))
+        if (!tbl.isAffinityKeyColumn(leftCol))
             return null;
 
         PartitionTableDescriptor tblDesc = descriptor(tbl);
@@ -357,32 +355,6 @@ public class PartitionExtractor {
             return new PartitionParameterNode(tblDesc, idx, rightParam.index(), leftCol.getType());
         else
             return null;
-    }
-
-    /**
-     *
-     * @param colId Column ID to check
-     * @param tbl H2 Table
-     * @return is affinity key or not
-     */
-    private static boolean isAffinityKey(int colId, GridH2Table tbl) {
-        GridH2RowDescriptor desc = tbl.rowDescriptor();
-
-        if (desc.isKeyColumn(colId))
-            return true;
-
-        IndexColumn affKeyCol = tbl.getAffinityKeyColumn();
-
-        try {
-            return
-                affKeyCol != null &&
-                colId >= DEFAULT_COLUMNS_COUNT &&
-                desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT) &&
-                colId == affKeyCol.column.getColumnId();
-        }
-        catch (IllegalStateException e) {
-            return false;
-        }
     }
 
     /**

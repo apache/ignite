@@ -337,12 +337,12 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
         h2Idx = GridTestUtils.getFieldValue(qryProc, GridQueryProcessor.class, "idx");
 
         personCache = ignite(0).getOrCreateCache(new CacheConfiguration<String, Person>("pers")
-            .setIndexedTypes(String.class, Person.class)
+            .setQueryEntities(JoinSqlTestHelper.personQueryEntity())
         );
 
         orgCache = ignite(0).getOrCreateCache(new CacheConfiguration<String, Organization>(ORG)
             .setCacheMode(CacheMode.REPLICATED)
-            .setIndexedTypes(String.class, Organization.class)
+            .setQueryEntities(JoinSqlTestHelper.organizationQueryEntity())
         );
 
         awaitPartitionMapExchange();

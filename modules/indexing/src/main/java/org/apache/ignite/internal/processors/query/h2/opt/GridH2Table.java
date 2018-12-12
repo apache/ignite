@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -63,6 +64,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor.COL_NOT_EXISTS;
 
 /**
  * H2 Table implementation.
@@ -101,6 +103,14 @@ public class GridH2Table extends TableBase {
     /** */
     private final IndexColumn affKeyCol;
 
+    private final HashSet<Integer> affKeyColIds;
+
+    /** Affinity key column ID. */
+    private final int affKeyColId;
+
+    /** Affinity key column alias ID (if any). */
+    private final int affKeyColAliasId;
+
     /** */
     private final LongAdder size = new LongAdder();
 
@@ -138,32 +148,24 @@ public class GridH2Table extends TableBase {
         this.desc = desc;
         this.cacheInfo = cacheInfo;
 
-        boolean affinityColExists = true;
+        String affKeyFieldName = desc.type().affinityKey();
 
-        String affKey = desc.type().affinityKey();
+        if (affKeyFieldName != null && doesColumnExist(affKeyFieldName)) {
+            int affKeyColId = getColumn(affKeyFieldName).getColumnId();
 
-        int affKeyColId = -1;
+            if (desc.isKeyAliasColumn(affKeyColId))
+                affKeyColId = KEY_COL;
 
-        if (affKey != null) {
-            if (doesColumnExist(affKey)) {
-                affKeyColId = getColumn(affKey).getColumnId();
-
-                if (desc.isKeyColumn(affKeyColId))
-                    affKeyColId = KEY_COL;
-            }
-            else
-                affinityColExists = false;
-        }
-        else
-            affKeyColId = KEY_COL;
-
-        if (affinityColExists) {
             affKeyCol = indexColumn(affKeyColId, SortOrder.ASCENDING);
 
-            assert affKeyCol != null;
+            this.affKeyColId = affKeyColId;
+            affKeyColAliasId = affKeyColId == KEY_COL ? desc.keyAliasColumn() : COL_NOT_EXISTS;
         }
-        else
+        else {
             affKeyCol = null;
+            affKeyColId = COL_NOT_EXISTS;
+            affKeyColAliasId = COL_NOT_EXISTS;
+        }
 
         this.rowFactory = rowFactory;
 
@@ -214,6 +216,18 @@ public class GridH2Table extends TableBase {
      */
     @Nullable public IndexColumn getAffinityKeyColumn() {
         return affKeyCol;
+    }
+
+    /**
+     * Check whether passed column is affinity key column.
+     *
+     * @param col Column.
+     * @return {@code True} if affinity key column.
+     */
+    public boolean isAffinityKeyColumn(Column col) {
+        int colId = col.getColumnId();
+
+        return colId == affKeyColId || colId == affKeyColAliasId;
     }
 
     /** {@inheritDoc} */
