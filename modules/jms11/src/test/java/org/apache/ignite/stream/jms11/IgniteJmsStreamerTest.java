@@ -57,8 +57,6 @@ import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -103,7 +101,6 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Before
     @SuppressWarnings("unchecked")
     @Override public void beforeTest() throws Exception {
         grid().<Integer, String>getOrCreateCache(defaultCacheConfiguration());
@@ -131,7 +128,6 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Iff ailed.
      */
-    @After
     @Override public void afterTest() throws Exception {
         grid().cache(DEFAULT_CACHE_NAME).clear();
 
