@@ -15,22 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ssl;
-
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLParameters;
-
 /**
- * Wrapper for {@link SSLContext} that extend source context with custom SSL parameters.
+ * <!-- Package description. -->
+ * Contains exceptions for preprocessing.
  */
-public class SSLContextWrapper extends SSLContext {
-    /**
-     * @param delegate Wrapped SSL context.
-     * @param sslParameters Extended SSL parameters.
-     */
-    public SSLContextWrapper(SSLContext delegate, SSLParameters sslParameters) {
-        super(new DelegatingSSLContextSpi(delegate, sslParameters),
-            delegate.getProvider(),
-            delegate.getProtocol());
-    }
-}
+package org.apache.ignite.ml.math.exceptions.preprocessing;
