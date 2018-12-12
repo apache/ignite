@@ -110,14 +110,16 @@ public interface MvccProcessor extends GridProcessor {
     boolean hasLocalTransaction(long crd, long cntr);
 
     /**
+     * Stands in the lock wait queue for the current lock holder.
+     *
      * @param cctx Cache context.
-     * @param locked Version the entry is locked by.
-     * @param blockedVersion
+     * @param waiterVer Version of the waiting tx.
+     * @param blockerVer Version the entry is locked by.
      * @return Future, which is completed as soon as the lock is released.
      * @throws IgniteCheckedException If failed.
      */
-    IgniteInternalFuture<Void> waitFor(GridCacheContext cctx, MvccVersion locked,
-        MvccVersion blockedVersion) throws IgniteCheckedException;
+    IgniteInternalFuture<Void> waitForLock(GridCacheContext cctx, MvccVersion waiterVer,
+        MvccVersion blockerVer) throws IgniteCheckedException;
 
     /**
      * @param tracker Query tracker.

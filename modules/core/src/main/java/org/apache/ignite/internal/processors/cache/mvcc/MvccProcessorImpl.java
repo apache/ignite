@@ -634,11 +634,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Void> waitFor(GridCacheContext cctx, MvccVersion locked,
-        MvccVersion blockedVersion) throws IgniteCheckedException {
-        TxKey key = new TxKey(locked.coordinatorVersion(), locked.counter());
+    @Override public IgniteInternalFuture<Void> waitForLock(GridCacheContext cctx, MvccVersion waiterVer,
+        MvccVersion blockerVer) throws IgniteCheckedException {
+        TxKey key = new TxKey(blockerVer.coordinatorVersion(), blockerVer.counter());
 
-        LockFuture fut = new LockFuture(cctx.ioPolicy(), blockedVersion);
+        LockFuture fut = new LockFuture(cctx.ioPolicy(), waiterVer);
 
         Waiter waiter = waitMap.merge(key, fut, Waiter::concat);
 
@@ -649,7 +649,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             waiter.run(ctx);
         else {
             DdCollaborator.DeferredDeadlockComputation deferredComputation
-                = new DdCollaborator(ctx.cache().context()).initDeferredComputation(blockedVersion, locked);
+                = new DdCollaborator(ctx.cache().context()).initDeferredComputation(waiterVer, blockerVer);
 
             fut.listen(fut0 -> deferredComputation.cancel());
         }
