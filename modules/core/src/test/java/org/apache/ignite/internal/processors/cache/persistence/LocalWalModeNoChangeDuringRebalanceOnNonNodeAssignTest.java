@@ -54,7 +54,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
  */
 @RunWith(JUnit4.class)
 public class LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest extends GridCommonAbstractTest {
-
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -114,6 +113,8 @@ public class LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest extends Grid
     public void test() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-10421");
+        else
+            fail("https://issues.apache.org/jira/browse/IGNITE-10652");
 
         Ignite ig = startGrids(NODES);
 
