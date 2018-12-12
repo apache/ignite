@@ -799,6 +799,9 @@ BOOST_AUTO_TEST_CASE(TestNullFields)
 
 BOOST_AUTO_TEST_CASE(TestDistributedJoins)
 {
+    if (jetbrains::teamcity::underTeamcity())
+        return;
+
     // Starting additional node.
     Ignite node1 = StartAdditionalNode("Node1");
     Ignite node2 = StartAdditionalNode("Node2");
