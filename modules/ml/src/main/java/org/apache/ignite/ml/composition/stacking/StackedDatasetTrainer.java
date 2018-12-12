@@ -218,7 +218,7 @@ public class StackedDatasetTrainer<IS, IA, O, AM extends Model<IA, O>, L>
     @SuppressWarnings({"unchecked"})
     public <M1 extends Model<IS, IA>> StackedDatasetTrainer<IS, IA, O, AM, L> addTrainer(
         DatasetTrainer<M1, L> trainer) {
-        // Unsafely coerce DatasetTrainer<M1, L> to Dataset<Model<IS, IA>, L>, but we fully control
+        // Unsafely coerce DatasetTrainer<M1, L> to DatasetTrainer<Model<IS, IA>, L>, but we fully control
         // usages of this unsafely coerced object, on the other hand this makes work with
         // submodelTrainers easier.
         submodelsTrainers.add(new DatasetTrainer<Model<IS, IA>, L>() {
