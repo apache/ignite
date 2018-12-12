@@ -29,10 +29,15 @@ import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests cases when node connects to cluster with different set of cipher suites.
  */
+@RunWith(JUnit4.class)
 public class ClientSslParametersTest extends GridCommonAbstractTest {
     /** */
     public static final String TEST_CACHE_NAME = "TEST";
@@ -106,6 +111,7 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSameCipherSuite() throws Exception {
         cipherSuites = new String[] {
             "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
@@ -128,6 +134,7 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOneCommonCipherSuite() throws Exception {
         cipherSuites = new String[] {
             "TLS_RSA_WITH_AES_128_GCM_SHA256",
@@ -148,6 +155,7 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoCommonCipherSuite() throws Exception {
         cipherSuites = new String[] {
             "TLS_RSA_WITH_AES_128_GCM_SHA256"
@@ -167,9 +175,9 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10245")
     public void testNonExistentCipherSuite() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10245");
-
         cipherSuites = new String[] {
             "TLS_RSA_WITH_AES_128_GCM_SHA256"
         };
@@ -189,6 +197,7 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoCommonProtocols() throws Exception {
         protocols = new String[] {
             "TLSv1.1",
@@ -209,9 +218,9 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10245")
     public void testNonExistentProtocol() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10245");
-
         protocols = new String[] {
             "SSLv3"
         };
@@ -231,6 +240,7 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSameProtocols() throws Exception {
         protocols = new String[] {
             "TLSv1.1",
@@ -250,6 +260,7 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOneCommonProtocol() throws Exception {
         protocols = new String[] {
             "TLSv1",
