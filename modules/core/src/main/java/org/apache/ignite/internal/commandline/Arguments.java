@@ -77,32 +77,35 @@ public class Arguments {
     /** Ping interval for grid client. See {@link GridClientConfiguration#pingInterval}. */
     private long pingInterval;
 
-    /** SSL Protocol. */
+    /** */
+    private boolean sslEnable;
+
+    /** */
     private String sslProtocol;
 
-    /** SSL Key Algorithm. */
-    private String sslKeyAlgorithm;
+    /** */
+    private String sslAlgorithm;
 
     /** */
     private String sslCipherSuites;
 
-    /** Keystore. */
+    /** */
     private String sslKeyStorePath;
 
-    /** Keystore Type. */
+    /** */
     private String sslKeyStoreType;
 
-    /** Keystore Password. */
-    private char[] sslKeyStorePassword;
+    /** */
+    private char sslKeyStorePassword[];
 
-    /** Truststore. */
+    /** */
     private String sslTrustStorePath;
 
-    /** Truststore Type. */
+    /** */
     private String sslTrustStoreType;
 
-    /** Truststore Password. */
-    private char[] sslTrustStorePassword;
+    /** */
+    private char sslTrustStorePassword[];
 
     /**
      * @param cmd Command.
@@ -119,21 +122,25 @@ public class Arguments {
      * @param pingTimeout Ping timeout. See {@link GridClientConfiguration#pingTimeout}.
      * @param pingInterval Ping interval. See {@link GridClientConfiguration#pingInterval}.
      * @param autoConfirmation Auto confirmation flag.
-     * @param sslProtocol SSL Protocol.
-     * @param sslKeyAlgorithm SSL Key Algorithm.
+     * @param sslEnable SSL flag.
+     * @param sslProtocol SSL protocol.
+     * @param sslAlgorithm SSL algorithm.
      * @param sslCipherSuites SSL cipher suites.
-     * @param sslKeyStorePath Keystore.
-     * @param sslKeyStorePassword Keystore Password.
-     * @param sslKeyStoreType Keystore Type.
-     * @param sslTrustStorePath Truststore.
-     * @param sslTrustStorePassword Truststore Password.
-     * @param sslTrustStoreType Truststore Type.
+     * @param sslKeyStorePath Key store path.
+     * @param sslKeyStoreType Key store type.
+     * @param sslKeyStorePassword Key store password.
+     * @param sslTrustStorePath Trust store path.
+     * @param sslTrustStoreType Trust store type.
+     * @param sslTrustStorePassword Trust store password.
      */
-    public Arguments(Command cmd, String host, String port, String user, String pwd, String baselineAct,
-        String baselineArgs, VisorTxTaskArg txArg, CacheArguments cacheArgs, String walAct, String walArgs,
-        Long pingTimeout, Long pingInterval, boolean autoConfirmation, String sslProtocol, String sslKeyAlgorithm,
-        String sslCipherSuites, String sslKeyStorePath, char[] sslKeyStorePassword, String sslKeyStoreType,
-        String sslTrustStorePath, char[] sslTrustStorePassword, String sslTrustStoreType) {
+    public Arguments(Command cmd, String host, String port, String user, String pwd,
+        String baselineAct, String baselineArgs,
+        VisorTxTaskArg txArg, CacheArguments cacheArgs, String walAct, String walArgs,
+        Long pingTimeout, Long pingInterval, boolean autoConfirmation,
+        boolean sslEnable, String sslProtocol, String sslAlgorithm, String sslCipherSuites,
+        String sslKeyStorePath, String sslKeyStoreType, char sslKeyStorePassword[],
+        String sslTrustStorePath, String sslTrustStoreType, char sslTrustStorePassword[]
+    ) {
         this.cmd = cmd;
         this.host = host;
         this.port = port;
@@ -154,8 +161,9 @@ public class Arguments {
 
         this.autoConfirmation = autoConfirmation;
 
+        this.sslEnable = sslEnable;
         this.sslProtocol = sslProtocol;
-        this.sslKeyAlgorithm = sslKeyAlgorithm;
+        this.sslAlgorithm = sslAlgorithm;
         this.sslCipherSuites = sslCipherSuites;
 
         this.sslKeyStorePath = sslKeyStorePath;
@@ -283,18 +291,19 @@ public class Arguments {
         return autoConfirmation;
     }
 
-    /**
-     * @return SSL protocol
-     */
-    public String sslProtocol() {
+    /** */
+    public boolean isSslEnable() {
+        return sslEnable;
+    }
+
+    /** */
+    public String getSslProtocol() {
         return sslProtocol;
     }
 
-    /**
-     * @return SSL Key Algorithm
-     */
-    public String sslKeyAlgorithm() {
-        return sslKeyAlgorithm;
+    /** */
+    public String getSslAlgorithm() {
+        return sslAlgorithm;
     }
 
     /** */
@@ -302,45 +311,33 @@ public class Arguments {
         return sslCipherSuites;
     }
 
-    /**
-     * @return Keystore
-     */
-    public String sslKeyStorePath() {
+    /** */
+    public String getSslKeyStorePath() {
         return sslKeyStorePath;
     }
 
-    /**
-     * @return Keystore type
-     */
-    public String sslKeyStoreType() {
+    /** */
+    public String getSslKeyStoreType() {
         return sslKeyStoreType;
     }
 
-    /**
-     * @return Keystore password
-     */
-    public char[] sslKeyStorePassword() {
+    /** */
+    public char[] getSslKeyStorePassword() {
         return sslKeyStorePassword;
     }
 
-    /**
-     * @return Truststore
-     */
-    public String sslTrustStorePath() {
+    /** */
+    public String getSslTrustStorePath() {
         return sslTrustStorePath;
     }
 
-    /**
-     * @return Truststore type
-     */
-    public String sslTrustStoreType() {
+    /** */
+    public String getSslTrustStoreType() {
         return sslTrustStoreType;
     }
 
-    /**
-     * @return Truststore password
-     */
-    public char[] sslTrustStorePassword() {
+    /** */
+    public char[] getSslTrustStorePassword() {
         return sslTrustStorePassword;
     }
 }

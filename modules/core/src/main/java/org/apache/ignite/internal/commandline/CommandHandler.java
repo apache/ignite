@@ -195,37 +195,40 @@ public class CommandHandler {
     /** */
     private static final String CMD_SKIP_ZEROS = "--skipZeros";
 
-    /** */
-    private static final String CMD_USER_ATTRIBUTES = "--user-attributes";
-
     // SSL configuration section
 
     /** */
-    private static final String CMD_SSL_PROTOCOL = "--ssl-protocol";
+    protected static final String CMD_SSL_ENABLED = "--ssl_enabled";
 
     /** */
-    private static final String CMD_SSL_KEY_ALGORITHM = "--ssl-key-algorithm";
+    protected static final String CMD_SSL_PROTOCOL = "--ssl_protocol";
 
     /** */
-    protected static final String CMD_SSL_CIPHER_SUITES = "--ssl-cipher-suites";
+    protected static final String CMD_SSL_ALGORITHM = "--ssl_algorithm";
 
     /** */
-    private static final String CMD_KEYSTORE = "--keystore";
+    protected static final String CMD_SSL_CIPHER_SUITES = "--ssl_cipher_suites";
 
     /** */
-    private static final String CMD_KEYSTORE_PASSWORD = "--keystore-password";
+    protected static final String CMD_SSL_KEY_STORE_PATH = "--ssl_key_store_path";
 
     /** */
-    private static final String CMD_KEYSTORE_TYPE = "--keystore-type";
+    protected static final String CMD_SSL_KEY_STORE_TYPE = "--ssl_key_store_type";
 
     /** */
-    private static final String CMD_TRUSTSTORE = "--truststore";
+    protected static final String CMD_SSL_KEY_STORE_PASSWORD = "--ssl_key_store_password";
 
     /** */
-    private static final String CMD_TRUSTSTORE_PASSWORD = "--truststore-password";
+    protected static final String CMD_SSL_TRUSTSTORE_PATH = "--ssl_truststore_path";
 
     /** */
-    private static final String CMD_TRUSTSTORE_TYPE = "--truststore-type";
+    protected static final String CMD_SSL_TRUSTSTORE_TYPE = "--ssl_truststore_type";
+
+    /** */
+    protected static final String CMD_SSL_TRUSTSTORE_PASSWORD = "--ssl_truststore_password";
+
+    /** */
+    private static final String CMD_USER_ATTRIBUTES = "--user-attributes";
 
     /** List of optional auxiliary commands. */
     private static final Set<String> AUX_COMMANDS = new HashSet<>();
@@ -244,17 +247,18 @@ public class CommandHandler {
         AUX_COMMANDS.add(CMD_PING_INTERVAL);
         AUX_COMMANDS.add(CMD_PING_TIMEOUT);
 
+        AUX_COMMANDS.add(CMD_SSL_ENABLED);
         AUX_COMMANDS.add(CMD_SSL_PROTOCOL);
-        AUX_COMMANDS.add(CMD_SSL_KEY_ALGORITHM);
+        AUX_COMMANDS.add(CMD_SSL_ALGORITHM);
         AUX_COMMANDS.add(CMD_SSL_CIPHER_SUITES);
 
-        AUX_COMMANDS.add(CMD_KEYSTORE);
-        AUX_COMMANDS.add(CMD_KEYSTORE_PASSWORD);
-        AUX_COMMANDS.add(CMD_KEYSTORE_TYPE);
+        AUX_COMMANDS.add(CMD_SSL_KEY_STORE_TYPE);
+        AUX_COMMANDS.add(CMD_SSL_KEY_STORE_PATH);
+        AUX_COMMANDS.add(CMD_SSL_KEY_STORE_PASSWORD);
 
-        AUX_COMMANDS.add(CMD_TRUSTSTORE);
-        AUX_COMMANDS.add(CMD_TRUSTSTORE_PASSWORD);
-        AUX_COMMANDS.add(CMD_TRUSTSTORE_TYPE);
+        AUX_COMMANDS.add(CMD_SSL_TRUSTSTORE_TYPE);
+        AUX_COMMANDS.add(CMD_SSL_TRUSTSTORE_PATH);
+        AUX_COMMANDS.add(CMD_SSL_TRUSTSTORE_PASSWORD);
     }
 
     /** Broadcast uuid. */
@@ -403,15 +407,16 @@ public class CommandHandler {
         list.add(op(CMD_PASSWORD, "PASSWORD"));
         list.add(op(CMD_PING_INTERVAL, "PING_INTERVAL"));
         list.add(op(CMD_PING_TIMEOUT, "PING_TIMEOUT"));
+        list.add(op(CMD_SSL_ENABLED));
         list.add(op(CMD_SSL_PROTOCOL, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ...]"));
-        list.add(op(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM"));
+        list.add(op(CMD_SSL_ALGORITHM, "SSL_ALGORITHM"));
         list.add(op(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1[, SSL_CIPHER_2, ...]"));
-        list.add(op(CMD_KEYSTORE, "KEYSTORE"));
-        list.add(op(CMD_KEYSTORE_TYPE, "KEYSTORE_TYPE"));
-        list.add(op(CMD_KEYSTORE_PASSWORD, "KEYSTORE_PASSWORD"));
-        list.add(op(CMD_TRUSTSTORE, "TRUSTSTORE"));
-        list.add(op(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE"));
-        list.add(op(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD"));
+        list.add(op(CMD_SSL_KEY_STORE_TYPE, "SSL_KEY_STORE_TYPE"));
+        list.add(op(CMD_SSL_KEY_STORE_PATH, "PATH"));
+        list.add(op(CMD_SSL_KEY_STORE_PASSWORD, "PASSWORD"));
+        list.add(op(CMD_SSL_TRUSTSTORE_TYPE, "SSL_TRUST_STORE_TYPE"));
+        list.add(op(CMD_SSL_TRUSTSTORE_PATH, "PATH"));
+        list.add(op(CMD_SSL_TRUSTSTORE_PASSWORD, "PASSWORD"));
 
         return list;
     }
@@ -680,15 +685,14 @@ public class CommandHandler {
      * @return List of hosts.
      */
     private Stream<IgniteBiTuple<GridClientNode, List<String>>> listHostsByClientNode(
-        GridClient client
-    ) throws GridClientException {
+        GridClient client) throws GridClientException {
         return client.compute().nodes(GridClientNode::connectable).stream()
             .map(node -> new IgniteBiTuple<>(node,
                 Stream.concat(
                     node.tcpAddresses() == null ? Stream.empty() : node.tcpAddresses().stream(),
                     node.tcpHostNames() == null ? Stream.empty() : node.tcpHostNames().stream()
                 )
-                .map(addr -> addr + ":" + node.tcpPort()).collect(Collectors.toList())));
+                    .map(addr -> addr + ":" + node.tcpPort()).collect(Collectors.toList())));
     }
 
     /**
@@ -699,6 +703,7 @@ public class CommandHandler {
      * @return Task result.
      * @throws GridClientException If failed to execute task.
      */
+    @SuppressWarnings("unchecked")
     private <R> R executeTaskByNameOnNode(
         GridClient client,
         String taskClsName,
@@ -1851,21 +1856,23 @@ public class CommandHandler {
 
         VisorTxTaskArg txArgs = null;
 
+        boolean sslEnable = false;
+
         String sslProtocol = SslContextFactory.DFLT_SSL_PROTOCOL;
 
-        String sslKeyAlgorithm = SslContextFactory.DFLT_KEY_ALGORITHM;
+        String sslAlgorithm = SslContextFactory.DFLT_KEY_ALGORITHM;
 
         String sslCipherSuites = "";
 
-        String sslKeyStorePath = null;
-
         String sslKeyStoreType = SslContextFactory.DFLT_STORE_TYPE;
+
+        String sslKeyStorePath = null;
 
         char sslKeyStorePassword[] = null;
 
-        String sslTrustStorePath = null;
-
         String sslTrustStoreType = SslContextFactory.DFLT_STORE_TYPE;
+
+        String sslTrustStorePath = null;
 
         char sslTrustStorePassword[] = null;
 
@@ -1981,13 +1988,23 @@ public class CommandHandler {
 
                         break;
 
+                    case CMD_AUTO_CONFIRMATION:
+                        autoConfirmation = true;
+
+                        break;
+
+                    case CMD_SSL_ENABLED:
+                        sslEnable = true;
+
+                        break;
+
                     case CMD_SSL_PROTOCOL:
                         sslProtocol = nextArg("Expected SSL protocol");
 
                         break;
 
-                    case CMD_SSL_KEY_ALGORITHM:
-                        sslKeyAlgorithm = nextArg("Expected SSL key algorithm");
+                    case CMD_SSL_ALGORITHM:
+                        sslAlgorithm = nextArg("Expected SSL algorithm");
 
                         break;
 
@@ -1996,38 +2013,33 @@ public class CommandHandler {
 
                         break;
 
-                    case CMD_KEYSTORE:
-                        sslKeyStorePath = nextArg("Expected keystore path");
+                    case CMD_SSL_KEY_STORE_PATH:
+                        sslKeyStorePath = nextArg("Expected SSL key store path");
 
                         break;
 
-                    case CMD_KEYSTORE_PASSWORD:
-                        sslKeyStorePassword = nextArg("Expected keystore password").toCharArray();
+                    case CMD_SSL_KEY_STORE_TYPE:
+                        sslKeyStoreType = nextArg("Expected SSL key store type");
 
                         break;
 
-                    case CMD_KEYSTORE_TYPE:
-                        sslKeyStoreType = nextArg("Expected keystore type");
+                    case CMD_SSL_KEY_STORE_PASSWORD:
+                        sslKeyStorePassword = nextArg("Expected SSL key store password").toCharArray();
 
                         break;
 
-                    case CMD_TRUSTSTORE:
-                        sslTrustStorePath = nextArg("Expected truststore path");
+                    case CMD_SSL_TRUSTSTORE_PATH:
+                        sslTrustStorePath = nextArg("Expected SSL trust store path");
 
                         break;
 
-                    case CMD_TRUSTSTORE_PASSWORD:
-                        sslTrustStorePassword = nextArg("Expected truststore password").toCharArray();
+                    case CMD_SSL_TRUSTSTORE_TYPE:
+                        sslTrustStoreType = nextArg("Expected SSL trust store type");
 
                         break;
 
-                    case CMD_TRUSTSTORE_TYPE:
-                        sslTrustStoreType = nextArg("Expected truststore type");
-
-                        break;
-
-                    case CMD_AUTO_CONFIRMATION:
-                        autoConfirmation = true;
+                    case CMD_SSL_TRUSTSTORE_PASSWORD:
+                        sslTrustStorePassword = nextArg("Expected SSL trust store password").toCharArray();
 
                         break;
 
@@ -2047,10 +2059,14 @@ public class CommandHandler {
 
         Command cmd = commands.get(0);
 
-        return new Arguments(cmd, host, port, user, pwd, baselineAct, baselineArgs, txArgs, cacheArgs, walAct, walArgs,
+        return new Arguments(cmd, host, port, user, pwd,
+            baselineAct, baselineArgs,
+            txArgs, cacheArgs,
+            walAct, walArgs,
             pingTimeout, pingInterval, autoConfirmation,
-            sslProtocol, sslKeyAlgorithm, sslCipherSuites, sslKeyStorePath, sslKeyStorePassword, sslKeyStoreType,
-            sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType);
+            sslEnable, sslProtocol, sslAlgorithm, sslCipherSuites,
+            sslKeyStorePath, sslKeyStoreType, sslKeyStorePassword,
+            sslTrustStorePath, sslTrustStoreType, sslTrustStorePassword);
     }
 
     /**
@@ -2616,9 +2632,9 @@ public class CommandHandler {
         log(i("PING_INTERVAL=" + DFLT_PING_INTERVAL, 2));
         log(i("PING_TIMEOUT=" + DFLT_PING_TIMEOUT, 2));
         log(i("SSL_PROTOCOL=" + SslContextFactory.DFLT_SSL_PROTOCOL, 2));
-        log(i("SSL_KEY_ALGORITHM=" + SslContextFactory.DFLT_KEY_ALGORITHM, 2));
-        log(i("KEYSTORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
-        log(i("TRUSTSTORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
+        log(i("SSL_ALGORITHM=" + SslContextFactory.DFLT_KEY_ALGORITHM, 2));
+        log(i("SSL_KEY_STORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
+        log(i("SSL_TRUST_STORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
 
         nl();
 
@@ -2671,6 +2687,49 @@ public class CommandHandler {
 
             clientCfg.setServers(Collections.singletonList(args.host() + ":" + args.port()));
 
+            if (args.isSslEnable()) {
+                GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
+
+                List<String> sslProtocols = split(args.getSslProtocol(), ",");
+
+                String sslProtocol = F.isEmpty(sslProtocols) ? SslContextFactory.DFLT_SSL_PROTOCOL : sslProtocols.get(0);
+
+                factory.setProtocol(sslProtocol);
+                factory.setKeyAlgorithm(args.getSslAlgorithm());
+
+                if (sslProtocols.size() > 1)
+                    factory.setProtocols(sslProtocols);
+
+                factory.setCipherSuites(split(args.getSslCipherSuites(), ","));
+
+                if (args.getSslKeyStorePath() == null)
+                    throw new IllegalArgumentException("SSL key store location is not specified.");
+
+                factory.setKeyStoreFilePath(args.getSslKeyStorePath());
+
+                if (args.getSslKeyStorePassword() != null)
+                    factory.setKeyStorePassword(args.getSslKeyStorePassword());
+                else
+                    factory.setKeyStorePassword(requestPasswordFromConsole("SSL keystore password: "));
+
+                factory.setKeyStoreType(args.getSslKeyStoreType());
+
+                if (args.getSslTrustStorePath() == null)
+                    factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
+                else {
+                    factory.setTrustStoreFilePath(args.getSslTrustStorePath());
+
+                    if (args.getSslTrustStorePassword() != null)
+                        factory.setTrustStorePassword(args.getSslTrustStorePassword());
+                    else
+                        factory.setTrustStorePassword(requestPasswordFromConsole("SSL truststore password: "));
+
+                    factory.setTrustStoreType(args.getSslTrustStoreType());
+                }
+
+                clientCfg.setSslContextFactory(factory);
+            }
+
             boolean tryConnectAgain = true;
 
             int tryConnectMaxCount = 3;
@@ -2691,40 +2750,6 @@ public class CommandHandler {
                     final SecurityCredentials credential = securityCredential.credentials();
                     credential.setLogin(args.getUserName());
                     credential.setPassword(args.getPassword());
-                }
-
-                if (!F.isEmpty(args.sslKeyStorePath())) {
-                    GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
-
-                    factory.setProtocol(args.sslProtocol());
-
-                    factory.setKeyAlgorithm(args.sslKeyAlgorithm());
-
-                    factory.setCipherSuites(split(args.getSslCipherSuites(), ","));
-
-                    factory.setKeyStoreFilePath(args.sslKeyStorePath());
-
-                    if (args.sslKeyStorePassword() != null)
-                        factory.setKeyStorePassword(args.sslKeyStorePassword());
-                    else
-                        factory.setKeyStorePassword(requestPasswordFromConsole("SSL keystore password: "));
-
-                    factory.setKeyStoreType(args.sslKeyStoreType());
-
-                    if (F.isEmpty(args.sslTrustStorePath()))
-                        factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
-                    else {
-                        factory.setTrustStoreFilePath(args.sslTrustStorePath());
-
-                        if (args.sslTrustStorePassword() != null)
-                            factory.setTrustStorePassword(args.sslTrustStorePassword());
-                        else
-                            factory.setTrustStorePassword(requestPasswordFromConsole("SSL truststore password: "));
-
-                        factory.setTrustStoreType(args.sslTrustStoreType());
-                    }
-
-                    clientCfg.setSslContextFactory(factory);
                 }
 
                 try (GridClient client = GridClientFactory.start(clientCfg)) {
