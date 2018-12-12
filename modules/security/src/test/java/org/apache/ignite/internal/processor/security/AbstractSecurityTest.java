@@ -165,7 +165,7 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
     /**
      * @return Cache entry for test.
      */
-    protected T2<String, Integer> entry(){
+    protected T2<String, Integer> entry() {
         int val = values.incrementAndGet();
 
         return new T2<>("key_" + val, -1 * val);
@@ -203,16 +203,20 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
     /**
      * @param r Runnable.
      */
-    protected void forbiddenRun(Runnable r){
+    protected void forbiddenRun(TestRunnable r) {
         try {
             r.run();
 
             fail("Should not happen.");
         }
         catch (Throwable e) {
-            e.printStackTrace();
-
             assertThat(X.cause(e, SecurityException.class), notNullValue());
         }
+    }
+
+    /** */
+    public interface TestRunnable {
+        /** */
+        void run() throws Exception;
     }
 }

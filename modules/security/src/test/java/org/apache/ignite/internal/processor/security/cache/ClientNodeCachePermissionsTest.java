@@ -19,9 +19,7 @@ package org.apache.ignite.internal.processor.security.cache;
 
 import java.util.Collections;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processor.security.AbstractSecurityTest;
+import org.apache.ignite.internal.processor.security.AbstractCachePermissionTest;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
@@ -31,33 +29,7 @@ import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
 /**
  * Test CRUD cache permissions for client node.
  */
-public class ClientNodeCachePermissionsTest extends AbstractSecurityTest {
-    /** Forbidden cache. */
-    private static final String FORBIDDEN_CACHE = "FORBIDDEN_TEST_CACHE";
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setCacheConfiguration(
-                new CacheConfiguration().setName(CACHE_NAME),
-                new CacheConfiguration().setName(FORBIDDEN_CACHE)
-            );
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        startGrid("sever", allowAllPermissionSet()).cluster().active(true);
-    }
-
-    /**
-     * @return Node client mode.
-     */
-    protected boolean isClient() {
-        return true;
-    }
-
+public class ClientNodeCachePermissionsTest extends AbstractCachePermissionTest {
     /**
      *
      */

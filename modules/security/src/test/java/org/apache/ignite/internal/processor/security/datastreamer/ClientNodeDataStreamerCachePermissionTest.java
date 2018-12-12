@@ -21,9 +21,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processor.security.AbstractSecurityTest;
+import org.apache.ignite.internal.processor.security.AbstractCachePermissionTest;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
@@ -36,33 +34,7 @@ import static org.junit.Assert.assertThat;
 /**
  * Test cache permissions for Data Streamer on Client node.
  */
-public class ClientNodeDataStreamerCachePermissionTest extends AbstractSecurityTest {
-    /** Forbidden cache. */
-    private static final String FORBIDDEN_CACHE = "FORBIDDEN_TEST_CACHE";
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        startGrid("server", allowAllPermissionSet()).cluster().active(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setCacheConfiguration(
-                new CacheConfiguration().setName(CACHE_NAME),
-                new CacheConfiguration().setName(FORBIDDEN_CACHE)
-            );
-    }
-
-    /**
-     * @return Node client mode.
-     */
-    protected boolean isClient() {
-        return true;
-    }
-
+public class ClientNodeDataStreamerCachePermissionTest extends AbstractCachePermissionTest {
     /**
      * @throws Exception If fail.
      */

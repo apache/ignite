@@ -22,6 +22,8 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processor.security.cache.ClientNodeCachePermissionsTest;
 import org.apache.ignite.internal.processor.security.cache.EntryProcessorSecurityTest;
 import org.apache.ignite.internal.processor.security.cache.ServerNodeCachePermissionsTest;
+import org.apache.ignite.internal.processor.security.compute.ClientNodeExecuteTaskPermissionTest;
+import org.apache.ignite.internal.processor.security.compute.ServerNodeExecuteTaskPermissionTest;
 import org.apache.ignite.internal.processor.security.datastreamer.ClientNodeDataStreamerCachePermissionTest;
 import org.apache.ignite.internal.processor.security.datastreamer.IgniteDataStreamerSecurityTest;
 import org.apache.ignite.internal.processor.security.cache.LoadCacheSecurityTest;
@@ -66,6 +68,8 @@ public class AuthorizeOperationsTestSuite extends TestSuite {
         suite.addTest(new TestSuite(ServerNodeCachePermissionsTest.class));
         suite.addTest(new TestSuite(ClientNodeDataStreamerCachePermissionTest.class));
         suite.addTest(new TestSuite(ServerNodeDataStreamerCachePermissionTest.class));
+        suite.addTest(new TestSuite(ClientNodeExecuteTaskPermissionTest.class));
+        suite.addTest(new TestSuite(ServerNodeExecuteTaskPermissionTest.class));
 
         return suite;
     }
