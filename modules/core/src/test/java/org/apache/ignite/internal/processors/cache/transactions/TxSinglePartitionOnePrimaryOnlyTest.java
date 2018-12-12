@@ -23,7 +23,7 @@ public class TxSinglePartitionOnePrimaryOnlyTest extends TxSinglePartitionAbstra
 
     /** */
     public void testPrimaryPrepareCommitReorder() throws Exception {
-        Map<Integer, IgniteUuid> txMap = new ConcurrentHashMap<>();
+
 
         Map<IgniteUuid, GridFutureAdapter<?>> futs = new ConcurrentHashMap<>();
 
@@ -33,12 +33,12 @@ public class TxSinglePartitionOnePrimaryOnlyTest extends TxSinglePartitionAbstra
         int total = IntStream.of(sizes).sum();
 
         Queue<Integer> prepOrder = new ConcurrentLinkedQueue<>();
-        for (int i = 0; i < prepOrd.length; i++)
-            prepOrder.add(prepOrd[i]);
+        for (int aPrepOrd : prepOrd)
+            prepOrder.add(aPrepOrd);
 
         Queue<Integer> commitOrder = new ConcurrentLinkedQueue<>();
-        for (int i = 0; i < commitOrd.length; i++)
-            commitOrder.add(commitOrd[i]);
+        for (int aCommitOrd : commitOrd)
+            commitOrder.add(aCommitOrd);
 
         int partId = 0;
         int backups = 0;
@@ -47,14 +47,12 @@ public class TxSinglePartitionOnePrimaryOnlyTest extends TxSinglePartitionAbstra
         runOnPartition(partId, backups, nodes, new TxCallbackAdapter() {
             @Override public boolean beforePrimaryPrepare(IgniteEx node, IgniteUuid nearXidVer,
                 GridFutureAdapter<?> proceedFut) {
-                runAsync(new Runnable() {
-                    @Override public void run() {
-                        futs.put(nearXidVer, proceedFut);
+                runAsync(() -> {
+                    futs.put(nearXidVer, proceedFut);
 
-                        // Order prepares.
-                        if (futs.size() == prepOrder.size()) {// Wait until all prep requests queued and force prepare order.
-                            futs.remove(txMap.get(prepOrder.poll())).onDone();
-                        }
+                    // Order prepares.
+                    if (futs.size() == prepOrder.size()) {// Wait until all prep requests queued and force prepare order.
+                        futs.remove(version(prepOrder.poll())).onDone();
                     }
                 });
 
@@ -62,23 +60,21 @@ public class TxSinglePartitionOnePrimaryOnlyTest extends TxSinglePartitionAbstra
             }
 
             @Override public boolean afterPrimaryPrepare(IgniteEx from, IgniteInternalTx tx, GridFutureAdapter<?> fut) {
-                runAsync(new Runnable() {
-                    @Override public void run() {
-                        if (prepOrder.isEmpty())
-                            return;
+                runAsync(() -> {
+                    if (prepOrder.isEmpty())
+                        return;
 
-                        futs.remove(txMap.get(prepOrder.poll())).onDone();
+                    futs.remove(version(prepOrder.poll())).onDone();
 
-                        if (prepOrder.isEmpty()) {
-                            GridDhtLocalPartition part = internalCache(0).context().topology().localPartition(0);
-                            PartitionUpdateCounter cntr = part.dataStore().partUpdateCounter();
+                    if (prepOrder.isEmpty()) {
+                        GridDhtLocalPartition part = internalCache(0).context().topology().localPartition(0);
+                        PartitionUpdateCounter cntr = part.dataStore().partUpdateCounter();
 
-                            int i = 0;
-                            for (PartitionUpdateCounter.Item item : cntr.holes()) {
-                                assertEquals(sizes[prepOrd[i]], item.delta());
+                        int i = 0;
+                        for (PartitionUpdateCounter.Item item : cntr.holes()) {
+                            assertEquals(sizes[prepOrd[i]], item.delta());
 
-                                i++;
-                            }
+                            i++;
                         }
                     }
                 });
@@ -88,35 +84,27 @@ public class TxSinglePartitionOnePrimaryOnlyTest extends TxSinglePartitionAbstra
 
             @Override public boolean beforePrimaryFinish(IgniteEx primaryNode, IgniteInternalTx tx, GridFutureAdapter<?>
                 proceedFut) {
-                runAsync(new Runnable() {
-                    @Override public void run() {
-                        futs.put(tx.nearXidVersion().asGridUuid(), proceedFut);
+                runAsync(() -> {
+                    futs.put(tx.nearXidVersion().asGridUuid(), proceedFut);
 
-                        // Order prepares.
-                        if (futs.size() == 3)
-                            futs.remove(txMap.get(commitOrder.poll())).onDone();
+                    // Order prepares.
+                    if (futs.size() == 3)
+                        futs.remove(version(commitOrder.poll())).onDone();
 
-                    }
                 });
 
                 return true;
             }
 
             @Override public boolean afterPrimaryFinish(IgniteEx primaryNode, IgniteUuid nearXidVer, GridFutureAdapter<?> proceedFut) {
-                runAsync(new Runnable() {
-                    @Override public void run() {
-                        if (commitOrder.isEmpty())
-                            return;
+                runAsync(() -> {
+                    if (commitOrder.isEmpty())
+                        return;
 
-                        futs.remove(txMap.get(commitOrder.poll())).onDone();
-                    }
+                    futs.remove(version(commitOrder.poll())).onDone();
                 });
 
                 return false;
-            }
-
-            @Override public void onTxStart(Transaction tx, int idx) {
-                txMap.put(idx, tx.xid());
             }
         }, sizes);
 

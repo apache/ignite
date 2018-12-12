@@ -117,7 +117,6 @@ public class TxSinglePartitionOnePrimaryOneBackupTest extends TxSinglePartitionA
             }
 
             @Override public void onTxStart(Transaction tx, int idx) {
-                txMap.put(idx, tx.xid());
             }
         }, sizes);
 

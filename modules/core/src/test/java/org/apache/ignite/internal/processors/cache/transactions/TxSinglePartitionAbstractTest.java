@@ -377,6 +377,8 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
 
     /** */
     public static class TxCallbackAdapter implements TxCallback {
+        private Map<Integer, IgniteUuid> txMap = new ConcurrentHashMap<>();
+
         @Override public boolean beforePrimaryPrepare(IgniteEx node, IgniteUuid nearXidVer, GridFutureAdapter<?> proceedFut) {
             return false;
         }
@@ -413,8 +415,12 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
             return false;
         }
 
+        protected IgniteUuid version(int order) {
+            return txMap.get(order);
+        }
+
         @Override public void onTxStart(Transaction tx, int idx) {
-            // No-op.
+            txMap.put(idx, tx.xid());
         }
     }
 
