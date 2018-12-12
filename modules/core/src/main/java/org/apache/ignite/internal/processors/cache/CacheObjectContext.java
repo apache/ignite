@@ -31,6 +31,7 @@ public class CacheObjectContext implements CacheObjectValueContext {
     private String cacheName;
 
     /** */
+    @SuppressWarnings("deprecation")
     private AffinityKeyMapper dfltAffMapper;
 
     /** */
@@ -53,6 +54,7 @@ public class CacheObjectContext implements CacheObjectValueContext {
      * @param addDepInfo {@code true} if deployment info should be associated with the objects of this cache.
      * @param binaryEnabled Binary enabled flag.
      */
+    @SuppressWarnings("deprecation")
     public CacheObjectContext(GridKernalContext kernalCtx,
         String cacheName,
         AffinityKeyMapper dfltAffMapper,
@@ -94,6 +96,7 @@ public class CacheObjectContext implements CacheObjectValueContext {
     /**
      * @return Default affinity mapper.
      */
+    @SuppressWarnings("deprecation")
     public AffinityKeyMapper defaultAffMapper() {
         return dfltAffMapper;
     }

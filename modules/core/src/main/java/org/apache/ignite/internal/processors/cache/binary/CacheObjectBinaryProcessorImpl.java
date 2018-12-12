@@ -46,6 +46,7 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -920,6 +921,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("deprecation")
     @Override public CacheObjectContext contextForCache(CacheConfiguration ccfg) throws IgniteCheckedException {
         assert ccfg != null;
 
@@ -929,20 +931,21 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         boolean binaryEnabled = marsh instanceof BinaryMarshaller && !GridCacheUtils.isSystemCache(ccfg.getName()) &&
             !GridCacheUtils.isIgfsCache(ctx.config(), ccfg.getName());
 
-        CacheObjectContext res = new CacheObjectContext(ctx,
+        // TODO: Set proper mapper! Take in count non-default.
+        AffinityKeyMapper affMapper = binaryEnabled ?
+            new CacheDefaultBinaryAffinityKeyMapper(ccfg.getKeyConfiguration()) :
+            new GridCacheDefaultAffinityKeyMapper();
+
+        ctx.resource().injectGeneric(affMapper);
+
+        return new CacheObjectContext(ctx,
             ccfg.getName(),
-            // TODO: Set proper mapper.
-            binaryEnabled ? new CacheDefaultBinaryAffinityKeyMapper(ccfg.getKeyConfiguration()) :
-                new GridCacheDefaultAffinityKeyMapper(),
+            affMapper,
             ccfg.isCopyOnRead(),
             storeVal,
             ctx.config().isPeerClassLoadingEnabled() && !isBinaryEnabled(ccfg),
             binaryEnabled
         );
-
-        ctx.resource().injectGeneric(res.defaultAffMapper());
-
-        return res;
     }
 
     /** {@inheritDoc} */
