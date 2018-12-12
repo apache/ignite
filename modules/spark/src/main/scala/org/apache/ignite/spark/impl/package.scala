@@ -25,6 +25,8 @@ import org.apache.commons.lang.StringUtils.equalsIgnoreCase
 import org.apache.ignite.cache.{CacheMode, QueryEntity}
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.CacheConfiguration
+import org.apache.ignite.internal.IgniteEx
+import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils
 import org.apache.ignite.internal.processors.query.QueryUtils.normalizeSchemaName
 import org.apache.ignite.internal.util.IgniteUtils
 import org.apache.ignite.internal.util.lang.GridFunc.contains
@@ -155,37 +157,15 @@ package object impl {
       * @tparam V Value class.
       * @return HashMap consists of fields and fields type for a given table.
       */
-    def refreshFields[K, V](ignite: Ignite, ccfg : CacheConfiguration[K, V], tabName: String): util.LinkedHashMap[String, String] = {
-        val connection = connect(ignite)
-        val resultSet = connection.getMetaData.getColumns(null, ccfg.getSqlSchema, tabName, null)
-        val currentFieldMap = new util.LinkedHashMap[String, String]
-        while (resultSet.next) {
-            val name = resultSet.getString("COLUMN_NAME")
-            val dataType = resultSet.getShort("DATA_TYPE")
-            val typeClsName = DataType.getTypeClassName(DataType.convertSQLTypeToValueType(dataType))
-            currentFieldMap.put(name, typeClsName)
-        }
-        currentFieldMap
-    }
-
-    /**
-      * @param ignite Ignite instance.
-      * @return Thin JDBC connection to a random server node.
-      */
-    def connect(ignite: Ignite): Connection = {
-        //Randomly select one endpoint from cluster
-        val address = IgniteUtils.toInetAddresses(ignite.cluster.forServers.forRandom.node)
-            .find(_.isInstanceOf[Inet4Address]).get.getHostAddress
-        try {
-            DriverManager.getConnection("jdbc:ignite:thin://" + address)
-        }
-        catch {
-            case e: Exception ⇒
-                Logging.log.error("Failed to establish JDBC thin connection to cluster.", e)
-
-                throw e
-        }
-    }
+	def refreshFields[K, V](ignite: Ignite, ccfg: CacheConfiguration[K, V], tabName: String): util.LinkedHashMap[String, String] = {
+		val ctx = ignite.asInstanceOf[IgniteEx].context
+		val schemaName = if (ccfg.getSqlSchema == null) ccfg.getName else ccfg.getSqlSchema
+		val currentFieldMap = new util.LinkedHashMap[String, String]
+		ctx.cache.publicCacheNames.foreach(cacheName => ctx.query.types(cacheName).foreach(table =>
+			if (table.schemaName.equalsIgnoreCase(schemaName) && table.tableName.equalsIgnoreCase(tabName))
+				table.fields.foreach(field => currentFieldMap.put(field._1, JdbcThinUtils.typeName(field._2.getName)))))
+		currentFieldMap
+	}
 
     /**
       * @param table Table.
