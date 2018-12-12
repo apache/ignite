@@ -1166,7 +1166,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         return incompleteObj;
     }
 
-    // TODO: DUplicates?
     /** {@inheritDoc} */
     @Override public IncompleteCacheObject toKeyCacheObject(CacheObjectContext ctx, ByteBuffer buf,
         @Nullable IncompleteCacheObject incompleteObj) throws IgniteCheckedException {
