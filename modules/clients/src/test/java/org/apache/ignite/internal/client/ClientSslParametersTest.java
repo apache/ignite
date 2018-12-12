@@ -20,19 +20,24 @@ package org.apache.ignite.internal.client;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
-
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
 import org.jetbrains.annotations.NotNull;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests cases when node connects to cluster with different set of cipher suites.
  */
+@RunWith(JUnit4.class)
 public class ClientSslParametersTest extends GridCommonAbstractTest {
     /** */
     public static final String TEST_CACHE_NAME = "TEST";
@@ -47,16 +52,13 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        ConnectorConfiguration conCfg = new ConnectorConfiguration();
-        conCfg.setSslEnabled(true);
-        conCfg.setSslClientAuth(true);
-        conCfg.setSslContextFactory(createSslFactory());
+        cfg.setSslContextFactory(createSslFactory());
 
-        cfg.setConnectorConfiguration(conCfg);
+        cfg.setConnectorConfiguration(new ConnectorConfiguration()
+            .setSslEnabled(true)
+            .setSslClientAuth(true));
 
-        CacheConfiguration ccfg = new CacheConfiguration(TEST_CACHE_NAME);
-
-        cfg.setCacheConfiguration(ccfg);
+        cfg.setCacheConfiguration(new CacheConfiguration(TEST_CACHE_NAME));
 
         return cfg;
     }
@@ -69,18 +71,32 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
 
         cfg.setServers(Collections.singleton("127.0.0.1:11211"));
 
-        cfg.setSslContextFactory(createSslFactory());
+        cfg.setSslContextFactory(createOldSslFactory());
 
         return cfg;
     }
 
     /**
+     * @return SSL factory.
+     */
+    @NotNull private SslContextFactory createSslFactory() {
+        SslContextFactory factory = (SslContextFactory)GridTestUtils.sslFactory();
+
+        factory.setCipherSuites(cipherSuites);
+
+        factory.setProtocols(protocols);
+
+        return factory;
+    }
+
+    /**
      * @return SSL Factory.
      */
-    @NotNull private GridSslBasicContextFactory createSslFactory() {
+    @NotNull private GridSslBasicContextFactory createOldSslFactory() {
         GridSslBasicContextFactory factory = (GridSslBasicContextFactory)GridTestUtils.sslContextFactory();
 
         factory.setCipherSuites(cipherSuites);
+
         factory.setProtocols(protocols);
 
         return factory;
@@ -91,12 +107,14 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         protocols = null;
+
         cipherSuites = null;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSameCipherSuite() throws Exception {
         cipherSuites = new String[] {
             "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
@@ -107,12 +125,10 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
         startGrid();
 
         checkSuccessfulClientStart(
-            new String[][] {
-                new String[] {
-                    "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-                    "TLS_RSA_WITH_AES_128_GCM_SHA256",
-                    "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256"
-                }
+            new String[] {
+                "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+                "TLS_RSA_WITH_AES_128_GCM_SHA256",
+                "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256"
             },
             null
         );
@@ -121,6 +137,7 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOneCommonCipherSuite() throws Exception {
         cipherSuites = new String[] {
             "TLS_RSA_WITH_AES_128_GCM_SHA256",
@@ -130,11 +147,9 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
         startGrid();
         
         checkSuccessfulClientStart(
-            new String[][] {
-                new String[] {
-                    "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-                    "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256"
-                }
+            new String[] {
+                "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+                "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256"
             },
             null
         );
@@ -143,6 +158,7 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoCommonCipherSuite() throws Exception {
         cipherSuites = new String[] {
             "TLS_RSA_WITH_AES_128_GCM_SHA256"
@@ -151,11 +167,9 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
         startGrid();
         
         checkClientStartFailure(
-            new String[][] {
-                new String[] {
-                    "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-                    "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256"
-                }
+            new String[] {
+                "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+                "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256"
             },
             null
         );
@@ -164,9 +178,9 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10245")
     public void testNonExistentCipherSuite() throws Exception {
-        fail("IGNITE-10245");
-
         cipherSuites = new String[] {
             "TLS_RSA_WITH_AES_128_GCM_SHA256"
         };
@@ -174,14 +188,11 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
         startGrid();
         
         checkClientStartFailure(
-            new String[][] {
-                new String[] {
-                    "TLC_FAKE_CIPHER",
-                    "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256"
-                }
+            new String[] {
+                "TLC_FAKE_CIPHER",
+                "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256"
             },
             null,
-            GridClientException.class,
             "Unsupported ciphersuite"
         );
     }
@@ -189,6 +200,7 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoCommonProtocols() throws Exception {
         protocols = new String[] {
             "TLSv1.1",
@@ -199,11 +211,9 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
 
         checkClientStartFailure(
             null,
-            new String[][] {
-                new String[] {
-                    "TLSv1",
-                    "TLSv1.2",
-                }
+            new String[] {
+                "TLSv1",
+                "TLSv1.2"
             }
         );
     }
@@ -211,9 +221,9 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10245")
     public void testNonExistentProtocol() throws Exception {
-        fail("IGNITE-10245");
-
         protocols = new String[] {
             "SSLv3"
         };
@@ -222,13 +232,10 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
 
         checkClientStartFailure(
             null,
-            new String[][] {
-                new String[] {
-                    "SSLv3",
-                    "SSLvDoesNotExist"
-                }
+            new String[] {
+                "SSLv3",
+                "SSLvDoesNotExist"
             },
-            GridClientException.class,
             "SSLvDoesNotExist"
         );
     }
@@ -236,20 +243,20 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSameProtocols() throws Exception {
         protocols = new String[] {
             "TLSv1.1",
-            "TLSv1.2",
+            "TLSv1.2"
         };
 
         startGrid();
 
-        checkSuccessfulClientStart(null,
-            new String[][] {
-                new String[] {
-                    "TLSv1.1",
-                    "TLSv1.2",
-                }
+        checkSuccessfulClientStart(
+            null,
+            new String[] {
+                "TLSv1.1",
+                "TLSv1.2"
             }
         );
     }
@@ -257,6 +264,7 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOneCommonProtocol() throws Exception {
         protocols = new String[] {
             "TLSv1",
@@ -266,12 +274,11 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
 
         startGrid();
 
-        checkSuccessfulClientStart(null,
-            new String[][] {
-                new String[] {
-                    "TLSv1.1",
-                    "SSLv3"
-                }
+        checkSuccessfulClientStart(
+            null,
+            new String[] {
+                "TLSv1.1",
+                "SSLv3"
             }
         );
     }
@@ -281,22 +288,14 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
      * @param protocols list of protocols
      * @throws Exception If failed.
      */
-    private void checkSuccessfulClientStart(String[][] cipherSuites, String[][] protocols) throws Exception {
-        int n = Math.max(
-            cipherSuites != null ? cipherSuites.length : 0,
-            protocols != null ? protocols.length : 0);
+    private void checkSuccessfulClientStart(String[] cipherSuites, String[] protocols) throws Exception {
+        this.cipherSuites = F.isEmpty(cipherSuites) ? null : cipherSuites;
+        this.protocols = F.isEmpty(protocols) ? null : protocols;
 
-        for (int i = 0; i < n; i++) {
-            this.cipherSuites = cipherSuites != null && i < cipherSuites.length ? cipherSuites[i] : null;
-            this.protocols = protocols != null && i < protocols.length ? protocols[i] : null;
-
-            GridClient client = GridClientFactory.start(getClientConfiguration());
-
+        try (GridClient client = GridClientFactory.start(getClientConfiguration())) {
             List<GridClientNode> top = client.compute().refreshTopology(false, false);
 
             assertEquals(1, top.size());
-
-            client.close();
         }
     }
 
@@ -304,26 +303,22 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
      * @param cipherSuites list of cipher suites
      * @param protocols list of protocols
      */
-    private void checkClientStartFailure(String[][] cipherSuites, String[][] protocols) {
-        checkClientStartFailure(cipherSuites, protocols, GridClientException.class, "Latest topology update failed.");
+    private void checkClientStartFailure(String[] cipherSuites, String[] protocols) {
+        checkClientStartFailure(cipherSuites, protocols, "Latest topology update failed.");
     }
 
     /**
      * @param cipherSuites list of cipher suites
      * @param protocols list of protocols
-     * @param ex expected exception class
      * @param msg exception message
      */
-    private void checkClientStartFailure(String[][] cipherSuites, String[][] protocols, Class<? extends Throwable> ex, String msg) {
-        int n = Math.max(
-            cipherSuites != null ? cipherSuites.length : 0,
-            protocols != null ? protocols.length : 0);
+    private void checkClientStartFailure(String[] cipherSuites, String[] protocols, String msg) {
+        this.cipherSuites = F.isEmpty(cipherSuites) ? null : cipherSuites;
+        this.protocols = F.isEmpty(protocols) ? null : protocols;
 
-        for (int i = 0; i < n; i++) {
-            this.cipherSuites = cipherSuites != null && i < cipherSuites.length ? cipherSuites[i] : null;
-            this.protocols = protocols != null && i < protocols.length ? protocols[i] : null;
-
-            GridTestUtils.assertThrows(null, new Callable<Object>() {
+        GridTestUtils.assertThrows(
+            null,
+            new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     GridClient client = GridClientFactory.start(getClientConfiguration());
 
@@ -331,8 +326,10 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, ex, msg);
-        }
+            },
+            GridClientException.class,
+            msg
+            );
     }
 
 }
