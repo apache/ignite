@@ -89,7 +89,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Test simulated chekpoints,
+ * Test simulated checkpoints,
  * Disables integrated check pointer thread
  */
 @RunWith(JUnit4.class)
@@ -165,7 +165,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
     public void testCheckpointSimulationMultiThreaded() throws Exception {
         IgniteEx ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().active(true);
 
         GridCacheSharedContext<Object, Object> shared = ig.context().cache().context();
 
@@ -203,7 +203,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().active(true);
 
         shared = ig.context().cache().context();
 
@@ -223,7 +223,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
     public void testGetForInitialWrite() throws Exception {
         IgniteEx ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().active(true);
 
         GridCacheSharedContext<Object, Object> shared = ig.context().cache().context();
 
@@ -281,7 +281,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().active(true);
 
         shared = ig.context().cache().context();
 
@@ -328,6 +328,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testMvccDataWalEntries() throws Exception {
         checkDataWalEntries(true);
     }
@@ -335,10 +336,10 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
     /**
      * @throws Exception if failed.
      */
-    public void checkDataWalEntries(boolean mvcc) throws Exception {
+    private void checkDataWalEntries(boolean mvcc) throws Exception {
         IgniteEx ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().active(true);
 
         GridCacheSharedContext<Object, Object> sharedCtx = ig.context().cache().context();
         GridCacheContext<Object, Object> cctx = sharedCtx.cache().cache(mvcc ? MVCC_CACHE_NAME : CACHE_NAME).context();
@@ -385,7 +386,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().active(true);
 
         sharedCtx = ig.context().cache().context();
         cctx = sharedCtx.cache().cache(mvcc ? MVCC_CACHE_NAME : CACHE_NAME).context();
@@ -459,7 +460,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
     public void testPageWalEntries() throws Exception {
         IgniteEx ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().active(true);
 
         GridCacheSharedContext<Object, Object> sharedCtx = ig.context().cache().context();
         int cacheId = sharedCtx.cache().cache(CACHE_NAME).context().cacheId();
@@ -506,7 +507,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().active(true);
 
         sharedCtx = ig.context().cache().context();
 
@@ -560,7 +561,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
     public void testDirtyFlag() throws Exception {
         IgniteEx ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().active(true);
 
         GridCacheSharedContext<Object, Object> shared = ig.context().cache().context();
 
