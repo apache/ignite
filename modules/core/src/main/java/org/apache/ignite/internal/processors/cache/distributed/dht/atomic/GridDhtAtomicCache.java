@@ -1789,23 +1789,37 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                     // Cache validation should use topology version from the update request
                                     // in case of the topology version was locked on near node.
                                     if (req.topologyLocked()) {
-                                        List<GridDhtPartitionsExchangeFuture> futs =
-                                            ctx.shared().exchange().exchangeFutures();
+                                        // affinityReadyFuture() can return GridFinishedFuture under some circumstances
+                                        // and therefore it cannot be used for validation.
+                                        IgniteInternalFuture<AffinityTopologyVersion> affFut =
+                                            ctx.shared().exchange().affinityReadyFuture(req.topologyVersion());
 
-                                        for (int i = 0; i < futs.size(); ++i) {
-                                            GridDhtPartitionsExchangeFuture fut = futs.get(i);
+                                        if (affFut.isDone()) {
+                                            List<GridDhtPartitionsExchangeFuture> futs =
+                                                ctx.shared().exchange().exchangeFutures();
 
-                                            if (fut.topologyVersion().equals(req.topologyVersion())) {
-                                                topFut = fut;
+                                            boolean found = false;
 
-                                                if (!topFut.isDone()) {
-                                                    topFut.listen(f -> updateAllAsyncInternal0(node, req, completionCb));
+                                            for (int i = 0; i < futs.size(); ++i) {
+                                                GridDhtPartitionsExchangeFuture fut = futs.get(i);
 
-                                                    return;
+                                                if (fut.exchangeDone() &&
+                                                    fut.topologyVersion().equals(req.topologyVersion())) {
+                                                    topFut = fut;
+
+                                                    found = true;
+
+                                                    break;
                                                 }
-
-                                                break;
                                             }
+
+                                            assert found: "The requested topology future cannot be found [topVer="
+                                                + req.topologyVersion() + ']';
+                                        }
+                                        else {
+                                            affFut.listen(f -> updateAllAsyncInternal0(node, req, completionCb));
+
+                                            return;
                                         }
 
                                         assert req.topologyVersion().equals(topFut.topologyVersion()) :
