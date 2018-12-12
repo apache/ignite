@@ -3011,8 +3011,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void resetLostPartitions(Collection<String> cacheNames) {
         assert !exchCtx.mergeExchanges();
 
-        U.dumpStack("reset lost partitions");
-
         synchronized (cctx.exchange().interruptLock()) {
             if (Thread.currentThread().isInterrupted())
                 return;

@@ -2129,6 +2129,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             try {
                 long updSeq = updateSeq.incrementAndGet();
 
+                Set<Integer> hasOwners = new HashSet<>();
+
                 for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
                     GridDhtPartitionMap partMap = e.getValue();
 
@@ -2136,6 +2138,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         GridDhtPartitionState state = e0.getValue();
 
                         int part = e0.getKey();
+
+                        if (state == OWNING)
+                            hasOwners.add(part);
 
                         if (state != LOST)
                             continue;
@@ -2146,23 +2151,32 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             continue;
 
                         e0.setValue(OWNING);
+                    }
+                }
 
-                        if (!ctx.localNodeId().equals(e.getKey()))
-                            continue;;
+                // Reset local partitions.
+                GridDhtPartitionMap locPartMap = node2part.get(ctx.localNodeId());
 
-                        GridDhtLocalPartition locPart = localPartition(part, resTopVer, false);
+                if (locPartMap != null) {
+                    for (Map.Entry<Integer, GridDhtPartitionState> e : locPartMap.entrySet()){
+                        GridDhtLocalPartition locPart = localPartition(e.getKey(), resTopVer, false);
 
                         if (locPart != null && locPart.state() == LOST) {
+                            long updateCntr = locPart.updateCounter();
+
+                            if (updateCntr == 0 && e.getValue() != OWNING)
+                                continue;
+
                             boolean marked = locPart.own();
 
                             if (marked) {
                                 updateLocal(locPart.id(), locPart.state(), updSeq, resTopVer);
 
-                                long updateCntr = locPart.updateCounter();
-
-                                //Set update counters to 0, for full rebalance.
-                                locPart.updateCounter(updateCntr, -updateCntr);
-                                locPart.initialUpdateCounter(0);
+                                if (!hasOwners.contains(e.getKey())) {
+                                    //Set update counters to 0, for full rebalance.
+                                    locPart.updateCounter(updateCntr, -updateCntr);
+                                    locPart.initialUpdateCounter(0);
+                                }
                             }
                         }
                     }
@@ -2352,7 +2366,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 continue;
 
             List<ClusterNode> nodes = nodes(p, aff.topologyVersion(), OWNING);
-
             Collection<UUID> nodeIds = F.nodeIds(nodes);
 
             // If all affinity nodes are owners, then evict partition from local node.
