@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Pattern;
-import junit.framework.TestCase;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
@@ -51,15 +50,18 @@ import org.apache.hadoop.yarn.client.api.AMRMClient;
 import org.apache.hadoop.yarn.client.api.NMClient;
 import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync;
 import org.apache.hadoop.yarn.exceptions.YarnException;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Application master tests.
  */
 @RunWith(JUnit4.class)
-public class IgniteApplicationMasterSelfTest extends TestCase {
+public class IgniteApplicationMasterSelfTest {
     /** */
     private ApplicationMaster appMaster;
 
@@ -72,9 +74,8 @@ public class IgniteApplicationMasterSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
-    @Override protected void setUp() throws Exception {
-        super.setUp();
-
+    @Before
+    public void setUp() throws Exception {
         props = new ClusterProperties();
         appMaster = new ApplicationMaster("test", props);
 
@@ -466,7 +467,7 @@ public class IgniteApplicationMasterSelfTest extends TestCase {
          * @param blacklistRemovals list of resources which should be removed from the
          *        application blacklist
          */
-        public void updateBlacklist(List blacklistAdditions, List blacklistRemovals) {
+        @Override public void updateBlacklist(List blacklistAdditions, List blacklistRemovals) {
             // No-op.
         }
     }
