@@ -18,93 +18,40 @@ import org.jetbrains.annotations.Nullable;
 /**
  */
 public class TxSinglePartitionOnePrimaryOnlyTest extends TxSinglePartitionAbstractTest {
-    /** Futures tracking map. */
-    private Queue<IgniteInternalFuture<?>> taskFuts = new ConcurrentLinkedQueue<>();
-
     /** */
-    public void testPrimaryPrepareCommitReorder() throws Exception {
-
-
-        Map<IgniteUuid, GridFutureAdapter<?>> futs = new ConcurrentHashMap<>();
-
+    public void testPrimaryPrepareCommitReorder3Txs() throws Exception {
         int[] prepOrd = new int[] {1, 2, 0};
         int[] commitOrd = new int[] {2, 1, 0};
         int[] sizes = new int[] {5, 7, 3};
         int total = IntStream.of(sizes).sum();
 
-        Queue<Integer> prepOrder = new ConcurrentLinkedQueue<>();
-        for (int aPrepOrd : prepOrd)
-            prepOrder.add(aPrepOrd);
-
-        Queue<Integer> commitOrder = new ConcurrentLinkedQueue<>();
-        for (int aCommitOrd : commitOrd)
-            commitOrder.add(aCommitOrd);
-
+        // For readability.
         int partId = 0;
         int backups = 0;
         int nodes = 1;
 
-        runOnPartition(partId, backups, nodes, new TxCallbackAdapter() {
-            @Override public boolean beforePrimaryPrepare(IgniteEx node, IgniteUuid nearXidVer,
-                GridFutureAdapter<?> proceedFut) {
-                runAsync(() -> {
-                    futs.put(nearXidVer, proceedFut);
-
-                    // Order prepares.
-                    if (futs.size() == prepOrder.size()) {// Wait until all prep requests queued and force prepare order.
-                        futs.remove(version(prepOrder.poll())).onDone();
-                    }
-                });
-
-                return true;
+        runOnPartition(partId, backups, nodes, new OrderingTxCallbackAdapter(prepOrd, commitOrd) {
+            @Override protected void onPrepared(IgniteEx node, int idx) {
+                log.info("TX: Prepared [node=" + node.name() + ", order=" + idx);
             }
 
-            @Override public boolean afterPrimaryPrepare(IgniteEx from, IgniteInternalTx tx, GridFutureAdapter<?> fut) {
-                runAsync(() -> {
-                    if (prepOrder.isEmpty())
-                        return;
+            @Override protected void onAllPrepared() {
+                PartitionUpdateCounter cntr = internalCache(0).context().topology().localPartition(partId).dataStore().partUpdateCounter();
 
-                    futs.remove(version(prepOrder.poll())).onDone();
+                int i = 0;
+                for (PartitionUpdateCounter.Item item : cntr.holes()) {
+                    assertEquals(sizes[prepOrd[i]], item.delta());
 
-                    if (prepOrder.isEmpty()) {
-                        GridDhtLocalPartition part = internalCache(0).context().topology().localPartition(0);
-                        PartitionUpdateCounter cntr = part.dataStore().partUpdateCounter();
-
-                        int i = 0;
-                        for (PartitionUpdateCounter.Item item : cntr.holes()) {
-                            assertEquals(sizes[prepOrd[i]], item.delta());
-
-                            i++;
-                        }
-                    }
-                });
-
-                return false;
+                    i++;
+                }
             }
 
-            @Override public boolean beforePrimaryFinish(IgniteEx primaryNode, IgniteInternalTx tx, GridFutureAdapter<?>
-                proceedFut) {
-                runAsync(() -> {
-                    futs.put(tx.nearXidVersion().asGridUuid(), proceedFut);
-
-                    // Order prepares.
-                    if (futs.size() == 3)
-                        futs.remove(version(commitOrder.poll())).onDone();
-
-                });
-
-                return true;
+            @Override protected void onCommitted(IgniteEx node, int idx) {
+                log.info("TX: Committed [node=" + node.name() + ", order=" + idx);
             }
 
-            @Override public boolean afterPrimaryFinish(IgniteEx primaryNode, IgniteUuid nearXidVer, GridFutureAdapter<?> proceedFut) {
-                runAsync(() -> {
-                    if (commitOrder.isEmpty())
-                        return;
+            @Override protected void onAllCommited() {
 
-                    futs.remove(version(commitOrder.poll())).onDone();
-                });
-
-                return false;
             }
         }, sizes);
 
@@ -117,18 +64,5 @@ public class TxSinglePartitionOnePrimaryOnlyTest extends TxSinglePartitionAbstra
 
         assertEquals(total, cntr.get());
         assertEquals(total, cntr.hwm());
-
-        // Check futures are executed without errors.
-        for (IgniteInternalFuture<?> fut : taskFuts)
-            fut.get();
-    }
-
-    /**
-     * @param r Runnable.
-     */
-    public void runAsync(Runnable r) {
-        IgniteInternalFuture fut = GridTestUtils.runAsync(r);
-
-        taskFuts.add(fut);
     }
 }

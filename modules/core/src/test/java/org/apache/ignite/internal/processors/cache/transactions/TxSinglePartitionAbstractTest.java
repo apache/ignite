@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -57,6 +59,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
@@ -64,7 +67,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
-import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 
 /**
@@ -81,6 +83,9 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
 
     /** */
     private int backups;
+
+    /** Futures tracking map. */
+    private Queue<IgniteInternalFuture<?>> taskFuts = new ConcurrentLinkedQueue<>();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -305,6 +310,10 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
         }, sizes.length, "tx-thread");
 
         fut.get();
+
+        // Check futures are executed without errors.
+        for (IgniteInternalFuture<?> f : taskFuts)
+            f.get();
     }
 
     /**
@@ -334,7 +343,7 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
         return fut;
     }
 
-    public static interface TxCallback {
+    protected static interface TxCallback {
         public boolean beforePrimaryPrepare(IgniteEx node, IgniteUuid nearXidVer,
             GridFutureAdapter<?> proceedFut);
 
@@ -376,8 +385,9 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static class TxCallbackAdapter implements TxCallback {
+    protected static class TxCallbackAdapter implements TxCallback {
         private Map<Integer, IgniteUuid> txMap = new ConcurrentHashMap<>();
+        private Map<IgniteUuid, Integer> revTxMap = new ConcurrentHashMap<>();
 
         @Override public boolean beforePrimaryPrepare(IgniteEx node, IgniteUuid nearXidVer, GridFutureAdapter<?> proceedFut) {
             return false;
@@ -419,16 +429,126 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
             return txMap.get(order);
         }
 
+        protected int order(IgniteUuid ver) {
+            return revTxMap.get(ver);
+        }
+
         @Override public void onTxStart(Transaction tx, int idx) {
             txMap.put(idx, tx.xid());
+            revTxMap.put(tx.xid(), idx);
         }
     }
 
+    protected abstract class OrderingTxCallbackAdapter extends TxCallbackAdapter {
+        /** */
+        private Queue<Integer> prepOrder;
+
+        /** */
+        private Queue<Integer> commitOrder;
+
+        /** */
+        private Map<IgniteUuid, GridFutureAdapter<?>> futs = new ConcurrentHashMap<>();
+
+        public OrderingTxCallbackAdapter(int[] prepOrd, int[] commitOrd) {
+            prepOrder = new ConcurrentLinkedQueue<>();
+            for (int aPrepOrd : prepOrd)
+                prepOrder.add(aPrepOrd);
+
+            commitOrder = new ConcurrentLinkedQueue<>();
+            for (int aCommitOrd : commitOrd)
+                commitOrder.add(aCommitOrd);
+        }
+
+        @Override public boolean beforePrimaryPrepare(IgniteEx node, IgniteUuid nearXidVer,
+            GridFutureAdapter<?> proceedFut) {
+            runAsync(() -> {
+                futs.put(nearXidVer, proceedFut);
+
+                // Order prepares.
+                if (futs.size() == prepOrder.size()) {// Wait until all prep requests queued and force prepare order.
+                    futs.remove(version(prepOrder.poll())).onDone();
+                }
+            });
+
+            return true;
+        }
+
+        protected abstract void onPrepared(IgniteEx from, int idx);
+
+        protected abstract void onAllPrepared();
+
+        protected abstract void onCommitted(IgniteEx primaryNode, int idx);
+
+        protected abstract void onAllCommited();
+
+        @Override public boolean afterPrimaryPrepare(IgniteEx from, IgniteInternalTx tx, GridFutureAdapter<?> fut) {
+            runAsync(() -> {
+                onPrepared(from, order(tx.nearXidVersion().asGridUuid()));
+
+                if (prepOrder.isEmpty())
+                    return;
+
+                futs.remove(version(prepOrder.poll())).onDone();
+
+                if (prepOrder.isEmpty())
+                    onAllPrepared();
+            });
+
+            return false;
+        }
+
+        @Override public boolean beforePrimaryFinish(IgniteEx primaryNode, IgniteInternalTx tx, GridFutureAdapter<?>
+        proceedFut) {
+            runAsync(() -> {
+                futs.put(tx.nearXidVersion().asGridUuid(), proceedFut);
+
+                // Order prepares.
+                if (futs.size() == 3)
+                    futs.remove(version(commitOrder.poll())).onDone();
+
+            });
+
+            return true;
+        }
+
+        @Override public boolean afterPrimaryFinish(IgniteEx primaryNode, IgniteUuid nearXidVer, GridFutureAdapter<?> proceedFut) {
+            runAsync(() -> {
+                onCommitted(primaryNode, order(nearXidVer));
+
+                if (commitOrder.isEmpty())
+                    return;
+
+                futs.remove(version(commitOrder.poll())).onDone();
+
+                if (commitOrder.isEmpty())
+                    onAllCommited();
+            });
+
+            return false;
+        }
+    }
+
+    /**
+     * Find a tx by near xid version.
+     *
+     * @param n Node.
+     * @param nearVer Near version.
+     * @param primary {@code True} to search primary tx.
+     */
     private IgniteInternalTx findTx(IgniteEx n, GridCacheVersion nearVer, boolean primary) {
         return n.context().cache().context().tm().activeTransactions().stream().filter(new Predicate<IgniteInternalTx>() {
             @Override public boolean test(IgniteInternalTx tx) {
                 return nearVer.equals(tx.nearXidVersion()) && tx.local() == primary;
             }
         }).findAny().orElse(null);
+    }
+
+    /**
+     * @param r Runnable.
+     */
+    public void runAsync(Runnable r) {
+        IgniteInternalFuture fut = GridTestUtils.runAsync(r);
+
+        taskFuts.add(fut);
     }
 }
