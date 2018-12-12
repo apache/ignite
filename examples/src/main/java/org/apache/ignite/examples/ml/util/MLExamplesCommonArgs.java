@@ -24,7 +24,7 @@ public class MLExamplesCommonArgs {
     /**
      * Unattended argument.
      */
-    public static String UNATTENDED = "unattended";
+    public static final String UNATTENDED = "unattended";
 
     /** Empty args for ML examples. */
     public static final String[] EMPTY_ARGS_ML = new String[] {"--" + UNATTENDED};

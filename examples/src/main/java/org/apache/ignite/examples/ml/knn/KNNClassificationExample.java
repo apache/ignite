@@ -19,6 +19,7 @@ package org.apache.ignite.examples.ml.knn;
 
 import java.io.FileNotFoundException;
 import javax.cache.Cache;
+import org.apache.commons.math3.util.Precision;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -85,7 +86,7 @@ public class KNNClassificationExample {
                     double prediction = knnMdl.apply(inputs);
 
                     totalAmount++;
-                    if (groundTruth != prediction)
+                    if (!Precision.equals(groundTruth, prediction, Precision.EPSILON))
                         amountOfErrors++;
 
                     System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);

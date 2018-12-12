@@ -20,6 +20,7 @@ package org.apache.ignite.examples.ml.multiclass;
 import java.io.FileNotFoundException;
 import java.util.Arrays;
 import javax.cache.Cache;
+import org.apache.commons.math3.util.Precision;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -125,7 +126,7 @@ public class OneVsRestClassificationExample {
                     totalAmount++;
 
                     // Collect data for model
-                    if (groundTruth != prediction)
+                    if (!Precision.equals(groundTruth, prediction, Precision.EPSILON))
                         amountOfErrors++;
 
                     int idx1 = (int)prediction == 1 ? 0 : ((int)prediction == 3 ? 1 : 2);
@@ -134,7 +135,7 @@ public class OneVsRestClassificationExample {
                     confusionMtx[idx1][idx2]++;
 
                     // Collect data for model with min-max scaling
-                    if (groundTruth != predictionWithMinMaxScaling)
+                    if (!Precision.equals(groundTruth, predictionWithMinMaxScaling, Precision.EPSILON))
                         amountOfErrorsWithMinMaxScaling++;
 
                     idx1 = (int)predictionWithMinMaxScaling == 1 ? 0 : ((int)predictionWithMinMaxScaling == 3 ? 1 : 2);
