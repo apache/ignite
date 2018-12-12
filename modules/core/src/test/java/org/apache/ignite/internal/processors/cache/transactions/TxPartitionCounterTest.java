@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
@@ -37,6 +38,7 @@ public class TxPartitionCounterTest extends TxSinglePartitionAbstractTest {
         int[] prepOrd = new int[] {1, 2, 0};
         int[] commitOrd = new int[] {2, 1, 0};
         int[] sizes = new int[] {5, 7, 3};
+        int total = IntStream.of(sizes).sum();
 
         Queue<Integer> prepOrder = new ConcurrentLinkedQueue<>();
         for (int i = 0; i < prepOrd.length; i++)
@@ -130,10 +132,13 @@ public class TxPartitionCounterTest extends TxSinglePartitionAbstractTest {
 
         int size = grid("client").cache(DEFAULT_CACHE_NAME).size();
 
-        assertEquals(15, size);
+        assertEquals(total, size);
 
         @Nullable GridDhtLocalPartition part = internalCache(0).context().topology().localPartition(0);
         PartitionUpdateCounter cntr = part.dataStore().partUpdateCounter();
+
+        assertEquals(total, cntr.get());
+        assertEquals(total, cntr.hwm());
 
         // Check futures are executed without errors.
         for (IgniteInternalFuture<?> fut : taskFuts)
