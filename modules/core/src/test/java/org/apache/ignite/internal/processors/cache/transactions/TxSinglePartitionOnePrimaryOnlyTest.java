@@ -32,11 +32,11 @@ public class TxSinglePartitionOnePrimaryOnlyTest extends TxSinglePartitionAbstra
 
         runOnPartition(partId, backups, nodes, new OrderingTxCallbackAdapter(prepOrd, commitOrd) {
             @Override protected void onPrepared(IgniteEx node, int idx) {
-                log.info("TX: Prepared [node=" + node.name() + ", order=" + idx);
+                log.info("TX: Prepared [node=" + node.name() + ", order=" + idx + ", cntr=" + counter(partId));
             }
 
             @Override protected void onAllPrepared() {
-                PartitionUpdateCounter cntr = internalCache(0).context().topology().localPartition(partId).dataStore().partUpdateCounter();
+                PartitionUpdateCounter cntr = counter(partId);
 
                 int i = 0;
                 for (PartitionUpdateCounter.Item item : cntr.holes()) {
@@ -47,7 +47,7 @@ public class TxSinglePartitionOnePrimaryOnlyTest extends TxSinglePartitionAbstra
             }
 
             @Override protected void onCommitted(IgniteEx node, int idx) {
-                log.info("TX: Committed [node=" + node.name() + ", order=" + idx);
+                log.info("TX: Committed [node=" + node.name() + ", order=" + idx + ", cntr=" + counter(partId));
             }
 
             @Override protected void onAllCommited() {

@@ -39,6 +39,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
@@ -385,7 +386,7 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected static class TxCallbackAdapter implements TxCallback {
+    protected class TxCallbackAdapter implements TxCallback {
         private Map<Integer, IgniteUuid> txMap = new ConcurrentHashMap<>();
         private Map<IgniteUuid, Integer> revTxMap = new ConcurrentHashMap<>();
 
@@ -436,6 +437,13 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
         @Override public void onTxStart(Transaction tx, int idx) {
             txMap.put(idx, tx.xid());
             revTxMap.put(tx.xid(), idx);
+        }
+
+        /**
+         * @param partId Partition id.
+         */
+        protected PartitionUpdateCounter counter(int partId) {
+            return internalCache(0).context().topology().localPartition(partId).dataStore().partUpdateCounter();
         }
     }
 
