@@ -57,6 +57,8 @@ ignite_odbc_tests_LDFLAGS = \
     -static-libtool-libs
 
 ignite_odbc_tests_SOURCES = \
+    src/teamcity/teamcity_boost.cpp \
+    src/teamcity/teamcity_messages.cpp \
     src/parser_test.cpp \
     src/cursor_test.cpp \
     src/connection_info_test.cpp \

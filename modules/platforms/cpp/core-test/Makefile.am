@@ -35,8 +35,8 @@ AM_CPPFLAGS = \
 	-I$(JAVA_HOME)/include/linux \
 	-DIGNITE_IMPL \
 	-D__STDC_LIMIT_MACROS \
-        -D__STDC_CONSTANT_MACROS \
-        -DBOOST_TEST_DYN_LINK
+	-D__STDC_CONSTANT_MACROS \
+	-DBOOST_TEST_DYN_LINK
 
 AM_CXXFLAGS = \
 	-Wall \
@@ -47,8 +47,8 @@ ignite_tests_LDADD = \
 	-lpthread \
 	-lboost_thread \
 	-lboost_system \
-        -lboost_chrono \
-        -lboost_unit_test_framework
+	-lboost_chrono \
+	-lboost_unit_test_framework
 
 ignite_tests_LDFLAGS = \
 	-static-libtool-libs \
@@ -81,7 +81,9 @@ ignite_tests_SOURCES = \
 	src/dynamic_size_array_test.cpp \
 	src/fixed_size_array_test.cpp \
 	src/future_test.cpp \
-        src/transactions_test.cpp \
+	src/transactions_test.cpp \
+	src/teamcity_messages.cpp \
+	src/teamcity_boost.cpp \
 	src/test_utils.cpp
 
 run-check: check
