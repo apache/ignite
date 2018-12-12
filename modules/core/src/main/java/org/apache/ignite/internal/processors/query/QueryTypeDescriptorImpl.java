@@ -107,9 +107,6 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** */
     private String affKey;
 
-    /** Whether custom affinity mapper is used. */
-    private boolean customAffMapper;
-
     /** */
     private String keyFieldName;
 
@@ -482,18 +479,6 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      */
     public void affinityKey(String affKey) {
         this.affKey = affKey;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean customAffinityMapper() {
-        return customAffMapper;
-    }
-
-    /**
-     * @param customAffMapper Whether custom affinity mapper is used.
-     */
-    public void customAffinityMapper(boolean customAffMapper) {
-        this.customAffMapper = customAffMapper;
     }
 
     /**
