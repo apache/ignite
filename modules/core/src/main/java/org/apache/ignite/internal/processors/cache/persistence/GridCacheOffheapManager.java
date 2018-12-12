@@ -179,17 +179,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         boolean needSnapshot = ctx.nextSnapshot() && ctx.needToSnapshot(grp.cacheOrGroupName());
 
-        boolean hasNonEmptyGroups = false;
-
-        for (CacheDataStore store : partDataStores.values()) {
-            if (notEmpty(store)) {
-                hasNonEmptyGroups = true;
-
-                break;
-            }
-        }
-
-        if (needSnapshot && hasNonEmptyGroups) {
+        if (needSnapshot) {
             if (execSvc == null)
                 updateSnapshotTag(ctx);
             else {
@@ -703,10 +693,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     log.debug("Save next snapshot before checkpoint start for grId = " + grpId
                         + ", nextSnapshotTag = " + nextSnapshotTag);
 
-                if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, metaPageId,
-                    metaPage, wal, null))
-                    wal.log(new MetaPageUpdateNextSnapshotId(grpId, metaPageId,
-                        nextSnapshotTag + 1));
+                if (!wal.disabled(grpId))
+                    wal.log(new MetaPageUpdateNextSnapshotId(grpId, metaPageId, nextSnapshotTag + 1));
 
                 addPartition(
                     null,
