@@ -16,15 +16,8 @@
  */
 
 /**
- * This package contains page memory implementation for case persitence is enabled.
- * Contained clasees with <ul>
- *  <li>Page Memory implementation {@link org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl}.</li>
- *  <li>Page Write Throttling.</li>
- *  <li>Mapping of full Page IDs to place in memory segment.</li>
- *  <li>Pages replacement with disk.</li>
- * </ul>
- *
+ * This package contain cache with persitence implementation. <br>
  * See also
- * <a href="https://github.com/apache/ignite/tree/master/modules/core/src/main/java/org/apache/ignite/internal/processors/cache/persistence/pagemem">Package description</a>
+ * <a href="https://github.com/apache/ignite/tree/master/modules/core/src/main/java/org/apache/ignite/internal/processors/cache/persistence">GitHub Package Readme</a>
  */
-package org.apache.ignite.internal.processors.cache.persistence.pagemem;
+package org.apache.ignite.internal.processors.cache.persistence;
