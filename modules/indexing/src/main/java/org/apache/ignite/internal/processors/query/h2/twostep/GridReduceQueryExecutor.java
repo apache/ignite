@@ -384,7 +384,13 @@ public class GridReduceQueryExecutor {
      * @return Cache context.
      */
     private GridCacheContext<?,?> cacheContext(Integer cacheId) {
-        return ctx.cache().context().cacheContext(cacheId);
+        GridCacheContext<?, ?> cctx = ctx.cache().context().cacheContext(cacheId);
+
+        if (cctx == null)
+            throw new CacheException(String.format("Cache not found on local node (was concurrently destroyed?) " +
+                "[cacheId=%d]", cacheId));
+
+        return cctx;
     }
 
     /**
