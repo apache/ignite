@@ -98,7 +98,7 @@ public class IgnitePdsCheckpointSimpleTest extends GridCommonAbstractTest {
      * @param i key.
      * @return value with extra data, which allows to verify
      */
-    @NotNull private String valueWithRedundancyForKey(int i) {
+    private @NotNull String valueWithRedundancyForKey(int i) {
         return Strings.repeat(Integer.toString(i), 10);
     }
 }
