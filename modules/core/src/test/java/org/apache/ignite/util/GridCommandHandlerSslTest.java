@@ -33,7 +33,6 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
  * Command line handler test.
  */
 public class GridCommandHandlerSslTest extends GridCommonAbstractTest {
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         cleanPersistenceDir();
@@ -78,9 +77,8 @@ public class GridCommandHandlerSslTest extends GridCommonAbstractTest {
         final CommandHandler cmd = new CommandHandler();
         assertEquals(EXIT_CODE_OK, cmd.execute(Arrays.asList(
             "--activate",
-            "--ssl_enabled",
-            "--ssl_key_store_path", GridTestUtils.keyStorePath("node01"),
-            "--ssl_key_store_password", GridTestUtils.keyStorePassword())));
+            "--keystore", GridTestUtils.keyStorePath("node01"),
+            "--keystore-password", GridTestUtils.keyStorePassword())));
 
         assertTrue(ignite.cluster().active());
 
