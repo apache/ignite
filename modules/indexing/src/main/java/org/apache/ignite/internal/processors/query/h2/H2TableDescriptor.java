@@ -174,7 +174,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
      * @return Cache context.
      */
     public GridCacheContext cache() {
-        return cacheInfo.gridCacheContext();
+        return cacheInfo.cacheContext();
     }
 
     /**
@@ -204,7 +204,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
      */
     H2RowFactory rowFactory(GridH2RowDescriptor rowDesc) {
         if (cacheInfo.affinityNode())
-            return new H2RowFactory(rowDesc, cacheInfo.gridCacheContext());
+            return new H2RowFactory(rowDesc, cacheInfo.cacheContext());
 
         return null;
     }
@@ -437,7 +437,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
         if (cacheInfo.affinityNode()) {
             assert pkHashIdx == null : pkHashIdx;
 
-            pkHashIdx = new H2PkHashIndex(cacheInfo.gridCacheContext(), tbl, PK_HASH_IDX_NAME, cols);
+            pkHashIdx = new H2PkHashIndex(cacheInfo.cacheContext(), tbl, PK_HASH_IDX_NAME, cols);
 
             return pkHashIdx;
         }

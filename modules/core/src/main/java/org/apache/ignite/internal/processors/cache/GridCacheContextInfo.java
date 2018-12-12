@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteUuid;
@@ -29,14 +28,8 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridToStringExclude
 public class GridCacheContextInfo<K, V> {
-    /** Full cache context. Can be {@code null} in case a cache is not started. */
-    @Nullable private volatile GridCacheContext gridCacheContext;
-
     /** Cache is client or not. */
     private final boolean clientCache;
-
-    /** Kernal context. */
-    private final GridKernalContext ctx;
 
     /** Dynamic cache deployment ID. */
     private final IgniteUuid dynamicDeploymentId;
@@ -50,86 +43,80 @@ public class GridCacheContextInfo<K, V> {
     /** Cache ID. */
     private final int cacheId;
 
+    /** Full cache context. Can be {@code null} in case a cache is not started. */
+    @Nullable private volatile GridCacheContext cctx;
+
     /**
      * Constructor of full cache context.
      *
-     * @param gridCacheContext Cache context.
+     * @param cctx Cache context.
      * @param clientCache Client cache or not.
      */
-    public GridCacheContextInfo(GridCacheContext<K, V> gridCacheContext, boolean clientCache) {
-        this.gridCacheContext = gridCacheContext;
-        this.ctx = gridCacheContext.kernalContext();
-        this.config = gridCacheContext.config();
-        this.dynamicDeploymentId = gridCacheContext.dynamicDeploymentId();
-        this.groupId = gridCacheContext.groupId();
-        this.cacheId = gridCacheContext.cacheId();
+    public GridCacheContextInfo(GridCacheContext<K, V> cctx, boolean clientCache) {
+        config = cctx.config();
+        dynamicDeploymentId = cctx.dynamicDeploymentId();
+        groupId = cctx.groupId();
+        cacheId = cctx.cacheId();
+
         this.clientCache = clientCache;
+
+        this.cctx = cctx;
     }
 
     /**
      * Constructor of not started cache context.
      *
      * @param cacheDesc Cache descriptor.
-     * @param ctx Kernal context.
      */
-    public GridCacheContextInfo(DynamicCacheDescriptor cacheDesc, GridKernalContext ctx) {
-        this.config = cacheDesc.cacheConfiguration();
-        this.dynamicDeploymentId = cacheDesc.deploymentId();
-        this.groupId = cacheDesc.groupId();
-        this.ctx = ctx;
-        this.clientCache = true;
+    public GridCacheContextInfo(DynamicCacheDescriptor cacheDesc) {
+        config = cacheDesc.cacheConfiguration();
+        dynamicDeploymentId = cacheDesc.deploymentId();
+        groupId = cacheDesc.groupId();
+        cacheId = CU.cacheId(config.getName());
 
-        this.cacheId = CU.cacheId(config.getName());
-
+        clientCache = true;
     }
 
     /**
      * @return Cache configuration.
      */
     public CacheConfiguration config() {
-        return isCacheContextInited() ? gridCacheContext.config() : config;
+        return config;
     }
 
     /**
      * @return Cache name.
      */
     public String name() {
-        return isCacheContextInited() ? gridCacheContext.name() : config.getName();
-    }
-
-    /**
-     * @return {@code true} in case cache use custom affinity mapper.
-     */
-    public boolean customAffinityMapper() {
-        return isCacheContextInited() && gridCacheContext.customAffinityMapper();
+        return config.getName();
     }
 
     /**
      * @return Cache group id.
      */
     public int groupId() {
-        return isCacheContextInited() ? gridCacheContext.groupId() : groupId;
+        return groupId;
     }
 
     /**
      * @return Cache id.
      */
     public int cacheId() {
-        return isCacheContextInited() ? gridCacheContext.cacheId() : cacheId;
+        return cacheId;
     }
 
     /**
      * @return {@code true} in case affinity node.
      */
     public boolean affinityNode() {
-        return isCacheContextInited() && gridCacheContext.affinityNode();
+        return cctx != null && cctx.affinityNode();
     }
 
     /**
      * @return Cache context. {@code null} for not started cache.
      */
-    @Nullable public GridCacheContext gridCacheContext() {
-        return gridCacheContext;
+    @Nullable public GridCacheContext cacheContext() {
+        return cctx;
     }
 
     /**
@@ -142,13 +129,13 @@ public class GridCacheContextInfo<K, V> {
     /**
      * Set real cache context in case cache has been fully initted and start.
      *
-     * @param gridCacheCtx Initted cache context.
+     * @param cctx Initted cache context.
      */
-    public void initCacheContext(GridCacheContext<?, ?> gridCacheCtx) {
-        assert this.gridCacheContext == null : this.gridCacheContext;
-        assert gridCacheCtx != null;
+    public void initCacheContext(GridCacheContext<?, ?> cctx) {
+        assert this.cctx == null : this.cctx;
+        assert cctx != null;
 
-        this.gridCacheContext = gridCacheCtx;
+        this.cctx = cctx;
     }
 
     /**
@@ -159,17 +146,10 @@ public class GridCacheContextInfo<K, V> {
     }
 
     /**
-     * @return Kernal context.
-     */
-    public GridKernalContext context() {
-        return ctx;
-    }
-
-    /**
      * @return {@code true} If Cache context is initted.
      */
     public boolean isCacheContextInited() {
-        return gridCacheContext != null;
+        return cctx != null;
     }
 
     /** {@inheritDoc} */

@@ -25,26 +25,29 @@ import org.apache.ignite.internal.GridKernalContext;
  */
 public class CacheObjectContext implements CacheObjectValueContext {
     /** */
-    private GridKernalContext kernalCtx;
+    private final GridKernalContext kernalCtx;
 
     /** */
-    private String cacheName;
+    private final String cacheName;
 
     /** */
     @SuppressWarnings("deprecation")
     private AffinityKeyMapper dfltAffMapper;
 
-    /** */
-    private boolean cpyOnGet;
+    /** Whether custom affinity mapper is used. */
+    private final boolean customAffMapper;
 
     /** */
-    private boolean storeVal;
+    private final boolean cpyOnGet;
 
     /** */
-    private boolean addDepInfo;
+    private final boolean storeVal;
+
+    /** */
+    private final boolean addDepInfo;
 
     /** Boinary enabled flag. */
-    private boolean binaryEnabled;
+    private final boolean binaryEnabled;
 
     /**
      * @param kernalCtx Kernal context.
@@ -58,6 +61,7 @@ public class CacheObjectContext implements CacheObjectValueContext {
     public CacheObjectContext(GridKernalContext kernalCtx,
         String cacheName,
         AffinityKeyMapper dfltAffMapper,
+        boolean customAffMapper,
         boolean cpyOnGet,
         boolean storeVal,
         boolean addDepInfo,
@@ -65,6 +69,7 @@ public class CacheObjectContext implements CacheObjectValueContext {
         this.kernalCtx = kernalCtx;
         this.cacheName = cacheName;
         this.dfltAffMapper = dfltAffMapper;
+        this.customAffMapper = customAffMapper;
         this.cpyOnGet = cpyOnGet;
         this.storeVal = storeVal;
         this.addDepInfo = addDepInfo;
@@ -99,6 +104,13 @@ public class CacheObjectContext implements CacheObjectValueContext {
     @SuppressWarnings("deprecation")
     public AffinityKeyMapper defaultAffMapper() {
         return dfltAffMapper;
+    }
+
+    /**
+     * @return Whether custom affinity mapper is used.
+     */
+    public boolean customAffinityMapper() {
+        return customAffMapper;
     }
 
     /** {@inheritDoc} */

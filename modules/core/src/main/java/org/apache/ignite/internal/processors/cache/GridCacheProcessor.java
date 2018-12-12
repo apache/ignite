@@ -1298,7 +1298,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public void initQueryStructuresForNotStartedCache(DynamicCacheDescriptor cacheDesc) throws IgniteCheckedException {
         QuerySchema schema = cacheDesc.schema() != null ? cacheDesc.schema() : new QuerySchema();
 
-        GridCacheContextInfo cacheInfo = new GridCacheContextInfo(cacheDesc, ctx);
+        CacheObjectContext coCtx = cacheDesc.cacheObjectContext(ctx.cacheObjects());
+
+        GridCacheContextInfo cacheInfo = new GridCacheContextInfo(cacheDesc);
 
         ctx.query().onCacheStart(cacheInfo, schema, cacheDesc.sql());
     }

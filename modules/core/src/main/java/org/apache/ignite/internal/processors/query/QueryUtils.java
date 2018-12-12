@@ -404,11 +404,10 @@ public class QueryUtils {
      * @return Type candidate.
      * @throws IgniteCheckedException If failed.
      */
-    public static QueryTypeCandidate typeForQueryEntity(String cacheName, String schemaName,
+    public static QueryTypeCandidate typeForQueryEntity(GridKernalContext ctx, String cacheName, String schemaName,
         GridCacheContextInfo cacheInfo,
         QueryEntity qryEntity, List<Class<?>> mustDeserializeClss, boolean escape)
         throws IgniteCheckedException {
-        GridKernalContext ctx = cacheInfo.context();
         CacheConfiguration<?, ?> ccfg = cacheInfo.config();
 
         boolean binaryEnabled = ctx.cacheObjects().isBinaryEnabled(ccfg);
@@ -496,8 +495,8 @@ public class QueryUtils {
             // Need to setup affinity key for distributed joins.
             String keyType = qryEntity.getKeyType();
 
-            if (!cacheInfo.customAffinityMapper() && keyType != null) {
-                if (coCtx != null) {
+            if (coCtx != null) {
+                if (!coCtx.customAffinityMapper() && keyType != null) {
                     CacheDefaultBinaryAffinityKeyMapper mapper =
                         (CacheDefaultBinaryAffinityKeyMapper)coCtx.defaultAffMapper();
 

@@ -99,7 +99,7 @@ public class GridH2Table extends TableBase {
     private final ConcurrentMap<Session, Boolean> sessions = new ConcurrentHashMap<>();
 
     /** */
-    private IndexColumn affKeyCol;
+    private final IndexColumn affKeyCol;
 
     /** */
     private final LongAdder size = new LongAdder();
@@ -138,32 +138,32 @@ public class GridH2Table extends TableBase {
         this.desc = desc;
         this.cacheInfo = cacheInfo;
 
-        if (desc.context() != null && !desc.context().customAffinityMapper()) {
-            boolean affinityColExists = true;
+        boolean affinityColExists = true;
 
-            String affKey = desc.type().affinityKey();
+        String affKey = desc.type().affinityKey();
 
-            int affKeyColId = -1;
+        int affKeyColId = -1;
 
-            if (affKey != null) {
-                if (doesColumnExist(affKey)) {
-                    affKeyColId = getColumn(affKey).getColumnId();
+        if (affKey != null) {
+            if (doesColumnExist(affKey)) {
+                affKeyColId = getColumn(affKey).getColumnId();
 
-                    if (desc.isKeyColumn(affKeyColId))
-                        affKeyColId = KEY_COL;
-                }
-                else
-                    affinityColExists = false;
+                if (desc.isKeyColumn(affKeyColId))
+                    affKeyColId = KEY_COL;
             }
             else
-                affKeyColId = KEY_COL;
-
-            if (affinityColExists) {
-                affKeyCol = indexColumn(affKeyColId, SortOrder.ASCENDING);
-
-                assert affKeyCol != null;
-            }
+                affinityColExists = false;
         }
+        else
+            affKeyColId = KEY_COL;
+
+        if (affinityColExists) {
+            affKeyCol = indexColumn(affKeyColId, SortOrder.ASCENDING);
+
+            assert affKeyCol != null;
+        }
+        else
+            affKeyCol = null;
 
         this.rowFactory = rowFactory;
 
@@ -253,14 +253,14 @@ public class GridH2Table extends TableBase {
      * @return {@code true} If Cache is lazy (not full inited).
      */
     public boolean isCacheLazy() {
-        return cacheInfo.gridCacheContext() == null;
+        return cacheInfo.cacheContext() == null;
     }
 
     /**
      * @return Cache context.
      */
     @Nullable public GridCacheContext cacheContext() {
-        return cacheInfo.gridCacheContext();
+        return cacheInfo.cacheContext();
     }
 
     /** {@inheritDoc} */
