@@ -46,3 +46,4 @@ export {default as structure} from './structure.icon.svg';
 export {default as cluster} from './cluster.icon.svg';
 export {default as sql} from './sql.icon.svg';
 export {default as menu} from './menu.icon.svg';
+export {default as downloadAgent} from './downloadAgent.icon.svg';
