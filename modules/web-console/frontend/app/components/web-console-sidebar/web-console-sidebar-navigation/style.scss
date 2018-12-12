@@ -33,7 +33,7 @@ web-console-sidebar-navigation {
     .web-console-sidebar-navigation__link-icon {
         width: 20px;
         height: auto;
-        color: inherit;
+        color: var(--inactive-link-color);
     }
 
     .web-console-sidebar-navigation__link-narrow {
@@ -46,6 +46,10 @@ web-console-sidebar-navigation {
 
         &:hover, &:focus {
             color: var(--active-link-color);
+
+            .web-console-sidebar-navigation__link-icon {
+                color: inherit;
+            }
         }
 
         &.web-console-sidebar-navigation__link-active {
@@ -80,6 +84,10 @@ web-console-sidebar-navigation {
 
         &:hover, &:focus {
             color: var(--active-link-color);
+
+            .web-console-sidebar-navigation__link-icon {
+                color: inherit;
+            }
         }
         &.web-console-sidebar-navigation__link-active {
             color: white;
