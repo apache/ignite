@@ -1733,6 +1733,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             false,
             ctx.deploymentEnabled());
 
+        boolean alreadyUpdated = false;
+
         assert !req.returnValue() || (req.operation() == TRANSFORM || req.size() == 1);
 
         GridDhtAtomicAbstractUpdateFuture dhtFut = null;
@@ -1875,12 +1877,20 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             .binaryContext().descriptorForClass(ex.cls(), false, false);
                     }
                     catch (UnregisteredBinaryTypeException ex) {
-                        IgniteCacheObjectProcessor cacheObjProc = ctx.cacheObjects();
+                        if(!alreadyUpdated) {
+                            IgniteCacheObjectProcessor cacheObjProc = ctx.cacheObjects();
 
-                        assert cacheObjProc instanceof CacheObjectBinaryProcessorImpl;
+                            assert cacheObjProc instanceof CacheObjectBinaryProcessorImpl;
 
-                        ((CacheObjectBinaryProcessorImpl)cacheObjProc)
-                            .binaryContext().updateMetadata(ex.typeId(), ex.binaryMetadata(), false);
+                            alreadyUpdated = true;
+                            ctx.kernalContext().getSystemExecutorService().submit(new Runnable() {
+                                @Override public void run() {
+
+                                    ((CacheObjectBinaryProcessorImpl)cacheObjProc)
+                                        .binaryContext().updateMetadata(ex.typeId(), ex.binaryMetadata(), false);
+                                }
+                            });
+                        }
                     }
                 }
             }
