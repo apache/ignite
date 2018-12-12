@@ -103,6 +103,9 @@ class MapQueryResult {
     /** */
     private volatile boolean closed;
 
+    /** */
+    private H2ConnectionWrapper conn;
+
     /**
      * Detached connection. Used for lazy execution to prevent share connection between thread from QUERY thread pool.
      */
@@ -142,7 +145,7 @@ class MapQueryResult {
 
             // Detach connection while result set is alive.
             // The session must be available from other thread to lock on session when concurrent cancel is happen.
-            detachedConn = h2.connections().detachThreadConnection();
+            conn = h2.connections().connectionForThread();
         }
         else {
             this.rs = null;
@@ -251,6 +254,9 @@ class MapQueryResult {
             rows.add(res.currentRow());
         }
 
+        if (res.hasNext())
+            detachedConn = h2.connections().detachThreadConnection();
+
         return !res.hasNext();
     }
 
@@ -281,6 +287,7 @@ class MapQueryResult {
         if (detachedConn != null)
             detachedConn.recycle();
 
+        conn = null;
         detachedConn = null;
     }
 
@@ -288,8 +295,8 @@ class MapQueryResult {
      * @return Session wrapper.
      */
     IgniteH2Session session() {
-        if (detachedConn != null)
-            return detachedConn.object().sessionWrapper();
+        if (conn != null)
+            return conn.sessionWrapper();
         else
             return null;
     }
