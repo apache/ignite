@@ -1332,23 +1332,28 @@ public class IgniteTxHandler {
             return;
         }
 
-        final GridDhtTxRemote dhtTx = ctx.tm().tx(req.version());
+        // Always add version to rollback history to prevent races with rollbacks.
+        if (!req.commit())
+            ctx.tm().addRolledbackTx(null, req.version());
+
+        GridDhtTxRemote dhtTx = ctx.tm().tx(req.version());
         GridNearTxRemote nearTx = ctx.tm().nearTx(req.version());
 
-        final GridCacheVersion nearTxId =
-            (dhtTx != null ? dhtTx.nearXidVersion() : (nearTx != null ? nearTx.nearXidVersion() : null));
+        IgniteInternalTx anyTx = U.<IgniteInternalTx>firstNotNull(dhtTx, nearTx);
 
-        if (txFinishMsgLog.isDebugEnabled()) {
-            txFinishMsgLog.debug("Received dht finish request [txId=" + nearTxId +
-                ", dhtTxId=" + req.version() +
+        final GridCacheVersion nearTxId = anyTx != null ? anyTx.nearXidVersion() : null;
+
+        if (txFinishMsgLog.isDebugEnabled())
+            txFinishMsgLog.debug("Received dht finish request [txId=" + nearTxId + ", dhtTxId=" + req.version() +
                 ", node=" + nodeId + ']');
-        }
 
-        // Safety - local transaction will finish explicitly.
-        if (nearTx != null && nearTx.local())
-            nearTx = null;
+        if (anyTx == null && req.commit())
+            ctx.tm().addCommittedTx(null, req.version(), null);
 
-        finish(nodeId, dhtTx, req);
+        if (dhtTx != null)
+            finish(nodeId, dhtTx, req);
+        else
+            applyPartitionsUpdatesCounters(req.updateCounters());
 
         if (nearTx != null)
             finish(nodeId, nearTx, req);
@@ -1401,30 +1406,7 @@ public class IgniteTxHandler {
         IgniteTxRemoteEx tx,
         GridDhtTxFinishRequest req
     ) {
-        // We don't allow explicit locks for transactions and
-        // therefore immediately return if transaction is null.
-        // However, we may decide to relax this restriction in
-        // future.
-        if (tx == null) {
-            if (req.commit())
-                // Must be some long time duplicate, but we add it anyway.
-                ctx.tm().addCommittedTx(tx, req.version(), null);
-            else
-                ctx.tm().addRolledbackTx(tx, req.version());
-
-                applyPartitionsUpdatesCounters(req.updateCounters());
-
-            if (log.isDebugEnabled())
-                log.debug("Received finish request for non-existing transaction (added to completed set) " +
-                    "[senderNodeId=" + nodeId + ", res=" + req + ']');
-
-            return;
-        }
-        else {
-            if (log.isDebugEnabled())
-                log.debug("Received finish request for transaction [senderNodeId=" + nodeId + ", req=" + req +
-                    ", tx=" + tx + ']');
-        }
+        assert tx != null;
 
         req.txState(tx.txState());
 
@@ -1444,6 +1426,9 @@ public class IgniteTxHandler {
                 tx.commitRemoteTx();
             }
             else {
+                if (tx.dht() && req.updateCounters() != null)
+                    tx.txCounters(true).updateCounters(req.updateCounters());
+
                 tx.doneRemote(req.baseVersion(), null, null, null);
                 tx.mvccSnapshot(req.mvccSnapshot());
                 tx.rollbackRemoteTx();
@@ -1734,7 +1719,6 @@ public class IgniteTxHandler {
             }
 
             if (req.updateCounters() != null)
-                //noinspection ConstantConditions
                 tx.txCounters(true).updateCounters(req.updateCounters());
 
             if (!tx.isSystemInvalidate()) {

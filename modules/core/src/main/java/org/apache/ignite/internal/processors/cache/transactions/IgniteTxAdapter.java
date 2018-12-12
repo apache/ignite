@@ -278,6 +278,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     @GridToStringInclude
     protected volatile MvccSnapshot mvccSnapshot;
 
+    /** {@code True} if tx should skip adding itself to completed version map on finish. */
+    private boolean skipCompletedVers;
+
     /** Rollback finish future. */
     @GridToStringExclude
     private volatile IgniteInternalFuture rollbackFut;
@@ -425,6 +428,20 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** {@inheritDoc} */
     @Override public void mvccSnapshot(MvccSnapshot mvccSnapshot) {
         this.mvccSnapshot = mvccSnapshot;
+    }
+
+    /**
+     * @return {@code True} if tx should skip adding itself to completed version map on finish.
+     */
+    public boolean skipCompletedVersions() {
+        return skipCompletedVers;
+    }
+
+    /**
+     * @param skipCompletedVers {@code True} if tx should skip adding itself to completed version map on finish.
+     */
+    public void skipCompletedVersions(boolean skipCompletedVers) {
+        this.skipCompletedVers = skipCompletedVers;
     }
 
     /**
@@ -1988,7 +2005,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     public abstract void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
-    @Nullable @Override public TxCounters txCounters(boolean createIfAbsent) {
+    @Override public TxCounters txCounters(boolean createIfAbsent) {
         if (createIfAbsent && txCounters == null)
             TX_COUNTERS_UPD.compareAndSet(this, null, new TxCounters());
 

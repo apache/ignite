@@ -660,9 +660,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMixedAsyncRollbackTypes() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10434");
-
         final Ignite client = startClient();
 
         final AtomicBoolean stop = new AtomicBoolean();
