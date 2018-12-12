@@ -16,6 +16,8 @@
  * $Revision: 88625 $
  */
 
+#define BOOST_TEST_MODULE IgniteOdbcTest
+
 #include "teamcity/teamcity_messages.h"
 
 #include <boost/version.hpp>
