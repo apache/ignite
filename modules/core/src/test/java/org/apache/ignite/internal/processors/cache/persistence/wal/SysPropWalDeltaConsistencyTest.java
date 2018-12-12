@@ -41,6 +41,13 @@ public class SysPropWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyT
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -76,7 +83,5 @@ public class SysPropWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyT
             cache1.put(i, "Cache value " + i);
 
         forceCheckpoint();
-
-        stopAllGrids();
     }
 }

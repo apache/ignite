@@ -51,14 +51,17 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.RecycleRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.tree.AbstractDataLeafIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -67,6 +70,9 @@ import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.mockito.Mockito;
+
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_CACHE_ID_DATA_REF_MVCC_LEAF;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA_REF_MVCC_LEAF;
 
 /**
  * Page memory tracker.
@@ -404,6 +410,14 @@ public class PageMemoryTracker implements IgnitePlugin {
             int grpId = snapshot.fullPageId().groupId();
             long pageId = snapshot.fullPageId().pageId();
 
+            // TODO Remove this dirty hack with newPageId after IGNITE-9303 is fixed.
+            ByteBuffer buf = ByteBuffer.allocate(Long.BYTES);
+            buf.order(GridUnsafe.NATIVE_BYTE_ORDER);
+            buf.put(snapshot.pageData(), PageIO.PAGE_ID_OFF, Long.BYTES);
+            buf.flip();
+
+            long newPageId = buf.getLong();
+
             FullPageId fullPageId = new FullPageId(pageId, grpId);
 
             DirectMemoryPage page = page(fullPageId);
@@ -413,7 +427,7 @@ public class PageMemoryTracker implements IgnitePlugin {
             try {
                 PageUtils.putBytes(page.address(), 0, snapshot.pageData());
 
-                page.fullPageId(fullPageId);
+                page.fullPageId(new FullPageId(newPageId, grpId));
 
                 page.changeHistory().clear();
 
@@ -467,6 +481,9 @@ public class PageMemoryTracker implements IgnitePlugin {
 
         long totalAllocated = pageStoreMgr.pagesAllocated(MetaStorage.METASTORAGE_CACHE_ID);
 
+        if (MvccUtils.mvccEnabled(gridCtx))
+            totalAllocated += pageStoreMgr.pagesAllocated(TxLog.TX_LOG_CACHE_ID);
+
         for (CacheGroupContext ctx : gridCtx.cache().cacheGroups())
             totalAllocated += pageStoreMgr.pagesAllocated(ctx.groupId());
 
@@ -489,15 +506,6 @@ public class PageMemoryTracker implements IgnitePlugin {
 
         synchronized (pageAllocatorMux) {
             long totalAllocated = pageStoreAllocatedPages();
-
-            long metaId = ((PageMemoryEx)cacheProc.context().database().metaStorage().pageMemory()).metaPageId(
-                MetaStorage.METASTORAGE_CACHE_ID);
-
-            // Meta storage meta page is counted as allocated, but never used in current implementation.
-            // This behavior will be fixed by https://issues.apache.org/jira/browse/IGNITE-8735
-            if (!pages.containsKey(new FullPageId(metaId, MetaStorage.METASTORAGE_CACHE_ID))
-                && pages.containsKey(new FullPageId(metaId + 1, MetaStorage.METASTORAGE_CACHE_ID)))
-                totalAllocated--;
 
             log.info(">>> Total tracked pages: " + pages.size());
             log.info(">>> Total allocated pages: " + totalAllocated);
@@ -523,6 +531,8 @@ public class PageMemoryTracker implements IgnitePlugin {
 
             if (fullPageId.groupId() == MetaStorage.METASTORAGE_CACHE_ID)
                 pageMem = cacheProc.context().database().metaStorage().pageMemory();
+            else if (fullPageId.groupId() == TxLog.TX_LOG_CACHE_ID)
+                pageMem = cacheProc.context().database().dataRegion(TxLog.TX_LOG_CACHE_NAME).pageMemory();
             else {
                 CacheGroupContext ctx = cacheProc.cacheGroup(fullPageId.groupId());
 
@@ -560,6 +570,26 @@ public class PageMemoryTracker implements IgnitePlugin {
                         else {
                             ByteBuffer locBuf = GridUnsafe.wrapPointer(page.address(), pageSize);
                             ByteBuffer rmtBuf = GridUnsafe.wrapPointer(rmtPageAddr, pageSize);
+
+                            PageIO pageIo = PageIO.getPageIO(rmtPageAddr);
+
+                            if (pageIo.getType() == T_DATA_REF_MVCC_LEAF ||
+                                pageIo.getType() == T_CACHE_ID_DATA_REF_MVCC_LEAF) {
+                                assert fullPageId.groupId() != MetaStorage.METASTORAGE_CACHE_ID &&
+                                    fullPageId.groupId() != TxLog.TX_LOG_CACHE_ID : fullPageId.groupId();
+
+                                assert cacheProc.cacheGroup(fullPageId.groupId()).mvccEnabled();
+
+                                AbstractDataLeafIO io = (AbstractDataLeafIO)pageIo;
+
+                                int cnt = io.getCount(rmtPageAddr);
+
+                                // Reset. Lock info doesn't logged into WAL.
+                                for (int i = 0; i < cnt; i++) {
+                                    io.setMvccLockCoordinatorVersion(page.address(), i, io.getMvccLockCoordinatorVersion(rmtPageAddr, i));
+                                    io.setMvccLockCounter(page.address(), i, io.getMvccLockCounter(rmtPageAddr, i));
+                                }
+                            }
 
                             if (!locBuf.equals(rmtBuf)) {
                                 res = false;

@@ -25,6 +25,13 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.Pa
  * WAL delta records consistency test with explicit checks.
  */
 public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyTest {
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
+    }
+
     /**
      *
      */
@@ -33,7 +40,7 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
 
         ignite.cluster().active(true);
 
-        IgniteCache<Integer, Object> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Object> cache = ignite.getOrCreateCache(defaultCacheConfiguration());
 
         for (int i = 0; i < 5_000; i++)
             cache.put(i, "Cache value " + i);
@@ -55,8 +62,6 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
             cache.remove(i);
 
         assertTrue(PageMemoryTrackerPluginProvider.tracker(ignite).checkPages(true));
-
-        stopAllGrids();
     }
 
     /**
@@ -67,7 +72,7 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
 
         ignite.cluster().active(true);
 
-        IgniteCache<Integer, Object> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Object> cache = ignite.getOrCreateCache(defaultCacheConfiguration());
 
         for (int i = 0; i < 3_000; i++)
             cache.put(i, "Cache value " + i);
@@ -80,7 +85,7 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
 
         ignite.cluster().active(true);
 
-        cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+        cache = ignite.getOrCreateCache(defaultCacheConfiguration());
 
         for (int i = 2_000; i < 5_000; i++)
             cache.put(i, "Changed cache value " + i);
@@ -89,7 +94,5 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
             cache.remove(i);
 
         assertTrue(PageMemoryTrackerPluginProvider.tracker(ignite).checkPages(true));
-
-        stopAllGrids();
     }
 }
