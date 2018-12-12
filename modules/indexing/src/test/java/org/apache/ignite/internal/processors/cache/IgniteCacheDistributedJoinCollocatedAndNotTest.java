@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -85,6 +87,8 @@ public class IgniteCacheDistributedJoinCollocatedAndNotTest extends GridCommonAb
             entity.addQueryField("id", Integer.class.getName(), null);
             entity.addQueryField("affKey", Integer.class.getName(), null);
             entity.addQueryField("name", String.class.getName(), null);
+
+            entity.setKeyFields(new HashSet<>(Arrays.asList("id", "affKey")));
 
             ccfg.setQueryEntities(F.asList(entity));
 
