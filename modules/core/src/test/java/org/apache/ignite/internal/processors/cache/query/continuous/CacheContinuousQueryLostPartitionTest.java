@@ -133,7 +133,6 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
      * @param cacheName Cache name.
      * @throws Exception If failed.
      */
-    @Test
     public void testEvent(String cacheName, boolean client) throws Exception {
         IgniteCache<Integer, String> cache1 = grid(0).getOrCreateCache(cacheName);
 

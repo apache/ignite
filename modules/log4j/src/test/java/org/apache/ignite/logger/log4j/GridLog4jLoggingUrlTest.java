@@ -19,7 +19,6 @@ package org.apache.ignite.logger.log4j;
 
 import java.io.File;
 import java.net.URL;
-import junit.framework.TestCase;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -27,12 +26,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static org.junit.Assert.assertTrue;
+
 /**
  * Grid Log4j SPI test.
  */
 @GridCommonTest(group = "Logger")
 @RunWith(JUnit4.class)
-public class GridLog4jLoggingUrlTest extends TestCase {
+public class GridLog4jLoggingUrlTest {
     /** */
     private IgniteLogger log;
 
@@ -40,7 +41,7 @@ public class GridLog4jLoggingUrlTest extends TestCase {
     private URL url;
 
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         File xml = GridTestUtils.resolveIgnitePath("modules/core/src/test/config/log4j-test.xml");
 
         assert xml != null;

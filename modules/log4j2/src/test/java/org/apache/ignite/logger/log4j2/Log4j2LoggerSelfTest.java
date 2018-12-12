@@ -21,7 +21,6 @@ import java.io.File;
 import java.net.URL;
 import java.util.Collections;
 import java.util.UUID;
-import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -36,22 +35,24 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 /**
  * Grid Log4j2 SPI test.
  */
 @RunWith(JUnit4.class)
-public class Log4j2LoggerSelfTest extends TestCase {
+public class Log4j2LoggerSelfTest {
     /** */
     private static final String LOG_PATH_TEST = "modules/core/src/test/config/log4j2-test.xml";
 
     /** */
     private static final String LOG_PATH_MAIN = "config/ignite-log4j2.xml";
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Before
-    @Override protected void setUp() throws Exception {
+    public void setUp() {
         Log4J2Logger.cleanup();
     }
 
@@ -135,6 +136,7 @@ public class Log4j2LoggerSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSystemNodeId() throws Exception {
         UUID id = UUID.randomUUID();
 
@@ -148,6 +150,7 @@ public class Log4j2LoggerSelfTest extends TestCase {
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testLogFilesTwoNodes() throws Exception {
         checkOneNode(0);
         checkOneNode(1);
