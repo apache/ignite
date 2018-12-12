@@ -43,11 +43,14 @@ public class DdCollaborator {
     }
 
     public void startComputation(MvccVersion waiterVersion, MvccVersion blockerVersion) {
+        // t0d0 filter out non-mvcc transactions where needed
         Optional<IgniteInternalTx> waitingTx = cctx.tm().activeTransactions().stream()
+            .filter(tx -> tx.mvccSnapshot() != null)
             .filter(tx -> belongToSameTx(waiterVersion, tx.mvccSnapshot()))
             .findAny();
 
         Optional<IgniteInternalTx> blockerTx = cctx.tm().activeTransactions().stream()
+            .filter(tx -> tx.mvccSnapshot() != null)
             .filter(tx -> belongToSameTx(blockerVersion, tx.mvccSnapshot()))
             .findAny();
 
