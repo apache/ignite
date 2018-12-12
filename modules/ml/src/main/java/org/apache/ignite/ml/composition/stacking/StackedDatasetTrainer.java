@@ -45,7 +45,7 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
  * </pre>
  * During second step we can choose if we want to keep original features along with converted outputs of first layer
  * models or use only converted results of first layer models. This choice will also affect inference.
- * This class is a most abstract stacked trainer, there is a {@link StackedVectorDatasetTrainer}: a shortcut version of
+ * This class is a most general stacked trainer, there is a {@link StackedVectorDatasetTrainer}: a shortcut version of
  * it with some types and functions specified.
  *
  * @param <IS> Type of submodels input.

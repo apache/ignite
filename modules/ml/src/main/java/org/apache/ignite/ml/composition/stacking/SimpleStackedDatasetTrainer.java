@@ -36,7 +36,7 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
 public class SimpleStackedDatasetTrainer<I, O, AM extends Model<I, O>, L> extends StackedDatasetTrainer<I, I, O, AM, L> {
     /**
      * Construct instance of this class.
-     *SS
+     *
      * @param aggregatingTrainer Aggregator trainer.
      * @param aggregatingInputMerger Function used to merge submodels outputs into one.
      * @param submodelInput2AggregatingInputConverter Function used to convert input of submodel to output of submodel
@@ -90,12 +90,14 @@ public class SimpleStackedDatasetTrainer<I, O, AM extends Model<I, O>, L> extend
         return (SimpleStackedDatasetTrainer<I, O, AM, L>)super.withOriginalFeaturesDropped();
     }
 
+    /** {@inheritDoc} */
     @Override public SimpleStackedDatasetTrainer<I, O, AM, L> withOriginalFeaturesKept(
         IgniteFunction<I, I> submodelInput2AggregatingInputConverter) {
         return (SimpleStackedDatasetTrainer<I, O, AM, L>)super.withOriginalFeaturesKept(
             submodelInput2AggregatingInputConverter);
     }
 
+    /** {@inheritDoc} */
     @Override public SimpleStackedDatasetTrainer<I, O, AM, L> withAggregatorInputMerger(IgniteBinaryOperator<I> merger) {
         return (SimpleStackedDatasetTrainer<I, O, AM, L>)super.withAggregatorInputMerger(merger);
     }

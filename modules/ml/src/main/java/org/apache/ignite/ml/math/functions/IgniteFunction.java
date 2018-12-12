@@ -34,18 +34,9 @@ public interface IgniteFunction<T, R> extends Function<T, R>, Serializable {
      * @param <R> Type of output.
      * @return {@link IgniteFunction} returning specified constant.
      */
+    // TODO: IGNITE-10653 Maybe we should add toString description to identity and constant.
     public static <T, R> IgniteFunction<T, R> constant(R r) {
-        return new IgniteFunction<T, R>() {
-            /** {@inheritDoc} */
-            @Override public String toString() {
-                return "Constant function [c=" + r + "]";
-            }
-
-            /** {@inheritDoc} */
-            @Override public R apply(T t) {
-                return r;
-            }
-        };
+        return (IgniteFunction<T, R>)t -> r;
     }
 
     /**
@@ -55,16 +46,6 @@ public interface IgniteFunction<T, R> extends Function<T, R>, Serializable {
      * @return Identity function.
      */
     public static <T> IgniteFunction<T, T> identity() {
-        return new IgniteFunction<T, T>() {
-            /** {@inheritDoc} */
-            @Override public String toString() {
-                return "Identity function.";
-            }
-
-            /** {@inheritDoc} */
-            @Override public T apply(T t) {
-                return t;
-            }
-        };
+        return (IgniteFunction<T, T>)t -> t;
     }
 }

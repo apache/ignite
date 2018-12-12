@@ -25,8 +25,8 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Type used to adapt input and output types of wrapped {@link DatasetTrainer}.
- * Produces model which is composition  of form {@code after . wMdl . before} where dot denotes functional composition
- * and wMdl is model produced by wrapped trainer.
+ * Produces model which is composition  of form {@code before `andThen` wMdl `andThen` after} where wMdl is model produced by
+ * wrapped trainer.
  *
  * @param <I> Input type of model produced by this trainer.
  * @param <O> Output type of model produced by this trainer.
@@ -93,7 +93,7 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends Model<IW, OW>, L>
 
     /**
      * Let this trainer produce model {@code mdl}. This method produces a trainer which produces {@code mdl1}, where
-     * {@code mdl1 = f . mdl}, where dot symbol is understood in sense of functions composition.
+     * {@code mdl1 = mdl `andThen` after}.
      *
      * @param after Function inserted before produced model.
      * @param <O1> Type of produced model output.
@@ -106,7 +106,7 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends Model<IW, OW>, L>
 
     /**
      * Let this trainer produce model {@code mdl}. This method produces a trainer which produces {@code mdl1}, where
-     * {@code mdl1 = mdl . f}, where dot symbol is understood in sense of functions composition.
+     * {@code mdl1 = f `andThen` mdl}.
      *
      * @param before Function inserted before produced model.
      * @param <I1> Type of produced model input.

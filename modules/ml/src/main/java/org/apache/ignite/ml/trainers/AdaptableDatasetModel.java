@@ -21,8 +21,7 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
- * Model which is composition  of form {@code after . iMdl . before} where dot denotes functional composition
- * and iMdl is a inner model.
+ * Model which is composition  of form {@code before `andThen` iMdl `andThen` after}.
  *
  * @param <I> Type of input of this model.
  * @param <O> Type of output of this model.
