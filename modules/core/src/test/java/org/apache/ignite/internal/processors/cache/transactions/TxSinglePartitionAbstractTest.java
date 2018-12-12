@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrep
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -225,6 +226,13 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
 
                     return cb.beforeBackupFinish(from, to, primTx, backupTx, createSendFuture(primWrapperSpi, msg));
                 }
+                else if (msg instanceof GridNearTxPrepareResponse) {
+                    GridNearTxPrepareResponse resp = (GridNearTxPrepareResponse)msg;
+
+                    IgniteInternalTx primTx = findTx(from, futMap.get(resp.futureId()), true);
+
+                    return cb.afterPrimaryPrepare(from, primTx, createSendFuture(primWrapperSpi, msg));
+                }
                 else if (msg instanceof GridNearTxFinishResponse) {
                     GridNearTxFinishResponse req = (GridNearTxFinishResponse)msg;
 
@@ -358,6 +366,8 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
             IgniteInternalTx backupTx,
             GridFutureAdapter<?> future);
 
+        boolean afterPrimaryPrepare(IgniteEx from, IgniteInternalTx tx, GridFutureAdapter<?> fut);
+
         /**
          * @param tx Tx.
          * @param idx Index.
@@ -365,9 +375,9 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
         void onTxStart(Transaction tx, int idx);
     }
 
+    /** */
     public static class TxCallbackAdapter implements TxCallback {
-        @Override
-        public boolean beforePrimaryPrepare(IgniteEx node, IgniteUuid nearXidVer, GridFutureAdapter<?> proceedFut) {
+        @Override public boolean beforePrimaryPrepare(IgniteEx node, IgniteUuid nearXidVer, GridFutureAdapter<?> proceedFut) {
             return false;
         }
 
@@ -376,8 +386,7 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
             return false;
         }
 
-        @Override
-        public boolean beforePrimaryFinish(IgniteEx primaryNode, IgniteInternalTx tx, GridFutureAdapter<?> proceedFut) {
+        @Override public boolean beforePrimaryFinish(IgniteEx primaryNode, IgniteInternalTx tx, GridFutureAdapter<?> proceedFut) {
             return false;
         }
 
@@ -386,17 +395,21 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
             return false;
         }
 
-        @Override public boolean afterBackupPrepare(IgniteEx n, IgniteInternalTx tx, GridFutureAdapter<?> future) {
+        @Override public boolean afterBackupPrepare(IgniteEx n, IgniteInternalTx tx, GridFutureAdapter<?> fut) {
             return false;
         }
 
-        @Override public boolean afterBackupFinish(IgniteEx n, IgniteUuid nearXidVer, GridFutureAdapter<?> future) {
+        @Override public boolean afterBackupFinish(IgniteEx n, IgniteUuid nearXidVer, GridFutureAdapter<?> fut) {
             return false;
         }
 
         @Override public boolean beforeBackupFinish(IgniteEx prim, IgniteEx backup, IgniteInternalTx primTx,
             IgniteInternalTx backupTx,
             GridFutureAdapter<?> future) {
+            return false;
+        }
+
+        @Override public boolean afterPrimaryPrepare(IgniteEx from, IgniteInternalTx tx, GridFutureAdapter<?> fut) {
             return false;
         }
 

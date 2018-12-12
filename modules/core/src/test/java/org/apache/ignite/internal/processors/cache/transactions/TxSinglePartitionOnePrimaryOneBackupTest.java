@@ -17,7 +17,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  */
-public class TxPartitionCounterTest extends TxSinglePartitionAbstractTest {
+public class TxSinglePartitionOnePrimaryOneBackupTest extends TxSinglePartitionAbstractTest {
     /** Futures tracking map. */
     private Queue<IgniteInternalFuture<?>> taskFuts = new ConcurrentLinkedQueue<>();
 

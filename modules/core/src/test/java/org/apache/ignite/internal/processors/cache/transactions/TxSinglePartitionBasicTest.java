@@ -9,18 +9,15 @@ import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Print DHT transaction using tx callback framework.
  */
-public class TxPartitionCounterTest2 extends TxSinglePartitionAbstractTest {
-    /**
-     *
-     */
+public class TxSinglePartitionBasicTest extends TxSinglePartitionAbstractTest {
+    /** */
     public void testBasicTxCallback() throws Exception {
         int partId = 0;
         int backups = 2;
         int nodes = 3;
-        int[] sizes = new int[] {3};
-        int total = IntStream.of(sizes).sum();
+        int txSize = 5;
 
         runOnPartition(partId, backups, nodes, new TxCallback() {
             @Override public boolean beforePrimaryPrepare(IgniteEx node, IgniteUuid nearXidVer,
@@ -73,12 +70,16 @@ public class TxPartitionCounterTest2 extends TxSinglePartitionAbstractTest {
                 return false;
             }
 
+            @Override public boolean afterPrimaryPrepare(IgniteEx prim, IgniteInternalTx tx, GridFutureAdapter<?> fut) {
+                log.info("TX: afterPrimaryPrepare: prim=" + prim.name() + ", nearXidVer=" + tx.nearXidVersion().asGridUuid() + ", tx=" + CU.txString(tx));
+
+                return false;
+            }
+
             @Override public void onTxStart(Transaction tx, int idx) {
             }
-        }, sizes);
+        }, txSize);
 
-        int size = grid("client").cache(DEFAULT_CACHE_NAME).size();
-
-        assertEquals(total, size);
+        assertEquals(txSize, grid("client").cache(DEFAULT_CACHE_NAME).size());
     }
 }
