@@ -37,13 +37,13 @@ import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.UpstreamTransformerBuilder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.internal.runners.JUnit38ClassRunner;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link ComputeUtils}.
  */
-@RunWith(JUnit4.class)
+@RunWith(JUnit38ClassRunner.class)
 public class ComputeUtilsTest extends GridCommonAbstractTest {
     /** Number of nodes in grid. */
     private static final int NODE_COUNT = 10;
@@ -63,7 +63,7 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTest() {
         /* Grid instance. */
         ignite = grid(NODE_COUNT);
         ignite.configuration().setPeerClassLoadingEnabled(true);
@@ -272,7 +272,7 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws Exception {
+        @Override public void close() {
             // Do nothing, GC will clean up.
         }
     }
