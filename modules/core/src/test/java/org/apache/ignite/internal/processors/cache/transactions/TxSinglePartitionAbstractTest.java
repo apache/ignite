@@ -97,7 +97,7 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
             setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true).
                 setInitialSize(100 * MB).setMaxSize(100 * MB)));
 
-        cfg.setFailureDetectionTimeout(60000);
+        cfg.setFailureDetectionTimeout(600000);
 
         if (!client) {
             CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
@@ -163,24 +163,28 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
 
         final TestRecordingCommunicationSpi clientWrappedSpi = TestRecordingCommunicationSpi.spi(client);
 
+        Map<IgniteUuid, IgniteUuid> futMap = new ConcurrentHashMap<>();
+
         clientWrappedSpi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode node, Message msg) {
-                IgniteEx n = IgnitionEx.gridxx(node.id());
+                IgniteEx to = IgnitionEx.gridxx(node.id());
 
                 if (msg instanceof GridNearTxPrepareRequest) {
                     GridNearTxPrepareRequest req = (GridNearTxPrepareRequest)msg;
 
-                    return cb.onBeforePrimaryPrepare(n, req.version().asGridUuid(), createSendFuture(clientWrappedSpi, msg));
+                    futMap.put(req.futureId(), req.version().asGridUuid());
+
+                    return cb.onBeforePrimaryPrepare(to, req.version().asGridUuid(), createSendFuture(clientWrappedSpi, msg));
                 }
-//                else if (msg instanceof GridNearTxFinishRequest) {
-//                    GridNearTxFinishRequest req = (GridNearTxFinishRequest)msg;
-//
-//                    IgniteInternalTx tx = findTx(n, req.version());
-//
-//                    assertNotNull(tx);
-//
-//                    return cb.onBeforePrimaryFinish(n, tx, createSendFuture(clientWrappedSpi, msg));
-//                }
+                else if (msg instanceof GridNearTxFinishRequest) {
+                    GridNearTxFinishRequest req = (GridNearTxFinishRequest)msg;
+
+                    IgniteInternalTx tx = findTx(to, req.version(), true);
+
+                    assertNotNull(tx);
+
+                    return cb.onBeforePrimaryFinish(to, tx, createSendFuture(clientWrappedSpi, msg));
+                }
 
                 return false;
             }
@@ -196,12 +200,17 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
                     if (msg instanceof GridDhtTxPrepareRequest) {
                         GridDhtTxPrepareRequest req = (GridDhtTxPrepareRequest)msg;
 
-                        return cb.onAfterPrimaryPrepare(to, findTx(from, req.version()), createSendFuture(primWrapperSpi, msg));
+                        return cb.onAfterPrimaryPrepare(to, findTx(from, req.nearXidVersion(), true), createSendFuture(primWrapperSpi, msg));
                     }
                     else if (msg instanceof GridDhtTxFinishRequest)
                         return false; // cb.onBeforeCommit(n, null, null, createSendFuture(primWrapperSpi, msg));
-                    else if (msg instanceof GridNearTxFinishResponse)
-                        return false; // cb.onBeforeCommit(n, null, null, createSendFuture(primWrapperSpi, msg));
+                    else if (msg instanceof GridNearTxFinishResponse) {
+                        GridNearTxFinishResponse req = (GridNearTxFinishResponse)msg;
+
+                        IgniteUuid nearVer = futMap.get(req.futureId());
+
+                        return cb.onAfterPrimaryFinish(to, nearVer, createSendFuture(primWrapperSpi, msg));
+                    }
 
                     return false;
                 }
@@ -267,7 +276,14 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
             @Override public void apply(IgniteInternalFuture<?> fut) {
                 wrapperSpi.stopBlock(true, new IgnitePredicate<T2<ClusterNode, GridIoMessage>>() {
                     @Override public boolean apply(T2<ClusterNode, GridIoMessage> objects) {
-                        return objects.get2().message() == msg;
+                        boolean res = objects.get2().message() == msg;
+
+                        if (res) {
+                            Message message = objects.get2().message();
+                            System.out.println("EBAT: " + message.hashCode());
+                        }
+
+                        return res;
                     }
                 }, false);
             }
@@ -285,15 +301,17 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
 
         boolean onBeforePrimaryFinish(IgniteEx n, IgniteInternalTx tx, GridFutureAdapter<?> proceedFut);
 
+        boolean onAfterPrimaryFinish(IgniteEx n, IgniteUuid version, GridFutureAdapter<?> proceedFut);
+
         void onTxStart(Transaction tx, int idx);
     }
 
 
 
-    private IgniteInternalTx findTx(IgniteEx n, GridCacheVersion ver) {
+    private IgniteInternalTx findTx(IgniteEx n, GridCacheVersion nearVersion, boolean primary) {
         return n.context().cache().context().tm().activeTransactions().stream().filter(new Predicate<IgniteInternalTx>() {
             @Override public boolean test(IgniteInternalTx tx) {
-                return ver.equals(tx.xidVersion());
+                return nearVersion.equals(tx.nearXidVersion()) && tx.local() == primary;
             }
         }).findAny().orElse(null);
     }
