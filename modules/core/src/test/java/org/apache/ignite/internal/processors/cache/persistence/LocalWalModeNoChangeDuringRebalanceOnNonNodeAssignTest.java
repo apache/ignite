@@ -37,7 +37,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -60,6 +59,9 @@ public class LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest extends Grid
     /** */
     private final int NODES = 3;
 
+    /** */
+    private CacheAtomicityMode atomicityMode;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
@@ -81,7 +83,7 @@ public class LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest extends Grid
 
         cfg.setCacheConfiguration(
             new CacheConfiguration(DEFAULT_CACHE_NAME)
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                .setAtomicityMode(atomicityMode)
                 .setAffinity(new RendezvousAffinityFunction(false, 3))
         );
 
@@ -110,15 +112,41 @@ public class LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest extends Grid
      * @throws Exception If failed.
      */
     @Test
-    public void test() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
-        else
-            fail("https://issues.apache.org/jira/browse/IGNITE-10652");
+    public void testAtomic() throws Exception {
+        atomicityMode = CacheAtomicityMode.ATOMIC;
 
-        Ignite ig = startGrids(NODES);
+        check();
+    }
 
-        ig.cluster().active(true);
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTx() throws Exception {
+        atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
+
+        fail("https://issues.apache.org/jira/browse/IGNITE-10652");
+
+        check();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMvcc() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10421");
+
+        atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+
+        check();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void check() throws Exception {
+        Ignite ig = startGridsMultiThreaded(NODES);
 
         int entries = 100_000;
 
