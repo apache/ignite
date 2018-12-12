@@ -306,18 +306,9 @@ public class GridH2Table extends TableBase {
         return false;
     }
 
-    ConcurrentHashMap<Session, Throwable> UNLOCK = new ConcurrentHashMap<>();
-
     /** {@inheritDoc} */
     @Override public void unlock(Session ses) {
         Long res = sessions.remove(ses);
-
-//        Throwable t = UNLOCK.put(ses, new Throwable());
-//
-//        if (t != null) {
-//            System.out.println(Thread.currentThread().getName() + "+++ PREV UNLOCK ");
-//            t.printStackTrace();
-//        }
 
         if (res != null)
             unlock(EXCLUSIVE_LOCK == res);
@@ -330,23 +321,14 @@ public class GridH2Table extends TableBase {
         if (destroyed)
             return;
 
-        Long res = sessions.get(ses);
-
-//        if (res == null) {
-//            Throwable t =  UNLOCK.get(ses);
-//
-//            if (t == null)
-//                System.err.println("+++ NOT LOCKED");
-//            else
-//                t.printStackTrace();
-//        }
+        Long lockVer = sessions.get(ses);
 
         // Check 'destroyed' flag again because changes at the sessions map and destroyed are not synchronized
         // at the destroy() method.
-        assert destroyed || res != null && EXCLUSIVE_LOCK != res : "Invalid table lock [name=" + getName()+
-            ", destr=" + destroyed + ", lock=" + res + ']';
+        assert destroyed || lockVer != null && EXCLUSIVE_LOCK != lockVer
+            : "Invalid table lock [name=" + getName() + ", destr=" + destroyed + ", lock=" + lockVer + ']';
 
-        if (res != null)
+        if (lockVer != null)
             lock(false);
     }
 
@@ -357,13 +339,14 @@ public class GridH2Table extends TableBase {
         if (destroyed)
             throw new QueryRetryException(getName());
 
-        Long res = sessions.get(ses);
+        Long lockVer = sessions.get(ses);
 
         // Check 'destroyed' flag again because changes at the sessions map and destroyed are not synchronized
         // at the destroy() method.
-        assert destroyed || res != null && EXCLUSIVE_LOCK != res : "Invalid table lock [name=" + getName()+ ", lock=" + res + ']';
+        assert destroyed || lockVer != null && EXCLUSIVE_LOCK != lockVer
+            : "Invalid table lock [name=" + getName() + ", destr=" + destroyed + ", lock=" + lockVer + ']';
 
-        if(ver.longValue() != (long)res)
+        if(ver.longValue() != lockVer)
             throw new QueryRetryException(getName());
     }
 
