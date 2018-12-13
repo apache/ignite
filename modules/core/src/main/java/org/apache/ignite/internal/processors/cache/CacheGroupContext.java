@@ -765,19 +765,20 @@ public class CacheGroupContext {
         UUID originalReceivedFrom,
         boolean affinityNode
     ) throws IgniteCheckedException {
-        if (recoveryMode.compareAndSet(true, false)) {
-            affNode = affinityNode;
+        if (!recoveryMode.compareAndSet(true, false))
+            return;
 
-            rcvdFrom = originalReceivedFrom;
+        affNode = affinityNode;
 
-            locStartVer = startVer;
+        rcvdFrom = originalReceivedFrom;
 
-            persistGlobalWalState(globalWalEnabled);
+        locStartVer = startVer;
 
-            initializeIO();
+        persistGlobalWalState(globalWalEnabled);
 
-            ctx.affinity().onCacheGroupCreated(this);
-        }
+        initializeIO();
+
+        ctx.affinity().onCacheGroupCreated(this);
     }
 
     /**

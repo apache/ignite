@@ -1573,8 +1573,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             grp,
             desc.cacheType(),
             locStartTopVer,
+            desc.deploymentId(),
             affNode,
             updatesAllowed,
+            desc.cacheConfiguration().isStatisticsEnabled(),
             recoveryMode,
             /*
              * Managers in starting order!
@@ -1593,8 +1595,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             pluginMgr,
             affMgr
         );
-
-        cacheCtx.statisticsEnabled(desc.cacheConfiguration().isStatisticsEnabled());
 
         cacheCtx.cacheObjectContext(cacheObjCtx);
 
@@ -1710,8 +1710,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 grp,
                 desc.cacheType(),
                 locStartTopVer,
+                desc.deploymentId(),
                 affNode,
                 true,
+                desc.cacheConfiguration().isStatisticsEnabled(),
                 recoveryMode,
                 /*
                  * Managers in starting order!
@@ -2233,7 +2235,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cacheCtx.isRecoveryMode())
             finishRecovery(exchTopVer, cacheCtx);
         else {
-            ctx.query().onCacheStart(new GridCacheContextInfo(cacheCtx, clientCache), desc.schema() != null ? desc.schema() : new QuerySchema(), desc.sql());
+            ctx.query().onCacheStart(
+                    new GridCacheContextInfo(cacheCtx, clientCache),
+                    desc.schema() != null ? desc.schema() : new QuerySchema(),
+                    desc.sql()
+            );
 
             onCacheStarted(cacheCtx);
         }
@@ -2298,7 +2304,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             false
         );
 
-        initCacheContext(cacheCtx, ccfg, desc.deploymentId());
+        initCacheContext(cacheCtx, ccfg);
 
         return cacheCtx;
     }
@@ -2345,9 +2351,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             isLocalAffinity(updatedDescriptor.cacheConfiguration())
         );
 
-        cacheContext.finishRecovery(cacheStartVer, updatedDescriptor.cacheConfiguration().isStatisticsEnabled());
-
-        ctx.query().finishRecovery(cacheContext, updatedDescriptor);
+        cacheContext.finishRecovery(cacheStartVer, updatedDescriptor);
 
         if (cacheContext.config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
             sharedCtx.coordinators().ensureStarted();
@@ -2470,16 +2474,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param cacheCtx Cache context to initializtion.
      * @param cfg Cache configuration.
-     * @param deploymentId Dynamic deployment ID.
      * @throws IgniteCheckedException if failed.
      */
     private void initCacheContext(
         GridCacheContext<?, ?> cacheCtx,
-        CacheConfiguration cfg,
-        IgniteUuid deploymentId
+        CacheConfiguration cfg
     ) throws IgniteCheckedException {
-        cacheCtx.dynamicDeploymentId(deploymentId);
-
         GridCacheAdapter cache = cacheCtx.cache();
 
         sharedCtx.addCacheContext(cacheCtx);
@@ -2587,7 +2587,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             true
         );
 
-        initCacheContext(cacheCtx, cfg, desc.deploymentId());
+        initCacheContext(cacheCtx, cfg);
 
         cacheCtx.onStarted();
 

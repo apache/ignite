@@ -39,7 +39,7 @@ public class GridCacheContextInfo<K, V> {
     private final GridKernalContext ctx;
 
     /** Dynamic cache deployment ID. */
-    private volatile IgniteUuid dynamicDeploymentId;
+    private final IgniteUuid dynamicDeploymentId;
 
     /** Cache configuration. */
     private final CacheConfiguration config;
@@ -60,7 +60,7 @@ public class GridCacheContextInfo<K, V> {
         this.gridCacheContext = gridCacheContext;
         this.ctx = gridCacheContext.kernalContext();
         this.config = gridCacheContext.config();
-        this.dynamicDeploymentId = gridCacheContext.dynamicDeploymentId();
+        this.dynamicDeploymentId = null;
         this.groupId = gridCacheContext.groupId();
         this.cacheId = gridCacheContext.cacheId();
         this.clientCache = clientCache;
@@ -136,6 +136,13 @@ public class GridCacheContextInfo<K, V> {
      * @return Dynamic deployment ID.
      */
     public IgniteUuid dynamicDeploymentId() {
+        GridCacheContext ctx = gridCacheContext;
+
+        if (ctx != null)
+            return ctx.dynamicDeploymentId();
+
+        assert dynamicDeploymentId != null : "Deployment id is not set and cache context is not initialized: " + this;
+
         return dynamicDeploymentId;
     }
 
@@ -170,13 +177,6 @@ public class GridCacheContextInfo<K, V> {
      */
     public boolean isCacheContextInited() {
         return gridCacheContext != null;
-    }
-
-    /**
-     * Change local deployment id to cluster-wide during exchange.
-     */
-    public void changeDeploymentId(IgniteUuid clusterWideDeploymentId) {
-        this.dynamicDeploymentId = clusterWideDeploymentId;
     }
 
     /** {@inheritDoc} */

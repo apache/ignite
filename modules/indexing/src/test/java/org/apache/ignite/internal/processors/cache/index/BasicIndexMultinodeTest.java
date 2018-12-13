@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 /**
- * A set of basic tests for caches with indexes in multinode mode.
+ * A set of basic tests for caches with indexes in multi-node environment.
  */
 public class BasicIndexMultinodeTest extends BasicIndexTest {
     /** {@inheritDoc} */
