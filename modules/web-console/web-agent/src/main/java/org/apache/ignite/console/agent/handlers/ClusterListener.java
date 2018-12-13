@@ -30,7 +30,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -38,7 +37,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.rest.RestExecutor;
-import org.apache.ignite.console.agent.rest.RestExecutorPool;
 import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
@@ -124,7 +122,7 @@ public class ClusterListener implements AutoCloseable {
     private final Socket client;
 
     /** */
-    private final RestExecutorPool restPool;
+    private final RestExecutor restExecutor;
 
     /** */
     private static final ScheduledExecutorService pool = Executors.newScheduledThreadPool(1);
@@ -134,12 +132,12 @@ public class ClusterListener implements AutoCloseable {
 
     /**
      * @param client Client.
-     * @param restPool REST executors pool.
+     * @param restExecutor REST executor.
      */
-    public ClusterListener(AgentConfiguration cfg, Socket client, RestExecutorPool restPool) {
+    public ClusterListener(AgentConfiguration cfg, Socket client, RestExecutor restExecutor) {
         this.cfg = cfg;
         this.client = client;
-        this.restPool = restPool;
+        this.restExecutor = restExecutor;
     }
 
     /**
@@ -370,6 +368,14 @@ public class ClusterListener implements AutoCloseable {
         boolean differentCluster(TopologySnapshot prev) {
             return prev == null || F.isEmpty(prev.nids) || Collections.disjoint(nids, prev.nids);
         }
+
+        /**
+         * @param prev Previous topology.
+         * @return {@code true} in case if current topology is the same cluster, but topology changed.
+         */
+        boolean topologyChanged(TopologySnapshot prev) {
+            return prev != null && !prev.nids.equals(nids);
+        }
     }
 
     /** */
@@ -395,16 +401,7 @@ public class ClusterListener implements AutoCloseable {
                 params.put("password", cfg.nodePassword());
             }
 
-            RestExecutor restExec = restPool.get("web-agent");
-
-            if (restExec == null) {
-                restExec = restPool.open("web-agent",
-                    cfg.nodeKeyStore(), cfg.nodeKeyStorePassword(),
-                    cfg.nodeTrustStore(), cfg.nodeTrustStorePassword(),
-                    cfg.cipherSuites());
-            }
-
-            RestResult res = restExec.sendRequest(cfg.nodeURIs(), params, null);
+            RestResult res = restExecutor.sendRequest(cfg.nodeURIs(), params, null);
 
             switch (res.getStatus()) {
                 case STATUS_SUCCESS:
@@ -429,15 +426,14 @@ public class ClusterListener implements AutoCloseable {
         /**
          * Collect topology.
          *
-         * @param attrs Whether to collect attributes.
          * @return REST result.
-         * @throws Exception If failed to collect topology.
+         * @throws IOException If failed to collect topology.
          */
-        private RestResult topology(boolean attrs) throws Exception {
+        private RestResult topology() throws IOException {
             Map<String, Object> params = U.newHashMap(4);
 
             params.put("cmd", "top");
-            params.put("attr", attrs);
+            params.put("attr", true);
             params.put("mtr", false);
             params.put("caches", false);
 
@@ -448,9 +444,9 @@ public class ClusterListener implements AutoCloseable {
          * @param ver Cluster version.
          * @param nid Node ID.
          * @return Cluster active state.
-         * @throws Exception If failed to collect cluster active state.
+         * @throws IOException If failed to collect cluster active state.
          */
-        public boolean active(IgniteProductVersion ver, UUID nid) throws Exception {
+        public boolean active(IgniteProductVersion ver, UUID nid) throws IOException {
             // 1.x clusters are always active.
             if (ver.compareTo(IGNITE_2_0) < 0)
                 return true;
@@ -487,51 +483,20 @@ public class ClusterListener implements AutoCloseable {
             throw new IOException(res.getError());
         }
 
-        /**
-         * @param res Response from topology command.
-         * @return List of cluster nodes.
-         * @throws Exception if failed to extract nodes list from response.
-         */
-        private List<GridClientNodeBean> nodes(RestResult res) throws Exception {
-            if (res.getStatus() == STATUS_SUCCESS)
-                return MAPPER.readValue(res.getData(), new TypeReference<List<GridClientNodeBean>>() {});
-
-            LT.warn(log, res.getError());
-
-            throw new ConnectException();
-        }
-
-        /**
-         * Collect light weight topology without attributes.
-         *
-         * @return List of node IDs.
-         * @throws Exception If failed to collect topology.
-         */
-        private List<UUID> newTopologyNids() throws Exception {
-            if (top == null)
-                return Collections.emptyList();
-
-            RestResult res = topology(false);
-
-            List<GridClientNodeBean> nodes = nodes(res);
-
-            return nodes.stream().map(GridClientNodeBean::getNodeId).collect(Collectors.toList());
-        }
-
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                // If topology changed, collect with attributes.
-                if (top == null || !top.getNids().equals(newTopologyNids())) {
-                    RestResult res = topology(true);
+                RestResult res = topology();
 
-                    List<GridClientNodeBean> nodes = nodes(res);
+                if (res.getStatus() == STATUS_SUCCESS) {
+                    List<GridClientNodeBean> nodes = MAPPER.readValue(res.getData(),
+                        new TypeReference<List<GridClientNodeBean>>() {});
 
                     TopologySnapshot newTop = new TopologySnapshot(nodes);
 
                     if (newTop.differentCluster(top))
                         log.info("Connection successfully established to cluster with nodes: " + newTop.nid8());
-                    else
+                    else if (newTop.topologyChanged(top))
                         log.info("Cluster topology changed, new topology: " + newTop.nid8());
 
                     boolean active = active(newTop.clusterVersion(), F.first(newTop.getNids()));
@@ -540,16 +505,14 @@ public class ClusterListener implements AutoCloseable {
                     newTop.setSecured(!F.isEmpty(res.getSessionToken()));
 
                     top = newTop;
+
+                    client.emit(EVENT_CLUSTER_TOPOLOGY, toJSON(top));
                 }
                 else {
-                    // If topology stable, just poll active state only.
-                    boolean active = active(top.clusterVersion(), F.first(top.getNids()));
+                    LT.warn(log, res.getError());
 
-                    if (active != top.isActive())
-                        top.setActive(active);
+                    clusterDisconnect();
                 }
-
-                client.emit(EVENT_CLUSTER_TOPOLOGY, toJSON(top));
             }
             catch (ConnectException ignored) {
                 clusterDisconnect();

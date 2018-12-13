@@ -22,7 +22,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.rest.RestExecutor;
-import org.apache.ignite.console.agent.rest.RestExecutorPool;
 import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.console.demo.AgentClusterDemo;
 import org.apache.ignite.internal.util.typedef.F;
@@ -36,15 +35,15 @@ public class RestListener extends AbstractListener {
     private final AgentConfiguration cfg;
 
     /** */
-    private final RestExecutorPool restPool;
+    private final RestExecutor restExecutor;
 
     /**
      * @param cfg Config.
-     * @param restPool REST executors pool.
+     * @param restExecutor REST executor.
      */
-    public RestListener(AgentConfiguration cfg, RestExecutorPool restPool) {
+    public RestListener(AgentConfiguration cfg, RestExecutor restExecutor) {
         this.cfg = cfg;
-        this.restPool = restPool;
+        this.restExecutor = restExecutor;
     }
 
     /** {@inheritDoc} */
@@ -67,9 +66,7 @@ public class RestListener extends AbstractListener {
 
         boolean demo = (boolean)args.get("demo");
 
-        String token = (String)args.get("token");
-
-        if (F.isEmpty(token))
+        if (F.isEmpty((String)args.get("token")))
             return RestResult.fail(404, "Request does not contain user token.");
 
         Map<String, Object> headers = null;
@@ -86,28 +83,10 @@ public class RestListener extends AbstractListener {
                         return RestResult.fail(404, "Failed to send request because of embedded node for demo mode is not started yet.");
                 }
 
-                RestExecutor restExec = restPool.get("demo-rest-listener");
-
-                if (restExec == null) {
-                    restExec = restPool.open("demo-rest-listener",
-                        cfg.nodeKeyStore(), cfg.nodeKeyStorePassword(),
-                        cfg.nodeTrustStore(), cfg.nodeTrustStorePassword(),
-                        cfg.cipherSuites());
-                }
-
-                return restExec.sendRequest(AgentClusterDemo.getDemoUrl(), params, headers);
+                return restExecutor.sendRequest(AgentClusterDemo.getDemoUrl(), params, headers);
             }
 
-            RestExecutor restExec = restPool.get(token);
-
-            if (restExec == null) {
-                restExec = restPool.open(token,
-                    cfg.nodeKeyStore(), cfg.nodeKeyStorePassword(),
-                    cfg.nodeTrustStore(), cfg.nodeTrustStorePassword(),
-                    cfg.cipherSuites());
-            }
-
-            return restExec.sendRequest(this.cfg.nodeURIs(), params, headers);
+            return restExecutor.sendRequest(this.cfg.nodeURIs(), params, headers);
         }
         catch (Exception e) {
             U.error(log, "Failed to execute REST command with parameters: " + params, e);

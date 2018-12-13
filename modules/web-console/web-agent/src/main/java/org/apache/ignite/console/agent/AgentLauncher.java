@@ -45,7 +45,7 @@ import okhttp3.OkHttpClient;
 import org.apache.ignite.console.agent.handlers.ClusterListener;
 import org.apache.ignite.console.agent.handlers.DatabaseListener;
 import org.apache.ignite.console.agent.handlers.RestListener;
-import org.apache.ignite.console.agent.rest.RestExecutorPool;
+import org.apache.ignite.console.agent.rest.RestExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.json.JSONArray;
@@ -339,8 +339,14 @@ public class AgentLauncher {
 
         final Socket client = IO.socket(uri, opts);
 
-        try (RestExecutorPool restPool = new RestExecutorPool();
-             ClusterListener clusterLsnr = new ClusterListener(cfg, client, restPool)) {
+        try (
+            RestExecutor restExecutor = new RestExecutor(
+                cfg.nodeKeyStore(), cfg.nodeKeyStorePassword(),
+                cfg.nodeTrustStore(), cfg.nodeTrustStorePassword(),
+                cfg.cipherSuites());
+
+             ClusterListener clusterLsnr = new ClusterListener(cfg, client, restExecutor)
+        ) {
             Emitter.Listener onConnect = connectRes -> {
                 log.info("Connection established.");
 
@@ -421,7 +427,7 @@ public class AgentLauncher {
 
             DatabaseListener dbHnd = new DatabaseListener(cfg);
 
-            RestListener restHnd = new RestListener(cfg, restPool);
+            RestListener restHnd = new RestListener(cfg, restExecutor);
 
             final CountDownLatch latch = new CountDownLatch(1);
 
@@ -439,8 +445,6 @@ public class AgentLauncher {
                     log.warn("Security token has been reset: {}", tok);
 
                     cfg.tokens().remove(tok);
-
-                    restPool.close(tok);
 
                     if (cfg.tokens().isEmpty()) {
                         client.off();

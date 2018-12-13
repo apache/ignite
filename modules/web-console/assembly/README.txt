@@ -43,18 +43,39 @@ Technical details
 All available parameters with defaults:
     Web Console host:           --server:host 0.0.0.0
     Web Console port:           --server:port 80
+
     Enable HTTPS:               --server:ssl false
-    HTTPS key:                  --server:key "serve/keys/test.key"
-    HTTPS certificate:          --server:cert "serve/keys/test.crt"
-    HTTPS passphrase:           --server:keyPassphrase "password"
+
     Disable self registration:  --server:disable:signup false
+
     MongoDB URL:                --mongodb:url mongodb://localhost/console
+
     Mail service:               --mail:service "gmail"
     Signature text:             --mail:sign "Kind regards, Apache Ignite Team"
     Greeting text:              --mail:greeting "Apache Ignite Web Console"
     Mail FROM:                  --mail:from "Apache Ignite Web Console <someusername@somecompany.somedomain>"
     User to send e-mail:        --mail:auth:user "someusername@somecompany.somedomain"
     E-mail service password:    --mail:auth:pass ""
+
+SSL options has no default values:
+    --server:key "path to file with server.key"
+    --server:cert "path to file with server.crt"
+    --server:ca "path to file with ca.crt"
+    --server:passphrase "Password for key"
+    --server:ciphers "Comma separated ciphers list"
+    --server:secureProtocol "The TLS protocol version to use"
+    --server:clientCertEngine "Name of an OpenSSL engine which can provide the client certificate"
+    --server:pfx "Path to PFX or PKCS12 encoded private key and certificate chain"
+    --server:crl "Path to file with CRLs (Certificate Revocation Lists)"
+    --server:dhparam "Diffie Hellman parameters"
+    --server:ecdhCurve "A string describing a named curve"
+    --server:maxVersion "Optional the maximmu TLS version to allow"
+    --server:minVersion "Optional the minimum TLS version to allow"
+    --server:secureOptions "Optional OpenSSL options"
+    --server:sessionIdContext "Opaque identifier used by servers to ensure session state is not shared between applications"
+    --server:honorCipherOrder "true or false"
+
+Documentation for SSL options: https://nodejs.org/api/tls.html#tls_tls_createsecurecontext_options
 
 Sample usage:
     `ignite-web-console-win.exe --mail:auth:user "my_user@gmail.com"  --mail:auth:pass "my_password"`
@@ -90,9 +111,10 @@ In case of non GMail SMTP server it may require to change options in "settings.j
 Troubleshooting
 -------------------------------------
 1. On Windows check that MongoDB is not blocked by Antivirus/Firewall/Smartscreen.
-2. Root permission is required to bind to 80 port under Mac OS X and Linux, but you may always start Web Console on another port if you don't have such permission.
+2. Root permission is required to bind to 80 port under macOS and Linux, but you may always start Web Console
+   on another port if you don't have such permission.
 3. For extended debug output start Web Console as following:
-	On Linux execute command in terminal: `DEBUG=mongodb-* ./ignite-web-console-linux`
-	On Windows execute two commands in terminal:
-		`SET DEBUG=mongodb-*`
-		`ignite-web-console-win.exe`
+     On macOS/Linux execute command in terminal: `DEBUG=mongodb-* ./ignite-web-console-linux`
+     On Windows execute two commands in terminal:
+         `SET DEBUG=mongodb-*`
+         `ignite-web-console-win.exe`

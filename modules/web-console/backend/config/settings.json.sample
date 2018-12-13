@@ -3,12 +3,12 @@
     "port": 3000,
     "sessionSecret": "CHANGE ME",
     "ssl": false,
-    "key": "serve/keys/server.key",
-    "cert": "serve/keys/server.crt",
-    "ca": "serve/keys/ca.crt",
+    "key": "path to file with server.key",
+    "cert": "path to file with server.crt",
+    "ca": "path to file with ca.crt",
+    "passphrase": "password",
     "ciphers": "ECDHE-RSA-AES128-GCM-SHA256",
     "secureProtocol": "TLSv1_2_method",
-    "passphrase": "password",
     "disable": {
       "signup": false
     }

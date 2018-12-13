@@ -85,13 +85,13 @@ module.exports = {
                 trustXFPHeader: true
             };
 
-            const setSslOption = (cfg, isFile = false) => {
+            const setSslOption = (cfg, fromFile = false) => {
                 const cfgValue = nconf.get(`server:${cfg}`);
 
                 const hasOption = !!cfgValue;
 
                 if (hasOption)
-                    SSLOptions[cfg] = isFile ?  fs.readFileSync(cfgValue) : cfgValue;
+                    SSLOptions[cfg] = fromFile ? fs.readFileSync(cfgValue) : cfgValue;
 
                 return hasOption;
             };
@@ -100,10 +100,22 @@ module.exports = {
             setSslOption('cert', true);
             setSslOption('ca', true);
             setSslOption('passphrase');
+            setSslOption('ciphers');
             setSslOption('secureProtocol');
+            setSslOption('clientCertEngine');
+            setSslOption('pfx', true);
+            setSslOption('crl');
+            setSslOption('dhparam');
+            setSslOption('ecdhCurve');
+            setSslOption('maxVersion');
+            setSslOption('minVersion');
+            setSslOption('secureOptions');
+            setSslOption('sessionIdContext');
 
-            if (setSslOption('ciphers'))
-                SSLOptions.honorCipherOrder = true;
+            const honorCipherOrder = nconf.get(`server:honorCipherOrder`);
+
+            if (honorCipherOrder)
+                SSLOptions.honorCipherOrder = _isTrue(honorCipherOrder);
 
             settings.server.SSLOptions = SSLOptions;
         }
