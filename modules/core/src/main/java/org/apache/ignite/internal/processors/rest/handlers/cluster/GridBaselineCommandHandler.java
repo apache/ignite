@@ -177,7 +177,7 @@ public class GridBaselineCommandHandler extends GridRestCommandHandlerAdapter {
      */
     private Collection<BaselineNode> filterNodesByConsId(Collection<? extends BaselineNode> nodes, List<Object> consistentIds) {
         Map<Object, BaselineNode> nodeMap =
-            nodes.stream().collect(toMap(n -> String.valueOf(n.consistentId()), identity()));
+            nodes.stream().collect(toMap(n -> n.consistentId().toString(), identity()));
 
         Collection<BaselineNode> filtered = new ArrayList<>(consistentIds.size());
 
