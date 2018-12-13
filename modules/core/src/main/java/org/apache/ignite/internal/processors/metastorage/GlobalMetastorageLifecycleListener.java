@@ -14,24 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
-import java.io.Serializable;
+package org.apache.ignite.internal.processors.metastorage;
+
 import org.apache.ignite.IgniteCheckedException;
-import org.jetbrains.annotations.NotNull;
 
-/**
- *
- */
-public interface ReadWriteMetastorage extends ReadOnlyMetastorage {
+/** */
+@SuppressWarnings("RedundantThrows")
+public interface GlobalMetastorageLifecycleListener {
     /** */
-    public void write(@NotNull String key, @NotNull Serializable val) throws IgniteCheckedException;
+    default void onReadyForRead(ReadOnlyDistributedMetaStorage metastorage) throws IgniteCheckedException { }
 
     /** */
-    //TODO Rename to "writeData".
-    public void putData(String key, byte[] data) throws IgniteCheckedException;
-
-    /** */
-    //TODO Rename to "delete"?
-    public void remove(@NotNull String key) throws IgniteCheckedException;
+    default void onReadyForWrite(DistributedMetaStorage metastorage) throws IgniteCheckedException { }
 }

@@ -27,7 +27,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage {
+public class DistributedMetaStorageUpdateAckMessage implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -38,17 +38,8 @@ public class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessa
     private final UUID reqId;
 
     /** */
-    private final String key;
-
-    /** */
-    private final byte[] valBytes;
-
-
-    /** */
-    public DistributedMetaStorageUpdateMessage(UUID reqId, String key, byte[] valBytes) {
+    public DistributedMetaStorageUpdateAckMessage(UUID reqId) {
         this.reqId = reqId;
-        this.key = key;
-        this.valBytes = valBytes;
     }
 
     /** {@inheritDoc} */
@@ -62,23 +53,13 @@ public class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessa
     }
 
     /** */
-    public String key() {
-        return key;
-    }
-
-    /** */
-    public byte[] value() {
-        return valBytes;
-    }
-
-    /** */
     public boolean isAckMessage() {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override @Nullable public DiscoveryCustomMessage ackMessage() {
-        return new DistributedMetaStorageUpdateAckMessage(reqId);
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -102,6 +83,6 @@ public class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessa
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DistributedMetaStorageUpdateMessage.class, this);
+        return S.toString(DistributedMetaStorageUpdateAckMessage.class, this);
     }
 }

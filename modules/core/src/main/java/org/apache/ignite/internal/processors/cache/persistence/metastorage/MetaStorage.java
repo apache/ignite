@@ -274,7 +274,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
 
 
     /** */
-    public void iterate(
+    @Override public void iterate(
         @NotNull IgnitePredicate<String> keyPred,
         @NotNull IgniteBiInClosure<String, ? super Serializable> cb,
         boolean ignoreValues
@@ -372,7 +372,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
     }
 
     /** */
-    public void putData(String key, byte[] data) throws IgniteCheckedException {
+    @Override public void putData(String key, byte[] data) throws IgniteCheckedException {
         if (!readOnly) {
             WALPointer ptr = wal.log(new MetastoreDataRecord(key, data));
 
@@ -394,7 +394,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
     }
 
     /** */
-    public byte[] getData(String key) throws IgniteCheckedException {
+    @Override public byte[] getData(String key) throws IgniteCheckedException {
         if (readOnly) {
             if (lastUpdates != null) {
                 byte[] res = lastUpdates.get(key);

@@ -22,7 +22,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -285,5 +289,43 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         ignite.cluster().active(true);
 
         assertEquals("value", ignite.context().globalMetastorage().read("key"));
+    }
+
+    /** */
+    @Test
+    public void testNamesCollision() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        IgniteCacheDatabaseSharedManager dbSharedMgr = ignite.context().cache().context().database();
+
+        MetaStorage locMetastorage = dbSharedMgr.metaStorage();
+
+        DistributedMetaStorage globalMetastorage = ignite.context().globalMetastorage();
+
+        dbSharedMgr.checkpointReadLock();
+
+        try {
+            locMetastorage.write("key", "localValue");
+        }
+        finally {
+            dbSharedMgr.checkpointReadUnlock();
+        }
+
+        globalMetastorage.write("key", "globalValue");
+
+        Thread.sleep(150L); // Remove later.
+
+        dbSharedMgr.checkpointReadLock();
+
+        try {
+            assertEquals("localValue", locMetastorage.read("key"));
+        }
+        finally {
+            dbSharedMgr.checkpointReadUnlock();
+        }
+
+        assertEquals("globalValue", globalMetastorage.read("key"));
     }
 }

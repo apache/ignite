@@ -20,7 +20,9 @@ import java.io.Serializable;
 import java.util.Map;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.NotNull;
 
 /**
  *
@@ -29,12 +31,25 @@ public interface ReadOnlyMetastorage {
     /** */
     Serializable read(String key) throws IgniteCheckedException;
 
+    /** */
+    //TODO Rename to "readData".
+    byte[] getData(String key) throws IgniteCheckedException;
+
+    /** */
+    public void iterate(
+        @NotNull IgnitePredicate<String> keyPred,
+        @NotNull IgniteBiInClosure<String, ? super Serializable> cb,
+        boolean ignoreValues
+    ) throws IgniteCheckedException;
+
     /**
      * Read all keys matching provided predicate.
      *
      * @param keyPred Key predicate.
      * @return Matched key-value pairs.
      * @throws IgniteCheckedException If failed.
+     * @deprecated Method is poorly designed. It should be replaced with something better.
      */
+    @Deprecated
     Map<String, ? extends Serializable> readForPredicate(IgnitePredicate<String> keyPred) throws IgniteCheckedException;
 }

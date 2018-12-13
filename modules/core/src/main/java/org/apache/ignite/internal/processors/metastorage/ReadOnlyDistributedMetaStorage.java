@@ -25,15 +25,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public interface DistributedMetaStorage {
+public interface ReadOnlyDistributedMetaStorage {
     /** */
-    @Nullable <S extends Serializable> S read(@NotNull String key) throws IgniteCheckedException;
-
-    /** */
-    void write(@NotNull String key, @NotNull Serializable val) throws IgniteCheckedException;
-
-    /** */
-    void remove(@NotNull String key) throws IgniteCheckedException;
+    @Nullable <T extends Serializable> T read(@NotNull String key) throws IgniteCheckedException;
 
     /** */
     void iterate(@NotNull IgnitePredicate<String> keyPred, @NotNull IgniteBiInClosure<String, ? super Serializable> cb) throws IgniteCheckedException;
