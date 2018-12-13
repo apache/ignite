@@ -51,7 +51,7 @@ class MapQueryResults {
     private final GridCacheContext<?, ?> cctx;
 
     /** Lazy mode. */
-    private boolean lazy;
+    private final boolean lazy;
 
     /** */
     private volatile boolean cancelled;

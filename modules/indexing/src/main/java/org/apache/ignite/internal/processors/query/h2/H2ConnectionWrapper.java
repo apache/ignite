@@ -143,8 +143,7 @@ public class H2ConnectionWrapper implements AutoCloseable {
     }
 
     /** Closes wrapped connection */
-    @Override
-    public void close() {
+    @Override public void close() {
         try {
             sesWrp.lockTables();
 

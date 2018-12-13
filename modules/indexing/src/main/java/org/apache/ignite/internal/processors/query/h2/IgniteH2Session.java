@@ -31,7 +31,7 @@ public class IgniteH2Session {
     private final Session ses;
 
     /** */
-    private ReentrantLock lock = new ReentrantLock();
+    private final ReentrantLock lock = new ReentrantLock();
 
     /**
      * Constructor.

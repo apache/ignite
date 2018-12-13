@@ -283,7 +283,7 @@ public class GridH2Table extends TableBase {
             if (EXCLUSIVE_LOCK == res)
                 return true;
 
-            if(ver.longValue() != res)
+            if (ver.longValue() != res)
                 throw new QueryRetryException(getName());
 
             return false;
@@ -346,7 +346,7 @@ public class GridH2Table extends TableBase {
         assert destroyed || lockVer != null && EXCLUSIVE_LOCK != lockVer
             : "Invalid table lock [name=" + getName() + ", destr=" + destroyed + ", lock=" + lockVer + ']';
 
-        if(ver.longValue() != lockVer)
+        if (ver.longValue() != lockVer)
             throw new QueryRetryException(getName());
     }
 
@@ -404,7 +404,7 @@ public class GridH2Table extends TableBase {
         try {
             l.unlock();
         }
-        catch(IllegalMonitorStateException e) {
+        catch (IllegalMonitorStateException e) {
             // Skip invalid lock state on table unlock when the table is destroyed.
             if (!destroyed)
                 throw e;
