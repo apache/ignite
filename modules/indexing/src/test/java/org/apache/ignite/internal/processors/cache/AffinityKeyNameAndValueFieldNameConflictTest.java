@@ -89,6 +89,11 @@ public class AffinityKeyNameAndValueFieldNameConflictTest extends GridCommonAbst
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -116,6 +121,7 @@ public class AffinityKeyNameAndValueFieldNameConflictTest extends GridCommonAbst
     public void testAnnotationConfig() throws Exception {
         keyCls = PersonKey1.class;
         keyProducer = PersonKey1::new;
+
         checkQuery();
     }
 

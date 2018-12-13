@@ -490,7 +490,6 @@ public class QueryUtils {
             if (valCls != null)
                 altTypeId = new QueryTypeIdKey(cacheName, valCls);
 
-            // Need to setup affinity key for distributed joins.
             if (!coCtx.customAffinityMapper()) {
                 String affField = KEY_FIELD_NAME;
 
@@ -502,8 +501,12 @@ public class QueryUtils {
 
                     BinaryField field = mapper.affinityKeyField(keyType);
 
-                    if (field != null)
-                        affField = field.name();
+                    if (field != null) {
+                        String affField0 = field.name();
+
+                        if (!F.isEmpty(qryEntity.getKeyFields()) && qryEntity.getKeyFields().contains(affField))
+                            affField = affField0;
+                    }
                 }
 
                 if (!escape)
