@@ -18,25 +18,19 @@
 package org.apache.ignite.cache;
 
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -48,12 +42,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import static java.util.function.Predicate.isEqual;
-import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  *
@@ -66,9 +57,6 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
     private static final String[] CACHE_NAMES = {"cacheOne", "cacheTwo", "cacheThree"};
     /** Cache size */
     public static final int CACHE_SIZE = 100000 / CACHE_NAMES.length;
-
-    /** Persistence enabled flag. */
-    private boolean persistenceEnabled = true;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -100,7 +88,7 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
         DataStorageConfiguration storageCfg = new DataStorageConfiguration();
 
         storageCfg.getDefaultDataRegionConfiguration()
-            .setPersistenceEnabled(persistenceEnabled)
+            .setPersistenceEnabled(true)
             .setMaxSize(500L * 1024 * 1024);
 
         cfg.setDataStorageConfiguration(storageCfg);
@@ -251,87 +239,6 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Check that there is no duplicate partition owners after reset lost partitions.
-     *
-     * @throws Exception if fail.
-     */
-    @Test
-    public void testDuplicateOwners() throws Exception {
-        persistenceEnabled = false;
-
-        int gridCnt = 4;
-
-        long timeout = 5_000;
-
-        Ignite node = startGridsMultiThreaded(gridCnt);
-
-        IgniteCache<Integer, Integer> cache = node.createCache(
-            new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
-                .setAffinity(new RendezvousAffinityFunction(false, 32))
-                .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE));
-
-        for (int i = 0; i < CACHE_SIZE; i++)
-            cache.put(i, i);
-
-        int failedNodeIdx = gridCnt - 1;
-
-        int lostPartsCnt = count(DEFAULT_CACHE_NAME, OWNING, failedNodeIdx);
-
-        log.info(">xxx> stop " + failedNodeIdx);
-
-        stopGrid(failedNodeIdx);
-
-        int[] liveIdxs = new int[] {0, 1, 2};
-
-//        waitForCondition(() -> lostPartsCnt == count(DEFAULT_CACHE_NAME, LOST, liveIdxs), timeout);
-//        assertEquals(lostPartsCnt, count(DEFAULT_CACHE_NAME, LOST, liveIdxs));
-
-        U.sleep(5_000);
-
-        log.info(">xxx> start " + failedNodeIdx);
-
-        startGrid(failedNodeIdx);
-
-        U.sleep(5_000);
-//        waitForCondition(() -> lostPartsCnt == count(DEFAULT_CACHE_NAME, LOST, failedNodeIdx), timeout);
-//        assertEquals(lostPartsCnt, count(DEFAULT_CACHE_NAME, LOST, failedNodeIdx));
-//
-//        waitForCondition(() -> 0 == count(DEFAULT_CACHE_NAME, LOST, liveIdxs), timeout);
-//        assertEquals(0, count(DEFAULT_CACHE_NAME, LOST, liveIdxs));
-//
-//        for (Ignite grid : G.allGrids()) {
-//            GridCacheSharedContext cctx = ((IgniteEx)grid).context().cache().context();
-//
-//            cctx.exchange().affinityReadyFuture(cctx.discovery().topologyVersionEx()).get(timeout);
-//
-//            for (GridCacheContext ctx : (Collection<GridCacheContext>)cctx.cacheContexts())
-//                ctx.preloader().rebalanceFuture().get(timeout);
-//        }
-
-        log.info(">xxx> reset lost partitions");
-
-        node.resetLostPartitions(Collections.singleton(DEFAULT_CACHE_NAME));
-
-        U.sleep(5_000);
-
-        log.info(">xxx> check duplicate owners");
-
-        waitForCondition(() -> lostPartsCnt == count(DEFAULT_CACHE_NAME, OWNING, failedNodeIdx), timeout);
-        assertEquals(lostPartsCnt, count(DEFAULT_CACHE_NAME, OWNING, failedNodeIdx));
-
-        int parts = grid(0).affinity(DEFAULT_CACHE_NAME).partitions();
-
-        int[] allIdxs = new int[] {0, 1, 2, 3};
-
-        waitForCondition(() -> parts == count(DEFAULT_CACHE_NAME, OWNING, allIdxs), timeout);
-        assertEquals(parts, count(DEFAULT_CACHE_NAME, OWNING, allIdxs));
-
-        for (int idx : allIdxs)
-            assertEquals("" + idx, 0, count(DEFAULT_CACHE_NAME, LOST, idx));
-            //assert grid(idx).cache(DEFAULT_CACHE_NAME).lostPartitions().isEmpty();
-    }
-
-    /**
      * @param gridNumber Grid number.
      * @param cacheName Cache name.
      * @return Partitions states for given cache name.
@@ -343,20 +250,7 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
         return top.localPartitions().stream()
             .map(GridDhtLocalPartition::state)
-            .collect(toList());
-    }
-
-    /**
-     * Counts partitions in the specified state on the specified nodes.
-     *
-     * @param cacheName Cache name.
-     * @param state Partition state.
-     * @param gridIdx Grid index.
-     * @return Number of local partitions in the specified state.
-     */
-    private int count(String cacheName, GridDhtPartitionState state, int ... gridIdx) {
-        return Arrays.stream(gridIdx).map(idx ->
-            getPartitionsStates(idx, cacheName).stream().filter(isEqual(state)).collect(toList()).size()).sum();
+            .collect(Collectors.toList());
     }
 
     /**

@@ -59,7 +59,11 @@ public enum PartitionLossPolicy {
     /**
      * All reads and writes will proceed as if all partitions were in a consistent state. The result of reading
      * from a lost partition is undefined and may be different on different nodes in the cluster.
+     *
+     * @deprecated Since 2.8. This policy can lead to weird scenarios that are impossible to solve with current
+     * architecture.
      */
+    @Deprecated
     READ_WRITE_ALL,
 
     /**

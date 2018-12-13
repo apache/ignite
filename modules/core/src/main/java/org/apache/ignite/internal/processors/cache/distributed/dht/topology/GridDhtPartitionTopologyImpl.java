@@ -2130,17 +2130,14 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 // LOST partitions that has at least one owner.
                 Set<Integer> hasOwner = new HashSet<>();
 
-                for (GridDhtLocalPartition part : localPartitions()) {
-                    if (part.state() != LOST)
-                        continue;
-
+                for (int p : lostPartitions()) {
                     for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
-                        if (e.getValue().get(part.id()) != OWNING)
+                        if (e.getValue().get(p) != OWNING)
                             continue;
 
                         assert !ctx.localNodeId().equals(e.getKey());
 
-                        hasOwner.add(part.id());
+                        hasOwner.add(p);
 
                         break;
                     }

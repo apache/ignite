@@ -1452,7 +1452,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (exchActions != null) {
                     Collection<String> caches = exchActions.cachesToResetLostPartitions();
 
-                    // Reset lost partitions on coordinator before update cache topology from sinlge messages.
+                    // Reset lost partitions on coordinator before update cache topology from single messages.
                     if (!F.isEmpty(caches))
                         resetLostPartitions(caches);
                 }
