@@ -23,36 +23,56 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
+/**
+ * Probe message travelling between transactions (from waiting to blocking) during deadlock detection.
+ * @see DdCollaborator
+ */
 public class DeadlockProbe implements MvccMessage {
+    /** */
     private static final long serialVersionUID = 0;
 
-    private GridCacheVersion initiatorVersion;
-    private GridCacheVersion waitingVersion;
-    private GridCacheVersion blockerVersion;
+    /** */
+    private GridCacheVersion initiatorVer;
+    /** */
+    private GridCacheVersion waitingVer;
+    /** */
+    private GridCacheVersion blockerVer;
 
+    /** */
     public DeadlockProbe() {
     }
 
-    public DeadlockProbe(GridCacheVersion initiatorVersion, GridCacheVersion waitingVersion,
-        GridCacheVersion blockerVersion) {
-        this.initiatorVersion = initiatorVersion;
-        this.waitingVersion = waitingVersion;
-        this.blockerVersion = blockerVersion;
+    /** */
+    public DeadlockProbe(GridCacheVersion initiatorVer, GridCacheVersion waitingVer, GridCacheVersion blockerVer) {
+        this.initiatorVer = initiatorVer;
+        this.waitingVer = waitingVer;
+        this.blockerVer = blockerVer;
     }
 
+    /**
+     * @return Identifier of a transaction started a deadlock detection process.
+     */
     public GridCacheVersion initiatorVersion() {
-        return initiatorVersion;
+        return initiatorVer;
     }
 
+    /**
+     * @return Identifier of a transaction identified as waiting during deadlock detection.
+     */
     public GridCacheVersion waitingVersion() {
         // t0d0 why do we need that version?
-        return waitingVersion;
+        return waitingVer;
     }
 
+    /**
+     * @return Identifier of a transaction identified as blocking another (waiting)
+     * transction during deadlock deteciton.
+     */
     public GridCacheVersion blockerVersion() {
-        return blockerVersion;
+        return blockerVer;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -65,19 +85,19 @@ public class DeadlockProbe implements MvccMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("blockerVersion", blockerVersion))
+                if (!writer.writeMessage("blockerVer", blockerVer))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage("initiatorVersion", initiatorVersion))
+                if (!writer.writeMessage("initiatorVer", initiatorVer))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeMessage("waitingVersion", waitingVersion))
+                if (!writer.writeMessage("waitingVer", waitingVer))
                     return false;
 
                 writer.incrementState();
@@ -87,6 +107,7 @@ public class DeadlockProbe implements MvccMessage {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
@@ -95,7 +116,7 @@ public class DeadlockProbe implements MvccMessage {
 
         switch (reader.state()) {
             case 0:
-                blockerVersion = reader.readMessage("blockerVersion");
+                blockerVer = reader.readMessage("blockerVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -103,7 +124,7 @@ public class DeadlockProbe implements MvccMessage {
                 reader.incrementState();
 
             case 1:
-                initiatorVersion = reader.readMessage("initiatorVersion");
+                initiatorVer = reader.readMessage("initiatorVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -111,7 +132,7 @@ public class DeadlockProbe implements MvccMessage {
                 reader.incrementState();
 
             case 2:
-                waitingVersion = reader.readMessage("waitingVersion");
+                waitingVer = reader.readMessage("waitingVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -123,21 +144,26 @@ public class DeadlockProbe implements MvccMessage {
         return reader.afterMessageRead(DeadlockProbe.class);
     }
 
+    /** {@inheritDoc} */
     @Override public short directType() {
         return 167;
     }
 
+    /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 3;
     }
 
+    /** {@inheritDoc} */
     @Override public void onAckReceived() {
     }
 
+    /** {@inheritDoc} */
     @Override public boolean waitForCoordinatorInit() {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean processedFromNioThread() {
         return false;
     }
