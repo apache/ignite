@@ -182,10 +182,18 @@ public class TxPartitionCounterStateAfterRecoveryPrimaryOnlyTest extends TxParti
 
         assertEquals(SIZES[COMMIT_ORDER[0]], size);
 
+        // Only one transaction is applied with counter: 12-15
         PartitionUpdateCounter cntr = counter(PARTITION_ID);
 
         assertEquals(0, cntr.get());
-        assertEquals(0, cntr.hwm());
+        assertEquals(TOTAL, cntr.hwm());
+
+        assertEquals(1, cntr.holes().size());
+
+        PartitionUpdateCounter.Item hole = cntr.holes().first();
+
+        assertEquals(SIZES[0] + SIZES[1], hole.start());
+        assertEquals(SIZES[2], hole.delta());
     }
 
     /**
