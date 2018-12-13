@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.dataset;
 
+import junit.framework.TestSuite;
 import org.apache.ignite.ml.dataset.feature.ObjectHistogramTest;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilderTest;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetTest;
@@ -28,6 +29,7 @@ import org.apache.ignite.ml.dataset.primitive.DatasetWrapperTest;
 import org.apache.ignite.ml.dataset.primitive.SimpleDatasetTest;
 import org.apache.ignite.ml.dataset.primitive.SimpleLabeledDatasetTest;
 import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 import org.junit.runners.Suite;
 
 /**
@@ -36,16 +38,27 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     DatasetWrapperTest.class,
-    ComputeUtilsTest.class,
+    DatasetTestSuite.JUnit3TestSuite.class,
     DatasetAffinityFunctionWrapperTest.class,
     PartitionDataStorageTest.class,
-    CacheBasedDatasetBuilderTest.class,
-    CacheBasedDatasetTest.class,
     LocalDatasetBuilderTest.class,
     SimpleDatasetTest.class,
     SimpleLabeledDatasetTest.class,
     ObjectHistogramTest.class
 })
 public class DatasetTestSuite {
-    // No-op.
+    /** JUnit 3 tests. */
+    @RunWith(AllTests.class)
+    public static class JUnit3TestSuite {
+        /** */
+        public static TestSuite suite() {
+            TestSuite suite = new TestSuite();
+
+            suite.addTestSuite(ComputeUtilsTest.class);
+            suite.addTestSuite(CacheBasedDatasetBuilderTest.class);
+            suite.addTestSuite(CacheBasedDatasetTest.class);
+
+            return suite;
+        }
+    }
 }
