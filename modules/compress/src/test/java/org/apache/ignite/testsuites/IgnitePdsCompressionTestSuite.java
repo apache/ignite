@@ -43,7 +43,7 @@ public class IgnitePdsCompressionTestSuite {
         suite.addTest(new JUnit4TestAdapter(DiskPageCompressionIntegrationAsyncTest.class));
 
         enableCompressionByDefault();
-        IgnitePdsTestSuite.addRealPageStoreTests(suite);
+        IgnitePdsTestSuite.addRealPageStoreTests(suite, null);
 
         return suite;
     }
