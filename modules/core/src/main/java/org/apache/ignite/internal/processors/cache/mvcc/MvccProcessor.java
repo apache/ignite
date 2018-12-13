@@ -243,10 +243,10 @@ public interface MvccProcessor extends GridProcessor {
     void ensureStarted() throws IgniteCheckedException;
 
     /**
-     * Checks whether one tx is waiting for another tx on (t0d0 remote) node.
+     * Checks whether one tx is waiting for another tx on a particular node.
      * It is assumed that locks on data nodes are requested one by one, so tx can wait only for one another tx here.
      *
-     * @param nodeId (t0d0 remote) Node id.
+     * @param nodeId Node id.
      * @param mvccVer Version of transaction which is checked for being waiting.
      * @return Future containing locator for tx which blocks checked tx.
      * Locator is {@code null} is checked tx is not waiting.

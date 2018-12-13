@@ -1824,6 +1824,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         }
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteInternalFuture<NearTxLocator> checkWaiting(UUID nodeId, MvccVersion mvccVer) {
         if (ctx.localNodeId().equals(nodeId)) {
             return findBlockerTx(mvccVer)
@@ -1929,7 +1930,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
             if (msg0.waitForCoordinatorInit() && !initFut.isDone()) {
                 initFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
-                    @Override public void apply(IgniteInternalFuture<Void> future) {
+                    @Override public void apply(IgniteInternalFuture<Void> fut) {
                         assert crdVer != 0L;
 
                         processMessage(nodeId, msg);
@@ -2101,7 +2102,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         boolean compound();
 
         /**
-         * @param checkedVer Version of transaction under check.
+         * @param checkedVer Version of transaction checking for wait.
          * @return {@code True} if checked transaction is waiting in the queue.
          */
         boolean hasWaiting(MvccVersion checkedVer);
@@ -2111,15 +2112,13 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     private static class LockFuture extends GridFutureAdapter<Void> implements Waiter, Runnable {
         /** */
         private final byte plc;
-        private final MvccVersion blockedTxVer;
+        /** */
+        private final MvccVersion waitingTxVer;
 
-        /**
-         * @param plc Pool policy.
-         * @param blockedTxVer t0d0
-         */
-        LockFuture(byte plc, MvccVersion blockedTxVer) {
+        /** */
+        LockFuture(byte plc, MvccVersion waitingTxVer) {
             this.plc = plc;
-            this.blockedTxVer = blockedTxVer;
+            this.waitingTxVer = waitingTxVer;
         }
 
         /** {@inheritDoc} */
@@ -2154,7 +2153,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         /** {@inheritDoc} */
         @Override public boolean hasWaiting(MvccVersion checkedVer) {
-            return DdCollaborator.belongToSameTx(blockedTxVer, checkedVer);
+            return DdCollaborator.belongToSameTx(waitingTxVer, checkedVer);
         }
     }
 
