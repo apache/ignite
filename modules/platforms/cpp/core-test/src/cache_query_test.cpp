@@ -962,8 +962,7 @@ BOOST_AUTO_TEST_CASE(TestSqlQuery)
  */
 BOOST_AUTO_TEST_CASE(TestSqlQueryDistributedJoins)
 {
-    if (jetbrains::teamcity::underTeamcity())
-        return;
+    MUTE_TEST_FOR_TEAMCITY;
 
     Cache<int, QueryPerson> cache1 = GetPersonCache();
     Cache<int, QueryRelation> cache2 = GetRelationCache();
@@ -1243,8 +1242,7 @@ BOOST_AUTO_TEST_CASE(TestSqlFieldsQueryBasic)
  */
 BOOST_AUTO_TEST_CASE(TestSqlFieldsQueryDistributedJoins)
 {
-    if (jetbrains::teamcity::underTeamcity())
-        return;
+    MUTE_TEST_FOR_TEAMCITY;
 
     Cache<int, QueryPerson> cache1 = GetPersonCache();
     Cache<int, QueryRelation> cache2 = GetRelationCache();
