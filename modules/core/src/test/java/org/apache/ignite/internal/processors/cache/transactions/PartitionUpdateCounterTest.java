@@ -87,4 +87,30 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
 
         assertEquals(Arrays.stream(reservations).sum(), pc.get());
     }
+
+    public void testBackupMode1() {
+        PartitionUpdateCounter pc = new PartitionUpdateCounter(log);
+
+        pc.update(0, 1);
+        pc.update(2, 1);
+
+        pc.update(5, 1);
+        pc.update(6, 1);
+        pc.update(7, 1);
+
+        System.out.println();
+    }
+
+    public void testBackupMode2() {
+        PartitionUpdateCounter pc = new PartitionUpdateCounter(log);
+
+        pc.update(7, 1);
+        pc.update(6, 1);
+        pc.update(5, 1);
+
+        pc.update(2, 1);
+        pc.update(0, 1);
+
+        System.out.println();
+    }
 }

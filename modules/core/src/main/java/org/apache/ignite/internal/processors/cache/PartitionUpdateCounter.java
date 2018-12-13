@@ -136,8 +136,27 @@ public class PartitionUpdateCounter {
         }
 
         if (cur < start) {
-            // backup node with gaps
-            offer(new Item(start, delta));
+            // Try find existing gap.
+            NavigableSet<Item> set = queue.headSet(new Item(start, 0), false);
+
+            if (!set.isEmpty()) {
+                Item last = set.last();
+                if (last.start + last.delta == start)
+                    last.delta += delta;
+                else
+                    offer(new Item(start, delta)); // backup node with gaps
+            }
+            else if (!(set = queue.tailSet(new Item(start, 0), false)).isEmpty()) {
+                Item first = set.first();
+                if (start + delta == first.start) {
+                    first.start = start;
+                    first.delta += delta;
+                }
+                else
+                    offer(new Item(start, delta)); // backup node with gaps
+            }
+            else
+                offer(new Item(start, delta)); // backup node with gaps
 
             return;
         }
@@ -414,7 +433,7 @@ public class PartitionUpdateCounter {
      */
     public static class Item implements Comparable<Item> {
         /** */
-        private final long start;
+        private long start;
 
         /** */
         private long delta;
