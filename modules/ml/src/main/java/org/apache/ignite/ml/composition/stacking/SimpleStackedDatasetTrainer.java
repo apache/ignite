@@ -74,6 +74,7 @@ public class SimpleStackedDatasetTrainer<I, O, AM extends Model<I, O>, L> extend
     }
 
     //TODO: IGNITE-10441 -- Look for options to avoid boilerplate overrides.
+    /** {@inheritDoc} */
     @Override public <M1 extends Model<I, I>> SimpleStackedDatasetTrainer<I, O, AM, L> addTrainer(
         DatasetTrainer<M1, L> trainer) {
         return (SimpleStackedDatasetTrainer<I, O, AM, L>)super.addTrainer(trainer);
