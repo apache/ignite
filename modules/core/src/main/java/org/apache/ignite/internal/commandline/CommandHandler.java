@@ -2735,24 +2735,11 @@ public class CommandHandler {
                                 args.setUserName(console.readLine("user: "));
 
                             args.setPassword(new String(console.readPassword("password: ")));
+
+                            tryConnectAgain = true;
+
+                            tryConnectMaxCount--;
                         }
-                        else {
-                            Scanner scanner = new Scanner(System.in);
-
-                            if (F.isEmpty(args.getUserName())) {
-                                log("user: ");
-
-                                args.setUserName(scanner.next());
-                            }
-
-                            log("password: ");
-
-                            args.setPassword(scanner.next());
-                        }
-
-                        tryConnectAgain = true;
-
-                        tryConnectMaxCount--;
                     }
                     else {
                         if (tryConnectMaxCount == 0)
