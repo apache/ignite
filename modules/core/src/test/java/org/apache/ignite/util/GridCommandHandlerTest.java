@@ -19,6 +19,7 @@ package org.apache.ignite.util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -1028,14 +1029,13 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        corruptingAndCheckDefaultCache(ignite, CacheFilterEnum.ALL);
+        corruptingAndCheckDefaultCache(ignite);
     }
 
     /**
      * @param ignite Ignite.
-     * @param cacheFilterEnum Filter enum.
      */
-    private void corruptingAndCheckDefaultCache(IgniteEx ignite, CacheFilterEnum cacheFilterEnum) throws IOException {
+    private void corruptingAndCheckDefaultCache(IgniteEx ignite) throws IOException {
         injectTestSystemOut();
 
         GridCacheContext<Object, Object> cacheCtx = ignite.cachex(DEFAULT_CACHE_NAME).context();
@@ -1176,132 +1176,6 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             assertTrue(dumpWithConflicts.contains("Node ID: " + unstableNodeId + "\n" +
                 "Exception message:\n" +
                 "Node has left grid: " + unstableNodeId));
-        }
-        else
-            fail("Should be found dump with conflicts");
-    }
-
-    /**
-     * Tests that idle verify print partitions info over system caches.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testCacheIdleVerifyDumpForCorruptedDataOnSystemCache() throws Exception {
-        int parts = 32;
-
-        atomicConfiguration = new AtomicConfiguration()
-            .setAffinity(new RendezvousAffinityFunction(false, parts))
-            .setBackups(2);
-
-        IgniteEx ignite = (IgniteEx)startGrids(3);
-
-        ignite.cluster().active(true);
-
-        injectTestSystemOut();
-
-        // Adding some assignments without deployments.
-        for (int i = 0; i < 100; i++) {
-            ignite.semaphore("s" + i, i, false, true);
-
-            ignite.atomicSequence("sq" + i, 0, true)
-                .incrementAndGet();
-        }
-
-        CacheGroupContext storedSysCacheCtx = ignite.context().cache().cacheGroup(CU.cacheId("default-ds-group"));
-
-        assertNotNull(storedSysCacheCtx);
-
-        corruptDataEntry(storedSysCacheCtx.caches().get(0), new GridCacheInternalKeyImpl("sq0",
-            "default-ds-group"), true, false);
-
-        corruptDataEntry(storedSysCacheCtx.caches().get(0), new GridCacheInternalKeyImpl("sq" + parts / 2,
-            "default-ds-group"), false, true);
-
-        CacheGroupContext memorySysCacheCtx = ignite.context().cache().cacheGroup(CU.cacheId("default-volatile-ds-group"));
-
-        assertNotNull(memorySysCacheCtx);
-
-        corruptDataEntry(memorySysCacheCtx.caches().get(0), new GridCacheInternalKeyImpl("s0",
-                "default-volatile-ds-group"), true, false);
-
-        corruptDataEntry(memorySysCacheCtx.caches().get(0), new GridCacheInternalKeyImpl("s" + parts / 2,
-            "default-volatile-ds-group"), false, true);
-
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--cacheFilter", CacheFilterEnum.SYSTEM.toString()));
-
-        Matcher fileNameMatcher = dumpFileNameMatcher();
-
-        if (fileNameMatcher.find()) {
-            String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
-
-            assertTrue(dumpWithConflicts.contains("found 4 conflict partitions: [counterConflicts=2, " +
-                "hashConflicts=2]"));
-        }
-        else
-            fail("Should be found dump with conflicts");
-    }
-
-    /**
-     * Tests that idle verify print partitions info over persistence client caches.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testCacheIdleVerifyDumpForCorruptedDataOnPersistenceClientCache() throws Exception {
-        IgniteEx ignite = (IgniteEx)startGrids(3);
-
-        ignite.cluster().active(true);
-
-        createCacheAndPreload(ignite, 100);
-
-        corruptingAndCheckDefaultCache(ignite, CacheFilterEnum.PERSISTENT);
-    }
-
-    /**
-     * Tests that idle verify print partitions info over none-persistence client caches.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testCacheIdleVerifyDumpForCorruptedDataOnNonePersistenceClientCache() throws Exception {
-        int parts = 32;
-
-        dataRegionConfiguration = new DataRegionConfiguration()
-            .setName("none-persistence-region");
-
-        IgniteEx ignite = (IgniteEx)startGrids(3);
-
-        ignite.cluster().active(true);
-
-        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
-            .setAffinity(new RendezvousAffinityFunction(false, parts))
-            .setBackups(2)
-            .setName(DEFAULT_CACHE_NAME)
-            .setDataRegionName("none-persistence-region"));
-
-        // Adding some assignments without deployments.
-        for (int i = 0; i < 100; i++)
-            cache.put(i, i);
-
-        injectTestSystemOut();
-
-        GridCacheContext<Object, Object> cacheCtx = ignite.cachex(DEFAULT_CACHE_NAME).context();
-
-        corruptDataEntry(cacheCtx, 0, true, false);
-
-        corruptDataEntry(cacheCtx, parts / 2, false, true);
-
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--cacheFilter", CacheFilterEnum
-            .NOT_PERSISTENT.toString()));
-
-        Matcher fileNameMatcher = dumpFileNameMatcher();
-
-        if (fileNameMatcher.find()) {
-            String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
-
-            assertTrue(dumpWithConflicts.contains("found 1 conflict partitions: [counterConflicts=0, " +
-                "hashConflicts=1]"));
         }
         else
             fail("Should be found dump with conflicts");
