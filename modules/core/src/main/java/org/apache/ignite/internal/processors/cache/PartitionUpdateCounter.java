@@ -36,7 +36,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Partition update counter.
  *
- * TODO FIXME consider bit set implementation.
+ * TODO FIXME consider rolling bit set implementation.
+ * TODO describe ITEM structure
  */
 public class PartitionUpdateCounter {
     /** */
