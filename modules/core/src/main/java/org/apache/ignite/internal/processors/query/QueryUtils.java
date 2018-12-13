@@ -575,7 +575,8 @@ public class QueryUtils {
             boolean isKeyField;
 
             // Currently we are using only QueryBinaryProperties even if key or value is not of binary type.
-            // In case of key we just set key property to false and hope, that value() method will never be called.
+            // In case of key is of sql type we set key property to false (key is not a binary field of itself) and
+            // hope, that value() method will never be called.
             if (isKeyClsSqlType)
                 isKeyField = false;
             else
