@@ -47,10 +47,13 @@ public class PartitionUpdateCounter {
     /** Queue of counter update tasks*/
     private TreeSet<Item> queue = new TreeSet<>();
 
-    /** Counter of finished updates in partition. */
+    /** Counter of applied updates in partition. */
     private final AtomicLong cntr = new AtomicLong();
 
-    /** Initial counter points to last update which is written to persistent storage. */
+    /** Counter of pending updates in partition. */
+    private final AtomicLong reserveCntr = new AtomicLong();
+
+    /** Initial counter points to last sequential update after recovery. */
     private long initCntr;
 
     /**
@@ -84,6 +87,10 @@ public class PartitionUpdateCounter {
         return cntr.get();
     }
 
+    /**
+     * Highest seen (applied) update counter.
+     * @return Counter.
+     */
     public synchronized long hwm() {
         return queue.isEmpty() ? cntr.get() : queue.last().absolute();
     }
@@ -263,67 +270,55 @@ public class PartitionUpdateCounter {
         return gaps;
     }
 
-    public synchronized long reserve(long delta) {
-        long start;
-
-        long cntr = this.cntr.get();
-
-        if (queue.isEmpty())
-            offer(new Item((start = cntr), delta));
-        else {
-            Item last = queue.last();
-
-            offer(new Item((start = cntr + last.start + last.delta), delta));
-        }
-
-        return start;
-    }
-
     /**
-     * Release subsequent closed reservations and adjust lwm.
-     *
-     * @param start Start.
      * @param delta Delta.
      */
-    public synchronized void release(long start, long delta) {
-        NavigableSet<Item> items = queue.tailSet(new Item(start, delta), true);
-
-        Item first = items.first();
-
-        assert first != null && first.delta == delta : "Wrong interval " + first;
-
-        if (first.open())
-            first.close();
-
-        long cur = cntr.get(), next;
-
-        if (start != cur) // If not first just mark as closed and return.
-            return;
-
-        items.pollFirst(); // Skip first.
-
-        while (true) {
-            boolean res = cntr.compareAndSet(cur, next = start + delta);
-
-            assert res;
-
-            if (items.isEmpty())
-                break;
-
-            Item peek = items.first();
-
-            if (peek.start != next || peek.open())
-                return;
-
-            Item item = items.pollFirst();
-
-            assert peek == item;
-
-            start = item.start;
-            delta = item.delta;
-            cur = next;
-        }
+    public long reserve(long delta) {
+        return reserveCntr.getAndAdd(delta);
     }
+
+//    /**
+//     * Release subsequent closed reservations and adjust lwm.
+//     *
+//     * @param start Start.
+//     * @param delta Delta.
+//     */
+//    public synchronized void release(long start, long delta) {
+//        NavigableSet<Item> items = queue.tailSet(new Item(start, delta), true);
+//
+//        Item first = items.first();
+//
+//        assert first != null && first.delta == delta : "Wrong interval " + first;
+//
+//        long cur = cntr.get(), next;
+//
+//        if (start != cur) // If not first just mark as closed and return.
+//            return;
+//
+//        items.pollFirst(); // Skip first.
+//
+//        while (true) {
+//            boolean res = cntr.compareAndSet(cur, next = start + delta);
+//
+//            assert res;
+//
+//            if (items.isEmpty())
+//                break;
+//
+//            Item peek = items.first();
+//
+//            if (peek.start != next || peek.open())
+//                return;
+//
+//            Item item = items.pollFirst();
+//
+//            assert peek == item;
+//
+//            start = item.start;
+//            delta = item.delta;
+//            cur = next;
+//        }
+//    }
 
     public @Nullable byte[] getBytes() {
         if (queue.isEmpty())
@@ -337,11 +332,7 @@ public class PartitionUpdateCounter {
 
             dos.writeByte(VERSION); // Version.
 
-            int size = 0;
-            for (Item item : queue) {
-                if (!item.open())
-                    size++;
-            }
+            int size = queue.size();
 
             dos.writeInt(size); // Holes count.
 
@@ -352,9 +343,6 @@ public class PartitionUpdateCounter {
             // All ints are packed except first.
 
             for (Item item : queue) {
-                if (item.open()) // Skip writing open(just reserved) intervals - we know no updates was written.
-                    continue;
-
                 dos.writeLong(item.start);
                 dos.writeLong(item.delta);
             }
@@ -410,9 +398,6 @@ public class PartitionUpdateCounter {
         /** */
         private long delta;
 
-        /** */
-        private boolean closed;
-
         /**
          * @param start Start value.
          * @param delta Delta value.
@@ -431,7 +416,6 @@ public class PartitionUpdateCounter {
         @Override public String toString() {
             return "Item [" +
                 "start=" + start +
-                ", open=" + open() +
                 ", delta=" + delta +
                 ']';
         }
@@ -442,16 +426,6 @@ public class PartitionUpdateCounter {
 
         public long delta() {
             return delta;
-        }
-
-        public boolean open() {
-            return !closed;
-        }
-
-        public Item close() {
-            closed = true; // TODO FIXME why delta not integer?
-
-            return this;
         }
 
         public long absolute() {
@@ -472,17 +446,7 @@ public class PartitionUpdateCounter {
 
             if (start != item.start)
                 return false;
-            if (delta != item.delta)
-                return false;
-            return closed == item.closed;
-
-        }
-
-        @Override public int hashCode() {
-            int result = (int)(start ^ (start >>> 32));
-            result = 31 * result + (int)(delta ^ (delta >>> 32));
-            result = 31 * result + (closed ? 1 : 0);
-            return result;
+            return  (delta != item.delta);
         }
     }
 
@@ -499,12 +463,18 @@ public class PartitionUpdateCounter {
             return false;
         if (!queue.equals(cntr.queue))
             return false;
+        if (this.reserveCntr.get() != cntr.reserveCntr.get())
+            return false;
         return this.cntr.get() == cntr.cntr.get();
 
     }
 
+    public long reserved() {
+        return reserveCntr.get();
+    }
+
     /** {@inheritDoc} */
     public String toString() {
-        return "Counter [lwm=" + get() + ", holes=" + queue + ", hwm=" + hwm() + ']';
+        return "Counter [lwm=" + get() + ", holes=" + queue + ", hwm=" + hwm() + ", resrv=" + reserveCntr.get() + ']';
     }
 }

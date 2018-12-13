@@ -2265,12 +2265,8 @@ public class IgniteTxHandler {
 
                     if (part != null && part.reserve()) {
                         try {
-                            if (part.state() != GridDhtPartitionState.RENTING) {
-                                if (primary)
-                                    part.releaseCounter(counter.initialCounter(i), counter.updatesCount(i));
-                                else
-                                    part.updateCounter(counter.initialCounter(i), counter.updatesCount(i));
-                            }
+                            if (part.state() != GridDhtPartitionState.RENTING)
+                                part.updateCounter(counter.initialCounter(i), counter.updatesCount(i));
                             else
                                 invalid = true;
                         }

@@ -45,42 +45,22 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
 
         System.out.println();
 
-        pc.release(0, 1);
-        pc.release(2, 1);
+        pc.update(0, 1);
+        pc.update(2, 1);
 
-        pc.release(5, 1);
-        pc.release(6, 1);
-        pc.release(7, 1);
+        pc.update(5, 1);
+        pc.update(6, 1);
+        pc.update(7, 1);
 
-        System.out.println();
-    }
+        assertTrue(pc.get() < pc.reserved());
 
-    public void testPrimaryMode() {
-        for (int i = 0; i < 1000; i++)
-            doTestPrimaryMode(2, 6, 2, 10, 3, 1, 5, 4);
-    }
+        pc.update(1, 1);
+        pc.update(3, 1);
+        pc.update(4, 1);
+        pc.update(8, 1);
+        pc.update(9, 1);
 
-    private void doTestPrimaryMode(long... reservations) {
-        PartitionUpdateCounter pc = new PartitionUpdateCounter(log);
-
-        long[] ctrs = new long[reservations.length];
-
-        for (int i = 0; i < reservations.length; i++)
-            ctrs[i] = pc.reserve(reservations[i]);
-
-        List<T2<Long, Long>> tmp = new ArrayList<>();
-
-        for (int i = 0; i < ctrs.length; i++)
-            tmp.add(new T2<>(ctrs[i], reservations[i]));
-
-        Collections.shuffle(tmp);
-
-        for (T2<Long, Long> objects : tmp)
-            pc.release(objects.get1(), objects.get2());
-
-        assertEquals(pc.get(), pc.hwm());
-
-        assertEquals(Arrays.stream(reservations).sum(), pc.get());
+        assertTrue(pc.get() == pc.reserved());
     }
 
     public void testBackupModeSimple() {

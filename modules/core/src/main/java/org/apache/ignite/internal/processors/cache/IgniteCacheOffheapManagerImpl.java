@@ -1604,7 +1604,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public void releaseCounter(long start, long delta) {
-            pCntr.release(start, delta);
+            // TODO remove.
         }
 
         /** {@inheritDoc} */
