@@ -6413,6 +6413,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             entry.update(updated, newExpireTime, newTtl, newVer, true);
 
+            if (entry.isNear()) {
+                boolean updatedDht = ((GridNearCacheEntry)entry).recordDhtVersion(newVer);
+                assert updatedDht : this;
+            }
+
             updateRes = new GridCacheUpdateAtomicResult(UpdateOutcome.SUCCESS,
                 oldVal,
                 updated,

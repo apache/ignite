@@ -21,10 +21,15 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.PageMemoryTrackerPluginProvider;
+import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * WAL delta records consistency test enabled by system property.
  */
+@RunWith(JUnit4.class)
 public class SysPropWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -41,6 +46,13 @@ public class SysPropWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyT
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -50,14 +62,18 @@ public class SysPropWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyT
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
+    @Test
     public final void testPutRemoveMultinode() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10584");
+
         IgniteEx ignite0 = startGrid(0);
 
         ignite0.cluster().active(true);
 
-        IgniteCache<Integer, Object> cache0 = ignite0.getOrCreateCache("cache0");
+        IgniteCache<Integer, Object> cache0 = ignite0.createCache(cacheConfiguration("cache0"));
 
         for (int i = 0; i < 3_000; i++)
             cache0.put(i, "Cache value " + i);
@@ -70,13 +86,11 @@ public class SysPropWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyT
         for (int i = 1_000; i < 4_000; i++)
             cache0.remove(i);
 
-        IgniteCache<Integer, Object> cache1 = ignite1.getOrCreateCache("cache1");
+        IgniteCache<Integer, Object> cache1 = ignite1.createCache(cacheConfiguration("cache1"));
 
         for (int i = 0; i < 1_000; i++)
             cache1.put(i, "Cache value " + i);
 
         forceCheckpoint();
-
-        stopAllGrids();
     }
 }
