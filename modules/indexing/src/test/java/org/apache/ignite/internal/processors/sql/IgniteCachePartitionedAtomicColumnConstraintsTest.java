@@ -115,6 +115,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
         orgAddressPrecision.put("address", 5);
 
         jcache(grid(0), cacheConfiguration(new QueryEntity(Organization.class.getName(), Address.class.getName())
+            .setKeyFields(Collections.singleton("name"))
             .addQueryField("name", "java.lang.String", "name")
             .addQueryField("address", "java.lang.String", "address")
             .setFieldsPrecision(orgAddressPrecision)), OBJ_CACHE_NAME);
@@ -148,6 +149,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
         orgEmployeePrecision.put("salary", 4);
 
         jcache(grid(0), cacheConfiguration(new QueryEntity(DecOrganization.class.getName(), Employee.class.getName())
+            .setKeyFields(Collections.singleton("id"))
             .addQueryField("id", "java.math.BigDecimal", "id")
             .addQueryField("salary", "java.math.BigDecimal", "salary")
             .setFieldsPrecision(orgEmployeePrecision)), OBJ_CACHE_NAME_FOR_PREC);
@@ -189,6 +191,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
         orgEmployeeScale.put("salary", 2);
 
         jcache(grid(0), cacheConfiguration(new QueryEntity(DecOrganization.class.getName(), Employee.class.getName())
+            .setKeyFields(Collections.singleton("id"))
             .addQueryField("id", "java.math.BigDecimal", "id")
             .addQueryField("salary", "java.math.BigDecimal", "salary")
             .setFieldsScale(orgEmployeeScale)
