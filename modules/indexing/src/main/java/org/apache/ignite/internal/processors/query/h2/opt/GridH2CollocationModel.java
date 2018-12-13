@@ -386,44 +386,41 @@ public final class GridH2CollocationModel {
         }
 
         IndexColumn affCol = tbl.getAffinityKeyColumn();
+        int affColId = affCol != null ? affCol.column.getColumnId() : GridH2RowDescriptor.COL_NOT_EXISTS;
 
         boolean affKeyCondFound = false;
 
-        if (affCol != null) {
-            ArrayList<IndexCondition> idxConditions = tf.getIndexConditions();
+        ArrayList<IndexCondition> idxConditions = tf.getIndexConditions();
 
-            int affColId = affCol.column.getColumnId();
+        for (int i = 0; i < idxConditions.size(); i++) {
+            IndexCondition c = idxConditions.get(i);
+            int colId = c.getColumn().getColumnId();
+            int cmpType = c.getCompareType();
 
-            for (int i = 0; i < idxConditions.size(); i++) {
-                IndexCondition c = idxConditions.get(i);
-                int colId = c.getColumn().getColumnId();
-                int cmpType = c.getCompareType();
+            if ((cmpType == Comparison.EQUAL || cmpType == Comparison.EQUAL_NULL_SAFE) &&
+                (colId == affColId || tbl.rowDescriptor().isKeyColumn(colId)) && c.isEvaluatable()) {
+                affKeyCondFound = true;
 
-                if ((cmpType == Comparison.EQUAL || cmpType == Comparison.EQUAL_NULL_SAFE) &&
-                    (colId == affColId || tbl.rowDescriptor().isKeyColumn(colId)) && c.isEvaluatable()) {
-                    affKeyCondFound = true;
+                Expression exp = c.getExpression();
+                exp = exp.getNonAliasExpression();
 
-                    Expression exp = c.getExpression();
-                    exp = exp.getNonAliasExpression();
+                if (exp instanceof ExpressionColumn) {
+                    ExpressionColumn expCol = (ExpressionColumn)exp;
 
-                    if (exp instanceof ExpressionColumn) {
-                        ExpressionColumn expCol = (ExpressionColumn)exp;
+                    // This is one of our previous joins.
+                    TableFilter prevJoin = expCol.getTableFilter();
 
-                        // This is one of our previous joins.
-                        TableFilter prevJoin = expCol.getTableFilter();
+                    if (prevJoin != null) {
+                        GridH2CollocationModel cm = child(indexOf(prevJoin), true);
 
-                        if (prevJoin != null) {
-                            GridH2CollocationModel cm = child(indexOf(prevJoin), true);
+                        // If the previous joined model is a subquery (view), we can not be sure that
+                        // the found affinity column is the needed one, since we can select multiple
+                        // different affinity columns from different tables.
+                        if (cm != null && !cm.view) {
+                            Type t = cm.type(true);
 
-                            // If the previous joined model is a subquery (view), we can not be sure that
-                            // the found affinity column is the needed one, since we can select multiple
-                            // different affinity columns from different tables.
-                            if (cm != null && !cm.view) {
-                                Type t = cm.type(true);
-
-                                if (t.isPartitioned() && t.isCollocated() && isAffinityColumn(prevJoin, expCol, validate))
-                                    return Affinity.COLLOCATED_JOIN;
-                            }
+                            if (t.isPartitioned() && t.isCollocated() && isAffinityColumn(prevJoin, expCol, validate))
+                                return Affinity.COLLOCATED_JOIN;
                         }
                     }
                 }
