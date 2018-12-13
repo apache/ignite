@@ -426,7 +426,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
      */
     private void checkCacheContextsConsistency(GridCacheContext one, GridCacheContext other) {
         Assert.assertEquals(one.statisticsEnabled(), other.statisticsEnabled());
-        Assert.assertEquals(one.deploymentEnabled(), other.deploymentEnabled());
+        Assert.assertEquals(one.dynamicDeploymentId(), other.dynamicDeploymentId());
         Assert.assertEquals(one.keepBinary(), other.keepBinary());
         Assert.assertEquals(one.updatesAllowed(), other.updatesAllowed());
         Assert.assertEquals(one.group().receivedFrom(), other.group().receivedFrom());
