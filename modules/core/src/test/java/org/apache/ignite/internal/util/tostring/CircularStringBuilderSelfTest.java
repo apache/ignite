@@ -19,15 +19,20 @@ package org.apache.ignite.internal.util.tostring;
 
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @GridCommonTest(group = "Utils")
+@RunWith(JUnit4.class)
 public class CircularStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCSBPrimitive() throws Exception {
         CircularStringBuilder csb = new CircularStringBuilder(1);
         csb.append((String)null);
@@ -43,6 +48,7 @@ public class CircularStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
     * @throws Exception If failed.
     */
+    @Test
     public void testCSBOverflow() throws Exception {
         testSB(3, "1234", 2, "234");
         testSB(4, "1234", 2, "1234");

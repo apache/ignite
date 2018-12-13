@@ -61,6 +61,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -71,6 +74,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Base test for all multithreaded cache scenarios w/ and w/o failover.
  */
+@RunWith(JUnit4.class)
 public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstractTest {
     /** Node name prefix. */
     private static final String NODE_PREFIX = "node";
@@ -240,6 +244,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test() throws Exception {
         startUp();
 
