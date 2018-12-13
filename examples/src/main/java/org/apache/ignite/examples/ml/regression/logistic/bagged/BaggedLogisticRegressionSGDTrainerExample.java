@@ -62,7 +62,7 @@ public class BaggedLogisticRegressionSGDTrainerExample {
                 .fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
             System.out.println(">>> Create new logistic regression trainer object.");
-            LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>()
+            LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
                 .withUpdatesStgy(new UpdatesStrategy<>(
                     new SimpleGDUpdateCalculator(0.2),
                     SimpleGDParameterUpdate::sumLocal,
