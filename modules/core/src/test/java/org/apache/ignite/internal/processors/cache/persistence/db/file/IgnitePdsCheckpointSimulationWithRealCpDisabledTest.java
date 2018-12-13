@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -53,6 +54,8 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.MvccDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
@@ -62,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DummyPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -85,7 +89,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Test simulated chekpoints,
+ * Test simulated checkpoints,
  * Disables integrated check pointer thread
  */
 @RunWith(JUnit4.class)
@@ -100,17 +104,24 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
     private static final boolean VERBOSE = false;
 
     /** Cache name. */
-    private static final String cacheName = "cache";
+    private static final String CACHE_NAME = "cache";
+
+    /** Mvcc cache name. */
+    private static final String MVCC_CACHE_NAME = "mvccCache";
+
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration ccfg = new CacheConfiguration(cacheName);
+        CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME)
+                .setRebalanceMode(CacheRebalanceMode.NONE);
 
-        ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
+        CacheConfiguration mvccCfg =  new CacheConfiguration(MVCC_CACHE_NAME)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
+                .setRebalanceMode(CacheRebalanceMode.NONE);
 
-        cfg.setCacheConfiguration(ccfg);
+        cfg.setCacheConfiguration(ccfg, mvccCfg);
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
@@ -154,7 +165,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
     public void testCheckpointSimulationMultiThreaded() throws Exception {
         IgniteEx ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().active(true);
 
         GridCacheSharedContext<Object, Object> shared = ig.context().cache().context();
 
@@ -169,7 +180,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         // Must put something in partition 0 in order to initialize meta page.
         // Otherwise we will violate page store integrity rules.
-        ig.cache(cacheName).put(0, 0);
+        ig.cache(CACHE_NAME).put(0, 0);
 
         PageMemory mem = shared.database().dataRegion(null).pageMemory();
 
@@ -177,7 +188,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         try {
             res = runCheckpointing(ig, (PageMemoryImpl)mem, pageStore, shared.wal(),
-                shared.cache().cache(cacheName).context().cacheId());
+                shared.cache().cache(CACHE_NAME).context().cacheId());
         }
         catch (Throwable th) {
             log().error("Error while running checkpointing", th);
@@ -192,7 +203,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().active(true);
 
         shared = ig.context().cache().context();
 
@@ -212,11 +223,11 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
     public void testGetForInitialWrite() throws Exception {
         IgniteEx ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().active(true);
 
         GridCacheSharedContext<Object, Object> shared = ig.context().cache().context();
 
-        int cacheId = shared.cache().cache(cacheName).context().cacheId();
+        int cacheId = shared.cache().cache(CACHE_NAME).context().cacheId();
 
         GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)shared.database();
 
@@ -270,7 +281,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().active(true);
 
         shared = ig.context().cache().context();
 
@@ -311,12 +322,27 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
      */
     @Test
     public void testDataWalEntries() throws Exception {
+        checkDataWalEntries(false);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testMvccDataWalEntries() throws Exception {
+        checkDataWalEntries(true);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    private void checkDataWalEntries(boolean mvcc) throws Exception {
         IgniteEx ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().active(true);
 
         GridCacheSharedContext<Object, Object> sharedCtx = ig.context().cache().context();
-        GridCacheContext<Object, Object> cctx = sharedCtx.cache().cache(cacheName).context();
+        GridCacheContext<Object, Object> cctx = sharedCtx.cache().cache(mvcc ? MVCC_CACHE_NAME : CACHE_NAME).context();
 
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)sharedCtx.database();
         IgniteWriteAheadLogManager wal = sharedCtx.wal();
@@ -339,7 +365,10 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
             if (op != GridCacheOperation.DELETE)
                 val = cctx.toCacheObject("value-" + i);
 
-            entries.add(new DataEntry(cctx.cacheId(), key, val, op, null, cctx.versions().next(), 0L,
+            entries.add(mvcc ?
+                    new MvccDataEntry(cctx.cacheId(), key, val, op, null, cctx.versions().next(), 0L,
+                            cctx.affinity().partition(i), i, new MvccVersionImpl(1000L, 10L, i + 1 /* Non-zero */)) :
+                    new DataEntry(cctx.cacheId(), key, val, op, null, cctx.versions().next(), 0L,
                 cctx.affinity().partition(i), i));
         }
 
@@ -350,17 +379,17 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         wal.flush(start, false);
 
         for (DataEntry entry : entries)
-            wal.log(new DataRecord(entry));
+            wal.log(mvcc ? new MvccDataRecord((MvccDataEntry) entry) : new DataRecord(entry));
 
         // Data will not be written to the page store.
         stopAllGrids();
 
         ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().active(true);
 
         sharedCtx = ig.context().cache().context();
-        cctx = sharedCtx.cache().cache(cacheName).context();
+        cctx = sharedCtx.cache().cache(mvcc ? MVCC_CACHE_NAME : CACHE_NAME).context();
 
         db = (GridCacheDatabaseSharedManager)sharedCtx.database();
         wal = sharedCtx.wal();
@@ -386,7 +415,10 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
             while (idx < entries.size()) {
                 IgniteBiTuple<WALPointer, WALRecord> dataRecTup = it.next();
 
-                assert dataRecTup.get2() instanceof DataRecord;
+                if (!mvcc)
+                    assert dataRecTup.get2() instanceof DataRecord;
+                else
+                    assert dataRecTup.get2() instanceof MvccDataRecord;
 
                 DataRecord dataRec = (DataRecord)dataRecTup.get2();
 
@@ -409,6 +441,13 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                 assertEquals(entry.nearXidVersion(), readEntry.nearXidVersion());
                 assertEquals(entry.partitionCounter(), readEntry.partitionCounter());
 
+                if (mvcc) {
+                    assert entry instanceof MvccDataEntry;
+                    assert readEntry instanceof MvccDataEntry;
+
+                    assertEquals(((MvccDataEntry) entry).mvccVer(), ((MvccDataEntry) readEntry).mvccVer());
+                }
+
                 idx++;
             }
         }
@@ -421,10 +460,10 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
     public void testPageWalEntries() throws Exception {
         IgniteEx ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().active(true);
 
         GridCacheSharedContext<Object, Object> sharedCtx = ig.context().cache().context();
-        int cacheId = sharedCtx.cache().cache(cacheName).context().cacheId();
+        int cacheId = sharedCtx.cache().cache(CACHE_NAME).context().cacheId();
 
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)sharedCtx.database();
         PageMemory pageMem = sharedCtx.database().dataRegion(null).pageMemory();
@@ -468,7 +507,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().active(true);
 
         sharedCtx = ig.context().cache().context();
 
@@ -522,11 +561,11 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
     public void testDirtyFlag() throws Exception {
         IgniteEx ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().active(true);
 
         GridCacheSharedContext<Object, Object> shared = ig.context().cache().context();
 
-        int cacheId = shared.cache().cache(cacheName).context().cacheId();
+        int cacheId = shared.cache().cache(CACHE_NAME).context().cacheId();
 
         GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)shared.database();
 
