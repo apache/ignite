@@ -392,7 +392,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test checks that cache contexts have consistent parameters after recovery finished and nodes have joined to topology.
+     * Checks that cache contexts have consistent parameters after recovery finished and nodes have joined to topology.
      */
     private void checkCacheContextsConsistencyAfterRecovery() throws Exception {
         IgniteEx crd = grid(0);
@@ -420,6 +420,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
     /**
      * Checks that cluster-wide parameters are consistent between two caches.
+     *
      * @param one Cache context.
      * @param other Cache context.
      */
