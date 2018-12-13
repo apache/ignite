@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.selection;
 
+import junit.framework.TestSuite;
 import org.apache.ignite.ml.selection.cv.CrossValidationTest;
 import org.apache.ignite.ml.selection.paramgrid.ParameterSetGeneratorTest;
 import org.apache.ignite.ml.selection.scoring.cursor.CacheBasedLabelPairCursorTest;
@@ -29,6 +30,7 @@ import org.apache.ignite.ml.selection.scoring.metric.RecallTest;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitterTest;
 import org.apache.ignite.ml.selection.split.mapper.SHA256UniformMapperTest;
 import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 import org.junit.runners.Suite;
 
 /**
@@ -37,9 +39,8 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     CrossValidationTest.class,
-    EvaluatorTest.class,
+    SelectionTestSuite.JUnit3TestSuite.class,
     ParameterSetGeneratorTest.class,
-    CacheBasedLabelPairCursorTest.class,
     LocalLabelPairCursorTest.class,
     AccuracyTest.class,
     PrecisionTest.class,
@@ -49,5 +50,17 @@ import org.junit.runners.Suite;
     TrainTestDatasetSplitterTest.class
 })
 public class SelectionTestSuite {
-    // No-op.
+    /** JUnit 3 tests. */
+    @RunWith(AllTests.class)
+    public static class JUnit3TestSuite {
+        /** */
+        public static TestSuite suite() {
+            TestSuite suite = new TestSuite();
+
+            suite.addTestSuite(EvaluatorTest.class);
+            suite.addTestSuite(CacheBasedLabelPairCursorTest.class);
+
+            return suite;
+        }
+    }
 }
