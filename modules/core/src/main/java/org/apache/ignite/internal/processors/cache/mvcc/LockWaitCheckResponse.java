@@ -25,47 +25,73 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
+/**
+ * Response with an information what transaction is blocking a transaction from corresponding request.
+ * @see LockWaitCheckRequest
+ */
 public class LockWaitCheckResponse implements MvccMessage {
+    /** */
     private static final long serialVersionUID = 0;
 
+    /** */
     private IgniteUuid futId;
-    private GridCacheVersion blockerTxVersion;
+    /** */
+    private GridCacheVersion blockerTxVer;
+    /** */
     private UUID blockerNodeId;
 
+    /** */
     public static LockWaitCheckResponse waiting(
-        IgniteUuid futId, UUID blockerNodeId, GridCacheVersion blockerTxVersion) {
-        return new LockWaitCheckResponse(futId, blockerNodeId, blockerTxVersion);
+        IgniteUuid futId, UUID blockerNodeId, GridCacheVersion blockerTxVer) {
+        return new LockWaitCheckResponse(futId, blockerNodeId, blockerTxVer);
     }
 
+    /** */
     public static LockWaitCheckResponse notWaiting(IgniteUuid futId) {
         return new LockWaitCheckResponse(futId, null, null);
     }
 
+    /** */
     public LockWaitCheckResponse() {
     }
 
-    private LockWaitCheckResponse(IgniteUuid futId, UUID blockerNodeId, GridCacheVersion blockerTxVersion) {
+    /** */
+    private LockWaitCheckResponse(IgniteUuid futId, UUID blockerNodeId, GridCacheVersion blockerTxVer) {
         this.futId = futId;
-        this.blockerTxVersion = blockerTxVersion;
+        this.blockerTxVer = blockerTxVer;
         this.blockerNodeId = blockerNodeId;
     }
 
+    /**
+     * @return Id of a future waiting for a response.
+     */
     public IgniteUuid futId() {
         return futId;
     }
 
+    /**
+     * @return Identifier of a transaction which is determined to be blocking a transaction
+     * from a corresponding request.
+     */
     public GridCacheVersion blockerTxVersion() {
-        return blockerTxVersion;
+        return blockerTxVer;
     }
 
+    /**
+     * @return Blocking transaction near node id.
+     */
     public UUID blockerNodeId() {
         return blockerNodeId;
     }
 
+    /**
+     * @return {@code true} if a transaction from a corresponding request is waiting for another transaction.
+     */
     public boolean isWaiting() {
-        return blockerTxVersion != null;
+        return blockerTxVer != null;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -84,7 +110,7 @@ public class LockWaitCheckResponse implements MvccMessage {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage("blockerTxVersion", blockerTxVersion))
+                if (!writer.writeMessage("blockerTxVer", blockerTxVer))
                     return false;
 
                 writer.incrementState();
@@ -100,6 +126,7 @@ public class LockWaitCheckResponse implements MvccMessage {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
@@ -116,7 +143,7 @@ public class LockWaitCheckResponse implements MvccMessage {
                 reader.incrementState();
 
             case 1:
-                blockerTxVersion = reader.readMessage("blockerTxVersion");
+                blockerTxVer = reader.readMessage("blockerTxVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -136,22 +163,27 @@ public class LockWaitCheckResponse implements MvccMessage {
         return reader.afterMessageRead(LockWaitCheckResponse.class);
     }
 
+    /** {@inheritDoc} */
     @Override public short directType() {
         return 169;
     }
 
+    /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 3;
     }
 
+    /** {@inheritDoc} */
     @Override public void onAckReceived() {
 
     }
 
+    /** {@inheritDoc} */
     @Override public boolean waitForCoordinatorInit() {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean processedFromNioThread() {
         return false;
     }

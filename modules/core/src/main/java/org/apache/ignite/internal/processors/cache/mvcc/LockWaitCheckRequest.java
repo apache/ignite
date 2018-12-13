@@ -23,28 +23,44 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
+/**
+ * Request used for checking if a transaction is blocked waiting for another transaction.
+ * @see LockWaitCheckResponse
+ */
 public class LockWaitCheckRequest implements MvccMessage {
+    /** */
     private static final long serialVersionUID = 0;
 
+    /** */
     private IgniteUuid futId;
-    private MvccVersionImpl txVersion;
+    /** */
+    private MvccVersionImpl txVer;
 
+    /** */
     public LockWaitCheckRequest() {
     }
 
-    public LockWaitCheckRequest(IgniteUuid futId, MvccVersionImpl txVersion) {
+    /** */
+    public LockWaitCheckRequest(IgniteUuid futId, MvccVersionImpl txVer) {
         this.futId = futId;
-        this.txVersion = txVersion;
+        this.txVer = txVer;
     }
 
+    /**
+     * @return Id of a future waiting for a response.
+     */
     public IgniteUuid futId() {
         return futId;
     }
 
+    /**
+     * @return MVCC version of a transaction which is checked for being waiting.
+     */
     public MvccVersionImpl txVersion() {
-        return txVersion;
+        return txVer;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -63,7 +79,7 @@ public class LockWaitCheckRequest implements MvccMessage {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage("txVersion", txVersion))
+                if (!writer.writeMessage("txVer", txVer))
                     return false;
 
                 writer.incrementState();
@@ -73,6 +89,7 @@ public class LockWaitCheckRequest implements MvccMessage {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
@@ -89,7 +106,7 @@ public class LockWaitCheckRequest implements MvccMessage {
                 reader.incrementState();
 
             case 1:
-                txVersion = reader.readMessage("txVersion");
+                txVer = reader.readMessage("txVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -101,22 +118,27 @@ public class LockWaitCheckRequest implements MvccMessage {
         return reader.afterMessageRead(LockWaitCheckRequest.class);
     }
 
+    /** {@inheritDoc} */
     @Override public short directType() {
         return 168;
     }
 
+    /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 2;
     }
 
+    /** {@inheritDoc} */
     @Override public void onAckReceived() {
 
     }
 
+    /** {@inheritDoc} */
     @Override public boolean waitForCoordinatorInit() {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean processedFromNioThread() {
         return false;
     }
