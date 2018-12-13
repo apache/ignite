@@ -63,7 +63,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
+import org.apache.ignite.failure.TestFailingFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -176,6 +176,12 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
+
+    /** Show that test is currently running. */
+    public static volatile boolean testIsRunning;
+
+    /** Failure catched by test failure handler. */
+    public final AtomicReference<Throwable> ex = new AtomicReference<>();
 
     /** Lock to maintain integrity of {@link TestCounters} and of {@link IgniteConfigVariationsAbstractTest}. */
     private final Lock runSerializer = new ReentrantLock();
@@ -1706,7 +1712,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
      * @return Failure handler implementation.
      */
     protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
+        return new TestFailingFailureHandler(this);
     }
 
     /**
@@ -2081,6 +2087,8 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
         Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
             @Override public void run() {
+                testIsRunning = true;
+
                 try {
                     if (forceFailure)
                         fail("Forced failure: " + forceFailureMsg);
@@ -2088,9 +2096,9 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
                     testRoutine.evaluate();
                 }
                 catch (Throwable e) {
-                    IgniteClosure<Throwable, Throwable> hnd = errorHandler();
-
-                    ex.set(hnd != null ? hnd.apply(e) : e);
+                    handleFailure(e);
+                } finally {
+                    testIsRunning = false;
                 }
             }
         });
@@ -2132,6 +2140,15 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         }
 
         assert !stopGridErr : "Error occurred on grid stop (see log for more details).";
+    }
+
+    /**
+     * @param t Throwable.
+     */
+    public void handleFailure(Throwable t) {
+        IgniteClosure<Throwable, Throwable> hnd = errorHandler();
+
+        ex.set(hnd != null ? hnd.apply(t) : t);
     }
 
     /**
