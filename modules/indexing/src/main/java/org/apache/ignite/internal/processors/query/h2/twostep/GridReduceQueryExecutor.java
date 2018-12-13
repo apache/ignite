@@ -34,7 +34,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.CacheException;
@@ -61,12 +60,10 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxSe
 import org.apache.ignite.internal.processors.cache.distributed.near.TxTopologyVersionFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.H2FieldsIterator;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
@@ -136,9 +133,6 @@ public class GridReduceQueryExecutor {
     private IgniteLogger log;
 
     /** */
-    private final AtomicLong qryIdGen;
-
-    /** */
     private final ConcurrentMap<Long, ReduceQueryRun> runs = new ConcurrentHashMap<>();
 
     /** Contexts of running DML requests. */
@@ -166,11 +160,9 @@ public class GridReduceQueryExecutor {
     /**
      * Constructor.
      *
-     * @param qryIdGen Query ID generator.
      * @param busyLock Busy lock.
      */
-    public GridReduceQueryExecutor(AtomicLong qryIdGen, GridSpinBusyLock busyLock) {
-        this.qryIdGen = qryIdGen;
+    public GridReduceQueryExecutor(GridSpinBusyLock busyLock) {
         this.busyLock = busyLock;
     }
 
@@ -435,8 +427,6 @@ public class GridReduceQueryExecutor {
                 }
             }
 
-            long qryReqId = qryIdGen.incrementAndGet();
-
             List<Integer> cacheIds = qry.cacheIds();
 
             boolean mvccEnabled = mvccEnabled(ctx);
@@ -480,9 +470,10 @@ public class GridReduceQueryExecutor {
                 }
             }
 
-            final ReduceQueryRun r = new ReduceQueryRun(qryReqId, qry.originalSql(), schemaName,
-                h2.connections().connectionForThread(schemaName), qry.mapQueries().size(), qry.pageSize(),
-                U.currentTimeMillis(), sfuFut, cancel);
+            long qryReqId = h2.runningQueryManager().createUniqueQueryId();
+
+            final ReduceQueryRun r = new ReduceQueryRun(h2.connections().connectionForThread(schemaName),
+                qry.mapQueries().size(), qry.pageSize(), sfuFut);
 
             Collection<ClusterNode> nodes;
 
@@ -872,13 +863,10 @@ public class GridReduceQueryExecutor {
     ) {
         AffinityTopologyVersion topVer = h2.readyTopologyVersion();
 
-        final long reqId = qryIdGen.incrementAndGet();
+        final long reqId = h2.runningQueryManager().createUniqueQueryId();
 
         ReducePartitionMapResult nodesParts =
             mapper.nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly, reqId);
-
-        final GridRunningQueryInfo qryInfo = new GridRunningQueryInfo(reqId, selectQry, GridCacheQueryType.SQL_FIELDS,
-            schemaName, U.currentTimeMillis(), cancel, false);
 
         Collection<ClusterNode> nodes = nodesParts.nodes();
 
@@ -904,7 +892,7 @@ public class GridReduceQueryExecutor {
             }
         }
 
-        final DistributedUpdateRun r = new DistributedUpdateRun(nodes.size(), qryInfo);
+        final DistributedUpdateRun r = new DistributedUpdateRun(nodes.size());
 
         int flags = enforceJoinOrder ? GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER : 0;
 
@@ -1322,50 +1310,6 @@ public class GridReduceQueryExecutor {
 
         for (DistributedUpdateRun r: updRuns.values())
             r.handleDisconnect(err);
-    }
-
-    /**
-     * Collect queries that already running more than specified duration.
-     *
-     * @param duration Duration to check.
-     * @return Collection of IDs and statements of long running queries.
-     */
-    public Collection<GridRunningQueryInfo> longRunningQueries(long duration) {
-        Collection<GridRunningQueryInfo> res = new ArrayList<>();
-
-        long curTime = U.currentTimeMillis();
-
-        for (ReduceQueryRun run : runs.values()) {
-            if (run.queryInfo().longQuery(curTime, duration))
-                res.add(run.queryInfo());
-        }
-
-        for (DistributedUpdateRun upd: updRuns.values()) {
-            if (upd.queryInfo().longQuery(curTime, duration))
-                res.add(upd.queryInfo());
-        }
-
-        return res;
-    }
-
-    /**
-     * Cancel specified queries.
-     *
-     * @param queries Queries IDs to cancel.
-     */
-    public void cancelQueries(Collection<Long> queries) {
-        for (Long qryId : queries) {
-            ReduceQueryRun run = runs.get(qryId);
-
-            if (run != null)
-                run.queryInfo().cancel();
-            else {
-                DistributedUpdateRun upd = updRuns.get(qryId);
-
-                if (upd != null)
-                    upd.queryInfo().cancel();
-            }
-        }
     }
 
     /**

@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
+import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
@@ -289,7 +290,8 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-            SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker, GridQueryCancel cancel) {
+            SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker,
+            GridQueryCancel cancel, boolean clientReq) {
             return null;
         }
 
@@ -440,6 +442,11 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
                 throw new IgniteCheckedException("Test query exception " + ctx.name() + " " + new Random().nextInt());
 
             return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public RunningQueryManager runningQueryManager() {
+            return null;
         }
     }
 }

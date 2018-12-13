@@ -86,10 +86,12 @@ public interface GridQueryIndexing {
      * @param keepBinary Keep binary flag.
      * @param failOnMultipleStmts Whether an exception should be thrown for multiple statements query.
      * @param tracker Query tracker.
+     * @param clientReq {@code true} in case it's client request, {@code false} otherwise.
      * @return Cursor.
      */
     public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-        SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker, GridQueryCancel cancel);
+        SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker,
+        GridQueryCancel cancel, boolean clientReq);
 
     /**
      * Execute an INSERT statement using data streamer as receiver.
@@ -369,4 +371,11 @@ public interface GridQueryIndexing {
      * @return {@code true} If context has been initialized.
      */
     public boolean initCacheContext(GridCacheContext ctx) throws IgniteCheckedException;
+
+    /**
+     * Return Running query manager.
+     *
+     * @return Running query manager.
+     */
+    RunningQueryManager runningQueryManager();
 }

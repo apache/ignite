@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.internal.processors.cache.query.CloseListener;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -39,7 +40,7 @@ import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.
 /**
  * Query cursor implementation.
  */
-public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T> {
+public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T>, CloseListener {
     /** */
     private static final AtomicReferenceFieldUpdater<QueryCursorImpl, State> STATE_UPDATER =
         AtomicReferenceFieldUpdater.newUpdater(QueryCursorImpl.class, State.class, "state");
@@ -61,6 +62,9 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
 
     /** */
     private final GridQueryCancel cancel;
+
+    /** Close listener. */
+    private Runnable closeLsnr;
 
     /**
      * @param iterExec Query executor.
@@ -134,23 +138,40 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
 
     /** {@inheritDoc} */
     @Override public void close() {
-        while(state != CLOSED) {
-            if (STATE_UPDATER.compareAndSet(this, RESULT_READY, CLOSED)) {
-                closeIter();
+        try {
+            while (state != CLOSED) {
+                if (STATE_UPDATER.compareAndSet(this, RESULT_READY, CLOSED)) {
+                    closeIter();
 
-                return;
+                    return;
+                }
+
+                if (STATE_UPDATER.compareAndSet(this, EXECUTION, CLOSED)) {
+                    if (cancel != null)
+                        cancel.cancel();
+
+                    return;
+                }
+
+                if (STATE_UPDATER.compareAndSet(this, IDLE, CLOSED))
+                    return;
             }
-
-            if (STATE_UPDATER.compareAndSet(this, EXECUTION, CLOSED)) {
-                if (cancel != null)
-                    cancel.cancel();
-
-                return;
-            }
-
-            if (STATE_UPDATER.compareAndSet(this, IDLE, CLOSED))
-                return;
         }
+        finally {
+            if (closeLsnr != null) {
+                try {
+                    closeLsnr.run();
+                }
+                catch (Exception e) {
+                    throw new IgniteException(e);
+                }
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    public void closeListener(Runnable closeLsnr) {
+        this.closeLsnr = closeLsnr;
     }
 
     /**

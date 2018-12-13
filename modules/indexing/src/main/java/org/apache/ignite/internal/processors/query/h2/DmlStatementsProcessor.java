@@ -419,12 +419,13 @@ public class DmlStatementsProcessor {
      * @param streamer Streamer to feed data to.
      * @param stmt Statement.
      * @param args Statement arguments.
+     * @param cancel Query cancel.
      * @return Number of rows in given INSERT statement.
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"unchecked"})
-    long streamUpdateQuery(String schemaName, IgniteDataStreamer streamer, PreparedStatement stmt, final Object[] args)
-        throws IgniteCheckedException {
+    long streamUpdateQuery(String schemaName, IgniteDataStreamer streamer, PreparedStatement stmt, final Object[] args,
+        GridQueryCancel cancel) throws IgniteCheckedException {
         idx.checkStatementStreamable(stmt);
 
         Prepared p = GridSqlQueryParser.prepared(stmt);
@@ -449,7 +450,7 @@ public class DmlStatementsProcessor {
                     if (!F.isEmpty(plan.selectQuery())) {
                         GridQueryFieldsResult res = idx.queryLocalSqlFields(idx.schema(cctx.name()),
                             plan.selectQuery(), F.asList(U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY)),
-                            null, false, false, 0, null);
+                            null, false, false, 0, cancel);
 
                         it = res.iterator();
                     }
@@ -462,7 +463,7 @@ public class DmlStatementsProcessor {
                     throw new IgniteException(e);
                 }
             }
-        }, null);
+        }, cancel);
 
         data.addAll(stepCur.getAll());
 
@@ -470,7 +471,7 @@ public class DmlStatementsProcessor {
             @Override public Iterator<List<?>> iterator() {
                 return data.iterator();
             }
-        }, null);
+        }, cancel);
 
         if (plan.rowCount() == 1) {
             IgniteBiTuple t = plan.processRow(cur.iterator().next());
@@ -560,7 +561,7 @@ public class DmlStatementsProcessor {
                             .setTimeout((int)timeout, TimeUnit.MILLISECONDS);
 
                         FieldsQueryCursor<List<?>> cur = idx.querySqlFields(schemaName, newFieldsQry, null,
-                            true, true, mvccTracker(cctx, tx), cancel).get(0);
+                            true, true, mvccTracker(cctx, tx), cancel, false).get(0);
 
                         it = plan.iteratorForTransaction(connMgr, cur);
                     }
@@ -648,7 +649,7 @@ public class DmlStatementsProcessor {
                 .setTimeout(fieldsQry.getTimeout(), TimeUnit.MILLISECONDS);
 
             cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(schemaName, newFieldsQry, null, true, true,
-                null, cancel).get(0);
+                null, cancel, false).get(0);
         }
         else if (plan.hasRows())
             cur = plan.createRows(fieldsQry.getArgs());
@@ -1168,7 +1169,7 @@ public class DmlStatementsProcessor {
                 .setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
             cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(schema, newFieldsQry, null, true, true,
-                new StaticMvccQueryTracker(cctx, mvccSnapshot), cancel).get(0);
+                new StaticMvccQueryTracker(cctx, mvccSnapshot), cancel, false).get(0);
         }
         else {
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(schema, plan.selectQuery(),

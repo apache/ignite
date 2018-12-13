@@ -33,10 +33,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -69,7 +66,9 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.query.CloseListener;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
@@ -90,6 +89,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
+import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionNode;
@@ -174,8 +174,6 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkAc
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
-import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
-import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
 import static org.apache.ignite.internal.processors.query.h2.PreparedStatementEx.MVCC_CACHE_ID;
 import static org.apache.ignite.internal.processors.query.h2.PreparedStatementEx.MVCC_STATE;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
@@ -232,13 +230,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private GridReduceQueryExecutor rdcQryExec;
 
     /** */
-    private AtomicLong qryIdGen;
-
-    /** */
     private GridSpinBusyLock busyLock;
-
-    /** */
-    private final ConcurrentMap<Long, GridRunningQueryInfo> runs = new ConcurrentHashMap<>();
 
     /** Row cache. */
     private final H2RowCacheRegistry rowCache = new H2RowCacheRegistry();
@@ -254,6 +246,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** */
     private DdlStatementsProcessor ddlProc;
+
+    /**
+     *
+     */
+    private final RunningQueryManager runningQueryMgr = new RunningQueryManager();
 
     /** */
     private volatile GridBoundedConcurrentLinkedHashMap<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery> twoStepCache =
@@ -460,19 +457,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String cacheName, String qry, String typeName, IndexingQueryFilter filters) throws IgniteCheckedException {
         H2TableDescriptor tbl = schemaMgr.tableForType(schemaName, cacheName, typeName);
 
-        if (tbl != null && tbl.luceneIndex() != null) {
-            GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry, TEXT, schemaName,
-                U.currentTimeMillis(), null, true);
-
-            try {
-                runs.put(run.id(), run);
-
-                return tbl.luceneIndex().query(qry.toUpperCase(), filters);
-            }
-            finally {
-                runs.remove(run.id());
-            }
-        }
+        if (tbl != null && tbl.luceneIndex() != null)
+            return tbl.luceneIndex().query(qry.toUpperCase(), filters);
 
         return new GridEmptyCloseableIterator<>();
     }
@@ -641,11 +627,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     GridH2QueryContext.set(ctx);
 
-                    GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry0,
-                        SQL_FIELDS, schemaName, U.currentTimeMillis(), cancel, true);
-
-                    runs.putIfAbsent(run.id(), run);
-
                     try {
                         ResultSet rs = executeSqlQueryWithTimer(stmt0, conn, qry0, params, timeout0, cancel);
 
@@ -705,8 +686,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     }
                     finally {
                         GridH2QueryContext.clearThreadLocal();
-
-                        runs.remove(run.id());
                     }
                 }
             };
@@ -748,7 +727,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteSQLException(e);
         }
 
-        return dmlProc.streamUpdateQuery(schemaName, streamer, stmt, params);
+        GridRunningQueryInfo runningQryInfo = runningQueryMgr.registerUserRunningQuery(qry, GridCacheQueryType.SQL,
+            schemaName, false);
+
+        try {
+            return dmlProc.streamUpdateQuery(schemaName, streamer, stmt, params, runningQryInfo.gridQueryCancel());
+        }
+        finally {
+            runningQueryMgr.unregisterRunningQuery(runningQryInfo);
+        }
     }
 
     /** {@inheritDoc} */
@@ -781,8 +768,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         List<Long> res = new ArrayList<>(params.size());
 
-        for (int i = 0; i < params.size(); i++)
-            res.add(dmlProc.streamUpdateQuery(schemaName, streamer, stmt, params.get(i)));
+        for (int i = 0; i < params.size(); i++) {
+            GridRunningQueryInfo runningQryInfo = runningQueryMgr.registerUserRunningQuery(qry, GridCacheQueryType.SQL,
+                schemaName, false);
+
+            try {
+                res.add(dmlProc.streamUpdateQuery(schemaName, streamer, stmt, params.get(i), runningQryInfo.gridQueryCancel()));
+            }
+            finally {
+                runningQueryMgr.unregisterRunningQuery(runningQryInfo);
+            }
+        }
 
         return res;
     }
@@ -1436,8 +1432,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings({"StringEquality", "unchecked"})
     @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
         @Nullable SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker,
-        GridQueryCancel cancel) {
+        GridQueryCancel cancel, boolean clientReq) {
         boolean mvccEnabled = mvccEnabled(ctx), startTx = autoStartTx(qry);
+
+        List<FieldsQueryCursor<List<?>>> res = null;
+
+        GridRunningQueryInfo runningQryInfo = null;
 
         try {
             SqlCommand nativeCmd = parseQueryNative(schemaName, qry);
@@ -1449,10 +1449,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     "join the cluster. To activate the cluster call Ignite.active(true).");
             }
 
-            if (nativeCmd != null)
-                return queryDistributedSqlFieldsNative(qry, nativeCmd, cliCtx);
+            if (nativeCmd != null) {
+                if (clientReq)
+                    runningQryInfo = runningQueryMgr.registerUserRunningQuery(qry.getSql(), GridCacheQueryType.SQL,
+                        schemaName, qry.isLocal());
 
-            List<FieldsQueryCursor<List<?>>> res;
+                res = queryDistributedSqlFieldsNative(qry, nativeCmd, cliCtx);
+
+                registerCloseListener(res, runningQryInfo);
+
+                return res;
+            }
 
             {
                 // First, let's check if we already have a two-step query for this statement...
@@ -1468,8 +1475,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     List<GridQueryFieldMetadata> meta = cachedQry.meta();
 
+                    if (clientReq)
+                        runningQryInfo = runningQueryMgr.registerUserRunningQuery(qry.getSql(), GridCacheQueryType.SQL,
+                            schemaName, qry.isLocal());
+
                     res = Collections.singletonList(doRunDistributedQuery(schemaName, qry, twoStepQry, meta, keepBinary,
                         startTx, tracker, cancel));
+
+                    registerCloseListener(res, runningQryInfo);
 
                     if (!twoStepQry.explain())
                         twoStepCache.putIfAbsent(cachedQryKey, new H2TwoStepCachedQuery(meta, twoStepQry.copy()));
@@ -1491,8 +1504,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             throw new IgniteSQLException("Explains of update queries are not supported.",
                                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-                        return (List<FieldsQueryCursor<List<?>>>)doRunPrepared(schemaName, prepared, qry, null, null,
+                        if (clientReq)
+                            runningQryInfo = runningQueryMgr.registerUserRunningQuery(qry.getSql(),
+                                GridCacheQueryType.SQL, schemaName, qry.isLocal());
+
+                        res = (List<FieldsQueryCursor<List<?>>>)doRunPrepared(schemaName, prepared, qry, null, null,
                             keepBinary, startTx, tracker, cancel);
+
+                        registerCloseListener(res, runningQryInfo);
+
+                        return res;
                     }
                 }
             }
@@ -1523,8 +1544,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 firstArg += prepared.getParameters().size();
 
-                res.addAll(doRunPrepared(schemaName, prepared, newQry, twoStepQry, meta, keepBinary, startTx, tracker,
-                    cancel));
+                if (clientReq)
+                    runningQryInfo = runningQueryMgr.registerUserRunningQuery(newQry.getSql(), GridCacheQueryType.SQL,
+                        schemaName, qry.isLocal());
+
+                List<? extends FieldsQueryCursor<List<?>>> cursors = doRunPrepared(schemaName, prepared, newQry,
+                    twoStepQry, meta, keepBinary, startTx, tracker, cancel);
+
+                //Many cursors may be returned only for DDL batched operations and all of them will be closed before
+                // return result to user.
+                registerCloseListener(cursors, runningQryInfo);
+
+                res.addAll(cursors);
 
                 // We cannot cache two-step query for multiple statements query except the last statement
                 if (parseRes.twoStepQuery() != null && parseRes.twoStepQueryKey() != null &&
@@ -1541,11 +1572,33 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (mvccEnabled && (tx = tx(ctx)) != null &&
                 (!(e instanceof IgniteSQLException) || /* Parsing errors should not rollback Tx. */
                     ((IgniteSQLException)e).sqlState() != SqlStateCode.PARSING_EXCEPTION) ) {
-
                 tx.setRollbackOnly();
             }
 
+            runningQueryMgr.unregisterRunningQuery(runningQryInfo);
+
+            if (res != null) {
+                for (FieldsQueryCursor<List<?>> re : res) {
+                    try {
+                        re.close();
+                    }
+                    catch (Exception e1) {
+                        U.warn(log, "Can't close cursor", e1);
+                    }
+                }
+
+            }
+
             throw e;
+        }
+    }
+
+    private void registerCloseListener(List<? extends FieldsQueryCursor<List<?>>> cursors,
+        final GridRunningQueryInfo runningQryInfo) {
+        for (FieldsQueryCursor<List<?>> cursor : cursors) {
+            assert cursor instanceof CloseListener : cursor.getClass() + " is not CloseListener.";
+
+            ((CloseListener)cursor).closeListener(() -> runningQueryMgr.unregisterRunningQuery(runningQryInfo));
         }
     }
 
@@ -2249,14 +2302,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
+    @Override public RunningQueryManager runningQueryManager() {
+        return runningQueryMgr;
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings({"deprecation"})
     @Override public void start(GridKernalContext ctx, GridSpinBusyLock busyLock) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Starting cache query index...");
 
         this.busyLock = busyLock;
-
-        qryIdGen = new AtomicLong();
 
         if (SysProperties.serializeJavaObject) {
             U.warn(log, "Serialization of Java objects in H2 was enabled.");
@@ -2277,7 +2333,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         marshaller = ctx.config().getMarshaller();
 
         mapQryExec = new GridMapQueryExecutor(busyLock);
-        rdcQryExec = new GridReduceQueryExecutor(qryIdGen, busyLock);
+        rdcQryExec = new GridReduceQueryExecutor(busyLock);
 
         mapQryExec.start(ctx, this);
         rdcQryExec.start(ctx, this);
@@ -2548,25 +2604,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public Collection<GridRunningQueryInfo> runningQueries(long duration) {
-        Collection<GridRunningQueryInfo> res = new ArrayList<>();
-
-        res.addAll(runs.values());
-        res.addAll(rdcQryExec.longRunningQueries(duration));
-
-        return res;
+        return runningQueryMgr.longRunningUserQueries(duration);
     }
 
     /** {@inheritDoc} */
     @Override public void cancelQueries(Collection<Long> queries) {
         if (!F.isEmpty(queries)) {
-            for (Long qryId : queries) {
-                GridRunningQueryInfo run = runs.get(qryId);
-
-                if (run != null)
-                    run.cancel();
-            }
-
-            rdcQryExec.cancelQueries(queries);
+            for (Long qryId : queries)
+                runningQueryMgr.cancel(qryId);
         }
     }
 
