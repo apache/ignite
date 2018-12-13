@@ -66,11 +66,11 @@ public class IgniteMLTestSuite {
         suite.addTest(new JUnit4TestAdapter(EnvironmentTestSuite.class));
         suite.addTest(new JUnit4TestAdapter(StructuresTestSuite.class));
         suite.addTest(new JUnit4TestAdapter(CommonTestSuite.class));
-        suite.addTest(new JUnit4TestAdapter(InferenceTestSuite.class));
         suite.addTest(new JUnit4TestAdapter(BaggingTest.class));
         suite.addTest(new JUnit4TestAdapter(MultiClassTestSuite.class));
 
         /** JUnit 3 tests. */
+        suite.addTest(InferenceTestSuite.suite());
         suite.addTest(DatasetTestSuite.suite());
         suite.addTest(SelectionTestSuite.suite());
 
