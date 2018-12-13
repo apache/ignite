@@ -490,9 +490,9 @@ public class QueryUtils {
             if (valCls != null)
                 altTypeId = new QueryTypeIdKey(cacheName, valCls);
 
-            if (!coCtx.customAffinityMapper()) {
-                String affField = KEY_FIELD_NAME;
+            String affField = null;
 
+            if (!coCtx.customAffinityMapper()) {
                 String keyType = qryEntity.getKeyType();
 
                 if (keyType != null) {
@@ -504,16 +504,17 @@ public class QueryUtils {
                     if (field != null) {
                         String affField0 = field.name();
 
-                        if (!F.isEmpty(qryEntity.getKeyFields()) && qryEntity.getKeyFields().contains(affField))
+                        if (!F.isEmpty(qryEntity.getKeyFields()) && qryEntity.getKeyFields().contains(affField0)) {
                             affField = affField0;
+
+                            if (!escape)
+                                affField = normalizeObjectName(affField, false);
+                        }
                     }
                 }
-
-                if (!escape)
-                    affField = normalizeObjectName(affField, false);
-
-                desc.affinityKey(affField);
             }
+
+            desc.affinityKey(affField);
         }
         else {
             processClassMeta(qryEntity, desc, coCtx);

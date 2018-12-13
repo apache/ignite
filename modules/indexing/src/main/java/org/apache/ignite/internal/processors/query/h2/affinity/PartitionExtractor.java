@@ -341,7 +341,7 @@ public class PartitionExtractor {
 
         GridH2Table tbl = (GridH2Table)leftCol.getTable();
 
-        if (!tbl.isAffinityKeyColumn(leftCol))
+        if (!tbl.isColumnForPartitionPruning(leftCol))
             return null;
 
         PartitionTableDescriptor tblDesc = descriptor(tbl);

@@ -375,7 +375,7 @@ public final class GridH2CollocationModel {
         GridH2Table tbl = (GridH2Table)tf.getTable();
 
         if (validate) {
-            if (tbl.rowDescriptor().context().cacheObjectContext().customAffinityMapper())
+            if (tbl.isCustomAffinityMapper())
                 throw customAffinityError(tbl.cacheName());
 
             if (F.isEmpty(tf.getIndexConditions())) {
@@ -472,10 +472,12 @@ public final class GridH2CollocationModel {
         }
 
         if (t instanceof GridH2Table) {
-            if (validate && ((GridH2Table)t).rowDescriptor().context().cacheObjectContext().customAffinityMapper())
-                throw customAffinityError(((GridH2Table)t).cacheName());
+            GridH2Table t0 = (GridH2Table)t;
 
-            IndexColumn affCol = ((GridH2Table)t).getAffinityKeyColumn();
+            if (validate && t0.isCustomAffinityMapper())
+                throw customAffinityError((t0).cacheName());
+
+            IndexColumn affCol = t0.getAffinityKeyColumn();
 
             return affCol != null && col.getColumnId() == affCol.column.getColumnId();
         }

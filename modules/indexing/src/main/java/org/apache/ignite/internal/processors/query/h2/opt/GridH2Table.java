@@ -62,8 +62,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor.*;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor.COL_NOT_EXISTS;
 
 /**
  * H2 Table implementation.
@@ -145,13 +144,16 @@ public class GridH2Table extends TableBase {
         String affKeyFieldName = desc.type().affinityKey();
 
         if (affKeyFieldName != null && doesColumnExist(affKeyFieldName)) {
-            int affKeyColId = getColumn(affKeyFieldName).getColumnId();
+            int colId = getColumn(affKeyFieldName).getColumnId();
 
-            if (desc.isKeyAliasColumn(affKeyColId))
-                affKeyColId = KEY_COL;
-
-            affKeyCol = indexColumn(affKeyColId, SortOrder.ASCENDING);
-            this.affKeyColId = affKeyColId;
+            if (desc.isKeyColumn(colId)) {
+                affKeyCol = null;
+                affKeyColId = COL_NOT_EXISTS;
+            }
+            else {
+                affKeyCol = indexColumn(colId, SortOrder.ASCENDING);
+                affKeyColId = colId;
+            }
         }
         else {
             affKeyCol = null;
@@ -210,15 +212,22 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-     * Check whether passed column is affinity key column.
+     * Check whether passed column can be used for partition pruning.
      *
      * @param col Column.
      * @return {@code True} if affinity key column.
      */
-    public boolean isAffinityKeyColumn(Column col) {
+    public boolean isColumnForPartitionPruning(Column col) {
         int colId = col.getColumnId();
 
-        return affKeyColId != COL_NOT_EXISTS && (colId == affKeyColId || desc.isKeyColumn(colId));
+        return colId == affKeyColId || desc.isKeyColumn(colId);
+    }
+
+    /**
+     * @return Whether custom affintiy mapper is used.
+     */
+    public boolean isCustomAffinityMapper() {
+        return desc.context().cacheObjectContext().customAffinityMapper();
     }
 
     /** {@inheritDoc} */
