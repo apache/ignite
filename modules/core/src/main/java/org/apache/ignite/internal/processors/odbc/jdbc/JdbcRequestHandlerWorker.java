@@ -104,8 +104,7 @@ class JdbcRequestHandlerWorker extends GridWorker {
             T2<JdbcRequest, GridFutureAdapter<ClientListenerResponse>> req = queue.poll();
 
             while (req != null) {
-                req.get2().onDone(new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,"Connection closed.",
-                    req.get1().requestId()));
+                req.get2().onDone(new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,"Connection closed."));
 
                 req = queue.poll();
             }

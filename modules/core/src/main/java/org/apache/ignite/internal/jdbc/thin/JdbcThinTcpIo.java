@@ -500,14 +500,7 @@ public class JdbcThinTcpIo {
             if (lock != null)
                 lock.unlock();
 
-            JdbcResponse response = readResponse();
-
-            if (srvProtocolVer.compareTo(VER_2_8_0) >= 0) {
-                while (req.requestId() != response.requestId())
-                    response = readResponse();
-            }
-
-            return response;
+            return readResponse();
         }
         finally {
             synchronized (mux) {

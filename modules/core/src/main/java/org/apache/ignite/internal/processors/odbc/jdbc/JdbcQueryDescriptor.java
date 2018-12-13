@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import java.util.concurrent.locks.Lock;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 
 /**
@@ -27,18 +26,19 @@ public class JdbcQueryDescriptor {
     /** Hook for cancellation. */
     private GridQueryCancel cancelHook;
 
-    /** Lock. */
-    private Lock lockHook;
+    /** Canceled flag. */
+    private boolean canceled;
+
+    /** Usage count of given descriptor. */
+    private int usageCnt;
 
     /**
      * Constructor.
      *
      * @param cancelHook Hook for cancellation.
-     * @param lockHook Lock.
      */
-    public JdbcQueryDescriptor(GridQueryCancel cancelHook, Lock lockHook) {
+    public JdbcQueryDescriptor(GridQueryCancel cancelHook) {
         this.cancelHook = cancelHook;
-        this.lockHook = lockHook;
     }
 
     /**
@@ -49,9 +49,37 @@ public class JdbcQueryDescriptor {
     }
 
     /**
-     * @return Lock.
+     * @return True if descriptor was marked as canceled.
      */
-    public Lock lockHook() {
-        return lockHook;
+    public boolean isCanceled() {
+        return canceled;
+    }
+
+    /**
+     * Marks descriptor as canceled.
+     */
+    public void markCancelled() {
+        canceled = true;
+    }
+
+    /**
+     * Increments usage count.
+     */
+    public void incrementUsageCount() {
+        usageCnt++;
+    }
+
+    /**
+     * Descrements usage count.
+     */
+    public void decrementUsageCount() {
+        usageCnt--;
+    }
+
+    /**
+     * @return Usage count.
+     */
+    public int usageCount() {
+        return usageCnt;
     }
 }
