@@ -38,17 +38,33 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_COORDINATOR;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 
 // t0d0 meaningful name
+// t0d0 javadoc
 public class DdCollaborator {
+    /** */
     private final GridKernalContext ctx;
 
+    /** */
     public DdCollaborator(GridKernalContext ctx) {
         this.ctx = ctx;
     }
 
-    public DeferredDeadlockComputation initDeferredComputation(MvccVersion waiterVer, MvccVersion blockerVer) {
-        return new DeferredDeadlockComputation(waiterVer, blockerVer, 500);
+    /**
+     * Starts a dedlock detection after a delay.
+     *
+     * @param waiterVer Version of the waiting transaction.
+     * @param blockerVer Version of the waited for transaction.
+     * @return Cancellable computation.
+     */
+    public DelayedDeadlockComputation initDelayedComputation(MvccVersion waiterVer, MvccVersion blockerVer) {
+        return new DelayedDeadlockComputation(waiterVer, blockerVer, 500);
     }
 
+    /**
+     * Starts a deadlock detection for a given pair of transaction versions (wait-for edge).
+     *
+     * @param waiterVer Version of the waiting transaction.
+     * @param blockerVer Version of the waited for transaction.
+     */
     public void startComputation(MvccVersion waiterVer, MvccVersion blockerVer) {
         // t0d0 filter out non-mvcc transactions where needed
         Optional<IgniteInternalTx> waitingTx = ctx.cache().context().tm().activeTransactions().stream()
@@ -71,6 +87,16 @@ public class DdCollaborator {
         }
     }
 
+    /**
+     * Handles received deadlock probe. Possible outcomes:
+     * <ol>
+     *     <li>Deadlock is found.</li>
+     *     <li>Probe is relayed to other blocking transactions.</li>
+     *     <li>Probe is discarded because receiving transaction is not blocked.</li>
+     * </ol>
+     *
+     * @param probe Received probe message.
+     */
     public void handleDeadlockProbe(DeadlockProbe probe) {
         // a probe is simply discarded if next wait-for edge is not found
         GridNearTxLocal nearTx = tm().tx(probe.blockerVersion());
@@ -108,21 +134,24 @@ public class DdCollaborator {
         }
     }
 
+    /** */
     private Collection<IgniteInternalFuture<NearTxLocator>> collectBlockers(GridNearTxLocal tx) {
         return getPendingResponseNodes(tx).stream()
             .map(nodeId -> ctx.cache().context().coordinators().checkWaiting(nodeId, tx.mvccSnapshot()))
             .collect(Collectors.toList());
     }
 
+    /** */
     private Set<UUID> getPendingResponseNodes(GridNearTxLocal tx) {
         IgniteInternalFuture lockFut = tx.lockFuture();
 
         if (lockFut instanceof GridNearTxAbstractEnlistFuture)
-            return ((GridNearTxAbstractEnlistFuture)lockFut).pendingResponseNodes();
+            return ((GridNearTxAbstractEnlistFuture<?>)lockFut).pendingResponseNodes();
 
         return Collections.emptySet();
     }
 
+    /** */
     private void sendProbe(
         GridCacheVersion initiatorVer, GridCacheVersion waiterVer, GridCacheVersion blockerVer, UUID blockerNearNodeId) {
         // t0d0 review if message order is important here
@@ -142,25 +171,32 @@ public class DdCollaborator {
         return ctx.cache().context().tm();
     }
 
+    /** */
     public static boolean belongToSameTx(MvccVersion v1, MvccVersion v2) {
         return v1.coordinatorVersion() == v2.coordinatorVersion() && v1.counter() == v2.counter();
     }
 
-    public class DeferredDeadlockComputation {
-        private final GridTimeoutObject computation;
+    /**
+     * Delayed deadlock probe computation which can be cancelled.
+     */
+    public class DelayedDeadlockComputation {
+        /** */
+        private final GridTimeoutObject computationTimeoutObj;
 
-        private DeferredDeadlockComputation(MvccVersion waiterVer, MvccVersion blockerVer, long timeout) {
-            computation = new GridTimeoutObjectAdapter(timeout) {
+        /** */
+        private DelayedDeadlockComputation(MvccVersion waiterVer, MvccVersion blockerVer, long timeout) {
+            computationTimeoutObj = new GridTimeoutObjectAdapter(timeout) {
                 @Override public void onTimeout() {
                     startComputation(waiterVer, blockerVer);
                 }
             };
 
-            ctx.timeout().addTimeoutObject(computation);
+            ctx.timeout().addTimeoutObject(computationTimeoutObj);
         }
 
+        /** */
         public void cancel() {
-            ctx.timeout().removeTimeoutObject(computation);
+            ctx.timeout().removeTimeoutObject(computationTimeoutObj);
         }
     }
 }
