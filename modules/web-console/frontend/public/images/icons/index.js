@@ -21,7 +21,6 @@ export {default as check} from './check.icon.svg';
 export {default as checkmark} from './checkmark.icon.svg';
 export {default as clock} from './clock.icon.svg';
 export {default as collapse} from './collapse.icon.svg';
-export {default as connectedClusters} from './connectedClusters.icon.svg';
 export {default as copy} from './copy.icon.svg';
 export {default as cross} from './cross.icon.svg';
 export {default as csv} from './csv.icon.svg';
