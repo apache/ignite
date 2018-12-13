@@ -219,14 +219,14 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testBoradcastQuerySelectKeyEqualsParameter() throws Exception {
+    public void testUnicastQuerySelectKeyEqualsParameter() throws Exception {
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
         CallKey callKey = new CallKey(5, 1);
 
-        List<List<?>> result = runQueryEnsureBroadcast(cache,
+        List<List<?>> result = runQueryEnsureUnicast(cache,
             new SqlFieldsQuery("select name, duration from Call where _key=?")
-            .setArgs(callKey));
+            .setArgs(callKey), 1);
 
         assertEquals(1, result.size());
 
@@ -257,14 +257,14 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testBroadcastQuerySelectKeyEqualAndFieldParameter() throws Exception {
+    public void testUnicastQuerySelectKeyEqualAndFieldParameter() throws Exception {
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
         CallKey callKey = new CallKey(5, 1);
 
-        List<List<?>> result = runQueryEnsureBroadcast(cache,
+        List<List<?>> result = runQueryEnsureUnicast(cache,
             new SqlFieldsQuery("select name, duration from Call where _key=? and duration=?")
-            .setArgs(callKey, 100));
+            .setArgs(callKey, 100), 1);
 
         assertEquals(1, result.size());
 
@@ -274,15 +274,15 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testBroadcastQuerySelect2KeyEqualsAndFieldParameter() throws Exception {
+    public void testUnicastQuerySelect2KeyEqualsAndFieldParameter() throws Exception {
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
         CallKey callKey1 = new CallKey(5, 1);
         CallKey callKey2 = new CallKey(1000, 1);
 
-        List<List<?>> result = runQueryEnsureBroadcast(cache,
+        List<List<?>> result = runQueryEnsureUnicast(cache,
             new SqlFieldsQuery("select name, duration from Call where (_key=? and duration=?) or (_key=?)")
-            .setArgs(callKey1, 100, callKey2));
+            .setArgs(callKey1, 100, callKey2), 2);
 
         assertEquals(2, result.size());
 

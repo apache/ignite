@@ -63,7 +63,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor.COL_NOT_EXISTS;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor.*;
 
 /**
  * H2 Table implementation.
@@ -102,11 +102,8 @@ public class GridH2Table extends TableBase {
     /** */
     private final IndexColumn affKeyCol;
 
-    /** Affinity key column ID. */
+    /** */
     private final int affKeyColId;
-
-    /** Affinity key column alias ID (if any). */
-    private final int affKeyColAliasId;
 
     /** */
     private final LongAdder size = new LongAdder();
@@ -154,14 +151,11 @@ public class GridH2Table extends TableBase {
                 affKeyColId = KEY_COL;
 
             affKeyCol = indexColumn(affKeyColId, SortOrder.ASCENDING);
-
             this.affKeyColId = affKeyColId;
-            affKeyColAliasId = affKeyColId == KEY_COL ? desc.keyAliasColumn() : COL_NOT_EXISTS;
         }
         else {
             affKeyCol = null;
             affKeyColId = COL_NOT_EXISTS;
-            affKeyColAliasId = COL_NOT_EXISTS;
         }
 
         this.rowFactory = rowFactory;
@@ -224,7 +218,7 @@ public class GridH2Table extends TableBase {
     public boolean isAffinityKeyColumn(Column col) {
         int colId = col.getColumnId();
 
-        return colId == affKeyColId || colId == affKeyColAliasId;
+        return affKeyColId != COL_NOT_EXISTS && (colId == affKeyColId || desc.isKeyColumn(colId));
     }
 
     /** {@inheritDoc} */
