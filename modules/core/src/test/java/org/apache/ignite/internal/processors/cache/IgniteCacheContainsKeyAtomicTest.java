@@ -23,6 +23,9 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -31,6 +34,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Verifies that containsKey() works as expected on atomic cache.
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheContainsKeyAtomicTest extends GridCacheAbstractSelfTest {
     /** Cache name. */
     public static final String CACHE_NAME = "replicated";
@@ -53,6 +57,7 @@ public class IgniteCacheContainsKeyAtomicTest extends GridCacheAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContainsPutIfAbsent() throws Exception {
         checkPutIfAbsent(false);
     }
@@ -60,6 +65,7 @@ public class IgniteCacheContainsKeyAtomicTest extends GridCacheAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContainsPutIfAbsentAll() throws Exception {
         checkPutIfAbsent(true);
     }

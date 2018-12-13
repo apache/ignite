@@ -34,6 +34,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -46,6 +49,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheOptimisticTransactionsWithFilterTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -92,6 +96,7 @@ public class CacheOptimisticTransactionsWithFilterTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCasReplace() throws Exception {
         executeTestForAllCaches(new TestClosure() {
             @Override public void apply(Ignite ignite, String cacheName) throws Exception {
@@ -179,6 +184,7 @@ public class CacheOptimisticTransactionsWithFilterTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutIfAbsent() throws Exception {
         executeTestForAllCaches(new TestClosure() {
             @Override public void apply(Ignite ignite, String cacheName) throws Exception {
@@ -238,6 +244,7 @@ public class CacheOptimisticTransactionsWithFilterTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplace() throws Exception {
         executeTestForAllCaches(new TestClosure() {
             @Override public void apply(Ignite ignite, String cacheName) throws Exception {
@@ -297,6 +304,7 @@ public class CacheOptimisticTransactionsWithFilterTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveWithOldValue() throws Exception {
         executeTestForAllCaches(new TestClosure() {
             @Override public void apply(Ignite ignite, String cacheName) throws Exception {

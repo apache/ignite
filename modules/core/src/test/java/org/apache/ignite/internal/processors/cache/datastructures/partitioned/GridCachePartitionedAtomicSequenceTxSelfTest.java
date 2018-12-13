@@ -32,12 +32,16 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  * Tests {@link IgniteAtomicSequence} operations inside started user transaction.
  */
+@RunWith(JUnit4.class)
 public class GridCachePartitionedAtomicSequenceTxSelfTest extends GridCommonAbstractTest {
     /** Number of threads. */
     private static final int THREAD_NUM = 8;
@@ -107,6 +111,7 @@ public class GridCachePartitionedAtomicSequenceTxSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTransactionIncrement() throws Exception {
         ignite(0).atomicSequence(SEQ_NAME, 0, true);
 
@@ -123,6 +128,7 @@ public class GridCachePartitionedAtomicSequenceTxSelfTest extends GridCommonAbst
     /**
      * Tests isolation of system and user transactions.
      */
+    @Test
     public void testIsolation() {
         IgniteAtomicSequence seq = ignite(0).atomicSequence(SEQ_NAME, 0, true);
 

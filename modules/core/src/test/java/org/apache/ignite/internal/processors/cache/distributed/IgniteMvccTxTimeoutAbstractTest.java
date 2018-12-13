@@ -31,6 +31,9 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -38,6 +41,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Simple cache test.
  */
+@RunWith(JUnit4.class)
 public class IgniteMvccTxTimeoutAbstractTest extends GridCommonAbstractTest {
     /** Random number generator. */
     private static final Random RAND = new Random();
@@ -95,6 +99,7 @@ public class IgniteMvccTxTimeoutAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticRepeatableRead() throws Exception {
         checkTransactionTimeout(PESSIMISTIC, REPEATABLE_READ);
     }

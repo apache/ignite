@@ -32,6 +32,9 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -39,6 +42,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * ScanQuery failover test. Tests scenario where user supplied closures throw unhandled errors.
  */
+@RunWith(JUnit4.class)
 public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
     /** */
     private static final String LOCAL_CACHE_NAME = "local";
@@ -85,6 +89,7 @@ public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testScanQueryWithFailedClosures() throws Exception {
         Ignite srv = startGrids(4);
         Ignite client = startGrid("client");
@@ -103,6 +108,7 @@ public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testScanQueryOverLocalCacheWithFailedClosures() throws Exception {
         Ignite srv = startGrids(4);
 

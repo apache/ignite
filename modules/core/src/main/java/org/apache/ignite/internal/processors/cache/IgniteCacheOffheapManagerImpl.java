@@ -1998,6 +1998,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     assert res == ResultType.PREV_NULL;
 
                 if (entryProc != null) {
+                    entryProc = EntryProcessorResourceInjectorProxy.wrap(cctx.kernalContext(), entryProc);
+
                     CacheInvokeEntry.Operation op = applyEntryProcessor(cctx, key, ver, entryProc, invokeArgs, updateRow, oldRow);
 
                     if (op == CacheInvokeEntry.Operation.NONE) {

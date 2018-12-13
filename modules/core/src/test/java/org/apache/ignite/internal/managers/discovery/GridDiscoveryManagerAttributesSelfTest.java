@@ -30,6 +30,9 @@ import org.apache.ignite.spi.discovery.tcp.TestReconnectProcessor;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
@@ -40,6 +43,7 @@ import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 /**
  * Tests for node attributes consistency checks.
  */
+@RunWith(JUnit4.class)
 public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String PREFER_IPV4 = "java.net.preferIPv4Stack";
@@ -94,6 +98,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreferIpV4StackTrue() throws Exception {
         testPreferIpV4Stack(true);
     }
@@ -101,6 +106,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreferIpV4StackFalse() throws Exception {
         testPreferIpV4Stack(false);
     }
@@ -115,6 +121,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPreferIpV4StackDifferentValues() throws Exception {
         System.setProperty(PREFER_IPV4, "true");
 
@@ -136,6 +143,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUseDefaultSuid() throws Exception {
         try {
             doTestUseDefaultSuid(Boolean.TRUE.toString(), Boolean.FALSE.toString(), true);
@@ -183,6 +191,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         }
     }
 
+    @Test
     public void testUseStringSerVer2() throws Exception {
         String old = System.getProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
 
@@ -247,6 +256,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSecurityCompatibilityEnabled() throws Exception {
         TestReconnectPluginProvider.enabled = true;
         TestReconnectProcessor.enabled = true;
@@ -333,6 +343,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDifferentDeploymentModes() throws Exception {
         IgniteEx g = startGrid(0);
 
@@ -354,6 +365,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDifferentPeerClassLoadingEnabledFlag() throws Exception {
         IgniteEx g = startGrid(0);
 

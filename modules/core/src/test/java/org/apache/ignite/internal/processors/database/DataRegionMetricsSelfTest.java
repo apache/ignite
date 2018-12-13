@@ -23,12 +23,16 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.lang.Thread.sleep;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
     /** */
     private DataRegionMetricsImpl memMetrics;
@@ -61,6 +65,7 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
      * Test for allocationRate metric in single-threaded mode.
      * @throws Exception if any happens during test.
      */
+    @Test
     public void testAllocationRateSingleThreaded() throws Exception {
         threadsCnt = 1;
         memMetrics.rateTimeInterval(RATE_TIME_INTERVAL_2);
@@ -84,6 +89,7 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
      * Test for allocationRate metric in multi-threaded mode with short silent period in the middle of the test.
      * @throws Exception if any happens during test.
      */
+    @Test
     public void testAllocationRateMultiThreaded() throws Exception {
         threadsCnt = 4;
         memMetrics.rateTimeInterval(RATE_TIME_INTERVAL_1);
@@ -123,6 +129,7 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
      * Test verifies that allocationRate calculation algorithm survives setting new values to rateTimeInterval parameter.
      * @throws Exception if any happens during test.
      */
+    @Test
     public void testAllocationRateTimeIntervalConcurrentChange() throws Exception {
         threadsCnt = 5;
         memMetrics.rateTimeInterval(RATE_TIME_INTERVAL_1);
@@ -153,6 +160,7 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if any happens during test.
      */
+    @Test
     public void testAllocationRateSubintervalsConcurrentChange() throws Exception {
         threadsCnt = 5;
         memMetrics.rateTimeInterval(RATE_TIME_INTERVAL_1);
