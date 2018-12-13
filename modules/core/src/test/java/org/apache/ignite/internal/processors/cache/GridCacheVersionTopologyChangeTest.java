@@ -37,6 +37,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -46,6 +49,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridCacheVersionTopologyChangeTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -69,6 +73,7 @@ public class GridCacheVersionTopologyChangeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionIncreaseAtomic() throws Exception {
         checkVersionIncrease(cacheConfigurations(ATOMIC));
     }
@@ -76,6 +81,7 @@ public class GridCacheVersionTopologyChangeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionIncreaseTx() throws Exception {
         checkVersionIncrease(cacheConfigurations(TRANSACTIONAL));
     }
@@ -83,6 +89,7 @@ public class GridCacheVersionTopologyChangeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionIncreaseMvccTx() throws Exception {
         checkVersionIncrease(cacheConfigurations(TRANSACTIONAL_SNAPSHOT));
     }

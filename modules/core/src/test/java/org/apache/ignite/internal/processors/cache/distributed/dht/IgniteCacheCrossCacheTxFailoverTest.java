@@ -49,6 +49,9 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -63,6 +66,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -135,6 +139,7 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCachePessimisticTxFailover() throws Exception {
         crossCacheTxFailover(PARTITIONED, true, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -142,6 +147,7 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCachePessimisticTxFailoverDifferentAffinity() throws Exception {
         crossCacheTxFailover(PARTITIONED, false, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -149,6 +155,7 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCacheOptimisticTxFailover() throws Exception {
         crossCacheTxFailover(PARTITIONED, true, OPTIMISTIC, REPEATABLE_READ);
     }
@@ -156,6 +163,7 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCacheOptimisticSerializableTxFailover() throws Exception {
         crossCacheTxFailover(PARTITIONED, true, OPTIMISTIC, SERIALIZABLE);
     }
@@ -163,6 +171,7 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCacheOptimisticTxFailoverDifferentAffinity() throws Exception {
         crossCacheTxFailover(PARTITIONED, false, OPTIMISTIC, REPEATABLE_READ);
     }
@@ -170,6 +179,7 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCachePessimisticTxFailoverReplicated() throws Exception {
         crossCacheTxFailover(REPLICATED, true, PESSIMISTIC, REPEATABLE_READ);
     }
@@ -177,6 +187,7 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCacheOptimisticTxFailoverReplicated() throws Exception {
         crossCacheTxFailover(REPLICATED, true, OPTIMISTIC, REPEATABLE_READ);
     }
@@ -184,6 +195,7 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCachePessimisticTxFailoverDifferentAffinityReplicated() throws Exception {
         crossCacheTxFailover(PARTITIONED, false, PESSIMISTIC, REPEATABLE_READ);
     }
