@@ -22,17 +22,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Optional;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.rest.handlers.cluster.GridBaselineCommandResponse;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.configuration.WALMode.NONE;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
 
@@ -78,13 +76,14 @@ public class JettyRestProcessorBaselineSelfTest extends JettyRestProcessorCommon
     }
 
     /**
-     * @param nodes Nodes to process.
-     * @return Collection of consistentIds.
+     * @param nodes Collection of grid nodes.
+     * @return Collection of node consistent IDs for given collection of grid nodes.
      */
-    private static Collection<String> consistentIdMapper(@Nullable Collection<? extends BaselineNode> nodes) {
-        return Optional.ofNullable(nodes).orElseGet(Collections::emptyList)
-            .stream().map(n -> String.valueOf(n.consistentId()))
-            .collect(toSet());
+    private static Collection<String> nodeConsistentIds(@Nullable Collection<? extends BaselineNode> nodes) {
+        if (nodes == null || nodes.isEmpty())
+            return Collections.emptyList();
+
+        return F.viewReadOnly(nodes, n -> String.valueOf(n.consistentId()));
     }
 
     /**
@@ -112,9 +111,9 @@ public class JettyRestProcessorBaselineSelfTest extends JettyRestProcessorCommon
         assertTrue(baseline.isActive());
         assertEquals(grid(0).cluster().topologyVersion(), baseline.getTopologyVersion());
         assertEquals(baselineSz, baseline.getBaseline().size());
-        assertEqualsCollections(consistentIdMapper(grid(0).cluster().currentBaselineTopology()), new HashSet<>(baseline.getBaseline()));
+        assertEqualsCollections(nodeConsistentIds(grid(0).cluster().currentBaselineTopology()), baseline.getBaseline());
         assertEquals(srvsSz, baseline.getServers().size());
-        assertEqualsCollections(consistentIdMapper(grid(0).cluster().nodes()), new HashSet<>(baseline.getServers()));
+        assertEqualsCollections(nodeConsistentIds(grid(0).cluster().nodes()), baseline.getServers());
     }
 
     /**
@@ -138,23 +137,25 @@ public class JettyRestProcessorBaselineSelfTest extends JettyRestProcessorCommon
      * @throws Exception If failed.
      */
     public void testBaselineSet() throws Exception {
-        assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), gridCount(), gridCount());
+        int sz = gridCount();
+        
+        assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), sz, sz);
 
-        startGrid(gridCount());
-        assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), gridCount(), gridCount() + 1);
-
-        assertBaseline(content(null, GridRestCommand.BASELINE_SET, "topVer",
-            String.valueOf(grid(0).cluster().topologyVersion())), gridCount() + 1, gridCount() + 1);
-
-        stopGrid(gridCount());
-
-        assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), gridCount() + 1, gridCount());
+        startGrid(sz);
+        assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), sz, sz + 1);
 
         assertBaseline(content(null, GridRestCommand.BASELINE_SET, "topVer",
-            String.valueOf(grid(0).cluster().topologyVersion())), gridCount(), gridCount());
+            String.valueOf(grid(0).cluster().topologyVersion())), sz + 1, sz + 1);
 
-        startGrid(gridCount());
-        assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), gridCount(), gridCount() + 1);
+        stopGrid(sz);
+
+        assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), sz + 1, sz);
+
+        assertBaseline(content(null, GridRestCommand.BASELINE_SET, "topVer",
+            String.valueOf(grid(0).cluster().topologyVersion())), sz, sz);
+
+        startGrid(sz);
+        assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), sz, sz + 1);
 
         ArrayList<String> params = new ArrayList<>();
         int i = 1;
@@ -165,38 +166,48 @@ public class JettyRestProcessorBaselineSelfTest extends JettyRestProcessorCommon
         }
 
         assertBaseline(content(null, GridRestCommand.BASELINE_SET, params.toArray(new String[0])),
-            gridCount() + 1, gridCount() + 1);
+            sz + 1, sz + 1);
 
-        stopGrid(gridCount());
+        stopGrid(sz);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testBaselineAdd() throws Exception {
-        assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), gridCount(), gridCount());
+        int sz = gridCount();
+        
+        assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), sz, sz);
 
-        startGrid(gridCount());
-        assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), gridCount(), gridCount() + 1);
+        startGrid(sz);
+        assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), sz, sz + 1);
 
         assertBaseline(content(null, GridRestCommand.BASELINE_ADD, "consistentId1",
-            grid(gridCount()).localNode().consistentId().toString()), gridCount() + 1, gridCount() + 1);
+            grid(sz).localNode().consistentId().toString()), sz + 1, sz + 1);
         
-        stopGrid(gridCount());
+        stopGrid(sz);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testBaselineRemove() throws Exception {
-        assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), gridCount(), gridCount());
+        int sz = gridCount();
+        
+        assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), sz, sz);
 
-        startGrid(gridCount());
-        assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), gridCount(), gridCount() + 1);
+        startGrid(sz);
+        assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), sz, sz + 1);
 
         assertBaseline(content(null, GridRestCommand.BASELINE_SET, "topVer",
-            String.valueOf(grid(0).cluster().topologyVersion())), gridCount() + 1, gridCount() + 1);
+            String.valueOf(grid(0).cluster().topologyVersion())), sz + 1, sz + 1);
 
-        stopGrid(gridCount());
+        String consistentId = grid(sz).localNode().consistentId().toString();
+
+        stopGrid(sz);
+        assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), sz + 1, sz);
+
+        assertBaseline(content(null, GridRestCommand.BASELINE_REMOVE, "consistentId1",
+            consistentId), sz, sz);
     }
 }

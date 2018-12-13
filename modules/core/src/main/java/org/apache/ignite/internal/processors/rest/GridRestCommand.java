@@ -180,13 +180,13 @@ public enum GridRestCommand {
     BASELINE_CURRENT_STATE("baseline"),
 
     /** */
-    BASELINE_SET("baselineset"),
+    BASELINE_SET("setbaseline"),
 
     /** */
-    BASELINE_ADD("baselineadd"),
+    BASELINE_ADD("addbaseline"),
 
     /** */
-    BASELINE_REMOVE("baselineremove"),
+    BASELINE_REMOVE("removebaseline"),
 
     /** */
     AUTHENTICATE("authenticate"),

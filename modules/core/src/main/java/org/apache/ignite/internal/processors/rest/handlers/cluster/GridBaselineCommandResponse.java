@@ -70,11 +70,12 @@ public class GridBaselineCommandResponse implements Externalizable {
      * @param baseline Current baseline nodes.
      * @param srvs Current server nodes.
      */
-    public GridBaselineCommandResponse(
+    GridBaselineCommandResponse(
         boolean active,
         long topVer,
         Collection<? extends BaselineNode> baseline,
-        Collection<? extends BaselineNode> srvs) {
+        Collection<? extends BaselineNode> srvs
+    ) {
         this.active = active;
         this.topVer = topVer;
         this.baseline = consistentIds(baseline);
