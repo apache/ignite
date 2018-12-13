@@ -16,11 +16,8 @@
  */
 
 /**
- * Package with Apache Ignite internal Processors.
- * Processor is Ignite component with lifecycle associated with node lifecycle.
- *
+ * This package contain cache with persitence implementation. <br>
  * See also
- * <a href='https://github.com/apache/ignite/tree/master/modules/core/src/main/java/org/apache/ignite/internal/processors/'>Package Readme</a>
- *
+ * <a href="https://github.com/apache/ignite/tree/master/modules/core/src/main/java/org/apache/ignite/internal/processors/cache/persistence">GitHub Package Readme</a>
  */
-package org.apache.ignite.internal.processors;
+package org.apache.ignite.internal.processors.cache.persistence;
