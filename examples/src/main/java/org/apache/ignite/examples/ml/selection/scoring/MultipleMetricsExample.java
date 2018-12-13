@@ -27,7 +27,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
 import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
 import org.apache.ignite.ml.selection.scoring.metric.Metric;
 import org.apache.ignite.ml.selection.scoring.metric.Precision;
@@ -80,7 +80,7 @@ public class MultipleMetricsExample {
             metrics.add(new Recall<>(0.0));
             metrics.add(new Recall<>(1.0));
 
-            Map<String, Double> scores = Evaluator.evaluate(
+            Map<String, Double> scores = BinaryClassificationEvaluator.evaluate(
                 dataCache,
                 mdl,
                 featureExtractor,

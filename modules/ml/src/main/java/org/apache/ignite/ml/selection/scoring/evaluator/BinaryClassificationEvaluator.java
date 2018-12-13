@@ -33,7 +33,7 @@ import org.apache.ignite.ml.selection.scoring.metric.Metric;
 /**
  * Binary classification evaluator that computes metrics from predictions and ground truth values.
  */
-public class Evaluator {
+public class BinaryClassificationEvaluator {
     /**
      * Computes the given metric on the given cache.
      *

@@ -24,7 +24,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
 import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
 import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
 import org.apache.ignite.ml.svm.SVMLinearClassificationTrainer;
@@ -69,7 +69,7 @@ public class EvaluatorExample {
                 lbExtractor
             );
 
-            double accuracy = Evaluator.evaluate(
+            double accuracy = BinaryClassificationEvaluator.evaluate(
                 dataCache,
                 mdl,
                 featureExtractor,

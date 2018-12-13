@@ -29,7 +29,7 @@ import org.apache.ignite.ml.preprocessing.encoding.EncoderType;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
-import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
 import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 
@@ -44,7 +44,7 @@ import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
  * <p>
  * Then, it trains the model based on the processed data using decision tree classification.</p>
  * <p>
- * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
+ * Finally, this example uses {@link BinaryClassificationEvaluator} functionality to compute metrics from predictions.</p>
  */
 public class Step_5_Scaling_with_Pipeline {
     /** Run example. */
@@ -79,7 +79,7 @@ public class Step_5_Scaling_with_Pipeline {
 
                 System.out.println("\n>>> Trained model: " + mdl);
 
-                double accuracy = Evaluator.evaluate(
+                double accuracy = BinaryClassificationEvaluator.evaluate(
                     dataCache,
                     mdl,
                     mdl.getFeatureExtractor(),

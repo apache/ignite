@@ -35,7 +35,7 @@ import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer;
 import org.apache.ignite.ml.selection.cv.CrossValidation;
-import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
 import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
@@ -52,7 +52,7 @@ import org.apache.ignite.ml.selection.split.TrainTestSplit;
  * Then, it tunes hyperparams with K-fold Cross-Validation on the split training set and trains the model based on
  * the processed data using logistic regression and the obtained hyperparams.</p>
  * <p>
- * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
+ * Finally, this example uses {@link BinaryClassificationEvaluator} functionality to compute metrics from predictions.</p>
  */
 public class Step_9_Go_to_LogReg {
     /** Run example. */
@@ -207,7 +207,7 @@ public class Step_9_Go_to_LogReg {
 
                 System.out.println("\n>>> Trained model: " + bestMdl);
 
-                double accuracy = Evaluator.evaluate(
+                double accuracy = BinaryClassificationEvaluator.evaluate(
                     dataCache,
                     split.getTestFilter(),
                     bestMdl,
