@@ -276,8 +276,6 @@ public class ConnectionManager {
         catch (SQLException e) {
             U.close(sysConn, log);
 
-            IgniteSQLException ex = new IgniteSQLException("Failed to execute system statement: " + sql, e);
-
             throw new IgniteCheckedException("Failed to execute system statement: " + sql, e);
         }
         finally {

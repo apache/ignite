@@ -448,14 +448,14 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
      * @throws Exception If failed.
      */
     private void checkBaseOperations(Ignite node) throws Exception {
-//        checkQuerySplitToSeveralMapQueries(node);
-//
-//        // Get full data.
-//        {
-//            List<List<?>> rows = execute(node, baseQuery()).getAll();
-//
-//            assertBaseQueryResults(rows);
-//        }
+        checkQuerySplitToSeveralMapQueries(node);
+
+        // Get full data.
+        {
+            List<List<?>> rows = execute(node, baseQuery()).getAll();
+
+            assertBaseQueryResults(rows);
+        }
 
         // Get data in several pages.
         {
