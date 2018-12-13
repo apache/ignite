@@ -87,7 +87,7 @@ public class TxPartitionCounterStateAfterRecoveryPrimaryOnlyTest extends TxParti
 
         runOnPartition(partId, backups, nodes, new PrimaryOrderingTxCallbackAdapter(prepOrd, new int[0]) {
             @Override protected void onAllPrepared() {
-                new StopNodeClosure(-1, skipCheckpointOnStop, 0).apply(-1);
+                stopGridNoCheckpoint(skipCheckpointOnStop, 0);
             }
         }, sizes);
 
@@ -156,16 +156,7 @@ public class TxPartitionCounterStateAfterRecoveryPrimaryOnlyTest extends TxParti
         runOnPartition(PARTITION_ID, 0, 1, new PrimaryOrderingTxCallbackAdapter(PREPARE_ORDER, COMMIT_ORDER) {
             @Override protected boolean onCommitted(IgniteEx node, int idx) {
                 if (idx == COMMIT_ORDER[0]) {
-                    IgniteEx grid = grid(0);
-
-                    if (skipCheckpointOnStop) {
-                        GridCacheDatabaseSharedManager db =
-                            (GridCacheDatabaseSharedManager)grid.context().cache().context().database();
-
-                        db.enableCheckpoints(false);
-                    }
-
-                    stopGrid(0, skipCheckpointOnStop);
+                    stopGridNoCheckpoint(skipCheckpointOnStop, 0);
 
                     return true; // Stop further processing.
                 }
@@ -173,8 +164,6 @@ public class TxPartitionCounterStateAfterRecoveryPrimaryOnlyTest extends TxParti
                 return false;
             }
         }, SIZES);
-
-        stopGrid("client");
 
         IgniteEx ex = startGrid(0);
 
@@ -296,5 +285,20 @@ public class TxPartitionCounterStateAfterRecoveryPrimaryOnlyTest extends TxParti
 
             return false;
         }
+    }
+
+    private void stopGridNoCheckpoint(boolean skipCheckpointOnStop, int idx) {
+        stopGrid("client");
+
+        IgniteEx grid = grid(0);
+
+        if (skipCheckpointOnStop) {
+            GridCacheDatabaseSharedManager db =
+                (GridCacheDatabaseSharedManager)grid.context().cache().context().database();
+
+            db.enableCheckpoints(false);
+        }
+
+        stopGrid(0, skipCheckpointOnStop);
     }
 }
