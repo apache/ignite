@@ -311,18 +311,18 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(GridCacheQueryIndexDisabledSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteCacheQueryLoadSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteCacheLocalQuerySelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheLocalAtomicQuerySelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheReplicatedQuerySelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheReplicatedQueryP2PDisabledSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheReplicatedQueryEvtsDisabledSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteCachePartitionedQuerySelfTest.class));
+        suite.addTestSuite(IgniteCacheLocalAtomicQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheReplicatedQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheReplicatedQueryP2PDisabledSelfTest.class);
+        suite.addTestSuite(IgniteCacheReplicatedQueryEvtsDisabledSelfTest.class);
+        suite.addTestSuite(IgniteCachePartitionedQuerySelfTest.class);
         suite.addTest(new JUnit4TestAdapter(IgniteCachePartitionedSnapshotEnabledQuerySelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheAtomicQuerySelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheAtomicNearEnabledQuerySelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteCachePartitionedQueryP2PDisabledSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteCachePartitionedQueryEvtsDisabledSelfTest.class));
+        suite.addTestSuite(IgniteCacheAtomicQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheAtomicNearEnabledQuerySelfTest.class);
+        suite.addTestSuite(IgniteCachePartitionedQueryP2PDisabledSelfTest.class);
+        suite.addTestSuite(IgniteCachePartitionedQueryEvtsDisabledSelfTest.class);
 
-        suite.addTest(new JUnit4TestAdapter(IgniteCacheUnionDuplicatesTest.class));
+        suite.addTestSuite(IgniteCacheUnionDuplicatesTest.class);
         suite.addTest(new JUnit4TestAdapter(IgniteCacheJoinPartitionedAndReplicatedCollocationTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteClientReconnectCacheQueriesFailoverTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteErrorOnRebalanceTest.class));
