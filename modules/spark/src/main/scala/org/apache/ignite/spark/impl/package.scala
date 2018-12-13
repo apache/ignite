@@ -24,7 +24,6 @@ import org.apache.ignite.cache.{CacheMode, QueryEntity}
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.internal.IgniteEx
-import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils
 import org.apache.ignite.internal.processors.query.QueryUtils.normalizeSchemaName
 import org.apache.ignite.internal.util.lang.GridFunc.contains
 import org.apache.ignite.{Ignite, Ignition}
