@@ -574,7 +574,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         }
 
         if (holder != null) {
-            if (curThread instanceof IgniteDiscoveryThread)
+            if (curThread instanceof IgniteDiscoveryThread || (curThread != null && curThread.isForbiddenToRequestBinaryMetadata()))
                 return holder.metadata();
 
             if (holder.pendingVersion() - holder.acceptedVersion() > 0) {
