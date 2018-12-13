@@ -32,6 +32,29 @@ import org.junit.runners.Parameterized;
  * TODO FIXME add multithreaded test.
  */
 public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
+    public void testPrimaryModeSimple() {
+        PartitionUpdateCounter pc = new PartitionUpdateCounter(log);
+
+        int[][] updates = generateUpdates(10, 1);
+
+        for (int i = 0; i < updates.length; i++) {
+            int[] pair = updates[i];
+
+            pc.reserve(pair[1]);
+        }
+
+        System.out.println();
+
+        pc.release(0, 1);
+        pc.release(2, 1);
+
+        pc.release(5, 1);
+        pc.release(6, 1);
+        pc.release(7, 1);
+
+        System.out.println();
+    }
+
     public void testPrimaryMode() {
         for (int i = 0; i < 1000; i++)
             doTestPrimaryMode(2, 6, 2, 10, 3, 1, 5, 4);
@@ -60,7 +83,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
         assertEquals(Arrays.stream(reservations).sum(), pc.get());
     }
 
-    public void testBackupMode() {
+    public void testBackupModeSimple() {
         PartitionUpdateCounter pc = new PartitionUpdateCounter(log);
 
         pc.update(0, 1);
@@ -82,7 +105,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
         assertEquals(pc, pc2);
     }
 
-    public void testBackupMode2() {
+    public void testBackupModeBatch() {
         int[][] updates = generateUpdates(1000, 5);
 
         List<int[]> tmp = new ArrayList<>();
