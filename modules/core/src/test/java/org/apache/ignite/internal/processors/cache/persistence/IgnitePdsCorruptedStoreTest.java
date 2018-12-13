@@ -37,6 +37,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -53,6 +54,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
@@ -61,6 +65,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME1 = "cache1";
@@ -147,6 +152,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNodeInvalidatedWhenPersistenceIsCorrupted() throws Exception {
         Ignite ignite = startGrid(0);
 
@@ -191,6 +197,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of fail
      */
+    @Test
     public void testWrongPageCRC() throws Exception {
         System.setProperty(IGNITE_PDS_SKIP_CRC, "true");
 
@@ -224,6 +231,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     /**
      * Test node invalidation when meta storage is corrupted.
      */
+    @Test
     public void testMetaStorageCorruption() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -231,7 +239,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
 
         MetaStorage metaStorage = ignite.context().cache().context().database().metaStorage();
 
-        corruptTreeRoot(ignite, (PageMemoryEx)metaStorage.pageMemory(), METASTORAGE_CACHE_ID, 0);
+        corruptTreeRoot(ignite, (PageMemoryEx)metaStorage.pageMemory(), METASTORAGE_CACHE_ID, PageIdAllocator.METASTORE_PARTITION);
 
         stopGrid(0);
 
@@ -250,6 +258,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     /**
      * Test node invalidation when cache meta is corrupted.
      */
+    @Test
     public void testCacheMetaCorruption() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -324,6 +333,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     /**
      * Test node invalidation when meta store is read only.
      */
+    @Test
     public void testReadOnlyMetaStore() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
@@ -368,6 +378,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     /**
      * Test node invalidation due to checkpoint error.
      */
+    @Test
     public void testCheckpointFailure() throws Exception {
         IgniteEx ignite = startGrid(0);
 

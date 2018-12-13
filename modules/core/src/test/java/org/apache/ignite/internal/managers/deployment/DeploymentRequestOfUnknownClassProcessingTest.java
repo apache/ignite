@@ -34,12 +34,16 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_CLASSLOAD;
 
 /**
  * Tests the processing of deployment request with an attempt to load a class with an unknown class name.
  */
+@RunWith(JUnit4.class)
 public class DeploymentRequestOfUnknownClassProcessingTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -91,6 +95,7 @@ public class DeploymentRequestOfUnknownClassProcessingTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testResponseReceivingOnDeploymentRequestOfUnknownClass() throws Exception {
         IgniteEx locNode = grid(0);
         IgniteEx remNode = grid(1);

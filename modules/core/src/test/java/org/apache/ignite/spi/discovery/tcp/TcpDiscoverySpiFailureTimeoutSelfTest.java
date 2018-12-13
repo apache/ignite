@@ -24,8 +24,6 @@ import java.net.Socket;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.discovery.AbstractDiscoverySelfTest;
@@ -36,10 +34,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelfTest {
     /** */
     private static final int SPI_COUNT = 6;
@@ -83,14 +85,10 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
         return spi;
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testFailureDetectionTimeoutEnabled() throws Exception {
         assertTrue(firstSpi().failureDetectionTimeoutEnabled());
         assertTrue(secondSpi().failureDetectionTimeoutEnabled());
@@ -109,6 +107,7 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testFailureDetectionTimeoutDisabled() throws Exception {
         for (int i = 2; i < spis.size(); i++) {
             assertFalse(((TcpDiscoverySpi)spis.get(i)).failureDetectionTimeoutEnabled());
@@ -120,6 +119,7 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testFailureDetectionOnSocketOpen() throws Exception {
         try {
             ClusterNode node = secondSpi().getLocalNode();
@@ -146,6 +146,7 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testFailureDetectionOnSocketWrite() throws Exception {
         try {
             ClusterNode node = secondSpi().getLocalNode();
@@ -168,6 +169,7 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testConnectionCheckMessage() throws Exception {
         TestTcpDiscoverySpi nextSpi = null;
 

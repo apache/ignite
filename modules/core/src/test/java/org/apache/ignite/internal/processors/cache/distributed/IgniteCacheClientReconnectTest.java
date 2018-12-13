@@ -31,8 +31,6 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -42,6 +40,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -51,6 +52,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test for customer scenario.
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -120,11 +122,6 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * If setting IGNITE_EXCHANGE_HISTORY_SIZE is set to small value
      * it is possible that bunch of clients simultaneous start (amount > IGNITE_EXCHANGE_HISTORY_SIZE)
@@ -136,6 +133,7 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed
      */
+    @Test
     public void testClientReconnectOnExchangeHistoryExhaustion() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE, "1");
 
@@ -168,6 +166,7 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed
      */
+    @Test
     public void testClientInForceServerModeStopsOnExchangeHistoryExhaustion() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE, "1");
 
@@ -275,6 +274,7 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnect() throws Exception {
         startGrids(SRV_CNT);
 

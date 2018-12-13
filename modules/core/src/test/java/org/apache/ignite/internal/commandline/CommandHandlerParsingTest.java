@@ -27,6 +27,11 @@ import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
@@ -43,15 +48,18 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * Tests Command Handler parsing arguments.
  */
+@RunWith(JUnit4.class)
 public class CommandHandlerParsingTest extends TestCase {
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Before
+    @Override public void setUp() throws Exception {
         System.setProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
 
         super.setUp();
     }
 
     /** {@inheritDoc} */
+    @After
     @Override public void tearDown() throws Exception {
         System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
@@ -61,6 +69,7 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * validate_indexes command arguments parsing and validation
      */
+    @Test
     public void testValidateIndexArguments() {
         CommandHandler hnd = new CommandHandler();
 
@@ -143,6 +152,7 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * Test that experimental command (i.e. WAL command) is disabled by default.
      */
+    @Test
     public void testExperimentalCommandIsDisabled() {
         System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
@@ -170,6 +180,7 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * Tests parsing and validation for the SSL arguments.
      */
+    @Test
     public void testParseAndValidateSSLArguments() {
         CommandHandler hnd = new CommandHandler();
 
@@ -208,6 +219,7 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * Tests parsing and validation for user and password arguments.
      */
+    @Test
     public void testParseAndValidateUserAndPassword() {
         CommandHandler hnd = new CommandHandler();
 
@@ -244,6 +256,7 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * Tests parsing and validation  of WAL commands.
      */
+    @Test
     public void testParseAndValidateWalActions() {
         CommandHandler hnd = new CommandHandler();
 
@@ -283,6 +296,7 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * Tests that the auto confirmation flag was correctly parsed.
      */
+    @Test
     public void testParseAutoConfirmationFlag() {
         CommandHandler hnd = new CommandHandler();
 
@@ -344,6 +358,7 @@ public class CommandHandlerParsingTest extends TestCase {
      * Tests host and port arguments.
      * Tests connection settings arguments.
      */
+    @Test
     public void testConnectionSettings() {
         CommandHandler hnd = new CommandHandler();
 
@@ -398,6 +413,7 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * test parsing dump transaction arguments
      */
+    @Test
     public void testTransactionArguments() {
         CommandHandler hnd = new CommandHandler();
         Arguments args;

@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import java.util.HashSet;
 import java.util.Set;
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.PartitionedAtomicCacheGetsDistributionTest;
@@ -84,8 +85,8 @@ public class IgniteCacheMvccTestSuite6 extends TestSuite {
         suite.addTest(IgniteCacheTestSuite6.suite(ignoredTests));
 
         // Add mvcc versions for skipped tests.
-        suite.addTestSuite(PartitionedMvccTxPessimisticCacheGetsDistributionTest.class);
-        suite.addTestSuite(ReplicatedMvccTxPessimisticCacheGetsDistributionTest.class);
+        suite.addTest(new JUnit4TestAdapter(PartitionedMvccTxPessimisticCacheGetsDistributionTest.class));
+        suite.addTest(new JUnit4TestAdapter(ReplicatedMvccTxPessimisticCacheGetsDistributionTest.class));
 
         return suite;
     }
