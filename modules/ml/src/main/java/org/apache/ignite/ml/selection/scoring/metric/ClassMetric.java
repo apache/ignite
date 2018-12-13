@@ -18,7 +18,7 @@
 package org.apache.ignite.ml.selection.scoring.metric;
 
 /**
- * F-measure calculator.
+ * Metric calculator for one class label.
  *
  * @param <L> Type of a label (truth or prediction).
  */
