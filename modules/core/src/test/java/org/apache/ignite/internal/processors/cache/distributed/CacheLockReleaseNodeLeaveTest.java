@@ -172,8 +172,6 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
                                 finally {
                                     lock.unlock();
                                 }
-
-                                lock.unlock();
                             }
                         }
                     }
