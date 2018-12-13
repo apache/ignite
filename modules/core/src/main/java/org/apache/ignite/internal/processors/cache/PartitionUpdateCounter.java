@@ -25,10 +25,8 @@ import java.io.IOException;
 import java.util.NavigableSet;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.cache.persistence.ByteArrayDataRow;
 import org.apache.ignite.internal.util.GridLongList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -327,36 +325,6 @@ public class PartitionUpdateCounter {
         }
     }
 
-    /**
-     * Used on recovery. Should be called only once for each counter.
-     * TODO releaseOne bad name, because no releasing happens (release semantics absent on recovery).
-     * @param cntr Counter.
-     */
-    public synchronized void releaseOne(long cntr) {
-        NavigableSet<Item> items = queue.headSet(new Item(cntr, 0), true);
-
-        Item last;
-
-        if (items.isEmpty() || !(last = items.last()).within(cntr)) { // Counter not inside gap
-            update(cntr - 1, 1);
-
-            if (queue.first().start == this.cntr.get()) {
-
-            }
-
-            return;
-        }
-
-        last.increment();
-
-        if (items.first() == last) {
-            if (!last.open())
-                update(last.start, last.delta);
-            else
-                this.cntr.incrementAndGet();
-        }
-    }
-
     public @Nullable byte[] getBytes() {
         if (queue.isEmpty())
             return null;
@@ -443,7 +411,7 @@ public class PartitionUpdateCounter {
         private long delta;
 
         /** */
-        private int closed;
+        private boolean closed;
 
         /**
          * @param start Start value.
@@ -476,16 +444,12 @@ public class PartitionUpdateCounter {
             return delta;
         }
 
-        public void increment() {
-            closed++;
-        }
-
         public boolean open() {
-            return closed < delta;
+            return !closed;
         }
 
         public Item close() {
-            closed = (int)delta; // TODO FIXME why delta not integer?
+            closed = true; // TODO FIXME why delta not integer?
 
             return this;
         }
@@ -497,6 +461,46 @@ public class PartitionUpdateCounter {
         public boolean within(long cntr) {
             return cntr - start < delta;
         }
+
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            Item item = (Item)o;
+
+            if (start != item.start)
+                return false;
+            if (delta != item.delta)
+                return false;
+            return closed == item.closed;
+
+        }
+
+        @Override public int hashCode() {
+            int result = (int)(start ^ (start >>> 32));
+            result = 31 * result + (int)(delta ^ (delta >>> 32));
+            result = 31 * result + (closed ? 1 : 0);
+            return result;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        PartitionUpdateCounter cntr = (PartitionUpdateCounter)o;
+
+        if (initCntr != cntr.initCntr)
+            return false;
+        if (!queue.equals(cntr.queue))
+            return false;
+        return this.cntr.get() == cntr.cntr.get();
+
     }
 
     /** {@inheritDoc} */
