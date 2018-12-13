@@ -104,7 +104,7 @@ public class CacheConsistencyCheckExplicitTransactionalUnderLocksTest
             IgniteCache<Integer, Integer> cache = t.get1();
             Boolean raw = t.get3();
 
-            for (Map.Entry<Integer, T3<Map<Ignite, Integer>, Integer, Integer>> entry : t.get2().entrySet()) { // Once.
+            for (Map.Entry<Integer, T3<Map<Ignite, Integer>, Integer, Integer>> entry : t.get2().entrySet()) {
                 try {
                     Integer key = entry.getKey();
                     Integer latest = entry.getValue().get3();
