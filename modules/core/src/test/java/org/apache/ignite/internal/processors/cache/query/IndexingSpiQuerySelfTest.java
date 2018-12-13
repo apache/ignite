@@ -52,10 +52,14 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Indexing Spi query only test
  */
+@RunWith(JUnit4.class)
 public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
     private IndexingSpi indexingSpi;
 
@@ -89,6 +93,7 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleIndexingSpi() throws Exception {
         indexingSpi = new MyIndexingSpi();
 
@@ -110,6 +115,7 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIndexingSpiWithDisabledQueryProcessor() throws Exception {
         indexingSpi = new MyIndexingSpi();
 
@@ -131,6 +137,7 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBinaryIndexingSpi() throws Exception {
         indexingSpi = new MyBinaryIndexingSpi();
 
@@ -159,6 +166,7 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNonBinaryIndexingSpi() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI, "true");
 
@@ -193,6 +201,7 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIndexingSpiFailure() throws Exception {
         indexingSpi = new MyBrokenIndexingSpi();
 

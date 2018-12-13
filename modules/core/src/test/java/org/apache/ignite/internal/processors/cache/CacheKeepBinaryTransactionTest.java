@@ -31,10 +31,14 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test that no deserialization happens with binary objects and keepBinary set flag.
  */
+@RunWith(JUnit4.class)
 public class CacheKeepBinaryTransactionTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -69,6 +73,7 @@ public class CacheKeepBinaryTransactionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBinaryGet() throws Exception {
         IgniteEx ignite = grid(0);
         IgniteCache<Object, Object> cache = ignite.cache("tx-cache").withKeepBinary();
@@ -84,6 +89,7 @@ public class CacheKeepBinaryTransactionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBinaryContains() throws Exception {
         IgniteEx ignite = grid(0);
         IgniteCache<Object, Object> cache = ignite.cache("tx-cache").withKeepBinary();
@@ -99,6 +105,7 @@ public class CacheKeepBinaryTransactionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBinaryPutGetContains() throws Exception {
         IgniteEx ignite = grid(0);
         IgniteCache<Object, Object> cache = ignite.cache("tx-cache").withKeepBinary();

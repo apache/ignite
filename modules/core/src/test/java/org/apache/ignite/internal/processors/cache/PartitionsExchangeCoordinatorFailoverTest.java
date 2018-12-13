@@ -24,8 +24,6 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -37,10 +35,14 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Advanced coordinator failure scenarios during PME.
  */
+@RunWith(JUnit4.class)
 public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -74,14 +76,10 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
         return 60 * 1000L;
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * Tests that new coordinator is able to finish old exchanges in case of in-complete coordinator initialization.
      */
+    @Test
     public void testNewCoordinatorCompletedExchange() throws Exception {
         IgniteEx crd = (IgniteEx) startGrid("crd");
 
@@ -165,6 +163,7 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDelayedFullMessageReplacedIfCoordinatorChanged() throws Exception {
         IgniteEx crd = startGrid("crd");
 

@@ -24,10 +24,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * GridTcpDiscoverySharedFsIpFinder test.
  */
+@RunWith(JUnit4.class)
 public class TcpDiscoverySharedFsIpFinderSelfTest
     extends TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoverySharedFsIpFinder> {
     /**
@@ -60,6 +64,7 @@ public class TcpDiscoverySharedFsIpFinderSelfTest
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testUniqueNames() throws Exception {
         InetSocketAddress node1 = new InetSocketAddress("10.7.7.7", 4343);
         InetAddress ia = InetAddress.getByAddress("localhost", new byte[] {10, 7, 7, 7});

@@ -45,6 +45,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Callable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -54,6 +57,7 @@ import static org.apache.ignite.testframework.GridTestUtils.sleepAndIncrement;
 /**
  * {@link IgfsDataManager} test case.
  */
+@RunWith(JUnit4.class)
 public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     /** Test IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -151,6 +155,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
+    @Test
     public void testDataStoring() throws Exception {
         for (int i = 0; i < 10; i++) {
             IgfsPath path = IgfsPath.ROOT;
@@ -235,6 +240,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDataStoringRemainder() throws Exception {
         final int blockSize = IGFS_BLOCK_SIZE;
 
@@ -326,6 +332,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testDataStoringFlush() throws Exception {
         final int blockSize = IGFS_BLOCK_SIZE;
         final int writesCnt = 64;
@@ -400,6 +407,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinity() throws Exception {
         final int blockSize = 10;
         final int grpSize = blockSize * DATA_BLOCK_GROUP_CNT;
@@ -453,6 +461,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAffinity2() throws Exception {
         int blockSize = BLOCK_SIZE;
 
@@ -488,6 +497,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAffinityFileMap() throws Exception {
         int blockSize = BLOCK_SIZE;
 

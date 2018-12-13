@@ -47,6 +47,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
@@ -62,6 +65,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 /**
  * Test cases for partitioned cache {@link GridDhtPreloader preloader}.
  */
+@RunWith(JUnit4.class)
 public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /** Flag to print preloading events. */
     private static final boolean DEBUG = false;
@@ -158,6 +162,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivePartitionTransferSyncSameCoordinator() throws Exception {
         preloadMode = SYNC;
 
@@ -167,6 +172,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivePartitionTransferAsyncSameCoordinator() throws Exception {
         checkActivePartitionTransfer(1000, 4, true, false);
     }
@@ -174,6 +180,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivePartitionTransferSyncChangingCoordinator() throws Exception {
         preloadMode = SYNC;
 
@@ -183,6 +190,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivePartitionTransferAsyncChangingCoordinator() throws Exception {
         checkActivePartitionTransfer(1000, 4, false, false);
     }
@@ -190,6 +198,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivePartitionTransferSyncRandomCoordinator() throws Exception {
         preloadMode = SYNC;
 
@@ -199,6 +208,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivePartitionTransferAsyncRandomCoordinator() throws Exception {
         checkActivePartitionTransfer(1000, 4, false, true);
     }
@@ -349,6 +359,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiplePartitionBatchesSyncPreload() throws Exception {
         preloadMode = SYNC;
         preloadBatchSize = 100;
@@ -360,6 +371,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiplePartitionBatchesAsyncPreload() throws Exception {
         preloadBatchSize = 100;
         partitions = 2;
@@ -370,6 +382,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleNodesSyncPreloadSameCoordinator() throws Exception {
         preloadMode = SYNC;
 
@@ -379,6 +392,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleNodesAsyncPreloadSameCoordinator() throws Exception {
         checkNodes(1000, 4, true, false);
     }
@@ -386,6 +400,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleNodesSyncPreloadChangingCoordinator() throws Exception {
         preloadMode = SYNC;
 
@@ -395,6 +410,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleNodesAsyncPreloadChangingCoordinator() throws Exception {
         checkNodes(1000, 4, false, false);
     }
@@ -402,6 +418,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleNodesSyncPreloadRandomCoordinator() throws Exception {
         preloadMode = SYNC;
 
@@ -411,6 +428,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleNodesAsyncPreloadRandomCoordinator() throws Exception {
         checkNodes(1000, 4, false, true);
     }

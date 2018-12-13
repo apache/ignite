@@ -52,10 +52,14 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test handle of task canceling with PDS enabled.
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
     /** Slow file IO enabled. */
     private static final AtomicBoolean slowFileIoEnabled = new AtomicBoolean(false);
@@ -113,6 +117,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
     /**
      * Checks that tasks canceling does not lead to node failure.
      */
+    @Test
     public void testFailNodesOnCanceledTask() throws Exception {
         cleanPersistenceDir();
 
@@ -184,6 +189,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
     /**
      * Test FilePageStore with multiple interrupted threads.
      */
+    @Test
     public void testFilePageStoreInterruptThreads() throws Exception {
         failure.set(false);
 

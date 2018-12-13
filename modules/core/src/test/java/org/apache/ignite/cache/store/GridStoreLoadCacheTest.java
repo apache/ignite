@@ -31,11 +31,15 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test checks that local cacheLoad task never blocks remote
  * cacheLoad.
  */
+@RunWith(JUnit4.class)
 public class GridStoreLoadCacheTest extends GridCommonAbstractTest {
     /** Barrier. */
     private static final CyclicBarrier BARRIER = new CyclicBarrier(3);
@@ -61,6 +65,7 @@ public class GridStoreLoadCacheTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void test() throws Exception {
         for (int i = 0; i < 3; i++) {
             IgniteEx srv1 = startGrid(0);

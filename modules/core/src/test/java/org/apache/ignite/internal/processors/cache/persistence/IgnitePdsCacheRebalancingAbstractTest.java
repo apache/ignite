@@ -49,8 +49,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -62,12 +60,16 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 
 /**
  * Test for rebalancing and persistence integration.
  */
+@RunWith(JUnit4.class)
 public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -160,11 +162,6 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * @param cacheCfgs Cache cfgs.
      */
@@ -218,6 +215,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      *
      * @throws Exception If fails.
      */
+    @Test
     public void testRebalancingOnRestart() throws Exception {
         Ignite ignite0 = startGrid(0);
 
@@ -269,6 +267,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      *
      * @throws Exception If fails.
      */
+    @Test
     public void testRebalancingOnRestartAfterCheckpoint() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
@@ -330,6 +329,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyChangesWithConstantLoad() throws Exception {
         final long timeOut = U.currentTimeMillis() + 5 * 60 * 1000;
 
@@ -527,6 +527,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForceRebalance() throws Exception {
         testForceRebalance(CACHE);
     }
@@ -534,6 +535,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForceRebalanceClientTopology() throws Exception {
         filteredCacheEnabled = true;
 
@@ -589,6 +591,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     /**
      * @throws Exception If failed
      */
+    @Test
     public void testPartitionCounterConsistencyOnUnstableTopology() throws Exception {
         final Ignite ig = startGrids(4);
 
