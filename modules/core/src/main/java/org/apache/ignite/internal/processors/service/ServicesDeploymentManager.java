@@ -63,7 +63,6 @@ import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVE
 /**
  * Services deployment manager.
  *
- * @see ServicesDeploymentWorker
  * @see ServicesDeploymentTask
  * @see ServicesDeploymentActions
  */

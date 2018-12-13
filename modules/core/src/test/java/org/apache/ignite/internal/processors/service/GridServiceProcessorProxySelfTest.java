@@ -446,7 +446,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
     /**
      *
      */
-    protected class ErrorServiceImpl implements ErrorService {
+    protected static class ErrorServiceImpl implements ErrorService {
         /** {@inheritDoc} */
         @Override public void cancel(ServiceContext ctx) {
             // No-op.
