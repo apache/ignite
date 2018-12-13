@@ -1,7 +1,6 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.stream.IntStream;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -13,27 +12,70 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TxSinglePartitionOnePrimaryOnlyTest extends TxSinglePartitionAbstractTest {
     /** */
-    public void testPrimaryPrepareCommitReorder3TxsNoCheckpointBeforeCommit() throws Exception {
-        doTestPrimaryPrepareCommitReorder3Txs(false, null);
+    public void testPrepareCommitReorder() throws Exception {
+        doTestPrepareCommitReorder(false, null);
     }
 
     /** */
-    public void testPrimaryPrepareCommitReorder3TxsSkipCheckpointOnNodeStopNoCheckpointBeforeCommit() throws Exception {
-        doTestPrimaryPrepareCommitReorder3Txs(true, null);
+    public void testPrepareCommitReorder2() throws Exception {
+        doTestPrepareCommitReorder(true, null);
     }
 
     /** */
-    public void testPrimaryPrepareCommitReorder3TxsNoCheckpointBeforeCommitCheckpointAfterCommit() throws Exception {
-        doTestPrimaryPrepareCommitReorder3Txs(false, new DoCheckpointClosure(2, 0));
+    public void testPrepareCommitReorderCheckpointBetweenCommits() throws Exception {
+        doTestPrepareCommitReorder(false, new DoCheckpointClosure(2, 0));
     }
 
     /** */
-    public void testPrimaryPrepareCommitReorder3TxsSkipCheckpointOnNodeStopCheckpointAfterCommit() throws Exception {
-        doTestPrimaryPrepareCommitReorder3Txs(true, new DoCheckpointClosure(2, 0));
+    public void testPrimaryPrepareCommitReorderNoStopCheckpoint2() throws Exception {
+        doTestPrepareCommitReorder(true, new DoCheckpointClosure(2, 0));
     }
 
     /** */
-    private void doTestPrimaryPrepareCommitReorder3Txs(boolean skipCheckpointOnStop, @Nullable IgniteInClosure<Integer> commitClo) throws Exception {
+    public void testSkipReservedCountersAfterRecovery() throws Exception {
+        doTestSkipReservedCountersAfterRecovery(false);
+    }
+
+    /** */
+    public void testSkipReservedCountersAfterRecovery2() throws Exception {
+        doTestSkipReservedCountersAfterRecovery(true);
+    }
+
+    /**
+     * Tests when counter reserved on prepare should never be applied after recovery.
+     *
+     * @throws Exception
+     */
+    private void doTestSkipReservedCountersAfterRecovery(boolean skipCheckpointOnStop) throws Exception {
+        int[] prepOrd = new int[] {1, 0};
+        int[] sizes = new int[] {3, 7};
+
+        // For readability.
+        int partId = 0;
+        int backups = 0;
+        int nodes = 1;
+
+        runOnPartition(partId, backups, nodes, new OrderingTxCallbackAdapter(prepOrd, new int[0]) {
+            @Override protected void onAllPrepared() {
+                new StopNodeClosure(-1, skipCheckpointOnStop, 0).apply(-1);
+            }
+        }, sizes);
+
+        stopGrid("client");
+
+        startGrid(0);
+
+        PartitionUpdateCounter cntr = counter(partId);
+
+        assertEquals(0, cntr.get());
+        assertEquals(0, cntr.hwm());
+    }
+
+    /**
+     * Test correct update counter processing on updates reorder and node restart.
+     */
+    private void doTestPrepareCommitReorder(boolean skipCheckpointOnStop,
+        @Nullable IgniteInClosure<Integer> commitClo) throws Exception {
         int[] prepOrd = new int[] {1, 2, 0};
         int[] commitOrd = new int[] {2, 1, 0};
         int[] sizes = new int[] {5, 7, 3};

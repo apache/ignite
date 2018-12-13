@@ -1855,7 +1855,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         @Override public PartitionUpdateCounter partUpdateCounter() {
             try {
-                CacheDataStore delegate0 = init0(true);
+                CacheDataStore delegate0 = init0(false);
 
                 return delegate0 == null ? null : delegate0.partUpdateCounter();
             }

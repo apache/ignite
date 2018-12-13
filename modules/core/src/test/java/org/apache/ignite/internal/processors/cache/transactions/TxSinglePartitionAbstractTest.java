@@ -149,7 +149,7 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
      * @param sizes Sizes.
      * @param cb Callback.
      */
-    protected void runOnPartition(int partId, int backups, int nodesCnt, TxCallback cb, int... sizes) throws Exception {
+    protected void runOnPartition(int partId, int backups, int nodesCnt, TxCallback cb, int[] sizes) throws Exception {
         this.backups = backups;
 
         IgniteEx crd = (IgniteEx)startGridsMultiThreaded(nodesCnt);
@@ -307,6 +307,9 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
 
                     tx.commit();
                 }
+                catch (Exception ignored) {
+                    // No-op.
+                }
 
                 // TODO FIXME expect rollback for some scenarios.
             }
@@ -442,7 +445,7 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
         }
     }
 
-    protected abstract class OrderingTxCallbackAdapter extends TxCallbackAdapter {
+    protected class OrderingTxCallbackAdapter extends TxCallbackAdapter {
         /** */
         private Queue<Integer> prepOrder;
 
@@ -476,13 +479,21 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
             return true;
         }
 
-        protected abstract void onPrepared(IgniteEx from, int idx);
+        protected void onPrepared(IgniteEx from, int idx) {
+            // No-op.
+        }
 
-        protected abstract void onAllPrepared();
+        protected void onAllPrepared() {
+            // No-op.
+        }
 
-        protected abstract void onCommitted(IgniteEx primaryNode, int idx);
+        protected void onCommitted(IgniteEx primaryNode, int idx) {
+            // No-op.
+        }
 
-        protected abstract void onAllCommited();
+        protected void onAllCommited() {
+            // No-op.
+        }
 
         @Override public boolean afterPrimaryPrepare(IgniteEx from, IgniteInternalTx tx, GridFutureAdapter<?> fut) {
             runAsync(() -> {
