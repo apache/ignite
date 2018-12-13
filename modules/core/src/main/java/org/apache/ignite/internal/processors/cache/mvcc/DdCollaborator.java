@@ -40,6 +40,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 public class DdCollaborator {
     private final GridCacheSharedContext<?, ?> cctx;
 
+    // t0d0 design ddcollaborator lifecycle
     public DdCollaborator(GridCacheSharedContext<?, ?> cctx) {
         this.cctx = cctx;
     }
@@ -77,6 +78,7 @@ public class DdCollaborator {
         if (nearTx != null) {
             if (nearTx.nearXidVersion().equals(probe.initiatorVersion())) {
                 // a deadlock found
+                // t0d0 indicate that deadlock caused transaction abort
                 nearTx.rollbackAsync();
             }
             else {
