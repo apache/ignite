@@ -42,13 +42,13 @@ public class IgniteJtaTestSuite extends TestSuite {
     public static TestSuite suite() {
         TestSuite suite = new IgniteTestSuite("JTA Integration Test Suite");
 
-        suite.addTest(new JUnit4TestAdapter(GridPartitionedCacheJtaFactorySelfTest.class));
+        suite.addTestSuite(GridPartitionedCacheJtaFactorySelfTest.class);
         suite.addTest(new JUnit4TestAdapter(GridReplicatedCacheJtaFactorySelfTest.class));
 
-        suite.addTest(new JUnit4TestAdapter(GridPartitionedCacheJtaLookupClassNameSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridReplicatedCacheJtaLookupClassNameSelfTest.class));
+        suite.addTestSuite(GridPartitionedCacheJtaLookupClassNameSelfTest.class);
+        suite.addTestSuite(GridReplicatedCacheJtaLookupClassNameSelfTest.class);
 
-        suite.addTest(new JUnit4TestAdapter(GridPartitionedCacheJtaFactoryUseSyncSelfTest.class));
+        suite.addTestSuite(GridPartitionedCacheJtaFactoryUseSyncSelfTest.class);
         suite.addTest(new JUnit4TestAdapter(GridReplicatedCacheJtaFactoryUseSyncSelfTest.class));
 
         suite.addTest(new JUnit4TestAdapter(GridJtaLifecycleAwareSelfTest.class));
