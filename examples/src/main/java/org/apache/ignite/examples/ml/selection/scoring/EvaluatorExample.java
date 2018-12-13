@@ -32,7 +32,7 @@ import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
- * Run kNN multi-class classification trainer ({@link KNNClassificationTrainer}) over distributed dataset.
+ * Run SVM classification trainer ({@link SVMLinearClassificationTrainer}) over distributed dataset.
  * <p>
  * Code in this example launches Ignite grid and fills the cache with test data points (based on the
  * <a href="https://en.wikipedia.org/wiki/Iris_flower_data_set"></a>Iris dataset</a>).</p>
