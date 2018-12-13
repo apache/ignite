@@ -1294,11 +1294,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     return null;
             }
 
-            IgniteCacheDatabaseSharedManager dbMgr = ctx.database();
-
-            dbMgr.checkpointReadLock();
-
             if (init.compareAndSet(false, true)) {
+
+                IgniteCacheDatabaseSharedManager dbMgr = ctx.database();
+
+                dbMgr.checkpointReadLock();
+
                 try {
                     Metas metas = getOrAllocatePartitionMetas();
 
