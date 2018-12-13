@@ -594,11 +594,14 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             prev.writeLock().lock();
 
             try {
-                if (prev.status() == ValueStatus.PENDING) {
-                    // Flush process in progress, try again.
-                    prev.waitForFlush();
+                if (prev.status() == ValueStatus.PENDING || prev.status() == ValueStatus.PENDING_AND_UPDATED) {
+                    // Flush process in progress, save next value and update the status.
 
-                    continue;
+                    prev.addNext(newVal.val, newVal.storeOperation);
+
+                    prev.status(ValueStatus.PENDING_AND_UPDATED);
+
+                    break;
                 }
                 else if (prev.status() == ValueStatus.FLUSHED)
                     // This entry was deleted from map before we acquired the lock.
@@ -718,7 +721,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
             assert operation == e.getValue().operation();
 
-            assert e.getValue().status() == ValueStatus.PENDING;
+            assert e.getValue().status() == ValueStatus.PENDING || e.getValue().status() == ValueStatus.PENDING_AND_UPDATED;
 
             batch.put(e.getKey(), e.getValue().entry());
         }
@@ -732,17 +735,26 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 val.writeLock().lock();
 
                 try {
-                    val.status(ValueStatus.FLUSHED);
-
                     if (writeCoalescing) {
-                        StatefulValue<K, V> prev = writeCache.remove(e.getKey());
+                        if (val.status() == ValueStatus.PENDING_AND_UPDATED) {
+                            val.update(val.nextVal, val.nextStoreOperation, ValueStatus.NEW);
 
-                        // Additional check to ensure consistency.
-                        assert prev == val : "Map value for key " + e.getKey() + " was updated during flush";
+                            val.addNext(null, null);
+                        }
+                        else {
+                            val.status(ValueStatus.FLUSHED);
+
+                            StatefulValue<K, V> prev = writeCache.remove(e.getKey());
+
+                            // Additional check to ensure consistency.
+                            assert prev == val : "Map value for key " + e.getKey() + " was updated during flush";
+                        }
 
                         val.signalFlushed();
                     }
                     else {
+                        val.status(ValueStatus.FLUSHED);
+
                         Flusher f = flusher(e.getKey());
 
                         // Can remove using equal because if map contains another similar value it has different state.
@@ -762,9 +774,13 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 val.writeLock().lock();
 
                 try {
-                    val.status(ValueStatus.RETRY);
+                    if(val.status() == ValueStatus.PENDING_AND_UPDATED)
+                        val.update(val.nextVal, val.nextStoreOperation, ValueStatus.NEW);
+                    else {
+                        val.status(ValueStatus.RETRY);
 
-                    retryEntriesCnt.incrementAndGet();
+                        retryEntriesCnt.incrementAndGet();
+                    }
 
                     val.signalFlushed();
                 }
@@ -1117,13 +1133,17 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
                     switch (addRes) {
                         case NEW_BATCH:
+                            // No need to test first value in batch
+                            val.status(ValueStatus.PENDING);
+
+                            val.writeLock().unlock();
+
                             applyBatch(pending, true, null);
 
                             pending = U.newLinkedHashMap(batchSize);
 
-                            // No need to test first value in batch
-                            val.status(ValueStatus.PENDING);
                             pending.put(e.getKey(), val);
+
                             prevOperation = val.operation();
 
                             break;
@@ -1138,7 +1158,8 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                     }
                 }
                 finally {
-                    val.writeLock().unlock();
+                    if (val.writeLock().isHeldByCurrentThread())
+                        val.writeLock().unlock();
                 }
             }
 
@@ -1308,6 +1329,12 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         /** Value is captured by flusher and store operation is performed at the moment. */
         PENDING,
 
+        /**
+         * Value is captured by flusher and store operation is performed at the moment.
+         * New update for the key was stored and waiting for previous store operation.
+         */
+        PENDING_AND_UPDATED,
+
         /** Store operation has failed and it will be re-tried at the next flush. */
         RETRY,
 
@@ -1336,7 +1363,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      * @return {@code true} if status indicates any pending or complete store update operation.
      */
     private boolean acquired(ValueStatus status) {
-        return status == ValueStatus.PENDING || status == ValueStatus.FLUSHED;
+        return status == ValueStatus.PENDING || status == ValueStatus.FLUSHED || status == ValueStatus.PENDING_AND_UPDATED;
     }
 
     /**
@@ -1353,8 +1380,15 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         @GridToStringInclude(sensitive = true)
         private Entry<? extends K, ? extends V> val;
 
+        /** Next value that waiting for a previous store operation. */
+        @GridToStringInclude(sensitive = true)
+        private Entry<? extends K, ? extends V> nextVal;
+
         /** Store operation. */
         private StoreOperation storeOperation;
+
+        /** Next store operation. */
+        private StoreOperation nextStoreOperation;
 
         /** Value status. */
         private ValueStatus valStatus;
@@ -1419,6 +1453,18 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             this.val = val;
             this.storeOperation = storeOperation;
             this.valStatus = valStatus;
+        }
+
+        /**
+         * Added next value that waiting for a previous store operation.
+         *
+         * @param val Value.
+         * @param storeOperation Store operation.
+         */
+        private void addNext(@Nullable Entry<? extends K, ? extends V> val,
+            StoreOperation storeOperation) {
+            this.nextVal = val;
+            this.nextStoreOperation = storeOperation;
         }
 
         /**

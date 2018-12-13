@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!--
+    Ignite configuration with all defaults and enabled p2p deployment and enabled events.
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/util
+        http://www.springframework.org/schema/util/spring-util.xsd">
+
+    <!-- Data source beans for POJO store. -->
+    <bean id="trlmDataSource" class="org.h2.jdbcx.JdbcDataSource">
+        <property name="URL" value="jdbc:h2:mem:TestDatabase;DB_CLOSE_DELAY=-1"/>
+        <property name="user" value="sa"/>
+        <property name="password" value=""/>
+    </bean>
+
+    <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="dataStorageConfiguration">
+            <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
+                <property name="defaultDataRegionConfiguration">
+                    <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+                        <property name="persistenceEnabled" value="true"/>
+                        <property name="name" value="Default_Region"/>
+                    </bean>
+                </property>
+                <property name="walMode" value="LOG_ONLY"/>
+            </bean>
+        </property>
+
+        <property name="cacheConfiguration">
+            <list>
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="TEST_CACHE"/>
+                    <property name="cacheMode" value="REPLICATED"/>
+                    <property name="atomicityMode" value="ATOMIC"/>
+                    <property name="partitionLossPolicy" value="READ_WRITE_SAFE"/>
+
+                    <property name="cacheStoreFactory">
+                        <bean class="org.apache.ignite.cache.store.jdbc.common.TestJdbcPojoStoreFactoryWithHangWriteAll">
+                            <property name="parallelLoadCacheMinimumThreshold" value="100" />
+                            <property name="batchSize" value="100" />
+                            <property name="maximumPoolSize" value="4" />
+                            <property name="dataSourceBean" value="trlmDataSource" />
+                            <property name="dialect">
+                                <bean class="org.apache.ignite.cache.store.jdbc.dialect.H2Dialect">
+                                </bean>
+                            </property>
+
+                            <property name="types">
+                                <list>
+                                    <bean class="org.apache.ignite.cache.store.jdbc.JdbcType">
+                                        <property name="cacheName" value="TEST_CACHE"/>
+                                        <property name="keyType" value="java.lang.Integer"/>
+                                        <property name="valueType" value="org.apache.ignite.cache.store.jdbc.common.TestPogo"/>
+                                        <property name="databaseSchema" value="PUBLIC"/>
+                                        <property name="databaseTable" value="TEST_CACHE"/>
+
+                                        <property name="keyFields">
+                                            <list>
+                                                <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                                    <constructor-arg>
+                                                        <util:constant static-field="java.sql.Types.INTEGER"/>
+                                                    </constructor-arg>
+                                                    <constructor-arg value="VALUE2"/>
+                                                    <constructor-arg value="int"/>
+                                                    <constructor-arg value="value2"/>
+                                                </bean>
+                                            </list>
+                                        </property>
+
+                                        <property name="valueFields">
+                                            <list>
+                                                <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                                    <constructor-arg>
+                                                        <util:constant static-field="java.sql.Types.VARCHAR"/>
+                                                    </constructor-arg>
+                                                    <constructor-arg value="VALUE1"/>
+                                                    <constructor-arg value="java.lang.String"/>
+                                                    <constructor-arg value="value1"/>
+                                                </bean>
+
+                                                <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                                    <constructor-arg>
+                                                        <util:constant static-field="java.sql.Types.DATE"/>
+                                                    </constructor-arg>
+                                                    <constructor-arg value="VALUE3"/>
+                                                    <constructor-arg value="java.sql.Date"/>
+                                                    <constructor-arg value="value3"/>
+                                                </bean>
+                                            </list>
+                                        </property>
+                                    </bean>
+                                </list>
+                            </property>
+                        </bean>
+                    </property>
+
+                    <property name="readThrough" value="true"/>
+                    <property name="writeThrough" value="true"/>
+                    <property name="writeBehindEnabled" value="true"/>
+
+                    <property name="queryEntities">
+                        <list>
+                            <bean class="org.apache.ignite.cache.QueryEntity">
+                                <property name="keyType" value="java.lang.Integer"/>
+                                <property name="valueType" value="org.apache.ignite.cache.store.jdbc.common.TestPogo"/>
+                                <property name="tableName" value="TEST_CACHE"/>
+                                <property name="keyFieldName" value="value3"/>
+
+                                <property name="keyFields">
+                                    <list>
+                                        <value>value3</value>
+                                    </list>
+                                </property>
+
+                                <property name="fields">
+                                    <map>
+                                        <entry key="value1" value="java.lang.String"/>
+                                        <entry key="value2" value="java.lang.Integer"/>
+                                        <entry key="value3" value="java.sql.Date"/>
+                                    </map>
+                                </property>
+
+                                <property name="aliases">
+                                    <map>
+                                        <entry key="value1" value="VALUE1"/>
+                                        <entry key="value2" value="VALUE2"/>
+                                        <entry key="value3" value="VALUE3"/>
+                                    </map>
+                                </property>
+                            </bean>
+                        </list>
+                    </property>
+                </bean>
+            </list>
+        </property>
+
+        <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->
+        <property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                <property name="ipFinder">
+                    <!--
+                        Ignite provides several options for automatic discovery that can be used
+                        instead os static IP based discovery. For information on all options refer
+                        to our documentation: http://apacheignite.readme.io/docs/cluster-config
+                    -->
+                    <!-- Uncomment static IP finder to enable static-based discovery of initial nodes. -->
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                        <!--<bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">-->
+                        <property name="addresses">
+                            <list>
+                                <!-- In distributed environment, replace with actual host IP address. -->
+                                <value>127.0.0.1:47500..47509</value>
+                            </list>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+    </bean>
+</beans>
