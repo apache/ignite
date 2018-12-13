@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -1838,40 +1837,52 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 .orElseGet(GridFinishedFuture::new);
         }
 
-        LockWaitCheckFuture fut = new LockWaitCheckFuture(nodeId, mvccVer, ctx.cache().context());
+        LockWaitCheckFuture fut = new LockWaitCheckFuture(nodeId, mvccVer);
 
         fut.init();
 
         return fut;
     }
 
-    public class LockWaitCheckFuture extends GridCacheFutureAdapter<NearTxLocator> {
+    /** */
+    private class LockWaitCheckFuture extends GridCacheFutureAdapter<NearTxLocator> {
+        /** */
         private final UUID nodeId;
+        /** */
+        private final MvccVersionImpl txVer;
+        /** */
         private final IgniteUuid futId = IgniteUuid.randomUuid();
-        private final MvccVersionImpl txVersion;
-        private final GridCacheSharedContext<?, ?> cctx;
 
-        private LockWaitCheckFuture(UUID nodeId, MvccVersion txVersion, GridCacheSharedContext<?, ?> cctx) {
+        /** */
+        private LockWaitCheckFuture(UUID nodeId, MvccVersion txVer) {
             this.nodeId = nodeId;
-            this.txVersion = new MvccVersionImpl(txVersion.coordinatorVersion(), txVersion.counter(), txVersion.operationCounter());
-            this.cctx = cctx;
+            this.txVer = new MvccVersionImpl(txVer.coordinatorVersion(), txVer.counter(), txVer.operationCounter());
         }
 
-        public void init() {
+        /** */
+        private void init() {
             try {
-                cctx.mvcc().addFuture(this, futId);
-                sendMessage(nodeId, new LockWaitCheckRequest(futId, txVersion));
+                ctx.cache().context().mvcc().addFuture(this, futId);
+
+                sendMessage(nodeId, new LockWaitCheckRequest(futId, txVer));
             }
             catch (IgniteCheckedException e) {
                 onDone(e);
 
+                // t0d0 handle properly
                 e.printStackTrace();
             }
         }
 
+        /** */
+        private void onResponse(LockWaitCheckResponse res) {
+            onDone(res.isWaiting() ? new NearTxLocator(res.blockerNodeId(), res.blockerTxVersion()) : null);
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable NearTxLocator res, @Nullable Throwable err) {
             if (super.onDone(res, err)) {
-                cctx.mvcc().removeFuture(futId);
+                ctx.cache().context().mvcc().removeFuture(futId);
 
                 return true;
             }
@@ -1879,24 +1890,24 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             return false;
         }
 
-        public void onResponse(LockWaitCheckResponse res) {
-            onDone(res.isWaiting() ? new NearTxLocator(res.blockerNodeId(), res.blockerTxVersion()) : null);
-        }
-
+        /** {@inheritDoc} */
         @Override public IgniteUuid futureId() {
             return futId;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean onNodeLeft(UUID nodeId) {
             onDone(new ClusterTopologyCheckedException("Node left grid (will ignore)."));
 
             return true;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean trackable() {
             return true;
         }
 
+        /** {@inheritDoc} */
         @Override public void markNotTrackable() {
         }
     }
@@ -1907,30 +1918,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     private class MvccMessageListener implements GridMessageListener {
         /** {@inheritDoc} */
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-            // t0d0 setup message handler in proper place
-            if (msg instanceof DeadlockProbe) {
-                ddCollaborator.handleDeadlockProbe((DeadlockProbe)msg);
-                return;
-            }
-
-            if (msg instanceof LockWaitCheckRequest) {
-                handleLockCheckRequest(nodeId, (LockWaitCheckRequest)msg);
-                return;
-            }
-
-            if (msg instanceof LockWaitCheckResponse) {
-                LockWaitCheckResponse checkRes = (LockWaitCheckResponse)msg;
-
-                LockWaitCheckFuture fut = (LockWaitCheckFuture)ctx.cache().context().mvcc().future(checkRes.futId());
-                if (fut == null) {
-                    // t0d0 warning
-                }
-                else
-                    fut.onResponse(checkRes);
-
-                return;
-            }
-
             MvccMessage msg0 = (MvccMessage)msg;
 
             if (msg0.waitForCoordinatorInit() && !initFut.isDone()) {
@@ -1973,6 +1960,12 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 processCoordinatorActiveQueriesMessage(nodeId, (MvccActiveQueriesMessage)msg);
             else if (msg instanceof MvccRecoveryFinishedMessage)
                 processRecoveryFinishedMessage(nodeId, ((MvccRecoveryFinishedMessage)msg));
+            else if (msg instanceof DeadlockProbe)
+                ddCollaborator.handleDeadlockProbe((DeadlockProbe)msg);
+            else if (msg instanceof LockWaitCheckRequest)
+                processLockCheckRequest(nodeId, (LockWaitCheckRequest)msg);
+            else if (msg instanceof LockWaitCheckResponse)
+                processLockCheckResponse((LockWaitCheckResponse)msg);
             else
                 U.warn(log, "Unexpected message received [node=" + nodeId + ", msg=" + msg + ']');
         }
@@ -1983,7 +1976,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         }
     }
 
-    private void handleLockCheckRequest(UUID nodeId, LockWaitCheckRequest req) {
+    /** */
+    private void processLockCheckRequest(UUID nodeId, LockWaitCheckRequest req) {
         LockWaitCheckResponse res = findBlockerTx(req.txVersion())
             .map(tx -> LockWaitCheckResponse.waiting(req.futId(), tx.eventNodeId(), tx.nearXidVersion()))
             .orElseGet(() -> LockWaitCheckResponse.notWaiting(req.futId()));
@@ -1992,19 +1986,34 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             sendMessage(nodeId, res);
         }
         catch (IgniteCheckedException e) {
+            // t0d0 handle properly
             e.printStackTrace();
         }
     }
 
+    /** */
     private Optional<IgniteInternalTx> findBlockerTx(MvccVersion checkedTxVer) {
-        // t0d0 multiple blocker txs seems to be possible
         return waitMap.entrySet().stream()
             .filter(e -> e.getValue().hasWaiting(checkedTxVer))
-            .map(e -> e.getKey())
+            .map(Map.Entry::getKey)
             .findAny()
             .flatMap(txKey -> ctx.cache().context().tm().activeTransactions().stream()
-                .filter(tx -> tx.mvccSnapshot().coordinatorVersion() == txKey.major() && tx.mvccSnapshot().counter() == txKey.minor())
+                .filter(tx -> {
+                    MvccSnapshot s = tx.mvccSnapshot();
+                    return s.coordinatorVersion() == txKey.major() && s.counter() == txKey.minor();
+                })
                 .findAny());
+    }
+
+    /** */
+    private void processLockCheckResponse(LockWaitCheckResponse res) {
+        LockWaitCheckFuture fut = (LockWaitCheckFuture)ctx.cache().context().mvcc().future(res.futId());
+
+        if (fut != null)
+            fut.onResponse(res);
+        else {
+            // t0d0 warning
+        }
     }
 
     /**
