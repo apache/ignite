@@ -30,12 +30,12 @@ public:
       : m_out(out)
     {
         // endl for http://jetbrains.net/tracker/issue/TW-4412
-        m_out << '\n' << "##teamcity[" << name;
+        m_out << std::endl << "##teamcity[" << name;
     }
     ~RaiiMessage()
     {
         // endl for http://jetbrains.net/tracker/issue/TW-4412
-        m_out << "]\n";
+        m_out << "]" << std::endl;
     }
     /// \todo Copying char-by-char is ineffective!
     std::string escape(const std::string s)
