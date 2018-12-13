@@ -277,13 +277,13 @@ public class GridH2Table extends TableBase {
     /** {@inheritDoc} */
     @Override public boolean lock(Session ses, boolean exclusive, boolean force) {
         // In accordance with base method semantics, we'll return true if we were already exclusively locked.
-        Long res = sessions.get(ses);
+        Long lockVer = sessions.get(ses);
 
-        if (res != null) {
-            if (EXCLUSIVE_LOCK == res)
+        if (lockVer != null) {
+            if (EXCLUSIVE_LOCK == lockVer)
                 return true;
 
-            if (ver.longValue() != res)
+            if (ver.get() != lockVer)
                 throw new QueryRetryException(getName());
 
             return false;
@@ -308,10 +308,10 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public void unlock(Session ses) {
-        Long res = sessions.remove(ses);
+        Long lockVer = sessions.remove(ses);
 
-        if (res != null)
-            unlock(EXCLUSIVE_LOCK == res);
+        if (lockVer != null)
+            unlock(EXCLUSIVE_LOCK == lockVer);
     }
 
     /**

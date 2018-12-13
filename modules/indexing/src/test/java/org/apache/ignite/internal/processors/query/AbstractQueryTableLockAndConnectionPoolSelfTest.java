@@ -106,6 +106,8 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
         populateBaseQueryData(srv, 1);
 
         checkTablesLockQueryAndDDLMultithreaded(srv);
+
+        checkTablesLockQueryAndDropColumnMultithreaded(srv);
     }
 
     /**
@@ -119,6 +121,8 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
         populateBaseQueryData(srv, 4);
 
         checkTablesLockQueryAndDDLMultithreaded(srv);
+
+        checkTablesLockQueryAndDropColumnMultithreaded(srv);
     }
 
     /**
@@ -147,6 +151,11 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
         checkTablesLockQueryAndDDLMultithreaded(srv0);
         checkTablesLockQueryAndDDLMultithreaded(srv1);
         checkTablesLockQueryAndDDLMultithreaded(cli);
+
+        checkTablesLockQueryAndDropColumnMultithreaded(srv0);
+        checkTablesLockQueryAndDropColumnMultithreaded(srv1);
+        // TODO: +++ DDL DROP COLUMN CacheContext == null on CLI
+        // checkTablesLockQueryAndDropColumnMultithreaded(cli);
     }
 
     /**
@@ -175,6 +184,11 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
         checkTablesLockQueryAndDDLMultithreaded(srv0);
         checkTablesLockQueryAndDDLMultithreaded(srv1);
         checkTablesLockQueryAndDDLMultithreaded(cli);
+
+        checkTablesLockQueryAndDropColumnMultithreaded(srv0);
+        checkTablesLockQueryAndDropColumnMultithreaded(srv1);
+        // TODO: +++ DDL DROP COLUMN CacheContext == null on CLI
+        // checkTablesLockQueryAndDropColumnMultithreaded(cli);
     }
 
     /**
@@ -183,7 +197,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
     private void checkTablesLockQueryAndDDLMultithreaded(final Ignite node) throws Exception {
         final AtomicBoolean end = new AtomicBoolean(false);
 
-        final int qryThreads = 2;
+        final int qryThreads = 10;
 
         // Do many concurrent queries.
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
@@ -224,6 +238,58 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
         while (U.currentTimeMillis() < tEnd) {
             execute(node, new SqlFieldsQuery("CREATE INDEX \"pers\".PERSON_NAME ON \"pers\".Person (name asc)")).getAll();
             execute(node, new SqlFieldsQuery("DROP INDEX \"pers\".PERSON_NAME")).getAll();
+        }
+
+        // Test is OK in case DDL operations is passed on hi load queries pressure.
+        end.set(true);
+        fut.get();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkTablesLockQueryAndDropColumnMultithreaded(final Ignite node) throws Exception {
+        final AtomicBoolean end = new AtomicBoolean(false);
+
+        final int qryThreads = 10;
+
+        // Do many concurrent queries.
+        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+            @Override public void run() {
+                while(!end.get()) {
+                    try {
+                        FieldsQueryCursor<List<?>> cursor = execute(node, new SqlFieldsQuery(
+                            "SELECT pers.id, pers.name FROM \"pers\".PERSON")
+                            .setLazy(lazy())
+                            .setPageSize(PAGE_SIZE_SMALL));
+
+                        cursor.getAll();
+                    }
+                    catch (Exception e) {
+                        if (e.getMessage().contains("Failed to parse query. Column \"PERS.ID\" not found")) {
+                            // Swallow exception when column is dropped.
+                        }
+                        else if(X.cause(e, QueryRetryException.class) == null) {
+                            log.error("Unexpected exception", e);
+
+                            fail("Unexpected exception. " + e);
+                        }
+                        else if (!lazy()) {
+                            log.error("Unexpected exception", e);
+
+                            fail("Unexpected QueryRetryException.");
+                        }
+                    }
+                }
+            }
+        }, qryThreads, "usr-qry");
+
+
+        long tEnd = U.currentTimeMillis() + TEST_DUR;
+
+        while (U.currentTimeMillis() < tEnd) {
+            execute(node, new SqlFieldsQuery("ALTER TABLE \"pers\".Person DROP COLUMN name")).getAll();
+            execute(node, new SqlFieldsQuery("ALTER TABLE \"pers\".Person ADD  COLUMN name varchar")).getAll();
         }
 
         // Test is OK in case DDL operations is passed on hi load queries pressure.
@@ -383,30 +449,35 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
      */
     private void checkBaseOperations(Ignite node) throws Exception {
 //        checkQuerySplitToSeveralMapQueries(node);
-
-        // Get full data.
-        List<List<?>> rows = execute(node, baseQuery()).getAll();
-
-        assertBaseQueryResults(rows);
+//
+//        // Get full data.
+//        {
+//            List<List<?>> rows = execute(node, baseQuery()).getAll();
+//
+//            assertBaseQueryResults(rows);
+//        }
 
         // Get data in several pages.
-        rows = execute(node, baseQuery().setPageSize(PAGE_SIZE_SMALL)).getAll();
+        {
+            List<List<?>> rows = execute(node, baseQuery().setPageSize(PAGE_SIZE_SMALL)).getAll();
 
-        assertBaseQueryResults(rows);
+            assertBaseQueryResults(rows);
+        }
 
 
         // Test full iteration.
-        rows = new ArrayList<>();
+        {
+            List<List<?>> rows = new ArrayList<>();
 
-        FieldsQueryCursor<List<?>> cursor = execute(node, baseQuery().setPageSize(PAGE_SIZE_SMALL));
+            FieldsQueryCursor<List<?>> cursor = execute(node, baseQuery().setPageSize(PAGE_SIZE_SMALL));
 
-        for (List<?> row : cursor)
-            rows.add(row);
+            for (List<?> row : cursor)
+                rows.add(row);
 
-        cursor.close();
+            cursor.close();
 
-
-        assertBaseQueryResults(rows);
+            assertBaseQueryResults(rows);
+        }
 
         // Test partial iteration with cursor close.
         try (FieldsQueryCursor<List<?>> partialCursor = execute(node, baseQuery().setPageSize(PAGE_SIZE_SMALL))) {

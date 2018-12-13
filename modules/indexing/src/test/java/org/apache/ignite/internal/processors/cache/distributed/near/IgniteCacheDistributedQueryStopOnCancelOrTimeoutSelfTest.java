@@ -36,6 +36,7 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -223,7 +224,7 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
             catch (CacheException ex) {
                 log().error("Got expected exception", ex);
 
-                assertTrue("Must throw correct exception", ex.getCause() instanceof QueryCancelledException);
+                assertNotNull("Must throw correct exception", X.cause(ex, QueryCancelledException.class));
             }
 
             // Give some time to clean up.

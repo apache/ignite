@@ -911,20 +911,24 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             long time = U.currentTimeMillis() - start;
 
-            long longQryExecTimeout = ctx.config().getLongQueryWarningTimeout();
+            if (time > ctx.config().getLongQueryWarningTimeout()) {
+                String schema = connMgr.connectionForThread().schema();
 
-            if (time > longQryExecTimeout) {
-                ResultSet plan = executeSqlQuery(conn, preparedStatementWithParams(conn, "EXPLAIN " + sql,
-                    params, false), 0, null);
+                // In lazy mode we have to use separate connection to gather plan to print warning.
+                // Otherwise the all tables are unlocked by this query.
+                try (Connection planConn = connMgr.connectionNoCache(schema)) {
+                    ResultSet plan = executeSqlQuery(planConn, preparedStatementWithParams(planConn, "EXPLAIN " + sql,
+                        params, false), 0, null);
 
-                plan.next();
+                    plan.next();
 
-                // Add SQL explain result message into log.
-                String msg = "Query execution is too long [time=" + time + " ms, sql='" + sql + '\'' +
-                    ", plan=" + U.nl() + plan.getString(1) + U.nl() + ", parameters=" +
-                    (params == null ? "[]" : Arrays.deepToString(params.toArray())) + "]";
+                    // Add SQL explain result message into log.
+                    String msg = "Query execution is too long [time=" + time + " ms, sql='" + sql + '\'' +
+                        ", plan=" + U.nl() + plan.getString(1) + U.nl() + ", parameters=" +
+                        (params == null ? "[]" : Arrays.deepToString(params.toArray())) + "]";
 
-                LT.warn(log, msg);
+                    LT.warn(log, msg);
+                }
             }
 
             return rs;

@@ -75,8 +75,7 @@ public class IgniteH2Session {
      *
      */
     public void checkTablesVersions() {
-        if (ses != null)
-            GridH2Table.checkTablesVersions(ses);
+        GridH2Table.checkTablesVersions(ses);
     }
 
     /** {@inheritDoc} */

@@ -1038,7 +1038,7 @@ public class GridReduceQueryExecutor {
      * @return {@code true} if exception is caused by cancel.
      */
     private boolean wasCancelled(CacheException e) {
-        return X.hasSuppressed(e, QueryCancelledException.class);
+        return X.cause(e, QueryCancelledException.class) != null;
     }
 
     /**

@@ -32,6 +32,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -109,7 +110,7 @@ public class IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest extend
         catch (CacheException ex) {
             log().error("Got expected exception", ex);
 
-            assertTrue("Must throw correct exception", ex.getCause() instanceof QueryCancelledException);
+            assertNotNull("Must throw correct exception", X.cause(ex, QueryCancelledException.class));
         }
 
         // Give some time to clean up.
