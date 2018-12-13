@@ -37,6 +37,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -51,6 +53,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.internal.processors.cache.CacheOperationContext.DFLT_ALLOW_ATOMIC_OPS_IN_TX;
 
 /**
  * Common code for {@link IgniteQueue} implementation.
@@ -363,11 +366,13 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         A.ensure(batchSize >= 0, "Batch size cannot be negative: " + batchSize);
 
         try {
-            IgniteBiTuple<Long, Long> t =
-                (IgniteBiTuple<Long, Long>)cache.invoke(queueKey, new ClearProcessor(id)).get();
+            Object obj = cache.invoke(queueKey, new ClearProcessor(id)).get();
 
-            if (t == null)
+            if (obj == null)
                 return;
+
+            IgniteBiTuple<Long, Long> t = obj instanceof BinaryObject ? ((BinaryObject)obj).deserialize()
+                : (IgniteBiTuple<Long, Long>)obj;
 
             checkRemoved(t.get1());
 
@@ -420,6 +425,29 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
                 ". This operation is supported only for collocated queues.");
 
         return compute.affinityCall(cache.name(), queueKey, job);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <V1> IgniteQueue<V1> withKeepBinary() {
+        CacheOperationContext opCtx = cctx.operationContextPerCall();
+
+        if (opCtx != null && opCtx.isKeepBinary())
+            return (GridCacheQueueAdapter<V1>)this;
+
+        opCtx = opCtx == null ? new CacheOperationContext(
+            false,
+            null,
+            true,
+            null,
+            false,
+            null,
+            false,
+            DFLT_ALLOW_ATOMIC_OPS_IN_TX)
+            : opCtx.keepBinary();
+
+        cctx.operationContextPerCall(opCtx);
+
+        return (GridCacheQueueAdapter<V1>)this;
     }
 
     /**
