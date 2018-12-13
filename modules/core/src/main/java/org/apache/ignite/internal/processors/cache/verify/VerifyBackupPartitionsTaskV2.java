@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
@@ -40,6 +41,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -71,6 +73,10 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
     /** First version of Ignite that is capable of executing Idle Verify V2. */
     public static final IgniteProductVersion V2_SINCE_VER = IgniteProductVersion.fromString("2.5.0");
 
+    /** Injected logger. */
+    @LoggerResource
+    private IgniteLogger log;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -89,8 +95,15 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
     @Nullable @Override public IdleVerifyResultV2 reduce(List<ComputeJobResult> results)
         throws IgniteException {
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
+        Map<UUID, Exception> exceptions = new HashMap<>();
 
         for (ComputeJobResult res : results) {
+            if (res.getException() != null) {
+                exceptions.put(res.getNode().id(), res.getException());
+
+                continue;
+            }
+
             Map<PartitionKeyV2, PartitionHashRecordV2> nodeHashes = res.getData();
 
             for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> e : nodeHashes.entrySet()) {
@@ -135,7 +148,23 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             }
         }
 
-        return new IdleVerifyResultV2(updateCntrConflicts, hashConflicts, movingParts);
+        return new IdleVerifyResultV2(updateCntrConflicts, hashConflicts, movingParts, exceptions);
+    }
+
+    /** {@inheritDoc} */
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws
+        IgniteException {
+        ComputeJobResultPolicy superRes = super.result(res, rcvd);
+
+        // Deny failover.
+        if (superRes == ComputeJobResultPolicy.FAILOVER) {
+            superRes = ComputeJobResultPolicy.WAIT;
+
+            log.warning("VerifyBackupPartitionsJobV2 failed on node " +
+                "[consistentId=" + res.getNode().consistentId() + "]", res.getException());
+        }
+
+        return superRes;
     }
 
     /**
