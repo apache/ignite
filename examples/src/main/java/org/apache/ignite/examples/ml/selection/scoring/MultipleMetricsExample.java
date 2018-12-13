@@ -73,24 +73,16 @@ public class MultipleMetricsExample {
                 lbExtractor
             );
 
-            List<Metric<Double>> metrics = new ArrayList<>();
-            metrics.add(new Accuracy<>());
-            metrics.add(new Precision<>(0.0));
-            metrics.add(new Precision<>(1.0));
-            metrics.add(new Recall<>(0.0));
-            metrics.add(new Recall<>(1.0));
-
             Map<String, Double> scores = BinaryClassificationEvaluator.evaluate(
                 dataCache,
                 mdl,
                 featureExtractor,
-                lbExtractor,
-                metrics
-            );
+                lbExtractor
+            ).toMap();
 
-            scores.forEach((metricName, score) -> {
-                System.out.println("\n>>>" + metricName + ": " + score);
-            });
+            scores.forEach(
+                (metricName, score) -> System.out.println("\n>>>" + metricName + ": " + score)
+            );
         }
     }
 }

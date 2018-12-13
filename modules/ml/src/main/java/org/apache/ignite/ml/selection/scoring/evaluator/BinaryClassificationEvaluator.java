@@ -83,7 +83,6 @@ public class BinaryClassificationEvaluator {
      * @param mdl              The model.
      * @param featureExtractor The feature extractor.
      * @param lbExtractor      The label extractor.
-     * @param <L>              The type of label.
      * @param <K>              The type of cache entry key.
      * @param <V>              The type of cache entry value.
      * @return Computed metric.
