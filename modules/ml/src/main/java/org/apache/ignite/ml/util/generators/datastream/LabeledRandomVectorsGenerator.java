@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.util.generators.dataset;
+package org.apache.ignite.ml.util.generators.datastream;
 
 import java.util.Iterator;
 import org.apache.ignite.ml.util.generators.variable.RandomProducer;
@@ -25,7 +25,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 public class LabeledRandomVectorsGenerator implements Iterator<LabeledRandomVectorsGenerator.LabeledRandomVector> {
     private final RandomVectorsGenerator vectorsStream;
     private final IgniteFunction<Vector, Double> classifier;
-    private final RandomProducer noizeAfterClassification;
+    private final IgniteFunction<Vector, Vector> afterClassificationVectorMapping;
 
     public LabeledRandomVectorsGenerator(RandomVectorsGenerator vectorsStream,
         IgniteFunction<Vector, Double> classifier) {
@@ -39,15 +39,31 @@ public class LabeledRandomVectorsGenerator implements Iterator<LabeledRandomVect
 
         this.vectorsStream = vectorsStream;
         this.classifier = classifier;
-        this.noizeAfterClassification = noizeAfterClassification;
+        this.afterClassificationVectorMapping = v -> plus(v, noizeAfterClassification);
+    }
+
+    public LabeledRandomVectorsGenerator(RandomVectorsGenerator vectorsStream,
+        IgniteFunction<Vector, Double> classifier,
+        IgniteFunction<Vector, Vector> afterClassificationVectorMapping) {
+
+        this.vectorsStream = vectorsStream;
+        this.classifier = classifier;
+        this.afterClassificationVectorMapping = afterClassificationVectorMapping;
     }
 
     @Override public LabeledRandomVector next() {
         RandomVectorsGenerator.VectorWithDistributionFamily vector = vectorsStream.next();
         Double label = classifier.apply(vector.vector());
-        vector = vector.map(v -> v.plus(noizeAfterClassification.get()));
+        vector = vector.map(afterClassificationVectorMapping);
 
         return new LabeledRandomVector(vector, label);
+    }
+
+    private Vector plus(Vector v, RandomProducer randomProducer) {
+        Vector copy = v.copy();
+        for (int i = 0; i < v.size(); i++)
+            copy.set(i, v.get(i) + randomProducer.get());
+        return copy;
     }
 
     @Override public boolean hasNext() {

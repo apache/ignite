@@ -15,31 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.util.generators.variable;
+package org.apache.ignite.ml.util.generators.datastream;
 
-public class GaussRandomProducer extends RandomProducerWithGenerator {
-    private final double mean;
-    private final double variance;
+import java.util.stream.Stream;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.structures.DatasetRow;
+import org.apache.ignite.ml.structures.LabeledVector;
 
-    public GaussRandomProducer() {
-        this(0.0, 1.0, System.currentTimeMillis());
-    }
+public interface DataStreamGenerator {
+    Stream<LabeledVector<Vector, Double>> labeled();
 
-    public GaussRandomProducer(long seed) {
-        this(0.0, 1.0, seed);
-    }
-
-    public GaussRandomProducer(double mean, double variance) {
-        this(mean, variance, System.currentTimeMillis());
-    }
-
-    public GaussRandomProducer(double mean, double variance, long seed) {
-        super(seed);
-        this.mean = mean;
-        this.variance = variance;
-    }
-
-    @Override public Double get() {
-        return mean + generator().nextGaussian() * Math.sqrt(variance);
+    default Stream<Vector> unlabeled() {
+        return labeled().map(DatasetRow::features);
     }
 }

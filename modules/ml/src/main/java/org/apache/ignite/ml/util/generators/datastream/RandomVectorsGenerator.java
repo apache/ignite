@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.util.generators.dataset;
+package org.apache.ignite.ml.util.generators.datastream;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.ml.util.generators.function.ParametricVectorGenerator;
@@ -42,6 +43,14 @@ public class RandomVectorsGenerator implements Iterator<RandomVectorsGenerator.V
         checkValues();
     }
 
+    public RandomVectorsGenerator(ParametricVectorGenerator vectorGenerator,
+        UniformRandomProducer paramValuesGenerator) {
+
+        this(Collections.singletonList(vectorGenerator), null, paramValuesGenerator);
+
+        checkValues();
+    }
+
     @Override public VectorWithDistributionFamily next() {
         int family = families.size() == 1 ? 0 : familySelector.get().intValue();
         Vector vector = families.get(family).apply(paramValuesGenerator.get());
@@ -53,18 +62,18 @@ public class RandomVectorsGenerator implements Iterator<RandomVectorsGenerator.V
     }
 
     private void checkValues() {
-        if(familySelector == null && families.size() == 1)
+        if (familySelector == null && families.size() == 1)
             return;
 
-        if(families.isEmpty())
+        if (families.isEmpty())
             throw new IllegalArgumentException("Empty distribution families list");
 
         long countOfUniqVectorSizes = families.stream().map(x -> x.apply(paramValuesGenerator.get()))
             .mapToInt(Vector::size).distinct().count();
-        if(countOfUniqVectorSizes != 1)
+        if (countOfUniqVectorSizes != 1)
             throw new IllegalArgumentException("All families should generate vectors of same size");
 
-        if(families.size() != familySelector.size())
+        if (families.size() != familySelector.size())
             throw new IllegalArgumentException("Family selector size should equal to families count");
     }
 
