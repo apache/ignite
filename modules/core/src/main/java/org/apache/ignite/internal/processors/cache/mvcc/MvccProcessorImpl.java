@@ -238,11 +238,16 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
      */
     private final ConcurrentHashMap<UUID, RecoveryBallotBox> recoveryBallotBoxes = new ConcurrentHashMap<>();
 
+    /** */
+    private final DdCollaborator ddCollaborator;
+
     /**
      * @param ctx Context.
      */
     public MvccProcessorImpl(GridKernalContext ctx) {
         super(ctx);
+
+        ddCollaborator = new DdCollaborator(ctx);
 
         ctx.internalSubscriptionProcessor().registerDatabaseListener(this);
     }
@@ -649,7 +654,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             waiter.run(ctx);
         else {
             DdCollaborator.DeferredDeadlockComputation deferredComputation
-                = new DdCollaborator(ctx.cache().context()).initDeferredComputation(waiterVer, blockerVer);
+                = ddCollaborator.initDeferredComputation(waiterVer, blockerVer);
 
             fut.listen(fut0 -> deferredComputation.cancel());
         }
@@ -1904,7 +1909,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             // t0d0 setup message handler in proper place
             if (msg instanceof DeadlockProbe) {
-                new DdCollaborator(ctx.cache().context()).handleDeadlockProbe((DeadlockProbe)msg);
+                ddCollaborator.handleDeadlockProbe((DeadlockProbe)msg);
                 return;
             }
 

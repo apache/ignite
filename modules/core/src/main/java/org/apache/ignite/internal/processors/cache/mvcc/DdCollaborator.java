@@ -24,11 +24,12 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxAbstractEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
@@ -38,11 +39,10 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 
 // t0d0 meaningful name
 public class DdCollaborator {
-    private final GridCacheSharedContext<?, ?> cctx;
+    private final GridKernalContext ctx;
 
-    // t0d0 design ddcollaborator lifecycle
-    public DdCollaborator(GridCacheSharedContext<?, ?> cctx) {
-        this.cctx = cctx;
+    public DdCollaborator(GridKernalContext ctx) {
+        this.ctx = ctx;
     }
 
     public DeferredDeadlockComputation initDeferredComputation(MvccVersion waiterVer, MvccVersion blockerVer) {
@@ -51,12 +51,12 @@ public class DdCollaborator {
 
     public void startComputation(MvccVersion waiterVer, MvccVersion blockerVer) {
         // t0d0 filter out non-mvcc transactions where needed
-        Optional<IgniteInternalTx> waitingTx = cctx.tm().activeTransactions().stream()
+        Optional<IgniteInternalTx> waitingTx = ctx.cache().context().tm().activeTransactions().stream()
             .filter(tx -> tx.mvccSnapshot() != null)
             .filter(tx -> belongToSameTx(waiterVer, tx.mvccSnapshot()))
             .findAny();
 
-        Optional<IgniteInternalTx> blockerTx = cctx.tm().activeTransactions().stream()
+        Optional<IgniteInternalTx> blockerTx = tm().activeTransactions().stream()
             .filter(tx -> tx.mvccSnapshot() != null)
             .filter(tx -> belongToSameTx(blockerVer, tx.mvccSnapshot()))
             .findAny();
@@ -73,7 +73,7 @@ public class DdCollaborator {
 
     public void handleDeadlockProbe(DeadlockProbe probe) {
         // a probe is simply discarded if next wait-for edge is not found
-        GridNearTxLocal nearTx = cctx.tm().tx(probe.blockerVersion());
+        GridNearTxLocal nearTx = tm().tx(probe.blockerVersion());
 
         if (nearTx != null) {
             if (nearTx.nearXidVersion().equals(probe.initiatorVersion())) {
@@ -110,7 +110,7 @@ public class DdCollaborator {
 
     private Collection<IgniteInternalFuture<NearTxLocator>> collectBlockers(GridNearTxLocal tx) {
         return getPendingResponseNodes(tx).stream()
-            .map(nodeId -> cctx.coordinators().checkWaiting(nodeId, tx.mvccSnapshot()))
+            .map(nodeId -> ctx.cache().context().coordinators().checkWaiting(nodeId, tx.mvccSnapshot()))
             .collect(Collectors.toList());
     }
 
@@ -129,13 +129,17 @@ public class DdCollaborator {
         // t0d0 PROPER TOPIC
         DeadlockProbe probe = new DeadlockProbe(initiatorVer, waiterVer, blockerVer);
         try {
-            cctx.gridIO().sendToGridTopic(
-                blockerNearNodeId, TOPIC_CACHE_COORDINATOR, probe, SYSTEM_POOL);
+            ctx.io().sendToGridTopic(blockerNearNodeId, TOPIC_CACHE_COORDINATOR, probe, SYSTEM_POOL);
         }
         catch (IgniteCheckedException e) {
             // t0d0 handle send errors
             e.printStackTrace();
         }
+    }
+
+    /** */
+    private IgniteTxManager tm() {
+        return ctx.cache().context().tm();
     }
 
     public static boolean belongToSameTx(MvccVersion v1, MvccVersion v2) {
@@ -152,11 +156,11 @@ public class DdCollaborator {
                 }
             };
 
-            cctx.kernalContext().timeout().addTimeoutObject(computation);
+            ctx.timeout().addTimeoutObject(computation);
         }
 
         public void cancel() {
-            cctx.kernalContext().timeout().removeTimeoutObject(computation);
+            ctx.timeout().removeTimeoutObject(computation);
         }
     }
 }
