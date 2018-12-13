@@ -337,7 +337,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
 
                     ContinuousQuery qry = new ContinuousQuery();
 
-                    if (async) {//~~! here
+                    if (async) {
                         qry.setLocalListener(new TestCacheAsyncEventListener(queue, qryCntr));
 
                         qry.setRemoteFilterFactory(FactoryBuilder.factoryOf(
@@ -354,7 +354,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
 
                     IgniteCache<Object, Object> cache = grid(idx).cache(ccfg.getName());
 
-                    QueryCursor qryCursor = cache.query(qry); // ~~! get cache and set query on this cache
+                    QueryCursor qryCursor = cache.query(qry);
 
                     qries.add(qryCursor);
                 }
@@ -382,7 +382,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
                                     tx = cache.unwrap(Ignite.class).transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
                                 if ((cache.get(key) == null) || rnd.nextBoolean()) {
-                                    cache.invoke(key, new CacheEntryProcessor<QueryTestKey, QueryTestValue, Object>() { //~~! invoke process on this key
+                                    cache.invoke(key, new CacheEntryProcessor<QueryTestKey, QueryTestValue, Object>() {
                                         @Override public Object process(
                                             MutableEntry<QueryTestKey, QueryTestValue> entry,
                                             Object... arguments)

@@ -1733,8 +1733,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             false,
             ctx.deploymentEnabled());
 
-        boolean alreadyUpdated = false;
-
         assert !req.returnValue() || (req.operation() == TRANSFORM || req.size() == 1);
 
         GridDhtAtomicAbstractUpdateFuture dhtFut = null;
@@ -1755,6 +1753,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             DhtAtomicUpdateResult  updDhtRes = new DhtAtomicUpdateResult();
 
             try {
+                boolean alreadyUpdated = false;
+
                 while (true) {
                     try {
                         GridDhtPartitionTopology top = topology();
