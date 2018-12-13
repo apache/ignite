@@ -470,6 +470,9 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
      */
     protected abstract void map(boolean topLocked);
 
+    /**
+     * @return Nodes from which current future waits responses.
+     */
     public abstract Set<UUID> pendingResponseNodes();
 
     /**

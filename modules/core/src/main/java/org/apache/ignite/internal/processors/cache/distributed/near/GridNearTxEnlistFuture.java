@@ -619,10 +619,11 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public Set<UUID> pendingResponseNodes() {
         return batches.entrySet().stream()
             .filter(e -> e.getValue().ready())
-            .map(e -> e.getKey())
+            .map(Map.Entry::getKey)
             .collect(Collectors.toSet());
     }
 

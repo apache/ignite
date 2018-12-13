@@ -326,6 +326,7 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
             mini.onResult(res, null);
     }
 
+    /** {@inheritDoc} */
     @Override public Set<UUID> pendingResponseNodes() {
         if (initialized() && !isDone()) {
             return futures().stream()
