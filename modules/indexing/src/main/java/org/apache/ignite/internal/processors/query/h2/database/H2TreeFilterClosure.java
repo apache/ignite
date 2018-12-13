@@ -107,6 +107,7 @@ public class H2TreeFilterClosure implements H2Tree.TreeRowClosure<GridH2SearchRo
             return isVisible(cctx, mvccSnapshot, rowCrdVer, rowCntr, rowOpCntr, io.getLink(pageAddr, idx));
         }
         catch (IgniteTxMvccVersionCheckedException e) {
+            // TODO this catch must not be needed if we switch Vacuum to data page scan
             // We expect the active tx state can be observed by read tx only in the cases when tx has been aborted
             // asynchronously and node hasn't received finish message yet but coordinator has already removed it from
             // the active txs map. Rows written by this tx are invisible to anyone and will be removed by the vacuum.
@@ -119,7 +120,19 @@ public class H2TreeFilterClosure implements H2Tree.TreeRowClosure<GridH2SearchRo
 
     /** {@inheritDoc} */
     @Override public boolean applyMvcc(DataPageIO io, long dataPageAddr, int itemId, int pageSize) throws IgniteCheckedException {
-        return isVisible(cctx, mvccSnapshot, io, dataPageAddr, itemId, pageSize);
+        try {
+            return isVisible(cctx, mvccSnapshot, io, dataPageAddr, itemId, pageSize);
+        }
+        catch (IgniteTxMvccVersionCheckedException e) {
+            // TODO this catch must not be needed if we switch Vacuum to data page scan
+            // We expect the active tx state can be observed by read tx only in the cases when tx has been aborted
+            // asynchronously and node hasn't received finish message yet but coordinator has already removed it from
+            // the active txs map. Rows written by this tx are invisible to anyone and will be removed by the vacuum.
+            if (log.isDebugEnabled())
+                log.debug( "Unexpected tx state on index lookup. " + X.getFullStackTrace(e));
+
+            return false;
+        }
     }
 
     /** {@inheritDoc} */

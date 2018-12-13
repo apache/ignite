@@ -90,6 +90,7 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccSnapshot
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccTreeClosure;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
+import org.apache.ignite.internal.transactions.IgniteTxMvccVersionCheckedException;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
@@ -102,6 +103,7 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -3131,7 +3133,19 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             /** {@inheritDoc} */
             @Override public boolean applyMvcc(DataPageIO io, long dataPageAddr, int itemId, int pageSize)
                 throws IgniteCheckedException {
-                return isVisible(cctx, snapshot, io, dataPageAddr, itemId, pageSize);
+                try {
+                    return isVisible(cctx, snapshot, io, dataPageAddr, itemId, pageSize);
+                }
+                catch (IgniteTxMvccVersionCheckedException e) {
+                    // TODO this catch must not be needed if we switch Vacuum to data page scan
+                    // We expect the active tx state can be observed by read tx only in the cases when tx has been aborted
+                    // asynchronously and node hasn't received finish message yet but coordinator has already removed it from
+                    // the active txs map. Rows written by this tx are invisible to anyone and will be removed by the vacuum.
+                    if (log.isDebugEnabled())
+                        log.debug( "Unexpected tx state on index lookup. " + X.getFullStackTrace(e));
+
+                    return false;
+                }
             }
         }
 
