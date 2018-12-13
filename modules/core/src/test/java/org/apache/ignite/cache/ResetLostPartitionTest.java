@@ -255,6 +255,7 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
      *
      * @throws Exception if fail.
      */
+    @Test
     public void testDuplicateOwners() throws Exception {
         persistenceEnabled = false;
 
