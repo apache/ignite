@@ -30,9 +30,6 @@ import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_CONNECTION_FAILED;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
@@ -124,7 +121,6 @@ public class GridCommandHandlerSslTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
-    @Test
     public void testDefaultCipherSuite() throws Exception {
         cipherSuites = null;
 
@@ -134,7 +130,6 @@ public class GridCommandHandlerSslTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testSameCipherSuite() throws Exception {
         String ciphers = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256," +
             "TLS_RSA_WITH_AES_128_GCM_SHA256," +
@@ -146,7 +141,6 @@ public class GridCommandHandlerSslTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testOneCommonCipherSuite() throws Exception {
         String nodeCipherSuites = "TLS_RSA_WITH_AES_128_GCM_SHA256," +
             "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256";
@@ -160,7 +154,6 @@ public class GridCommandHandlerSslTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testNoCommonCipherSuite() throws Exception {
         String nodeCipherSuites = "TLS_RSA_WITH_AES_128_GCM_SHA256";
 
