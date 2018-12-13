@@ -590,7 +590,10 @@ public class MvccUtils {
         PageMemory pageMem = cctx.dataRegion().pageMemory();
         int grpId = cctx.groupId();
 
+        int pageSize = pageMem.realPageSize(grpId);
+
         long pageId = pageId(link);
+        int itemId = itemId(link);
         long page = pageMem.acquirePage(grpId, pageId);
 
         try {
@@ -599,23 +602,7 @@ public class MvccUtils {
             try{
                 DataPageIO dataIo = DataPageIO.VERSIONS.forPage(pageAddr);
 
-                int offset = dataIo.getPayloadOffset(pageAddr, itemId(link), pageMem.realPageSize(grpId),
-                    MVCC_INFO_SIZE);
-
-                long mvccCrd = dataIo.mvccCoordinator(pageAddr, offset);
-                long mvccCntr = dataIo.mvccCounter(pageAddr, offset);
-                int mvccOpCntr = dataIo.mvccOperationCounter(pageAddr, offset) & ~MVCC_KEY_ABSENT_BEFORE_MASK;
-
-                assert mvccVersionIsValid(mvccCrd, mvccCntr, mvccOpCntr) : mvccVersion(mvccCrd, mvccCntr, mvccOpCntr);
-
-                long newMvccCrd = dataIo.newMvccCoordinator(pageAddr, offset);
-                long newMvccCntr = dataIo.newMvccCounter(pageAddr, offset);
-                int newMvccOpCntr = dataIo.newMvccOperationCounter(pageAddr, offset) & ~MVCC_KEY_ABSENT_BEFORE_MASK;
-
-                assert newMvccCrd == MVCC_CRD_COUNTER_NA || mvccVersionIsValid(newMvccCrd, newMvccCntr, newMvccOpCntr)
-                    : mvccVersion(newMvccCrd, newMvccCntr, newMvccOpCntr);
-
-                return clo.apply(cctx, snapshot, mvccCrd, mvccCntr, mvccOpCntr, newMvccCrd, newMvccCntr, newMvccOpCntr);
+                return invoke(cctx, dataIo, pageAddr, itemId, pageSize, clo, snapshot);
             }
             finally {
                 pageMem.readUnlock(grpId, pageId, page);
@@ -624,6 +611,52 @@ public class MvccUtils {
         finally {
             pageMem.releasePage(grpId, pageId, page);
         }
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param dataIo Data page IO.
+     * @param pageAddr Page address.
+     * @param itemId Item Id.
+     * @param pageSize Page size.
+     * @param clo Closure.
+     * @param snapshot Mvcc snapshot.
+     * @return Result.
+     * @throws IgniteCheckedException If failed.
+     */
+    private static <R> R invoke(GridCacheContext cctx, DataPageIO dataIo, long pageAddr, int itemId, int pageSize,
+        MvccClosure<R> clo, MvccSnapshot snapshot) throws IgniteCheckedException {
+        int offset = dataIo.getPayloadOffset(pageAddr, itemId, pageSize, MVCC_INFO_SIZE);
+
+        long mvccCrd = dataIo.mvccCoordinator(pageAddr, offset);
+        long mvccCntr = dataIo.mvccCounter(pageAddr, offset);
+        int mvccOpCntr = dataIo.mvccOperationCounter(pageAddr, offset) & ~MVCC_KEY_ABSENT_BEFORE_MASK;
+
+        assert mvccVersionIsValid(mvccCrd, mvccCntr, mvccOpCntr) : mvccVersion(mvccCrd, mvccCntr, mvccOpCntr);
+
+        long newMvccCrd = dataIo.newMvccCoordinator(pageAddr, offset);
+        long newMvccCntr = dataIo.newMvccCounter(pageAddr, offset);
+        int newMvccOpCntr = dataIo.newMvccOperationCounter(pageAddr, offset) & ~MVCC_KEY_ABSENT_BEFORE_MASK;
+
+        assert newMvccCrd == MVCC_CRD_COUNTER_NA || mvccVersionIsValid(newMvccCrd, newMvccCntr, newMvccOpCntr)
+            : mvccVersion(newMvccCrd, newMvccCntr, newMvccOpCntr);
+
+        return clo.apply(cctx, snapshot, mvccCrd, mvccCntr, mvccOpCntr, newMvccCrd, newMvccCntr, newMvccOpCntr);
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param snapshot Mvcc snapshot.
+     * @param dataIo Data page IO.
+     * @param pageAddr Page address.
+     * @param itemId Item Id.
+     * @param pageSize Page size.
+     * @return {@code true} If the row is visible.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static boolean isVisible(GridCacheContext cctx, MvccSnapshot snapshot, DataPageIO dataIo,
+        long pageAddr, int itemId, int pageSize) throws IgniteCheckedException {
+        return invoke(cctx, dataIo, pageAddr, itemId, pageSize, isVisible, snapshot);
     }
 
     /**

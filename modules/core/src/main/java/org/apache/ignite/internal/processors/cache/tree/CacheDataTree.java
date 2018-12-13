@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwa
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccDataPageClosure;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -110,18 +111,20 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         Object x
     ) throws IgniteCheckedException {
         // If there is a group of caches, lower and upper bounds will not be null here.
-        if (c == null && lower == null && upper == null && grp.persistenceEnabled())
-            return scanDataPages(asRowData(x));
+        if (lower == null && upper == null && grp.persistenceEnabled() && (c == null || c instanceof MvccDataPageClosure))
+            return scanDataPages(asRowData(x), (MvccDataPageClosure)c);
 
         return super.find(lower, upper, c, x);
     }
 
     /**
      * @param rowData Required row data.
+     * @param c Optional MVCC closure.
      * @return Cache row cursor.
      * @throws IgniteCheckedException If failed.
      */
-    private GridCursor<CacheDataRow> scanDataPages(CacheDataRowAdapter.RowData rowData) throws IgniteCheckedException {
+    private GridCursor<CacheDataRow> scanDataPages(CacheDataRowAdapter.RowData rowData, MvccDataPageClosure c)
+        throws IgniteCheckedException {
         assert rowData != null;
         assert grp.persistenceEnabled();
 
@@ -129,6 +132,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         GridCacheSharedContext shared = grp.shared();
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)shared.database();
         PageStore pageStore = db.getPageStore(grpId, partId);
+        boolean mvccEnabled = grp.mvccEnabled();
+        int pageSize = pageSize();
 
         long startPageId = ((PageMemoryEx)pageMem).partitionMetaPageId(grp.groupId(), partId);
 
@@ -163,7 +168,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             private boolean readNextDataPage() throws IgniteCheckedException {
                 for (;;) {
                     if (++curPage >= pagesCnt) {
-                        // Reread number of pages when we reach it.
+                        // Reread number of pages when we reach it (it may grow).
                         int newPagesCnt = pageStore.pages();
 
                         if (newPagesCnt <= pagesCnt) {
@@ -182,25 +187,32 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
                         try {
                             if (PageIO.getType(pageAddr) != T_DATA)
-                                continue;
+                                continue; // Not a data page.
 
                             DataPageIO io = PageIO.getPageIO(T_DATA, PageIO.getVersion(pageAddr));
 
                             int rowsCnt = io.getRowsCount(pageAddr);
 
                             if (rowsCnt == 0)
-                                continue;
+                                continue; // Empty page.
 
                             if (rowsCnt > rows.length)
                                 rows = new CacheDataRow[rowsCnt];
                             else
                                 clearTail(rows, rowsCnt);
 
+                            int r = 0;
+
                             for (int i = 0; i < rowsCnt; i++) {
-                                DataRow row = grp.mvccEnabled() ? new MvccDataRow() : new DataRow();
-                                row.initFromDataPage(io, pageAddr, i, grp, shared, pageMem, rowData);
-                                rows[i] = row;
+                                if (c == null || c.applyMvcc(io, pageAddr, i, pageSize)) {
+                                    DataRow row = mvccEnabled ? new MvccDataRow() : new DataRow();
+                                    row.initFromDataPage(io, pageAddr, i, grp, shared, pageMem, rowData);
+                                    rows[r++] = row;
+                                }
                             }
+
+                            if (r == 0)
+                                continue; // No rows fetched in this page.
 
                             curRow = 0;
                             return true;

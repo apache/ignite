@@ -81,6 +81,7 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccUpdateData
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccUpdateDataRowNative;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccUpdateResult;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.ResultType;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccDataPageClosure;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccFirstRowTreeClosure;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccMaxSearchRow;
@@ -3096,7 +3097,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** */
-        private final class MvccFirstVisibleRowTreeClosure implements MvccTreeClosure {
+        private final class MvccFirstVisibleRowTreeClosure implements MvccTreeClosure, MvccDataPageClosure {
             /** */
             private final GridCacheContext cctx;
 
@@ -3125,6 +3126,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 assert mvccVersionIsValid(rowCrdVer, rowCntr, rowOpCntr);
 
                 return isVisible(cctx, snapshot, rowCrdVer, rowCntr, rowOpCntr, rowIo.getLink(pageAddr, idx));
+            }
+
+            /** {@inheritDoc} */
+            @Override public boolean applyMvcc(DataPageIO io, long dataPageAddr, int itemId, int pageSize)
+                throws IgniteCheckedException {
+                return isVisible(cctx, snapshot, io, dataPageAddr, itemId, pageSize);
             }
         }
 
