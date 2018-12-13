@@ -53,6 +53,8 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridAbsClosure;
+import org.apache.ignite.internal.util.lang.GridAbsClosureX;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -74,7 +76,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsyn
 
 /**
  */
-public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
+public class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -317,7 +319,7 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
 
         fut.get();
 
-        // Check futures are executed without errors.
+        // Wait and check if futures are executed without errors.
         for (IgniteInternalFuture<?> f : taskFuts)
             f.get();
     }
@@ -445,102 +447,7 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
         }
     }
 
-    protected class OrderingTxCallbackAdapter extends TxCallbackAdapter {
-        /** */
-        private Queue<Integer> prepOrder;
 
-        /** */
-        private Queue<Integer> commitOrder;
-
-        /** */
-        private Map<IgniteUuid, GridFutureAdapter<?>> futs = new ConcurrentHashMap<>();
-
-        public OrderingTxCallbackAdapter(int[] prepOrd, int[] commitOrd) {
-            prepOrder = new ConcurrentLinkedQueue<>();
-            for (int aPrepOrd : prepOrd)
-                prepOrder.add(aPrepOrd);
-
-            commitOrder = new ConcurrentLinkedQueue<>();
-            for (int aCommitOrd : commitOrd)
-                commitOrder.add(aCommitOrd);
-        }
-
-        @Override public boolean beforePrimaryPrepare(IgniteEx node, IgniteUuid nearXidVer,
-            GridFutureAdapter<?> proceedFut) {
-            runAsync(() -> {
-                futs.put(nearXidVer, proceedFut);
-
-                // Order prepares.
-                if (futs.size() == prepOrder.size()) {// Wait until all prep requests queued and force prepare order.
-                    futs.remove(version(prepOrder.poll())).onDone();
-                }
-            });
-
-            return true;
-        }
-
-        protected void onPrepared(IgniteEx from, int idx) {
-            // No-op.
-        }
-
-        protected void onAllPrepared() {
-            // No-op.
-        }
-
-        protected void onCommitted(IgniteEx primaryNode, int idx) {
-            // No-op.
-        }
-
-        protected void onAllCommited() {
-            // No-op.
-        }
-
-        @Override public boolean afterPrimaryPrepare(IgniteEx from, IgniteInternalTx tx, GridFutureAdapter<?> fut) {
-            runAsync(() -> {
-                onPrepared(from, order(tx.nearXidVersion().asGridUuid()));
-
-                if (prepOrder.isEmpty())
-                    return;
-
-                futs.remove(version(prepOrder.poll())).onDone();
-
-                if (prepOrder.isEmpty())
-                    onAllPrepared();
-            });
-
-            return false;
-        }
-
-        @Override public boolean beforePrimaryFinish(IgniteEx primaryNode, IgniteInternalTx tx, GridFutureAdapter<?>
-        proceedFut) {
-            runAsync(() -> {
-                futs.put(tx.nearXidVersion().asGridUuid(), proceedFut);
-
-                // Order prepares.
-                if (futs.size() == 3)
-                    futs.remove(version(commitOrder.poll())).onDone();
-
-            });
-
-            return true;
-        }
-
-        @Override public boolean afterPrimaryFinish(IgniteEx primaryNode, IgniteUuid nearXidVer, GridFutureAdapter<?> proceedFut) {
-            runAsync(() -> {
-                onCommitted(primaryNode, order(nearXidVer));
-
-                if (commitOrder.isEmpty())
-                    return;
-
-                futs.remove(version(commitOrder.poll())).onDone();
-
-                if (commitOrder.isEmpty())
-                    onAllCommited();
-            });
-
-            return false;
-        }
-    }
 
     /**
      * Find a tx by near xid version.
@@ -573,43 +480,27 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
         return internalCache(0).context().topology().localPartition(partId).dataStore().partUpdateCounter();
     }
 
-
-
     /**
      * Forces checkpoint after completing stage of transaction with specific order.
      */
-    protected class DoCheckpointClosure implements IgniteInClosure<Integer> {
-        /** Tx index. */
-        private final int txIdx;
-
+    protected class DoCheckpointClosure extends GridAbsClosureX {
         /** Grid index. */
         private final int gridIdx;
 
         /**
-         * @param txIdx Tx index.
          * @param gridIdx Grid index.
          */
-        public DoCheckpointClosure(int txIdx, int gridIdx) {
-            this.txIdx = txIdx;
-
+        public DoCheckpointClosure(int gridIdx) {
             this.gridIdx = gridIdx;
         }
 
-        /** {@inheritDoc} */
-        @Override public void apply(Integer txIdx) {
-            if (this.txIdx == txIdx) {
-                try {
-                    if (gridIdx >= 0)
-                        forceCheckpoint(grid(gridIdx));
-                    else
-                        forceCheckpoint();
-                }
-                catch (IgniteCheckedException e) {
-                    fail();
-                }
-            }
+        @Override public void applyx() throws IgniteCheckedException {
+            if (gridIdx >= 0)
+                forceCheckpoint(grid(gridIdx));
+            else
+                forceCheckpoint();
         }
-    };
+    }
 
     /**
      * Stops node after completing stage of transaction with specific order.
@@ -621,6 +512,7 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
         /** Tx index. */
         private final int txIdx;
 
+        /** Grid index. */
         private final int gridIdx;
 
         /**

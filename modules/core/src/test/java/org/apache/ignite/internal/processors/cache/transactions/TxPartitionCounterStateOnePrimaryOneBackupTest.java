@@ -5,19 +5,13 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.IntStream;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.transactions.Transaction;
-import org.jetbrains.annotations.Nullable;
 
 /**
  */
-public class TxSinglePartitionOnePrimaryOneBackupTest extends TxSinglePartitionAbstractTest {
+public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionCounterStateAbstractTest {
     /** Futures tracking map. */
     private Queue<IgniteInternalFuture<?>> taskFuts = new ConcurrentLinkedQueue<>();
 

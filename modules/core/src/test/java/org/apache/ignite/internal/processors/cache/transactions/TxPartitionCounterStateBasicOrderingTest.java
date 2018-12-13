@@ -1,6 +1,5 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.stream.IntStream;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -10,8 +9,9 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Print DHT transaction using tx callback framework.
+ * TODO asserts on counted events.
  */
-public class TxSinglePartitionBasicTest extends TxSinglePartitionAbstractTest {
+public class TxPartitionCounterStateBasicOrderingTest extends TxPartitionCounterStateAbstractTest {
     /** */
     public void testBasicTxCallback() throws Exception {
         int partId = 0;
@@ -78,7 +78,7 @@ public class TxSinglePartitionBasicTest extends TxSinglePartitionAbstractTest {
 
             @Override public void onTxStart(Transaction tx, int idx) {
             }
-        }, txSize);
+        }, new int[] {txSize});
 
         assertEquals(txSize, grid("client").cache(DEFAULT_CACHE_NAME).size());
     }
