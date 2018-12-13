@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -46,6 +47,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -54,6 +56,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -885,13 +888,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         ignite.cluster().active(true);
 
-        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
-            .setAffinity(new RendezvousAffinityFunction(false, 32))
-            .setBackups(1)
-            .setName(DEFAULT_CACHE_NAME));
-
-        for (int i = 0; i < 100; i++)
-            cache.put(i, i);
+        createCacheAndPreload(ignite, 100);
 
         injectTestSystemOut();
 
@@ -918,15 +915,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         ignite.cluster().active(true);
 
-        int parts = 32;
-
-        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
-            .setAffinity(new RendezvousAffinityFunction(false, parts))
-            .setBackups(1)
-            .setName(DEFAULT_CACHE_NAME));
-
-        for (int i = 0; i < 100; i++)
-            cache.put(i, i);
+        createCacheAndPreload(ignite, 100);
 
         injectTestSystemOut();
 
@@ -938,7 +927,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         corruptDataEntry(cacheCtx, 1, true, false);
 
-        corruptDataEntry(cacheCtx, 1 + parts / 2, false, true);
+        corruptDataEntry(cacheCtx, 1 + cacheCtx.config().getAffinity().partitions() / 2, false, true);
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
@@ -955,12 +944,11 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         ignite.cluster().active(true);
 
-        int parts = 32;
+        int keysCount = 20;//less than parts number for ability to check skipZeros flag.
 
-        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
-            .setAffinity(new RendezvousAffinityFunction(false, parts))
-            .setBackups(1)
-            .setName(DEFAULT_CACHE_NAME));
+        createCacheAndPreload(ignite, keysCount);
+
+        int parts = ignite.affinity(DEFAULT_CACHE_NAME).partitions();
 
         ignite.createCache(new CacheConfiguration<>()
             .setAffinity(new RendezvousAffinityFunction(false, parts))
@@ -968,11 +956,6 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             .setName(DEFAULT_CACHE_NAME + "other"));
 
         injectTestSystemOut();
-
-        int keysCount = 20;//less than parts number for ability to check skipZeros flag.
-
-        for (int i = 0; i < keysCount; i++)
-            cache.put(i, i);
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", DEFAULT_CACHE_NAME));
 
@@ -1041,23 +1024,15 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         ignite.cluster().active(true);
 
-        int parts = 32;
-
-        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
-            .setAffinity(new RendezvousAffinityFunction(false, parts))
-            .setBackups(1)
-            .setName(DEFAULT_CACHE_NAME));
+        createCacheAndPreload(ignite, 100);
 
         injectTestSystemOut();
-
-        for (int i = 0; i < 100; i++)
-            cache.put(i, i);
 
         GridCacheContext<Object, Object> cacheCtx = ignite.cachex(DEFAULT_CACHE_NAME).context();
 
         corruptDataEntry(cacheCtx, 0, true, false);
 
-        corruptDataEntry(cacheCtx, 0 + parts / 2, false, true);
+        corruptDataEntry(cacheCtx, cacheCtx.config().getAffinity().partitions() / 2, false, true);
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump"));
 
@@ -1070,6 +1045,23 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         }
         else
             fail("Should be found dump with conflicts");
+    }
+
+    /**
+     * Creates default cache and preload some data entries.
+     *
+     * @param ignite Ignite.
+     * @param countEntries Count of entries.
+     */
+    private void createCacheAndPreload(Ignite ignite, int countEntries) {
+        ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setBackups(1));
+
+        try (IgniteDataStreamer streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
+            for (int i = 0; i < countEntries; i++)
+                streamer.addData(i, i);
+        }
     }
 
     /**
@@ -1370,13 +1362,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         ignite.cluster().active(true);
 
-        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
-            .setAffinity(new RendezvousAffinityFunction(false, 32))
-            .setBackups(1)
-            .setName(DEFAULT_CACHE_NAME));
-
-        for (int i = 0; i < 100; i++)
-            cache.put(i, i);
+        createCacheAndPreload(ignite, 100);
 
         injectTestSystemOut();
 
@@ -1420,13 +1406,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         ignite.cluster().active(true);
 
-        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
-            .setAffinity(new RendezvousAffinityFunction(false, 32))
-            .setBackups(1)
-            .setName(DEFAULT_CACHE_NAME));
-
-        for (int i = 0; i < 100; i++)
-            cache.put(i, i);
+        createCacheAndPreload(ignite, 100);
 
         injectTestSystemOut();
 
