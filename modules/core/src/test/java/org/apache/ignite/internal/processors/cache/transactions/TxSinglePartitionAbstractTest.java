@@ -27,6 +27,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -48,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFi
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -559,4 +561,80 @@ public class TxSinglePartitionAbstractTest extends GridCommonAbstractTest {
     protected PartitionUpdateCounter counter(int partId) {
         return internalCache(0).context().topology().localPartition(partId).dataStore().partUpdateCounter();
     }
+
+
+
+    /**
+     * Forces checkpoint after completing stage of transaction with specific order.
+     */
+    protected class DoCheckpointClosure implements IgniteInClosure<Integer> {
+        /** Tx index. */
+        private final int txIdx;
+
+        /** Grid index. */
+        private final int gridIdx;
+
+        /**
+         * @param txIdx Tx index.
+         * @param gridIdx Grid index.
+         */
+        public DoCheckpointClosure(int txIdx, int gridIdx) {
+            this.txIdx = txIdx;
+
+            this.gridIdx = gridIdx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(Integer txIdx) {
+            if (this.txIdx == txIdx) {
+                try {
+                    if (gridIdx >= 0)
+                        forceCheckpoint(grid(gridIdx));
+                    else
+                        forceCheckpoint();
+                }
+                catch (IgniteCheckedException e) {
+                    fail();
+                }
+            }
+        }
+    };
+
+    /**
+     * Stops node after completing stage of transaction with specific order.
+     */
+    protected class StopNodeClosure implements IgniteInClosure<Integer> {
+        /** Skip checkpoint on stop. */
+        private final boolean skipCheckpointOnStop;
+
+        /** Tx index. */
+        private final int txIdx;
+
+        private final int gridIdx;
+
+        /**
+         * @param txIdx Tx index.
+         */
+        public StopNodeClosure(int txIdx, boolean skipCheckpointOnStop, int gridIdx) {
+            this.txIdx = txIdx;
+
+            this.skipCheckpointOnStop = skipCheckpointOnStop;
+
+            this.gridIdx = gridIdx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(Integer txIdx) {
+            if (this.txIdx == txIdx) {
+                if (skipCheckpointOnStop) {
+                    GridCacheDatabaseSharedManager db =
+                        (GridCacheDatabaseSharedManager)grid(gridIdx).context().cache().context().database();
+
+                    db.enableCheckpoints(false);
+                }
+
+                stopGrid(gridIdx, skipCheckpointOnStop);
+            }
+        }
+    };
 }

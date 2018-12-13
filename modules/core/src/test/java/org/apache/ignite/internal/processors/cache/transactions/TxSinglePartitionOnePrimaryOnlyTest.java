@@ -1,46 +1,39 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
-/** */
+/**
+ * Test partition update counter generation only on primary node.
+ */
 public class TxSinglePartitionOnePrimaryOnlyTest extends TxSinglePartitionAbstractTest {
     /** */
     public void testPrimaryPrepareCommitReorder3TxsNoCheckpointBeforeCommit() throws Exception {
-        doTestPrimaryPrepareCommitReorder3Txs(false, -1);
+        doTestPrimaryPrepareCommitReorder3Txs(false, null);
     }
 
     /** */
     public void testPrimaryPrepareCommitReorder3TxsSkipCheckpointOnNodeStopNoCheckpointBeforeCommit() throws Exception {
-        doTestPrimaryPrepareCommitReorder3Txs(true, -1);
+        doTestPrimaryPrepareCommitReorder3Txs(true, null);
     }
 
     /** */
     public void testPrimaryPrepareCommitReorder3TxsNoCheckpointBeforeCommitCheckpointAfterCommit() throws Exception {
-        doTestPrimaryPrepareCommitReorder3Txs(false, 2);
+        doTestPrimaryPrepareCommitReorder3Txs(false, new DoCheckpointClosure(2, 0));
     }
 
     /** */
     public void testPrimaryPrepareCommitReorder3TxsSkipCheckpointOnNodeStopCheckpointAfterCommit() throws Exception {
-        doTestPrimaryPrepareCommitReorder3Txs(true, 2);
+        doTestPrimaryPrepareCommitReorder3Txs(true, new DoCheckpointClosure(2, 0));
     }
 
     /** */
-    private void doTestPrimaryPrepareCommitReorder3Txs(boolean skipCheckpointOnStop, int checkpointAfterCommitIdx) throws Exception {
+    private void doTestPrimaryPrepareCommitReorder3Txs(boolean skipCheckpointOnStop, @Nullable IgniteInClosure<Integer> commitClo) throws Exception {
         int[] prepOrd = new int[] {1, 2, 0};
         int[] commitOrd = new int[] {2, 1, 0};
         int[] sizes = new int[] {5, 7, 3};
@@ -68,14 +61,8 @@ public class TxSinglePartitionOnePrimaryOnlyTest extends TxSinglePartitionAbstra
             }
 
             @Override protected void onCommitted(IgniteEx node, int idx) {
-                if (idx == checkpointAfterCommitIdx) {
-                    try {
-                        forceCheckpoint();
-                    }
-                    catch (IgniteCheckedException e) {
-                        fail();
-                    }
-                }
+                if (commitClo != null)
+                    commitClo.apply(idx);
 
                 log.info("TX: Committed [node=" + node.name() + ", order=" + idx + ", cntr=" + counter(partId));
             }
