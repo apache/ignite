@@ -88,6 +88,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
         assertEquals(Arrays.stream(reservations).sum(), pc.get());
     }
 
+    // TODO add shuffling to test.
     public void testBackupMode1() {
         PartitionUpdateCounter pc = new PartitionUpdateCounter(log);
 

@@ -35,8 +35,11 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Partition update counter.
+ *
+ * TODO FIXME consider bit set implementation.
  */
 public class PartitionUpdateCounter {
+    /** */
     private static final byte VERSION = 1;
 
     /** */
