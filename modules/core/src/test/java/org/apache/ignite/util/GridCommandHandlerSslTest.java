@@ -17,39 +17,28 @@
 
 package org.apache.ignite.util;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.commandline.CommandHandler;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.NotNull;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_CONNECTION_FAILED;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 
 /**
- * Command line handler test with SSL.
+ * Command line handler test.
  */
-@RunWith(JUnit4.class)
 public class GridCommandHandlerSslTest extends GridCommonAbstractTest {
-    /** */
-    private volatile String[] cipherSuites;
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         cleanPersistenceDir();
 
         stopAllGrids();
+
     }
 
     /** {@inheritDoc} */
@@ -57,17 +46,7 @@ public class GridCommandHandlerSslTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
-    }
 
-    /**
-     * @return SSL factory.
-     */
-    @NotNull private SslContextFactory createSslFactory() {
-        SslContextFactory factory = (SslContextFactory)GridTestUtils.sslFactory();
-
-        factory.setCipherSuites(cipherSuites);
-
-        return factory;
     }
 
     /** {@inheritDoc} */
@@ -80,94 +59,30 @@ public class GridCommandHandlerSslTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
         cfg.getConnectorConfiguration().setSslEnabled(true);
-        cfg.setSslContextFactory(createSslFactory());
+        cfg.setSslContextFactory(GridTestUtils.sslFactory());
 
         return cfg;
     }
 
     /**
-     * @param nodeCipherSuite Ciphers suites to set on node.
-     * @param utilityCipherSuite Ciphers suites to set on utility.
-     * @param expRes Expected result.
+     * Test activation works via control.sh
+     *
      * @throws Exception If failed.
      */
-    private void activate(String nodeCipherSuite, String utilityCipherSuite, int expRes) throws Exception {
-        cipherSuites = F.isEmpty(nodeCipherSuite) ? null : nodeCipherSuite.split(",");
-
+    public void testActivate() throws Exception {
         Ignite ignite = startGrids(1);
 
         assertFalse(ignite.cluster().active());
 
         final CommandHandler cmd = new CommandHandler();
+        assertEquals(EXIT_CODE_OK, cmd.execute(Arrays.asList(
+            "--activate",
+            "--keystore", GridTestUtils.keyStorePath("node01"),
+            "--keystore-password", GridTestUtils.keyStorePassword())));
 
-        List<String> params = new ArrayList<>();
-        params.add("--activate");
-        params.add("--keystore");
-        params.add(GridTestUtils.keyStorePath("node01"));
-        params.add("--keystore-password");
-        params.add(GridTestUtils.keyStorePassword());
-
-        if (!F.isEmpty(utilityCipherSuite)) {
-            params.add("--ssl-cipher-suites");
-            params.add(utilityCipherSuite);
-        }
-
-        assertEquals(expRes, cmd.execute(params));
-
-        if (expRes == EXIT_CODE_OK)
-            assertTrue(ignite.cluster().active());
-        else
-            assertFalse(ignite.cluster().active());
+        assertTrue(ignite.cluster().active());
 
         assertEquals(EXIT_CODE_CONNECTION_FAILED, cmd.execute(Arrays.asList("--deactivate", "--yes")));
     }
 
-    /**
-     * @throws Exception If test failed.
-     */
-    @Test
-    public void testDefaultCipherSuite() throws Exception {
-        cipherSuites = null;
-
-        activate(null, null, EXIT_CODE_OK);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testSameCipherSuite() throws Exception {
-        String ciphers = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256," +
-            "TLS_RSA_WITH_AES_128_GCM_SHA256," +
-            "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256";
-
-        activate(ciphers, ciphers, EXIT_CODE_OK);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testOneCommonCipherSuite() throws Exception {
-        String nodeCipherSuites = "TLS_RSA_WITH_AES_128_GCM_SHA256," +
-            "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256";
-
-        String utilityCipherSuites = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256," +
-            "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256";
-
-        activate(nodeCipherSuites, utilityCipherSuites, EXIT_CODE_OK);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testNoCommonCipherSuite() throws Exception {
-        String nodeCipherSuites = "TLS_RSA_WITH_AES_128_GCM_SHA256";
-
-        String utilityCipherSuites = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256," +
-            "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256";
-
-        activate(nodeCipherSuites, utilityCipherSuites, EXIT_CODE_CONNECTION_FAILED);
-    }
 }

@@ -71,20 +71,20 @@ public class Arguments {
      */
     private String walArgs;
 
-    /** Ping timeout for grid client. See {@link GridClientConfiguration#getPingTimeout()}. */
+    /** Ping timeout for grid client. See {@link GridClientConfiguration#pingTimeout}. */
     private long pingTimeout;
 
-    /** Ping interval for grid client. See {@link GridClientConfiguration#getPingInterval()}. */
+    /** Ping interval for grid client. See {@link GridClientConfiguration#pingInterval}. */
     private long pingInterval;
 
     /** SSL Protocol. */
     private String sslProtocol;
 
-    /** SSL Cipher suites. */
-    private String sslCipherSuites;
-
     /** SSL Key Algorithm. */
     private String sslKeyAlgorithm;
+
+    /** */
+    private String sslCipherSuites;
 
     /** Keystore. */
     private String sslKeyStorePath;
@@ -116,12 +116,12 @@ public class Arguments {
      * @param cacheArgs --cache subcommand arguments.
      * @param walAct WAL action.
      * @param walArgs WAL args.
-     * @param pingTimeout Ping timeout. See {@link GridClientConfiguration#getPingTimeout()}.
-     * @param pingInterval Ping interval. See {@link GridClientConfiguration#getPingInterval()}.
+     * @param pingTimeout Ping timeout. See {@link GridClientConfiguration#pingTimeout}.
+     * @param pingInterval Ping interval. See {@link GridClientConfiguration#pingInterval}.
      * @param autoConfirmation Auto confirmation flag.
      * @param sslProtocol SSL Protocol.
-     * @param sslCipherSuites SSL cipher suites.
      * @param sslKeyAlgorithm SSL Key Algorithm.
+     * @param sslCipherSuites SSL cipher suites.
      * @param sslKeyStorePath Keystore.
      * @param sslKeyStorePassword Keystore Password.
      * @param sslKeyStoreType Keystore Type.
@@ -131,11 +131,9 @@ public class Arguments {
      */
     public Arguments(Command cmd, String host, String port, String user, String pwd, String baselineAct,
         String baselineArgs, VisorTxTaskArg txArg, CacheArguments cacheArgs, String walAct, String walArgs,
-        Long pingTimeout, Long pingInterval, boolean autoConfirmation,
-        String sslProtocol, String sslCipherSuites, String sslKeyAlgorithm,
-        String sslKeyStorePath, char[] sslKeyStorePassword, String sslKeyStoreType,
-        String sslTrustStorePath, char[] sslTrustStorePassword, String sslTrustStoreType
-    ) {
+        Long pingTimeout, Long pingInterval, boolean autoConfirmation, String sslProtocol, String sslKeyAlgorithm,
+        String sslCipherSuites, String sslKeyStorePath, char[] sslKeyStorePassword, String sslKeyStoreType,
+        String sslTrustStorePath, char[] sslTrustStorePassword, String sslTrustStoreType) {
         this.cmd = cmd;
         this.host = host;
         this.port = port;
@@ -157,9 +155,9 @@ public class Arguments {
         this.autoConfirmation = autoConfirmation;
 
         this.sslProtocol = sslProtocol;
+        this.sslKeyAlgorithm = sslKeyAlgorithm;
         this.sslCipherSuites = sslCipherSuites;
 
-        this.sslKeyAlgorithm = sslKeyAlgorithm;
         this.sslKeyStorePath = sslKeyStorePath;
         this.sslKeyStoreType = sslKeyStoreType;
         this.sslKeyStorePassword = sslKeyStorePassword;
@@ -261,7 +259,7 @@ public class Arguments {
     }
 
     /**
-     * See {@link GridClientConfiguration#getPingInterval()}.
+     * See {@link GridClientConfiguration#pingTimeout}.
      *
      * @return Ping timeout.
      */
@@ -270,7 +268,7 @@ public class Arguments {
     }
 
     /**
-     * See {@link GridClientConfiguration#getPingInterval()}.
+     * See {@link GridClientConfiguration#pingInterval}.
      *
      * @return Ping interval.
      */
@@ -293,17 +291,15 @@ public class Arguments {
     }
 
     /**
-     * @return SSL cipher suites.
-     */
-    public String getSslCipherSuites() {
-        return sslCipherSuites;
-    }
-
-    /**
      * @return SSL Key Algorithm
      */
     public String sslKeyAlgorithm() {
         return sslKeyAlgorithm;
+    }
+
+    /** */
+    public String getSslCipherSuites() {
+        return sslCipherSuites;
     }
 
     /**
