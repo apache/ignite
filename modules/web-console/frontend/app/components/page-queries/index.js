@@ -15,17 +15,27 @@
  * limitations under the License.
  */
 
+import './style.scss';
+
 import angular from 'angular';
 
 import queriesNotebooksList from './components/queries-notebooks-list';
 import queriesNotebook from './components/queries-notebook';
 import pageQueriesCmp from './component';
-
-import template from 'views/base2.pug';
-// This template is deprecated for notebooks view
-import legacyTemplate from 'views/base.pug';
-
+import {default as ActivitiesData} from 'app/core/activities/Activities.data';
 import Notebook from './notebook.service';
+
+/**
+ * @param {uirouter.UIRouter} $uiRouter
+ * @param {ActivitiesData} ActivitiesData
+ */
+function registerActivitiesHook($uiRouter, ActivitiesData) {
+    $uiRouter.transitionService.onSuccess({to: 'base.sql.**'}, (transition) => {
+        ActivitiesData.post({group: 'sql', action: transition.targetState().name()});
+    });
+}
+
+registerActivitiesHook.$inject = ['$uiRouter', 'IgniteActivitiesData'];
 
 export default angular.module('ignite-console.sql', [
     'ui.router',
@@ -49,11 +59,9 @@ export default angular.module('ignite-console.sql', [
             }
 
             $postLink() {
-                this.$timeout(() => {
-                    this.$transclude((clone) => {
-                        this.pageQueries[this.slotName].empty();
-                        clone.appendTo(this.pageQueries[this.slotName]);
-                    });
+                this.$transclude((clone) => {
+                    this.pageQueries[this.slotName].empty();
+                    clone.appendTo(this.pageQueries[this.slotName]);
                 });
             }
         },
@@ -64,15 +72,7 @@ export default angular.module('ignite-console.sql', [
         // set up the states
         $stateProvider
             .state('base.sql', {
-                abstract: true,
-                views: {
-                    '@': {
-                        template
-                    },
-                    '@base.sql': {
-                        template: '<ui-view></ui-view>'
-                    }
-                }
+                abstract: true
             })
             .state('base.sql.tabs', {
                 url: '/queries',
@@ -88,19 +88,13 @@ export default angular.module('ignite-console.sql', [
                     title: 'Notebooks'
                 }
             })
-            .state('base.sql.tabs.notebook', {
+            .state('base.sql.notebook', {
                 url: '/notebook/{noteId}',
-                views: {
-                    '@': {
-                        template: legacyTemplate
-                    },
-                    '@base.sql.tabs.notebook': {
-                        component: 'queriesNotebook'
-                    }
-                },
+                component: 'queriesNotebook',
                 permission: 'query',
                 tfMetaTags: {
                     title: 'Query notebook'
                 }
             });
-    }]);
+    }])
+    .run(registerActivitiesHook);

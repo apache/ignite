@@ -18,12 +18,13 @@
 package org.apache.ignite.failure;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 
 /**
  * Test failure handler implementation
  */
-public class TestFailureHandler implements FailureHandler {
+public class TestFailureHandler extends AbstractFailureHandler {
     /** Invalidate. */
     private final boolean invalidate;
 
@@ -35,6 +36,13 @@ public class TestFailureHandler implements FailureHandler {
 
     /**
      * @param invalidate Invalidate.
+     */
+    public TestFailureHandler(boolean invalidate) {
+        this(invalidate, new CountDownLatch(1));
+    }
+
+    /**
+     * @param invalidate Invalidate.
      * @param latch Latch.
      */
     public TestFailureHandler(boolean invalidate, CountDownLatch latch) {
@@ -43,13 +51,15 @@ public class TestFailureHandler implements FailureHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
-        this.failureCtx = failureCtx;
+    @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
+        if (this.failureCtx == null) {
+            this.failureCtx = failureCtx;
 
-        if (latch != null)
-            latch.countDown();
+            if (latch != null)
+                latch.countDown();
 
-        ignite.log().warning("Handled ignite failure: " + failureCtx);
+            ignite.log().warning("Handled ignite failure: " + failureCtx);
+        }
 
         return invalidate;
     }
@@ -58,6 +68,17 @@ public class TestFailureHandler implements FailureHandler {
      * @return Failure context.
      */
     public FailureContext failureContext() {
+        return failureCtx;
+    }
+
+    /**
+     * @param millis Millis.
+
+     * @return Failure context.
+     */
+    public FailureContext awaitFailure(long millis) throws InterruptedException {
+        latch.await(millis, TimeUnit.MILLISECONDS);
+
         return failureCtx;
     }
 }

@@ -36,11 +36,15 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Baseline nodes metrics self test.
  */
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -53,6 +57,7 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBaselineNodes() throws Exception {
         // Start 2 server nodes.
         IgniteEx ignite0 = startGrid(0);
@@ -149,7 +154,6 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
     private void resetBlt() throws Exception {
         resetBaselineTopology();
 
-        waitForRebalancing();
         awaitPartitionMapExchange();
     }
 

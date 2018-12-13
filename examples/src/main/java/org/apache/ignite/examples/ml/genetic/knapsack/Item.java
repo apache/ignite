@@ -20,52 +20,54 @@ package org.apache.ignite.examples.ml.genetic.knapsack;
 import java.io.Serializable;
 
 /**
- * POJO to model an Item
+ * POJO to model an Item.
  */
 public class Item implements Serializable {
-    /** weight of item in lbs. */
+    /** Weight of item in lbs. */
     private double weight;
-    /** value of item */
-    private double value;
-    /** name of item */
+    /** Value of item. */
+    private double val;
+    /** Name of item. */
     private String name;
 
     /**
-     * Get the weight
+     * Get the weight.
      *
-     * @return Weight
+     * @return Weight.
      */
     public double getWeight() {
         return weight;
     }
 
     /**
-     * Set the weight
+     * Set the weight.
      *
-     * @param weight Weight
+     * @param weight Weight.
      */
     public void setWeight(double weight) {
         this.weight = weight;
     }
 
     /**
-     * Get the value
+     * Get the value.
      *
-     * @return Value
+     * @return Value.
      */
-    public double getValue() {
-        return value;
+    public double getVal() {
+        return val;
     }
 
     /**
-     * @param value Value
+     * Set the value.
+     *
+     * @param val Value.
      */
-    public void setValue(double value) {
-        this.value = value;
+    public void setVal(double val) {
+        this.val = val;
     }
 
     /**
-     * Get the name
+     * Get the name.
      *
      * @return Name
      */
@@ -74,9 +76,9 @@ public class Item implements Serializable {
     }
 
     /**
-     * Set the name
+     * Set the name.
      *
-     * @param name Name
+     * @param name Name.
      */
     public void setName(String name) {
         this.name = name;
@@ -84,7 +86,6 @@ public class Item implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "Item [weight=" + weight + ", value=" + value + ", name=" + name + "]";
+        return "Item [weight=" + weight + ", value=" + val + ", name=" + name + "]";
     }
-
 }

@@ -19,9 +19,11 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -33,15 +35,17 @@ import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.Random;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for rebalancing.
  */
+@RunWith(JUnit4.class)
 public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
-
     /** Cache name with one backups */
     private static final String REBALANCE_TEST_CACHE_NAME = "rebalanceCache";
 
@@ -49,12 +53,12 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration<Integer,Integer> rebalabceCacheCfg = new CacheConfiguration<>();
-        rebalabceCacheCfg.setBackups(1);
-        rebalabceCacheCfg.setName(REBALANCE_TEST_CACHE_NAME);
-        rebalabceCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        CacheConfiguration<Integer,Integer> ccfg = new CacheConfiguration<>();
+        ccfg.setBackups(1);
+        ccfg.setName(REBALANCE_TEST_CACHE_NAME);
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
-        cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME), rebalabceCacheCfg);
+        cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME), ccfg);
 
         return cfg;
     }
@@ -67,8 +71,30 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If fails.
+     */
+    @Test
+    public void testRebalanceLocalCacheFuture() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
+        startGrid(
+            getTestIgniteInstanceName(0),
+            getConfiguration(getTestIgniteInstanceName(0))
+                .setCacheConfiguration(
+                    new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME),
+                    new CacheConfiguration<Integer, Integer>(REBALANCE_TEST_CACHE_NAME)
+                        .setCacheMode(CacheMode.LOCAL))
+        );
+
+        IgniteCache<Integer, Integer> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
+
+        assertTrue(cache.rebalance().get());
+    }
+
+    /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalanceFuture() throws Exception {
         IgniteEx ig0 = startGrid(0);
 
@@ -104,6 +130,7 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDisableRebalancing() throws Exception {
         IgniteEx ig0 = startGrid(0);
         IgniteEx ig1 = startGrid(1);

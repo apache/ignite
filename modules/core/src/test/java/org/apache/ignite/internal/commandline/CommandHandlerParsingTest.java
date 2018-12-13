@@ -23,9 +23,15 @@ import java.util.UUID;
 import junit.framework.TestCase;
 import org.apache.ignite.internal.commandline.cache.CacheArguments;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
+import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
@@ -37,19 +43,23 @@ import static org.apache.ignite.internal.commandline.CommandHandler.VI_CHECK_FIR
 import static org.apache.ignite.internal.commandline.CommandHandler.VI_CHECK_THROUGH;
 import static org.apache.ignite.internal.commandline.CommandHandler.WAL_DELETE;
 import static org.apache.ignite.internal.commandline.CommandHandler.WAL_PRINT;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Tests Command Handler parsing arguments.
  */
+@RunWith(JUnit4.class)
 public class CommandHandlerParsingTest extends TestCase {
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Before
+    @Override public void setUp() throws Exception {
         System.setProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
 
         super.setUp();
     }
 
     /** {@inheritDoc} */
+    @After
     @Override public void tearDown() throws Exception {
         System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
@@ -59,6 +69,7 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * validate_indexes command arguments parsing and validation
      */
+    @Test
     public void testValidateIndexArguments() {
         CommandHandler hnd = new CommandHandler();
 
@@ -141,6 +152,7 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * Test that experimental command (i.e. WAL command) is disabled by default.
      */
+    @Test
     public void testExperimentalCommandIsDisabled() {
         System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
@@ -166,8 +178,48 @@ public class CommandHandlerParsingTest extends TestCase {
     }
 
     /**
+     * Tests parsing and validation for the SSL arguments.
+     */
+    @Test
+    public void testParseAndValidateSSLArguments() {
+        CommandHandler hnd = new CommandHandler();
+
+        for (Command cmd : Command.values()) {
+
+            if (cmd == Command.CACHE || cmd == Command.WAL)
+                continue; // --cache subcommand requires its own specific arguments.
+
+            try {
+                hnd.parseAndValidate(asList("--truststore"));
+
+                fail("expected exception: Expected truststore");
+            }
+            catch (IllegalArgumentException e) {
+                e.printStackTrace();
+            }
+
+            Arguments args = hnd.parseAndValidate(asList("--keystore", "testKeystore", "--keystore-password", "testKeystorePassword", "--keystore-type", "testKeystoreType",
+                "--truststore", "testTruststore", "--truststore-password", "testTruststorePassword", "--truststore-type", "testTruststoreType",
+                "--ssl-key-algorithm", "testSSLKeyAlgorithm", "--ssl-protocol", "testSSLProtocol", cmd.text()));
+
+            assertEquals("testSSLProtocol", args.sslProtocol());
+            assertEquals("testSSLKeyAlgorithm", args.sslKeyAlgorithm());
+            assertEquals("testKeystore", args.sslKeyStorePath());
+            assertArrayEquals("testKeystorePassword".toCharArray(), args.sslKeyStorePassword());
+            assertEquals("testKeystoreType", args.sslKeyStoreType());
+            assertEquals("testTruststore", args.sslTrustStorePath());
+            assertArrayEquals("testTruststorePassword".toCharArray(), args.sslTrustStorePassword());
+            assertEquals("testTruststoreType", args.sslTrustStoreType());
+
+            assertEquals(cmd, args.command());
+        }
+    }
+
+
+    /**
      * Tests parsing and validation for user and password arguments.
      */
+    @Test
     public void testParseAndValidateUserAndPassword() {
         CommandHandler hnd = new CommandHandler();
 
@@ -193,28 +245,10 @@ public class CommandHandlerParsingTest extends TestCase {
                 e.printStackTrace();
             }
 
-            try {
-                hnd.parseAndValidate(asList("--user", "testUser", cmd.text()));
-
-                fail("expected exception: Both user and password should be specified");
-            }
-            catch (IllegalArgumentException e) {
-                e.printStackTrace();
-            }
-
-            try {
-                hnd.parseAndValidate(asList("--password", "testPass", cmd.text()));
-
-                fail("expected exception: Both user and password should be specified");
-            }
-            catch (IllegalArgumentException e) {
-                e.printStackTrace();
-            }
-
             Arguments args = hnd.parseAndValidate(asList("--user", "testUser", "--password", "testPass", cmd.text()));
 
-            assertEquals("testUser", args.user());
-            assertEquals("testPass", args.password());
+            assertEquals("testUser", args.getUserName());
+            assertEquals("testPass", args.getPassword());
             assertEquals(cmd, args.command());
         }
     }
@@ -222,6 +256,7 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * Tests parsing and validation  of WAL commands.
      */
+    @Test
     public void testParseAndValidateWalActions() {
         CommandHandler hnd = new CommandHandler();
 
@@ -259,9 +294,71 @@ public class CommandHandlerParsingTest extends TestCase {
     }
 
     /**
+     * Tests that the auto confirmation flag was correctly parsed.
+     */
+    @Test
+    public void testParseAutoConfirmationFlag() {
+        CommandHandler hnd = new CommandHandler();
+
+        for (Command cmd : Command.values()) {
+            if (cmd != Command.DEACTIVATE
+                && cmd != Command.BASELINE
+                && cmd != Command.TX)
+                continue;
+
+            Arguments args = hnd.parseAndValidate(asList(cmd.text()));
+
+            assertEquals(cmd, args.command());
+            assertEquals(DFLT_HOST, args.host());
+            assertEquals(DFLT_PORT, args.port());
+            assertEquals(false, args.autoConfirmation());
+
+            switch (cmd) {
+                case DEACTIVATE: {
+                    args = hnd.parseAndValidate(asList(cmd.text(), "--yes"));
+
+                    assertEquals(cmd, args.command());
+                    assertEquals(DFLT_HOST, args.host());
+                    assertEquals(DFLT_PORT, args.port());
+                    assertEquals(true, args.autoConfirmation());
+
+                    break;
+                }
+                case BASELINE: {
+                    for (String baselineAct : asList("add", "remove", "set")) {
+                        args = hnd.parseAndValidate(asList(cmd.text(), baselineAct, "c_id1,c_id2", "--yes"));
+
+                        assertEquals(cmd, args.command());
+                        assertEquals(DFLT_HOST, args.host());
+                        assertEquals(DFLT_PORT, args.port());
+                        assertEquals(baselineAct, args.baselineAction());
+                        assertEquals("c_id1,c_id2", args.baselineArguments());
+                        assertEquals(true, args.autoConfirmation());
+                    }
+
+                    break;
+                }
+                case TX: {
+                    args = hnd.parseAndValidate(asList(cmd.text(), "xid", "xid1", "minDuration", "10", "kill", "--yes"));
+
+                    assertEquals(cmd, args.command());
+                    assertEquals(DFLT_HOST, args.host());
+                    assertEquals(DFLT_PORT, args.port());
+                    assertEquals(true, args.autoConfirmation());
+
+                    assertEquals("xid1", args.transactionArguments().getXid());
+                    assertEquals(10_000, args.transactionArguments().getMinDuration().longValue());
+                    assertEquals(VisorTxOperation.KILL, args.transactionArguments().getOperation());
+                }
+            }
+        }
+    }
+
+    /**
      * Tests host and port arguments.
      * Tests connection settings arguments.
      */
+    @Test
     public void testConnectionSettings() {
         CommandHandler hnd = new CommandHandler();
 
@@ -316,7 +413,7 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * test parsing dump transaction arguments
      */
-    @SuppressWarnings("Null")
+    @Test
     public void testTransactionArguments() {
         CommandHandler hnd = new CommandHandler();
         Arguments args;

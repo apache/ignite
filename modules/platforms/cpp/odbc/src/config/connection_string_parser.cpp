@@ -24,6 +24,7 @@
 #include "ignite/odbc/ssl/ssl_mode.h"
 #include "ignite/odbc/config/connection_string_parser.h"
 #include "ignite/odbc/config/config_tools.h"
+#include "ignite/odbc/nested_tx_mode.h"
 
 namespace ignite
 {
@@ -51,6 +52,7 @@ namespace ignite
             const std::string ConnectionStringParser::Key::sslCaFile              = "ssl_ca_file";
             const std::string ConnectionStringParser::Key::user                   = "user";
             const std::string ConnectionStringParser::Key::password               = "password";
+            const std::string ConnectionStringParser::Key::nestedTxMode           = "nested_tx_mode";
 
             ConnectionStringParser::ConnectionStringParser(Configuration& cfg):
                 cfg(cfg)
@@ -63,7 +65,7 @@ namespace ignite
                 // No-op.
             }
 
-            void ConnectionStringParser::ParseConnectionString(const char* str, size_t len, char delimeter,
+            void ConnectionStringParser::ParseConnectionString(const char* str, size_t len, char delimiter,
                 diagnostic::DiagnosticRecordStorage* diag)
             {
                 std::string connect_str(str, len);
@@ -73,7 +75,7 @@ namespace ignite
 
                 while (!connect_str.empty())
                 {
-                    size_t attr_begin = connect_str.rfind(delimeter);
+                    size_t attr_begin = connect_str.rfind(delimiter);
 
                     if (attr_begin == std::string::npos)
                         attr_begin = 0;
@@ -93,8 +95,8 @@ namespace ignite
                         const char* value_begin = connect_str.data() + attr_eq_pos + 1;
                         const char* value_end = connect_str.data() + connect_str.size();
 
-                        std::string key = utility::RemoveSurroundingSpaces(key_begin, key_end);
-                        std::string value = utility::RemoveSurroundingSpaces(value_begin, value_end);
+                        std::string key = common::StripSurroundingWhitespaces(key_begin, key_end);
+                        std::string value = common::StripSurroundingWhitespaces(value_begin, value_end);
 
                         if (value[0] == '{' && value[value.size() - 1] == '}')
                             value = value.substr(1, value.size() - 2);
@@ -423,6 +425,23 @@ namespace ignite
                 else if (lKey == Key::password)
                 {
                     cfg.SetPassword(value);
+                }
+                else if (lKey == Key::nestedTxMode)
+                {
+                    NestedTxMode::Type mode = NestedTxMode::FromString(value);
+
+                    if (mode == NestedTxMode::AI_UNKNOWN)
+                    {
+                        if (diag)
+                        {
+                            diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                                "Specified nested transaction mode is not supported. Default value used ('error').");
+                        }
+
+                        return;
+                    }
+
+                    cfg.SetNestedTxMode(mode);
                 }
                 else if (diag)
                 {

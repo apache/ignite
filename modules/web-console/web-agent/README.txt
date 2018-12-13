@@ -20,6 +20,8 @@ Configuration file:
     tokens
     server-uri
     node-uri
+    node-login
+    node-password
     driver-folder
 
   Example configuration file:
@@ -47,6 +49,10 @@ Options:
   -n, --node-uri
      Comma-separated list of URIs for connect to Ignite REST server,
      default value: http://localhost:8080
+  -nl, --node-login
+     User name that will be used to connect to secured cluster.
+  -np, --node-password
+     Password that will be used to connect to secured cluster
   -s, --server-uri
      URI for connect to Ignite Web Console via web-socket protocol,
      default value: http://localhost:3000

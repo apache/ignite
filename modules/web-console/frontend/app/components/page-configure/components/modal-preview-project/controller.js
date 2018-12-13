@@ -47,9 +47,15 @@ export default class ModalPreviewProjectController {
 
     showPreview(node) {
         this.fileText = '';
-        if (!node) return;
+
+        if (!node)
+            return;
+
         this.fileExt = node.file.name.split('.').reverse()[0].toLowerCase();
-        if (node.file.dir) return;
+
+        if (node.file.dir)
+            return;
+
         node.file.async('string').then((text) => {
             this.fileText = text;
             this.$scope.$applyAsync();

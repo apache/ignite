@@ -18,10 +18,16 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import javax.cache.configuration.Factory;
+import javax.management.JMException;
+import javax.management.ObjectName;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -30,6 +36,9 @@ import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
+import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.nio.GridNioAsyncNotifyFilter;
@@ -40,10 +49,13 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.spi.IgnitePortProtocol;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.CONN_CTX_META_KEY;
 
 /**
  * Client connector processor.
@@ -51,6 +63,9 @@ import org.jetbrains.annotations.Nullable;
 public class ClientListenerProcessor extends GridProcessorAdapter {
     /** Default client connector configuration. */
     public static final ClientConnectorConfiguration DFLT_CLI_CFG = new ClientConnectorConfigurationEx();
+
+    /** Client listener port. */
+    public static final String CLIENT_LISTENER_PORT = "clientListenerPort";
 
     /** Default number of selectors. */
     private static final int DFLT_SELECTOR_CNT = Math.min(4, Runtime.getRuntime().availableProcessors());
@@ -123,7 +138,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
                 GridNioFilter[] filters = makeFilters(cliConnCfg);
 
-                int maxOpenCursors = cliConnCfg.getMaxOpenCursorsPerConnection();
                 long idleTimeout = cliConnCfg.getIdleTimeout();
 
                 for (int port = cliConnCfg.getPort(); port <= portTo && port <= 65535; port++) {
@@ -157,6 +171,8 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
                         lastErr = null;
 
+                        ctx.addNodeAttribute(CLIENT_LISTENER_PORT, port);
+
                         break;
                     }
                     catch (Exception e) {
@@ -170,6 +186,9 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                     throw new IgniteCheckedException("Failed to bind to any [host:port] from the range [" +
                         "host=" + host + ", portFrom=" + cliConnCfg.getPort() + ", portTo=" + portTo +
                         ", lastErr=" + lastErr + ']');
+
+                if (!U.IGNITE_MBEANS_DISABLED)
+                    registerMBean();
             }
             catch (Exception e) {
                 throw new IgniteCheckedException("Failed to start client connector processor.", e);
@@ -177,12 +196,56 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         }
     }
 
-     /**
-      * Make NIO server filters.
-      * @param cliConnCfg Client configuration.
-      * @return Array of filters, suitable for the configuration.
-      * @throws IgniteCheckedException if provided SslContextFactory is null.
-      */
+    /**
+     * Register an Ignite MBean for managing clients connections.
+     */
+    private void registerMBean() throws IgniteCheckedException {
+        assert !U.IGNITE_MBEANS_DISABLED;
+
+        String name = getClass().getSimpleName();
+
+        try {
+            ObjectName objName = U.registerMBean(
+                ctx.config().getMBeanServer(),
+                ctx.config().getIgniteInstanceName(),
+                "Clients", name, new ClientProcessorMXBeanImpl(), ClientProcessorMXBean.class);
+
+            if (log.isDebugEnabled())
+                log.debug("Registered MBean: " + objName);
+        }
+        catch (JMException e) {
+            throw new IgniteCheckedException("Failed to register MBean " + name, e);
+        }
+    }
+
+    /**
+     * Unregisters given MBean.
+     */
+    private void unregisterMBean() {
+        assert !U.IGNITE_MBEANS_DISABLED;
+
+        String name = getClass().getSimpleName();
+
+        try {
+            ObjectName objName = U.makeMBeanName(ctx.config().getIgniteInstanceName(), "Clients", name);
+
+            ctx.config().getMBeanServer().unregisterMBean(objName);
+
+            if (log.isDebugEnabled())
+                log.debug("Unregistered MBean: " + objName);
+        }
+        catch (JMException e) {
+            U.error(log, "Failed to unregister MBean: " + name, e);
+        }
+    }
+
+    /**
+     * Make NIO server filters.
+     *
+     * @param cliConnCfg Client configuration.
+     * @return Array of filters, suitable for the configuration.
+     * @throws IgniteCheckedException if provided SslContextFactory is null.
+     */
     @NotNull private GridNioFilter[] makeFilters(@NotNull ClientConnectorConfiguration cliConnCfg)
         throws IgniteCheckedException {
         GridNioFilter openSesFilter = new GridNioAsyncNotifyFilter(ctx.igniteInstanceName(), execSvc, log) {
@@ -203,7 +266,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                     "(SSL is enabled but factory is null). Check the ClientConnectorConfiguration");
 
             GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtxFactory.create(),
-                    true, ByteOrder.nativeOrder(), log);
+                true, ByteOrder.nativeOrder(), log);
 
             sslFilter.directMode(false);
 
@@ -239,6 +302,9 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
                 execSvc = null;
             }
+
+            if (!U.IGNITE_MBEANS_DISABLED)
+                unregisterMBean();
 
             if (log.isDebugEnabled())
                 log.debug("Client connector processor stopped.");
@@ -375,5 +441,111 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
      */
     private static boolean isNotDefault(ClientConnectorConfiguration cliConnCfg) {
         return cliConnCfg != null && !(cliConnCfg instanceof ClientConnectorConfigurationEx);
+    }
+
+    /**
+     * ClientProcessorMXBean interface.
+     */
+    private class ClientProcessorMXBeanImpl implements ClientProcessorMXBean {
+        /** {@inheritDoc} */
+        @Override public List<String> getConnections() {
+            Collection<? extends GridNioSession> sessions = srv.sessions();
+
+            List<String> res = new ArrayList<>(sessions.size());
+
+            for (GridNioSession ses : sessions) {
+                ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
+
+                if (connCtx == null || ses.closeTime() != 0)
+                    continue; // Skip non-initialized or closed session.
+
+                String desc = clientConnectionDescription(ses, connCtx);
+
+                res.add(desc);
+            }
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void dropAllConnections() {
+            Collection<? extends GridNioSession> sessions = srv.sessions();
+
+            for (GridNioSession ses : sessions) {
+                ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
+
+                if (connCtx == null || ses.closeTime() != 0)
+                    continue; // Skip non-initialized or closed session.
+
+                srv.close(ses);
+
+                log.info("Client session has been dropped: " + clientConnectionDescription(ses, connCtx));
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean dropConnection(long id) {
+            assert (id >> 32) == ctx.discovery().localNode().order() : "Invalid connection id.";
+
+            Collection<? extends GridNioSession> sessions = srv.sessions();
+
+            for (GridNioSession ses : sessions) {
+                ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
+
+                if (connCtx == null || connCtx.connectionId() != id)
+                    continue;
+
+                if (ses.closeTime() != 0) {
+                    if (log.isDebugEnabled())
+                        log.debug("Client session is already closed: " + clientConnectionDescription(ses, connCtx));
+
+                    return false;
+                }
+
+                srv.close(ses);
+
+                log.info("Client session has been dropped: " + clientConnectionDescription(ses, connCtx));
+
+                return true;
+            }
+
+            return false;
+        }
+
+        /**
+         * Compose connection description string.
+         * @param ses client NIO session.
+         * @param ctx client connection context.
+         * @return connection description
+         */
+        @SuppressWarnings("StringConcatenationInsideStringBufferAppend")
+        private String clientConnectionDescription(GridNioSession ses, ClientListenerConnectionContext ctx) {
+            AuthorizationContext authCtx = ctx.authorizationContext();
+
+            StringBuilder sb = new StringBuilder();
+
+            if(ctx instanceof JdbcConnectionContext)
+                sb.append("JdbcClient [");
+            else if (ctx instanceof OdbcConnectionContext)
+                sb.append("OdbcClient [");
+            else
+                sb.append("ThinClient [");
+
+            InetSocketAddress rmtAddr = ses.remoteAddress();
+            InetSocketAddress locAddr = ses.localAddress();
+
+            assert rmtAddr != null;
+            assert locAddr != null;
+
+            String rmtAddrStr = rmtAddr.getHostString() + ":" + rmtAddr.getPort();
+            String locAddrStr = locAddr.getHostString() + ":" + locAddr.getPort();
+
+            sb.append("id=" + ctx.connectionId());
+            sb.append(", user=").append(authCtx == null ? "<anonymous>" : authCtx.userName());
+            sb.append(", rmtAddr=" + rmtAddrStr);
+            sb.append(", locAddr=" + locAddrStr);
+
+            return sb.append(']').toString();
+        }
     }
 }

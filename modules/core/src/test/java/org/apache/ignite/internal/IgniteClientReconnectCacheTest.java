@@ -37,7 +37,6 @@ import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteTransactions;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -75,6 +74,9 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -94,6 +96,7 @@ import static org.junit.Assert.assertNotEquals;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstractTest {
     /** */
     private static final int SRV_CNT = 3;
@@ -103,6 +106,9 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
     /** */
     private static final int CACHE_PUTS_CNT = 3;
+
+    /** */
+    public static final String NEAR_CACHE_NAME = "nearCache";
 
     /** */
     private UUID nodeId;
@@ -154,6 +160,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnect() throws Exception {
         clientMode = true;
 
@@ -165,9 +172,10 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         DiscoverySpi srvSpi = ignite(0).configuration().getDiscoverySpi();
 
-        final IgniteCache<Object, Object> cache = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+        final IgniteCache<Object, Object> cache = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME))
+            .withAllowAtomicOpsInTx();
 
-        final IgniteCache<Object, Object> staticCache = client.cache(STATIC_CACHE);
+        final IgniteCache<Object, Object> staticCache = client.cache(STATIC_CACHE).withAllowAtomicOpsInTx();
 
         staticCache.put(1, 1);
 
@@ -176,9 +184,10 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setName("nearCache");
+        ccfg.setName(NEAR_CACHE_NAME);
 
-        final IgniteCache<Object, Object> nearCache = client.getOrCreateCache(ccfg, new NearCacheConfiguration<>());
+        final IgniteCache<Object, Object> nearCache = client.getOrCreateCache(ccfg, new NearCacheConfiguration<>())
+            .withAllowAtomicOpsInTx();
 
         nearCache.put(1, 1);
 
@@ -268,7 +277,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         checkCacheDiscoveryData(srv, client, DEFAULT_CACHE_NAME, true, true, false);
 
-        checkCacheDiscoveryData(srv, client, "nearCache", true, true, true);
+        checkCacheDiscoveryData(srv, client, NEAR_CACHE_NAME, true, true, true);
 
         checkCacheDiscoveryData(srv, client, STATIC_CACHE, true, true, false);
 
@@ -306,7 +315,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         checkCacheDiscoveryData(srv2, client, DEFAULT_CACHE_NAME, true, true, false);
 
-        checkCacheDiscoveryData(srv2, client, "nearCache", true, true, true);
+        checkCacheDiscoveryData(srv2, client, NEAR_CACHE_NAME, true, true, true);
 
         checkCacheDiscoveryData(srv2, client, STATIC_CACHE, true, true, false);
 
@@ -314,14 +323,24 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         assertEquals(20, staticCache.get(20));
 
-        srv.cache(nearCache.getName()).put(20, 22);
-
-        assertEquals(22, nearCache.localPeek(20));
+        for(int i = 0; i < 100; i++) {
+            srv.cache(nearCache.getName()).put(i, 22);
+            Object actual = nearCache.localPeek(i);
+            // Change of topology may start partitions moving. It leads to invalidate near cache and
+            // null-values can be valid in such case.
+            if(actual == null) {
+                actual = nearCache.get(i);
+                assertEquals(22, actual);
+                actual = nearCache.localPeek(i);
+            }
+            assertEquals(22, actual);
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectTransactions() throws Exception {
         clientMode = true;
 
@@ -391,6 +410,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxStateAfterClientReconnect() throws Exception {
         clientMode = true;
 
@@ -430,6 +450,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectTransactionInProgress1() throws Exception {
         clientMode = true;
 
@@ -591,6 +612,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectTransactionInProgress2() throws Exception {
         clientMode = true;
 
@@ -650,6 +672,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectExchangeInProgress() throws Exception {
         clientMode = true;
 
@@ -712,6 +735,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectInitialExchangeInProgress() throws Exception {
         final UUID clientId = UUID.randomUUID();
 
@@ -800,6 +824,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectOperationInProgress() throws Exception {
         clientMode = true;
 
@@ -872,6 +897,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectCacheDestroyed() throws Exception {
         clientMode = true;
 
@@ -909,6 +935,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectCacheDestroyedAndCreated() throws Exception {
         clientMode = true;
 
@@ -952,6 +979,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectMarshallerCache() throws Exception {
         clientMode = true;
 
@@ -994,6 +1022,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectClusterRestart() throws Exception {
         clientMode = true;
 
@@ -1058,6 +1087,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectClusterRestartMultinode() throws Exception {
         clientMode = true;
 
@@ -1121,6 +1151,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectMultinode() throws Exception {
         reconnectMultinode(false);
     }
@@ -1128,6 +1159,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectMultinodeLongHistory() throws Exception {
         reconnectMultinode(true);
     }
@@ -1201,7 +1233,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
                 ClusterGroup grp = client.cluster().forCacheNodes(DEFAULT_CACHE_NAME);
 
-                assertEquals(CLIENTS + srvNodes, grp.nodes().size());
+                assertEquals(expNodes, grp.nodes().size());
 
                 grp = client.cluster().forClientNodes(DEFAULT_CACHE_NAME);
 
@@ -1243,6 +1275,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectDestroyCache() throws Exception {
         clientMode = true;
 

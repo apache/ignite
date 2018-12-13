@@ -27,14 +27,28 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  * Load-All self test.
  */
+@RunWith(JUnit4.class)
 public class GridCacheLocalLoadAllSelfTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Before
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
+        super.setUp();
+    }
+
     /**
      *
      */
@@ -46,6 +60,7 @@ public class GridCacheLocalLoadAllSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testCacheGetAll() throws Exception {
         Ignite ignite = grid();
 

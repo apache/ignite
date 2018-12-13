@@ -39,7 +39,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * We emulate that client receive message about joining to topology earlier than some server nodes in topology.
@@ -47,6 +49,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * To emulate this we connect client to second node in topology and pause sending message about joining finishing to
  * third node.
  */
+@RunWith(JUnit4.class)
 public class IgniteClientConnectTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -94,6 +97,7 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientConnectToBigTopology() throws Exception {
         Ignite ignite = startGrids(3);
 
@@ -135,7 +139,7 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
      */
     class TestTcpDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
+        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
                 IgniteCheckedException {
             if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
                 if (msg.senderNodeId() != null && clientJustStarted.get())

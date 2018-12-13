@@ -28,10 +28,14 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * IgniteOutOfMemoryError failure handler test.
  */
+@RunWith(JUnit4.class)
 public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
     /** Offheap size for memory policy. */
     private static final int SIZE = 10 * 1024 * 1024;
@@ -44,6 +48,9 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
 
     /** PDS enabled. */
     private boolean pds;
+
+    /** MVCC enabled. */
+    private boolean mvcc;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -69,7 +76,7 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
             .setName(DEFAULT_CACHE_NAME)
             .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(0)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+            .setAtomicityMode(mvcc ? CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT : CacheAtomicityMode.TRANSACTIONAL);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -93,22 +100,43 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
     /**
      * Test IgniteOutOfMemoryException handling with no store.
      */
+    @Test
     public void testIoomErrorNoStoreHandling() throws Exception {
-        testIoomErrorHandling(false);
+        testIoomErrorHandling(false, false);
     }
 
     /**
      * Test IgniteOutOfMemoryException handling with PDS.
      */
+    @Test
     public void testIoomErrorPdsHandling() throws Exception {
-        testIoomErrorHandling(true);
+        testIoomErrorHandling(true, false);
+    }
+
+    /**
+     * Test IgniteOutOfMemoryException handling with no store.
+     */
+    @Test
+    public void testIoomErrorMvccNoStoreHandling() throws Exception {
+        testIoomErrorHandling(false, true);
+    }
+
+    /**
+     * Test IgniteOutOfMemoryException handling with PDS.
+     */
+    @Test
+    public void testIoomErrorMvccPdsHandling() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10185");
+
+        testIoomErrorHandling(true, true);
     }
 
     /**
      * Test IOOME handling.
      */
-    public void testIoomErrorHandling(boolean pds) throws Exception {
+    public void testIoomErrorHandling(boolean pds, boolean mvcc) throws Exception {
         this.pds = pds;
+        this.mvcc = mvcc;
 
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);

@@ -44,23 +44,28 @@ export default class ItemsTableController {
             },
             onRegisterApi: (api) => {
                 this.gridAPI = api;
+
                 api.selection.on.rowSelectionChanged(this.$scope, (row, e) => {
                     this.onRowsSelectionChange([row], e);
                 });
+
                 api.selection.on.rowSelectionChangedBatch(this.$scope, (rows, e) => {
                     this.onRowsSelectionChange(rows, e);
                 });
+
                 api.core.on.rowsVisibleChanged(this.$scope, () => {
                     const visibleRows = api.core.getVisibleRows();
                     if (this.onVisibleRowsChange) this.onVisibleRowsChange({$event: visibleRows});
                     this.adjustHeight(api, visibleRows.length);
                     this.showFilterNotification = this.grid.data.length && visibleRows.length === 0;
                 });
+
                 if (this.onFilterChanged) {
                     api.core.on.filterChanged(this.$scope, () => {
                         this.onFilterChanged();
                     });
                 }
+
                 this.$timeout(() => {
                     if (this.selectedRowId) this.applyIncomingSelection(this.selectedRowId);
                 });
@@ -73,10 +78,16 @@ export default class ItemsTableController {
     oneWaySelection = false;
 
     onRowsSelectionChange = debounce((rows, e = {}) => {
-        if (e.ignore) return;
+        if (e.ignore)
+            return;
+
         const selected = this.gridAPI.selection.legacyGetSelectedRows();
-        if (this.oneWaySelection) rows.forEach((r) => r.isSelected = false);
-        if (this.onSelectionChange) this.onSelectionChange({$event: selected});
+
+        if (this.oneWaySelection)
+            rows.forEach((r) => r.isSelected = false);
+
+        if (this.onSelectionChange)
+            this.onSelectionChange({$event: selected});
     });
 
     makeActionsMenu(incomingActionsMenu = []) {
@@ -85,17 +96,22 @@ export default class ItemsTableController {
 
     $onChanges(changes) {
         const hasChanged = (binding) => binding in changes && changes[binding].currentValue !== changes[binding].previousValue;
+
         if (hasChanged('items') && this.grid) {
             this.grid.data = changes.items.currentValue;
             this.gridAPI.grid.modifyRows(this.grid.data);
             this.adjustHeight(this.gridAPI, this.grid.data.length);
+
             // Without property existence check non-set selectedRowId binding might cause
             // unwanted behavior, like unchecking rows during any items change, even if
             // nothing really changed.
-            if ('selectedRowId' in this) this.applyIncomingSelection(this.selectedRowId);
+            if ('selectedRowId' in this)
+                this.applyIncomingSelection(this.selectedRowId);
         }
+
         if (hasChanged('selectedRowId') && this.grid && this.grid.data)
             this.applyIncomingSelection(changes.selectedRowId.currentValue);
+
         if ('incomingActionsMenu' in changes)
             this.actionsMenu = this.makeActionsMenu(changes.incomingActionsMenu.currentValue);
     }
@@ -103,9 +119,11 @@ export default class ItemsTableController {
     applyIncomingSelection(selected = []) {
         this.gridAPI.selection.clearSelectedRows({ignore: true});
         const rows = this.grid.data.filter((r) => selected.includes(r[this.rowIdentityKey]));
+
         rows.forEach((r) => {
             this.gridAPI.selection.selectRow(r, {ignore: true});
         });
+
         if (rows.length === 1) {
             this.$timeout(() => {
                 this.gridAPI.grid.scrollToIfNecessary(this.gridAPI.grid.getRow(rows[0]), null);

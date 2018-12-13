@@ -14,6 +14,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+include /app/helpers/jade/mixins
+
 button.table-action-cell__edit-button.btn-ignite(
     type='button'
     b_s-tooltip=''
@@ -25,21 +27,17 @@ button.table-action-cell__edit-button.btn-ignite(
 )
     | {{ $ctrl.tableActionView($ctrl.table) }}
 .table-action-cell__edit-form(ng-if='$ctrl.table.edit')
-    .ignite-form-field.ignite-form-field-dropdown.table-action-cell__action-select
-        .ignite-form-field__control
-            .input-tip
-                button.select-toggle.form-control(
-                    type='button'
-                    bs-select
-                    ng-model='$ctrl.table.action'
-                    bs-options='item.value as item.shortLabel for item in $ctrl.importActions'
-                )
-    .ignite-form-field.ignite-form-field-dropdown.table-action-cell__cache-select
-        .ignite-form-field__control
-            .input-tip
-                button.select-toggle.form-control(
-                    bs-select
-                    ng-model='$ctrl.table.cacheOrTemplate'
-                    ng-change='$ctrl.onCacheSelect({$event: $ctrl.table.cacheOrTemplate})'
-                    bs-options='item.value as item.label for item in $ctrl.table.cachesOrTemplates'
-                )
+    .table-action-cell__action-select
+        +form-field__dropdown({
+            model: '$ctrl.table.action',
+            options: '$ctrl.importActions',
+            optionLabel: 'shortLabel'
+        })
+
+    .table-action-cell__cache-select
+        +form-field__dropdown({
+            model: '$ctrl.table.cacheOrTemplate',
+            options: '$ctrl.table.cachesOrTemplates'
+        })(
+            ng-change='$ctrl.onCacheSelect({$event: $ctrl.table.cacheOrTemplate})'
+        )

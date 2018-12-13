@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -33,10 +34,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonAbstractTest {
     /** */
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -109,6 +114,7 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
         cfg.setCacheMode(CacheMode.PARTITIONED);
         cfg.setRebalanceMode(CacheRebalanceMode.SYNC);
         cfg.setBackups(0);
+        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         iCfg.setCacheConfiguration(cfg);
 
@@ -118,6 +124,7 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
     /**
      * @throws Exception e.
      */
+    @Test
     public void test() throws Exception {
         String marshClsName = GridTestProperties.getProperty(GridTestProperties.MARSH_CLASS_NAME);
 

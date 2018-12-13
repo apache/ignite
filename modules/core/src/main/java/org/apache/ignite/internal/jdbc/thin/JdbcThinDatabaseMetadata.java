@@ -43,9 +43,9 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcPrimaryKeyMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTableMeta;
-import org.apache.ignite.internal.util.typedef.F;
 
 import static java.sql.Connection.TRANSACTION_NONE;
+import static java.sql.Connection.TRANSACTION_REPEATABLE_READ;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
@@ -56,6 +56,9 @@ import static java.sql.RowIdLifetime.ROWID_UNSUPPORTED;
  */
 @SuppressWarnings("RedundantCast")
 public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
+    /** The only possible name for catalog. */
+    public static final String CATALOG_NAME = "IGNITE";
+
     /** Driver name. */
     public static final String DRIVER_NAME = "Apache Ignite Thin JDBC Driver";
 
@@ -630,17 +633,19 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public int getDefaultTransactionIsolation() throws SQLException {
-        return TRANSACTION_NONE;
+        return conn.igniteVersion().greaterThanEqual(2, 5, 0) ? TRANSACTION_REPEATABLE_READ :
+            TRANSACTION_NONE;
     }
 
     /** {@inheritDoc} */
     @Override public boolean supportsTransactions() throws SQLException {
-        return false;
+        return conn.igniteVersion().greaterThanEqual(2, 5, 0);
     }
 
     /** {@inheritDoc} */
     @Override public boolean supportsTransactionIsolationLevel(int level) throws SQLException {
-        return false;
+        return conn.igniteVersion().greaterThanEqual(2, 5, 0) &&
+            TRANSACTION_REPEATABLE_READ == level;
     }
 
     /** {@inheritDoc} */
@@ -734,7 +739,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             }
         }
 
-        if (!validCatalogPattern(catalog) || !tblTypeMatch)
+        if (!isValidCatalog(catalog) || !tblTypeMatch)
             return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), meta);
 
         JdbcMetaTablesResult res = conn.sendRequest(new JdbcMetaTablesRequest(schemaPtrn, tblNamePtrn));
@@ -754,7 +759,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     private List<Object> tableRow(JdbcTableMeta tblMeta) {
         List<Object> row = new ArrayList<>(10);
 
-        row.add(null);
+        row.add(CATALOG_NAME);
         row.add(tblMeta.schemaName());
         row.add(tblMeta.tableName());
         row.add("TABLE");
@@ -776,7 +781,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
     @Override public ResultSet getCatalogs() throws SQLException {
-        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(),
+        return new JdbcThinResultSet(Collections.singletonList(Collections.singletonList(CATALOG_NAME)),
             Arrays.asList(new JdbcColumnMeta(null, null, "TABLE_CAT", String.class)));
     }
 
@@ -819,7 +824,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             new JdbcColumnMeta(null, null, "IS_GENERATEDCOLUMN ", String.class) // 24
         );
 
-        if (!validCatalogPattern(catalog))
+        if (!isValidCatalog(catalog))
             return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), meta);
 
         JdbcMetaColumnsResult res = conn.sendRequest(new JdbcMetaColumnsRequest(schemaPtrn, tblNamePtrn, colNamePtrn));
@@ -838,15 +843,15 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
      * @return Column metadata row.
      */
     private List<Object> columnRow(JdbcColumnMeta colMeta, int pos) {
-        List<Object> row = new ArrayList<>(20);
+        List<Object> row = new ArrayList<>(24);
 
-        row.add((String)null);                  // 1. TABLE_CAT
+        row.add(CATALOG_NAME);                  // 1. TABLE_CAT
         row.add(colMeta.schemaName());          // 2. TABLE_SCHEM
         row.add(colMeta.tableName());           // 3. TABLE_NAME
         row.add(colMeta.columnName());          // 4. COLUMN_NAME
         row.add(colMeta.dataType());            // 5. DATA_TYPE
         row.add(colMeta.dataTypeName());        // 6. TYPE_NAME
-        row.add(colMeta.precision() == -1 ? null : colMeta.precision());                 // 7. COLUMN_SIZE
+        row.add(colMeta.precision() == -1 ? null : colMeta.precision()); // 7. COLUMN_SIZE
         row.add((Integer)null);                 // 8. BUFFER_LENGTH
         row.add(colMeta.scale() == -1 ? null : colMeta.scale());           // 9. DECIMAL_DIGITS
         row.add(10);                            // 10. NUM_PREC_RADIX
@@ -938,7 +943,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             new JdbcColumnMeta(null, null, "KEY_SEQ", Short.class),
             new JdbcColumnMeta(null, null, "PK_NAME", String.class));
 
-        if (!validCatalogPattern(catalog))
+        if (!isValidCatalog(catalog))
             return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), meta);
 
         JdbcMetaPrimaryKeysResult res = conn.sendRequest(new JdbcMetaPrimaryKeysRequest(schema, tbl));
@@ -961,7 +966,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         for (int i = 0; i < pkMeta.fields().size(); ++i) {
             List<Object> row = new ArrayList<>(6);
 
-            row.add((String)null); // table catalog
+            row.add(CATALOG_NAME); // table catalog
             row.add(pkMeta.schemaName());
             row.add(pkMeta.tableName());
             row.add(pkMeta.fields().get(i));
@@ -1165,7 +1170,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             new JdbcColumnMeta(null, null, "PAGES", Integer.class),
             new JdbcColumnMeta(null, null, "FILTER_CONDITION", String.class));
 
-        if (!validCatalogPattern(catalog))
+        if (!isValidCatalog(catalog))
             return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), meta);
 
         JdbcMetaIndexesResult res = conn.sendRequest(new JdbcMetaIndexesRequest(schema, tbl));
@@ -1188,7 +1193,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         for (int i = 0; i < idxMeta.fields().size(); ++i) {
             List<Object> row = new ArrayList<>(13);
 
-            row.add((String)null); // table catalog
+            row.add(CATALOG_NAME); // table catalog
             row.add(idxMeta.schemaName());
             row.add(idxMeta.tableName());
             row.add(true); // non unique
@@ -1418,7 +1423,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             new JdbcColumnMeta(null, null, "TABLE_CATALOG", String.class)
         );
 
-        if (!validCatalogPattern(catalog))
+        if (!isValidCatalog(catalog))
             return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), meta);
 
         JdbcMetaSchemasResult res = conn.sendRequest(new JdbcMetaSchemasRequest(schemaPtrn));
@@ -1429,7 +1434,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             List<Object> row = new ArrayList<>(2);
 
             row.add(schema);
-            row.add(null);
+            row.add(CATALOG_NAME);
 
             rows.add(row);
         }
@@ -1530,12 +1535,14 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     }
 
     /**
-     * @param catalog Catalog pattern.
-     * @return {@code true} If patter is valid for Ignite (null, empty, or '%' wildcard).
+     * Checks if specified catalog matches the only possible catalog value. See {@link #CATALOG_NAME}.
+     *
+     * @param catalog Catalog name or {@code null}.
+     * @return {@code true} If catalog equal ignoring case to {@link #CATALOG_NAME} or null (which means any catalog).
      *  Otherwise returns {@code false}.
      */
-    private static boolean validCatalogPattern(String catalog) {
-        return F.isEmpty(catalog) || "%".equals(catalog);
+    private static boolean isValidCatalog(String catalog) {
+        return catalog == null || catalog.equalsIgnoreCase(CATALOG_NAME);
     }
 
     /** {@inheritDoc} */

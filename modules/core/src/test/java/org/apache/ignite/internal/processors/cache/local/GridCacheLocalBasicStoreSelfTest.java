@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.local;
 
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.processors.cache.GridCacheBasicStoreAbstractTest;
+import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Before;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
@@ -26,6 +28,14 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
  * Test store with local cache.
  */
 public class GridCacheLocalBasicStoreSelfTest extends GridCacheBasicStoreAbstractTest {
+    /** {@inheritDoc} */
+    @Before
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
+        super.setUp();
+    }
+
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return LOCAL;

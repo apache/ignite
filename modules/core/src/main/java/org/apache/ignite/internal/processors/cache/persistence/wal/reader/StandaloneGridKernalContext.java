@@ -41,6 +41,7 @@ import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
@@ -49,12 +50,14 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
+import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
@@ -457,6 +460,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
+    @Override public GridEncryptionManager encryption() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public WorkersRegistry workersRegistry() {
         return null;
     }
@@ -467,7 +475,17 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
+    @Override public MvccProcessor coordinators() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean invalid() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean segmented() {
         return false;
     }
 
@@ -631,6 +649,16 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
+    @Override public Thread.UncaughtExceptionHandler uncaughtExceptionHandler() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean recoveryMode() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public PdsFoldersResolver pdsFolderResolver() {
         return new PdsFoldersResolver() {
             /** {@inheritDoc} */
@@ -642,6 +670,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<GridComponent> iterator() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CompressionProcessor compress() {
         return null;
     }
 }

@@ -19,9 +19,12 @@ package org.apache.ignite.ml.preprocessing.minmaxscaling;
 
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
 
 /**
@@ -30,43 +33,47 @@ import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class MinMaxScalerTrainer<K, V> implements PreprocessingTrainer<K, V, double[], double[]> {
+public class MinMaxScalerTrainer<K, V> implements PreprocessingTrainer<K, V, Vector, Vector> {
     /** {@inheritDoc} */
-    @Override public MinMaxScalerPreprocessor<K, V> fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> basePreprocessor) {
+    @Override public MinMaxScalerPreprocessor<K, V> fit(
+        LearningEnvironmentBuilder envBuilder,
+        DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> basePreprocessor) {
+        PartitionContextBuilder<K, V, EmptyContext> ctxBuilder = (env, upstream, upstreamSize) -> new EmptyContext();
         try (Dataset<EmptyContext, MinMaxScalerPartitionData> dataset = datasetBuilder.build(
-            (upstream, upstreamSize) -> new EmptyContext(),
-            (upstream, upstreamSize, ctx) -> {
+            envBuilder,
+            ctxBuilder,
+            (env, upstream, upstreamSize, ctx) -> {
                 double[] min = null;
                 double[] max = null;
 
                 while (upstream.hasNext()) {
                     UpstreamEntry<K, V> entity = upstream.next();
-                    double[] row = basePreprocessor.apply(entity.getKey(), entity.getValue());
+                    Vector row = basePreprocessor.apply(entity.getKey(), entity.getValue());
 
                     if (min == null) {
-                        min = new double[row.length];
+                        min = new double[row.size()];
                         for (int i = 0; i < min.length; i++)
                             min[i] = Double.MAX_VALUE;
                     }
                     else
-                        assert min.length == row.length : "Base preprocessor must return exactly " + min.length
+                        assert min.length == row.size() : "Base preprocessor must return exactly " + min.length
                             + " features";
 
                     if (max == null) {
-                        max = new double[row.length];
+                        max = new double[row.size()];
                         for (int i = 0; i < max.length; i++)
                             max[i] = -Double.MAX_VALUE;
                     }
                     else
-                        assert max.length == row.length : "Base preprocessor must return exactly " + min.length
+                        assert max.length == row.size() : "Base preprocessor must return exactly " + min.length
                             + " features";
 
-                    for (int i = 0; i < row.length; i++) {
-                        if (row[i] < min[i])
-                            min[i] = row[i];
-                        if (row[i] > max[i])
-                            max[i] = row[i];
+                    for (int i = 0; i < row.size(); i++) {
+                        if (row.get(i) < min[i])
+                            min[i] = row.get(i);
+                        if (row.get(i) > max[i])
+                            max[i] = row.get(i);
                     }
                 }
 

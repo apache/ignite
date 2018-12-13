@@ -42,6 +42,9 @@ import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.spi.IgniteSpiCloseableIterator;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -62,6 +65,7 @@ import static org.apache.ignite.cache.CachePeekMode.PRIMARY;
  *     <li>{@link IgniteCache#localEntries(CachePeekMode...)}</li>
  * </ul>
  */
+@RunWith(JUnit4.class)
 public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstractTest {
     /** */
     private static final int HEAP_ENTRIES = 30;
@@ -106,6 +110,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalPeek() throws Exception {
         if (cacheMode() == LOCAL) {
             checkAffinityLocalCache();
@@ -371,6 +376,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSize() throws Exception {
         checkEmpty();
 
@@ -479,6 +485,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalPartitionSize() throws Exception {
         if (cacheMode() != LOCAL)
             return;
@@ -534,6 +541,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     /**
      * @throws InterruptedException If failed.
      */
+    @Test
     public void testLocalPartitionSizeFlags() throws InterruptedException {
         if (true) // TODO GG-11148.
             return;
@@ -595,6 +603,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNonLocalPartitionSize() throws Exception {
         if (true) // TODO GG-11148.
             return;
@@ -1280,6 +1289,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalEntries() throws Exception {
         if (cacheMode() == LOCAL) {
             IgniteCache<Integer, String> cache0 = jcache(0);
@@ -1407,13 +1417,13 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
 
             T2<List<Integer>, List<Integer>> swapKeys = swapKeys(nodeIdx);
 
-            assertTrue(swapKeys.get1().size() > 0);
-            assertTrue(swapKeys.get2().size() > 0);
+            assertTrue(!swapKeys.get1().isEmpty());
+            assertTrue(!swapKeys.get2().isEmpty());
 
             T2<List<Integer>, List<Integer>> offheapKeys = offheapKeys(nodeIdx);
 
-            assertTrue(offheapKeys.get1().size() > 0);
-            assertTrue(offheapKeys.get2().size() > 0);
+            assertTrue(!offheapKeys.get1().isEmpty());
+            assertTrue(!offheapKeys.get2().isEmpty());
 
             List<Integer> swap = new ArrayList<>();
 

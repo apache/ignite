@@ -27,21 +27,31 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Disabling MBeans test.
  */
+@RunWith(JUnit4.class)
 public class GridMBeanDisableSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Before
+    @Override public void setUp() throws Exception {
         IgniteUtils.IGNITE_MBEANS_DISABLED = true;
 
-        super.beforeTestsStarted();
+        super.setUp();
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @After
+    @Override public void tearDown() throws Exception {
         IgniteUtils.IGNITE_MBEANS_DISABLED = false;
+
+        super.tearDown();
     }
 
     /**
@@ -49,15 +59,16 @@ public class GridMBeanDisableSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception Thrown if test fails.
      */
+    @Test
     public void testCorrectMBeanInfo() throws Exception {
         // Node should start and stopped with no errors.
         try (final Ignite ignite = startGrid(0)) {
-            final MBeanServer server = ignite.configuration().getMBeanServer();
+            final MBeanServer srv = ignite.configuration().getMBeanServer();
 
             GridTestUtils.assertThrowsWithCause(
                 new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        U.registerMBean(server, ignite.name(), "dummy", "DummyMbean1", new DummyMBeanImpl(), DummyMBean.class);
+                        U.registerMBean(srv, ignite.name(), "dummy", "DummyMbean1", new DummyMBeanImpl(), DummyMBean.class);
 
                         return null;
                     }
@@ -72,7 +83,7 @@ public class GridMBeanDisableSelfTest extends GridCommonAbstractTest {
                             "DummyMbean2"
                         );
 
-                        U.registerMBean(server, objName, new DummyMBeanImpl(), DummyMBean.class);
+                        U.registerMBean(srv, objName, new DummyMBeanImpl(), DummyMBean.class);
 
                         return null;
 
@@ -82,6 +93,7 @@ public class GridMBeanDisableSelfTest extends GridCommonAbstractTest {
     }
 
     /** Check that a cache can be started when MBeans are disabled. */
+    @Test
     public void testCacheStart() throws Exception {
         try (
             Ignite ignite = startGrid(0);

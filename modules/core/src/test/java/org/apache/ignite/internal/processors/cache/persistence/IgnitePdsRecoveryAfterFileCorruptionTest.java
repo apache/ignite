@@ -52,10 +52,14 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * This test generates WAL & Page Store with N pages, then rewrites pages with zeroes and tries to acquire all pages.
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstractTest {
     /** Ip finder. */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -117,6 +121,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPageRecoveryAfterFileCorruption() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -202,7 +207,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
             final long pageAddr = mem.writeLock(fullId.groupId(), fullId.pageId(), page);
 
             try {
-                pageIO.initNewPage(pageAddr, fullId.pageId(), mem.pageSize());
+                pageIO.initNewPage(pageAddr, fullId.pageId(), mem.realPageSize(fullId.groupId()));
             }
             finally {
                 mem.writeUnlock(fullId.groupId(), fullId.pageId(), page, null, true);
@@ -234,7 +239,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
 
         long size = fileIO.size();
 
-        fileIO.write(ByteBuffer.allocate((int)size - filePageStore.headerSize()), filePageStore.headerSize());
+        fileIO.writeFully(ByteBuffer.allocate((int)size - filePageStore.headerSize()), filePageStore.headerSize());
 
         fileIO.force();
     }
@@ -261,7 +266,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
                 try {
                     long pageAddr = mem.readLock(fullId.groupId(), fullId.pageId(), page);
 
-                    for (int j = PageIO.COMMON_HEADER_END; j < mem.pageSize(); j += 4)
+                    for (int j = PageIO.COMMON_HEADER_END; j < mem.realPageSize(fullId.groupId()); j += 4)
                         assertEquals(j + (int)fullId.pageId(), PageUtils.getInt(pageAddr, j));
 
                     mem.readUnlock(fullId.groupId(), fullId.pageId(), page);
@@ -305,7 +310,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
                 PageIO.setPageId(pageAddr, fullId.pageId());
 
                 try {
-                    for (int j = PageIO.COMMON_HEADER_END; j < mem.pageSize(); j += 4)
+                    for (int j = PageIO.COMMON_HEADER_END; j < mem.realPageSize(fullId.groupId()); j += 4)
                         PageUtils.putInt(pageAddr, j, j + (int)fullId.pageId());
                 }
                 finally {
@@ -346,7 +351,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
                     cp += cpEnd - cpStart;
                     tmpBuf.rewind();
 
-                    for (int j = PageIO.COMMON_HEADER_END; j < mem.pageSize(); j += 4)
+                    for (int j = PageIO.COMMON_HEADER_END; j < mem.realPageSize(fullId.groupId()); j += 4)
                         assertEquals(j + (int)fullId.pageId(), tmpBuf.getInt(j));
 
                     tmpBuf.rewind();

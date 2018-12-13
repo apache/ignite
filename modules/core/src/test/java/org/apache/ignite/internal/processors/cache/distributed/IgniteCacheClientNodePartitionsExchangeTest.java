@@ -42,7 +42,7 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -57,12 +57,16 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.ExchangeContext.IGNITE_EXCHANGE_COMPATIBILITY_VER_1;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstractTest {
     /** */
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -97,6 +101,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerNodeLeave() throws Exception {
         Ignite ignite0 = startGrid(0);
 
@@ -146,6 +151,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSkipPreload() throws Exception {
         Ignite ignite0 = startGrid(0);
 
@@ -198,6 +204,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionsExchange() throws Exception {
         partitionsExchange(false);
     }
@@ -205,6 +212,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionsExchangeCompatibilityMode() throws Exception {
         System.setProperty(IGNITE_EXCHANGE_COMPATIBILITY_VER_1, "true");
 
@@ -474,6 +482,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientOnlyCacheStart() throws Exception {
         clientOnlyCacheStart(false, false);
     }
@@ -481,6 +490,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearOnlyCacheStart() throws Exception {
         clientOnlyCacheStart(true, false);
     }
@@ -488,6 +498,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientOnlyCacheStartFromServerNode() throws Exception {
         clientOnlyCacheStart(false, true);
     }
@@ -495,6 +506,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearOnlyCacheStartFromServerNode() throws Exception {
         clientOnlyCacheStart(true, true);
     }

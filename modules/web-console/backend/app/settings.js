@@ -53,6 +53,14 @@ module.exports = {
         const dfltHost = packaged ? '0.0.0.0' : '127.0.0.1';
         const dfltPort = packaged ? 80 : 3000;
 
+        // We need this function because nconf() can return String or Boolean.
+        // And in JS we cannot compare String with Boolean.
+        const _isTrue = (confParam) => {
+            const v = nconf.get(confParam);
+
+            return v === 'true' || v === true;
+        };
+
         return {
             agent: {
                 dists: nconf.get('agent:dists') || dfltAgentDists
@@ -61,13 +69,16 @@ module.exports = {
             server: {
                 host: nconf.get('server:host') || dfltHost,
                 port: _normalizePort(nconf.get('server:port') || dfltPort),
-                SSLOptions: nconf.get('server:ssl') && {
+                // eslint-disable-next-line eqeqeq
+                SSLOptions: _isTrue('server:ssl') && {
                     enable301Redirects: true,
                     trustXFPHeader: true,
                     key: fs.readFileSync(nconf.get('server:key')),
                     cert: fs.readFileSync(nconf.get('server:cert')),
                     passphrase: nconf.get('server:keyPassphrase')
-                }
+                },
+                // eslint-disable-next-line eqeqeq
+                disableSignup: _isTrue('server:disable:signup')
             },
             mail,
             mongoUrl: nconf.get('mongodb:url') || 'mongodb://127.0.0.1/console',

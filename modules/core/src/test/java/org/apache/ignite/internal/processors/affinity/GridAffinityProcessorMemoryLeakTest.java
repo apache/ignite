@@ -31,6 +31,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -39,9 +42,10 @@ import static org.apache.ignite.IgniteSystemProperties.getInteger;
  * Tests for {@link GridAffinityProcessor}.
  */
 @GridCommonTest(group = "Affinity Processor")
+@RunWith(JUnit4.class)
 public class GridAffinityProcessorMemoryLeakTest extends GridCommonAbstractTest {
     /** Max value for affinity history size name. Should be the same as in GridAffinityAssignmentCache.MAX_HIST_SIZE */
-    private final int MAX_HIST_SIZE = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, 100);
+    private final int MAX_HIST_SIZE = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, 500);
 
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
@@ -84,6 +88,7 @@ public class GridAffinityProcessorMemoryLeakTest extends GridCommonAbstractTest 
      *
      * @throws Exception In case of any exception.
      */
+    @Test
     public void testAffinityProcessor() throws Exception {
         Ignite ignite = startGrid(0);
 

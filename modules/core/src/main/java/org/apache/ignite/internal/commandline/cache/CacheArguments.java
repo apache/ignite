@@ -18,6 +18,8 @@ package org.apache.ignite.internal.commandline.cache;
 
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.commandline.OutputFormat;
+import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
 import org.jetbrains.annotations.Nullable;
 
@@ -53,7 +55,49 @@ public class CacheArguments {
     private int checkThrough = -1;
 
     /** Cache view command. */
-    private @Nullable VisorViewCacheCmd cacheCmd;
+    @Nullable private VisorViewCacheCmd cacheCmd;
+
+    /** Calculate partition hash and print into standard output. */
+    private boolean dump;
+
+    /** Skip zeros partitions. */
+    private boolean skipZeros;
+
+    /** Additional user attributes in result. Set of attribute names whose values will be searched in ClusterNode.attributes(). */
+    private Set<String> userAttributes;
+
+    /** Output format. */
+    private OutputFormat outputFormat;
+
+    /** Full config flag. */
+    private boolean fullConfig;
+
+    /** Cache filter. */
+    private CacheFilterEnum cacheFilterEnum = CacheFilterEnum.ALL;
+
+    /**
+     * @return Gets filter of caches, which will by checked.
+     */
+    public CacheFilterEnum getCacheFilterEnum() {
+        return cacheFilterEnum;
+    }
+
+    /**
+     * @param cacheFilterEnum Cache filter.
+     */
+    public void setCacheFilterEnum(CacheFilterEnum cacheFilterEnum) {
+        this.cacheFilterEnum = cacheFilterEnum;
+    }
+
+    /**
+     * @return Full config flag.
+     */
+    public boolean fullConfig(){ return fullConfig; }
+
+    /**
+     * @param fullConfig New full config flag.
+     */
+    public void fullConfig(boolean fullConfig) { this.fullConfig = fullConfig; }
 
     /**
      * @return Command.
@@ -168,7 +212,7 @@ public class CacheArguments {
     }
 
     /**
-     *  @return Max number of entries to be checked.
+     * @return Max number of entries to be checked.
      */
     public int checkFirst() {
         return checkFirst;
@@ -194,4 +238,56 @@ public class CacheArguments {
     public void checkThrough(int checkThrough) {
         this.checkThrough = checkThrough;
     }
+
+    /**
+     * @return Calculate partition hash and print into standard output.
+     */
+    public boolean dump() {
+        return dump;
+    }
+
+    /**
+     * @param dump Calculate partition hash and print into standard output.
+     */
+    public void dump(boolean dump) {
+        this.dump = dump;
+    }
+
+    /**
+     * @return Skip zeros partitions(size == 0) in result.
+     */
+    public boolean isSkipZeros() {
+        return skipZeros;
+    }
+
+    /**
+     * @param skipZeros Skip zeros partitions.
+     */
+    public void skipZeros(boolean skipZeros) {
+        this.skipZeros = skipZeros;
+    }
+
+    /**
+     * @return Additional user attributes in result. Set of attribute names whose values will be searched in ClusterNode.attributes().
+     */
+    public Set<String> getUserAttributes() {
+        return userAttributes;
+    }
+
+    /**
+     * @param userAttrs New additional user attributes in result.
+     */
+    public void setUserAttributes(Set<String> userAttrs) {
+        userAttributes = userAttrs;
+    }
+
+    /**
+     * @return Output format.
+     */
+    public OutputFormat outputFormat() { return outputFormat; }
+
+    /**
+     * @param outputFormat New output format.
+     */
+    public void outputFormat(OutputFormat outputFormat) { this.outputFormat = outputFormat; }
 }

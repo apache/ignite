@@ -26,12 +26,15 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Multi-JVM test for dynamic proxy serialization.
  */
+@RunWith(JUnit4.class)
 public class DynamicProxySerializationMultiJvmSelfTest extends GridCommonAbstractTest {
     /** */
     private static Callable<Marshaller> marshFactory;
@@ -58,6 +61,7 @@ public class DynamicProxySerializationMultiJvmSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBinaryMarshaller() throws Exception {
         marshFactory = new Callable<Marshaller>() {
             @Override public Marshaller call() throws Exception {
@@ -71,6 +75,7 @@ public class DynamicProxySerializationMultiJvmSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testToBinary() throws Exception {
         marshFactory = new Callable<Marshaller>() {
             @Override public Marshaller call() throws Exception {
@@ -90,6 +95,7 @@ public class DynamicProxySerializationMultiJvmSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBinaryField() throws Exception {
         marshFactory = new Callable<Marshaller>() {
             @Override public Marshaller call() throws Exception {

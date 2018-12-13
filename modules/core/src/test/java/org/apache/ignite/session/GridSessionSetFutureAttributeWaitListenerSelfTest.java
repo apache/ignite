@@ -45,11 +45,15 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @GridCommonTest(group = "Task Session")
+@RunWith(JUnit4.class)
 public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommonAbstractTest {
     /** */
     public static final int SPLIT_COUNT = 5;
@@ -89,6 +93,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetAttribute() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -117,7 +122,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
 
                 assert (Integer)res == SPLIT_COUNT : "Invalid result [i=" + i + ", fut=" + fut + ']';
 
-                assert lsnr.getAttributes().size() != 0 : "No attributes found.";
+                assert !lsnr.getAttributes().isEmpty() : "No attributes found.";
             }
             finally {
                 // We must wait for the jobs to be sure that they have completed
@@ -156,7 +161,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
 
             for (int i = 1; i <= SPLIT_COUNT; i++) {
                 jobs.add(new ComputeJobAdapter(i) {
-                    @SuppressWarnings({"UnconditionalWait"})
+                    @Override @SuppressWarnings({"UnconditionalWait"})
                     public Serializable execute() {
                         assert taskSes != null;
 

@@ -38,6 +38,9 @@ public class SqlKeyword {
     /** Keyword: BATCH_SIZE */
     public static final String BATCH_SIZE = "BATCH_SIZE";
 
+    /** Keyword: BEGIN. */
+    public static final String BEGIN = "BEGIN";
+
     /** Keyword: BIGINT */
     public static final String BIGINT = "BIGINT";
 
@@ -64,6 +67,9 @@ public class SqlKeyword {
 
     /** Keyword: CHARSET. */
     public static final String CHARSET = "CHARSET";
+
+    /** Keyword: COMMIT. */
+    public static final String COMMIT = "COMMIT";
 
     /** Keyword: COPY. */
     public static final String COPY = "COPY";
@@ -206,6 +212,9 @@ public class SqlKeyword {
     /** Keyword: RESTRICT. */
     public static final String RESTRICT = "RESTRICT";
 
+    /** Keyword: ROLLBACK. */
+    public static final String ROLLBACK = "ROLLBACK";
+
     /** Keyword: SET. */
     public static final String SET = "SET";
 
@@ -220,6 +229,9 @@ public class SqlKeyword {
 
     /** Keyword: SPATIAL. */
     public static final String SPATIAL = "SPATIAL";
+
+    /** Keyword: START. */
+    public static final String START = "START";
 
     /** Keyword: STREAMING. */
     public static final String STREAMING = "STREAMING";
@@ -236,6 +248,9 @@ public class SqlKeyword {
     /** Keyword: TINYINT. */
     public static final String TINYINT = "TINYINT";
 
+    /** Keyword: TRANSACTION. */
+    public static final String TRANSACTION = "TRANSACTION";
+
     /** Keyword: UNIQUE. */
     public static final String UNIQUE = "UNIQUE";
 
@@ -250,6 +265,9 @@ public class SqlKeyword {
 
     /** Keyword: VARCHAR_CASESENSITIVE. */
     public static final String VARCHAR_CASESENSITIVE = "VARCHAR_CASESENSITIVE";
+
+    /** Keyword: WORK. */
+    public static final String WORK = "WORK";
 
     /** Keyword: YEAR. */
     public static final String YEAR = "YEAR";

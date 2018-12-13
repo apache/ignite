@@ -28,7 +28,7 @@ import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
@@ -113,9 +113,17 @@ public class RecordV2Serializer implements RecordSerializer {
             if (recType == SWITCH_SEGMENT_RECORD)
                 throw new SegmentEofException("Reached end of segment", null);
 
-            FileWALPointer ptr = readPositionAndCheckPoint(in, expPtr, skipPositionCheck);
+            FileWALPointer ptr = readPositionAndCheckPoint(in, expPtr, skipPositionCheck, recType);
 
-            if (recordFilter != null && !recordFilter.apply(recType, ptr)) {
+            if (recType == null) {
+                FileWALPointer exp = (FileWALPointer)expPtr;
+
+                throw new IOException("Unknown record type: " + recType +
+                    ", expected pointer [idx=" + exp.index() + ", offset=" + exp.fileOffset() + "]");
+            }
+
+            if (recType.purpose() != WALRecord.RecordPurpose.INTERNAL
+                && recordFilter != null && !recordFilter.apply(recType, ptr)) {
                 int toSkip = ptr.length() - REC_TYPE_SIZE - FILE_WAL_POINTER_SIZE - CRC_SIZE;
 
                 assert toSkip >= 0 : "Too small saved record length: " + ptr;
@@ -167,7 +175,7 @@ public class RecordV2Serializer implements RecordSerializer {
             ByteBuffer buf
         ) throws IgniteCheckedException {
             // Write record type.
-            RecordV1Serializer.putRecordType(buf, record);
+            RecordV1Serializer.putRecordType(buf, dataSerializer.recordType(record));
 
             // SWITCH_SEGMENT_RECORD should have only type, no need to write pointer.
             if (record.type() == SWITCH_SEGMENT_RECORD)
@@ -238,7 +246,8 @@ public class RecordV2Serializer implements RecordSerializer {
     private static FileWALPointer readPositionAndCheckPoint(
         DataInput in,
         WALPointer expPtr,
-        boolean skipPositionCheck
+        boolean skipPositionCheck,
+        WALRecord.RecordType type
     ) throws IgniteCheckedException, IOException {
         long idx = in.readLong();
         int fileOff = in.readInt();
@@ -248,9 +257,9 @@ public class RecordV2Serializer implements RecordSerializer {
 
         if (!F.eq(idx, p.index()) || (!skipPositionCheck && !F.eq(fileOff, p.fileOffset())))
             throw new WalSegmentTailReachedException(
-                "WAL segment tail is reached. [ " +
-                        "Expected next state: {Index=" + p.index() + ",Offset=" + p.fileOffset() + "}, " +
-                        "Actual state : {Index=" + idx + ",Offset=" + fileOff + "} ]", null);
+                "WAL segment tail reached. [ " +
+                    "Expected next state: {Index=" + p.index() + ",Offset=" + p.fileOffset() + "}, " +
+                    "Actual state : {Index=" + idx + ",Offset=" + fileOff + "} ] recordType=" + type, null);
 
         return new FileWALPointer(idx, fileOff, len);
     }

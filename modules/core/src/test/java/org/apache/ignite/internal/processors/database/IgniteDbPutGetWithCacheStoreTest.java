@@ -31,8 +31,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.IgniteReflectionFactory;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -40,6 +43,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteDbPutGetWithCacheStoreTest extends GridCommonAbstractTest {
     /** */
     private static Map<Object, Object> storeMap = new ConcurrentHashMap<>();
@@ -78,6 +82,13 @@ public class IgniteDbPutGetWithCacheStoreTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        super.beforeTest();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         cleanPersistenceDir();
 
@@ -94,6 +105,7 @@ public class IgniteDbPutGetWithCacheStoreTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWriteThrough() throws Exception {
         checkWriteThrough(ATOMIC);
         checkWriteThrough(TRANSACTIONAL);
@@ -102,6 +114,7 @@ public class IgniteDbPutGetWithCacheStoreTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testReadThrough() throws Exception {
         checkReadThrough(ATOMIC);
         checkReadThrough(TRANSACTIONAL);
@@ -124,7 +137,7 @@ public class IgniteDbPutGetWithCacheStoreTest extends GridCommonAbstractTest {
 
             assertEquals(2000, storeMap.size());
 
-            stopAllGrids();
+            stopAllGrids(false);
 
             storeMap.clear();
 
@@ -158,7 +171,7 @@ public class IgniteDbPutGetWithCacheStoreTest extends GridCommonAbstractTest {
             for (int i = 0; i < 2000; i++)
                 assertEquals(i, ig.cache(CACHE_NAME).get(i));
 
-            stopAllGrids();
+            stopAllGrids(false);
 
             storeMap.clear();
 

@@ -29,11 +29,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Dedicated tests for {@link PlatformDefaultJavaObjectFactory}.
  */
-@SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+@RunWith(JUnit4.class)
 public class PlatformDefaultJavaObjectFactorySelfTest extends GridCommonAbstractTest {
     /** Name of the class. */
     private static final String CLS_NAME = TestJavaObject.class.getName();
@@ -44,6 +47,7 @@ public class PlatformDefaultJavaObjectFactorySelfTest extends GridCommonAbstract
     /**
      * Test normal object creation.
      */
+    @Test
     public void testNormal() {
         final PlatformDefaultJavaObjectFactory factory = new PlatformDefaultJavaObjectFactory();
 
@@ -77,6 +81,7 @@ public class PlatformDefaultJavaObjectFactorySelfTest extends GridCommonAbstract
     /**
      * Test object creation with boxed property.
      */
+    @Test
     public void testBoxedProperty() {
         final PlatformDefaultJavaObjectFactory factory = new PlatformDefaultJavaObjectFactory();
 
@@ -90,6 +95,7 @@ public class PlatformDefaultJavaObjectFactorySelfTest extends GridCommonAbstract
     /**
      * Test object creation without properties.
      */
+    @Test
     public void testNoProperties() {
         final PlatformDefaultJavaObjectFactory factory = new PlatformDefaultJavaObjectFactory();
 
@@ -103,6 +109,7 @@ public class PlatformDefaultJavaObjectFactorySelfTest extends GridCommonAbstract
     /**
      * Test object creation with invalid property name.
      */
+    @Test
     public void testInvalidPropertyName() {
         final PlatformDefaultJavaObjectFactory factory = new PlatformDefaultJavaObjectFactory();
 
@@ -118,6 +125,7 @@ public class PlatformDefaultJavaObjectFactorySelfTest extends GridCommonAbstract
     /**
      * Test object creation with invalid property value.
      */
+    @Test
     public void testInvalidPropertyValue() {
         final PlatformDefaultJavaObjectFactory factory = new PlatformDefaultJavaObjectFactory();
 
@@ -133,6 +141,7 @@ public class PlatformDefaultJavaObjectFactorySelfTest extends GridCommonAbstract
     /**
      * Test object creation without default constructor.
      */
+    @Test
     public void testNoDefaultConstructor() {
         final PlatformDefaultJavaObjectFactory factory = new PlatformDefaultJavaObjectFactory();
 
@@ -148,6 +157,7 @@ public class PlatformDefaultJavaObjectFactorySelfTest extends GridCommonAbstract
     /**
      * Test object creation with null class name.
      */
+    @Test
     public void testNullClassName() {
         final PlatformDefaultJavaObjectFactory factory = new PlatformDefaultJavaObjectFactory();
 
@@ -171,6 +181,7 @@ public class PlatformDefaultJavaObjectFactorySelfTest extends GridCommonAbstract
     /**
      * Test object creation with invalid class name.
      */
+    @Test
     public void testInvalidClassName() {
         final PlatformDefaultJavaObjectFactory factory = new PlatformDefaultJavaObjectFactory();
 

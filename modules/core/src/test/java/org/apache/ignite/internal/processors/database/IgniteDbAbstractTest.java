@@ -32,7 +32,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -74,13 +73,14 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
 
         if (isLargePage())
             dbCfg.setPageSize(16 * 1024);
-        else
-            dbCfg.setPageSize(4 * 1024);
 
         dbCfg.setWalMode(WALMode.LOG_ONLY);
 
         dbCfg.setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration().setPersistenceEnabled(true).setName("default"));
+            new DataRegionConfiguration()
+                .setPersistenceEnabled(true)
+                .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
+        );
 
         configure(dbCfg);
 

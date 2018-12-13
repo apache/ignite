@@ -152,6 +152,12 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean rebalanceRequired(AffinityTopologyVersion rebTopVer,
+        GridDhtPartitionsExchangeFuture exchFut) {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public GridDhtPreloaderAssignments generateAssignments(GridDhtPartitionExchangeId exchId,
                                                                      GridDhtPartitionsExchangeFuture exchFut) {
         return null;
@@ -174,5 +180,15 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     /** {@inheritDoc} */
     @Override public void dumpDebugInfo() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void pause() {
+        // No-op
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resume() {
+        // No-op
     }
 }

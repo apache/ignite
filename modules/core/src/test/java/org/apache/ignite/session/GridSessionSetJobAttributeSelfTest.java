@@ -43,12 +43,15 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@SuppressWarnings({"CatchGenericClass"})
 @GridCommonTest(group = "Task Session")
+@RunWith(JUnit4.class)
 public class GridSessionSetJobAttributeSelfTest extends GridCommonAbstractTest {
     /** */
     public static final int SPLIT_COUNT = 5;
@@ -79,6 +82,7 @@ public class GridSessionSetJobAttributeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testSetAttribute() throws Exception {
         for (int i = 0; i < EXEC_COUNT; i++)
             checkTask(i);
@@ -87,6 +91,7 @@ public class GridSessionSetJobAttributeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testMultiThreaded() throws Exception {
         final GridThreadSerialNumber sNum = new GridThreadSerialNumber();
 

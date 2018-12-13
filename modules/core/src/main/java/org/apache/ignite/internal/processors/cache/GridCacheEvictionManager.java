@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
+import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
@@ -29,7 +30,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManag
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_EVICTED;
@@ -71,6 +72,9 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
             plc = cfg.getEvictionPolicy();
 
         plcEnabled = plc != null;
+
+        if (plcEnabled)
+            prepare(cfg, plc, cctx.isNear());
 
         filter = cfg.getEvictionFilter();
 
@@ -150,7 +154,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
                 cache.metrics0().onEvict();
 
             if (recordable)
-                cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), (IgniteUuid)null, null,
+                cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), null, null, null,
                     EVT_CACHE_ENTRY_EVICTED, null, false, oldVal, hasVal, null, null, null, false);
 
             if (log.isDebugEnabled())
@@ -166,6 +170,11 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
 
     /** {@inheritDoc} */
     @Override public void touch(IgniteTxEntry txEntry, boolean loc) {
+        assert txEntry.context() == cctx : "Entry from another cache context passed to eviction manager: [" +
+            "entry=" + txEntry +
+            ", cctx=" + cctx +
+            ", entryCtx=" + txEntry.context() + "]";
+
         if (!plcEnabled)
             return;
 
@@ -192,6 +201,11 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
 
     /** {@inheritDoc} */
     @Override public void touch(GridCacheEntryEx e, AffinityTopologyVersion topVer) {
+        assert e.context() == cctx : "Entry from another cache context passed to eviction manager: [" +
+            "entry=" + e +
+            ", cctx=" + cctx +
+            ", entryCtx=" + e.context() + "]";
+
         if (e.detached() || e.isInternal())
             return;
 
@@ -233,13 +247,17 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
         }
 
         U.warn(log, "Evictions started (cache may have reached its capacity)." +
-                " You may wish to increase 'maxSize' on eviction policy being used for cache: " + cctx.name(),
-            "Evictions started (cache may have reached its capacity): " + cctx.name());
+            " You may wish to increase 'maxSize' on eviction policy being used for cache: " + cctx.name());
     }
 
     /** {@inheritDoc} */
     @Override public boolean evict(@Nullable GridCacheEntryEx entry, @Nullable GridCacheVersion obsoleteVer,
         boolean explicit, @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
+        assert entry == null || entry.context() == cctx : "Entry from another cache context passed to eviction manager: [" +
+            "entry=" + entry +
+            ", cctx=" + cctx +
+            ", entryCtx=" + entry.context() + "]";
+
         if (entry == null)
             return true;
 
@@ -277,7 +295,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
                     notifyPolicy(entry);
 
                 if (recordable)
-                    cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), (IgniteUuid)null, null,
+                    cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), null, null, null,
                         EVT_CACHE_ENTRY_EVICTED, null, false, entry.rawGet(), entry.hasValue(), null, null, null,
                         false);
             }
@@ -287,11 +305,14 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
     /**
      * @param e Entry to notify eviction policy.
      */
-    @SuppressWarnings({"IfMayBeConditional", "RedundantIfStatement"})
     private void notifyPolicy(GridCacheEntryEx e) {
         assert plcEnabled;
         assert plc != null;
         assert !e.isInternal() : "Invalid entry for policy notification: " + e;
+        assert e.context() == cctx : "Entry from another cache context passed to eviction manager: [" +
+            "entry=" + e +
+            ", cctx=" + cctx +
+            ", entryCtx=" + e.context() + "]";
 
         if (log.isDebugEnabled())
             log.debug("Notifying eviction policy with entry: " + e);
@@ -310,5 +331,128 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
     /** For test purposes. */
     public EvictionPolicy getEvictionPolicy() {
         return plc;
+    }
+
+    /**
+     * Performs injections and MBean registration.
+     *
+     * @param cfg Cache configuration.
+     * @param rsrc Resource.
+     * @param near Near flag.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void prepare(CacheConfiguration cfg, @Nullable Object rsrc, boolean near) throws IgniteCheckedException {
+        cctx.kernalContext().resource().injectGeneric(rsrc);
+
+        cctx.kernalContext().resource().injectCacheName(rsrc, cfg.getName());
+
+        registerMbean(rsrc, cfg.getName(), near);
+    }
+
+    /**
+     * Registers MBean for cache components.
+     *
+     * @param obj Cache component.
+     * @param cacheName Cache name.
+     * @param near Near flag.
+     * @throws IgniteCheckedException If registration failed.
+     */
+    @SuppressWarnings("unchecked")
+    private void registerMbean(Object obj, @Nullable String cacheName, boolean near)
+        throws IgniteCheckedException {
+        if (U.IGNITE_MBEANS_DISABLED)
+            return;
+
+        assert obj != null;
+
+        MBeanServer srvr = cctx.kernalContext().config().getMBeanServer();
+
+        assert srvr != null;
+
+        cacheName = U.maskName(cacheName);
+
+        cacheName = near ? cacheName + "-near" : cacheName;
+
+        final Object mbeanImpl = (obj instanceof IgniteMBeanAware) ? ((IgniteMBeanAware)obj).getMBean() : obj;
+
+        for (Class<?> itf : mbeanImpl.getClass().getInterfaces()) {
+            if (itf.getName().endsWith("MBean") || itf.getName().endsWith("MXBean")) {
+                try {
+                    U.registerMBean(srvr, cctx.kernalContext().igniteInstanceName(), cacheName, obj.getClass().getName(),
+                        mbeanImpl, (Class<Object>)itf);
+                }
+                catch (Throwable e) {
+                    throw new IgniteCheckedException("Failed to register MBean for component: " + obj, e);
+                }
+
+                break;
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void stop0(boolean cancel, boolean destroy) {
+        cleanup(cctx.config(), plc, cctx.isNear());
+    }
+
+    /**
+     * @param cfg Cache configuration.
+     * @param rsrc Resource.
+     * @param near Near flag.
+     */
+    void cleanup(CacheConfiguration cfg, @Nullable Object rsrc, boolean near) {
+        if (rsrc != null) {
+            unregisterMbean(rsrc, cfg.getName(), near);
+
+            try {
+                cctx.kernalContext().resource().cleanupGeneric(rsrc);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to cleanup resource: " + rsrc, e);
+            }
+        }
+    }
+
+    /**
+     * Unregisters MBean for cache components.
+     *
+     * @param o Cache component.
+     * @param cacheName Cache name.
+     * @param near Near flag.
+     */
+    private void unregisterMbean(Object o, @Nullable String cacheName, boolean near) {
+        if (U.IGNITE_MBEANS_DISABLED)
+            return;
+
+        assert o != null;
+
+        MBeanServer srvr = cctx.kernalContext().config().getMBeanServer();
+
+        assert srvr != null;
+
+        cacheName = U.maskName(cacheName);
+
+        cacheName = near ? cacheName + "-near" : cacheName;
+
+        boolean needToUnregister = o instanceof IgniteMBeanAware;
+
+        if (!needToUnregister) {
+            for (Class<?> itf : o.getClass().getInterfaces()) {
+                if (itf.getName().endsWith("MBean") || itf.getName().endsWith("MXBean")) {
+                    needToUnregister = true;
+
+                    break;
+                }
+            }
+        }
+
+        if (needToUnregister) {
+            try {
+                srvr.unregisterMBean(U.makeMBeanName(cctx.kernalContext().igniteInstanceName(), cacheName, o.getClass().getName()));
+            }
+            catch (Throwable e) {
+                U.error(log, "Failed to unregister MBean for component: " + o, e);
+            }
+        }
     }
 }

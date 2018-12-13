@@ -88,6 +88,9 @@ public interface IgniteCacheProxy<K, V> extends IgniteCache<K, V>, Externalizabl
      */
     public IgniteCache<K, V> skipStore();
 
+    /** {@inheritDoc} */
+    @Override public IgniteCache<K, V> withAllowAtomicOpsInTx();
+
     /**
      * @return Internal proxy.
      */

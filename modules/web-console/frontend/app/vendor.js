@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import 'babel-polyfill';
 import 'jquery';
 import 'angular';
 import 'angular-acl';
@@ -28,6 +27,8 @@ import 'angular-socket-io';
 import 'angular-messages';
 import '@uirouter/angularjs';
 import '@uirouter/angularjs/lib/legacy/stateEvents';
+
+import 'resize-observer-polyfill';
 
 import 'tf-metatags';
 import 'angular-translate';

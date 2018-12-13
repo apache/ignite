@@ -23,10 +23,14 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsTxCacheRebalancingTest extends IgnitePdsCacheRebalancingAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String cacheName) {
@@ -36,7 +40,6 @@ public class IgnitePdsTxCacheRebalancingTest extends IgnitePdsCacheRebalancingAb
         ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
         ccfg.setBackups(1);
-        ccfg.setRebalanceDelay(10_000);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
@@ -53,6 +56,7 @@ public class IgnitePdsTxCacheRebalancingTest extends IgnitePdsCacheRebalancingAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyChangesWithConstantLoadExplicitTx() throws Exception {
         explicitTx = true;
 

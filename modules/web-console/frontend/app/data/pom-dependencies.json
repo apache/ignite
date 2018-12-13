@@ -19,7 +19,8 @@
     "PostgreSQL": {"groupId": "org.postgresql", "artifactId": "postgresql", "version": "9.4.1212.jre7"},
     "H2": {"groupId": "com.h2database", "artifactId": "h2", "version": [
         {"range": ["1.0.0", "2.0.0"], "version": "1.4.191"},
-        {"range": "2.0.0", "version": "1.4.195"}
+        {"range": ["2.0.0", "2.7.0"], "version": "1.4.195"},
+        {"range": "2.7.0", "version": "1.4.197"}
     ]},
     "Oracle": {"groupId": "com.oracle.jdbc", "artifactId": "ojdbc7", "version": "12.1.0.2", "jar": "ojdbc7.jar"},
     "DB2": {"groupId": "ibm", "artifactId": "jdbc", "version": "4.21.29", "jar": "db2jcc4.jar"},

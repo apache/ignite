@@ -36,6 +36,9 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -44,6 +47,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCacheNearOnlyMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
@@ -80,16 +84,19 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
-    @Override public void _testReaderTtlNoTx() throws Exception {
+    @Test
+    @Override public void testReaderTtlNoTx() {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void _testReaderTtlTx() throws Exception {
+    @Test
+    @Override public void testReaderTtlTx() {
         // No-op.
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testSize() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -119,6 +126,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testClear() throws Exception {
         IgniteCache<String, Integer> nearCache = jcache();
         IgniteCache<String, Integer> primary = fullCache();
@@ -154,6 +162,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testLocalClearKeys() throws Exception {
         IgniteCache<String, Integer> nearCache = jcache();
         IgniteCache<String, Integer> primary = fullCache();
@@ -185,6 +194,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testEvictExpired() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -232,6 +242,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testLocalEvict() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -281,6 +292,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testPeekExpired() throws Exception {
         IgniteCache<String, Integer> c = jcache();
 

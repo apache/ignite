@@ -61,6 +61,7 @@ public class DataEntry {
     @GridToStringInclude
     protected long partCnt;
 
+    /** Constructor. */
     private DataEntry() {
         // No-op, used from factory methods.
     }
@@ -155,6 +156,18 @@ public class DataEntry {
      */
     public long partitionCounter() {
         return partCnt;
+    }
+
+    /**
+     * Sets partition update counter to entry.
+     *
+     * @param partCnt Partition update counter.
+     * @return {@code this} for chaining.
+     */
+    public DataEntry partitionCounter(long partCnt) {
+        this.partCnt = partCnt;
+
+        return this;
     }
 
     /**

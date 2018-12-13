@@ -57,7 +57,7 @@ libignite_odbc_la_SOURCES = \
     src/config/config_tools.cpp \
     src/config/configuration.cpp \
     src/config/connection_info.cpp \
-	src/config/connection_string_parser.cpp \
+    src/config/connection_string_parser.cpp \
     src/connection.cpp \
     src/cursor.cpp \
     src/diagnostic/diagnosable_adapter.cpp \
@@ -77,12 +77,21 @@ libignite_odbc_la_SOURCES = \
     src/query/table_metadata_query.cpp \
     src/query/type_info_query.cpp \
     src/query/special_columns_query.cpp \
+    src/query/streaming_query.cpp \
     src/ssl/ssl_gateway.cpp \
     src/ssl/secure_socket_client.cpp \
     src/ssl/ssl_mode.cpp \
+    src/ssl/ssl_api.cpp \
+    src/sql/sql_lexer.cpp \
+    src/sql/sql_parser.cpp \
+    src/sql/sql_set_streaming_command.cpp \
+    src/sql/sql_utils.cpp \
+    src/streaming/streaming_batch.cpp \
+    src/streaming/streaming_context.cpp \
     src/protocol_version.cpp \
     src/result_page.cpp \
     src/row.cpp \
+    src/nested_tx_mode.cpp \
     src/message.cpp \
     src/column.cpp \
     src/statement.cpp \

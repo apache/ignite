@@ -32,6 +32,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.F;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -43,6 +46,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 /**
  * Multi-node tests for partitioned cache.
  */
+@RunWith(JUnit4.class)
 public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCachePartitionedFullApiSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -68,6 +72,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllRemoveAll() throws Exception {
         for (int i = 0; i < gridCount(); i++)
             info(">>>>> Grid" + i + ": " + grid(i).localNode().id());
@@ -95,6 +100,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllPutAll() throws Exception {
         for (int i = 0; i < gridCount(); i++)
             info(">>>>> Grid" + i + ": " + grid(i).localNode().id());
@@ -134,6 +140,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutDebug() throws Exception {
         for (int i = 0; i < gridCount(); i++)
             info(">>>>> Grid" + i + ": " + grid(i).localNode().id());
@@ -168,6 +175,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPeekPartitionedModes() throws Exception {
         jcache().put("key", 1);
 
@@ -207,6 +215,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPeekAsyncPartitionedModes() throws Exception {
         jcache().put("key", 1);
 
@@ -237,6 +246,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testNearDhtKeySize() throws Exception {
         List<String> keys = new ArrayList<>(5);
 
@@ -312,6 +322,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinity() throws Exception {
         for (int i = 0; i < gridCount(); i++)
             info("Grid " + i + ": " + grid(i).localNode().id());
@@ -328,7 +339,6 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         Object key = new Object() {
             /** */
-            @SuppressWarnings("UnusedDeclaration")
             @AffinityKeyMapped
             private final Object key0 = affKey;
 

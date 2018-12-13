@@ -20,12 +20,12 @@ package org.apache.ignite.ml.regressions.linear;
 import java.util.Arrays;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
-import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.isolve.lsqr.AbstractLSQR;
 import org.apache.ignite.ml.math.isolve.lsqr.LSQROnHeap;
 import org.apache.ignite.ml.math.isolve.lsqr.LSQRResult;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
@@ -33,29 +33,53 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
  *
  * @see AbstractLSQR
  */
-public class LinearRegressionLSQRTrainer implements SingleLabelDatasetTrainer<LinearRegressionModel> {
+public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<LinearRegressionModel> {
     /** {@inheritDoc} */
     @Override public <K, V> LinearRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+
+        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected <K, V> LinearRegressionModel updateModel(LinearRegressionModel mdl,
+        DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
         LSQRResult res;
 
         try (LSQROnHeap<K, V> lsqr = new LSQROnHeap<>(
             datasetBuilder,
+            envBuilder,
             new SimpleLabeledDatasetDataBuilder<>(
                 new FeatureExtractorWrapper<>(featureExtractor),
-                lbExtractor.andThen(e -> new double[]{e})
+                lbExtractor.andThen(e -> new double[] {e})
             )
         )) {
-            res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, null);
+            double[] x0 = null;
+            if (mdl != null) {
+                int x0Size = mdl.getWeights().size() + 1;
+                Vector weights = mdl.getWeights().like(x0Size);
+                mdl.getWeights().nonZeroes().forEach(ith -> weights.set(ith.index(), ith.get()));
+                weights.set(weights.size() - 1, mdl.getIntercept());
+                x0 = weights.asArray();
+            }
+            res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, x0);
+            if (res == null)
+                return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
         }
         catch (Exception e) {
             throw new RuntimeException(e);
         }
 
         double[] x = res.getX();
-        Vector weights = new DenseLocalOnHeapVector(Arrays.copyOfRange(x, 0, x.length - 1));
+        Vector weights = new DenseVector(Arrays.copyOfRange(x, 0, x.length - 1));
 
         return new LinearRegressionModel(weights, x[x.length - 1]);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(LinearRegressionModel mdl) {
+        return true;
     }
 }

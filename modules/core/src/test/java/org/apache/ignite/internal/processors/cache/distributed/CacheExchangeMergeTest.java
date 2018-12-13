@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -74,11 +75,14 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.eclipse.jetty.util.ConcurrentHashSet;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -88,12 +92,13 @@ import static org.apache.ignite.testframework.GridTestUtils.mergeExchangeWaitVer
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final long WAIT_SECONDS = 15;
+    private static final long WAIT_SECONDS = 45;
 
     /** */
     private ThreadLocal<Boolean> client = new ThreadLocal<>();
@@ -149,7 +154,12 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
                 cacheConfiguration("c7", TRANSACTIONAL, PARTITIONED, 1),
                 cacheConfiguration("c8", TRANSACTIONAL, PARTITIONED, 2),
                 cacheConfiguration("c9", TRANSACTIONAL, PARTITIONED, 10),
-                cacheConfiguration("c10", TRANSACTIONAL, REPLICATED, 0)
+                cacheConfiguration("c10", TRANSACTIONAL, REPLICATED, 0),
+                cacheConfiguration("c11", TRANSACTIONAL_SNAPSHOT, PARTITIONED, 0),
+                cacheConfiguration("c12", TRANSACTIONAL_SNAPSHOT, PARTITIONED, 1),
+                cacheConfiguration("c13", TRANSACTIONAL_SNAPSHOT, PARTITIONED, 2),
+                cacheConfiguration("c14", TRANSACTIONAL_SNAPSHOT, PARTITIONED, 10),
+                cacheConfiguration("c15", TRANSACTIONAL_SNAPSHOT, REPLICATED, 0)
             );
         }
 
@@ -203,6 +213,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDelayExchangeMessages() throws Exception {
         testDelaySpi = true;
 
@@ -275,6 +286,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMergeStartRandomClientsServers() throws Exception {
         for (int iter = 0; iter < 3; iter++) {
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -331,6 +343,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMergeStartStopRandomClientsServers() throws Exception {
         for (int iter = 0; iter < 3; iter++) {
             log.info("Iteration: " + iter);
@@ -354,7 +367,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
 
             final AtomicInteger idx = new AtomicInteger(initNodes);
 
-            final ConcurrentHashSet<Integer> stopNodes = new ConcurrentHashSet<>();
+            final GridConcurrentHashSet<Integer> stopNodes = new GridConcurrentHashSet<>();
 
             IgniteInternalFuture fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -403,6 +416,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentStartServers() throws Exception {
         concurrentStart(false);
     }
@@ -410,6 +424,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentStartServersAndClients() throws Exception {
         concurrentStart(true);
     }
@@ -419,7 +434,9 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void concurrentStart(final boolean withClients) throws Exception {
-        for (int i = 0; i < 5; i++) {
+        int iterations = GridTestUtils.SF.applyLB(5, 1);
+
+        for (int i = 0; i < iterations; i++) {
             log.info("Iteration: " + i);
 
             startGrid(0);
@@ -456,7 +473,10 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMergeServerAndClientJoin1() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10186");
+
         final IgniteEx srv0 = startGrid(0);
 
         mergeExchangeWaitVersion(srv0, 3);
@@ -494,6 +514,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartCacheOnJoinAndJoinMerge_2_nodes() throws Exception {
         startCacheOnJoinAndJoinMerge1(2, false);
     }
@@ -501,6 +522,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartCacheOnJoinAndJoinMerge_4_nodes() throws Exception {
         startCacheOnJoinAndJoinMerge1(4, false);
     }
@@ -508,6 +530,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartCacheOnJoinAndJoinMerge_WithClients() throws Exception {
         startCacheOnJoinAndJoinMerge1(5, true);
     }
@@ -544,6 +567,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMergeAndHistoryCleanup() throws Exception {
         final int histSize = 5;
 
@@ -595,19 +619,20 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     private void checkHistorySize(int histSize) {
         List<Ignite> nodes = G.allGrids();
 
-        assertTrue(nodes.size() > 0);
+        assertTrue(!nodes.isEmpty());
 
         for (Ignite node : nodes) {
             List<GridDhtPartitionsExchangeFuture> exchFuts =
                     ((IgniteEx)node).context().cache().context().exchange().exchangeFutures();
 
-            assertTrue("Unexpected size: " + exchFuts.size(), exchFuts.size() > 0 && exchFuts.size() <= histSize);
+            assertTrue("Unexpected size: " + exchFuts.size(), !exchFuts.isEmpty() && exchFuts.size() <= histSize);
         }
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartCacheOnJoinAndMergeWithFail() throws Exception {
         cfgCache = false;
 
@@ -633,6 +658,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartCacheOnJoinAndCoordinatorFailed1() throws Exception {
         cfgCache = false;
 
@@ -654,6 +680,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartCacheOnJoinAndCoordinatorFailed2() throws Exception {
         cfgCache = false;
 
@@ -675,6 +702,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMergeServersJoin1() throws Exception {
         IgniteEx srv0 = startGrid(0);
 
@@ -702,6 +730,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMergeServerJoin1ClientsInTopology() throws Exception {
         IgniteEx srv0 = startGrid(0);
 
@@ -739,6 +768,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMergeAndNewCoordinator() throws Exception {
         final Ignite srv0 = startGrids(3);
 
@@ -758,6 +788,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMergeServersFail1_1() throws Exception {
         mergeServersFail1(false);
     }
@@ -765,6 +796,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMergeServersFail1_2() throws Exception {
         mergeServersFail1(true);
     }
@@ -810,6 +842,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMergeServersAndClientsFail1() throws Exception {
         mergeServersAndClientsFail(false);
     }
@@ -817,10 +850,10 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMergeServersAndClientsFail2() throws Exception {
         mergeServersAndClientsFail(true);
     }
-
 
     /**
      * @param waitRebalance Wait for rebalance end before start tested topology change.
@@ -859,6 +892,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinExchangeCoordinatorChange_NoMerge_1() throws Exception {
         for (CoordinatorChangeMode mode : CoordinatorChangeMode.values()) {
             exchangeCoordinatorChangeNoMerge(4, true, mode);
@@ -870,6 +904,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinExchangeCoordinatorChange_NoMerge_2() throws Exception {
         for (CoordinatorChangeMode mode : CoordinatorChangeMode.values()) {
             exchangeCoordinatorChangeNoMerge(8, true, mode);
@@ -881,6 +916,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailExchangeCoordinatorChange_NoMerge_1() throws Exception {
         for (CoordinatorChangeMode mode : CoordinatorChangeMode.values()) {
             exchangeCoordinatorChangeNoMerge(5, false, mode);
@@ -892,6 +928,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailExchangeCoordinatorChange_NoMerge_2() throws Exception {
         for (CoordinatorChangeMode mode : CoordinatorChangeMode.values()) {
             exchangeCoordinatorChangeNoMerge(8, false, mode);
@@ -903,6 +940,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMergeJoinExchangesCoordinatorChange1_4_servers() throws Exception {
         for (CoordinatorChangeMode mode : CoordinatorChangeMode.values()) {
             mergeJoinExchangesCoordinatorChange1(4, mode);
@@ -914,6 +952,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMergeJoinExchangesCoordinatorChange1_8_servers() throws Exception {
         for (CoordinatorChangeMode mode : CoordinatorChangeMode.values()) {
             mergeJoinExchangesCoordinatorChange1(8, mode);
@@ -936,8 +975,6 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
 
         Ignite srv0 = startGrids(srvs);
 
-        mergeExchangeWaitVersion(srv0, 6);
-
         CountDownLatch latch = blockExchangeFinish(srvs, mode);
 
         IgniteInternalFuture<?> fut = startGridsAsync(srv0, srvs, 2);
@@ -955,6 +992,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMergeJoinExchangesCoordinatorChange2_4_servers() throws Exception {
         mergeJoinExchangeCoordinatorChange2(4, 2, F.asList(1, 2, 3, 4), F.asList(5));
 
@@ -998,6 +1036,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMergeExchangeCoordinatorChange4() throws Exception {
         testSpi = true;
 
@@ -1220,7 +1259,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     private void checkCaches0() throws Exception {
         List<Ignite> nodes = G.allGrids();
 
-        assertTrue(nodes.size() > 0);
+        assertTrue(!nodes.isEmpty());
 
         for (Ignite node : nodes)
             checkNodeCaches(node);
@@ -1426,8 +1465,10 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
                 tx.commit();
             }
         }
-        catch (ClusterTopologyException ignore) {
-            // No-op.
+        catch (ClusterTopologyException e) {
+            info("Tx failed, ignore: " + e);
+
+            return;
         }
 
         for (Map.Entry<Object, Object> e : map.entrySet())

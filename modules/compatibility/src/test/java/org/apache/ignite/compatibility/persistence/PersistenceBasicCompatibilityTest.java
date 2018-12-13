@@ -60,6 +60,7 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
                         .setPersistenceEnabled(true)
+                        .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
                 ));
 
         cfg.setBinaryConfiguration(
@@ -95,6 +96,33 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
      */
     public void testNodeStartByOldVersionPersistenceData_2_3() throws Exception {
         doTestStartupWithOldVersion("2.3.0");
+    }
+
+    /**
+     * Tests opportunity to read data from previous Ignite DB version.
+     *
+     * @throws Exception If failed.
+     */
+    public void testNodeStartByOldVersionPersistenceData_2_4() throws Exception {
+        doTestStartupWithOldVersion("2.4.0");
+    }
+
+    /**
+     * Tests opportunity to read data from previous Ignite DB version.
+     *
+     * @throws Exception If failed.
+     */
+    public void testNodeStartByOldVersionPersistenceData_2_5() throws Exception {
+        doTestStartupWithOldVersion("2.5.0");
+    }
+
+    /**
+     * Tests opportunity to read data from previous Ignite DB version.
+     *
+     * @throws Exception If failed.
+     */
+    public void testNodeStartByOldVersionPersistenceData_2_6() throws Exception {
+        doTestStartupWithOldVersion("2.6.0");
     }
 
     /**

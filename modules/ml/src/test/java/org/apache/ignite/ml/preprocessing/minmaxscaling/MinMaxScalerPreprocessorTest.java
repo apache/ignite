@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.preprocessing.minmaxscaling;
 
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -35,7 +37,7 @@ public class MinMaxScalerPreprocessorTest {
             {0., 22., 300.}
         };
 
-        MinMaxScalerPreprocessor<Integer, double[]> preprocessor = new MinMaxScalerPreprocessor<>(
+        MinMaxScalerPreprocessor<Integer, Vector> preprocessor = new MinMaxScalerPreprocessor<>(
             new double[] {0, 4, 1},
             new double[] {4, 22, 300},
             (k, v) -> v
@@ -49,6 +51,6 @@ public class MinMaxScalerPreprocessorTest {
         };
 
        for (int i = 0; i < data.length; i++)
-           assertArrayEquals(standardData[i], preprocessor.apply(i, data[i]), 1e-8);
+           assertArrayEquals(standardData[i], preprocessor.apply(i, VectorUtils.of(data[i])).asArray(), 1e-8);
     }
 }

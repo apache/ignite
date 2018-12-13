@@ -17,46 +17,58 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteDataStorageMetricsSelfTest;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTest;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithExpiryPolicy;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCorruptedCacheDataTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheStartStopWithFreqCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCorruptedStoreTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsExchangeDuringCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsPageSizesTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsPartitionFilesDestroyTest;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRecoveryAfterFileCorruptionTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsPartitionsStateRecoveryTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistentStoreDataStructuresTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteRebalanceScheduleResendPartitionsTest;
+import org.apache.ignite.internal.processors.cache.persistence.LocalWacModeNoChangeDuringRebalanceOnNonNodeAssignTest;
 import org.apache.ignite.internal.processors.cache.persistence.LocalWalModeChangeDuringRebalancingSelfTest;
-import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteAbsentEvictionNodeOutOfBaselineTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.ClientAffinityAssignmentWithBaselineTest;
+import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteAbsentEvictionNodeOutOfBaselineTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteAllBaselineNodesOnlineFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteOfflineBaselineNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteOnlineNodeOutOfBaselineFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageEvictionDuringPartitionClearTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsRebalancingOnNotStableTopologyTest;
-import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsTransactionsHangTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsReserveWalSegmentsTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsReserveWalSegmentsWithCompactionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWholeClusterRestartTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.SlowHistoricalRebalanceSmallHistoryTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.IgniteCheckpointDirtyPagesForLowLoadTest;
-import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsUnusedWalSegmentsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.filename.IgniteUidAsConsistentIdMigrationTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.FsyncWalRolloverDoesNotBlockTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteNodeStoppedDuringDisableWALTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWALTailIsReachedDuringIterationOverArchiveTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushBackgroundSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushBackgroundWithMmapBufferSelfTest;
-import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushFsyncSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushFailoverTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushFsyncSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushFsyncWithDedicatedWorkerSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushFsyncWithMmapBufferSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushLogOnlySelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushLogOnlyWithMmapBufferSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFormatFileFailoverTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalHistoryReservationsTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalIteratorExceptionDuringReadTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalIteratorSwitchSegmentTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalSerializerVersionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalCompactionTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalDeletionArchiveFsyncTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalDeletionArchiveLogOnlyTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRolloverTypesTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteDataIntegrityTests;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteFsyncReplayWalIteratorInvalidCrcTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteReplayWalIteratorInvalidCrcTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteStandaloneWalIteratorInvalidCrcTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgnitePureJavaCrcCompatibility;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.reader.IgniteWalReaderTest;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileDownloaderTest;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneWalRecordsIteratorTest;
 
 /**
  *
@@ -69,48 +81,46 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         TestSuite suite = new TestSuite("Ignite persistent Store Test Suite 2");
 
         // Integrity test.
-        suite.addTestSuite(IgniteDataIntegrityTests.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteDataIntegrityTests.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteStandaloneWalIteratorInvalidCrcTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteReplayWalIteratorInvalidCrcTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteFsyncReplayWalIteratorInvalidCrcTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgnitePureJavaCrcCompatibility.class));
 
         addRealPageStoreTests(suite);
 
         addRealPageStoreTestsNotForDirectIo(suite);
 
         // BaselineTopology tests
-        suite.addTestSuite(IgniteAllBaselineNodesOnlineFullApiSelfTest.class);
-        suite.addTestSuite(IgniteOfflineBaselineNodeFullApiSelfTest.class);
-        suite.addTestSuite(IgniteOnlineNodeOutOfBaselineFullApiSelfTest.class);
-        suite.addTestSuite(ClientAffinityAssignmentWithBaselineTest.class);
-        suite.addTestSuite(IgniteAbsentEvictionNodeOutOfBaselineTest.class);
-
-        suite.addTestSuite(FileDownloaderTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteAllBaselineNodesOnlineFullApiSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteOfflineBaselineNodeFullApiSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteOnlineNodeOutOfBaselineFullApiSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(ClientAffinityAssignmentWithBaselineTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteAbsentEvictionNodeOutOfBaselineTest.class));
 
         return suite;
     }
 
     /**
-     * Fills {@code suite} with PDS test subset, which operates with real page store, but requires long time to execute.
+     * Fills {@code suite} with PDS test subset, which operates with real page store, but requires long time to
+     * execute.
      *
      * @param suite suite to add tests into.
      */
     private static void addRealPageStoreTestsNotForDirectIo(TestSuite suite) {
-        suite.addTestSuite(IgnitePdsTransactionsHangTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsPartitionFilesDestroyTest.class));
 
-        suite.addTestSuite(IgnitePdsPageEvictionDuringPartitionClearTest.class);
+        suite.addTest(new JUnit4TestAdapter(LocalWalModeChangeDuringRebalancingSelfTest.class));
 
-        // Rebalancing test
-        suite.addTestSuite(IgnitePdsContinuousRestartTest.class);
-        suite.addTestSuite(IgnitePdsContinuousRestartTestWithExpiryPolicy.class);
+        suite.addTest(new JUnit4TestAdapter(LocalWacModeNoChangeDuringRebalanceOnNonNodeAssignTest.class));
 
-        suite.addTestSuite(IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteWalFlushFsyncSelfTest.class));
 
-        // Integrity test.
-        suite.addTestSuite(IgnitePdsRecoveryAfterFileCorruptionTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteWalFlushFsyncWithDedicatedWorkerSelfTest.class));
 
-        suite.addTestSuite(IgnitePdsPartitionFilesDestroyTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteWalFlushFsyncWithMmapBufferSelfTest.class));
 
-        suite.addTestSuite(LocalWalModeChangeDuringRebalancingSelfTest.class);
-
-        suite.addTestSuite(IgniteWalFlushFsyncSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsCacheStartStopWithFreqCheckpointTest.class));
     }
 
     /**
@@ -121,55 +131,75 @@ public class IgnitePdsTestSuite2 extends TestSuite {
      * @param suite suite to add tests into.
      */
     public static void addRealPageStoreTests(TestSuite suite) {
-        suite.addTestSuite(IgnitePdsPageSizesTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsPageSizesTest.class));
 
         // Metrics test.
-        suite.addTestSuite(IgniteDataStorageMetricsSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteDataStorageMetricsSelfTest.class));
 
-        suite.addTestSuite(IgnitePdsRebalancingOnNotStableTopologyTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsRebalancingOnNotStableTopologyTest.class));
 
-        suite.addTestSuite(IgnitePdsWholeClusterRestartTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsWholeClusterRestartTest.class));
 
         // Rebalancing test
-        suite.addTestSuite(IgniteWalHistoryReservationsTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteWalHistoryReservationsTest.class));
 
-        suite.addTestSuite(IgnitePersistentStoreDataStructuresTest.class);
+        suite.addTest(new JUnit4TestAdapter(SlowHistoricalRebalanceSmallHistoryTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(IgnitePersistentStoreDataStructuresTest.class));
 
         // Failover test
-        suite.addTestSuite(IgniteWalFlushFailoverTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteWalFlushFailoverTest.class));
 
-        suite.addTestSuite(IgniteWalFlushFsyncWithDedicatedWorkerSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteWalFlushBackgroundSelfTest.class));
 
-        suite.addTestSuite(IgniteWalFlushFsyncWithMmapBufferSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteWalFlushBackgroundWithMmapBufferSelfTest.class));
 
-        suite.addTestSuite(IgniteWalFlushBackgroundSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteWalFlushLogOnlySelfTest.class));
 
-        suite.addTestSuite(IgniteWalFlushBackgroundWithMmapBufferSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteWalFlushLogOnlyWithMmapBufferSelfTest.class));
 
-        suite.addTestSuite(IgniteWalFlushLogOnlySelfTest.class);
-
-        suite.addTestSuite(IgniteWalFlushLogOnlyWithMmapBufferSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteWalFormatFileFailoverTest.class));
 
         // Test suite uses Standalone WAL iterator to verify PDS content.
-        suite.addTestSuite(IgniteWalReaderTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteWalReaderTest.class));
 
-        suite.addTestSuite(IgnitePdsExchangeDuringCheckpointTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsExchangeDuringCheckpointTest.class));
 
-        suite.addTestSuite(IgnitePdsUnusedWalSegmentsTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsReserveWalSegmentsTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsReserveWalSegmentsWithCompactionTest.class));
 
         // new style folders with generated consistent ID test
-        suite.addTestSuite(IgniteUidAsConsistentIdMigrationTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteUidAsConsistentIdMigrationTest.class));
 
-        suite.addTestSuite(IgniteWalSerializerVersionTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteWalSerializerVersionTest.class));
 
         suite.addTestSuite(WalCompactionTest.class);
 
-        suite.addTestSuite(IgniteCheckpointDirtyPagesForLowLoadTest.class);
+        suite.addTest(new JUnit4TestAdapter(WalDeletionArchiveFsyncTest.class));
+        suite.addTest(new JUnit4TestAdapter(WalDeletionArchiveLogOnlyTest.class));
 
-        suite.addTestSuite(IgnitePdsCorruptedStoreTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteCheckpointDirtyPagesForLowLoadTest.class));
 
-        suite.addTestSuite(IgnitePdsCorruptedCacheDataTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsCorruptedStoreTest.class));
 
-        suite.addTestSuite(IgniteWalIteratorSwitchSegmentTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteWalIteratorSwitchSegmentTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(IgniteWalIteratorExceptionDuringReadTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(IgniteNodeStoppedDuringDisableWALTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(StandaloneWalRecordsIteratorTest.class));
+
+        //suite.addTest(new JUnit4TestAdapter(IgniteWalRecoverySeveralRestartsTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(IgniteRebalanceScheduleResendPartitionsTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(IgniteWALTailIsReachedDuringIterationOverArchiveTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(WalRolloverTypesTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(FsyncWalRolloverDoesNotBlockTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsPartitionsStateRecoveryTest.class));
     }
 }

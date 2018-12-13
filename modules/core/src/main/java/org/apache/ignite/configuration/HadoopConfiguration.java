@@ -225,6 +225,6 @@ public class HadoopConfiguration {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(HadoopConfiguration.class, this, super.toString());
+        return S.toString(HadoopConfiguration.class, this);
     }
 }

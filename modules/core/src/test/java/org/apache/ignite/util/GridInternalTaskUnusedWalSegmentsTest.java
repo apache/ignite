@@ -17,12 +17,7 @@
 
 package org.apache.ignite.util;
 
-import java.io.File;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -40,11 +35,21 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import java.io.File;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
 
 /**
  * Test correctness of VisorWalTask.
  */
+@RunWith(JUnit4.class)
 public class GridInternalTaskUnusedWalSegmentsTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -95,21 +100,24 @@ public class GridInternalTaskUnusedWalSegmentsTest extends GridCommonAbstractTes
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testCorrectnessOfDeletionTaskSegments() throws Exception {
         try {
             IgniteEx ig0 = (IgniteEx)startGrids(4);
 
             ig0.cluster().active(true);
 
-            IgniteCache<Object, Object> cache = ig0.cache(DEFAULT_CACHE_NAME);
-
-            for (int k = 0; k < 10_000; k++)
-                cache.put(k, new byte[1024]);
+            try (IgniteDataStreamer streamer = ig0.dataStreamer(DEFAULT_CACHE_NAME)) {
+                for (int k = 0; k < 10_000; k++)
+                    streamer.addData(k, new byte[1024]);
+            }
 
             forceCheckpoint();
 
-            for (int k = 0; k < 1_000; k++)
-                cache.put(k, new byte[1024]);
+            try (IgniteDataStreamer streamer = ig0.dataStreamer(DEFAULT_CACHE_NAME)) {
+                for (int k = 0; k < 1_000; k++)
+                    streamer.addData(k, new byte[1024]);
+            }
 
             forceCheckpoint();
 

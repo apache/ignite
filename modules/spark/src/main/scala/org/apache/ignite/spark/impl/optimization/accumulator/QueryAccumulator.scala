@@ -18,7 +18,7 @@
 package org.apache.ignite.spark.impl.optimization.accumulator
 
 import org.apache.ignite.spark.impl.optimization.IgniteQueryContext
-import org.apache.spark.sql.catalyst.expressions.{NamedExpression, SortOrder}
+import org.apache.spark.sql.catalyst.expressions.{Expression, NamedExpression, SortOrder}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 
 /**
@@ -53,10 +53,20 @@ private[apache] trait QueryAccumulator extends LogicalPlan {
     def withOrderBy(orderBy: Seq[SortOrder]): QueryAccumulator
 
     /**
+      * @return Copy of this accumulator with `limit` expression.
+      */
+    def withLimit(limit: Expression): QueryAccumulator
+
+    /**
+      * @return Copy of this accumulator with `localLimit` expression.
+      */
+    def withLocalLimit(localLimit: Expression): QueryAccumulator
+
+    /**
       * @param prettyPrint If true human readable query will be generated.
       * @return SQL query.
       */
-    def compileQuery(prettyPrint: Boolean = false): String
+    def compileQuery(prettyPrint: Boolean = false, nestedQuery: Boolean = false): String
 
     /**
       * @return Qualifier that should be use to select data from this accumulator.

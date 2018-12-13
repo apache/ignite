@@ -77,6 +77,16 @@ public class DataRecord extends TimeStampRecord {
     }
 
     /**
+     * @param writeEntries Write entries.
+     * @return {@code this} for chaining.
+     */
+    public DataRecord setWriteEntries(List<DataEntry> writeEntries) {
+        this.writeEntries = writeEntries;
+
+        return this;
+    }
+
+    /**
      * @return Collection of write entries.
      */
     public List<DataEntry> writeEntries() {

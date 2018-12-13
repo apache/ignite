@@ -41,6 +41,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -48,6 +51,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -81,6 +85,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUniqueNameMultithreaded() throws Exception {
         testUniqueName(true);
     }
@@ -88,6 +93,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUniqueNameMultinode() throws Exception {
         testUniqueName(false);
     }
@@ -95,6 +101,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateRemove() throws Exception {
         final String name = IgniteUuid.randomUuid().toString();
 
@@ -225,11 +232,14 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
         assertNotNull(ref);
 
         assertSame(ref, ignite.atomicReference(name, 0, true));
+
+        ref.close();
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUniqueNamePerGroup() throws Exception {
         Ignite ignite = ignite(0);
 
@@ -258,6 +268,9 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
 
         assert atomicLong != null;
         assert atomicSeq != null;
+
+        atomicLong.close();
+        atomicSeq.close();
     }
 
     /**

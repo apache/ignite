@@ -49,14 +49,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
     /** Ip finder. */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -127,6 +127,7 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testThrottle() throws Exception {
         startGrids(2).active(true);
 
@@ -288,11 +289,6 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
         private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();
 
         /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            return create(file, CREATE, READ, WRITE);
-        }
-
-        /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... openOption) throws IOException {
             final FileIO delegate = delegateFactory.create(file, openOption);
 
@@ -311,11 +307,11 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
                     return delegate.write(srcBuf, position);
                 }
 
-                @Override public void write(byte[] buf, int off, int len) throws IOException {
+                @Override public int write(byte[] buf, int off, int len) throws IOException {
                     if (slowCheckpointEnabled.get() && Thread.currentThread().getName().contains("checkpoint"))
                         LockSupport.parkNanos(5_000_000);
 
-                    delegate.write(buf, off, len);
+                    return delegate.write(buf, off, len);
                 }
 
                 /** {@inheritDoc} */

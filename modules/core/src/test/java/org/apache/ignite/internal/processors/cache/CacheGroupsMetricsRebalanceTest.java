@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -38,6 +39,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -46,6 +50,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -88,7 +93,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
             .setName(CACHE1)
             .setGroupName(GROUP)
             .setCacheMode(CacheMode.PARTITIONED)
-            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setRebalanceMode(CacheRebalanceMode.ASYNC)
             .setRebalanceBatchSize(100)
             .setStatisticsEnabled(true);
@@ -99,7 +104,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         CacheConfiguration cfg3 = new CacheConfiguration()
             .setName(CACHE3)
             .setCacheMode(CacheMode.PARTITIONED)
-            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setRebalanceMode(CacheRebalanceMode.ASYNC)
             .setRebalanceBatchSize(100)
             .setStatisticsEnabled(true)
@@ -113,6 +118,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalance() throws Exception {
         Ignite ignite = startGrids(4);
 
@@ -159,17 +165,18 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         assertTrue(rate1 > 0);
         assertTrue(rate2 > 0);
 
-        // rate1 has to be roughly twice more than rate2.
-        double ratio = ((double)rate2 / rate1) * 100;
+        // rate1 has to be roughly the same as rate2
+        double ratio = ((double)rate2 / rate1);
 
         log.info("Ratio: " + ratio);
 
-        assertTrue(ratio > 40 && ratio < 60);
+        assertTrue(ratio > 0.9 && ratio < 1.1);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalanceEstimateFinishTime() throws Exception {
         System.setProperty(IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL, String.valueOf(1000));
 
@@ -225,29 +232,27 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
                 log.info("Wait until keys left will be less than: " + keysLine);
 
-                try {
-                    while (finishRebalanceLatch.getCount() != 0) {
-                        CacheMetrics m = ig2.cache(CACHE1).localMetrics();
+                while (true) {
+                    CacheMetrics m = ig2.cache(CACHE1).localMetrics();
 
-                        long keyLeft = m.getKeysToRebalanceLeft();
+                    long keyLeft = m.getKeysToRebalanceLeft();
 
-                        if (keyLeft > 0 && keyLeft < keysLine)
-                            latch.countDown();
+                    if (keyLeft > 0 && keyLeft < keysLine) {
+                        latch.countDown();
 
-                        log.info("Keys left: " + m.getKeysToRebalanceLeft());
-
-                        try {
-                            Thread.sleep(1_000);
-                        }
-                        catch (InterruptedException e) {
-                            log.warning("Interrupt thread", e);
-
-                            Thread.currentThread().interrupt();
-                        }
+                        break;
                     }
-                }
-                finally {
-                    latch.countDown();
+
+                    log.info("Keys left: " + m.getKeysToRebalanceLeft());
+
+                    try {
+                        Thread.sleep(1_000);
+                    }
+                    catch (InterruptedException e) {
+                        log.warning("Interrupt thread", e);
+
+                        Thread.currentThread().interrupt();
+                    }
                 }
             }
         });
@@ -270,8 +275,15 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         long timePassed = currTime - startTime;
         long timeLeft = finishTime - currTime;
 
-        assertTrue("Got timeout while waiting for rebalancing. Estimated left time: " + timeLeft,
-            finishRebalanceLatch.await(timeLeft + 2_000L, TimeUnit.MILLISECONDS));
+        // TODO: finishRebalanceLatch gets countdown much earlier because of ForceRebalanceExchangeTask triggered by cache with delay
+//        assertTrue("Got timeout while waiting for rebalancing. Estimated left time: " + timeLeft,
+//            finishRebalanceLatch.await(timeLeft + 10_000L, TimeUnit.MILLISECONDS));
+
+        waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return ig2.cache(CACHE1).localMetrics().getKeysToRebalanceLeft() == 0;
+            }
+        }, timeLeft + 10_000L);
 
         log.info("[timePassed=" + timePassed + ", timeLeft=" + timeLeft +
                 ", Time to rebalance=" + (finishTime - startTime) +
@@ -292,6 +304,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalanceDelay() throws Exception {
         Ignite ig1 = startGrid(1);
 

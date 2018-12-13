@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(TestGuidEqualsToColumn)
     testCache.Put(1, in1);
     testCache.Put(2, in2);
 
-    CheckSingleResult<int32_t>(
+    CheckSingleResult<SQLINTEGER>(
         "SELECT i32Field FROM TestType WHERE guidField = {guid '04cc382a-0b82-f520-08d0-07a0620c0004'}", in2.i32Field);
 }
 
@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE(TestByteArrayParamInsert)
 
     const int8_t data[] = { 'A','B','C','D','E','F','G','H','I','J' };
     std::vector<int8_t> paramData(data, data + sizeof(data) / sizeof(data[0]));
-    SQLCHAR request[] = "INSERT INTO TestType(_key, i8ArrayField) VALUES(?, ?)";;
+    SQLCHAR request[] = "INSERT INTO TestType(_key, i8ArrayField) VALUES(?, ?)";
 
     ret = SQLPrepare(stmt, request, SQL_NTS);
 
@@ -161,7 +161,7 @@ BOOST_AUTO_TEST_CASE(TestByteParamInsert)
 {
     SQLRETURN ret;
 
-    SQLCHAR request[] = "INSERT INTO TestType(_key, i8Field) VALUES(?, ?)";;
+    SQLCHAR request[] = "INSERT INTO TestType(_key, i8Field) VALUES(?, ?)";
 
     ret = SQLPrepare(stmt, request, SQL_NTS);
 
@@ -197,7 +197,7 @@ BOOST_AUTO_TEST_CASE(TestTimestampSelect)
 
     testCache.Put(1, in1);
 
-    CheckSingleResult<int32_t>(
+    CheckSingleResult<SQLINTEGER>(
         "SELECT i32Field FROM TestType WHERE timestampField = '2017-01-13 19:54:01.987654321'", in1.i32Field);
 
     CheckSingleResult<Timestamp>(
@@ -259,7 +259,7 @@ BOOST_AUTO_TEST_CASE(TestTimeSelect)
 
     testCache.Put(1, in1);
 
-    CheckSingleResult<int32_t>("SELECT i32Field FROM TestType WHERE timeField = '19:54:01'", in1.i32Field);
+    CheckSingleResult<SQLINTEGER>("SELECT i32Field FROM TestType WHERE timeField = '19:54:01'", in1.i32Field);
 
     CheckSingleResult<Time>("SELECT timeField FROM TestType WHERE i32Field = 1", in1.timeField);
 }

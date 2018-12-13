@@ -23,7 +23,7 @@ import _ from 'lodash';
  * If this problem will be fixed in AngularStrap we can remove this delegate.
  */
 export default angular.module('mgcrea.ngStrap.select')
-    .decorator('$select', ['$delegate', ($delegate) => {
+    .decorator('$select', ['$delegate', function($delegate) {
         function SelectFactoryDecorated(element, controller, config) {
             const delegate = $delegate(element, controller, config);
 

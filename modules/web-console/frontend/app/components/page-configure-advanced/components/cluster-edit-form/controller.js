@@ -25,12 +25,18 @@ export default class ClusterEditFormController {
     caches;
     /** @type {ig.menu<string>} */
     cachesMenu;
+    /** @type {ig.menu<string>} */
+    servicesCachesMenu;
     /** @type {ng.ICompiledExpression} */
     onSave;
 
     static $inject = ['IgniteLegacyUtils', 'IgniteEventGroups', 'IgniteConfirm', 'IgniteVersion', '$scope', 'Clusters', 'IgniteFormUtils'];
+    /**
+     * @param {import('app/services/Clusters').default} Clusters
+     */
     constructor(IgniteLegacyUtils, IgniteEventGroups, IgniteConfirm, IgniteVersion, $scope, Clusters, IgniteFormUtils) {
-        Object.assign(this, {IgniteLegacyUtils, IgniteEventGroups, IgniteConfirm, IgniteVersion, $scope, Clusters, IgniteFormUtils});
+        Object.assign(this, {IgniteLegacyUtils, IgniteEventGroups, IgniteConfirm, IgniteVersion, $scope, IgniteFormUtils});
+        this.Clusters = Clusters;
     }
 
     $onDestroy() {
@@ -39,8 +45,6 @@ export default class ClusterEditFormController {
 
     $onInit() {
         this.available = this.IgniteVersion.available.bind(this.IgniteVersion);
-
-        let __original_value;
 
         const rebuildDropdowns = () => {
             this.eventStorage = [
@@ -106,8 +110,11 @@ export default class ClusterEditFormController {
                 this.$scope.ui.inputForm.$setUntouched();
             }
         }
-        if ('caches' in changes)
+
+        if ('caches' in changes) {
             this.cachesMenu = (changes.caches.currentValue || []).map((c) => ({label: c.name, value: c._id}));
+            this.servicesCachesMenu = [{label: 'Key-affinity not used', value: null}].concat(this.cachesMenu);
+        }
     }
 
     /**

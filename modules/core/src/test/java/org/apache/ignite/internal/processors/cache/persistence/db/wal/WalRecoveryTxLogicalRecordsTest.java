@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -50,8 +49,8 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -66,10 +65,14 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
@@ -147,6 +150,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWalTxSimple() throws Exception {
         Ignite ignite = startGrid();
 
@@ -222,6 +226,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWalRecoveryRemoves() throws Exception {
         Ignite ignite = startGrid();
 
@@ -310,6 +315,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testHistoricalRebalanceIterator() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
 
@@ -472,52 +478,9 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception if failed.
-     */
-    public void testCheckpointHistory() throws Exception {
-        Ignite ignite = startGrid();
-
-        ignite.cluster().active(true);
-
-        try {
-            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)ignite).context()
-                .cache().context().database();
-
-            dbMgr.waitForCheckpoint("test");
-
-            // This number depends on wal history size.
-            int entries = WAL_HIST_SIZE * 2;
-
-            IgniteCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
-
-            for (int i = 0; i < entries; i++) {
-                // Put to partition 0.
-                cache.put(i * PARTS, i * PARTS);
-
-                // Put to partition 1.
-                cache.put(i * PARTS + 1, i * PARTS + 1);
-
-                dbMgr.waitForCheckpoint("test");
-            }
-
-            GridCacheDatabaseSharedManager.CheckpointHistory hist = dbMgr.checkpointHistory();
-
-            assertTrue(hist.checkpoints().size() <= WAL_HIST_SIZE);
-
-            File cpDir = dbMgr.checkpointDirectory();
-
-            File[] cpFiles = cpDir.listFiles();
-
-            assertTrue(cpFiles.length <= WAL_HIST_SIZE * 2 + 1); // starts & ends + node_start
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWalAfterPreloading() throws Exception {
         Ignite ignite = startGrid();
 
@@ -560,6 +523,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryRandomPutRemove() throws Exception {
         try {
             pageSize = 1024;
@@ -617,6 +581,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryNoPageLost1() throws Exception {
         recoveryNoPageLost(false);
     }
@@ -624,13 +589,17 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryNoPageLost2() throws Exception {
         recoveryNoPageLost(true);
     }
 
     /**
+     * Test checks that the number of pages per each page store are not changing before and after node restart.
+     *
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryNoPageLost3() throws Exception {
         try {
             pageSize = 1024;
@@ -724,7 +693,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
                 pages = allocatedPages(ignite, CACHE2_NAME);
 
-                ignite.close();
+                stopGrid(0, true);
             }
         }
         finally {
@@ -766,6 +735,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFreeListRecovery() throws Exception {
         try {
             pageSize = 1024;

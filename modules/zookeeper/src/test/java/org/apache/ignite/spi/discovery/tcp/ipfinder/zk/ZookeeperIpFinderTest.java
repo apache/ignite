@@ -26,18 +26,18 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.InstanceSpec;
-import org.apache.curator.test.TestingCluster;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Rule;
+import org.junit.rules.Timeout;
 
 /**
  * Test for {@link TcpDiscoveryZookeeperIpFinder}.
@@ -45,6 +45,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * @author Raul Kripalani
  */
 public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
+    /** Per test timeout */
+    @Rule
+    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+
     /** ZK Cluster size. */
     private static final int ZK_CLUSTER_SIZE = 3;
 
@@ -81,6 +85,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
 
         // start the ZK cluster
         zkCluster = new TestingCluster(ZK_CLUSTER_SIZE);
+
         zkCluster.start();
 
         // start the Curator client so we can perform assertions on the ZK state later
@@ -356,24 +361,24 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
         // block the client until connected
         zkCurator.blockUntilConnected();
 
-        // check that the nodes have registered again
+        // Check that the nodes have registered again with the previous configuration.
         assertEquals(4, zkCurator.getChildren().forPath(SERVICES_IGNITE_ZK_PATH).size());
+
+        // Block the clients until connected.
+        for (int i = 0; i < 4; i++) {
+            TcpDiscoverySpi spi = (TcpDiscoverySpi)grid(i).configuration().getDiscoverySpi();
+
+            TcpDiscoveryZookeeperIpFinder zkIpFinder = (TcpDiscoveryZookeeperIpFinder)spi.getIpFinder();
+
+            CuratorFramework curator = GridTestUtils.getFieldValue(zkIpFinder, "curator");
+
+            curator.blockUntilConnected();
+        }
 
         // stop all grids
         stopAllGrids();
 
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                try {
-                    return 0 == zkCurator.getChildren().forPath(SERVICES_IGNITE_ZK_PATH).size();
-                }
-                catch (Exception e) {
-                    U.error(log, "Failed to wait for zk condition", e);
-
-                    return false;
-                }
-            }
-        }, 20000));
+        assertEquals(0, zkCurator.getChildren().forPath(SERVICES_IGNITE_ZK_PATH).size());
     }
 
     /**

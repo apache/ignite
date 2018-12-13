@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
+import java.io.EOFException;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -33,11 +34,14 @@ public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Set unique ID. */
     private IgniteUuid id;
 
-    /** */
+    /** Collocation flag. */
     private boolean collocated;
+
+    /** Separated cache flag. */
+    private boolean separated;
 
     /**
      * Required by {@link Externalizable}.
@@ -49,10 +53,14 @@ public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
     /**
      * @param id Set UUID.
      * @param collocated Collocation flag.
+     * @param separated Separated cache flag.
      */
-    public GridCacheSetHeader(IgniteUuid id, boolean collocated) {
+    public GridCacheSetHeader(IgniteUuid id, boolean collocated, boolean separated) {
+        assert !(separated && collocated);
+
         this.id = id;
         this.collocated = collocated;
+        this.separated = separated;
     }
 
     /**
@@ -69,16 +77,31 @@ public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
         return collocated;
     }
 
+    /**
+     * @return Separated cache flag.
+     */
+    public boolean separated() {
+        return separated;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeGridUuid(out, id);
         out.writeBoolean(collocated);
+        out.writeBoolean(separated);
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException {
         id = U.readGridUuid(in);
         collocated = in.readBoolean();
+
+        try {
+            separated = in.readBoolean();
+        }
+        catch (EOFException ignore) {
+            // Ignore exception for backward compatibility, since header may not contain a "separated" flag.
+        }
     }
 
     /** {@inheritDoc} */

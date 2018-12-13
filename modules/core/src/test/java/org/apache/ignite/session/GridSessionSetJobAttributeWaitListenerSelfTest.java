@@ -45,11 +45,15 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @GridCommonTest(group = "Task Session")
+@RunWith(JUnit4.class)
 public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAbstractTest {
     /** */
     public static final int SPLIT_COUNT = 5;
@@ -83,6 +87,7 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetAttribute() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -140,7 +145,7 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
 
             for (int i = 1; i <= SPLIT_COUNT; i++) {
                 jobs.add(new ComputeJobAdapter(i) {
-                    @SuppressWarnings({"UnconditionalWait"})
+                    @Override @SuppressWarnings({"UnconditionalWait"})
                     public Serializable execute() {
                         assert taskSes != null;
 
@@ -167,7 +172,7 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
                                 lsnr.wait(WAIT_TIME);
                             }
 
-                            return lsnr.getAttributes().size() == 0 ? 0 : 1;
+                            return lsnr.getAttributes().isEmpty() ? 0 : 1;
                         }
                         catch (InterruptedException e) {
                             throw new IgniteException("Failed to wait for listener due to interruption.", e);

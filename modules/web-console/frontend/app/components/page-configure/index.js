@@ -19,7 +19,6 @@ import angular from 'angular';
 
 import 'angular1-async-filter';
 import {UIRouterRx} from '@uirouter/rx';
-import {Visualizer} from '@uirouter/visualizer';
 import uiValidate from 'angular-ui-validate';
 
 import component from './component';
@@ -36,7 +35,6 @@ import effects from './store/effects';
 import projectStructurePreview from './components/modal-preview-project';
 import itemsTable from './components/pc-items-table';
 import pcUiGridFilters from './components/pc-ui-grid-filters';
-import pcFormFieldSize from './components/pc-form-field-size';
 import isInCollection from './components/pcIsInCollection';
 import pcValidation from './components/pcValidation';
 import fakeUiCanExit from './components/fakeUICanExit';
@@ -55,12 +53,14 @@ import 'rxjs/add/operator/withLatestFrom';
 import 'rxjs/add/operator/skip';
 
 import {Observable} from 'rxjs/Observable';
+
 Observable.prototype.debug = function(l) {
     return this.do((v) => console.log(l, v), (e) => console.error(l, e), () => console.log(l, 'completed'));
 };
 
 import {
     editReducer2,
+    shortObjectsReducer,
     reducer,
     editReducer,
     loadingReducer,
@@ -83,22 +83,22 @@ import {reducer as reduxDevtoolsReducer, devTools} from './reduxDevtoolsIntegrat
 import {registerStates} from './states';
 
 /**
- * @param {ActivitiesData} ActivitiesData
  * @param {uirouter.UIRouter} $uiRouter
+ * @param {ActivitiesData} ActivitiesData
  */
-function registerActivitiesHook(ActivitiesData, $uiRouter) {
+function registerActivitiesHook($uiRouter, ActivitiesData) {
     $uiRouter.transitionService.onSuccess({to: 'base.configuration.**'}, (transition) => {
         ActivitiesData.post({group: 'configuration', action: transition.targetState().name()});
     });
 }
-registerActivitiesHook.$inject = ['IgniteActivitiesData', '$uiRouter'];
+
+registerActivitiesHook.$inject = ['$uiRouter', 'IgniteActivitiesData'];
 
 export default angular
     .module('ignite-console.page-configure', [
         'ui.router',
         'asyncFilter',
         uiValidate,
-        pcFormFieldSize.name,
         pcUiGridFilters.name,
         projectStructurePreview.name,
         itemsTable.name,
@@ -117,23 +117,25 @@ export default angular
     .run(registerActivitiesHook)
     .run(['ConfigEffects', 'ConfigureState', '$uiRouter', (ConfigEffects, ConfigureState, $uiRouter) => {
         $uiRouter.plugin(UIRouterRx);
-        // $uiRouter.plugin(Visualizer);
+
         if (devTools) {
             devTools.subscribe((e) => {
                 if (e.type === 'DISPATCH' && e.state) ConfigureState.actions$.next(e);
             });
 
             ConfigureState.actions$
-            .filter((e) => e.type !== 'DISPATCH')
-            .withLatestFrom(ConfigureState.state$.skip(1))
-            .subscribe(([action, state]) => devTools.send(action, state));
+                .filter((e) => e.type !== 'DISPATCH')
+                .withLatestFrom(ConfigureState.state$.skip(1))
+                .subscribe(([action, state]) => devTools.send(action, state));
 
             ConfigureState.addReducer(reduxDevtoolsReducer);
         }
+
         ConfigureState.addReducer(refsReducer({
             models: {at: 'domains', store: 'caches'},
             caches: {at: 'caches', store: 'models'}
         }));
+
         ConfigureState.addReducer((state, action) => Object.assign({}, state, {
             clusterConfiguration: editReducer(state.clusterConfiguration, action),
             configurationLoading: loadingReducer(state.configurationLoading, action),
@@ -148,14 +150,19 @@ export default angular
             shortIgfss: mapCacheReducerFactory(shortIGFSsActionTypes)(state.shortIgfss, action),
             edit: editReducer2(state.edit, action)
         }));
+
+        ConfigureState.addReducer(shortObjectsReducer);
+
         ConfigureState.addReducer((state, action) => {
             switch (action.type) {
                 case 'APPLY_ACTIONS_UNDO':
                     return action.state;
+
                 default:
                     return state;
             }
         });
+
         const la = ConfigureState.actions$.scan((acc, action) => [...acc, action], []);
 
         ConfigureState.actions$
@@ -171,9 +178,9 @@ export default angular
         ConfigEffects.connect();
     }])
     .component('pageConfigure', component)
-    .directive(isInCollection.name, isInCollection)
-    .directive(fakeUiCanExit.name, fakeUiCanExit)
-    .directive(formUICanExitGuard.name, formUICanExitGuard)
+    .directive('pcIsInCollection', isInCollection)
+    .directive('fakeUiCanExit', fakeUiCanExit)
+    .directive('formUiCanExitGuard', formUICanExitGuard)
     .factory('configSelectionManager', ConfigSelectionManager)
     .service('IgniteSummaryZipper', SummaryZipper)
     .service('IgniteConfigurationResource', ConfigurationResource)

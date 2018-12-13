@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
@@ -25,17 +26,25 @@ import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.file.OpenOption;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.compress.FileSystemUtils;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * File I/O implementation based on {@link AsynchronousFileChannel}.
  */
-public class AsyncFileIO implements FileIO {
+public class AsyncFileIO extends AbstractFileIO {
     /**
      * File channel associated with {@code file}
      */
     private final AsynchronousFileChannel ch;
+
+    /** Native file descriptor. */
+    private final int fd;
+
+    /** */
+    private final int fsBlockSize;
 
     /**
      * Channel's position.
@@ -54,9 +63,34 @@ public class AsyncFileIO implements FileIO {
      * @param modes Open modes.
      */
     public AsyncFileIO(File file, ThreadLocal<ChannelOpFuture> holder, OpenOption... modes) throws IOException {
-        this.ch = AsynchronousFileChannel.open(file.toPath(), modes);
-
+        ch = AsynchronousFileChannel.open(file.toPath(), modes);
+        fd = getFileDescriptor(ch);
+        fsBlockSize = FileSystemUtils.getFileSystemBlockSize(fd);
         this.holder = holder;
+    }
+
+    /**
+     * @param ch File channel.
+     * @return Native file descriptor.
+     */
+    private static int getFileDescriptor(AsynchronousFileChannel ch) {
+         FileDescriptor fd = U.field(ch, "fdObj");
+         return U.field(fd, "fd");
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getFileSystemBlockSize() {
+        return fsBlockSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSparseSize() {
+        return FileSystemUtils.getSparseFileSize(fd);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int punchHole(long position, int len) {
+        return (int)FileSystemUtils.punchHole(fd, position, len, fsBlockSize);
     }
 
     /** {@inheritDoc} */
@@ -154,14 +188,14 @@ public class AsyncFileIO implements FileIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void write(byte[] buf, int off, int len) throws IOException {
+    @Override public int write(byte[] buf, int off, int len) throws IOException {
         ChannelOpFuture fut = holder.get();
         fut.reset();
 
         ch.write(ByteBuffer.wrap(buf, off, len), position, this, fut);
 
         try {
-            fut.getUninterruptibly();
+            return fut.getUninterruptibly();
         }
         catch (IgniteCheckedException e) {
             throw new IOException(e);

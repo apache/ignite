@@ -39,6 +39,9 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -46,12 +49,13 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * Test check that cache values removes from cache on expiry.
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTest {
     /** Expected time to live in milliseconds. */
     private static final int TIME_TO_LIVE = 1000;
 
     /** Additional time to wait expiry process in milliseconds. */
-    private static final int WAIT_TIME = 1000;
+    private static final int WAIT_TIME = 1500;
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -79,6 +83,7 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheWithExpiry() throws Exception {
         checkLoad(false);
     }
@@ -86,6 +91,7 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheWithExpiryAsync() throws Exception {
         checkLoad(true);
     }
@@ -119,6 +125,7 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalLoadCacheWithExpiry() throws Exception {
         checkLocalLoad(false);
     }
@@ -126,6 +133,7 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalLoadCacheWithExpiryAsync() throws Exception {
         checkLocalLoad(true);
     }
@@ -159,6 +167,7 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadAllWithExpiry() throws Exception {
         IgniteCache<Integer, Integer> cache = ignite(0).<Integer, Integer>cache(DEFAULT_CACHE_NAME)
             .withExpiryPolicy(new CreatedExpiryPolicy(new Duration(MILLISECONDS, TIME_TO_LIVE)));

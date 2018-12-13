@@ -21,10 +21,14 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Partitioned atomic cache metrics test.
  */
+@RunWith(JUnit4.class)
 public class GridCacheAtomicPartitionedTckMetricsSelfTestImpl extends GridCacheAtomicPartitionedMetricsSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -34,6 +38,7 @@ public class GridCacheAtomicPartitionedTckMetricsSelfTestImpl extends GridCacheA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntryProcessorRemove() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -68,6 +73,7 @@ public class GridCacheAtomicPartitionedTckMetricsSelfTestImpl extends GridCacheA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheStatistics() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -108,6 +114,7 @@ public class GridCacheAtomicPartitionedTckMetricsSelfTestImpl extends GridCacheA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConditionReplace() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -158,6 +165,7 @@ public class GridCacheAtomicPartitionedTckMetricsSelfTestImpl extends GridCacheA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutIfAbsent() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -168,6 +176,8 @@ public class GridCacheAtomicPartitionedTckMetricsSelfTestImpl extends GridCacheA
         boolean result = cache.putIfAbsent(1, 1);
 
         ++putCount;
+        ++missCount;
+
         assertTrue(result);
 
         assertEquals(missCount, cache.localMetrics().getCacheMisses());
@@ -175,6 +185,8 @@ public class GridCacheAtomicPartitionedTckMetricsSelfTestImpl extends GridCacheA
         assertEquals(putCount, cache.localMetrics().getCachePuts());
 
         result = cache.putIfAbsent(1, 1);
+
+        ++hitCount;
 
         cache.containsKey(123);
 

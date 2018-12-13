@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.db.checkpoint;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Random;
@@ -29,6 +30,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.cache.Cache;
 import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
@@ -47,11 +50,16 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
@@ -59,6 +67,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
  * Sandbox test to measure progress of grid write operations. If no progress occur during period of time, then thread
  * dumps are generated.
  */
+@RunWith(JUnit4.class)
 public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     /** Cache name. Random to cover external stores possible problems. */
     public static final String CACHE_NAME = "partitioned" + new Random().nextInt(10000000);
@@ -165,8 +174,10 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
     /**
      * Runs multithreaded put scenario (no data streamer). Load is generated to page store and to WAL.
+     *
      * @throws Exception if failed.
      */
+    @Test
     public void testContinuousPutMultithreaded() throws Exception {
         try {
             // System.setProperty(IgniteSystemProperties.IGNITE_DIRTY_PAGES_PARALLEL, "true");
@@ -224,8 +235,10 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
     /**
      * Runs multithreaded put scenario (no data streamer). Load is generated to page store and to WAL.
+     *
      * @throws Exception if failed.
      */
+    @Test
     public void testDataStreamerContinuousPutMultithreaded() throws Exception {
         try {
             // System.setProperty(IgniteSystemProperties.IGNITE_DIRTY_PAGES_PARALLEL, "true");
@@ -233,7 +246,6 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             System.setProperty(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, "false");
             System.setProperty(IgniteSystemProperties.IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED, "speed");
             System.setProperty(IgniteSystemProperties.IGNITE_DELAYED_REPLACED_PAGE_WRITE, "true");
-
 
             setWalArchAndWorkToSameVal = true;
 
@@ -243,7 +255,8 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
             ignite.active(true);
 
-            final int threads = 1; Runtime.getRuntime().availableProcessors();
+            final int threads = 1;
+            Runtime.getRuntime().availableProcessors();
 
             final int recsPerThread = CONTINUOUS_PUT_RECS_CNT / threads;
 
@@ -297,6 +310,101 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * Test that WAL segments that are fully covered by checkpoint are logged
+     *
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testCoveredWalLogged() throws Exception {
+        GridStringLogger log0 = null;
+
+        try {
+            log0 = new GridStringLogger();
+
+            final IgniteConfiguration cfg = getConfiguration("testCoveredWalLogged");
+
+            cfg.setGridLogger(log0);
+
+            cfg.getDataStorageConfiguration().setWalAutoArchiveAfterInactivity(10);
+
+            final Ignite ignite = G.start(cfg);
+
+            ignite.cluster().active(true);
+
+            final IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
+
+            cache.put(1, new byte[cfg.getDataStorageConfiguration().getWalSegmentSize() - 1024]);
+
+            forceCheckpoint();
+
+            cache.put(1, new byte[cfg.getDataStorageConfiguration().getWalSegmentSize() - 1024]);
+
+            forceCheckpoint();
+
+            cache.put(1, new byte[cfg.getDataStorageConfiguration().getWalSegmentSize() - 1024]);
+
+            forceCheckpoint();
+
+            Thread.sleep(200); // needed by GridStringLogger
+
+            final String log = log0.toString();
+
+            final String lines[] = log.split("\\r?\\n");
+
+            final Pattern chPtrn = Pattern.compile("Checkpoint finished");
+
+            final Pattern idxPtrn = Pattern.compile("idx=([0-9]+),");
+
+            final Pattern covererdPtrn = Pattern.compile("walSegmentsCovered=\\[(.+)\\], ");
+
+            boolean hasCheckpoint = false;
+
+            long nextCovered = 0;
+
+            for (String line : lines) {
+                if (!chPtrn.matcher(line).find())
+                    continue;
+
+                hasCheckpoint = true;
+
+                final Matcher idxMatcher = idxPtrn.matcher(line);
+
+                assertTrue(idxMatcher.find());
+
+                final long idx = Long.valueOf(idxMatcher.group(1));
+
+                final Matcher coveredMatcher = covererdPtrn.matcher(line);
+
+                if (!coveredMatcher.find()) { // no wal segments are covered by checkpoint
+                    assertEquals(nextCovered, idx);
+                    continue;
+                }
+
+                final String coveredMatcherGrp = coveredMatcher.group(1);
+
+                final long[] covered = !coveredMatcherGrp.isEmpty() ?
+                    Arrays.stream(coveredMatcherGrp.split(" - ")).mapToLong(e -> Integer.valueOf(e.trim())).toArray() :
+                    new long[0];
+
+                assertEquals(nextCovered, covered[0]);
+
+                final long lastCovered = covered[covered.length - 1];
+
+                assertEquals(idx - 1, lastCovered);  // current wal is excluded
+
+                nextCovered = lastCovered + 1;
+            }
+
+            assertTrue(hasCheckpoint);
+
+        }
+        finally {
+            System.out.println(log0 != null ? log0.toString() : "Error initializing GridStringLogger");
+
+            stopAllGrids();
+        }
+    }
 
     /**
      * Verifies data from storage.
@@ -383,6 +491,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testPutRemoveMultithreaded() throws Exception {
         setWalArchAndWorkToSameVal = false;
         customWalMode = WALMode.LOG_ONLY;
@@ -457,14 +566,13 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
         }
     }
 
-
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return TimeUnit.MINUTES.toMillis(20);
     }
 
     /** Object with additional 40 000 bytes of payload */
-    public static class HugeIndexedObject   {
+    public static class HugeIndexedObject {
         /** Data. */
         private byte[] data;
         /** */

@@ -39,6 +39,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
@@ -49,6 +50,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_LOCKED;
@@ -57,6 +61,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitionedMultiNodeFullApiSelfTest {
     /** */
     private static AtomicInteger cnt;
@@ -165,13 +170,16 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     /** {@inheritDoc} */
     @Override protected List<String> primaryKeysForCache(IgniteCache<String, Integer> cache, int cnt)
         throws IgniteCheckedException {
-        if (cache.equals(jcache()))
+        if (cache instanceof GatewayProtectedCacheProxy &&
+            ((GatewayProtectedCacheProxy) cache).internalProxy().delegate().equals(
+                ((GatewayProtectedCacheProxy) jcache()).internalProxy().delegate()))
             return super.primaryKeysForCache(fullCache(), cnt);
 
         return super.primaryKeysForCache(cache, cnt);
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testSize() throws Exception {
         IgniteCache<String, Integer> nearCache = jcache();
 
@@ -201,29 +209,28 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testLoadAll() throws Exception {
         // Not needed for near-only cache.
     }
 
     /**
-     * TODO GG-11133.
-
      * @throws Exception If failed.
      */
-    public void _testReaderTtlTx() throws Exception {
+    @Test
+    public void testReaderTtlTx() throws Exception {
         // IgniteProcessProxy#transactions is not implemented.
-        if (isMultiJvm())
+        if (isMultiJvm() || !txShouldBeUsed())
             return;
 
         checkReaderTtl(true);
     }
 
     /**
-     * TODO GG-11133.
-
      * @throws Exception If failed.
      */
-    public void _testReaderTtlNoTx() throws Exception {
+    @Test
+    public void testReaderTtlNoTx() throws Exception {
         checkReaderTtl(false);
     }
 
@@ -249,7 +256,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
         final String key = primaryKeysForCache(fullCache(), 1).get(0);
 
-        c.put(key, 1);
+        fullCache().put(key, 1);
 
         info("Finished first put.");
 
@@ -282,6 +289,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
                 tx.close();
         }
 
+        jcache(nearIdx).get(key); // Create entry on near node.
+
         long[] expireTimes = new long[gridCount()];
 
         for (int i = 0; i < gridCount(); i++) {
@@ -297,8 +306,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             if (entryTtl != null) {
                 assertNotNull(entryTtl.get1());
                 assertNotNull(entryTtl.get2());
-                assertEquals(ttl, (long)entryTtl.get1());
-                assertTrue(entryTtl.get2() > startTime);
+                assertTrue("Invalid expire time [expire=" + entryTtl.get2() + ", start=" + startTime + ']',
+                    entryTtl.get2() > startTime);
                 expireTimes[i] = entryTtl.get2();
             }
         }
@@ -330,7 +339,6 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             if (entryTtl != null) {
                 assertNotNull(entryTtl.get1());
                 assertNotNull(entryTtl.get2());
-                assertEquals(ttl, (long)entryTtl.get1());
                 assertTrue(entryTtl.get2() > startTime);
                 expireTimes[i] = entryTtl.get2();
             }
@@ -360,7 +368,6 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             if (entryTtl != null) {
                 assertNotNull(entryTtl.get1());
                 assertNotNull(entryTtl.get2());
-                assertEquals(ttl, (long)entryTtl.get1());
                 assertEquals(expireTimes[i], (long)entryTtl.get2());
             }
         }
@@ -432,6 +439,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testClear() throws Exception {
         IgniteCache<String, Integer> nearCache = jcache();
         IgniteCache<String, Integer> primary = fullCache();
@@ -484,6 +492,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testLocalClearKeys() throws Exception {
         IgniteCache<String, Integer> nearCache = jcache();
         IgniteCache<String, Integer> primary = fullCache();
@@ -551,6 +560,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
     /** {@inheritDoc} */
     @SuppressWarnings("BusyWait")
+    @Test
     @Override public void testLockUnlock() throws Exception {
         if (lockingEnabled()) {
             final CountDownLatch lockCnt = new CountDownLatch(1);

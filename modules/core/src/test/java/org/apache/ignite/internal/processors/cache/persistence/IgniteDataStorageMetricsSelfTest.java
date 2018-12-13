@@ -40,6 +40,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -48,12 +51,16 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final String GROUP1 = "grp1";
+
+    /** */
+    private static final String NO_PERSISTENCE = "no-persistence";
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
@@ -73,19 +80,20 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
         cfg.setConsistentId(gridName);
 
+        long maxRegionSize = 20L * 1024 * 1024;
+
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setMaxSize(10L * 1024 * 1024)
+                .setMaxSize(maxRegionSize)
                 .setPersistenceEnabled(true)
                 .setMetricsEnabled(true)
                 .setName("dflt-plc"))
             .setDataRegionConfigurations(new DataRegionConfiguration()
-                .setMaxSize(10L * 1024 * 1024)
+                .setMaxSize(maxRegionSize)
                 .setPersistenceEnabled(false)
                 .setMetricsEnabled(true)
-                .setName("no-persistence"))
+                .setName(NO_PERSISTENCE))
             .setWalMode(WALMode.LOG_ONLY)
-            .setPageSize(4 * 1024)
             .setMetricsEnabled(true);
 
         cfg.setDataStorageConfiguration(memCfg);
@@ -95,7 +103,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         cfg.setCacheConfiguration(cacheConfiguration(GROUP1, "cache", PARTITIONED, ATOMIC, 1, null),
-            cacheConfiguration(null, "cache-np", PARTITIONED, ATOMIC, 1, "no-persistence"));
+            cacheConfiguration(null, "cache-np", PARTITIONED, ATOMIC, 1, NO_PERSISTENCE));
 
         return cfg;
     }
@@ -135,12 +143,16 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setDataRegionName(dataRegName);
 
+        if (NO_PERSISTENCE.equals(dataRegName))
+            ccfg.setDiskPageCompression(null);
+
         return ccfg;
     }
 
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPersistenceMetrics() throws Exception {
         final IgniteEx ig = startGrid(0);
 

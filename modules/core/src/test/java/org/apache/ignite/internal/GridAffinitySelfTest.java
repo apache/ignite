@@ -33,12 +33,16 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Tests affinity mapping.
  */
+@RunWith(JUnit4.class)
 public class GridAffinitySelfTest extends GridCommonAbstractTest {
     /** VM ip finder for TCP discovery. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -52,8 +56,6 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
         disco.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(disco);
-
-        cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
 
         if (igniteInstanceName.endsWith("1"))
             cfg.setClientMode(true);
@@ -86,11 +88,12 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testAffinity() throws Exception {
         Ignite g1 = grid(1);
         Ignite g2 = grid(2);
 
-        assert caches(g1).size() == 0;
+        assert caches(g1).isEmpty();
         assert F.first(caches(g2)).getCacheMode() == PARTITIONED;
 
         awaitPartitionMapExchange();

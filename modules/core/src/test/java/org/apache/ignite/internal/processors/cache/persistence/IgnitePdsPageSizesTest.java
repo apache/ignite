@@ -21,19 +21,27 @@ import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_COMPRESSION;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
     /** Cache name. */
     private final String cacheName = "cache";
@@ -58,6 +66,8 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
                 .setAffinity(new RendezvousAffinityFunction(false, 32))
         );
 
+        cfg.setFailureDetectionTimeout(20_000);
+
         return cfg;
     }
 
@@ -74,6 +84,7 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPageSize_1k() throws Exception {
         checkPageSize(1024);
     }
@@ -81,6 +92,7 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPageSize_2k() throws Exception {
         checkPageSize(2 * 1024);
     }
@@ -88,6 +100,7 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPageSize_4k() throws Exception {
         checkPageSize(4 * 1024);
     }
@@ -95,6 +108,7 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPageSize_8k() throws Exception {
         checkPageSize(8 * 1024);
     }
@@ -102,6 +116,7 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPageSize_16k() throws Exception {
         checkPageSize(16 * 1024);
     }
@@ -110,6 +125,10 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     private void checkPageSize(int pageSize) throws Exception {
+        if (pageSize <= 4 * 1024 &&
+            IgniteSystemProperties.getEnum(DiskPageCompression.class, IGNITE_DEFAULT_DISK_PAGE_COMPRESSION) != null)
+            return; // Small pages do not work with compression.
+
         this.pageSize = pageSize;
 
         IgniteEx ignite = startGrid(0);

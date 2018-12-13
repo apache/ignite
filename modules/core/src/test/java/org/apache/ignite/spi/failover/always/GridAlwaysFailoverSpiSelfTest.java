@@ -29,6 +29,9 @@ import org.apache.ignite.spi.failover.GridFailoverTestContext;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.spi.failover.always.AlwaysFailoverSpi.FAILED_NODE_LIST_ATTR;
 
@@ -36,10 +39,12 @@ import static org.apache.ignite.spi.failover.always.AlwaysFailoverSpi.FAILED_NOD
  * Always-failover SPI test.
  */
 @GridSpiTest(spi = AlwaysFailoverSpi.class, group = "Failover SPI")
+@RunWith(JUnit4.class)
 public class GridAlwaysFailoverSpiSelfTest extends GridSpiAbstractTest<AlwaysFailoverSpi> {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleNode() throws Exception {
         AlwaysFailoverSpi spi = getSpi();
 
@@ -57,7 +62,7 @@ public class GridAlwaysFailoverSpiSelfTest extends GridSpiAbstractTest<AlwaysFai
     /**
      * @throws Exception If test failed.
      */
-    @SuppressWarnings("unchecked")
+    @Test
     public void testTwoNodes() throws Exception {
         AlwaysFailoverSpi spi = getSpi();
 
@@ -79,6 +84,7 @@ public class GridAlwaysFailoverSpiSelfTest extends GridSpiAbstractTest<AlwaysFai
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxAttempts() throws Exception {
         AlwaysFailoverSpi spi = getSpi();
 

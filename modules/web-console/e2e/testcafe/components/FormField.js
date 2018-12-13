@@ -19,23 +19,25 @@ import {Selector, t} from 'testcafe';
 import {AngularJSSelector} from 'testcafe-angular-selectors';
 
 export class FormField {
-    static ROOT_SELECTOR = '.ignite-form-field';
-    static LABEL_SELECTOR = '.ignite-form-field__label';
+    static ROOT_SELECTOR = '.form-field';
+    static LABEL_SELECTOR = '.form-field__label';
     static CONTROL_SELECTOR = '[ng-model]';
-    static ERRORS_SELECTOR = '.ignite-form-field__errors';
+    static ERRORS_SELECTOR = '.form-field__errors';
+
+    /** @type {ReturnType<Selector>} */
+    _selector;
 
     constructor({id = '', label = '', model = ''} = {}) {
         if (!id && !label && !model) throw new Error('ID, label or model are required');
         if (id)
             this._selector = Selector(`#${id}`).parent(this.constructor.ROOT_SELECTOR);
         else if (label) {
-            this._selector = Selector(() => {
-                return Array
-                    .from(window.document.querySelectorAll(this.constructor.LABEL_SELECTOR))
-                    .filter((el) => el.textContent.contains(label))
-                    .map((el) => el.parent(this.constructor.ROOT_SELECTOR))
+            this._selector = Selector((LABEL_SELECTOR, ROOT_SELECTOR, label) => {
+                return [].slice.call((window.document.querySelectorAll(LABEL_SELECTOR)))
+                    .filter((el) => el.textContent.includes(label))
+                    .map((el) => el.closest(ROOT_SELECTOR))
                     .pop();
-            });
+            })(this.constructor.LABEL_SELECTOR, this.constructor.ROOT_SELECTOR, label);
         } else if (model)
             this._selector = AngularJSSelector.byModel(model).parent(this.constructor.ROOT_SELECTOR);
 
@@ -60,6 +62,12 @@ export class FormField {
         // return this._selector.find(`.form-field__error`)
         return this._selector.find(`[ng-message="${errorType}"]`);
     }
+    get selectedOption() {
+        return this.control.textContent;
+    }
+    get postfix() {
+        return this._selector.find('[data-postfix]').getAttribute('data-postfix');
+    }
 }
 
 /**
@@ -69,4 +77,12 @@ export class CustomFormField extends FormField {
     static ROOT_SELECTOR = '.form-field';
     static LABEL_SELECTOR = '.form-field__label';
     static ERRORS_SELECTOR = '.form-field__errors';
+    constructor(...args) {
+        super(...args);
+        this.errors = this.errors.addCustomMethods({
+            hasError(errors, errorMessage) {
+                return !!errors.querySelectorAll(`.form-field__error [data-title*="${errorMessage}"]`).length;
+            }
+        });
+    }
 }

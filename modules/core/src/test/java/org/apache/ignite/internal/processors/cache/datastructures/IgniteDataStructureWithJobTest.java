@@ -21,7 +21,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSet;
+import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -32,10 +32,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteDataStructureWithJobTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -57,6 +61,7 @@ public class IgniteDataStructureWithJobTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJobWithRestart() throws Exception {
         Ignite ignite = startGrid(0);
 
@@ -81,13 +86,13 @@ public class IgniteDataStructureWithJobTest extends GridCommonAbstractTest {
 
             while (System.currentTimeMillis() < endTime) {
                 try {
-                    ignite.compute().broadcast(new IgniteClosure<IgniteSet, Integer>() {
-                        @Override public Integer apply(IgniteSet set) {
-                            assertNotNull(set);
+                    ignite.compute().broadcast(new IgniteClosure<IgniteQueue, Integer>() {
+                        @Override public Integer apply(IgniteQueue queue) {
+                            assertNotNull(queue);
 
                             return 1;
                         }
-                    }, ignite.set("set", new CollectionConfiguration()));
+                    }, ignite.queue("queue", 0, new CollectionConfiguration()));
                 }
                 catch (IgniteException ignore) {
                     // No-op.

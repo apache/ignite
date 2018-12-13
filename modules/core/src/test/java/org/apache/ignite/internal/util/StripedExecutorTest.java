@@ -17,19 +17,27 @@
 
 package org.apache.ignite.internal.util;
 
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class StripedExecutorTest extends GridCommonAbstractTest {
     /** */
     private StripedExecutor stripedExecSvc;
 
     /** {@inheritDoc} */
     @Override public void beforeTest() {
-        stripedExecSvc = new StripedExecutor(3, "foo name", "pool name", new JavaLogger(), (thread, t) -> {});
+        stripedExecSvc = new StripedExecutor(3, "foo name", "pool name", new JavaLogger(),
+            new IgniteInClosure<Throwable>() {
+                @Override public void apply(Throwable throwable) {}
+            }, null);
     }
 
     /** {@inheritDoc} */
@@ -40,6 +48,7 @@ public class StripedExecutorTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCompletedTasks() throws Exception {
         stripedExecSvc.execute(0, new TestRunnable());
         stripedExecSvc.execute(1, new TestRunnable());
@@ -52,6 +61,7 @@ public class StripedExecutorTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStripesCompletedTasks() throws Exception {
         stripedExecSvc.execute(0, new TestRunnable());
         stripedExecSvc.execute(1, new TestRunnable());
@@ -68,6 +78,7 @@ public class StripedExecutorTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStripesActiveStatuses() throws Exception {
         stripedExecSvc.execute(0, new TestRunnable());
         stripedExecSvc.execute(1, new TestRunnable(true));
@@ -84,6 +95,7 @@ public class StripedExecutorTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActiveStripesCount() throws Exception {
         stripedExecSvc.execute(0, new TestRunnable());
         stripedExecSvc.execute(1, new TestRunnable(true));
@@ -96,6 +108,7 @@ public class StripedExecutorTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStripesQueueSizes() throws Exception {
         stripedExecSvc.execute(0, new TestRunnable());
         stripedExecSvc.execute(0, new TestRunnable(true));
@@ -116,6 +129,7 @@ public class StripedExecutorTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueSize() throws Exception {
         stripedExecSvc.execute(1, new TestRunnable());
         stripedExecSvc.execute(1, new TestRunnable(true));

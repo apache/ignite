@@ -76,10 +76,12 @@ import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.CURRENT_VER;
+
 /**
  * Native cache wrapper implementation.
  */
-@SuppressWarnings({"unchecked", "UnusedDeclaration", "TryFinallyCanBeTryWithResources", "TypeMayBeWeakened", "WeakerAccess"})
+@SuppressWarnings({"unchecked", "WeakerAccess"})
 public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_CLEAR = 1;
@@ -980,7 +982,7 @@ public class PlatformCache extends PlatformAbstractTarget {
                 CacheConfiguration ccfg = ((IgniteCache<Object, Object>)cache).
                         getConfiguration(CacheConfiguration.class);
 
-                PlatformConfigurationUtils.writeCacheConfiguration(writer, ccfg);
+                PlatformConfigurationUtils.writeCacheConfiguration(writer, ccfg, CURRENT_VER);
 
                 break;
 
@@ -1504,6 +1506,19 @@ public class PlatformCache extends PlatformAbstractTarget {
         writer.writeLong(metrics.getRebalancingStartTime());
         writer.writeLong(metrics.getRebalanceClearingPartitionsLeft());
         writer.writeLong(metrics.getCacheSize());
+        writer.writeLong(metrics.getRebalancedKeys());
+        writer.writeLong(metrics.getEstimatedRebalancingKeys());
+        writer.writeLong(metrics.getEntryProcessorPuts());
+        writer.writeFloat(metrics.getEntryProcessorAverageInvocationTime());
+        writer.writeLong(metrics.getEntryProcessorInvocations());
+        writer.writeFloat(metrics.getEntryProcessorMaxInvocationTime());
+        writer.writeFloat(metrics.getEntryProcessorMinInvocationTime());
+        writer.writeLong(metrics.getEntryProcessorReadOnlyInvocations());
+        writer.writeFloat(metrics.getEntryProcessorHitPercentage());
+        writer.writeLong(metrics.getEntryProcessorHits());
+        writer.writeLong(metrics.getEntryProcessorMisses());
+        writer.writeFloat(metrics.getEntryProcessorMissPercentage());
+        writer.writeLong(metrics.getEntryProcessorRemovals());
     }
 
     /**

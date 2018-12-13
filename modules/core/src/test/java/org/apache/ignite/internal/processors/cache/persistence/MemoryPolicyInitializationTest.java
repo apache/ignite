@@ -27,12 +27,16 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
     /** */
     private static final String CUSTOM_NON_DEFAULT_MEM_PLC_NAME = "custom_mem_plc";
@@ -68,6 +72,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
     /**
      * Verifies that expected memory policies are allocated when used doesn't provide any MemoryPolicyConfiguration.
      */
+    @Test
     public void testNoConfigProvided() throws Exception {
         memCfg = null;
 
@@ -75,7 +80,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         Collection<DataRegion> allMemPlcs = ignite.context().cache().context().database().dataRegions();
 
-        assertTrue(allMemPlcs.size() == 2);
+        assertEquals(3, allMemPlcs.size());
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
     }
@@ -84,6 +89,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
      * Verifies that expected memory policies are allocated when used provides MemoryPolicyConfiguration
      * with non-default custom MemoryPolicy.
      */
+    @Test
     public void testCustomConfigNoDefault() throws Exception {
         prepareCustomNoDefaultConfig();
 
@@ -91,7 +97,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         Collection<DataRegion> allMemPlcs = ignite.context().cache().context().database().dataRegions();
 
-        assertTrue(allMemPlcs.size() == 3);
+        assertEquals(4, allMemPlcs.size());
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
 
@@ -103,6 +109,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
      * User is allowed to configure memory policy with 'default' name,
      * in that case Ignite instance will use this user-defined memory policy as a default one.
      */
+    @Test
     public void testCustomConfigOverridesDefault() throws Exception {
         prepareCustomConfigWithOverridingDefault();
 
@@ -112,13 +119,13 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         Collection<DataRegion> allMemPlcs = dbMgr.dataRegions();
 
-        assertTrue(allMemPlcs.size() == 2);
+        assertEquals(3, allMemPlcs.size());
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
 
         DataRegion dfltMemPlc = U.field(dbMgr, "dfltDataRegion");
 
-        assertTrue(dfltMemPlc.config().getMaxSize() == USER_DEFAULT_MEM_PLC_SIZE);
+        assertEquals(dfltMemPlc.config().getMaxSize(), USER_DEFAULT_MEM_PLC_SIZE);
     }
 
     /**
@@ -127,6 +134,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
      * At the same time user still can create a memory policy with name 'default'
      * which although won't be used as default.
      */
+    @Test
     public void testCustomConfigOverridesDefaultNameAndDeclaresDefault() throws Exception {
         prepareCustomConfigWithOverriddenDefaultName();
 
@@ -136,13 +144,13 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         Collection<DataRegion> allMemPlcs = dbMgr.dataRegions();
 
-        assertTrue(allMemPlcs.size() == 3);
+        assertEquals(4, allMemPlcs.size());
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
 
         DataRegion dfltMemPlc = U.field(dbMgr, "dfltDataRegion");
 
-        assertTrue(dfltMemPlc.config().getMaxSize() == USER_CUSTOM_MEM_PLC_SIZE);
+        assertEquals(dfltMemPlc.config().getMaxSize(), USER_CUSTOM_MEM_PLC_SIZE);
     }
 
     /**
@@ -150,6 +158,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
      * with specified default memory policy name and specified custom memory policy name
      * all started with correct memory policy.
      */
+    @Test
     public void testCachesOnOverriddenMemoryPolicy() throws Exception {
         prepareCustomConfigWithOverridingDefaultAndCustom();
 
@@ -184,6 +193,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
      * with specified default memory policy name and specified custom memory policy name
      * all started with correct memory policy.
      */
+    @Test
     public void testCachesOnUserDefinedDefaultMemoryPolicy() throws Exception {
         prepareCustomConfigWithOverriddenDefaultName();
 

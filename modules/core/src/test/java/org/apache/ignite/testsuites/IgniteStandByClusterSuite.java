@@ -17,16 +17,14 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheBaselineTopologyTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteBaselineAffinityTopologyActivationTest;
-import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateDataStreamerTest;
-import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateDataStructureTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateFailOverTest;
-import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateServiceTest;
-import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateTest;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteNoParrallelClusterIsAllowedTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteStandByClusterTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.JoinActiveNodeToActiveCluster;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.JoinActiveNodeToInActiveCluster;
@@ -49,31 +47,34 @@ public class IgniteStandByClusterSuite extends TestSuite {
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Activate/DeActivate Cluster Test Suite");
 
-        suite.addTestSuite(IgniteClusterActivateDeactivateTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteClusterActivateDeactivateTest.class));
 
-        suite.addTestSuite(IgniteStandByClusterTest.class);
-        suite.addTestSuite(IgniteStandByClientReconnectTest.class);
-        suite.addTestSuite(IgniteStandByClientReconnectToNewClusterTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteStandByClusterTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteStandByClientReconnectTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteStandByClientReconnectToNewClusterTest.class));
 
-        suite.addTestSuite(JoinActiveNodeToActiveCluster.class);
-        suite.addTestSuite(JoinActiveNodeToInActiveCluster.class);
-        suite.addTestSuite(JoinInActiveNodeToActiveCluster.class);
-        suite.addTestSuite(JoinInActiveNodeToInActiveCluster.class);
+        suite.addTest(new JUnit4TestAdapter(JoinActiveNodeToActiveCluster.class));
+        suite.addTest(new JUnit4TestAdapter(JoinActiveNodeToInActiveCluster.class));
+        suite.addTest(new JUnit4TestAdapter(JoinInActiveNodeToActiveCluster.class));
+        suite.addTest(new JUnit4TestAdapter(JoinInActiveNodeToInActiveCluster.class));
 
-        suite.addTestSuite(JoinActiveNodeToActiveClusterWithPersistence.class);
-        suite.addTestSuite(JoinActiveNodeToInActiveClusterWithPersistence.class);
-        suite.addTestSuite(JoinInActiveNodeToActiveClusterWithPersistence.class);
-        suite.addTestSuite(JoinInActiveNodeToInActiveClusterWithPersistence.class);
+        suite.addTest(new JUnit4TestAdapter(JoinActiveNodeToActiveClusterWithPersistence.class));
+        suite.addTest(new JUnit4TestAdapter(JoinActiveNodeToInActiveClusterWithPersistence.class));
+        suite.addTest(new JUnit4TestAdapter(JoinInActiveNodeToActiveClusterWithPersistence.class));
+        suite.addTest(new JUnit4TestAdapter(JoinInActiveNodeToInActiveClusterWithPersistence.class));
 
-        suite.addTestSuite(IgniteChangeGlobalStateTest.class);
-        suite.addTestSuite(IgniteChangeGlobalStateCacheTest.class);
-        suite.addTestSuite(IgniteChangeGlobalStateDataStructureTest.class);
-        suite.addTestSuite(IgniteChangeGlobalStateDataStreamerTest.class);
-        suite.addTestSuite(IgniteChangeGlobalStateFailOverTest.class);
-        suite.addTestSuite(IgniteChangeGlobalStateServiceTest.class);
+//TODO https://issues.apache.org/jira/browse/IGNITE-9081 suite.addTest(new JUnit4TestAdapter(IgniteChangeGlobalStateTest.class));
+//TODO https://issues.apache.org/jira/browse/IGNITE-9081 suite.addTest(new JUnit4TestAdapter(IgniteChangeGlobalStateCacheTest.class));
+//TODO https://issues.apache.org/jira/browse/IGNITE-9081 suite.addTest(new JUnit4TestAdapter(IgniteChangeGlobalStateDataStructureTest.class));
+//TODO https://issues.apache.org/jira/browse/IGNITE-9081 suite.addTest(new JUnit4TestAdapter(IgniteChangeGlobalStateServiceTest.class));
 
-        suite.addTestSuite(CacheBaselineTopologyTest.class);
-        suite.addTestSuite(IgniteBaselineAffinityTopologyActivationTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteChangeGlobalStateDataStreamerTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteChangeGlobalStateFailOverTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(IgniteNoParrallelClusterIsAllowedTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(CacheBaselineTopologyTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteBaselineAffinityTopologyActivationTest.class));
 
         return suite;
     }

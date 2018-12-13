@@ -20,38 +20,22 @@ package org.apache.ignite.ml.math.isolve.lsqr;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.TestUtils;
+import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for {@link LSQROnHeap}.
  */
-@RunWith(Parameterized.class)
-public class LSQROnHeapTest {
-    /** Parameters. */
-    @Parameterized.Parameters(name = "Data divided on {0} partitions")
-    public static Iterable<Integer[]> data() {
-        return Arrays.asList(
-            new Integer[] {1},
-            new Integer[] {2},
-            new Integer[] {3},
-            new Integer[] {5},
-            new Integer[] {7},
-            new Integer[] {100},
-            new Integer[] {1000}
-        );
-    }
-
-    /** Number of partitions. */
-    @Parameterized.Parameter
-    public int parts;
-
+public class LSQROnHeapTest extends TrainerTest {
     /** Tests solving simple linear system. */
     @Test
     public void testSolveLinearSystem() {
@@ -64,15 +48,26 @@ public class LSQROnHeapTest {
 
         LSQROnHeap<Integer, double[]> lsqr = new LSQROnHeap<>(
             datasetBuilder,
+            TestUtils.testEnvBuilder(),
             new SimpleLabeledDatasetDataBuilder<>(
-                (k, v) -> Arrays.copyOf(v, v.length - 1),
+                (k, v) -> VectorUtils.of(Arrays.copyOf(v, v.length - 1)),
                 (k, v) -> new double[]{v[3]}
             )
         );
 
         LSQRResult res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, null);
 
+        assertEquals(3, res.getIterations());
+        assertEquals(1, res.getIsstop());
+        assertEquals(7.240617907140957E-14, res.getR1norm(), 0.0001);
+        assertEquals(7.240617907140957E-14, res.getR2norm(), 0.0001);
+        assertEquals(6.344288770224759, res.getAnorm(), 0.0001);
+        assertEquals(40.540617492419464, res.getAcond(), 0.0001);
+        assertEquals(3.4072322214704627E-13, res.getArnorm(), 0.0001);
+        assertEquals(3.000000000000001, res.getXnorm(), 0.0001);
+        assertArrayEquals(new double[]{0.0, 0.0, 0.0}, res.getVar(), 1e-6);
         assertArrayEquals(new double[]{1, -2, -2}, res.getX(), 1e-6);
+        assertTrue(res.toString().length() > 0);
     }
 
     /** Tests solving simple linear system with specified x0. */
@@ -87,14 +82,17 @@ public class LSQROnHeapTest {
 
         LSQROnHeap<Integer, double[]> lsqr = new LSQROnHeap<>(
             datasetBuilder,
+            TestUtils.testEnvBuilder(),
             new SimpleLabeledDatasetDataBuilder<>(
-                (k, v) -> Arrays.copyOf(v, v.length - 1),
+                (k, v) -> VectorUtils.of(Arrays.copyOf(v, v.length - 1)),
                 (k, v) -> new double[]{v[3]}
             )
         );
 
         LSQRResult res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false,
             new double[] {999, 999, 999});
+
+        assertEquals(3, res.getIterations());
 
         assertArrayEquals(new double[]{1, -2, -2}, res.getX(), 1e-6);
     }
@@ -118,12 +116,15 @@ public class LSQROnHeapTest {
 
         try (LSQROnHeap<Integer, double[]> lsqr = new LSQROnHeap<>(
             datasetBuilder,
+            TestUtils.testEnvBuilder(),
             new SimpleLabeledDatasetDataBuilder<>(
-                (k, v) -> Arrays.copyOf(v, v.length - 1),
+                (k, v) -> VectorUtils.of(Arrays.copyOf(v, v.length - 1)),
                 (k, v) -> new double[]{v[4]}
             )
         )) {
             LSQRResult res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, null);
+
+            assertEquals(8, res.getIterations());
 
             assertArrayEquals(new double[]{72.26948107,  15.95144674,  24.07403921,  66.73038781}, res.getX(), 1e-6);
         }

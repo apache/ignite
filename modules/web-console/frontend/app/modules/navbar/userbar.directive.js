@@ -15,36 +15,45 @@
  * limitations under the License.
  */
 
-export default ['igniteUserbar', [function() {
+/**
+ * @param {ng.IRootScopeService} $root
+ * @param {unknown} IgniteUserbar
+ * @param {unknown} AclService
+ */
+function controller($root, IgniteUserbar, AclService) {
+    const ctrl = this;
+
+    this.$onInit = () => {
+        ctrl.items = [
+            {text: 'Profile', sref: 'base.settings.profile'},
+            {text: 'Getting started', click: 'gettingStarted.tryShow(true)'}
+        ];
+
+        const _rebuildSettings = () => {
+            ctrl.items.splice(2);
+
+            if (AclService.can('admin_page'))
+                ctrl.items.push({text: 'Admin panel', sref: 'base.settings.admin'});
+
+            ctrl.items.push(...IgniteUserbar);
+
+            if (AclService.can('logout'))
+                ctrl.items.push({text: 'Log out', sref: 'logout'});
+        };
+
+        if ($root.user)
+            _rebuildSettings(null, $root.user);
+
+        $root.$on('user', _rebuildSettings);
+    };
+}
+
+controller.$inject = ['$rootScope', 'IgniteUserbar', 'AclService'];
+
+export default function() {
     return {
         restrict: 'A',
-        controller: ['$rootScope', 'IgniteUserbar', 'AclService', function($root, IgniteUserbar, AclService) {
-            const ctrl = this;
-
-            this.$onInit = () => {
-                ctrl.items = [
-                    {text: 'Profile', sref: 'base.settings.profile'},
-                    {text: 'Getting started', click: 'gettingStarted.tryShow(true)'}
-                ];
-
-                const _rebuildSettings = () => {
-                    ctrl.items.splice(2);
-
-                    if (AclService.can('admin_page'))
-                        ctrl.items.push({text: 'Admin panel', sref: 'base.settings.admin'});
-
-                    ctrl.items.push(...IgniteUserbar);
-
-                    if (AclService.can('logout'))
-                        ctrl.items.push({text: 'Log out', sref: 'logout'});
-                };
-
-                if ($root.user)
-                    _rebuildSettings(null, $root.user);
-
-                $root.$on('user', _rebuildSettings);
-            };
-        }],
+        controller,
         controllerAs: 'userbar'
     };
-}]];
+}

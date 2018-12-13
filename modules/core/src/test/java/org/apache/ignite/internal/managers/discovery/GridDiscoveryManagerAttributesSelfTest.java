@@ -30,17 +30,20 @@ import org.apache.ignite.spi.discovery.tcp.TestReconnectProcessor;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SECURITY_COMPATIBILITY_MODE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
 /**
  * Tests for node attributes consistency checks.
  */
+@RunWith(JUnit4.class)
 public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String PREFER_IPV4 = "java.net.preferIPv4Stack";
@@ -95,6 +98,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreferIpV4StackTrue() throws Exception {
         testPreferIpV4Stack(true);
     }
@@ -102,6 +106,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreferIpV4StackFalse() throws Exception {
         testPreferIpV4Stack(false);
     }
@@ -116,6 +121,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPreferIpV4StackDifferentValues() throws Exception {
         System.setProperty(PREFER_IPV4, "true");
 
@@ -123,16 +129,21 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
             Ignite g = startGrid(i);
 
             assert "true".equals(g.cluster().localNode().attribute(PREFER_IPV4));
+
+            checkIsClientFlag((IgniteEx) g);
         }
 
         System.setProperty(PREFER_IPV4, "false");
 
-        startGrid(2);
+        IgniteEx g = startGrid(2);
+
+        checkIsClientFlag(g);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUseDefaultSuid() throws Exception {
         try {
             doTestUseDefaultSuid(Boolean.TRUE.toString(), Boolean.FALSE.toString(), true);
@@ -154,12 +165,18 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         try {
             System.setProperty(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, first);
 
-            startGrid(0);
+            {
+                IgniteEx g = startGrid(0);
+
+                checkIsClientFlag(g);
+            }
 
             System.setProperty(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, second);
 
             try {
-                startGrid(1);
+                IgniteEx g = startGrid(1);
+
+                checkIsClientFlag(g);
 
                 if (fail)
                     fail("Node should not join");
@@ -174,6 +191,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         }
     }
 
+    @Test
     public void testUseStringSerVer2() throws Exception {
         String old = System.getProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
 
@@ -206,7 +224,11 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
             else
                 System.clearProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
 
-            startGrid(0);
+            {
+                IgniteEx g = startGrid(0);
+
+                checkIsClientFlag(g);
+            }
 
             if (second != null)
                 System.setProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, second);
@@ -214,7 +236,9 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
                 System.clearProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
 
             try {
-                startGrid(1);
+                IgniteEx g = startGrid(1);
+
+                checkIsClientFlag(g);
 
                 if (fail)
                     fail("Node should not join");
@@ -232,42 +256,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
-    public void testServiceCompatibilityEnabled() throws Exception {
-        String backup = System.getProperty(IGNITE_SERVICES_COMPATIBILITY_MODE);
-
-        try {
-            doTestServiceCompatibilityEnabled(true, null, true);
-            doTestServiceCompatibilityEnabled(false, null, true);
-            doTestServiceCompatibilityEnabled(null, false, true);
-            doTestServiceCompatibilityEnabled(true, false, true);
-            doTestServiceCompatibilityEnabled(null, true, true);
-            doTestServiceCompatibilityEnabled(false, true, true);
-
-            doTestServiceCompatibilityEnabled(true, true, false);
-            doTestServiceCompatibilityEnabled(false, false, false);
-            doTestServiceCompatibilityEnabled(null, null, false);
-        }
-        finally {
-            if (backup != null)
-                System.setProperty(IGNITE_SERVICES_COMPATIBILITY_MODE, backup);
-            else
-                System.clearProperty(IGNITE_SERVICES_COMPATIBILITY_MODE);
-        }
-    }
-
-    /**
-     * @param first Service compatibility enabled flag for first node.
-     * @param second Service compatibility enabled flag for second node.
-     * @param fail Fail flag.
-     * @throws Exception If failed.
-     */
-    private void doTestServiceCompatibilityEnabled(Object first, Object second, boolean fail) throws Exception {
-        doTestCompatibilityEnabled(IGNITE_SERVICES_COMPATIBILITY_MODE, first, second, fail);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @Test
     public void testSecurityCompatibilityEnabled() throws Exception {
         TestReconnectPluginProvider.enabled = true;
         TestReconnectProcessor.enabled = true;
@@ -317,6 +306,8 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
 
             IgniteEx ignite = startGrid(0);
 
+            checkIsClientFlag(ignite);
+
             // Ignore if disabled security plugin used.
             if (IGNITE_SECURITY_COMPATIBILITY_MODE.equals(prop) && !ignite.context().security().enabled())
                 return;
@@ -327,7 +318,9 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
                 System.clearProperty(prop);
 
             try {
-                startGrid(1);
+                IgniteEx g = startGrid(1);
+
+                checkIsClientFlag(g);
 
                 if (fail)
                     fail("Node must not join");
@@ -350,8 +343,11 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDifferentDeploymentModes() throws Exception {
-        startGrid(0);
+        IgniteEx g = startGrid(0);
+
+        checkIsClientFlag(g);
 
         mode = CONTINUOUS;
 
@@ -369,8 +365,11 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDifferentPeerClassLoadingEnabledFlag() throws Exception {
-        startGrid(0);
+        IgniteEx g = startGrid(0);
+
+        checkIsClientFlag(g);
 
         p2pEnabled = true;
 
@@ -398,7 +397,20 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
             Ignite g = startGrid(i);
 
             assert val.equals(g.cluster().localNode().attribute(PREFER_IPV4));
+
+            checkIsClientFlag((IgniteEx) g);
         }
+    }
+
+    /**
+     *
+     * @param g
+     */
+    protected void checkIsClientFlag(IgniteEx g) {
+        boolean isClientDiscovery = g.context().discovery().localNode().isClient();
+        boolean isClientConfig = g.configuration().isClientMode() == null ? false : g.configuration().isClientMode();
+
+        assertEquals(isClientConfig, isClientDiscovery);
     }
 
     /**
