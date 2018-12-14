@@ -135,6 +135,8 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** {@inheritDoc} */
     @Override public void onDisconnected() {
         resReg.clean();
+
+        super.onDisconnected();
     }
 
     /**
