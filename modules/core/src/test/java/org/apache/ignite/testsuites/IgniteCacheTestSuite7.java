@@ -75,8 +75,8 @@ public class IgniteCacheTestSuite7 {
 //        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorSelfTest.class, ignoredTests);
 //        GridTestUtils.addTestIfNeeded(suite, AuthenticationOnNotActiveClusterTest.class, ignoredTests);
         for (int i = 0; i < 40; i++) {
-            suite.addTestSuite(AuthenticationProcessorNodeRestartTest.class);
-            suite.addTestSuite(WalModeChangeAdvancedSelfTest.class);
+            suite.add(AuthenticationProcessorNodeRestartTest.class);
+            suite.add(WalModeChangeAdvancedSelfTest.class);
         }
 //        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
 

@@ -218,11 +218,11 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      *
      * @throws Exception If failed.
      */
-    @Test
-    @Ignore
-    public void testServerRestartNonCoordinator() throws Exception {
-        checkNodeRestart(false);
-    }
+//    @Test
+//    @Ignore
+//    public void testServerRestartNonCoordinator() throws Exception {
+//        checkNodeRestart(false);
+//    }
 
     /**
      * Test server restart (coordinator).
@@ -311,199 +311,199 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      *
      * @throws Exception If failed.
      */
-    @Test
-    @Ignore
-    public void testClientReconnect() throws Exception {
-        final Ignite srv = startGrid(config(SRV_1, false, false));
-        Ignite cli = startGrid(config(CLI, true, false));
-
-        cli.cluster().active(true);
-
-        cli.getOrCreateCache(cacheConfig(PARTITIONED));
-
-        final AtomicBoolean done = new AtomicBoolean();
-
-        // Start load.
-        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
-            boolean state = false;
-
-            while (!done.get()) {
-                try {
-                    if (state)
-                        cli.cluster().enableWal(CACHE_NAME);
-                    else
-                        cli.cluster().disableWal(CACHE_NAME);
-                }
-                catch (IgniteException e) {
-                    String msg = e.getMessage();
-
-                    assert msg.startsWith("Client node disconnected") ||
-                        msg.startsWith("Client node was disconnected") : e.getMessage();
-                }
-                finally {
-                    state = !state;
-                }
-            }
-        }, "wal-load-" + cli.name());
-
-        // Now perform multiple client reconnects.
-        try {
-            for (int i = 1; i <= 10; i++) {
-                Thread.sleep(ThreadLocalRandom.current().nextLong(200, 1000));
-
-                IgniteClientReconnectAbstractTest.reconnectClientNode(log, cli, srv, new Runnable() {
-                    @Override public void run() {
-                        // No-op.
-                    }
-                });
-
-                log.info(">>> Finished iteration: " + i);
-            }
-        } finally {
-            done.set(true);
-        }
-
-        fut.get();
-    }
+//    @Test
+//    @Ignore
+//    public void testClientReconnect() throws Exception {
+//        final Ignite srv = startGrid(config(SRV_1, false, false));
+//        Ignite cli = startGrid(config(CLI, true, false));
+//
+//        cli.cluster().active(true);
+//
+//        cli.getOrCreateCache(cacheConfig(PARTITIONED));
+//
+//        final AtomicBoolean done = new AtomicBoolean();
+//
+//        // Start load.
+//        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+//            boolean state = false;
+//
+//            while (!done.get()) {
+//                try {
+//                    if (state)
+//                        cli.cluster().enableWal(CACHE_NAME);
+//                    else
+//                        cli.cluster().disableWal(CACHE_NAME);
+//                }
+//                catch (IgniteException e) {
+//                    String msg = e.getMessage();
+//
+//                    assert msg.startsWith("Client node disconnected") ||
+//                        msg.startsWith("Client node was disconnected") : e.getMessage();
+//                }
+//                finally {
+//                    state = !state;
+//                }
+//            }
+//        }, "wal-load-" + cli.name());
+//
+//        // Now perform multiple client reconnects.
+//        try {
+//            for (int i = 1; i <= 10; i++) {
+//                Thread.sleep(ThreadLocalRandom.current().nextLong(200, 1000));
+//
+//                IgniteClientReconnectAbstractTest.reconnectClientNode(log, cli, srv, new Runnable() {
+//                    @Override public void run() {
+//                        // No-op.
+//                    }
+//                });
+//
+//                log.info(">>> Finished iteration: " + i);
+//            }
+//        } finally {
+//            done.set(true);
+//        }
+//
+//        fut.get();
+//    }
 
     /**
      * Test client re-connect.
      *
      * @throws Exception If failed.
      */
-    @Test
-    @Ignore
-    public void testCacheDestroy() throws Exception {
-        final Ignite srv = startGrid(config(SRV_1, false, false));
-        Ignite cli = startGrid(config(CLI, true, false));
-
-        cli.cluster().active(true);
-
-        srv.createCache(cacheConfig(PARTITIONED));
-
-        final AtomicBoolean done = new AtomicBoolean();
-
-        // Start load.
-        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
-            boolean state = false;
-
-            while (!done.get()) {
-                try {
-                    if (state)
-                        cli.cluster().enableWal(CACHE_NAME);
-                    else
-                        cli.cluster().disableWal(CACHE_NAME);
-                }
-                catch (IgniteException e) {
-                    String msg = e.getMessage();
-
-                    assert msg.startsWith("Cache doesn't exist") ||
-                        msg.startsWith("Failed to change WAL mode because some caches no longer exist") :
-                        e.getMessage();
-                }
-                finally {
-                    state = !state;
-                }
-            }
-        }, "wal-load-" + cli.name());
-
-        try {
-            // Now perform multiple client reconnects.
-            for (int i = 1; i <= 20; i++) {
-                Thread.sleep(ThreadLocalRandom.current().nextLong(200, 1000));
-
-                srv.destroyCache(CACHE_NAME);
-
-                Thread.sleep(100);
-
-                srv.createCache(cacheConfig(PARTITIONED));
-
-                log.info(">>> Finished iteration: " + i);
-            }
-        }
-        finally {
-            done.set(true);
-        }
-
-        fut.get();
-    }
-
-    /**
-     * Test that concurrent enable/disable events doesn't leave to hangs.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    @Ignore
-    public void testConcurrentOperations() throws Exception {
-        final Ignite srv1 = startGrid(config(SRV_1, false, false));
-        final Ignite srv2 = startGrid(config(SRV_2, false, false));
-        final Ignite srv3 = startGrid(config(SRV_3, false, true));
-
-        final Ignite cli = startGrid(config(CLI, true, false));
-
-        final Ignite cacheCli = startGrid(config(CLI_2, true, false));
-
-        cacheCli.cluster().active(true);
-
-        final IgniteCache cache = cacheCli.getOrCreateCache(cacheConfig(PARTITIONED));
-
-        for (int i = 1; i <= SF.applyLB(3, 2); i++) {
-            // Start pushing requests.
-            Collection<Ignite> walNodes = new ArrayList<>();
-
-            walNodes.add(srv1);
-            walNodes.add(srv2);
-            walNodes.add(srv3);
-            walNodes.add(cli);
-
-            final AtomicBoolean done = new AtomicBoolean();
-
-            final CountDownLatch latch = new CountDownLatch(walNodes.size() + 1);
-
-            for (Ignite node : walNodes) {
-                final Ignite node0 = node;
-
-                Thread t = new Thread(new Runnable() {
-                    @Override public void run() {
-                        checkConcurrentOperations(done, node0);
-
-                        latch.countDown();
-                    }
-                });
-
-                t.setName("wal-load-" + node0.name());
-
-                t.start();
-            }
-
-            // Do some cache loading in the mean time.
-            Thread t = new Thread(new Runnable() {
-                @Override public void run() {
-                    int i = 0;
-
-                    while (!done.get())
-                        cache.put(i, i++);
-
-                    latch.countDown();
-                }
-            });
-
-            t.setName("cache-load");
-
-            t.start();
-
-            Thread.sleep(SF.applyLB(20_000, 2_000));
-
-            done.set(true);
-
-            log.info(">>> Stopping iteration: " + i);
-
-            latch.await();
-
-            log.info(">>> Iteration finished: " + i);
-        }
-    }
+//    @Test
+//    @Ignore
+//    public void testCacheDestroy() throws Exception {
+//        final Ignite srv = startGrid(config(SRV_1, false, false));
+//        Ignite cli = startGrid(config(CLI, true, false));
+//
+//        cli.cluster().active(true);
+//
+//        srv.createCache(cacheConfig(PARTITIONED));
+//
+//        final AtomicBoolean done = new AtomicBoolean();
+//
+//        // Start load.
+//        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+//            boolean state = false;
+//
+//            while (!done.get()) {
+//                try {
+//                    if (state)
+//                        cli.cluster().enableWal(CACHE_NAME);
+//                    else
+//                        cli.cluster().disableWal(CACHE_NAME);
+//                }
+//                catch (IgniteException e) {
+//                    String msg = e.getMessage();
+//
+//                    assert msg.startsWith("Cache doesn't exist") ||
+//                        msg.startsWith("Failed to change WAL mode because some caches no longer exist") :
+//                        e.getMessage();
+//                }
+//                finally {
+//                    state = !state;
+//                }
+//            }
+//        }, "wal-load-" + cli.name());
+//
+//        try {
+//            // Now perform multiple client reconnects.
+//            for (int i = 1; i <= 20; i++) {
+//                Thread.sleep(ThreadLocalRandom.current().nextLong(200, 1000));
+//
+//                srv.destroyCache(CACHE_NAME);
+//
+//                Thread.sleep(100);
+//
+//                srv.createCache(cacheConfig(PARTITIONED));
+//
+//                log.info(">>> Finished iteration: " + i);
+//            }
+//        }
+//        finally {
+//            done.set(true);
+//        }
+//
+//        fut.get();
+//    }
+//
+//    /**
+//     * Test that concurrent enable/disable events doesn't leave to hangs.
+//     *
+//     * @throws Exception If failed.
+//     */
+//    @Test
+//    @Ignore
+//    public void testConcurrentOperations() throws Exception {
+//        final Ignite srv1 = startGrid(config(SRV_1, false, false));
+//        final Ignite srv2 = startGrid(config(SRV_2, false, false));
+//        final Ignite srv3 = startGrid(config(SRV_3, false, true));
+//
+//        final Ignite cli = startGrid(config(CLI, true, false));
+//
+//        final Ignite cacheCli = startGrid(config(CLI_2, true, false));
+//
+//        cacheCli.cluster().active(true);
+//
+//        final IgniteCache cache = cacheCli.getOrCreateCache(cacheConfig(PARTITIONED));
+//
+//        for (int i = 1; i <= SF.applyLB(3, 2); i++) {
+//            // Start pushing requests.
+//            Collection<Ignite> walNodes = new ArrayList<>();
+//
+//            walNodes.add(srv1);
+//            walNodes.add(srv2);
+//            walNodes.add(srv3);
+//            walNodes.add(cli);
+//
+//            final AtomicBoolean done = new AtomicBoolean();
+//
+//            final CountDownLatch latch = new CountDownLatch(walNodes.size() + 1);
+//
+//            for (Ignite node : walNodes) {
+//                final Ignite node0 = node;
+//
+//                Thread t = new Thread(new Runnable() {
+//                    @Override public void run() {
+//                        checkConcurrentOperations(done, node0);
+//
+//                        latch.countDown();
+//                    }
+//                });
+//
+//                t.setName("wal-load-" + node0.name());
+//
+//                t.start();
+//            }
+//
+//            // Do some cache loading in the mean time.
+//            Thread t = new Thread(new Runnable() {
+//                @Override public void run() {
+//                    int i = 0;
+//
+//                    while (!done.get())
+//                        cache.put(i, i++);
+//
+//                    latch.countDown();
+//                }
+//            });
+//
+//            t.setName("cache-load");
+//
+//            t.start();
+//
+//            Thread.sleep(SF.applyLB(20_000, 2_000));
+//
+//            done.set(true);
+//
+//            log.info(">>> Stopping iteration: " + i);
+//
+//            latch.await();
+//
+//            log.info(">>> Iteration finished: " + i);
+//        }
+//    }
 
     /**
      * Check concurrent operations.

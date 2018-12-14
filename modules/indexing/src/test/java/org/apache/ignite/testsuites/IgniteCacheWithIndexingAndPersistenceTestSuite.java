@@ -27,8 +27,8 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    GridCommandHandlerIndexingTest.class,
-    StartCachesInParallelTest.class
+//    GridCommandHandlerIndexingTest.class,
+//    StartCachesInParallelTest.class
 })
 public class IgniteCacheWithIndexingAndPersistenceTestSuite {
 }

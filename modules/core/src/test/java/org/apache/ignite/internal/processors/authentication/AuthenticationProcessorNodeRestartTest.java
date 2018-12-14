@@ -167,64 +167,64 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    @Test
-    @Ignore
-    public void testConcurrentAuthorize() throws Exception {
-        final int testUsersCnt = 10;
-
-        AuthorizationContext.context(actxDflt);
-
-        for (int i = 0; i < testUsersCnt; ++i)
-            grid(CLI_NODE).context().authentication().addUser("test" + i, "passwd_test" + i);
-
-        final IgniteInternalFuture restartFut = GridTestUtils.runAsync(() -> {
-            try {
-                for (int i = 0; i < RESTARTS; ++i) {
-                    int nodeIdx = RND.nextInt(NODES_COUNT - 1);
-
-                    stopGrid(nodeIdx);
-
-                    U.sleep(500);
-
-                    startGrid(nodeIdx);
-
-                    U.sleep(500);
-                }
-            }
-            catch (Exception e) {
-                e.printStackTrace(System.err);
-                fail("Unexpected exception on server restart: " + e.getMessage());
-            }
-        });
-
-        final AtomicInteger usrCnt = new AtomicInteger();
-
-        GridTestUtils.runMultiThreaded(() -> {
-            String user = "test" + usrCnt.getAndIncrement();
-
-            try {
-                while (!restartFut.isDone()) {
-                    AuthorizationContext actx = grid(CLI_NODE).context().authentication()
-                        .authenticate(user, "passwd_" + user);
-
-                    assertNotNull(actx);
-                }
-            }
-            catch (IgniteCheckedException e) {
-                // Skip exception if server down.
-                if (!serverDownMessage(e.getMessage())) {
-                    e.printStackTrace();
-                    fail("Unexpected exception: " + e.getMessage());
-                }
-            }
-            catch (Exception e) {
-                e.printStackTrace();
-                fail("Unexpected exception: " + e.getMessage());
-            }
-        }, testUsersCnt, "user-op");
-
-        restartFut.get();
-    }
+//    @Test
+//    @Ignore
+//    public void testConcurrentAuthorize() throws Exception {
+//        final int testUsersCnt = 10;
+//
+//        AuthorizationContext.context(actxDflt);
+//
+//        for (int i = 0; i < testUsersCnt; ++i)
+//            grid(CLI_NODE).context().authentication().addUser("test" + i, "passwd_test" + i);
+//
+//        final IgniteInternalFuture restartFut = GridTestUtils.runAsync(() -> {
+//            try {
+//                for (int i = 0; i < RESTARTS; ++i) {
+//                    int nodeIdx = RND.nextInt(NODES_COUNT - 1);
+//
+//                    stopGrid(nodeIdx);
+//
+//                    U.sleep(500);
+//
+//                    startGrid(nodeIdx);
+//
+//                    U.sleep(500);
+//                }
+//            }
+//            catch (Exception e) {
+//                e.printStackTrace(System.err);
+//                fail("Unexpected exception on server restart: " + e.getMessage());
+//            }
+//        });
+//
+//        final AtomicInteger usrCnt = new AtomicInteger();
+//
+//        GridTestUtils.runMultiThreaded(() -> {
+//            String user = "test" + usrCnt.getAndIncrement();
+//
+//            try {
+//                while (!restartFut.isDone()) {
+//                    AuthorizationContext actx = grid(CLI_NODE).context().authentication()
+//                        .authenticate(user, "passwd_" + user);
+//
+//                    assertNotNull(actx);
+//                }
+//            }
+//            catch (IgniteCheckedException e) {
+//                // Skip exception if server down.
+//                if (!serverDownMessage(e.getMessage())) {
+//                    e.printStackTrace();
+//                    fail("Unexpected exception: " + e.getMessage());
+//                }
+//            }
+//            catch (Exception e) {
+//                e.printStackTrace();
+//                fail("Unexpected exception: " + e.getMessage());
+//            }
+//        }, testUsersCnt, "user-op");
+//
+//        restartFut.get();
+//    }
 
     /**
      * Exception messages from {@code org.apache.ignite.internal.managers.communication.GridIoManager#send}.
@@ -268,126 +268,126 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    @Test
-    @Ignore
-    public void test1kUsersNodeRestartServer() throws Exception {
-        final AtomicInteger usrCnt = new AtomicInteger();
-
-        GridTestUtils.runMultiThreaded(() -> {
-            AuthorizationContext.context(actxDflt);
-
-            try {
-                while (usrCnt.get() < 200) {
-                    String user = "test" + usrCnt.getAndIncrement();
-
-                    System.out.println("+++ CREATE  " + user);
-                    grid(0).context().authentication().addUser(user, "init");
-                }
-            }
-            catch (Exception e) {
-                e.printStackTrace();
-                fail("Unexpected exception on add / remove");
-            }
-        }, 3, "user-op");
-
-        usrCnt.set(0);
-
-        GridTestUtils.runMultiThreaded(() -> {
-            AuthorizationContext.context(actxDflt);
-
-            try {
-                while (usrCnt.get() < 200) {
-                    String user = "test" + usrCnt.getAndIncrement();
-
-                    System.out.println("+++ ALTER " + user);
-
-                    grid(0).context().authentication().updateUser(user, "passwd_" + user);
-                }
-            }
-            catch (Exception e) {
-                e.printStackTrace();
-                fail("Unexpected exception on add / remove");
-            }
-        }, 3, "user-op");
-
-        System.out.println("+++ STOP");
-        stopGrid(0, true);
-
-        U.sleep(1000);
-
-        System.out.println("+++ START");
-        startGrid(0);
-
-        AuthorizationContext actx = grid(0).context().authentication().authenticate("ignite", "ignite");
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    @Ignore
-    public void testConcurrentAddUpdateRemoveNodeRestartServer() throws Exception {
-        IgniteInternalFuture restartFut = loopServerRestarts();
-
-        AuthorizationContext.context(actxDflt);
-
-        final AtomicInteger usrCnt = new AtomicInteger();
-
-        GridTestUtils.runMultiThreaded(() -> {
-            AuthorizationContext.context(actxDflt);
-
-            String user = "test" + usrCnt.getAndIncrement();
-
-            try {
-                while (!restartFut.isDone()) {
-                    grid(CLI_NODE).context().authentication().addUser(user, "init");
-
-                    grid(CLI_NODE).context().authentication().updateUser(user, "passwd_" + user);
-
-                    grid(CLI_NODE).context().authentication().removeUser(user);
-                }
-            }
-            catch (Exception e) {
-                e.printStackTrace();
-                fail("Unexpected exception on add / remove");
-            }
-        }, 10, "user-op");
-
-        restartFut.get();
-    }
+//    @Test
+//    @Ignore
+//    public void test1kUsersNodeRestartServer() throws Exception {
+//        final AtomicInteger usrCnt = new AtomicInteger();
+//
+//        GridTestUtils.runMultiThreaded(() -> {
+//            AuthorizationContext.context(actxDflt);
+//
+//            try {
+//                while (usrCnt.get() < 200) {
+//                    String user = "test" + usrCnt.getAndIncrement();
+//
+//                    System.out.println("+++ CREATE  " + user);
+//                    grid(0).context().authentication().addUser(user, "init");
+//                }
+//            }
+//            catch (Exception e) {
+//                e.printStackTrace();
+//                fail("Unexpected exception on add / remove");
+//            }
+//        }, 3, "user-op");
+//
+//        usrCnt.set(0);
+//
+//        GridTestUtils.runMultiThreaded(() -> {
+//            AuthorizationContext.context(actxDflt);
+//
+//            try {
+//                while (usrCnt.get() < 200) {
+//                    String user = "test" + usrCnt.getAndIncrement();
+//
+//                    System.out.println("+++ ALTER " + user);
+//
+//                    grid(0).context().authentication().updateUser(user, "passwd_" + user);
+//                }
+//            }
+//            catch (Exception e) {
+//                e.printStackTrace();
+//                fail("Unexpected exception on add / remove");
+//            }
+//        }, 3, "user-op");
+//
+//        System.out.println("+++ STOP");
+//        stopGrid(0, true);
+//
+//        U.sleep(1000);
+//
+//        System.out.println("+++ START");
+//        startGrid(0);
+//
+//        AuthorizationContext actx = grid(0).context().authentication().authenticate("ignite", "ignite");
+//    }
 
     /**
      * @throws Exception If failed.
      */
-    @Test
-    @Ignore
-    public void testConcurrentFailedOperationNodeRestartServer() throws Exception {
-        IgniteInternalFuture restartFut = loopServerRestarts();
+//    @Test
+//    @Ignore
+//    public void testConcurrentAddUpdateRemoveNodeRestartServer() throws Exception {
+//        IgniteInternalFuture restartFut = loopServerRestarts();
+//
+//        AuthorizationContext.context(actxDflt);
+//
+//        final AtomicInteger usrCnt = new AtomicInteger();
+//
+//        GridTestUtils.runMultiThreaded(() -> {
+//            AuthorizationContext.context(actxDflt);
+//
+//            String user = "test" + usrCnt.getAndIncrement();
+//
+//            try {
+//                while (!restartFut.isDone()) {
+//                    grid(CLI_NODE).context().authentication().addUser(user, "init");
+//
+//                    grid(CLI_NODE).context().authentication().updateUser(user, "passwd_" + user);
+//
+//                    grid(CLI_NODE).context().authentication().removeUser(user);
+//                }
+//            }
+//            catch (Exception e) {
+//                e.printStackTrace();
+//                fail("Unexpected exception on add / remove");
+//            }
+//        }, 10, "user-op");
+//
+//        restartFut.get();
+//    }
 
-        AuthorizationContext.context(actxDflt);
-
-        grid(CLI_NODE).context().authentication().addUser("test", "test");
-
-        GridTestUtils.runMultiThreaded(() -> {
-            AuthorizationContext.context(actxDflt);
-
-            try {
-                while (!restartFut.isDone()) {
-                    GridTestUtils.assertThrows(log, () -> {
-                        grid(CLI_NODE).context().authentication().addUser("test", "test");
-
-                        return null;
-                    }, UserManagementException.class, "User already exists");
-                }
-            }
-            catch (Exception e) {
-                e.printStackTrace();
-                fail("Unexpected error on failed operation");
-            }
-        }, 10, "user-op");
-
-        restartFut.get();
-    }
+    /**
+     * @throws Exception If failed.
+     */
+//    @Test
+//    @Ignore
+//    public void testConcurrentFailedOperationNodeRestartServer() throws Exception {
+//        IgniteInternalFuture restartFut = loopServerRestarts();
+//
+//        AuthorizationContext.context(actxDflt);
+//
+//        grid(CLI_NODE).context().authentication().addUser("test", "test");
+//
+//        GridTestUtils.runMultiThreaded(() -> {
+//            AuthorizationContext.context(actxDflt);
+//
+//            try {
+//                while (!restartFut.isDone()) {
+//                    GridTestUtils.assertThrows(log, () -> {
+//                        grid(CLI_NODE).context().authentication().addUser("test", "test");
+//
+//                        return null;
+//                    }, UserManagementException.class, "User already exists");
+//                }
+//            }
+//            catch (Exception e) {
+//                e.printStackTrace();
+//                fail("Unexpected error on failed operation");
+//            }
+//        }, 10, "user-op");
+//
+//        restartFut.get();
+//    }
 
     /** */
     private IgniteInternalFuture loopServerRestarts() {
