@@ -68,6 +68,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testCacheCleanup() throws Exception {
         Ignite srv = startGrid(config(SRV_1, false, false));
 
@@ -137,6 +138,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testJoin() throws Exception {
         checkJoin(false);
     }
@@ -147,6 +149,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testJoinCoordinator() throws Exception {
         checkJoin(true);
     }
@@ -216,6 +219,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testServerRestartNonCoordinator() throws Exception {
         checkNodeRestart(false);
     }
@@ -225,7 +229,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7472")
+    //@Ignore("https://issues.apache.org/jira/browse/IGNITE-7472")
     @Test
     public void testServerRestartCoordinator() throws Exception {
         checkNodeRestart(true);
@@ -308,6 +312,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testClientReconnect() throws Exception {
         final Ignite srv = startGrid(config(SRV_1, false, false));
         Ignite cli = startGrid(config(CLI, true, false));
@@ -367,6 +372,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testCacheDestroy() throws Exception {
         final Ignite srv = startGrid(config(SRV_1, false, false));
         Ignite cli = startGrid(config(CLI, true, false));
@@ -428,6 +434,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testConcurrentOperations() throws Exception {
         final Ignite srv1 = startGrid(config(SRV_1, false, false));
         final Ignite srv2 = startGrid(config(SRV_2, false, false));

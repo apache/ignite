@@ -105,7 +105,7 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7472")
+//    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7472")
     @Test
     public void testConcurrentAddUpdateRemoveNodeRestartCoordinator() throws Exception {
         final IgniteInternalFuture restartFut = restartCoordinator();
@@ -168,6 +168,7 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testConcurrentAuthorize() throws Exception {
         final int testUsersCnt = 10;
 
@@ -268,6 +269,7 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void test1kUsersNodeRestartServer() throws Exception {
         final AtomicInteger usrCnt = new AtomicInteger();
 
@@ -323,6 +325,7 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testConcurrentAddUpdateRemoveNodeRestartServer() throws Exception {
         IgniteInternalFuture restartFut = loopServerRestarts();
 
@@ -357,6 +360,7 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testConcurrentFailedOperationNodeRestartServer() throws Exception {
         IgniteInternalFuture restartFut = loopServerRestarts();
 
