@@ -194,10 +194,10 @@ public class CommandHandler {
     private static final String CMD_DUMP = "--dump";
 
     /** */
-    private static final String CMD_SKIP_ZEROS = "--skipZeros";
+    private static final String CMD_SKIP_ZEROS = "--skip-zeros";
 
     /** Cache filter. */
-    private static final String CACHE_FILTER = "--cacheFilter";
+    private static final String CACHE_FILTER = "--cache-filter";
 
     /** */
     private static final String CMD_USER_ATTRIBUTES = "--user-attributes";
@@ -208,10 +208,10 @@ public class CommandHandler {
     private static final String CMD_SSL_PROTOCOL = "--ssl-protocol";
 
     /** */
-    private static final String CMD_SSL_CIPHER_SUITES = "--ssl-cipher-suites";
+    private static final String CMD_SSL_KEY_ALGORITHM = "--ssl-key-algorithm";
 
     /** */
-    private static final String CMD_SSL_KEY_ALGORITHM = "--ssl-key-algorithm";
+    protected static final String CMD_SSL_CIPHER_SUITES = "--ssl-cipher-suites";
 
     /** */
     private static final String CMD_KEYSTORE = "--keystore";
@@ -249,16 +249,16 @@ public class CommandHandler {
         AUX_COMMANDS.add(CMD_PING_TIMEOUT);
 
         AUX_COMMANDS.add(CMD_SSL_PROTOCOL);
+        AUX_COMMANDS.add(CMD_SSL_KEY_ALGORITHM);
         AUX_COMMANDS.add(CMD_SSL_CIPHER_SUITES);
 
-        AUX_COMMANDS.add(CMD_SSL_KEY_ALGORITHM);
-        AUX_COMMANDS.add(CMD_KEYSTORE_TYPE);
         AUX_COMMANDS.add(CMD_KEYSTORE);
         AUX_COMMANDS.add(CMD_KEYSTORE_PASSWORD);
+        AUX_COMMANDS.add(CMD_KEYSTORE_TYPE);
 
-        AUX_COMMANDS.add(CMD_TRUSTSTORE_TYPE);
         AUX_COMMANDS.add(CMD_TRUSTSTORE);
         AUX_COMMANDS.add(CMD_TRUSTSTORE_PASSWORD);
+        AUX_COMMANDS.add(CMD_TRUSTSTORE_TYPE);
     }
 
     /** Broadcast uuid. */
@@ -283,10 +283,10 @@ public class CommandHandler {
     private static final String BASELINE_SET_VERSION = "version";
 
     /** Parameter name for validate_indexes command. */
-    static final String VI_CHECK_FIRST = "checkFirst";
+    static final String VI_CHECK_FIRST = "--check-first";
 
     /** Parameter name for validate_indexes command. */
-    static final String VI_CHECK_THROUGH = "checkThrough";
+    static final String VI_CHECK_THROUGH = "--check-through";
 
     /** */
     static final String WAL_PRINT = "print";
@@ -343,7 +343,7 @@ public class CommandHandler {
     private static final String TX_DURATION = "minDuration";
 
     /** */
-    private static final String TX_SIZE = "minSize";
+    private static final String TX_SIZE = "min-size";
 
     /** */
     private static final String TX_LABEL = "label";
@@ -384,6 +384,12 @@ public class CommandHandler {
 
     /** */
     private static final String NULL = "null";
+
+    /** */
+    private static final String NODE_ID = "nodeId";
+
+    /** */
+    private static final String OP_NODE_ID = op(NODE_ID);
 
     /** */
     private Iterator<String> argsIt;
@@ -649,7 +655,9 @@ public class CommandHandler {
      * @return List of hosts.
      */
     private Stream<IgniteBiTuple<GridClientNode, String>> listHosts(GridClient client) throws GridClientException {
-        return client.compute().nodes(GridClientNode::connectable).stream()
+        return client.compute()
+            .nodes(GridClientNode::connectable)
+            .stream()
             .flatMap(node -> Stream.concat(
                 node.tcpAddresses() == null ? Stream.empty() : node.tcpAddresses().stream(),
                 node.tcpHostNames() == null ? Stream.empty() : node.tcpHostNames().stream()
@@ -661,14 +669,17 @@ public class CommandHandler {
      * @param client Client.
      * @return List of hosts.
      */
-    private Stream<IgniteBiTuple<GridClientNode, List<String>>> listHostsByClientNode(GridClient client) throws GridClientException {
+    private Stream<IgniteBiTuple<GridClientNode, List<String>>> listHostsByClientNode(
+        GridClient client
+    ) throws GridClientException {
         return client.compute().nodes(GridClientNode::connectable).stream()
             .map(node -> new IgniteBiTuple<>(node,
                 Stream.concat(
                     node.tcpAddresses() == null ? Stream.empty() : node.tcpAddresses().stream(),
                     node.tcpHostNames() == null ? Stream.empty() : node.tcpHostNames().stream()
                 )
-                .map(addr -> addr + ":" + node.tcpPort()).collect(Collectors.toList())));
+                .map(addr -> addr + ":" + node.tcpPort()).collect(Collectors.toList()))
+            );
     }
 
     /**
@@ -814,24 +825,20 @@ public class CommandHandler {
      *
      */
     private void printCacheHelp() {
-        log(i("The '" + CACHE.text() + " subcommand' is used to get information about and perform actions with caches. The command has the following syntax:"));
+        log(i("The '" + CACHE + " subcommand' is used to get information about and perform actions with caches. The command has the following syntax:"));
         nl();
-        log(i(UTILITY_NAME_WITH_COMMON_OPTIONS + " " + CACHE.text() + "[subcommand] <subcommand_parameters>"));
+        log(i(UTILITY_NAME_WITH_COMMON_OPTIONS + " " + CACHE + "[subcommand] <subcommand_parameters>"));
         nl();
-        log(i("The subcommands that take [nodeId] as an argument ('" + LIST.text() + "', '" + CONTENTION.text() + "' and '" + VALIDATE_INDEXES.text() + "') will be executed on the given node or on all server nodes if the option is not specified. Other commands will run on a random server node."));
+        log(i("The subcommands that take " + OP_NODE_ID + " as an argument ('" + LIST + "', '" + CONTENTION + "' and '" + VALIDATE_INDEXES + "') will be executed on the given node or on all server nodes if the option is not specified. Other commands will run on a random server node."));
         nl();
         nl();
         log(i("Subcommands:"));
 
-        usageCache(LIST, "regexPattern", op(or("groups","seq")), op("nodeId"), op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE
-            .text()));
-        usageCache(CONTENTION, "minQueueSize", op("nodeId"), op("maxPrint"));
-        usageCache(IDLE_VERIFY, op(CMD_DUMP), op(CMD_SKIP_ZEROS), "[cache1,...,cacheN]",
-            op(CACHE_FILTER, or(CacheFilterEnum.ALL.toString(), CacheFilterEnum.SYSTEM.toString(), CacheFilterEnum.PERSISTENT.toString(),
-                CacheFilterEnum.NOT_PERSISTENT.toString())));
-        usageCache(VALIDATE_INDEXES, "[cache1,...,cacheN]", op("nodeId"), op(or(VI_CHECK_FIRST + " N",
-            VI_CHECK_THROUGH + " K")));
-        usageCache(DISTRIBUTION, or("nodeId", NULL), "[cacheName1,...,cacheNameN]", op(CMD_USER_ATTRIBUTES, "attName1,...,attrNameN"));
+        usageCache(LIST, "regexPattern", op(or("groups","seq")), OP_NODE_ID, op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE));
+        usageCache(CONTENTION, "minQueueSize", OP_NODE_ID, op("maxPrint"));
+        usageCache(IDLE_VERIFY, op(CMD_DUMP), op(CMD_SKIP_ZEROS), "[cache1,...,cacheN]", op(CACHE_FILTER, or(CacheFilterEnum.values())));
+        usageCache(VALIDATE_INDEXES, "[cache1,...,cacheN]", OP_NODE_ID, op(or(VI_CHECK_FIRST + " N", VI_CHECK_THROUGH + " K")));
+        usageCache(DISTRIBUTION, or(NODE_ID, NULL), "[cacheName1,...,cacheNameN]", op(CMD_USER_ATTRIBUTES, "attName1,...,attrNameN"));
         usageCache(RESET_LOST_PARTITIONS, "cacheName1,...,cacheNameN");
         nl();
     }
@@ -1738,11 +1745,17 @@ public class CommandHandler {
      * @param params Other input parameter.
      * @return Joined parameters wrapped optional braces.
      */
-    private static String op(String param, String... params) {
-        if (params == null || params.length == 0)
-            return "[" + param + "]";
+    private static String op(Object param, Object... params) {
+        SB sb = new SB("[");
 
-        return "[" + param + " " + String.join(" ", params) + "]";
+        sb.a(param);
+
+        if(!F.isEmpty(params)) {
+            for(Object obj : params)
+                sb.a(" ").a(obj);
+        }
+
+        return sb.a("]").toString();
     }
 
     /**
@@ -1752,13 +1765,12 @@ public class CommandHandler {
      * @param params Remaining parameters.
      * @return Concatenated string.
      */
-    private static String or(String param1, String... params) {
-        if (params.length == 0)
-            return param1;
+    private static String or(Object param1, Object... params) {
+        SB sb = new SB();
 
-        SB sb = new SB(param1);
+        sb.a(param1);
 
-        for (String param : params)
+        for (Object param : params)
             sb.a("|").a(param);
 
         return sb.toString();
@@ -2079,9 +2091,9 @@ public class CommandHandler {
                         cacheArgs.skipZeros(true);
                     else if (CACHE_FILTER.equals(nextArg)) {
                         String filter = nextArg("The cache filter should be specified. The following values can be " +
-                            "used: " + Arrays.toString(CacheFilterEnum.values()) + '.').toUpperCase();
+                            "used: " + Arrays.toString(CacheFilterEnum.values()) + '.');
 
-                        cacheArgs.setCacheFilterEnum(CacheFilterEnum.valueOf(filter));
+                        cacheArgs.setCacheFilterEnum(CacheFilterEnum.valueOf(filter.toUpperCase()));
                     }
                     else
                         parseCacheNames(nextArg, cacheArgs);
@@ -2791,7 +2803,6 @@ public class CommandHandler {
      *
      * @return Last operation result;
      */
-    @SuppressWarnings("unchecked")
     public <T> T getLastOperationResult() {
         return (T)lastOperationRes;
     }
