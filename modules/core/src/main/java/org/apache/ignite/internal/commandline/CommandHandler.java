@@ -642,7 +642,6 @@ public class CommandHandler {
 
     /**
      * @param client Client.
-     *
      * @return List of hosts.
      */
     private Stream<IgniteBiTuple<GridClientNode, String>> listHosts(GridClient client) throws GridClientException {
@@ -656,7 +655,6 @@ public class CommandHandler {
 
     /**
      * @param client Client.
-     *
      * @return List of hosts.
      */
     private Stream<IgniteBiTuple<GridClientNode, List<String>>> listHostsByClientNode(GridClient client) throws GridClientException {
