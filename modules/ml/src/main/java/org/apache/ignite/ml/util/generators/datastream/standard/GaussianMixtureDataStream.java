@@ -22,11 +22,9 @@ import java.util.List;
 import java.util.stream.Stream;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.util.Utils;
 import org.apache.ignite.ml.util.generators.datastream.DataStreamGenerator;
-import org.apache.ignite.ml.util.generators.datastream.RandomVectorsGenerator;
-import org.apache.ignite.ml.util.generators.variable.DiscreteRandomProducer;
-import org.apache.ignite.ml.util.generators.variable.VectorGenerator;
+import org.apache.ignite.ml.util.generators.variable.vector.VectorGenerator;
+import org.apache.ignite.ml.util.generators.variable.vector.VectorGeneratorsFamily;
 
 public class GaussianMixtureDataStream implements DataStreamGenerator {
     public static class Builder {
@@ -60,15 +58,14 @@ public class GaussianMixtureDataStream implements DataStreamGenerator {
     }
 
     @Override public Stream<LabeledVector<Vector, Double>> labeled() {
-        List<VectorGenerator> generators = new ArrayList<>();
-
+        VectorGeneratorsFamily.Builder builder = new VectorGeneratorsFamily.Builder();
         long seed = System.currentTimeMillis();
         for (int i = 0; i < points.length; i++) {
-            generators.add(VectorGenerator.gauss(points[i].asArray(), variances[i], seed));
+            VectorGenerator gauss = VectorGenerator.gauss(points[i].asArray(), variances[i], seed);
+            builder = builder.with(gauss, 1.0);
             seed >>= 2;
         }
 
-        RandomVectorsGenerator vectorsGenerator = new RandomVectorsGenerator(generators, DiscreteRandomProducer.uniform(points.length));
-        return Utils.asStream(vectorsGenerator).map(v -> new LabeledVector<>(v.vector(), (double)v.distributionFamilyId()));
+        return builder.build().labeled();
     }
 }

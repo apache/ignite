@@ -17,19 +17,15 @@
 
 package org.apache.ignite.ml.util.generators.datastream.standard;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.stream.Stream;
-import org.apache.ignite.ml.util.generators.datastream.DataStreamGenerator;
-import org.apache.ignite.ml.util.generators.datastream.RandomVectorsGenerator;
-import org.apache.ignite.ml.util.generators.function.FunctionWithNoize;
-import org.apache.ignite.ml.util.generators.function.ParametricVectorGenerator;
-import org.apache.ignite.ml.util.generators.variable.DiscreteRandomProducer;
-import org.apache.ignite.ml.util.generators.variable.GaussRandomProducer;
-import org.apache.ignite.ml.util.generators.variable.UniformRandomProducer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.util.Utils;
+import org.apache.ignite.ml.util.generators.datastream.DataStreamGenerator;
+import org.apache.ignite.ml.util.generators.function.FunctionWithNoize;
+import org.apache.ignite.ml.util.generators.variable.GaussRandomProducer;
+import org.apache.ignite.ml.util.generators.variable.UniformRandomProducer;
+import org.apache.ignite.ml.util.generators.variable.vector.ParametricVectorGenerator;
+import org.apache.ignite.ml.util.generators.variable.vector.VectorGeneratorsFamily;
 
 public class CirclesDataStream implements DataStreamGenerator {
     private final int countOfCircles;
@@ -44,21 +40,18 @@ public class CirclesDataStream implements DataStreamGenerator {
 
     @Override
     public Stream<LabeledVector<Vector, Double>> labeled() {
-        DiscreteRandomProducer selector = new DiscreteRandomProducer(Stream.generate(() -> 1.0 / countOfCircles)
-            .mapToDouble(x -> x).limit(countOfCircles).toArray());
-        List<ParametricVectorGenerator> circleFamilies = new ArrayList<>();
+        VectorGeneratorsFamily.Builder builder = new VectorGeneratorsFamily.Builder();
         for (int i = 0; i < countOfCircles; i++) {
             final double radius = minRadius + distanceBetweenCircles * i;
             final double variance = 0.1 * (i + 1);
 
             GaussRandomProducer randomProducer = new GaussRandomProducer(0, variance);
-            circleFamilies.add(new ParametricVectorGenerator(new UniformRandomProducer(-10, 10),
+            builder = builder.with(new ParametricVectorGenerator(new UniformRandomProducer(-10, 10),
                 new FunctionWithNoize<>(t -> radius * Math.sin(t), randomProducer),
                 new FunctionWithNoize<>(t -> radius * Math.cos(t), randomProducer)
-            ));
+            ), 1.0);
         }
 
-        return Utils.asStream(new RandomVectorsGenerator(circleFamilies, selector))
-            .map(v -> new LabeledVector<>(v.vector(), (double)v.distributionFamilyId()));
+        return builder.build().labeled();
     }
 }

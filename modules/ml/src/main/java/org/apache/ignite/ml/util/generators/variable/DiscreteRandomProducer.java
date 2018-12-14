@@ -20,10 +20,9 @@ package org.apache.ignite.ml.util.generators.variable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.ignite.ml.util.generators.function.ParametricVectorGenerator;
+import org.apache.ignite.ml.util.generators.variable.vector.VectorGenerator;
 
 public class DiscreteRandomProducer extends RandomProducerWithGenerator {
     private double EPS = 1e-5;
@@ -79,11 +78,9 @@ public class DiscreteRandomProducer extends RandomProducerWithGenerator {
             .toArray());
     }
 
-
     public static double[] randomDistribution(int numberOfValues) {
         return randomDistribution(numberOfValues, System.currentTimeMillis());
     }
-
 
     public static double[] randomDistribution(int numberOfValues, long seed) {
         Random random = new Random(seed);
@@ -120,10 +117,9 @@ public class DiscreteRandomProducer extends RandomProducerWithGenerator {
 
 
     private boolean checkDistribution(double[] probs) {
-        boolean moreThanOneElement = probs.length > 1;
         boolean allElementsAreGEZero = Arrays.stream(probs).allMatch(p -> p >= 0.0);
         boolean sumOfProbsEqOne = Math.abs(Arrays.stream(probs).sum() - 1.0) < EPS;
 
-        return allElementsAreGEZero && sumOfProbsEqOne && moreThanOneElement;
+        return allElementsAreGEZero && sumOfProbsEqOne;
     }
 }

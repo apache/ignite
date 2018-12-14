@@ -18,15 +18,13 @@
 package org.apache.ignite.ml.util.generators.datastream.standard;
 
 import java.util.stream.Stream;
-import org.apache.ignite.ml.util.generators.datastream.DataStreamGenerator;
-import org.apache.ignite.ml.util.generators.datastream.LabeledRandomVectorsGenerator;
-import org.apache.ignite.ml.util.generators.datastream.RandomVectorsGenerator;
-import org.apache.ignite.ml.util.generators.function.ParametricVectorGenerator;
-import org.apache.ignite.ml.util.generators.variable.UniformRandomProducer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.util.Utils;
-import org.apache.ignite.ml.util.generators.variable.VectorGenerator;
+import org.apache.ignite.ml.util.generators.datastream.DataStreamGenerator;
+import org.apache.ignite.ml.util.generators.variable.UniformRandomProducer;
+import org.apache.ignite.ml.util.generators.variable.vector.ParametricVectorGenerator;
+import org.apache.ignite.ml.util.generators.variable.vector.VectorGenerator;
+import org.apache.ignite.ml.util.generators.variable.vector.VectorGeneratorsFamily;
 
 public class TwoSeparableClassesDataStream implements DataStreamGenerator {
     private final double margin;
@@ -44,12 +42,11 @@ public class TwoSeparableClassesDataStream implements DataStreamGenerator {
         UniformRandomProducer urv = new UniformRandomProducer(minCordValue - Math.abs(margin), maxCordValue + Math.abs(margin));
 
         VectorGenerator vectorGenerator = new ParametricVectorGenerator(UniformRandomProducer.zero(), t -> urv.get(), t -> -urv.get());
-        RandomVectorsGenerator vectorsGenerator = new RandomVectorsGenerator(vectorGenerator);
-        LabeledRandomVectorsGenerator datasetGenerator = new LabeledRandomVectorsGenerator(vectorsGenerator, v -> isFirstClass(v) ? 1.0 : -1.0, this::mixer);
-        return Utils.asStream(datasetGenerator)
-            .filter(v -> between(v.vector().get(0), minCordValue, maxCordValue))
-            .filter(v -> between(v.vector().get(1), minCordValue, maxCordValue))
-            .map(v -> new LabeledVector<>(v.vector(), v.label()));
+        VectorGeneratorsFamily vectorsGenerator = new VectorGeneratorsFamily(vectorGenerator);
+        return vectorsGenerator.asStream()
+            .map(v -> new LabeledVector<>(applyMargin(v.vector()), isFirstClass(v.vector()) ? 1.0 : -1.0))
+            .filter(v -> between(v.features().get(0), minCordValue, maxCordValue))
+            .filter(v -> between(v.features().get(1), minCordValue, maxCordValue));
     }
 
     private boolean between(double x, double min, double max) {
@@ -60,7 +57,7 @@ public class TwoSeparableClassesDataStream implements DataStreamGenerator {
         return v.get(0) - v.get(1) > 0;
     }
 
-    private Vector mixer(Vector v) {
+    private Vector applyMargin(Vector v) {
         Vector copy = v.copy();
         copy.set(0, copy.get(0) + Math.signum(v.get(0) - v.get(1)) * margin);
         copy.set(1, copy.get(1) - Math.signum(v.get(0) - v.get(1)) * margin);

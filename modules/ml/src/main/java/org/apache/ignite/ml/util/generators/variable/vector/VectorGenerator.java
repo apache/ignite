@@ -15,14 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.util.generators.variable;
+package org.apache.ignite.ml.util.generators.variable.vector;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.util.generators.variable.GaussRandomProducer;
+import org.apache.ignite.ml.util.generators.variable.RandomProducer;
+import org.apache.ignite.ml.util.generators.variable.UniformRandomProducer;
 
 public interface VectorGenerator extends Supplier<Vector> {
     public static VectorGenerator gauss(double[] pivots, double variance) {
