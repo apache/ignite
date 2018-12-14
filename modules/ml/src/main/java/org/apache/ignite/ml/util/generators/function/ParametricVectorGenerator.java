@@ -22,15 +22,23 @@ import java.util.List;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.util.generators.variable.RandomProducer;
+import org.apache.ignite.ml.util.generators.variable.UniformRandomProducer;
+import org.apache.ignite.ml.util.generators.variable.VectorGenerator;
 
 public class ParametricVectorGenerator implements VectorGenerator {
     private final List<IgniteFunction<Double, Double>> perDimensionGenerators;
+    private final RandomProducer randomProducer;
 
-    public ParametricVectorGenerator(IgniteFunction<Double, Double> ... perDimensionGenerators) {
+    public ParametricVectorGenerator(RandomProducer parameterGenerator,
+        IgniteFunction<Double, Double> ... perDimensionGenerators) {
+
         this.perDimensionGenerators = Arrays.asList(perDimensionGenerators);
+        this.randomProducer = parameterGenerator;
     }
 
-    @Override public Vector apply(Double t) {
+    @Override public Vector get() {
+        Double t = randomProducer.get();
         return VectorUtils.of(
             perDimensionGenerators.stream()
                 .mapToDouble(f -> f.apply(t))

@@ -19,6 +19,7 @@ package org.apache.ignite.ml.math.primitives.vector;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.stream.IntStream;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -122,11 +123,11 @@ public class VectorUtils {
     }
 
     /**
-     * Zip two vectors with given binary function
-     * (i.e. apply binary function to both vector elementwise and construct vector from results).
+     * Zip two vectors with given binary function (i.e. apply binary function to both vector elementwise and construct
+     * vector from results).
      *
-     * Example zipWith({0, 2, 4}, {1, 3, 5}, plus) = {0 + 1, 2 + 3, 4 + 5}.
-     * Length of result is length of shortest of vectors.
+     * Example zipWith({0, 2, 4}, {1, 3, 5}, plus) = {0 + 1, 2 + 3, 4 + 5}. Length of result is length of shortest of
+     * vectors.
      *
      * @param v1 First vector.
      * @param v2 Second vector.
@@ -169,16 +170,15 @@ public class VectorUtils {
      *
      * @param values Values.
      */
-    public static Vector of(double ... values) {
+    public static Vector of(double... values) {
         A.notNull(values, "values");
 
         return new DenseVector(values);
     }
 
     /**
-     * Creates vector based on array of Doubles. If array contains null-elements then
-     * method returns sparse local on head vector. In other case method returns
-     * dense local on heap vector.
+     * Creates vector based on array of Doubles. If array contains null-elements then method returns sparse local on
+     * head vector. In other case method returns dense local on heap vector.
      *
      * @param values Values.
      */
@@ -196,5 +196,30 @@ public class VectorUtils {
                 answer.set(i, values[i]);
 
         return answer;
+    }
+
+    /**
+     * Concatenates two given vectors.
+     *
+     * @param v1 First vector.
+     * @param v2 Second vector.
+     * @return Concatenation result.
+     */
+    public static Vector concat(Vector v1, Vector v2) {
+        int size1 = v1.size();
+        int size2 = v2.size();
+        double[] vals = new double[size1 + size2];
+        System.arraycopy(v1.asArray(), 0, vals, 0, size1);
+        System.arraycopy(v2.asArray(), 0, vals, size1, size2);
+        return new DenseVector(vals);
+    }
+
+    public static Vector lerp(Vector[] vectors, double[] weights) {
+        A.notEmpty(vectors, "vectors.length != 0");
+        A.ensure(vectors.length == weights.length, "vectors.length == weights.length");
+
+        return IntStream.range(0, vectors.length)
+            .mapToObj(i -> vectors[i].times(weights[i]))
+            .reduce(Vector::plus).get();
     }
 }

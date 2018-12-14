@@ -19,18 +19,14 @@ package org.apache.ignite.ml.util.generators.datastream.standard;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.Utils;
 import org.apache.ignite.ml.util.generators.datastream.DataStreamGenerator;
 import org.apache.ignite.ml.util.generators.datastream.RandomVectorsGenerator;
-import org.apache.ignite.ml.util.generators.function.ParametricVectorGenerator;
 import org.apache.ignite.ml.util.generators.variable.DiscreteRandomProducer;
-import org.apache.ignite.ml.util.generators.variable.GaussRandomProducer;
-import org.apache.ignite.ml.util.generators.variable.UniformRandomProducer;
+import org.apache.ignite.ml.util.generators.variable.VectorGenerator;
 
 public class GaussianMixtureDataStream implements DataStreamGenerator {
     public static class Builder {
@@ -64,23 +60,15 @@ public class GaussianMixtureDataStream implements DataStreamGenerator {
     }
 
     @Override public Stream<LabeledVector<Vector, Double>> labeled() {
-        DiscreteRandomProducer selector = new DiscreteRandomProducer(Stream.generate(() -> 1.0 / points.length)
-            .mapToDouble(x -> x).limit(points.length).toArray());
-        List<ParametricVectorGenerator> generators = new ArrayList<>();
+        List<VectorGenerator> generators = new ArrayList<>();
+
         long seed = System.currentTimeMillis();
         for (int i = 0; i < points.length; i++) {
-            IgniteFunction<Double, Double>[] dimGenerators = new IgniteFunction[points[0].size()];
-            for (int j = 0; j < points[0].size(); j++) {
-                seed = seed >> 2;
-                final int fi = i;
-                final int fj = j;
-                final GaussRandomProducer producer = new GaussRandomProducer(0.0, variances[fi], seed);
-                dimGenerators[fj] = t -> points[fi].get(fj) + producer.get();
-            }
-            generators.add(new ParametricVectorGenerator(dimGenerators));
+            generators.add(VectorGenerator.gauss(points[i].asArray(), variances[i], seed));
+            seed >>= 2;
         }
 
-        RandomVectorsGenerator vectorsGenerator = new RandomVectorsGenerator(generators, selector, UniformRandomProducer.zero());
+        RandomVectorsGenerator vectorsGenerator = new RandomVectorsGenerator(generators, DiscreteRandomProducer.uniform(points.length));
         return Utils.asStream(vectorsGenerator).map(v -> new LabeledVector<>(v.vector(), (double)v.distributionFamilyId()));
     }
 }

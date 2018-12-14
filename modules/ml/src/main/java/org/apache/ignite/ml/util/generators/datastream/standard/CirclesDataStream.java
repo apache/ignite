@@ -52,13 +52,13 @@ public class CirclesDataStream implements DataStreamGenerator {
             final double variance = 0.1 * (i + 1);
 
             GaussRandomProducer randomProducer = new GaussRandomProducer(0, variance);
-            circleFamilies.add(new ParametricVectorGenerator(
+            circleFamilies.add(new ParametricVectorGenerator(new UniformRandomProducer(-10, 10),
                 new FunctionWithNoize<>(t -> radius * Math.sin(t), randomProducer),
                 new FunctionWithNoize<>(t -> radius * Math.cos(t), randomProducer)
             ));
         }
 
-        return Utils.asStream(new RandomVectorsGenerator(circleFamilies, selector, new UniformRandomProducer(-10, 10)))
+        return Utils.asStream(new RandomVectorsGenerator(circleFamilies, selector))
             .map(v -> new LabeledVector<>(v.vector(), (double)v.distributionFamilyId()));
     }
 }

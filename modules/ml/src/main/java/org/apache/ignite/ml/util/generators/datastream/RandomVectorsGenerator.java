@@ -20,40 +20,33 @@ package org.apache.ignite.ml.util.generators.datastream;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import org.apache.ignite.ml.util.generators.function.ParametricVectorGenerator;
-import org.apache.ignite.ml.util.generators.variable.DiscreteRandomProducer;
-import org.apache.ignite.ml.util.generators.variable.UniformRandomProducer;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.util.generators.variable.DiscreteRandomProducer;
+import org.apache.ignite.ml.util.generators.variable.UniformRandomProducer;
+import org.apache.ignite.ml.util.generators.variable.VectorGenerator;
 
 //TODO: builder
 public class RandomVectorsGenerator implements Iterator<RandomVectorsGenerator.VectorWithDistributionFamily> {
-    private final List<ParametricVectorGenerator> families;
+    private final List<? extends VectorGenerator> families;
     private final DiscreteRandomProducer familySelector;
-    private final UniformRandomProducer paramValuesGenerator;
 
-    public RandomVectorsGenerator(List<ParametricVectorGenerator> families,
-        DiscreteRandomProducer familySelector,
-        UniformRandomProducer paramValuesGenerator) {
-
+    public RandomVectorsGenerator(List<? extends VectorGenerator> families, DiscreteRandomProducer familySelector) {
         this.families = families;
         this.familySelector = familySelector;
-        this.paramValuesGenerator = paramValuesGenerator;
 
         checkValues();
     }
 
-    public RandomVectorsGenerator(ParametricVectorGenerator vectorGenerator,
-        UniformRandomProducer paramValuesGenerator) {
+    public RandomVectorsGenerator(VectorGenerator vectorGenerator) {
 
-        this(Collections.singletonList(vectorGenerator), null, paramValuesGenerator);
-
+        this(Collections.singletonList(vectorGenerator), null);
         checkValues();
     }
 
     @Override public VectorWithDistributionFamily next() {
         int family = families.size() == 1 ? 0 : familySelector.get().intValue();
-        Vector vector = families.get(family).apply(paramValuesGenerator.get());
+        Vector vector = families.get(family).get();
         return new VectorWithDistributionFamily(vector, family);
     }
 
@@ -68,7 +61,7 @@ public class RandomVectorsGenerator implements Iterator<RandomVectorsGenerator.V
         if (families.isEmpty())
             throw new IllegalArgumentException("Empty distribution families list");
 
-        long countOfUniqVectorSizes = families.stream().map(x -> x.apply(paramValuesGenerator.get()))
+        long countOfUniqVectorSizes = families.stream().map(VectorGenerator::get)
             .mapToInt(Vector::size).distinct().count();
         if (countOfUniqVectorSizes != 1)
             throw new IllegalArgumentException("All families should generate vectors of same size");

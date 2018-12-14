@@ -18,7 +18,12 @@
 package org.apache.ignite.ml.util.generators.variable;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import org.apache.ignite.ml.util.generators.function.ParametricVectorGenerator;
 
 public class DiscreteRandomProducer extends RandomProducerWithGenerator {
     private double EPS = 1e-5;
@@ -57,6 +62,43 @@ public class DiscreteRandomProducer extends RandomProducerWithGenerator {
             probs[i] += probs[i - 1];
     }
 
+    public static DiscreteRandomProducer uniform(List<VectorGenerator> families) {
+        return uniform(families.size(), System.currentTimeMillis());
+    }
+
+    public static DiscreteRandomProducer uniform(List<VectorGenerator> families, long seed) {
+        return uniform(families.size(), seed);
+    }
+
+    public static DiscreteRandomProducer uniform(int numberOfValues) {
+        return uniform(numberOfValues, System.currentTimeMillis());
+    }
+
+    public static DiscreteRandomProducer uniform(int numberOfValues, long seed) {
+        return new DiscreteRandomProducer(seed, IntStream.range(0, numberOfValues).mapToDouble(x -> 1.0 / numberOfValues)
+            .toArray());
+    }
+
+
+    public static double[] randomDistribution(int numberOfValues) {
+        return randomDistribution(numberOfValues, System.currentTimeMillis());
+    }
+
+
+    public static double[] randomDistribution(int numberOfValues, long seed) {
+        Random random = new Random(seed);
+        long[] rnd = IntStream.range(0, numberOfValues).mapToLong(i -> random.nextInt(Integer.MAX_VALUE))
+            .limit(numberOfValues)
+            .toArray();
+        long sum = Arrays.stream(rnd).sum();
+
+        double[] result = new double[numberOfValues];
+        for(int i = 0; i < result.length; i++)
+            result[i] = rnd[i] / Math.max(1.0, sum);
+
+        return result;
+    }
+
     @Override public Double get() {
         //TODO: optimize this to binary search.
         double p = generator().nextDouble();
@@ -66,6 +108,10 @@ public class DiscreteRandomProducer extends RandomProducerWithGenerator {
         }
 
         return (double) (probs.length - 1);
+    }
+
+    public int getInt() {
+        return get().intValue();
     }
 
     public int size() {
