@@ -571,16 +571,16 @@ public class QueryUtils {
             }
         }
 
-        for (Map.Entry<String, String> entry : fields.entrySet()) {
-            boolean isKeyField;
+        if (!F.isEmpty(keyFields) && isKeyClsSqlType)
+            throw new IgniteCheckedException(
+                "Key is of sql type, so 'keyFields' QueryEntity property must be empty, but keyFields=" + keyFields);
 
-            // Currently we are using only QueryBinaryProperties even if key or value is not of binary type.
-            // In case of key is of sql type we set key property to false (key is not a binary field of itself) and
-            // hope, that value() method will never be called.
-            if (isKeyClsSqlType)
-                isKeyField = false;
-            else
-                isKeyField = (hasKeyFields && keyFields.contains(entry.getKey()));
+        // Non-sql type key and value may contain fields that sql should be aware of. QueryEntity has collection of such
+        // fields. Let's build binary properties for them.
+        // If we have a key or value of sql type, we will not create property for them because key or value
+        // is not a "field" of itself.
+        for (Map.Entry<String, String> entry : fields.entrySet()) {
+            boolean isKeyField = hasKeyFields && keyFields.contains(entry.getKey());
 
             boolean notNull = notNulls != null && notNulls.contains(entry.getKey());
 
@@ -595,6 +595,7 @@ public class QueryUtils {
             d.addProperty(prop, false);
         }
 
+        // Sql-typed key/value doesn't have field property, but they may have precision and scale constraints.
         String keyFieldName = qryEntity.getKeyFieldName();
 
         if (keyFieldName == null)
