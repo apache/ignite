@@ -35,10 +35,14 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for behavior in various cases of local and distributed queries.
  */
+@RunWith(JUnit4.class)
 public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -109,6 +113,7 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testDistributedQueryOnPartitionedCaches() {
         createCachesAndExecuteQuery(TestCacheMode.PARTITIONED, TestCacheMode.PARTITIONED, false, false);
 
@@ -118,6 +123,7 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testDistributedQueryOnPartitionedAndReplicatedCache() {
         createCachesAndExecuteQuery(TestCacheMode.PARTITIONED, TestCacheMode.REPLICATED, false, false);
 
@@ -127,6 +133,7 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testDistributedQueryOnReplicatedCaches() {
         createCachesAndExecuteQuery(TestCacheMode.REPLICATED, TestCacheMode.REPLICATED, false, false);
 
@@ -136,6 +143,7 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testDistributedQueryOnSegmentedCaches() {
         createCachesAndExecuteQuery(TestCacheMode.SEGMENTED, TestCacheMode.SEGMENTED, false, false);
 
@@ -145,6 +153,7 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testDistributedQueryOnReplicatedAndSegmentedCache() {
         createCachesAndExecuteQuery(TestCacheMode.REPLICATED, TestCacheMode.SEGMENTED, false, false);
 
@@ -154,6 +163,7 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testDistributedQueryOnPartitionedCachesWithReplicatedFlag() {
         createCachesAndExecuteQuery(TestCacheMode.PARTITIONED, TestCacheMode.PARTITIONED, true, false);
 
@@ -163,6 +173,7 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testDistributedQueryOnPartitionedAndReplicatedCacheWithReplicatedFlag() {
         createCachesAndExecuteQuery(TestCacheMode.PARTITIONED, TestCacheMode.REPLICATED, true, false);
 
@@ -172,6 +183,7 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testLocalQueryOnReplicatedCachesWithReplicatedFlag() {
         createCachesAndExecuteQuery(TestCacheMode.REPLICATED, TestCacheMode.REPLICATED, true, false);
 
@@ -181,6 +193,7 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testDistributedQueryOnSegmentedCachesWithReplicatedFlag() {
         createCachesAndExecuteQuery(TestCacheMode.SEGMENTED, TestCacheMode.SEGMENTED, true, false);
 
@@ -190,6 +203,7 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testDistributedQueryOnReplicatedAndSegmentedCacheWithReplicatedFlag() {
         createCachesAndExecuteQuery(TestCacheMode.REPLICATED, TestCacheMode.SEGMENTED, true, false);
 
@@ -199,6 +213,7 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testLocalQueryOnPartitionedCachesWithLocalFlag() {
         createCachesAndExecuteQuery(TestCacheMode.PARTITIONED, TestCacheMode.PARTITIONED, false, true);
 
@@ -208,6 +223,7 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testLocalQueryOnPartitionedAndReplicatedCacheWithLocalFlag() {
         createCachesAndExecuteQuery(TestCacheMode.PARTITIONED, TestCacheMode.REPLICATED, false, true);
 
@@ -217,6 +233,7 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testLocalQueryOnReplicatedCachesWithLocalFlag() {
         createCachesAndExecuteQuery(TestCacheMode.REPLICATED, TestCacheMode.REPLICATED, false, true);
 
@@ -226,6 +243,7 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testLocalTwoStepQueryOnSegmentedCachesWithLocalFlag() {
         createCachesAndExecuteQuery(TestCacheMode.SEGMENTED, TestCacheMode.SEGMENTED, false, true);
 
@@ -235,6 +253,7 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testLocalTwoStepQueryOnReplicatedAndSegmentedCacheWithLocalFlag() {
         createCachesAndExecuteQuery(TestCacheMode.REPLICATED, TestCacheMode.SEGMENTED, false, true);
 
@@ -244,6 +263,7 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testLocalQueryOnPartitionedCachesWithReplicatedAndLocalFlag() {
         createCachesAndExecuteQuery(TestCacheMode.PARTITIONED, TestCacheMode.PARTITIONED, false, true);
 
@@ -253,6 +273,7 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testLocalQueryOnPartitionedAndReplicatedCacheWithReplicatedAndLocalFlag() {
         createCachesAndExecuteQuery(TestCacheMode.PARTITIONED, TestCacheMode.REPLICATED, true, true);
 
@@ -262,6 +283,7 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testLocalQueryOnReplicatedCachesWithReplicatedAndLocalFlag() {
         createCachesAndExecuteQuery(TestCacheMode.REPLICATED, TestCacheMode.REPLICATED, true, true);
 
@@ -271,6 +293,7 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testLocalTwoStepQueryOnSegmentedCachesWithReplicatedAndLocalFlag() {
         createCachesAndExecuteQuery(TestCacheMode.SEGMENTED, TestCacheMode.SEGMENTED, true, true);
 
@@ -280,6 +303,7 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testLocalTwoStepQueryOnReplicatedAndSegmentedCacheWithReplicatedAndLocalFlag() {
         createCachesAndExecuteQuery(TestCacheMode.REPLICATED, TestCacheMode.SEGMENTED, true, true);
 

@@ -108,6 +108,9 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
@@ -116,6 +119,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /** */
     private static final String HAS_CACHE = "HAS_CACHE";
@@ -240,6 +244,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWalBig() throws Exception {
         IgniteEx ignite = startGrid(1);
 
@@ -282,6 +287,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWalBigObjectNodeCancel() throws Exception {
         final int MAX_SIZE_POWER = 21;
 
@@ -320,6 +326,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testSwitchClassLoader() throws Exception {
         try {
             final IgniteEx igniteEx = startGrid(1);
@@ -361,6 +368,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWalSimple() throws Exception {
         try {
             IgniteEx ignite = startGrid(1);
@@ -438,6 +446,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testWalLargeValue() throws Exception {
         try {
             IgniteEx ignite = startGrid(1);
@@ -492,6 +501,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testBinaryRecoverBeforePMEWhenMiddleCheckpoint() throws Exception {
         startGrids(3);
 
@@ -592,6 +602,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWalRolloverMultithreadedDefault() throws Exception {
         logOnly = false;
 
@@ -601,6 +612,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWalRolloverMultithreadedLogOnly() throws Exception {
         logOnly = true;
 
@@ -610,6 +622,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testHugeCheckpointRecord() throws Exception {
         long prevFDTimeout = customFailureDetectionTimeout;
 
@@ -696,6 +709,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testWalRenameDirSimple() throws Exception {
         try {
             IgniteEx ignite = startGrid(1);
@@ -759,6 +773,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRecoveryNoCheckpoint() throws Exception {
         try {
             IgniteEx ctrlGrid = startGrid(0);
@@ -812,6 +827,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRecoveryLargeNoCheckpoint() throws Exception {
         try {
             IgniteEx ctrlGrid = startGrid(0);
@@ -867,6 +883,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRandomCrash() throws Exception {
         try {
             IgniteEx ctrlGrid = startGrid(0);
@@ -905,6 +922,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testLargeRandomCrash() throws Exception {
         try {
             IgniteEx ctrlGrid = startGrid(0);
@@ -953,6 +971,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDestroyCache() throws Exception {
         try {
             IgniteEx ignite = startGrid(1);
@@ -978,6 +997,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testEvictPartition() throws Exception {
         try {
             Ignite ignite1 = startGrid("node1");
@@ -1022,6 +1042,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testMetastorage() throws Exception {
         try {
             int cnt = 5000;
@@ -1087,6 +1108,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testMetastorageLargeArray() throws Exception {
         try {
             int cnt = 5000;
@@ -1134,6 +1156,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testMetastorageRemove() throws Exception {
         try {
             int cnt = 400;
@@ -1187,6 +1210,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testMetastorageUpdate() throws Exception {
         try {
             int cnt = 2000;
@@ -1239,6 +1263,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testMetastorageWalRestore() throws Exception {
         try {
             int cnt = 2000;
@@ -1295,6 +1320,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testAbsentDeadlock_Iterator_RollOver_Archivation() throws Exception {
         try {
             walSegments = 2;
@@ -1363,6 +1389,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testApplyDeltaRecords() throws Exception {
         try {
             IgniteEx ignite0 = (IgniteEx)startGrid("node0");
@@ -1500,6 +1527,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      *
      * @throws Exception If fail.
      */
+    @Test
     public void testRecoveryOnTransactionalAndPartitionedCache() throws Exception {
         IgniteEx ignite = (IgniteEx) startGrids(3);
         ignite.cluster().active(true);
@@ -1576,6 +1604,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      *
      * @throws Exception If any fail.
      */
+    @Test
     public void testTxRecordsConsistency() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS, "true");
 

@@ -60,6 +60,9 @@ import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.RootClass;
 import org.hibernate.stat.NaturalIdCacheStatistics;
 import org.hibernate.stat.SecondLevelCacheStatistics;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -80,6 +83,7 @@ import static org.hibernate.cfg.Environment.USE_SECOND_LEVEL_CACHE;
  *
  * Tests Hibernate L2 cache.
  */
+@RunWith(JUnit4.class)
 public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -515,6 +519,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollectionCache() throws Exception {
         for (AccessType accessType : accessTypes())
             testCollectionCache(accessType);
@@ -635,6 +640,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntityCache() throws Exception {
         for (AccessType accessType : accessTypes())
             testEntityCache(accessType);
@@ -795,6 +801,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTwoEntitiesSameCache() throws Exception {
         for (AccessType accessType : accessTypes())
             testTwoEntitiesSameCache(accessType);
@@ -998,6 +1005,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionedEntity() throws Exception {
         for (AccessType accessType : accessTypes())
             testVersionedEntity(accessType);
@@ -1108,6 +1116,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNaturalIdCache() throws Exception {
         for (AccessType accessType : accessTypes())
             testNaturalIdCache(accessType);
@@ -1262,6 +1271,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntityCacheTransactionFails() throws Exception {
         for (AccessType accessType : accessTypes())
             testEntityCacheTransactionFails(accessType);
@@ -1436,6 +1446,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryCache() throws Exception {
         for (AccessType accessType : accessTypes())
             testQueryCache(accessType);
@@ -1600,6 +1611,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRegionClear() throws Exception {
         for (AccessType accessType : accessTypes())
             testRegionClear(accessType);

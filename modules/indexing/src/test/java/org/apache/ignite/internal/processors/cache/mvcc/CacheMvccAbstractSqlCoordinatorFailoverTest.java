@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SCAN;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.WriteMode.DML;
@@ -26,11 +30,12 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Mvcc SQL API coordinator failover test.
  */
-@SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheMvccAbstractBasicCoordinatorFailoverTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxSql_Server_Backups0_CoordinatorFails() throws Exception {
         accountsTxReadAll(2, 1, 0, 64,
             new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL, DML, DFLT_TEST_TIME, RestartMode.RESTART_CRD);
@@ -39,6 +44,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxSql_SingleNode_CoordinatorFails_Persistence() throws Exception {
         persistence = true;
 
@@ -49,6 +55,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllGetAll_ClientServer_Backups0_RestartCoordinator_ScanDml() throws Exception {
         putAllGetAll(RestartMode.RESTART_CRD  , 2, 1, 0, 64,
             new InitIndexing(Integer.class, Integer.class), SCAN, DML);
@@ -57,6 +64,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllGetAll_SingleNode_RestartCoordinator_ScanDml_Persistence() throws Exception {
         persistence = true;
 
@@ -67,6 +75,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllGetAll_ClientServer_Backups0_RestartCoordinator_SqlDml() throws Exception {
         putAllGetAll(RestartMode.RESTART_CRD, 2, 1, 0, DFLT_PARTITION_COUNT,
             new InitIndexing(Integer.class, Integer.class), SQL, DML);
@@ -75,6 +84,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllGetAll_SingleNode_RestartCoordinator_SqlDml_Persistence() throws Exception {
         persistence = true;
 
@@ -85,6 +95,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdate_N_Objects_ClientServer_Backups0_Sql_Persistence() throws Exception {
         persistence = true;
 
@@ -95,6 +106,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdate_N_Objects_SingleNode_Sql_Persistence() throws Exception {
         updateNObjectsTest(3, 1, 0, 0, 1, DFLT_TEST_TIME,
             new InitIndexing(Integer.class, Integer.class), SQL, DML, RestartMode.RESTART_CRD);
@@ -103,6 +115,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCoordinatorFailureSimplePessimisticTxSql() throws Exception {
         coordinatorFailureSimple(PESSIMISTIC, REPEATABLE_READ, SQL, DML);
     }
@@ -110,6 +123,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxInProgressCoordinatorChangeSimple_Readonly() throws Exception {
         txInProgressCoordinatorChangeSimple(PESSIMISTIC, REPEATABLE_READ,
             new InitIndexing(Integer.class, Integer.class), SQL, DML);
@@ -118,6 +132,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadInProgressCoordinatorFailsSimple_FromClient() throws Exception {
         readInProgressCoordinatorFailsSimple(true, new InitIndexing(Integer.class, Integer.class), SQL, DML);
     }
@@ -125,6 +140,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCoordinatorChangeActiveQueryClientFails_Simple() throws Exception {
         checkCoordinatorChangeActiveQueryClientFails_Simple(new InitIndexing(Integer.class, Integer.class), SQL, DML);
     }
@@ -132,6 +148,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCoordinatorChangeActiveQueryClientFails_SimpleScan() throws Exception {
         checkCoordinatorChangeActiveQueryClientFails_Simple(new InitIndexing(Integer.class, Integer.class), SCAN, DML);
     }

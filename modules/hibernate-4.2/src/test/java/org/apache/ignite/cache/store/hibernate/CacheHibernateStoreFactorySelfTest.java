@@ -43,10 +43,14 @@ import org.hibernate.engine.spi.FilterDefinition;
 import org.hibernate.metadata.ClassMetadata;
 import org.hibernate.metadata.CollectionMetadata;
 import org.hibernate.stat.Statistics;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for Cache jdbc blob store factory.
  */
+@RunWith(JUnit4.class)
 public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "test";
@@ -57,6 +61,7 @@ public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheConfiguration() throws Exception {
         try (Ignite ignite1 = startGrid(0)) {
             IgniteCache<Integer, String> cache1 = ignite1.getOrCreateCache(cacheConfiguration());
@@ -68,6 +73,7 @@ public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testXmlConfiguration() throws Exception {
         try (Ignite ignite = Ignition.start(MODULE_PATH + "/src/test/config/factory-cache.xml")) {
             try(Ignite ignite1 = Ignition.start(MODULE_PATH + "/src/test/config/factory-cache1.xml")) {
@@ -82,6 +88,7 @@ public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIncorrectBeanConfiguration() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-1094");
 
