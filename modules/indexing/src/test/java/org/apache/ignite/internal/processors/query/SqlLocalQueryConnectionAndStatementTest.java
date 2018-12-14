@@ -51,11 +51,11 @@ public class SqlLocalQueryConnectionAndStatementTest extends GridCommonAbstractT
         for (int i = 0; i < 10; i++)
             sql("insert into repl_tbl(id,val) VALUES(" + i + "," + i + ")").getAll();
 
-        Iterator<List<?>> it0 = sql(new SqlFieldsQuery("SELECT * FROM tbl where id > ?").setArgs(1)).iterator();
+        Iterator<List<?>> it0 = sql(new SqlFieldsQuery("SELECT * FROM repl_tbl where id > ?").setArgs(1)).iterator();
 
         it0.next();
 
-        sql(new SqlFieldsQuery("SELECT * FROM tbl where id > ?").setArgs(1)).getAll();
+        sql(new SqlFieldsQuery("SELECT * FROM repl_tbl where id > ?").setArgs(1)).getAll();
 
         it0.next();
     }
@@ -68,7 +68,11 @@ public class SqlLocalQueryConnectionAndStatementTest extends GridCommonAbstractT
         for (int i = 0; i < 10; i++)
             sql("insert into tbl(id,val) VALUES(" + i + "," + i + ")").getAll();
 
-        Iterator<List<?>> it0 = sql(new SqlFieldsQuery("SELECT * FROM tbl where id > ?").setArgs(1).setLocal(true)).iterator();
+        Iterator<List<?>> it0 = sql(
+            new SqlFieldsQuery("SELECT * FROM tbl where id > ?")
+                .setArgs(1)
+                .setLocal(true))
+            .iterator();
 
         it0.next();
 
