@@ -2166,8 +2166,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      */
     @Test
     public void testNodesRestartNoHang() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5935");
-
         final int srvs = 4;
         final int clients = 4;
         final int writers = 6;
