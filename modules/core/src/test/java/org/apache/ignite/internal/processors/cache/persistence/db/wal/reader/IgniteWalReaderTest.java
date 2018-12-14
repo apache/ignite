@@ -38,6 +38,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -55,6 +56,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -807,6 +809,60 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             null,
             null
         );
+    }
+
+    /**
+     * Tests WAL iterator which uses shared cache context of currently started Ignite node.
+     */
+    @Test
+    public void testIteratorWithCurrentKernelContext() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        int cntEntries = 100;
+
+        putDummyRecords(ignite, cntEntries);
+
+        String workDir = U.defaultWorkDirectory();
+
+        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
+
+        IteratorParametersBuilder iterParametersBuilder =
+            createIteratorParametersBuilder(workDir, genDbSubfolderName(ignite, 0))
+                .filesOrDirs(workDir)
+                .binaryMetadataFileStoreDir(null)
+                .marshallerMappingFileStoreDir(null)
+                .sharedContext(ignite.context().cache().context());
+
+        AtomicInteger cnt = new AtomicInteger();
+
+        IgniteBiInClosure<Object, Object> objConsumer = (key, val) -> {
+            if (val instanceof IndexedObject) {
+                assertEquals(key, ((IndexedObject)val).iVal);
+                assertEquals(key, cnt.getAndIncrement());
+            }
+        };
+
+        iterateAndCountDataRecord(factory.iterator(iterParametersBuilder.copy()), objConsumer, null);
+
+        assertEquals(cntEntries, cnt.get());
+
+        // Test without converting non primary types.
+        iterParametersBuilder.keepBinary(true);
+
+        cnt.set(0);
+
+        IgniteBiInClosure<Object, Object> binObjConsumer = (key, val) -> {
+            if (val instanceof BinaryObject) {
+                assertEquals(key, ((BinaryObject)val).field("iVal"));
+                assertEquals(key, cnt.getAndIncrement());
+            }
+        };
+
+        iterateAndCountDataRecord(factory.iterator(iterParametersBuilder.copy()), binObjConsumer, null);
+
+        assertEquals(cntEntries, cnt.get());
     }
 
     /**
