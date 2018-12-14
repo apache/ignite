@@ -18,10 +18,15 @@
 package org.apache.ignite.internal.processors.service;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.service.inner.LongInitializedTestService;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -45,13 +50,28 @@ public class ServiceDeploymentProcessingOnCoordinatorChangeTest extends GridComm
         Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
     }
 
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        TcpDiscoverySpi discSpi = new BlockingTcpDiscoverySpi();
+
+        discSpi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder());
+
+        cfg.setDiscoverySpi(discSpi);
+
+        return cfg;
+    }
+
     /**
      * @throws Exception In case of an error.
      */
     @Test
     public void testDeploymentProcessingOnCoordinatorStop() throws Exception {
         try {
-            startGrids(4);
+            IgniteEx ignite0 = (IgniteEx)startGrids(4);
+
+            ((BlockingTcpDiscoverySpi)ignite0.context().discovery().getInjectedDiscoverySpi()).block();
 
             IgniteEx ignite2 = grid(2);
 
@@ -61,8 +81,6 @@ public class ServiceDeploymentProcessingOnCoordinatorChangeTest extends GridComm
                 new LongInitializedTestService(5000L));
             IgniteFuture fut3 = ignite2.services().deployNodeSingletonAsync("testService3",
                 new LongInitializedTestService(5000L));
-
-            IgniteEx ignite0 = grid(0);
 
             assertEquals(ignite0.localNode(), U.oldest(ignite2.cluster().nodes(), null));
 
@@ -89,7 +107,9 @@ public class ServiceDeploymentProcessingOnCoordinatorChangeTest extends GridComm
     @Test
     public void testDeploymentProcessingOnCoordinatorStop2() throws Exception {
         try {
-            startGrids(5);
+            IgniteEx ignite0 = (IgniteEx)startGrids(5);
+
+            ((BlockingTcpDiscoverySpi)ignite0.context().discovery().getInjectedDiscoverySpi()).block();
 
             IgniteEx ignite4 = grid(4);
 
@@ -97,8 +117,6 @@ public class ServiceDeploymentProcessingOnCoordinatorChangeTest extends GridComm
                 new LongInitializedTestService(5000L));
             IgniteFuture depFut2 = ignite4.services().deployNodeSingletonAsync("testService2",
                 new LongInitializedTestService(5000L));
-
-            IgniteEx ignite0 = grid(0);
 
             assertEquals(ignite0.localNode(), U.oldest(ignite4.cluster().nodes(), null));
 
@@ -112,10 +130,12 @@ public class ServiceDeploymentProcessingOnCoordinatorChangeTest extends GridComm
             assertNotNull(ignite2.services().service("testService"));
             assertNotNull(ignite2.services().service("testService2"));
 
+            IgniteEx ignite1 = grid(1);
+
+            ((BlockingTcpDiscoverySpi)ignite0.context().discovery().getInjectedDiscoverySpi()).block();
+
             IgniteFuture undepFut = ignite4.services().cancelAsync("testService");
             IgniteFuture undepFut2 = ignite4.services().cancelAsync("testService2");
-
-            IgniteEx ignite1 = grid(1);
 
             assertEquals(ignite1.localNode(), U.oldest(ignite4.cluster().nodes(), null));
 
@@ -129,6 +149,27 @@ public class ServiceDeploymentProcessingOnCoordinatorChangeTest extends GridComm
         }
         finally {
             stopAllGrids();
+        }
+    }
+
+    /** */
+    private static class BlockingTcpDiscoverySpi extends TcpDiscoverySpi {
+        /** Block flag. */
+        private volatile boolean block;
+
+        /** {@inheritDoc} */
+        @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
+            if (block && GridTestUtils.getFieldValue(msg, "delegate") instanceof ServicesFullDeploymentsMessage)
+                return;
+
+            super.sendCustomEvent(msg);
+        }
+
+        /**
+         * Set {@link #block} flag to {@code true}.
+         */
+        void block() {
+            block = true;
         }
     }
 }
