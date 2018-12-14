@@ -23,14 +23,17 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionRollbackException;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,10 +43,13 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
+/** */
 @RunWith(JUnit4.class)
 public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
+    /** */
     private IgniteEx client;
 
+    /** */
     private void setUpGrids(int n, boolean indexed) throws Exception {
         Ignite ign = startGridsMultiThreaded(n);
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME)
@@ -58,11 +64,13 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
         client = startGrid(n);
     }
 
+    /** */
     @After
-    public void tearDown1() throws Exception {
+    public void cleanupTest() throws Exception {
         stopAllGrids();
     }
 
+    /** */
     @Test
     public void detectSimpleDeadlock() throws Exception {
         // t0d0 ensure test will not hang
@@ -81,25 +89,28 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
             try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 cache.put(key0, 0);
                 b.await();
+                // t0d0 consider timeouts elimination
+                TimeUnit.SECONDS.sleep(2);
                 cache.put(key1, 1);
 
                 tx.commit();
             }
+
             return null;
         });
 
         try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.put(key1, 1);
             b.await();
-            TimeUnit.SECONDS.sleep(2);
             cache.put(key0, 0);
 
             tx.commit();
         }
 
-        fut.get();
+        assertAbortedDueDeadlock(fut);
     }
 
+    /** */
     @Test
     public void detectSimpleDeadlockFastUpdate() throws Exception {
         // t0d0 ensure test will not hang
@@ -121,6 +132,8 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
             try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 cache.query(new SqlFieldsQuery("update Integer set _val = 0 where _key = ?").setArgs(key0));
                 b.await();
+                // t0d0 consider timeouts elimination
+                TimeUnit.SECONDS.sleep(2);
                 cache.query(new SqlFieldsQuery("update Integer set _val = 0 where _key = ?").setArgs(key1));
 
                 tx.commit();
@@ -131,15 +144,15 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
         try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.query(new SqlFieldsQuery("update Integer set _val = 1 where _key = ?").setArgs(key1));
             b.await();
-            TimeUnit.SECONDS.sleep(2);
             cache.query(new SqlFieldsQuery("update Integer set _val = 1 where _key = ?").setArgs(key0));
 
             tx.commit();
         }
 
-        fut.get();
+        assertAbortedDueDeadlock(fut);
     }
 
+    /** */
     @Test
     public void detect3Deadlock() throws Exception {
         // t0d0 ensure test will not hang
@@ -161,7 +174,7 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
                 b.await();
                 cache.put(key1, 1);
 
-                tx.commit();
+                tx.rollback();
             }
             return null;
         });
@@ -170,9 +183,11 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
             try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 cache.put(key1, 0);
                 b.await();
+                // t0d0 consider timeouts elimination
+                TimeUnit.SECONDS.sleep(2);
                 cache.put(key2, 1);
 
-                tx.commit();
+                tx.rollback();
             }
             return null;
         });
@@ -182,13 +197,15 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
             b.await();
             cache.put(key0, 0);
 
-            tx.commit();
+            tx.rollback();
         }
 
         fut1.get();
-        fut2.get();
+
+        assertAbortedDueDeadlock(fut2);
     }
 
+    /** */
     @Test
     public void detectMultipleLockWaitDeadlock() throws Exception {
         // T0 -> T1
@@ -212,7 +229,7 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
             try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 cache.query(new SqlFieldsQuery("update Integer set _val = 1 where _key = ?").setArgs(key1));
                 b.await();
-                // t0d0
+                // t0d0 consider timeouts elimination
                 TimeUnit.SECONDS.sleep(10);
 
                 // rollback to prevent waiting tx abort due write conflict
@@ -225,6 +242,7 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
             try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 cache.query(new SqlFieldsQuery("update Integer set _val = 2 where _key = ?").setArgs(key2));
                 b.await();
+                // t0d0 consider timeouts elimination
                 TimeUnit.SECONDS.sleep(3);
                 cache.put(key0, 2);
 
@@ -247,6 +265,7 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
         fut2.get();
     }
 
+    /** */
     @Test
     public void detectDeadlockLocalEntriesEnlistFuture() throws Exception {
         // t0d0 ensure test will not hang
@@ -264,6 +283,8 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
             try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 cache.put(keys.get(0), 11);
                 b.await();
+                // t0d0 consider timeouts elimination
+                TimeUnit.SECONDS.sleep(2);
                 cache.put(keys.get(1), 11);
 
                 tx.commit();
@@ -274,15 +295,15 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
         try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.put(keys.get(1), 22);
             b.await();
-            TimeUnit.SECONDS.sleep(2);
             cache.put(keys.get(0), 22);
 
             tx.commit();
         }
 
-        fut.get();
+        assertAbortedDueDeadlock(fut);
     }
 
+    /** */
     @Test
     public void detectDeadlockLocalQueryEnlistFuture() throws Exception {
         // t0d0 ensure test will not hang
@@ -307,6 +328,8 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
             try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 cache.query(new SqlFieldsQuery("update Integer set _val = 0 where _key <= ?").setArgs(key0));
                 b.await();
+                // t0d0 consider timeouts elimination
+                TimeUnit.SECONDS.sleep(2);
                 cache.query(new SqlFieldsQuery("update Integer set _val = 0 where _key >= ?").setArgs(key1));
 
                 tx.commit();
@@ -317,13 +340,25 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
         try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.query(new SqlFieldsQuery("update Integer set _val = 1 where _key >= ?").setArgs(key1));
             b.await();
-            TimeUnit.SECONDS.sleep(2);
             cache.query(new SqlFieldsQuery("update Integer set _val = 1 where _key <= ?").setArgs(key0));
 
             tx.commit();
         }
 
-        fut.get();
+        assertAbortedDueDeadlock(fut);
+    }
+
+    /** */
+    private void assertAbortedDueDeadlock(IgniteInternalFuture<?> fut) throws IgniteCheckedException {
+        try {
+            fut.get();
+
+            fail("Transaction is expected to be aborted");
+        }
+        catch (IgniteCheckedException e) {
+            if (!X.hasCause(e, TransactionRollbackException.class))
+                throw e;
+        }
     }
 }
 
