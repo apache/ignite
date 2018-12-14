@@ -8,7 +8,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -17,7 +16,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import java.io.File;
 import java.io.FileFilter;
 
-public class WalCompactionSwitchOverTest extends GridCommonAbstractTest {
+public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
     private boolean compactionEnabled;
 
     @Override

@@ -60,10 +60,7 @@ import org.apache.ignite.events.WalSegmentArchivedEvent;
 import org.apache.ignite.events.WalSegmentCompactedEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.internal.GridComponentState;
-import org.apache.ignite.internal.GridComponentStateMachine;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.GridStateChangeCallback;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
@@ -351,7 +348,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     private final FileHandleManagerFactory fileHandleManagerFactory;
 
-    private final GridComponentStateMachine stateMachine = new GridComponentStateMachine(this);
     /**
      * @param ctx Kernal context.
      */
@@ -396,95 +392,87 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
-        stateMachine.changeState(
-                GridComponentState.CREATED,
-                GridComponentState.INITIALIZED,
-                log,
-                new GridStateChangeCallback() {
-            @Override public void apply() throws IgniteCheckedException {
-                if(cctx.kernalContext().clientNode())
-                    return;
+        if(cctx.kernalContext().clientNode())
+            return;
 
-                final PdsFolderSettings resolveFolders = cctx.kernalContext().pdsFolderResolver().resolveFolders();
+        final PdsFolderSettings resolveFolders = cctx.kernalContext().pdsFolderResolver().resolveFolders();
 
-                checkWalConfiguration();
+        checkWalConfiguration();
 
-                final File walWorkDir0 = walWorkDir = initDirectory(
-                        dsCfg.getWalPath(),
-                        DataStorageConfiguration.DFLT_WAL_PATH,
-                        resolveFolders.folderName(),
-                        "write ahead log work directory"
-                );
+        final File walWorkDir0 = walWorkDir = initDirectory(
+                dsCfg.getWalPath(),
+                DataStorageConfiguration.DFLT_WAL_PATH,
+                resolveFolders.folderName(),
+                "write ahead log work directory"
+        );
 
-                final File walArchiveDir0 = walArchiveDir = initDirectory(
-                        dsCfg.getWalArchivePath(),
-                        DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH,
-                        resolveFolders.folderName(),
-                        "write ahead log archive directory"
-                );
+        final File walArchiveDir0 = walArchiveDir = initDirectory(
+                dsCfg.getWalArchivePath(),
+                DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH,
+                resolveFolders.folderName(),
+                "write ahead log archive directory"
+        );
 
-                serializer = new RecordSerializerFactoryImpl(cctx).createSerializer(serializerVer);
+        serializer = new RecordSerializerFactoryImpl(cctx).createSerializer(serializerVer);
 
-                GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
+        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
 
-                metrics = dbMgr.persistentStoreMetricsImpl();
+        metrics = dbMgr.persistentStoreMetricsImpl();
 
-                checkOrPrepareFiles();
+        checkOrPrepareFiles();
 
-                if (metrics != null)
-                    metrics.setWalSizeProvider(new CO<Long>() {
-                        @Override public Long apply() {
-                            long size = 0;
+        if (metrics != null)
+            metrics.setWalSizeProvider(new CO<Long>() {
+                @Override public Long apply() {
+                    long size = 0;
 
-                            for (File f : walWorkDir0.listFiles())
-                                size += f.length();
+                    for (File f : walWorkDir0.listFiles())
+                        size += f.length();
 
-                            for (File f : walArchiveDir0.listFiles())
-                                size += f.length();
+                    for (File f : walArchiveDir0.listFiles())
+                        size += f.length();
 
-                            return size;
-                        }
-                    });
-
-                IgniteBiTuple<Long, Long> tup = scanMinMaxArchiveIndices();
-
-                segmentAware = new SegmentAware(dsCfg.getWalSegments(), dsCfg.isWalCompactionEnabled());
-
-                segmentAware.lastTruncatedArchiveIdx(tup == null ? -1 : tup.get1() - 1);
-
-                long lastAbsArchivedIdx = tup == null ? -1 : tup.get2();
-
-                if (isArchiverEnabled())
-                    archiver = new FileArchiver(lastAbsArchivedIdx, log);
-                else
-                    archiver = null;
-
-                if (lastAbsArchivedIdx > 0)
-                    segmentAware.setLastArchivedAbsoluteIndex(lastAbsArchivedIdx);
-
-                if (dsCfg.isWalCompactionEnabled()) {
-                    compressor = new FileCompressor(log);
-
-                    decompressor = new FileDecompressor(log);
+                    return size;
                 }
+            });
 
-                segmentRouter = new SegmentRouter(walWorkDir, walArchiveDir, segmentAware, dsCfg);
+        IgniteBiTuple<Long, Long> tup = scanMinMaxArchiveIndices();
 
-                walDisableContext = cctx.walState().walDisableContext();
+        segmentAware = new SegmentAware(dsCfg.getWalSegments(), dsCfg.isWalCompactionEnabled());
 
-                fileHandleManager = fileHandleManagerFactory.build(
-                        cctx, metrics, mmap, lastWALPtr::get, serializer, FileWriteAheadLogManager.this::currentHandle
-                );
+        segmentAware.lastTruncatedArchiveIdx(tup == null ? -1 : tup.get1() - 1);
 
-                fileHandleManager.start();
+        long lastAbsArchivedIdx = tup == null ? -1 : tup.get2();
 
-                lockedSegmentFileInputFactory = new LockedSegmentFileInputFactory(
-                        segmentAware,
-                        segmentRouter,
-                        ioFactory
-                );
-            }
-        });
+        if (isArchiverEnabled())
+            archiver = new FileArchiver(lastAbsArchivedIdx, log);
+        else
+            archiver = null;
+
+        if (lastAbsArchivedIdx > 0)
+            segmentAware.setLastArchivedAbsoluteIndex(lastAbsArchivedIdx);
+
+        if (dsCfg.isWalCompactionEnabled()) {
+            compressor = new FileCompressor(log);
+
+            decompressor = new FileDecompressor(log);
+        }
+
+        segmentRouter = new SegmentRouter(walWorkDir, walArchiveDir, segmentAware, dsCfg);
+
+        walDisableContext = cctx.walState().walDisableContext();
+
+        fileHandleManager = fileHandleManagerFactory.build(
+                cctx, metrics, mmap, lastWALPtr::get, serializer, this::currentHandle
+        );
+
+        fileHandleManager.start();
+
+        lockedSegmentFileInputFactory = new LockedSegmentFileInputFactory(
+                segmentAware,
+                segmentRouter,
+                ioFactory
+        );
     }
 
     /**
@@ -572,7 +560,18 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override protected void stop0(boolean cancel) {
+    @Override public void onActivate(GridKernalContext kctx) {
+        if (log.isDebugEnabled())
+            log.debug("Activated file write ahead log manager [nodeId=" + cctx.localNodeId() +
+                " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate(GridKernalContext kctx) {
+        if (log.isDebugEnabled())
+            log.debug("DeActivate file write ahead log [nodeId=" + cctx.localNodeId() +
+                " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
+
         final GridTimeoutProcessor.CancelableTask schedule = backgroundFlushSchedule;
 
         if (schedule != null)
@@ -606,24 +605,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         catch (Exception e) {
             U.error(log, "Failed to gracefully close WAL segment: " + this.currHnd, e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        if (log.isDebugEnabled())
-            log.debug("Activated file write ahead log manager [nodeId=" + cctx.localNodeId() +
-                " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
-
-        start0();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onDeActivate(GridKernalContext kctx) {
-        if (log.isDebugEnabled())
-            log.debug("DeActivate file write ahead log [nodeId=" + cctx.localNodeId() +
-                " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
-
-        stop0(true);
 
         currHnd = null;
     }
