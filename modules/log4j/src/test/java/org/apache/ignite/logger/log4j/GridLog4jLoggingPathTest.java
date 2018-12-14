@@ -34,7 +34,7 @@ public class GridLog4jLoggingPathTest {
     /** Logger config */
     private String path = "modules/core/src/test/config/log4j-test.xml";
 
-    /** */
+    /** TODO IGNITE-10177 add annotation @Before here. */
     private void setUp() throws Exception {
         log = new Log4JLogger(path).getLogger(getClass());
     }

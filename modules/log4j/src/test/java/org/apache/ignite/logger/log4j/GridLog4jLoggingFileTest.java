@@ -36,7 +36,7 @@ public class GridLog4jLoggingFileTest {
     /** Logger config */
     private File xml;
 
-    /** */
+    /** TODO IGNITE-10177 add annotation @Before here. */
     private void setUp() throws Exception {
         xml = GridTestUtils.resolveIgnitePath("modules/core/src/test/config/log4j-test.xml");
 
