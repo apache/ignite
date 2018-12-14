@@ -23,6 +23,8 @@ import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -45,9 +47,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT
  */
 @RunWith(JUnit4.class)
 public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractTest {
-    /** */
-    public static final String CACHE_NAME = "SomeCache";
-
     /**
      * Start grid with override default configuration via customConfigurator.
      */
@@ -72,6 +71,13 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
         ignite.active(true);
 
         return ignite;
+    }
+
+    /** */
+    private CacheConfiguration<Integer, Integer> cacheConfiguration() {
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+
+        return ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
     }
 
     /** {@inheritDoc} */
@@ -141,7 +147,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
 
         long allowedThresholdWalArchiveSize = maxWalArchiveSize / 2;
 
-        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(CACHE_NAME);
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cacheConfiguration());
 
         //when: put to cache more than 2 MB
         for (int i = 0; i < 500; i++)
@@ -179,7 +185,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
 
         GridCacheDatabaseSharedManager dbMgr = gridDatabase(ignite);
 
-        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(CACHE_NAME);
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cacheConfiguration());
 
         for (int i = 0; i < 500; i++)
             cache.put(i, i);
@@ -208,7 +214,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
 
         GridCacheDatabaseSharedManager dbMgr = gridDatabase(ignite);
 
-        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(CACHE_NAME);
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cacheConfiguration());
 
         //when: put to cache and do checkpoint
         int testNumberOfCheckpoint = walHistorySize * 2;
@@ -242,7 +248,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
 
         GridCacheDatabaseSharedManager dbMgr = gridDatabase(ignite);
 
-        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(CACHE_NAME);
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cacheConfiguration());
 
         //when: put to cache
         for (int i = 0; i < 500; i++) {
