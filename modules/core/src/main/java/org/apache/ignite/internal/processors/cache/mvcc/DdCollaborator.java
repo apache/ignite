@@ -66,7 +66,6 @@ public class DdCollaborator {
      * @param blockerVer Version of the waited for transaction.
      */
     public void startComputation(MvccVersion waiterVer, MvccVersion blockerVer) {
-        // t0d0 filter out non-mvcc transactions where needed
         Optional<IgniteInternalTx> waitingTx = ctx.cache().context().tm().activeTransactions().stream()
             .filter(tx -> tx.mvccSnapshot() != null)
             .filter(tx -> belongToSameTx(waiterVer, tx.mvccSnapshot()))
@@ -115,7 +114,7 @@ public class DdCollaborator {
                 collectBlockers(nearTx).forEach(fut -> {
                     fut.listen(fut0 -> {
                         try {
-                            NearTxLocator blockerTx = fut.get();
+                            NearTxLocator blockerTx = fut0.get();
 
                             if (blockerTx != null) {
                                 sendProbe(
@@ -152,8 +151,8 @@ public class DdCollaborator {
     }
 
     /** */
-    private void sendProbe(
-        GridCacheVersion initiatorVer, GridCacheVersion waiterVer, GridCacheVersion blockerVer, UUID blockerNearNodeId) {
+    private void sendProbe(GridCacheVersion initiatorVer, GridCacheVersion waiterVer, GridCacheVersion blockerVer,
+        UUID blockerNearNodeId) {
         // t0d0 review if message order is important here
         // t0d0 PROPER TOPIC
         DeadlockProbe probe = new DeadlockProbe(initiatorVer, waiterVer, blockerVer);

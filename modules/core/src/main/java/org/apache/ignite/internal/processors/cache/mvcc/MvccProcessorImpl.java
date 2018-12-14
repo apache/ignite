@@ -1960,12 +1960,12 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 processCoordinatorActiveQueriesMessage(nodeId, (MvccActiveQueriesMessage)msg);
             else if (msg instanceof MvccRecoveryFinishedMessage)
                 processRecoveryFinishedMessage(nodeId, ((MvccRecoveryFinishedMessage)msg));
-            else if (msg instanceof DeadlockProbe)
-                ddCollaborator.handleDeadlockProbe((DeadlockProbe)msg);
             else if (msg instanceof LockWaitCheckRequest)
                 processLockCheckRequest(nodeId, (LockWaitCheckRequest)msg);
             else if (msg instanceof LockWaitCheckResponse)
                 processLockCheckResponse((LockWaitCheckResponse)msg);
+            else if (msg instanceof DeadlockProbe)
+                ddCollaborator.handleDeadlockProbe((DeadlockProbe)msg);
             else
                 U.warn(log, "Unexpected message received [node=" + nodeId + ", msg=" + msg + ']');
         }
@@ -1998,8 +1998,10 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             .map(Map.Entry::getKey)
             .findAny()
             .flatMap(txKey -> ctx.cache().context().tm().activeTransactions().stream()
+                .filter(tx -> tx.mvccSnapshot() != null)
                 .filter(tx -> {
                     MvccSnapshot s = tx.mvccSnapshot();
+
                     return s.coordinatorVersion() == txKey.major() && s.counter() == txKey.minor();
                 })
                 .findAny());
