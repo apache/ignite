@@ -53,6 +53,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -62,6 +65,7 @@ import static javax.cache.configuration.FactoryBuilder.factoryOf;
  *
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -100,6 +104,7 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedTx() throws Exception {
         testRegistration(cacheConfiguration(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL, 1));
     }
@@ -107,6 +112,7 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedMvccTx() throws Exception {
         testRegistration(cacheConfiguration(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, 1));
     }
@@ -114,6 +120,7 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartReplicated() throws Exception {
         testRestartRegistration(cacheConfiguration(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC, 2));
     }
@@ -121,6 +128,7 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartPartition() throws Exception {
         testRestartRegistration(cacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC, 2));
     }
@@ -128,6 +136,7 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartPartitionTx() throws Exception {
         testRestartRegistration(cacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL, 2));
     }
@@ -135,6 +144,7 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartPartitionMvccTx() throws Exception {
         testRestartRegistration(cacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, 2));
     }
@@ -142,6 +152,7 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedAtomic() throws Exception {
         testRegistration(cacheConfiguration(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC, 2));
     }
@@ -149,6 +160,7 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionTx() throws Exception {
         testRegistration(cacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL, 2));
     }
@@ -156,6 +168,7 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionMvccTx() throws Exception {
         testRegistration(cacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, 2));
     }
@@ -163,6 +176,7 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionAtomic() throws Exception {
         testRegistration(cacheConfiguration(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC, 2));
     }

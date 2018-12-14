@@ -32,11 +32,15 @@ import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for task failover.
  */
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class GridTaskFailoverSelfTest extends GridCommonAbstractTest {
     /** Don't change it value. */
     public static final int SPLIT_COUNT = 2;
@@ -49,6 +53,7 @@ public class GridTaskFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testFailover() throws Exception {
         Ignite ignite = startGrid();
 

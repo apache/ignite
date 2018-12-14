@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.jdbc2;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -28,6 +29,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -50,9 +52,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.sql.Types.INTEGER;
 import static java.sql.Types.VARCHAR;
+import static java.sql.Types.DECIMAL;
+import static java.sql.Types.DATE;
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -61,6 +68,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Metadata tests.
  */
+@RunWith(JUnit4.class)
 public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -90,7 +98,10 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                     .setNotNullFields(new HashSet<>(Arrays.asList("age", "name")))
             )),
             cacheConfiguration("org").setQueryEntities(Arrays.asList(
-                new QueryEntity(AffinityKey.class, Organization.class))));
+                new QueryEntity(AffinityKey.class, Organization.class))),
+
+            cacheConfiguration("metaTest").setQueryEntities(Arrays.asList(
+                new QueryEntity(AffinityKey.class, MetaTest.class))));
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -138,6 +149,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testResultSetMetaData() throws Exception {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             Statement stmt = conn.createStatement();
@@ -172,6 +184,42 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testDecimalAndDateTypeMetaData() throws Exception {
+        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+            Statement stmt = conn.createStatement();
+
+            ResultSet rs = stmt.executeQuery(
+                    "select t.decimal, t.date from \"metaTest\".MetaTest as t");
+
+            assert rs != null;
+
+            ResultSetMetaData meta = rs.getMetaData();
+
+            assert meta != null;
+
+            assert meta.getColumnCount() == 2;
+
+            assert "METATEST".equalsIgnoreCase(meta.getTableName(1));
+            assert "DECIMAL".equalsIgnoreCase(meta.getColumnName(1));
+            assert "DECIMAL".equalsIgnoreCase(meta.getColumnLabel(1));
+            assert meta.getColumnType(1) == DECIMAL;
+            assert "DECIMAL".equals(meta.getColumnTypeName(1));
+            assert "java.math.BigDecimal".equals(meta.getColumnClassName(1));
+
+            assert "METATEST".equalsIgnoreCase(meta.getTableName(2));
+            assert "DATE".equalsIgnoreCase(meta.getColumnName(2));
+            assert "DATE".equalsIgnoreCase(meta.getColumnLabel(2));
+            assert meta.getColumnType(2) == DATE;
+            assert "DATE".equals(meta.getColumnTypeName(2));
+            assert "java.sql.Date".equals(meta.getColumnClassName(2));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testGetTables() throws Exception {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             DatabaseMetaData meta = conn.getMetaData();
@@ -213,6 +261,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      * Negative scenarios for catalog name.
      * Perform metadata lookups, that use incorrect catalog names.
      */
+    @Test
     public void testCatalogWithNotExistingName() throws SQLException {
         checkNoEntitiesFoundForCatalog("");
         checkNoEntitiesFoundForCatalog("NOT_EXISTING_CATALOG");
@@ -264,6 +313,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetColumns() throws Exception {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             DatabaseMetaData meta = conn.getMetaData();
@@ -352,6 +402,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMetadataResultSetClose() throws Exception {
         try (Connection conn = DriverManager.getConnection(BASE_URL);
              ResultSet tbls = conn.getMetaData().getTables(null, null, "%", null)) {
@@ -370,6 +421,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIndexMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(BASE_URL);
              ResultSet rs = conn.getMetaData().getIndexInfo(null, "pers", "PERSON", false, false)) {
@@ -408,6 +460,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryKeyMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(BASE_URL);
              ResultSet rs = conn.getMetaData().getPrimaryKeys(null, "pers", "PERSON")) {
@@ -427,6 +480,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testParametersMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             conn.setSchema("pers");
@@ -451,11 +505,12 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSchemasMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             ResultSet rs = conn.getMetaData().getSchemas();
 
-            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("pers", "org"));
+            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("pers", "org", "metaTest"));
 
             Set<String> schemas = new HashSet<>();
 
@@ -473,6 +528,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersions() throws Exception {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             assertEquals("Apache Ignite", conn.getMetaData().getDatabaseProductName());
@@ -539,6 +595,33 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         private Organization(int id, String name) {
             this.id = id;
             this.name = name;
+        }
+    }
+
+    /**
+     * Meta Test.
+     */
+    private static class MetaTest implements Serializable {
+        /** ID. */
+        @QuerySqlField
+        private final int id;
+
+        /** Date. */
+        @QuerySqlField
+        private final Date date;
+
+        /** decimal. */
+        @QuerySqlField
+        private final BigDecimal decimal;
+
+        /**
+         * @param id ID.
+         * @param date Date.
+         */
+        private MetaTest(int id, Date date, BigDecimal decimal) {
+            this.id = id;
+            this.date = date;
+            this.decimal = decimal;
         }
     }
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import java.util.HashSet;
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeAffinityBackupFilterSelfTest;
@@ -115,6 +116,7 @@ public class IgniteCacheMvccTestSuite2 extends TestSuite {
         ignoredTests.add(CacheOptimisticTransactionsWithFilterSingleServerTest.class);
         ignoredTests.add(CacheOptimisticTransactionsWithFilterTest.class);
 
+        // Irrelevant Tx tests.
         ignoredTests.add(IgniteOnePhaseCommitInvokeTest.class);
         ignoredTests.add(IgniteOnePhaseCommitNearReadersTest.class);
         ignoredTests.add(GridCacheDhtPreloadOnheapSelfTest.class);
@@ -185,11 +187,11 @@ public class IgniteCacheMvccTestSuite2 extends TestSuite {
         suite.addTest(IgniteCacheTestSuite2.suite(ignoredTests));
 
         // Add Mvcc clones.
-        suite.addTestSuite(GridCachePartitionedMvccTxSingleThreadedSelfTest.class);
-        suite.addTestSuite(GridCacheColocatedMvccTxSingleThreadedSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedMvccTxMultiThreadedSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedNearDisabledMvccTxMultiThreadedSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedMvccTxTimeoutSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedMvccTxSingleThreadedSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheColocatedMvccTxSingleThreadedSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedMvccTxMultiThreadedSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedNearDisabledMvccTxMultiThreadedSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedMvccTxTimeoutSelfTest.class));
 
         return suite;
     }

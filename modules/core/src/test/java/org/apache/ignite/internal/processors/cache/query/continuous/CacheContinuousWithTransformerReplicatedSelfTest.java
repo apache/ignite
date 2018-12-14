@@ -47,11 +47,15 @@ import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  */
+@RunWith(JUnit4.class)
 public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int DFLT_ENTRY_CNT = 10;
@@ -144,6 +148,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousWithTransformer() throws Exception {
         runContinuousQueryWithTransformer(SKIP_EVT_FILTER, DFLT_ENTRY_CNT, SKIP_KEEP_BINARY, false);
     }
@@ -151,6 +156,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousWithTransformerAsync() throws Exception {
         runContinuousQueryWithTransformer(SKIP_EVT_FILTER, DFLT_ENTRY_CNT, SKIP_KEEP_BINARY, true);
     }
@@ -158,6 +164,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousWithTransformerAndRegularListener() throws Exception {
         runContinuousQueryWithTransformer(SKIP_EVT_FILTER, DFLT_ENTRY_CNT, SKIP_KEEP_BINARY, false);
     }
@@ -165,6 +172,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousWithTransformerAndRegularListenerAsync() throws Exception {
         runContinuousQueryWithTransformer(SKIP_EVT_FILTER, DFLT_ENTRY_CNT, SKIP_KEEP_BINARY, true);
     }
@@ -172,6 +180,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousWithTransformerWithFilter() throws Exception {
         runContinuousQueryWithTransformer(ADD_EVT_FILTER, DFLT_ENTRY_CNT / 2, SKIP_KEEP_BINARY, false);
     }
@@ -179,6 +188,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousWithTransformerWithFilterAsync() throws Exception {
         runContinuousQueryWithTransformer(ADD_EVT_FILTER, DFLT_ENTRY_CNT / 2, SKIP_KEEP_BINARY, true);
     }
@@ -186,6 +196,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousWithTransformerAndRegularListenerWithFilter() throws Exception {
         runContinuousQueryWithTransformer(ADD_EVT_FILTER, DFLT_ENTRY_CNT / 2, KEEP_BINARY, false);
     }
@@ -193,6 +204,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousWithTransformerAndRegularListenerWithFilterAsync() throws Exception {
         runContinuousQueryWithTransformer(ADD_EVT_FILTER, DFLT_ENTRY_CNT / 2, KEEP_BINARY, true);
     }
@@ -200,6 +212,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousWithTransformerKeepBinary() throws Exception {
         runContinuousQueryWithTransformer(SKIP_EVT_FILTER, DFLT_ENTRY_CNT, KEEP_BINARY, false);
     }
@@ -207,6 +220,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousWithTransformerKeepBinaryAsync() throws Exception {
         runContinuousQueryWithTransformer(SKIP_EVT_FILTER, DFLT_ENTRY_CNT, KEEP_BINARY, true);
     }
@@ -214,6 +228,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousWithTransformerAndRegularListenerKeepBinary() throws Exception {
         runContinuousQueryWithTransformer(SKIP_EVT_FILTER, DFLT_ENTRY_CNT, KEEP_BINARY, false);
     }
@@ -221,6 +236,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousWithTransformerAndRegularListenerKeepBinaryAsync() throws Exception {
         runContinuousQueryWithTransformer(SKIP_EVT_FILTER, DFLT_ENTRY_CNT, KEEP_BINARY, true);
     }
@@ -228,6 +244,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousWithTransformerWithFilterKeepBinary() throws Exception {
         runContinuousQueryWithTransformer(ADD_EVT_FILTER, DFLT_ENTRY_CNT / 2, KEEP_BINARY, false);
     }
@@ -235,6 +252,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousWithTransformerWithFilterKeepBinaryAsync() throws Exception {
         runContinuousQueryWithTransformer(ADD_EVT_FILTER, DFLT_ENTRY_CNT / 2, KEEP_BINARY, true);
     }
@@ -242,6 +260,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousWithTransformerAndRegularListenerWithFilterKeepBinary() throws Exception {
         runContinuousQueryWithTransformer(ADD_EVT_FILTER, DFLT_ENTRY_CNT / 2, KEEP_BINARY, false);
     }
@@ -249,6 +268,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousWithTransformerAndRegularListenerWithFilterKeepBinaryAsync() throws Exception {
         runContinuousQueryWithTransformer(ADD_EVT_FILTER, DFLT_ENTRY_CNT / 2, KEEP_BINARY, true);
     }
@@ -256,6 +276,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformerReturnNull() throws Exception {
         Ignite ignite = gridToRunQuery();
 
@@ -305,6 +326,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExpired() throws Exception {
         Ignite ignite = gridToRunQuery();
 

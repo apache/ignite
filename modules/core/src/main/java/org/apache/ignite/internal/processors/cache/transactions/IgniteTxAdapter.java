@@ -1185,10 +1185,10 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             }
 
             if (valid) {
-                this.state = state;
-
                 if (timedOut)
                     this.timedOut = true;
+
+                this.state = state;
 
                 if (log.isDebugEnabled())
                     log.debug("Changed transaction state [prev=" + prev + ", new=" + this.state + ", tx=" + this + ']');

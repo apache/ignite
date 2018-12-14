@@ -48,6 +48,7 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
 
+import static org.apache.ignite.ml.TestUtils.testEnvBuilder;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
@@ -288,19 +289,24 @@ public class EvaluatorTest extends GridCommonAbstractTest {
                 .withEncoderType(EncoderType.STRING_ENCODER)
                 .withEncodedFeature(1)
                 .withEncodedFeature(6) // <--- Changed index here
-                .fit(ignite,
+                .fit(
+                    testEnvBuilder(123L),
+                    ignite,
                     cache,
                     featureExtractor
                 );
 
             IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
-                .fit(ignite,
+                .fit(
+                    testEnvBuilder(124L),
+                    ignite,
                     cache,
                     strEncoderPreprocessor
                 );
 
             IgniteBiFunction<Integer, Object[], Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
                 .fit(
+                    testEnvBuilder(125L),
                     ignite,
                     cache,
                     imputingPreprocessor
@@ -309,6 +315,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
             return new NormalizationTrainer<Integer, Object[]>()
                 .withP(2)
                 .fit(
+                    testEnvBuilder(126L),
                     ignite,
                     cache,
                     minMaxScalerPreprocessor

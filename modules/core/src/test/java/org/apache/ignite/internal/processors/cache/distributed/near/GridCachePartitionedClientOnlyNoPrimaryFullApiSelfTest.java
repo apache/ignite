@@ -26,10 +26,14 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for local cache.
  */
+@RunWith(JUnit4.class)
 public class GridCachePartitionedClientOnlyNoPrimaryFullApiSelfTest extends GridCachePartitionedFullApiSelfTest {
     /** {@inheritDoc} */
     @Override protected NearCacheConfiguration nearConfiguration() {
@@ -49,6 +53,7 @@ public class GridCachePartitionedClientOnlyNoPrimaryFullApiSelfTest extends Grid
     /**
      *
      */
+    @Test
     public void testMapKeysToNodes() {
         grid(0).affinity(DEFAULT_CACHE_NAME).mapKeysToNodes(Arrays.asList("1", "2"));
     }
@@ -56,6 +61,7 @@ public class GridCachePartitionedClientOnlyNoPrimaryFullApiSelfTest extends Grid
     /**
      *
      */
+    @Test
     public void testMapKeyToNode() {
         assert grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToNode("1") == null;
     }

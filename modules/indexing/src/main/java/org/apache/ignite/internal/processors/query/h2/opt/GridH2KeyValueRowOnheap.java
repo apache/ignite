@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.h2.message.DbException;
 import org.h2.value.Value;
@@ -73,13 +75,15 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
 
         this.desc = desc;
 
-        this.key = desc.wrap(row.key(), keyType);
+        CacheObjectValueContext coCtx = desc.indexing().objectContext();
+
+        this.key = H2Utils.wrap(coCtx, row.key(), keyType);
 
         if (row.value() != null)
-            this.val = desc.wrap(row.value(), valType);
+            this.val = H2Utils.wrap(coCtx, row.value(), valType);
 
         if (row.version() != null)
-            this.ver = desc.wrap(row.version(), Value.JAVA_OBJECT);
+            this.ver = H2Utils.wrap(coCtx, row.version(), Value.JAVA_OBJECT);
     }
 
     /** {@inheritDoc} */
@@ -132,7 +136,7 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
             v = ValueNull.INSTANCE;
         else {
             try {
-                v = desc.wrap(res, desc.fieldType(col));
+                v = H2Utils.wrap(desc.indexing().objectContext(), res, desc.fieldType(col));
             }
             catch (IgniteCheckedException e) {
                 throw DbException.convert(e);

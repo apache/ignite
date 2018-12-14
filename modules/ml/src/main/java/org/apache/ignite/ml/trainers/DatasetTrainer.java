@@ -26,8 +26,10 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 
@@ -38,8 +40,11 @@ import org.jetbrains.annotations.NotNull;
  * @param <L> Type of a label.
  */
 public abstract class DatasetTrainer<M extends Model, L> {
+    /** Learning environment builder. */
+    protected LearningEnvironmentBuilder envBuilder = LearningEnvironmentBuilder.defaultBuilder();
+
     /** Learning Environment. */
-    protected LearningEnvironment environment = LearningEnvironment.DEFAULT;
+    protected LearningEnvironment environment = envBuilder.buildForTrainer();
 
     /**
      * Trains model based on the specified data.
@@ -66,6 +71,7 @@ public abstract class DatasetTrainer<M extends Model, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated model.
      */
+    //
     public <K,V> M update(M mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
 
@@ -289,11 +295,56 @@ public abstract class DatasetTrainer<M extends Model, L> {
     }
 
     /**
-     * Sets learning Environment
-     * @param environment Environment.
+     * Changes learning Environment.
+     *
+     * @param envBuilder Learning environment builder.
      */
-    public void setEnvironment(LearningEnvironment environment) {
-        this.environment = environment;
+    // TODO: IGNITE-10441 Think about more elegant ways to perform fluent API.
+    public DatasetTrainer<M, L> withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        this.envBuilder  = envBuilder;
+        this.environment = envBuilder.buildForTrainer();
+
+        return this;
+    }
+
+    /**
+     * Creates {@code DatasetTrainer} with same training logic, but able to accept labels of given new type
+     * of labels.
+     *
+     * @param new2Old Converter of new labels to old labels.
+     * @param <L1> New labels type.
+     * @return {@code DatasetTrainer} with same training logic, but able to accept labels of given new type
+     * of labels.
+     */
+    public <L1> DatasetTrainer<M, L1> withConvertedLabels(IgniteFunction<L1, L> new2Old) {
+        DatasetTrainer<M, L> old = this;
+        return new DatasetTrainer<M, L1>() {
+            /** {@inheritDoc} */
+            @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
+                IgniteBiFunction<K, V, L1> lbExtractor) {
+                return old.fit(datasetBuilder, featureExtractor, lbExtractor.andThen(new2Old));
+            }
+
+            /** {@inheritDoc} */
+            @Override protected boolean checkState(M mdl) {
+                return old.checkState(mdl);
+            }
+
+            /** {@inheritDoc} */
+            @Override protected <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L1> lbExtractor) {
+                return old.update(mdl, datasetBuilder, featureExtractor, lbExtractor.andThen(new2Old));
+            }
+        };
+    }
+
+    /**
+     * Get learning environment.
+     *
+     * @return Learning environment.
+     */
+    public LearningEnvironment learningEnvironment() {
+        return environment;
     }
 
     /**

@@ -326,7 +326,9 @@ module.exports.factory = function(mongoose) {
         memoryPolicyName: String,
         dataRegionName: String,
         sqlIndexMaxInlineSize: Number,
-        topologyValidator: String
+        topologyValidator: String,
+        diskPageCompression: {type: String, enum: ['SKIP_GARBAGE', 'ZSTD', 'LZ4', 'SNAPPY']},
+        diskPageCompressionLevel: Number
     });
 
     Cache.index({name: 1, space: 1, clusters: 1}, {unique: true});

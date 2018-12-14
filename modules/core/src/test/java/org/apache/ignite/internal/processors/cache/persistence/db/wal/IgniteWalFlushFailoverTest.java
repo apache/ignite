@@ -43,10 +43,14 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
     /** */
     private static final String TEST_CACHE = "testCache";
@@ -100,6 +104,7 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of fail
      */
+    @Test
     public void testErrorOnFlushByTimeout() throws Exception {
         flushByTimeout = true;
         flushingErrorTest();
@@ -110,6 +115,7 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of fail
      */
+    @Test
     public void testErrorOnDirectFlush() throws Exception {
         flushByTimeout = false;
         flushingErrorTest();

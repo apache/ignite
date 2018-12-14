@@ -68,7 +68,7 @@ public class OneVsRestTrainer<M extends Model<Vector, Double>>
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> MultiClassModel<M> updateModel(MultiClassModel<M> newMdl,
+    @Override protected <K, V> MultiClassModel<M> updateModel(MultiClassModel<M> newMdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
@@ -115,7 +115,8 @@ public class OneVsRestTrainer<M extends Model<Vector, Double>>
         List<Double> res = new ArrayList<>();
 
         try (Dataset<EmptyContext, LabelPartitionDataOnHeap> dataset = datasetBuilder.build(
-            (upstream, upstreamSize) -> new EmptyContext(),
+            envBuilder,
+            (env, upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
             final Set<Double> clsLabels = dataset.compute(data -> {
