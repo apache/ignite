@@ -1220,6 +1220,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     /**
      * @throws InterruptedException if failed.
      */
+    @Test
     public void testContinuousQueryRemoteFilterFactoryWithoutLocalLsnr() throws InterruptedException {
         doContinuousQueryRemoteFilterFactoryWithoutLocalLsnr(true);
 
@@ -1229,6 +1230,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     /**
      * @throws InterruptedException if failed.
      */
+    @Test
     public void testContinuousQueryRemoteFilterWithoutLocalLsnr() throws InterruptedException {
         doContinuousQueryRemoteFilterWithoutLocalLsnr(true);
 
@@ -1238,6 +1240,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     /**
      * @throws InterruptedException if failed.
      */
+    @Test
     public void testContinuousQueryRemoteTransformerWithoutLocalLsnr() throws InterruptedException {
         doContinuousQueryRemoteTransformerWithoutLocalLsnr(true);
 
@@ -1247,6 +1250,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     /**
      * @throws InterruptedException if failed.
      */
+    @Test
     public void testContinuousQueryInitialQueryWithoutLocalLsnr() throws InterruptedException {
         doContinuousQueryInitialQueryWithoutLocalLsnr(true);
 
