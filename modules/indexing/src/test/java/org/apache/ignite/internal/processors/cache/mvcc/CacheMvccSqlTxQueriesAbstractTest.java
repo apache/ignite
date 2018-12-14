@@ -1449,8 +1449,6 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
      */
     @Test
     public void testInsertFastUpdateConcurrent() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9292");
-
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
