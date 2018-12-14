@@ -20,12 +20,18 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.PageMemoryTrackerPluginProvider;
+import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * WAL delta records consistency test with explicit checks.
  */
+@RunWith(JUnit4.class)
 public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyTest {
     /** {@inheritDoc} */
+    @After
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
@@ -33,14 +39,18 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
+    @Test
     public final void testPutRemoveAfterCheckpoint() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10584");
+
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().active(true);
 
-        IgniteCache<Integer, Object> cache = ignite.getOrCreateCache(defaultCacheConfiguration());
+        IgniteCache<Integer, Object> cache = ignite.createCache(cacheConfiguration(DEFAULT_CACHE_NAME));
 
         for (int i = 0; i < 5_000; i++)
             cache.put(i, "Cache value " + i);
@@ -65,14 +75,14 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public final void testNotEmptyPds() throws Exception {
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().active(true);
 
-        IgniteCache<Integer, Object> cache = ignite.getOrCreateCache(defaultCacheConfiguration());
+        IgniteCache<Integer, Object> cache = ignite.createCache(cacheConfiguration(DEFAULT_CACHE_NAME));
 
         for (int i = 0; i < 3_000; i++)
             cache.put(i, "Cache value " + i);
@@ -85,7 +95,7 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
 
         ignite.cluster().active(true);
 
-        cache = ignite.getOrCreateCache(defaultCacheConfiguration());
+        cache = ignite.getOrCreateCache(cacheConfiguration(DEFAULT_CACHE_NAME));
 
         for (int i = 2_000; i < 5_000; i++)
             cache.put(i, "Changed cache value " + i);
