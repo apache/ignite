@@ -1609,7 +1609,7 @@ public class CommandHandler {
      */
     private void usage(String desc, Command cmd, String... args) {
         log(desc);
-        log(i(j(" ", UTILITY_NAME_WITH_COMMON_OPTIONS, cmd, j(" ", args)), 2));
+        log(i(j(" ", UTILITY_NAME, cmd, j(" ", args)), 2));
         nl();
     }
 
@@ -1743,12 +1743,11 @@ public class CommandHandler {
     /**
      * Join input parameters with space and wrap optional braces {@code []}.
      *
-     * @param param First input parameter.
      * @param params Other input parameter.
      * @return Joined parameters wrapped optional braces.
      */
-    private static String op(Object param, Object... params) {
-        return j(new SB(), "[", " ", param, params).a("]").toString();
+    private static String op(Object... params) {
+        return j(new SB(), "[", " ", params).a("]").toString();
     }
 
     /**
@@ -1776,7 +1775,9 @@ public class CommandHandler {
             sb.a(sbDelimeter);
 
             for (Object par : params)
-                sb.a(delimeter).a(par);
+                sb.a(par).a(delimeter);
+
+            sb.setLength(sb.length() - delimeter.length());
         }
 
         return sb;
@@ -1785,12 +1786,11 @@ public class CommandHandler {
     /**
      * Concatenates input parameters to single string with OR delimiter {@code |}.
      *
-     * @param param1 First parameter.
      * @param params Remaining parameters.
      * @return Concatenated string.
      */
-    private static String or(Object param1, Object... params) {
-        return j("|", param1, params);
+    private static String or(Object... params) {
+        return j("|", params);
     }
 
     /**
@@ -2571,6 +2571,9 @@ public class CommandHandler {
             .collect(Collectors.toList());
     }
 
+    /**
+     * @return Transaction command options.
+     */
     private String[] getTxOptions() {
         List<String> list = new ArrayList<>();
 
@@ -2592,6 +2595,13 @@ public class CommandHandler {
     private void printHelp() {
         final String constistIds = "consistentId1[,consistentId2,....,consistentIdN]";
 
+        log("Contol.sh is used to execute admin commands on cluster or get common cluster info. The command has the following syntax:");
+        nl();
+
+        log(i(j(" ", UTILITY_NAME_WITH_COMMON_OPTIONS, op("command"), "<command_parameters>")));
+        nl();
+        nl();
+
         log("This utility can do the following commands:");
 
         usage(i("Activate cluster:"), ACTIVATE);
@@ -2606,7 +2616,7 @@ public class CommandHandler {
 
         if (enableExperimental) {
             usage(i("Print absolute paths of unused archived wal segments on each node:"), WAL, WAL_PRINT, "[consistentId1,consistentId2,....,consistentIdN]");
-            usage(i("Delete unused archived wal segments on each node:"), WAL, WAL_DELETE, "[consistentId1,consistentId2,....,consistentIdN] ", op(CMD_AUTO_CONFIRMATION));
+            usage(i("Delete unused archived wal segments on each node:"), WAL, WAL_DELETE, "[consistentId1,consistentId2,....,consistentIdN]", op(CMD_AUTO_CONFIRMATION));
         }
 
         log(i("View caches information in a cluster. For more details type:"));

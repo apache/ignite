@@ -62,6 +62,7 @@ import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.OutputFormat;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
@@ -90,7 +91,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
@@ -118,6 +118,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
+import static org.apache.ignite.internal.commandline.cache.CacheCommand.HELP;
 import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREMIX;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -258,13 +259,11 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      * @param args Arguments.
      * @return Result of execution
      */
-    protected int execute(ArrayList<String> args) {
-        // Add force to avoid interactive confirmation
-        args.add(CMD_AUTO_CONFIRMATION);
-
-        SB sb = new SB();
-
-        args.forEach(arg -> sb.a(arg).a(" "));
+    protected int execute(List<String> args) {
+        if(args.size()!=1 && !args.get(0).equalsIgnoreCase("--help")) {
+            // Add force to avoid interactive confirmation
+            args.add(CMD_AUTO_CONFIRMATION);
+        }
 
         return new CommandHandler().execute(args);
     }
@@ -902,17 +901,27 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCacheHelp() throws Exception {
-        Ignite ignite = startGrids(1);
-
-        ignite.cluster().active(true);
-
         injectTestSystemOut();
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "help"));
 
         for (CacheCommand cmd : CacheCommand.values()) {
-            if (cmd != CacheCommand.HELP)
-                assertTrue(cmd.text(), testOut.toString().contains(cmd.text()));
+            if (cmd != HELP)
+                assertTrue(cmd.text(), testOut.toString().contains(cmd.toString()));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testHelp() throws Exception {
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--help"));
+
+        for (Command cmd : Command.values()) {
+            assertTrue(cmd.text(), testOut.toString().contains(cmd.toString()));
         }
     }
 
