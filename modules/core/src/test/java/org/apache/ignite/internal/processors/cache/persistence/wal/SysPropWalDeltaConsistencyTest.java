@@ -35,7 +35,7 @@ import org.junit.runners.JUnit4;
 public class SysPropWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyTest {
     /** {@inheritDoc} */
     @BeforeClass
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override public void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         System.setProperty(PageMemoryTrackerPluginProvider.IGNITE_ENABLE_PAGE_MEMORY_TRACKER, "true");
@@ -43,7 +43,7 @@ public class SysPropWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyT
 
     /** {@inheritDoc} */
     @AfterClass
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override public void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
         System.clearProperty(PageMemoryTrackerPluginProvider.IGNITE_ENABLE_PAGE_MEMORY_TRACKER);
@@ -51,7 +51,7 @@ public class SysPropWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyT
 
     /** {@inheritDoc} */
     @After
-    @Override protected void afterTest() throws Exception {
+    @Override public void afterTest() throws Exception {
         stopAllGrids();
 
         super.afterTest();

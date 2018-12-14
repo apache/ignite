@@ -36,7 +36,7 @@ public class CpTriggeredWalDeltaConsistencyTest extends AbstractWalDeltaConsiste
 
     /** {@inheritDoc} */
     @After
-    @Override protected void afterTest() throws Exception {
+    @Override public void afterTest() throws Exception {
         stopAllGrids();
 
         super.afterTest();

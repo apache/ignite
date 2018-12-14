@@ -96,7 +96,7 @@ public abstract class AbstractWalDeltaConsistencyTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Before
-    @Override protected void beforeTest() throws Exception {
+    @Override public void beforeTest() throws Exception {
         super.beforeTest();
 
         cleanPersistenceDir();
@@ -104,7 +104,7 @@ public abstract class AbstractWalDeltaConsistencyTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @After
-    @Override protected void afterTest() throws Exception {
+    @Override public void afterTest() throws Exception {
         super.afterTest();
 
         cleanPersistenceDir();
