@@ -42,7 +42,7 @@ public class IgnitePdsCompressionTestSuite {
         suite.addTestSuite(DiskPageCompressionIntegrationAsyncTest.class);
 
         enableCompressionByDefault();
-        IgnitePdsTestSuite.addRealPageStoreTests(suite);
+        IgnitePdsTestSuite.addRealPageStoreTests(suite, null);
 
         return suite;
     }
