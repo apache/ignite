@@ -560,18 +560,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public void onActivate(GridKernalContext kctx) {
-        if (log.isDebugEnabled())
-            log.debug("Activated file write ahead log manager [nodeId=" + cctx.localNodeId() +
-                " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onDeActivate(GridKernalContext kctx) {
-        if (log.isDebugEnabled())
-            log.debug("DeActivate file write ahead log [nodeId=" + cctx.localNodeId() +
-                " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
-
+    @Override protected void stop0(boolean cancel) {
         final GridTimeoutProcessor.CancelableTask schedule = backgroundFlushSchedule;
 
         if (schedule != null)
@@ -590,21 +579,34 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (archiver != null)
                 archiver.shutdown();
 
-            if (compressor != null) {
+            if (compressor != null)
                 compressor.shutdown();
 
-                compressor = null;
-            }
-
-            if (decompressor != null) {
+            if (decompressor != null)
                 decompressor.shutdown();
 
-                decompressor = null;
-            }
         }
         catch (Exception e) {
             U.error(log, "Failed to gracefully close WAL segment: " + this.currHnd, e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+        if (log.isDebugEnabled())
+            log.debug("Activated file write ahead log manager [nodeId=" + cctx.localNodeId() +
+                " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
+
+        startArchiverAndCompressor();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate(GridKernalContext kctx) {
+        if (log.isDebugEnabled())
+            log.debug("DeActivate file write ahead log [nodeId=" + cctx.localNodeId() +
+                " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
+
+        stop0(true);
 
         currHnd = null;
     }
