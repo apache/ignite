@@ -25,7 +25,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
     private static final int[] PRIMARY_COMMIT_ORDER = new int[] {2, 1, 0};
 
     /** */
-    private static final int[] BACKUP_COMMIT_ORDER = new int[] {1, 2, 0};
+    private static final int[] BACKUP_COMMIT_ORDER = new int[] {0, 2, 1};
 
     /** */
     private static final int [] SIZES = new int[] {5, 7, 3};
@@ -93,30 +93,45 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
         }
 
         /** */
-        protected boolean onPrepared(IgniteEx primaryNode, IgniteInternalTx tx, int idx) {
+        protected boolean onPrepared(IgniteEx primary, IgniteInternalTx tx, int idx) {
             log.info("TX: prepared on primary " + idx + ", tx=" + CU.txString(tx));
 
             return false;
         }
 
         /** */
-        protected void onAllPrepared() {
-            log.info("TX: all prepared");
+        protected void onAllPrimaryPrepared() {
+            log.info("TX: all primary prepared");
         }
 
         /**
-         * @param primaryNode Primary node.
+         * @param primary Primary node.
          * @param idx Index.
          */
-        protected boolean onCommitted(IgniteEx primaryNode, int idx) {
-            log.info("TX: committed " + idx);
+        protected boolean onPrimaryCommitted(IgniteEx primary, int idx) {
+            log.info("TX: primary committed " + idx);
+
+            return false;
+        }
+
+        /**
+         * @param primary Backup node.
+         * @param idx Index.
+         */
+        protected boolean onBackupCommitted(IgniteEx primary, int idx) {
+            log.info("TX: backup committed " + idx);
 
             return false;
         }
 
         /** */
-        protected void onAllCommited() {
-            log.info("TX: all committed");
+        protected void onAllPrimaryCommited() {
+            log.info("TX: all primary committed");
+        }
+
+        /** */
+        protected void onAllBackupCommited() {
+            log.info("TX: all backup committed");
         }
 
         /** {@inheritDoc} */
@@ -141,7 +156,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
                     return;
 
                 if (prepOrder.isEmpty()) {
-                    onAllPrepared();
+                    onAllPrimaryPrepared();
 
                     return;
                 }
@@ -170,16 +185,40 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
         @Override public boolean beforeBackupFinish(IgniteEx prim, IgniteEx backup, @Nullable IgniteInternalTx primTx,
             IgniteInternalTx backupTx, IgniteUuid nearXidVer, GridFutureAdapter<?> fut) {
             runAsync(() -> {
-                if (onCommitted(prim, order(nearXidVer)))
+                backupFinishFuts.put(nearXidVer, fut);
+
+                if (onPrimaryCommitted(prim, order(nearXidVer)))
                     return;
 
                 if (primCommitOrder.isEmpty()) {
-                    onAllCommited();
+                    onAllPrimaryCommited();
+
+                    assertEquals(SIZES.length, backupFinishFuts.size());
+
+                    backupFinishFuts.remove(version(backupCommitOrder.poll())).onDone();
 
                     return;
                 }
 
                 primFinishFuts.remove(version(primCommitOrder.poll())).onDone();
+            });
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean afterBackupFinish(IgniteEx n, IgniteUuid nearXidVer, GridFutureAdapter<?> fut) {
+            runAsync(() -> {
+                if (onBackupCommitted(n, order(nearXidVer)))
+                    return;
+
+                if (backupCommitOrder.isEmpty()) {
+                    onAllBackupCommited();
+
+                    return;
+                }
+
+                backupFinishFuts.remove(version(backupCommitOrder.poll())).onDone();
             });
 
             return false;
