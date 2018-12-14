@@ -186,10 +186,10 @@ public class CommandHandler {
     private static final String CMD_AUTO_CONFIRMATION = "--yes";
 
     /** */
-    protected static final String CMD_PING_INTERVAL = "--ping-interval";
+    private static final String CMD_PING_INTERVAL = "--ping-interval";
 
     /** */
-    protected static final String CMD_PING_TIMEOUT = "--ping-timeout";
+    private static final String CMD_PING_TIMEOUT = "--ping-timeout";
 
     /** */
     private static final String CMD_DUMP = "--dump";
@@ -212,7 +212,7 @@ public class CommandHandler {
     private static final String CMD_SSL_KEY_ALGORITHM = "--ssl-key-algorithm";
 
     /** */
-    protected static final String CMD_SSL_CIPHER_SUITES = "--ssl-cipher-suites";
+    private static final String CMD_SSL_CIPHER_SUITES = "--ssl-cipher-suites";
 
     /** */
     private static final String CMD_KEYSTORE = "--keystore";
