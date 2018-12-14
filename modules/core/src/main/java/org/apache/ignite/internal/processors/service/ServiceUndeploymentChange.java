@@ -24,11 +24,11 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Service undeployment request.
  */
-class ServiceUndeploymentChange extends ServiceAbstractChange {
+public class ServiceUndeploymentChange extends ServiceAbstractChange {
     /**
      * @param srvcId Service id.
      */
-    ServiceUndeploymentChange(@NotNull IgniteUuid srvcId) {
+    public ServiceUndeploymentChange(@NotNull IgniteUuid srvcId) {
         super(srvcId);
     }
 

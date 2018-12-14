@@ -25,7 +25,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Service deployment request.
  */
-class ServiceDeploymentChange extends ServiceAbstractChange {
+public class ServiceDeploymentChange extends ServiceAbstractChange {
     /** Service configuration. */
     private final ServiceConfiguration cfg;
 
@@ -33,7 +33,7 @@ class ServiceDeploymentChange extends ServiceAbstractChange {
      * @param srvcId Service id.
      * @param cfg Service configuration.
      */
-    ServiceDeploymentChange(@NotNull IgniteUuid srvcId, @NotNull ServiceConfiguration cfg) {
+    public ServiceDeploymentChange(@NotNull IgniteUuid srvcId, @NotNull ServiceConfiguration cfg) {
         super(srvcId);
 
         this.cfg = cfg;
