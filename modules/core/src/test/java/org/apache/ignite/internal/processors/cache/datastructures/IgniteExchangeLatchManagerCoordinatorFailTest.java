@@ -23,23 +23,31 @@ import com.google.common.collect.Lists;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.Latch;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManager;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.Latch;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link ExchangeLatchManager} functionality when latch coordinator is failed.
  */
+@RunWith(JUnit4.class)
 public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbstractTest {
     /** */
     private static final String LATCH_NAME = "test";
 
     /** 5 nodes. */
-    private final AffinityTopologyVersion latchTopVer = new AffinityTopologyVersion(5, 0);
+    private final AffinityTopologyVersion latchTopVer = new AffinityTopologyVersion(5, 1);
+
+    /** Latch coordinator index. */
+    private static final int LATCH_CRD_INDEX = 0;
 
     /** Wait before latch creation. */
     private final IgniteBiClosure<ExchangeLatchManager, CountDownLatch, Boolean> beforeCreate = (mgr, syncLatch) -> {
@@ -141,6 +149,7 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
      * Node 3 state -> {@link #all}
      * Node 4 state -> {@link #beforeCreate}
      */
+    @Test
     public void testCoordinatorFail1() throws Exception {
         List<IgniteBiClosure<ExchangeLatchManager, CountDownLatch, Boolean>> nodeStates = Lists.newArrayList(
             beforeCreate,
@@ -160,6 +169,7 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
      * Node 3 state -> {@link #all}
      * Node 4 state -> {@link #beforeCreate}
      */
+    @Test
     public void testCoordinatorFail2() throws Exception {
         List<IgniteBiClosure<ExchangeLatchManager, CountDownLatch, Boolean>> nodeStates = Lists.newArrayList(
             beforeCountDown,
@@ -179,6 +189,7 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
      * Node 3 state -> {@link #all}
      * Node 4 state -> {@link #beforeCreate}
      */
+    @Test
     public void testCoordinatorFail3() throws Exception {
         List<IgniteBiClosure<ExchangeLatchManager, CountDownLatch, Boolean>> nodeStates = Lists.newArrayList(
             all,
@@ -200,6 +211,8 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(5);
         crd.cluster().active(true);
 
+        IgniteEx latchCrd = grid(LATCH_CRD_INDEX);
+
         // Latch to synchronize node states.
         CountDownLatch syncLatch = new CountDownLatch(5);
 
@@ -207,31 +220,41 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
 
         AtomicBoolean hasErrors = new AtomicBoolean();
 
-        for (int node = 1; node < 5; node++) {
-            IgniteEx grid = grid(node);
+        int scenarioIdx = 0;
+
+        for (int nodeId = 0; nodeId < 5; nodeId++) {
+            if (nodeId == LATCH_CRD_INDEX)
+                continue;
+
+            IgniteEx grid = grid(nodeId);
+
             ExchangeLatchManager latchMgr = grid.context().cache().context().exchange().latch();
-            final int stateIdx = node - 1;
+
+            IgniteBiClosure<ExchangeLatchManager, CountDownLatch, Boolean> scenario = nodeScenarios.get(scenarioIdx);
 
             IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(() -> {
-                boolean success = nodeScenarios.get(stateIdx).apply(latchMgr, syncLatch);
+                boolean success = scenario.apply(latchMgr, syncLatch);
+
                 if (!success)
                     hasErrors.set(true);
-            }, 1, "latch-runner-" + node);
+            }, 1, "latch-runner-" + nodeId);
 
             finishAllLatches.add(fut);
+
+            scenarioIdx++;
         }
 
         finishAllLatches.markInitialized();
 
         // Wait while all nodes reaches their states.
         while (syncLatch.getCount() != 1) {
-            Thread.sleep(10);
+            U.sleep(10);
 
             if (hasErrors.get())
                 throw new Exception("All nodes should complete latches without errors");
         }
 
-        crd.close();
+        latchCrd.close();
 
         // Resume progress for all nodes.
         syncLatch.countDown();

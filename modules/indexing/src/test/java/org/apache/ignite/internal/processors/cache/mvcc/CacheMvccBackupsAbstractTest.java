@@ -182,6 +182,8 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
      * @throws Exception If failed.
      */
     public void testBackupsCoherenceWithLargeOperations() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10104");
+
         disableScheduledVacuum = true;
 
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 1, 10)

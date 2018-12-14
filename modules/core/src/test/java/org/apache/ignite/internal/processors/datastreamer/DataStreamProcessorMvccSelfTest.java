@@ -17,54 +17,60 @@
 
 package org.apache.ignite.internal.processors.datastreamer;
 
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
 /**
  * Check DataStreamer with Mvcc enabled.
  */
+@RunWith(JUnit4.class)
 public class DataStreamProcessorMvccSelfTest extends DataStreamProcessorSelfTest {
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration igniteConfiguration = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration[] cacheConfigurations = igniteConfiguration.getCacheConfiguration();
+        CacheConfiguration[] ccfgs = igniteConfiguration.getCacheConfiguration();
 
-        assert cacheConfigurations == null || cacheConfigurations.length == 0
-                || (cacheConfigurations.length == 1 && cacheConfigurations[0].getAtomicityMode() == TRANSACTIONAL);
+        if (ccfgs != null) {
+            for (CacheConfiguration ccfg : ccfgs)
+                ccfg.setNearConfiguration(null);
+        }
 
-        igniteConfiguration.setMvccEnabled(true);
+        assert ccfgs == null || ccfgs.length == 0 ||
+            (ccfgs.length == 1 && ccfgs[0].getAtomicityMode() == TRANSACTIONAL_SNAPSHOT);
 
         return igniteConfiguration;
     }
 
     /** {@inheritDoc} */
-    @Override public void testPartitioned() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8149");
-
-        super.testPartitioned();
+    @Override protected CacheAtomicityMode getCacheAtomicityMode() {
+        return TRANSACTIONAL_SNAPSHOT;
     }
 
     /** {@inheritDoc} */
-    @Override public void testColocated() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8149");
-
-        super.testColocated();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testReplicated() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8149");
-
-        super.testReplicated();
-    }
-
-    /** {@inheritDoc} */
+    @Test
     @Override public void testUpdateStore() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-8582");
 
         super.testUpdateStore();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Override public void testFlushTimeout() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9321");
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Override public void testLocal() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
     }
 }

@@ -62,7 +62,7 @@ checkJava() {
         if [ $RETCODE -ne 0 ]; then
             echo $0", ERROR:"
             echo "JAVA_HOME environment variable is not found."
-            echo "Please point JAVA_HOME variable to location of JDK 1.8 or JDK 9."
+            echo "Please point JAVA_HOME variable to location of JDK 1.8 or later."
             echo "You can also download latest JDK at http://java.com/download"
 
             exit 1
@@ -81,14 +81,9 @@ checkJava() {
     if [ $version -lt 8 ]; then
         echo "$0, ERROR:"
         echo "The $version version of JAVA installed in JAVA_HOME=$JAVA_HOME is incompatible."
-        echo "Please point JAVA_HOME variable to installation of JDK 1.8 or JDK 9."
+        echo "Please point JAVA_HOME variable to installation of JDK 1.8 or later."
         echo "You can also download latest JDK at http://java.com/download"
         exit 1
-    elif [ $version -gt 9 ]; then
-        echo "$0, WARNING:"
-        echo "The $version version of JAVA installed in JAVA_HOME=$JAVA_HOME was not tested with Apache Ignite."
-        echo "Run it on your own risk or point JAVA_HOME variable to installation of JDK 1.8 or JDK 9."
-        echo "You can also download JDK at http://java.com/download"
     fi
 }
 

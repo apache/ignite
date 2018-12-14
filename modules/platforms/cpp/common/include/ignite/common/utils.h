@@ -489,6 +489,15 @@ namespace ignite
         };
 
         /**
+         * Returns the bigger type.
+         */
+        template<typename T1, typename T2>
+        struct Bigger
+        {
+            typedef typename Conditional<(sizeof(T1) > sizeof(T2)), T1, T2>::type type;
+        };
+
+        /**
          * Utility class to bind class instance with member function.
          */
         template<typename R, typename T>
@@ -538,6 +547,62 @@ namespace ignite
         {
             return BoundInstance<R, T>(instance, mfunc);
         }
+
+        /**
+         * Method guard class template.
+         *
+         * Upon destruction calls provided method on provided class instance.
+         *
+         * @tparam T Value type.
+         */
+        template<typename T>
+        class MethodGuard
+        {
+        public:
+            /** Value type. */
+            typedef T ValueType;
+
+            /** Mehtod type. */
+            typedef void (ValueType::*MethodType)();
+
+            /**
+             * Constructor.
+             *
+             * @param val Instance, to call method on.
+             * @param method Method to call.
+             */
+            MethodGuard(ValueType* val, MethodType method) :
+                val(val),
+                method(method)
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~MethodGuard()
+            {
+                if (val && method)
+                    (val->*method)();
+            }
+
+            /**
+             * Release control over object.
+             */
+            void Release()
+            {
+                val = 0;
+                method = 0;
+            }
+
+        private:
+            /** Instance, to call method on. */
+            ValueType* val;
+
+            /** Method to call. */
+            MethodType method;
+        };
 
         /**
          * Get dynamic library full name.

@@ -23,11 +23,12 @@ interface ITfMetatagsConfig {
 
 export interface IIgniteNg1StateDeclaration extends Ng1StateDeclaration {
     /**
-     * Whether to store state as last visited in local storage or not.
-     * true - will be saved
-     * false (default) - won't be saved
+     * Whether to store state as last visited in local storage or not:
+     * `true` - will be saved
+     * `false` (default) - won't be saved
      * @type {boolean}
      */
     unsaved?: boolean,
-    tfMetaTags: ITfMetatagsConfig
+    tfMetaTags: ITfMetatagsConfig,
+    permission?: string
 }

@@ -78,21 +78,20 @@ sm=FULL_SYNC
 commonParams="-cfg ${SCRIPT_DIR}/../config/ignite-localhost-config.xml -nn ${nodesNum} -w ${w} -d ${d} \
   -jdbc jdbc:ignite:thin://auto.find/ -t ${t} -sm ${sm} \
   --clientNodesAfterId 100 \
-  -sn IgniteNode -cl --range 1000000 \
-  --atomic-mode TRANSACTIONAL"
+  -sn IgniteNode -cl --range 1000000"
 
 # Run configuration which contains all benchmarks.
 # Note that each benchmark is set to run for 300 seconds (5 min) with warm-up set to 60 seconds (1 minute).
 CONFIGS="\
-${commonParams} -dn NativeSqlUpdateRangeBenchmark -ds ${ver}sql-update-batch-1-backup-0-mvcc-off -b 0 --sqlRange 1, \
-${commonParams} -dn NativeSqlUpdateRangeBenchmark -ds ${ver}sql-update-batch-1-backup-0-mvcc-on -b 0 --sqlRange 1 --mvcc, \
+${commonParams} -dn NativeSqlUpdateRangeBenchmark -ds ${ver}sql-update-batch-1-backup-0-mvcc-off -b 0 --sqlRange 1 --atomic-mode TRANSACTIONAL, \
+${commonParams} -dn NativeSqlUpdateRangeBenchmark -ds ${ver}sql-update-batch-1-backup-0-mvcc-on -b 0 --sqlRange 1  --atomic-mode TRANSACTIONAL_SNAPSHOT, \
   \
-${commonParams} -dn NativeSqlUpdateRangeBenchmark -ds ${ver}sql-update-batch-1000-backup-0-mvcc-off -b 0 --sqlRange 1000, \
-${commonParams} -dn NativeSqlUpdateRangeBenchmark -ds ${ver}sql-update-batch-1000-backup-0-mvcc-on -b 0 --sqlRange 1000 --mvcc, \
+${commonParams} -dn NativeSqlUpdateRangeBenchmark -ds ${ver}sql-update-batch-1000-backup-0-mvcc-off -b 0 --sqlRange 1000, --atomic-mode TRANSACTIONAL, \
+${commonParams} -dn NativeSqlUpdateRangeBenchmark -ds ${ver}sql-update-batch-1000-backup-0-mvcc-on -b 0 --sqlRange 1000 --atomic-mode TRANSACTIONAL_SNAPSHOT, \
   \
-${commonParams} -dn NativeSqlUpdateRangeBenchmark -ds ${ver}sql-update-batch-1-backup-2-mvcc-off -b 2 --sqlRange 1, \
-${commonParams} -dn NativeSqlUpdateRangeBenchmark -ds ${ver}sql-update-batch-1-backup-2-mvcc-on -b 2 --sqlRange 1 --mvcc, \
+${commonParams} -dn NativeSqlUpdateRangeBenchmark -ds ${ver}sql-update-batch-1-backup-2-mvcc-off -b 2 --sqlRange 1 --atomic-mode TRANSACTIONAL, \
+${commonParams} -dn NativeSqlUpdateRangeBenchmark -ds ${ver}sql-update-batch-1-backup-2-mvcc-on -b 2 --sqlRange 1 --atomic-mode TRANSACTIONAL_SNAPSHOT, \
   \
-${commonParams} -dn NativeSqlUpdateRangeBenchmark -ds ${ver}sql-update-batch-1000-backup-2-mvcc-off -b 2 --sqlRange 1000, \
-${commonParams} -dn NativeSqlUpdateRangeBenchmark -ds ${ver}sql-update-batch-1000-backup-2-mvcc-on -b 2 --sqlRange 1000 --mvcc, \
+${commonParams} -dn NativeSqlUpdateRangeBenchmark -ds ${ver}sql-update-batch-1000-backup-2-mvcc-off -b 2 --sqlRange 1000 --atomic-mode TRANSACTIONAL, \
+${commonParams} -dn NativeSqlUpdateRangeBenchmark -ds ${ver}sql-update-batch-1000-backup-2-mvcc-on -b 2 --sqlRange 1000 --atomic-mode TRANSACTIONAL_SNAPSHOT, \
 "

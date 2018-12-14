@@ -228,7 +228,6 @@ public class GridTuple5<V1, V2, V3, V4, V5> implements Iterable<Object>, Externa
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException"})
     @Override public Object clone() {
         try {
             return super.clone();

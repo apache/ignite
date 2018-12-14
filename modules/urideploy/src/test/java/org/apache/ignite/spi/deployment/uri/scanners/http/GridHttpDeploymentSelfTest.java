@@ -108,16 +108,16 @@ public class GridHttpDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
      * @throws Exception If failed.
      */
     public void testDeployUndeploy2Files() throws Exception {
-        checkNoTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask3");
+        String taskName = "org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask3";
+
+        checkNoTask(taskName);
 
         try {
             copyToResourceBase(LIBS_GAR_FILE_PATH, LIBS_GAR);
 
             copyToResourceBase(CLASSES_GAR_FILE_PATH, CLASSES_GAR);
 
-            Thread.sleep(FREQ + 3000);
-
-            checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask3");
+            waitForTask(taskName, true, FREQ + 3000);
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -126,9 +126,7 @@ public class GridHttpDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
             deleteFromResourceBase(LIBS_GAR);
             deleteFromResourceBase(CLASSES_GAR);
 
-            Thread.sleep(FREQ + 3000);
-
-            checkNoTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask3");
+            waitForTask(taskName, false, FREQ + 3000);
         }
     }
 
@@ -136,20 +134,18 @@ public class GridHttpDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
      * @throws Exception If failed.
      */
     public void testSameContantFiles() throws Exception {
-        checkNoTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask3");
+        String taskName = "org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask3";
+
+        checkNoTask(taskName);
 
         try {
             copyToResourceBase(ALL_GAR_FILE_PATH, ALL_GAR);
 
-            Thread.sleep(FREQ + 3000);
-
-            checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask3");
+            waitForTask(taskName, true, FREQ + 3000);
 
             copyToResourceBase(ALL_GAR_FILE_PATH, "file-copy.gar");
 
-            Thread.sleep(FREQ + 3000);
-
-            checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask3");
+            waitForTask(taskName, true, FREQ + 3000);
         }
         catch (Throwable e) {
             e.printStackTrace();
@@ -158,9 +154,7 @@ public class GridHttpDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
             deleteFromResourceBase(ALL_GAR);
             deleteFromResourceBase("file-copy.gar");
 
-            Thread.sleep(FREQ + 3000);
-
-            checkNoTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask3");
+            waitForTask(taskName, false, FREQ + 3000);
         }
     }
 

@@ -26,9 +26,16 @@ class Controller {
     listEditableTransclude;
     /** @type {Array} */
     items;
+    /** @type {string?} */
+    key;
+    /** @type {Array<string>} */
+    skip;
 
     static $inject = ['$scope'];
 
+    /**
+     * @param {ng.IScope} $scope
+     */
     constructor($scope) {
         this.$scope = $scope;
     }
@@ -69,7 +76,7 @@ class Controller {
     }
 }
 
-export default ['igniteUnique', () => {
+export default () => {
     return {
         controller: Controller,
         require: {
@@ -82,4 +89,4 @@ export default ['igniteUnique', () => {
             skip: '<?igniteUniqueSkip'
         }
     };
-}];
+};

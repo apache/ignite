@@ -58,18 +58,9 @@ struct AttributesTestSuiteFixture : odbc::OdbcTestSuite
     /**
      * Constructor.
      */
-    AttributesTestSuiteFixture() :
-        grid()
+    AttributesTestSuiteFixture()
     {
-        const char* config = NULL;
-
-#ifdef IGNITE_TESTS_32
-          config = "queries-test-32.xml";
-#else
-          config = "queries-test.xml";
-#endif
-
-        grid = StartNode(config, "NodeMain");
+        grid = StartPlatformNode("queries-test.xml", "NodeMain");
     }
 
     /**

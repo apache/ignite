@@ -19,7 +19,6 @@ import angular from 'angular';
 
 import 'angular1-async-filter';
 import {UIRouterRx} from '@uirouter/rx';
-import {Visualizer} from '@uirouter/visualizer';
 import uiValidate from 'angular-ui-validate';
 
 import component from './component';
@@ -54,6 +53,7 @@ import 'rxjs/add/operator/withLatestFrom';
 import 'rxjs/add/operator/skip';
 
 import {Observable} from 'rxjs/Observable';
+
 Observable.prototype.debug = function(l) {
     return this.do((v) => console.log(l, v), (e) => console.error(l, e), () => console.log(l, 'completed'));
 };
@@ -83,15 +83,16 @@ import {reducer as reduxDevtoolsReducer, devTools} from './reduxDevtoolsIntegrat
 import {registerStates} from './states';
 
 /**
- * @param {ActivitiesData} ActivitiesData
  * @param {uirouter.UIRouter} $uiRouter
+ * @param {ActivitiesData} ActivitiesData
  */
-function registerActivitiesHook(ActivitiesData, $uiRouter) {
+function registerActivitiesHook($uiRouter, ActivitiesData) {
     $uiRouter.transitionService.onSuccess({to: 'base.configuration.**'}, (transition) => {
         ActivitiesData.post({group: 'configuration', action: transition.targetState().name()});
     });
 }
-registerActivitiesHook.$inject = ['IgniteActivitiesData', '$uiRouter'];
+
+registerActivitiesHook.$inject = ['$uiRouter', 'IgniteActivitiesData'];
 
 export default angular
     .module('ignite-console.page-configure', [
@@ -116,7 +117,7 @@ export default angular
     .run(registerActivitiesHook)
     .run(['ConfigEffects', 'ConfigureState', '$uiRouter', (ConfigEffects, ConfigureState, $uiRouter) => {
         $uiRouter.plugin(UIRouterRx);
-        // $uiRouter.plugin(Visualizer);
+
         if (devTools) {
             devTools.subscribe((e) => {
                 if (e.type === 'DISPATCH' && e.state) ConfigureState.actions$.next(e);
@@ -177,9 +178,9 @@ export default angular
         ConfigEffects.connect();
     }])
     .component('pageConfigure', component)
-    .directive(isInCollection.name, isInCollection)
-    .directive(fakeUiCanExit.name, fakeUiCanExit)
-    .directive(formUICanExitGuard.name, formUICanExitGuard)
+    .directive('pcIsInCollection', isInCollection)
+    .directive('fakeUiCanExit', fakeUiCanExit)
+    .directive('formUiCanExitGuard', formUICanExitGuard)
     .factory('configSelectionManager', ConfigSelectionManager)
     .service('IgniteSummaryZipper', SummaryZipper)
     .service('IgniteConfigurationResource', ConfigurationResource)

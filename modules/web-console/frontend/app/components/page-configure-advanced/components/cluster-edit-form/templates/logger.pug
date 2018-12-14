@@ -26,8 +26,12 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-60
-                +dropdown('Logger:', kind, '"logger"', 'true', 'Default',
-                    '[\
+                +form-field__dropdown({
+                    label: 'Logger:',
+                    model: kind,
+                    name: '"logger"',
+                    placeholder: 'Default',
+                    options: '[\
                         {value: "Log4j", label: "Apache Log4j"},\
                         {value: "Log4j2", label: "Apache Log4j 2"},\
                         {value: "SLF4J", label: "Simple Logging Facade (SLF4J)"},\
@@ -37,17 +41,18 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                         {value: "Custom", label: "Custom"},\
                         {value: null, label: "Default"}\
                     ]',
-                    'Logger implementations\
-                    <ul>\
-                        <li>Apache Log4j - log4j-based logger</li>\
-                        <li>Apache Log4j 2 - Log4j2-based logger</li>\
-                        <li>Simple Logging Facade (SLF4J) - SLF4j-based logger</li>\
-                        <li>Java logger (JUL) - built in java logger</li>\
-                        <li>Jakarta Commons Logging (JCL) - wraps any JCL (Jakarta Commons Logging) loggers</li>\
-                        <li>Null logger - logger which does not output anything</li>\
-                        <li>Custom - custom logger implementation</li>\
-                        <li>Default - Apache Log4j if awailable on classpath or Java logger otherwise</li>\
-                    </ul>')
+                    tip: 'Logger implementations\
+                       <ul>\
+                           <li>Apache Log4j - log4j-based logger</li>\
+                           <li>Apache Log4j 2 - Log4j2-based logger</li>\
+                           <li>Simple Logging Facade (SLF4J) - SLF4j-based logger</li>\
+                           <li>Java logger (JUL) - built in java logger</li>\
+                           <li>Jakarta Commons Logging (JCL) - wraps any JCL (Jakarta Commons Logging) loggers</li>\
+                           <li>Null logger - logger which does not output anything</li>\
+                           <li>Custom - custom logger implementation</li>\
+                           <li>Default - Apache Log4j if awailable on classpath or Java logger otherwise</li>\
+                       </ul>'
+                })
             .pc-form-group(ng-show=`${kind} && (${kind} === 'Log4j2' || ${kind} === 'Log4j' || ${kind} === 'Custom')`)
                 .pc-form-grid-row(ng-show=`${kind} === 'Log4j2'`)
                     include ./logger/log4j2

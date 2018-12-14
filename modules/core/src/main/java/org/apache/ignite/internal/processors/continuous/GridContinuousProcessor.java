@@ -875,11 +875,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         true);
                 }
 
-            ctx.discovery().sendCustomEvent(msg);
-        }
-        catch (IgniteCheckedException e) {
-            startFuts.remove(routineId);
-            locInfos.remove(routineId);
+                ctx.discovery().sendCustomEvent(msg);
+            }
+            catch (IgniteCheckedException e) {
+                startFuts.remove(routineId);
+                locInfos.remove(routineId);
 
                 unregisterHandler(routineId, hnd, true);
 
@@ -1594,7 +1594,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     private void sendMessageStartResult(final ClusterNode node,
         final UUID routineId,
         byte[] cntrsMapBytes,
-        final @Nullable Exception err)
+        @Nullable final Exception err)
     {
         byte[] errBytes = null;
 

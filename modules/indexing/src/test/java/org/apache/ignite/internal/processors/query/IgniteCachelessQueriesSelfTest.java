@@ -44,7 +44,7 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private final static String SELECT =
+    private static final String SELECT =
         "select count(*) from \"pers\".Person p, \"org\".Organization o where p.orgId = o._key";
 
     /** */
@@ -130,7 +130,7 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     public void testDistributedQueryOnReplicatedCaches() {
         createCachesAndExecuteQuery(TestCacheMode.REPLICATED, TestCacheMode.REPLICATED, false, false);
 
-        assertDistributedQuery();
+        assertLocalQuery();
     }
 
     /**

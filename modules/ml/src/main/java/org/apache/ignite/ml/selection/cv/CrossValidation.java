@@ -120,7 +120,7 @@ public class CrossValidation<M extends Model<Vector, L>, L, K, V> {
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor, int cv,
         ParamGrid paramGrid) {
 
-        List<Double[]> paramSets = new ParameterSetGenerator(paramGrid.getParamValuesByParamIndex()).generate();
+        List<Double[]> paramSets = new ParameterSetGenerator(paramGrid.getParamValuesByParamIdx()).generate();
 
         CrossValidationResult cvRes = new CrossValidationResult();
 

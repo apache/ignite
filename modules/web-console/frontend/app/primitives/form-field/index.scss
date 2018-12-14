@@ -259,7 +259,7 @@
         &--postfix::after {
             content: attr(data-postfix);
             display: inline-flex;
-            place-self: center;
+            align-self: center;
             margin-left: 10px;
         }
 

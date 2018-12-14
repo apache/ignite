@@ -27,7 +27,7 @@ angular
 .module('ignite-console.navbar', [
 
 ])
-.provider(...IgniteNavbar)
-.provider(...IgniteUserbar)
-.directive(...igniteNavbar)
-.directive(...igniteUserbar);
+.provider('IgniteNavbar', IgniteNavbar)
+.provider('IgniteUserbar', IgniteUserbar)
+.directive('igniteNavbar', igniteNavbar)
+.directive('igniteUserbar', igniteUserbar);

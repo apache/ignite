@@ -161,7 +161,6 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected void createCaches() {
         cacheCustOrd = ignite.cache("custord");
         cacheReplOrd = ignite.cache("replord");
@@ -171,7 +170,6 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected void initCacheAndDbData() throws SQLException {
         final AtomicInteger idGen = new AtomicInteger();
 

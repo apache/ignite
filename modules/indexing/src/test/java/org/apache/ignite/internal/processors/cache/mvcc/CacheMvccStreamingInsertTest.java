@@ -57,7 +57,7 @@ public class CacheMvccStreamingInsertTest extends CacheMvccAbstractTest {
             "create table person(" +
             "  id int not null primary key," +
             "  name varchar not null" +
-            ") with \"atomicity=transactional\""
+            ") with \"atomicity=transactional_snapshot\""
         ));
 
         Properties props = new Properties();

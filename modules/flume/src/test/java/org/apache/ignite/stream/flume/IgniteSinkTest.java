@@ -79,7 +79,7 @@ public class IgniteSinkTest extends GridCommonAbstractTest {
 
         IgniteSink sink = new IgniteSink() {
             // Setting the listener on cache before sink processing starts.
-            @Override synchronized public void start() {
+            @Override public synchronized void start() {
                 super.start();
 
                 grid.events(grid.cluster().forCacheNodes(CACHE_NAME)).localListen(putLsnr, EVT_CACHE_OBJECT_PUT);

@@ -22,7 +22,7 @@ import 'rxjs/add/operator/publishReplay';
 
 // Controller for Clusters screen.
 export default class PageConfigureAdvancedCluster {
-    static $inject = ['$uiRouter', ConfigSelectors.name, ConfigureState.name];
+    static $inject = ['$uiRouter', 'ConfigSelectors', 'ConfigureState'];
 
     /**
      * @param {uirouter.UIRouter} $uiRouter

@@ -161,6 +161,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary> Default value for <see cref="QueryParallelism"/>. </summary>
         public const int DefaultQueryParallelism = 1;
 
+        /// <summary> Default value for <see cref="EncryptionEnabled"/>. </summary>
+        public const bool DefaultEncryptionEnabled = false;
+
         /// <summary>
         /// Gets or sets the cache name.
         /// </summary>
@@ -214,6 +217,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             RebalanceBatchesPrefetchCount = DefaultRebalanceBatchesPrefetchCount;
             MaxQueryIteratorsCount = DefaultMaxQueryIteratorsCount;
             QueryParallelism = DefaultQueryParallelism;
+            EncryptionEnabled = DefaultEncryptionEnabled;
         }
 
         /// <summary>
@@ -329,6 +333,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             QueryDetailMetricsSize = reader.ReadInt();
             QueryParallelism = reader.ReadInt();
             SqlSchema = reader.ReadString();
+            EncryptionEnabled = reader.ReadBoolean();
 
             QueryEntities = reader.ReadCollectionRaw(r => new QueryEntity(r, srvVer));
 
@@ -427,6 +432,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteInt(QueryDetailMetricsSize);
             writer.WriteInt(QueryParallelism);
             writer.WriteString(SqlSchema);
+            writer.WriteBoolean(EncryptionEnabled);
 
             writer.WriteCollectionRaw(QueryEntities, srvVer);
 
@@ -919,5 +925,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [DefaultValue(DefaultQueryParallelism)]
         public int QueryParallelism { get; set; }
+
+        /// <summary>
+        /// Gets or sets encryption flag.
+        /// Default is false.
+        /// </summary>
+        [DefaultValue(DefaultEncryptionEnabled)]
+        public bool EncryptionEnabled { get; set; }
     }
 }

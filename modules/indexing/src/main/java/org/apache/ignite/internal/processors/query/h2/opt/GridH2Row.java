@@ -126,7 +126,6 @@ public abstract class GridH2Row extends GridH2SearchRowAdapter implements CacheD
         return row.newMvccTxState();
     }
 
-
     /** {@inheritDoc} */
     @Override public boolean indexSearchRow() {
         return false;

@@ -74,8 +74,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
@@ -87,6 +87,7 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteAsyncCallback;
@@ -104,6 +105,10 @@ import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionRollbackException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -111,10 +116,13 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -211,6 +219,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFirstFilteredEvent() throws Exception {
         this.backups = 2;
 
@@ -255,6 +264,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalanceVersion() throws Exception {
         Ignite ignite0 = startGrid(0);
 
@@ -307,6 +317,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      *
      * @throws Exception If fail.
      */
+    @Test
     public void testRebalance() throws Exception {
         for (int iter = 0; iter < 5; iter++) {
             log.info("Iteration: " + iter);
@@ -422,6 +433,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOneBackup() throws Exception {
         checkBackupQueue(1, false);
     }
@@ -429,6 +441,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOneBackupClientUpdate() throws Exception {
         checkBackupQueue(1, true);
     }
@@ -436,6 +449,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdatePartitionCounter() throws Exception {
         this.backups = 2;
 
@@ -536,6 +550,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartStopQuery() throws Exception {
         this.backups = 1;
 
@@ -640,6 +655,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLeftPrimaryAndBackupNodes() throws Exception {
         if (cacheMode() == REPLICATED)
             return;
@@ -760,6 +776,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             }
         }, 5000L);
 
+        awaitPartitionMapExchange();
+
         for (; keyIter < keys.size(); keyIter++) {
             int key = keys.get(keyIter);
 
@@ -784,7 +802,18 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                     expEvts.add(new T3<>((Object)key, (Object)val, (Object)key));
             }
 
-            clnCache.put(key, val);
+            boolean updated = false;
+
+            while (!updated) {
+                try {
+                    clnCache.put(key, val);
+
+                    updated = true;
+                }
+                catch (Exception ignore) {
+                    assertEquals(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, atomicityMode());
+                }
+            }
 
             filtered = !filtered;
         }
@@ -797,6 +826,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteFilter() throws Exception {
         this.backups = 2;
 
@@ -909,6 +939,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testThreeBackups() throws Exception {
         if (cacheMode() == REPLICATED)
             return;
@@ -977,8 +1008,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 T2<Object, Object> t = updates.get(key);
 
                 if (updateFromClient) {
-                    if (atomicityMode() == CacheAtomicityMode.TRANSACTIONAL) {
-                        try (Transaction tx = qryClient.transactions().txStart()) {
+                    if (atomicityMode() != CacheAtomicityMode.ATOMIC) {
+                        try (Transaction tx = qryClient.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                             qryClientCache.put(key, key);
 
                             tx.commit();
@@ -993,8 +1024,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                         qryClientCache.put(key, key);
                 }
                 else {
-                    if (atomicityMode() == CacheAtomicityMode.TRANSACTIONAL) {
-                        try (Transaction tx = ignite.transactions().txStart()) {
+                    if (atomicityMode() != CacheAtomicityMode.ATOMIC) {
+                        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                             cache.put(key, key);
 
                             tx.commit();
@@ -1335,6 +1366,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupQueueCleanupClientQuery() throws Exception {
         startGridsMultiThreaded(2);
 
@@ -1408,6 +1440,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupQueueEvict() throws Exception {
         startGridsMultiThreaded(2);
 
@@ -1466,7 +1499,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         assertTrue("Backup queue is not cleared: " + backupQueue(ignite(0)), backupQueue(ignite(0)).size() < BACKUP_ACK_THRESHOLD);
 
-        if (backupQueue(ignite(0)).size() != 0) {
+        if (!backupQueue(ignite(0)).isEmpty()) {
             for (Object o : backupQueue(ignite(0))) {
                 CacheContinuousQueryEntry e = (CacheContinuousQueryEntry)o;
 
@@ -1480,6 +1513,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupQueueCleanupServerQuery() throws Exception {
         Ignite qryClient = startGridsMultiThreaded(2);
 
@@ -1556,6 +1590,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailoverStartStopBackup() throws Exception {
         failoverStartStopFilter(2);
     }
@@ -1563,6 +1598,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartStop() throws Exception {
         this.backups = 2;
 
@@ -1755,18 +1791,30 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 if (filtered)
                     val = -val;
 
-                if (processorPut && prevVal != null) {
-                    qryClnCache.invoke(key, new CacheEntryProcessor<Object, Object, Void>() {
-                        @Override public Void process(MutableEntry<Object, Object> entry,
-                            Object... arguments) throws EntryProcessorException {
-                            entry.setValue(arguments[0]);
+                boolean updated = false;
 
-                            return null;
+                while (!updated) {
+                    try {
+                        if (processorPut && prevVal != null) {
+                            qryClnCache.invoke(key, new CacheEntryProcessor<Object, Object, Void>() {
+                                @Override public Void process(MutableEntry<Object, Object> entry,
+                                    Object... arguments) throws EntryProcessorException {
+                                    entry.setValue(arguments[0]);
+
+                                    return null;
+                                }
+                            }, val);
                         }
-                    }, val);
+                        else
+                            qryClnCache.put(key, val);
+
+                        updated = true;
+                    }
+                    catch (CacheException e) {
+                        assertTrue(X.hasCause(e, TransactionRollbackException.class));
+                        assertSame(atomicityMode(), CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+                    }
                 }
-                else
-                    qryClnCache.put(key, val);
 
                 processorPut = !processorPut;
 
@@ -1870,6 +1918,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiThreadedFailover() throws Exception {
         this.backups = 2;
 
@@ -2020,7 +2069,20 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
                         Integer val = valCntr.incrementAndGet();
 
-                        Integer prevVal = (Integer)qryClnCache.getAndPut(key, val);
+                        Integer prevVal = null;
+
+                        boolean updated = false;
+
+                        while (!updated) {
+                            try {
+                                prevVal = (Integer)qryClnCache.getAndPut(key, val);
+
+                                updated = true;
+                            }
+                            catch (CacheException e) {
+                                assertSame(atomicityMode(), CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+                            }
+                        }
 
                         expEvts.get(threadId).add(new T3<>((Object)key, (Object)val, (Object)prevVal));
 
@@ -2064,6 +2126,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiThreaded() throws Exception {
         this.backups = 2;
 
@@ -2114,7 +2177,19 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 @Override public Object call() throws Exception {
                     Integer val0 = val.getAndIncrement();
 
-                    cache.put(key, val0);
+                    boolean updated = false;
+
+                    while (!updated) {
+                        try {
+                            cache.put(key, val0);
+
+                            updated = true;
+                        }
+                        catch (CacheException e) {
+                            assertTrue(X.hasCause(e, TransactionRollbackException.class));
+                            assertSame(atomicityMode(), CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+                        }
+                    }
 
                     return null;
                 }
@@ -2245,6 +2320,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNoEventLossOnTopologyChange() throws Exception {
         final int batchLoadSize = 2000;
 
@@ -2341,7 +2417,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      */
     private Thread nodeRestartThread(final int restartCycles, final long initDelay, final long restartDelay) {
         Thread t = new Thread(new Runnable() {
-            public void run() {
+            @Override public void run() {
                 sleep(initDelay);
 
                 try {

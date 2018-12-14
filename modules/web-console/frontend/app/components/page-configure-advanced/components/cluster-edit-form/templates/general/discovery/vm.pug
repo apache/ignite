@@ -45,7 +45,8 @@ mixin discovery-vm(modelAt = '$ctrl.clonedCluster')
                         </ul>`
                 })(
                     ng-required='true'
-                    expose-ignite-form-field-control='$vmAddresses'
+                    ng-ref='$vmAddresses'
+                    ng-ref-read='ngModel'
                 )
                 .form-field__errors(
                     ng-messages=`$vmAddresses.$error`

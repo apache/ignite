@@ -103,8 +103,6 @@ public class IgniteNode implements BenchmarkServer {
 
         CacheConfiguration[] ccfgs = c.getCacheConfiguration();
 
-        c.setMvccEnabled(args.mvccEnabled());
-
         if (ccfgs != null) {
             for (CacheConfiguration cc : ccfgs) {
                 // IgniteNode can not run in CLIENT_ONLY mode,
@@ -179,8 +177,12 @@ public class IgniteNode implements BenchmarkServer {
             memCfg.setPageSize(args.getPageSize());
         }
 
-        if (args.persistentStoreEnabled()) {
+        // Set data storage configuration with persistence only if there is no data storage configuration
+        // in configuration file.
+        if (args.persistentStoreEnabled() && c.getDataStorageConfiguration() == null) {
             DataStorageConfiguration pcCfg = new DataStorageConfiguration();
+
+            pcCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
 
             c.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
 

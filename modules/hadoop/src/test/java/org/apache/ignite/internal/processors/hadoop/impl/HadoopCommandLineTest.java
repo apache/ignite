@@ -250,11 +250,33 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
         res.environment().put("HADOOP_HOME", hadoopHome);
         res.environment().put("HADOOP_CLASSPATH", ggClsPath);
         res.environment().put("HADOOP_CONF_DIR", testWorkDir.getAbsolutePath());
+        res.environment().put("HADOOP_OPTS", filteredJvmArgs());
 
         res.redirectErrorStream(true);
 
         return res;
     }
+
+    /**
+     * Creates list of JVM arguments to be used to start hadoop process.
+     *
+     * @return JVM arguments.
+     */
+    private String filteredJvmArgs() {
+        StringBuilder filteredJvmArgs = new StringBuilder();
+
+        filteredJvmArgs.append("-ea");
+
+        for (String arg : U.jvmArgs()) {
+            if (arg.startsWith("--add-opens") || arg.startsWith("--add-exports") || arg.startsWith("--add-modules") ||
+                arg.startsWith("--patch-module") || arg.startsWith("--add-reads") ||
+                arg.startsWith("-XX:+IgnoreUnrecognizedVMOptions"))
+                filteredJvmArgs.append(' ').append(arg);
+        }
+
+        return filteredJvmArgs.toString();
+    }
+
 
     /**
      * Waits for process exit and prints the its output.

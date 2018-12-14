@@ -19,7 +19,7 @@
 
 #include <sstream>
 
-#include <boost/test/unit_test_suite_impl.hpp>
+#include <boost/test/unit_test_suite.hpp>
 #include <boost/test/results_collector.hpp>
 #include <boost/test/utils/basic_cstring/io.hpp>
 #include <boost/test/unit_test_log.hpp>

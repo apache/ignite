@@ -24,6 +24,6 @@ button.btn-ignite.btn-ignite--link-dashed-secondary(
     bs-on-before-show='$ctrl.onShow'
     data-multiple='true'
     ng-transclude
-    ng-show='$ctrl.charts.length'
+    ng-disabled='!($ctrl.charts.length)'
 )
     svg(ignite-icon='gear').icon

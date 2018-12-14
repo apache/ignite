@@ -23,5 +23,5 @@ import service from './service';
 
 export default angular
     .module('ignite-console.page-configure.modal-preview-project', [])
-    .service(service.name, service)
+    .service('ModalPreviewProject', service)
     .component(component.name, component);

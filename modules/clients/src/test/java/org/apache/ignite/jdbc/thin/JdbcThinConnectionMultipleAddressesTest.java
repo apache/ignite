@@ -534,7 +534,7 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
         else {
             JdbcThinTcpIo io = GridTestUtils.getFieldValue(conn, "cliIo");
 
-            int idx = GridTestUtils.getFieldValue(io, "srvIdx");
+            int idx = io.serverIndex();
 
             stopGrid(idx);
         }

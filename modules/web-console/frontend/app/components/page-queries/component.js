@@ -27,8 +27,17 @@ export default {
     controller: class Ctrl {
         static $inject = ['$element', '$rootScope', '$state', 'IgniteNotebook'];
 
+        /**
+         * @param {JQLite} $element       
+         * @param {ng.IRootScopeService} $rootScope     
+         * @param {import('@uirouter/angularjs').StateService} $state         
+         * @param {import('./notebook.service').default} IgniteNotebook
+         */
         constructor($element, $rootScope, $state, IgniteNotebook) {
-            Object.assign(this, {$element, $rootScope, $state, IgniteNotebook});
+            this.$element = $element;
+            this.$rootScope = $rootScope;
+            this.$state = $state;
+            this.IgniteNotebook = IgniteNotebook;
         }
 
         $onInit() {

@@ -27,10 +27,14 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * The test checks process messaging.
  */
+@RunWith(JUnit4.class)
 public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVariationsAbstractTest {
     /**
      * Message topic.
@@ -55,6 +59,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalServer() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -66,6 +71,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalServerAsync() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -77,6 +83,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalListener() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -88,6 +95,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerClientMessage() throws Exception {
         if (!testsCfg.withClients())
             return;
@@ -102,6 +110,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerClientMessageAsync() throws Exception {
         if (!testsCfg.withClients())
             return;
@@ -116,6 +125,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientClientMessage() throws Exception {
         if (!testsCfg.withClients())
             return;
@@ -130,6 +140,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientClientMessageAsync() throws Exception {
         if (!testsCfg.withClients())
             return;
@@ -144,6 +155,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientServerMessage() throws Exception {
         if (!testsCfg.withClients())
             return;
@@ -158,6 +170,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientServerMessageAsync() throws Exception {
         if (!testsCfg.withClients())
             return;
@@ -172,6 +185,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollectionMessage() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -183,6 +197,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOrderedMessage() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -194,6 +209,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientServerOrderedMessage() throws Exception {
         if (!testsCfg.withClients())
             return;
@@ -208,6 +224,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientClientOrderedMessage() throws Exception {
         if (!testsCfg.withClients())
             return;
@@ -222,6 +239,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerClientOrderedMessage() throws Exception {
         if (!testsCfg.withClients())
             return;
@@ -302,7 +320,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
 
         ClusterGroup grp = ignite.cluster().forClients();
 
-        assert grp.nodes().size() > 0;
+        assert !grp.nodes().isEmpty();
 
         registerListenerAndSendMessages(ignite, grp, async);
     }
@@ -318,7 +336,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
 
         ClusterGroup grp = ignite.cluster().forClients();
 
-        assert grp.nodes().size() > 0;
+        assert !grp.nodes().isEmpty();
 
         registerListenerAndSendMessages(ignite, grp, async);
     }
@@ -334,7 +352,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
 
         ClusterGroup grp = ignite.cluster().forServers();
 
-        assert grp.nodes().size() > 0;
+        assert !grp.nodes().isEmpty();
 
         registerListenerAndSendMessages(ignite, grp, async);
     }
@@ -373,7 +391,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
 
         ClusterGroup grp = gridCount() > 1 ? ignite.cluster().forRemotes() : ignite.cluster().forLocal();
 
-        assert grp.nodes().size() > 0;
+        assert !grp.nodes().isEmpty();
 
         int messages = MSGS;
 
@@ -404,7 +422,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
 
         ClusterGroup grp = gridCount() > 1 ? ignite.cluster().forRemotes() : ignite.cluster().forLocal();
 
-        assert grp.nodes().size() > 0;
+        assert !grp.nodes().isEmpty();
 
         registerListenerAndSendOrderedMessages(ignite, grp);
     }
@@ -417,7 +435,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
 
         ClusterGroup grp = ignite.cluster().forServers();
 
-        assert grp.nodes().size() > 0;
+        assert !grp.nodes().isEmpty();
 
         registerListenerAndSendOrderedMessages(ignite, grp);
     }
@@ -430,7 +448,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
 
         ClusterGroup grp = ignite.cluster().forClients();
 
-        assert grp.nodes().size() > 0;
+        assert !grp.nodes().isEmpty();
 
         registerListenerAndSendOrderedMessages(ignite, grp);
     }
@@ -443,7 +461,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
 
         ClusterGroup grp = ignite.cluster().forClients();
 
-        assert grp.nodes().size() > 0;
+        assert !grp.nodes().isEmpty();
 
         registerListenerAndSendOrderedMessages(ignite, grp);
     }

@@ -39,11 +39,11 @@ import {confirmClustersRemoval} from '../page-configure/store/actionCreators';
 export default class PageConfigureOverviewController {
     static $inject = [
         '$uiRouter',
-        ModalPreviewProject.name,
-        Clusters.name,
-        ConfigureState.name,
-        ConfigSelectors.name,
-        ConfigurationDownload.name
+        'ModalPreviewProject',
+        'Clusters',
+        'ConfigureState',
+        'ConfigSelectors',
+        'ConfigurationDownload'
     ];
 
     /**

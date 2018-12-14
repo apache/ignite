@@ -17,8 +17,12 @@
 
 import {CancellationError} from 'app/errors/CancellationError';
 
-// Service to show various information and error messages.
-export default ['IgniteMessages', ['$alert', 'IgniteErrorParser', function($alert, errorParser) {
+/**
+ * Service to show various information and error messages.
+ * @param {mgcrea.ngStrap.alert.IAlertService} $alert
+ * @param {import('./ErrorParser.service').default} errorParser
+ */
+export default function factory($alert, errorParser) {
     // Common instance of alert modal.
     let msgModal;
 
@@ -47,6 +51,10 @@ export default ['IgniteMessages', ['$alert', 'IgniteErrorParser', function($aler
     return {
         errorMessage,
         hideAlert,
+        /**
+         * @param {string|CancellationError} message
+         * @param [err]
+         */
         showError(message, err, duration = 10) {
             if (message instanceof CancellationError)
                 return false;
@@ -55,8 +63,13 @@ export default ['IgniteMessages', ['$alert', 'IgniteErrorParser', function($aler
 
             return false;
         },
+        /**
+         * @param {string} message
+         */
         showInfo(message, duration = 5) {
             _showMessage(message, null, 'success', duration);
         }
     };
-}]];
+}
+
+factory.$inject = ['$alert', 'IgniteErrorParser'];

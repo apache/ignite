@@ -218,7 +218,6 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testClosureMethodWithResourceClassWithMultipleBeans() throws Exception {
         IgniteConfiguration anotherCfg = new IgniteConfiguration();
         anotherCfg.setIgniteInstanceName("anotherGrid");
@@ -330,7 +329,6 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
      * @param expE Expected exception type.
      * @param expEMsg Expected exception message.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void assertError(final IgniteCallable<?> job, final Ignite grid, Class<? extends Throwable> expE,
         String expEMsg) {
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {

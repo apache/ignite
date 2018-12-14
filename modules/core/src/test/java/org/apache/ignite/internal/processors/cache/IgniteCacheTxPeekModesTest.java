@@ -41,12 +41,4 @@ public class IgniteCacheTxPeekModesTest extends IgniteCachePeekModesAbstractTest
     @Override protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
     }
-
-    /** {@inheritDoc} */
-    @Override public void testLocalPeek() throws Exception {
-        // TODO: uncomment and re-open ticket if fails.
-//        fail("https://issues.apache.org/jira/browse/IGNITE-1824");
-
-        super.testLocalPeek();
-    }
 }

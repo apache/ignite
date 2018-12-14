@@ -41,9 +41,9 @@ angular
 
     tfMetaTagsProvider.setTitleSuffix(' – Apache Ignite Web Console');
 }])
-.directive(...ignitePoweredByApache)
-.directive(...igniteHeaderLogo)
-.directive(...igniteHeaderTitle)
-.directive(...igniteTerms)
-.directive(...igniteFeatures)
-.directive(...igniteFooter);
+.directive('ignitePoweredByApache', ignitePoweredByApache)
+.directive('igniteHeaderLogo', igniteHeaderLogo)
+.directive('igniteHeaderTitle', igniteHeaderTitle)
+.directive('igniteTerms', igniteTerms)
+.directive('igniteFeatures', igniteFeatures)
+.directive('igniteFooter', igniteFooter);

@@ -18,6 +18,8 @@
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/utility.h"
 
+#include "ignite/odbc/streaming/streaming_batch.h"
+
 namespace
 {
     using namespace ignite;
@@ -123,7 +125,7 @@ namespace ignite
                 writer.WriteBool(autoCommit);
         }
 
-        QueryExecuteBatchtRequest::QueryExecuteBatchtRequest(const std::string& schema, const std::string& sql,
+        QueryExecuteBatchRequest::QueryExecuteBatchRequest(const std::string& schema, const std::string& sql,
             const app::ParameterSet& params, SqlUlen begin, SqlUlen end, bool last, int32_t timeout, bool autoCommit) :
             schema(schema),
             sql(sql),
@@ -137,12 +139,12 @@ namespace ignite
             // No-op.
         }
 
-        QueryExecuteBatchtRequest::~QueryExecuteBatchtRequest()
+        QueryExecuteBatchRequest::~QueryExecuteBatchRequest()
         {
             // No-op.
         }
 
-        void QueryExecuteBatchtRequest::Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
+        void QueryExecuteBatchRequest::Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
         {
             writer.WriteInt8(RequestType::EXECUTE_SQL_QUERY_BATCH);
 
@@ -262,6 +264,38 @@ namespace ignite
             writer.WriteInt32(pageSize);
         }
 
+        StreamingBatchRequest::StreamingBatchRequest(const std::string& schema,
+            const streaming::StreamingBatch& batch, bool last, int64_t order) :
+            schema(schema),
+            batch(batch),
+            last(last),
+            order(order)
+        {
+            // No-op.
+        }
+
+        StreamingBatchRequest::~StreamingBatchRequest()
+        {
+            // No-op.
+        }
+
+        void StreamingBatchRequest::Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
+        {
+            writer.WriteInt8(RequestType::STREAMING_BATCH);
+
+            writer.WriteString(schema);
+
+            impl::interop::InteropOutputStream* stream = writer.GetStream();
+
+            writer.WriteInt32(batch.GetSize());
+
+            if (batch.GetSize() != 0)
+                stream->WriteInt8Array(batch.GetData(), batch.GetDataLength());
+
+            writer.WriteBool(last);
+            writer.WriteInt64(order);
+        }
+
         Response::Response() :
             status(ResponseStatus::UNKNOWN_ERROR),
             error()
@@ -358,7 +392,7 @@ namespace ignite
             ReadAffectedRows(reader, ver, affectedRows);
         }
 
-        QueryExecuteBatchResponse::QueryExecuteBatchResponse():
+        QueryExecuteBatchResponse::QueryExecuteBatchResponse() :
             affectedRows(0),
             errorMessage(),
             errorCode(1)
@@ -386,6 +420,26 @@ namespace ignite
                 if (ver >= ProtocolVersion::VERSION_2_1_5)
                     errorCode = reader.ReadInt32();
             }
+        }
+
+        StreamingBatchResponse::StreamingBatchResponse() :
+            errorMessage(),
+            errorCode(ResponseStatus::SUCCESS),
+            order(0)
+        {
+            // No-op.
+        }
+
+        StreamingBatchResponse::~StreamingBatchResponse()
+        {
+            // No-op.
+        }
+
+        void StreamingBatchResponse::ReadOnSuccess(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+        {
+            errorMessage = reader.ReadObject<std::string>();
+            errorCode = reader.ReadInt32();
+            order = reader.ReadInt64();
         }
 
         QueryFetchResponse::QueryFetchResponse(ResultPage& resultPage) :

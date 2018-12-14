@@ -29,11 +29,7 @@ namespace ignite
         dbc(NULL),
         stmt(NULL)
     {
-#ifdef IGNITE_TESTS_32
-        grid = StartNode("queries-test-32.xml");
-#else
-        grid = StartNode("queries-test.xml");
-#endif
+        grid = StartPlatformNode("queries-test.xml", "NodeMain");
 
         testCache = grid.GetCache<int64_t, TestType>("cache");
 

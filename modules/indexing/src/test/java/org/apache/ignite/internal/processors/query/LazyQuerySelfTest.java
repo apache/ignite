@@ -315,7 +315,6 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
      * @param qry Query.
      * @return Cursor.
      */
-    @SuppressWarnings("unchecked")
     private static FieldsQueryCursor<List<?>> execute(Ignite node, SqlFieldsQuery qry) {
         return cache(node).query(qry.setLazy(true));
     }

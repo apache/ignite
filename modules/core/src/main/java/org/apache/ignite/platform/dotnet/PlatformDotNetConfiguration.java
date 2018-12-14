@@ -91,7 +91,6 @@ public class PlatformDotNetConfiguration implements PlatformConfiguration {
     /**
      * @return Configuration copy.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private PlatformDotNetConfiguration copy() {
         return new PlatformDotNetConfiguration(this);
     }

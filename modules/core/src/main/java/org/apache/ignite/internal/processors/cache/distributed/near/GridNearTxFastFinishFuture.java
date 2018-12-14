@@ -60,7 +60,7 @@ public class GridNearTxFastFinishFuture extends GridFutureAdapter<IgniteInternal
     /**
      * @param clearThreadMap {@code True} if need remove tx from thread map.
      */
-    public void finish(boolean commit, boolean clearThreadMap, boolean onTimeout) {
+    @Override public void finish(boolean commit, boolean clearThreadMap, boolean onTimeout) {
         try {
             if (commit) {
                 tx.state(PREPARING);

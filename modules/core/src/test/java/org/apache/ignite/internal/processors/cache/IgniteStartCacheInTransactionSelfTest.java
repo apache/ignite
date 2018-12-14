@@ -30,8 +30,12 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -40,6 +44,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Check starting cache in transaction.
  */
+@RunWith(JUnit4.class)
 public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -90,6 +95,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartCache() throws Exception {
         final Ignite ignite = grid(0);
 
@@ -116,6 +122,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartConfigurationCache() throws Exception {
         final Ignite ignite = grid(0);
 
@@ -142,6 +149,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartConfigurationCacheWithNear() throws Exception {
         final Ignite ignite = grid(0);
 
@@ -168,6 +176,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetOrCreateCache() throws Exception {
         final Ignite ignite = grid(0);
 
@@ -194,6 +203,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetOrCreateCacheConfiguration() throws Exception {
         final Ignite ignite = grid(0);
 
@@ -220,6 +230,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopCache() throws Exception {
         final Ignite ignite = grid(0);
 
@@ -246,9 +257,12 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockCache() throws Exception {
         if (atomicityMode() != TRANSACTIONAL)
             return;
+
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
         final Ignite ignite = grid(0);
 

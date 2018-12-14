@@ -24,10 +24,14 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.configvariations.ConfigParameter;
 import org.apache.ignite.testframework.configvariations.Parameters;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test.
  */
+@RunWith(JUnit4.class)
 public class ParametersTest extends TestCase {
     /** */
     private static final String DEFAULT_CACHE_NAME = "default";
@@ -35,6 +39,7 @@ public class ParametersTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEnumVariations() throws Exception {
         ConfigParameter<CacheConfiguration>[] modes = Parameters.enumParameters("setCacheMode", CacheMode.class);
 
@@ -60,7 +65,7 @@ public class ParametersTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
+    @Test
     public void testEnumVariationsWithNull() throws Exception {
         ConfigParameter<CacheConfiguration>[] cfgParam =
             Parameters.enumParameters(true, "setCacheMode", CacheMode.class);

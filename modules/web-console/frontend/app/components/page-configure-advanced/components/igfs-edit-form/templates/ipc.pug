@@ -28,28 +28,77 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
             -var enabled = `${model}.ipcEndpointEnabled`
 
             .pc-form-grid-col-60
-                +checkbox('Enabled', enabled, '"ipcEndpointEnabled"', 'IPC endpoint enabled flag')
+                +form-field__checkbox({
+                    label: 'Enabled',
+                    model: enabled,
+                    name: '"ipcEndpointEnabled"',
+                    tip: 'IPC endpoint enabled flag'
+                })
             .pc-form-grid-col-60
-                +dropdown('Type:', `${ipcEndpointConfiguration}.type`, '"ipcEndpointConfigurationType"', enabled, 'TCP',
-                    '[\
+                +form-field__dropdown({
+                    label: 'Type:',
+                    model: `${ipcEndpointConfiguration}.type`,
+                    name: '"ipcEndpointConfigurationType"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'TCP',
+                    options: '[\
                         {value: "SHMEM", label: "SHMEM"},\
                         {value: "TCP", label: "TCP"}\
                     ]',
-                    'IPC endpoint type\
-                    <ul>\
-                        <li>SHMEM - shared memory endpoint</li>\
-                        <li>TCP - TCP endpoint</li>\
-                    </ul>')
+                    tip: 'IPC endpoint type\
+                        <ul>\
+                            <li>SHMEM - shared memory endpoint</li>\
+                            <li>TCP - TCP endpoint</li>\
+                        </ul>'
+                })
             .pc-form-grid-col-30
-                +text-ip-address('Host:', `${ipcEndpointConfiguration}.host`, '"ipcEndpointConfigurationHost"', enabled, '127.0.0.1', 'Host endpoint is bound to')
+                +form-field__ip-address({
+                    label: 'Host:',
+                    model: `${ipcEndpointConfiguration}.host`,
+                    name: '"ipcEndpointConfigurationHost"',
+                    enabled: enabled,
+                    placeholder: '127.0.0.1',
+                    tip: 'Host endpoint is bound to'
+                })
             .pc-form-grid-col-30
-                +number-min-max('Port:', `${ipcEndpointConfiguration}.port`, '"ipcEndpointConfigurationPort"', enabled, '10500', '1', '65535', 'Port endpoint is bound to')
+                +form-field__number({
+                    label: 'Port:',
+                    model: `${ipcEndpointConfiguration}.port`,
+                    name: '"ipcEndpointConfigurationPort"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '10500',
+                    min: '1',
+                    max: '65535',
+                    tip: 'Port endpoint is bound to'
+                })
             .pc-form-grid-col-30
-                +number('Memory size:', `${ipcEndpointConfiguration}.memorySize`, '"ipcEndpointConfigurationMemorySize"', enabled, '262144', '1', 'Shared memory size in bytes allocated for endpoint communication')
+                +form-field__number({
+                    label: 'Memory size:',
+                    model: `${ipcEndpointConfiguration}.memorySize`,
+                    name: '"ipcEndpointConfigurationMemorySize"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '262144',
+                    min: '1',
+                    tip: 'Shared memory size in bytes allocated for endpoint communication'
+                })
             .pc-form-grid-col-30
-                +number('Thread count:', `${ipcEndpointConfiguration}.threadCount`, '"ipcEndpointConfigurationThreadCount"', enabled, 'availableProcessors', '1',
-                    'Number of threads used by this endpoint to process incoming requests')
+                +form-field__number({
+                    label: 'Thread count:',
+                    model: `${ipcEndpointConfiguration}.threadCount`,
+                    name: '"ipcEndpointConfigurationThreadCount"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'availableProcessors',
+                    min: '1',
+                    tip: 'Number of threads used by this endpoint to process incoming requests'
+                })
             .pc-form-grid-col-60
-                +text-enabled('Token directory:', `${ipcEndpointConfiguration}.tokenDirectoryPath`, '"ipcEndpointConfigurationTokenDirectoryPath"', enabled, 'false', 'ipc/shmem', 'Directory where shared memory tokens are stored')
+                +form-field__text({
+                    label: 'Token directory:',
+                    model: `${ipcEndpointConfiguration}.tokenDirectoryPath`,
+                    name: '"ipcEndpointConfigurationTokenDirectoryPath"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'ipc/shmem',
+                    tip: 'Directory where shared memory tokens are stored'
+                })
         .pca-form-column-6
             +preview-xml-java(model, 'igfsIPC')

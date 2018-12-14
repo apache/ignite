@@ -22,7 +22,7 @@ include /app/helpers/jade/mixins
 panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-title Secondary file system
     panel-description
-        | Secondary file system is provided for pass-through, write-through, and read-through purposes. 
+        | Secondary file system is provided for pass-through, write-through, and read-through purposes.
         a.link-success(href="https://apacheignite-fs.readme.io/docs/secondary-file-system" target="_blank") More info
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
@@ -46,10 +46,31 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     +form-field__error({ error: 'requiredWhenIGFSProxyMode', message: 'Secondary file system should be configured for "PROXY" IGFS mode' })
                     +form-field__error({ error: 'requiredWhenPathModeProxyMode', message: 'Secondary file system should be configured for "PROXY" path mode' })
             .pc-form-grid-col-60
-                +text-enabled('URI:', `${secondaryFileSystem}.uri`, '"hadoopURI"', enabled, 'false', 'hdfs://[namenodehost]:[port]/[path]', 'URI of file system')
+                +form-field__text({
+                    label: 'URI:',
+                    model: `${secondaryFileSystem}.uri`,
+                    name: '"hadoopURI"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'hdfs://[namenodehost]:[port]/[path]',
+                    tip: 'URI of file system'
+                })
             .pc-form-grid-col-60
-                +text-enabled('Config path:', `${secondaryFileSystem}.cfgPath`, '"cfgPath"', enabled, 'false', 'Path to additional config', 'Additional path to Hadoop configuration')
+                +form-field__text({
+                    label: 'Config path:',
+                    model: `${secondaryFileSystem}.cfgPath`,
+                    name: '"cfgPath"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'Path to additional config',
+                    tip: 'Additional path to Hadoop configuration'
+                })
             .pc-form-grid-col-60
-                +text-enabled('User name:', `${secondaryFileSystem}.userName`, '"userName"', enabled, 'false', 'Input user name', 'User name')
+                +form-field__text({
+                    label: 'User name:',
+                    model: `${secondaryFileSystem}.userName`,
+                    name: '"userName"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'Input user name',
+                    tip: 'User name'
+                })
         .pca-form-column-6
             +preview-xml-java(model, 'igfsSecondFS')

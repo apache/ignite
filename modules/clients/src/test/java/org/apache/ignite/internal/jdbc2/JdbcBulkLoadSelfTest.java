@@ -130,7 +130,7 @@ public class JdbcBulkLoadSelfTest extends GridCommonAbstractTest {
                 conn = createConnection();
 
                 try (Statement stmt = conn.createStatement()) {
-                    stmt.executeUpdate("copy from \"dummy.csv\" into Person" +
+                    stmt.executeUpdate("copy from 'dummy.csv' into Person" +
                         " (_key, id, firstName, lastName) format csv");
 
                     return null;
@@ -142,7 +142,6 @@ public class JdbcBulkLoadSelfTest extends GridCommonAbstractTest {
     /**
      * A test class for creating a query entity.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** ID. */
         @QuerySqlField

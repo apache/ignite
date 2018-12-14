@@ -28,7 +28,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import javax.cache.Cache;
-import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -53,7 +52,6 @@ import org.apache.ignite.transactions.Transaction;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  * Tests replicated query.
@@ -103,8 +101,8 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
         ignite1 = grid(0);
         ignite2 = grid(1);
@@ -113,19 +111,6 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
         cache1 = jcache(ignite1, CacheKey.class, CacheValue.class);
         cache2 = jcache(ignite2, CacheKey.class, CacheValue.class);
         cache3 = jcache(ignite3, CacheKey.class, CacheValue.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        ignite1 = null;
-        ignite2 = null;
-        ignite3 = null;
-
-        cache1 = null;
-        cache2 = null;
-        cache3 = null;
     }
 
     /**
@@ -156,31 +141,6 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
 
                 i++;
             }
-        }
-        finally {
-            stopGrid("client");
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClientsLocalQuery() throws Exception {
-        try {
-            Ignite g = startGrid("client");
-
-            IgniteCache<Integer, Integer> c = jcache(g, Integer.class, Integer.class);
-
-            for (int i = 0; i < 10; i++)
-                c.put(i, i);
-
-            assertEquals(0, c.localSize());
-
-            SqlQuery<Integer, Integer> qry = new SqlQuery<>(Integer.class, "_key >= 5 order by _key");
-
-            qry.setLocal(true);
-
-            assertThrowsWithCause(() -> c.query(qry), CacheException.class);
         }
         finally {
             stopGrid("client");

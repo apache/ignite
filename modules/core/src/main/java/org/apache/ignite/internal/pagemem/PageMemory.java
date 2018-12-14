@@ -18,15 +18,34 @@
 package org.apache.ignite.internal.pagemem;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.IgniteException;
 
 /**
  */
-public interface PageMemory extends LifecycleAware, PageIdAllocator, PageSupport {
+public interface PageMemory extends PageIdAllocator, PageSupport {
+    /**
+     * Start page memory.
+     */
+    public void start() throws IgniteException;
+
+    /**
+     * Stop page memory.
+     *
+     * @param deallocate {@code True} to deallocate memory, {@code false} to allow memory reuse on subsequent {@link #start()}
+     * @throws IgniteException
+     */
+    public void stop(boolean deallocate) throws IgniteException;
+
     /**
      * @return Page size in bytes.
      */
     public int pageSize();
+
+    /**
+     * @param grpId Group id.
+     * @return Page size without encryption overhead.
+     */
+    public int realPageSize(int grpId);
 
     /**
      * @return Page size with system overhead, in bytes.

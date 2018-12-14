@@ -29,10 +29,14 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.custom.DummyEventFilterFactory;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Checks if filter factory correctly deployed on all nodes.
  */
+@RunWith(JUnit4.class)
 public class ContinuousQueryPeerClassLoadingTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE_NAME = "test-cache";
@@ -55,6 +59,7 @@ public class ContinuousQueryPeerClassLoadingTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteFilterFactoryClient() throws Exception {
         check("server", "client1", "client2");
     }
@@ -62,6 +67,7 @@ public class ContinuousQueryPeerClassLoadingTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteFilterFactoryServer1() throws Exception {
         check("server1", "server2", "client");
     }
@@ -69,6 +75,7 @@ public class ContinuousQueryPeerClassLoadingTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteFilterFactoryServer2() throws Exception {
         check("server1", "server2", "server3");
     }
@@ -91,8 +98,8 @@ public class ContinuousQueryPeerClassLoadingTest extends GridCommonAbstractTest 
         final ContinuousQuery<Integer, String> qry1 = new ContinuousQuery<>();
         final ContinuousQuery<Integer, String> qry2 = new ContinuousQuery<>();
 
-        qry1.setRemoteFilterFactory(new DummyEventFilterFactory());
-        qry2.setRemoteFilterFactory(new DummyEventFilterFactory());
+        qry1.setRemoteFilterFactory(new DummyEventFilterFactory<>());
+        qry2.setRemoteFilterFactory(new DummyEventFilterFactory<>());
 
         final AtomicInteger client1Evts = new AtomicInteger(0);
         final AtomicInteger client2Evts = new AtomicInteger(0);

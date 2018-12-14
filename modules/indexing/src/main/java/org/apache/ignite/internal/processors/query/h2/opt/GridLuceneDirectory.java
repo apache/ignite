@@ -75,7 +75,7 @@ public class GridLuceneDirectory extends BaseDirectory implements Accountable {
     }
 
     /** {@inheritDoc} */
-    @Override public void renameFile(String source, String dest) throws IOException {
+    @Override public void rename(String source, String dest) throws IOException {
         ensureOpen();
 
         GridLuceneFile file = fileMap.get(source);
@@ -86,6 +86,16 @@ public class GridLuceneDirectory extends BaseDirectory implements Accountable {
         fileMap.put(dest, file);
 
         fileMap.remove(source);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void syncMetaData() throws IOException {
+        // Noop. No meta data sync needed as all data is in-memory.
+    }
+
+    /** {@inheritDoc} */
+    @Override public IndexOutput createTempOutput(String prefix, String suffix, IOContext ctx) throws IOException {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

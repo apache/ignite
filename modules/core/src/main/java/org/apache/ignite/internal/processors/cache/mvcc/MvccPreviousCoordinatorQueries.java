@@ -19,12 +19,10 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -56,29 +54,25 @@ class MvccPreviousCoordinatorQueries {
 
     /**
      * @param nodeQueries Active queries map.
-     * @param discoCache Discovery data.
+     * @param nodes Cluster nodes.
      * @param mgr Discovery manager.
      */
-    void init(Map<UUID, GridLongList> nodeQueries, DiscoCache discoCache, GridDiscoveryManager mgr) {
+    void init(GridLongList nodeQueries, Collection<ClusterNode> nodes, GridDiscoveryManager mgr) {
         synchronized (this) {
             assert !initDone;
             assert waitNodes == null;
 
             waitNodes = new HashSet<>();
 
-            for (ClusterNode node : discoCache.allNodes()) {
-                if ((nodeQueries == null || !nodeQueries.containsKey(node.id())) &&
-                    mgr.alive(node) &&
-                    !F.contains(rcvd, node.id()))
+            for (ClusterNode node : nodes) {
+                if (!node.isLocal() && mgr.alive(node) && !F.contains(rcvd, node.id()))
                     waitNodes.add(node.id());
             }
 
             initDone = waitNodes.isEmpty();
 
-            if (nodeQueries != null) {
-                for (Map.Entry<UUID, GridLongList> e : nodeQueries.entrySet())
-                    mergeToActiveQueries(e.getKey(), e.getValue());
-            }
+            if (nodeQueries != null)
+                mergeToActiveQueries(mgr.localNode().id(), nodeQueries);
 
             if (initDone && !prevQueriesDone)
                 prevQueriesDone = activeQueries.isEmpty() && rcvdAcks.isEmpty();

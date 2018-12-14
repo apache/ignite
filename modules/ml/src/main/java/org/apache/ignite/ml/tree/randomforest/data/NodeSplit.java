@@ -27,7 +27,7 @@ public class NodeSplit {
     private final int featureId;
 
     /** Feature split value. */
-    private final double value;
+    private final double val;
 
     /** Impurity at this split point. */
     private final double impurity;
@@ -36,12 +36,12 @@ public class NodeSplit {
      * Creates an instance of NodeSplit.
      *
      * @param featureId Feature id.
-     * @param value Feature split value.
+     * @param val Feature split value.
      * @param impurity Impurity value.
      */
-    public NodeSplit(int featureId, double value, double impurity) {
+    public NodeSplit(int featureId, double val, double impurity) {
         this.featureId = featureId;
-        this.value = value;
+        this.val = val;
         this.impurity = impurity;
     }
 
@@ -52,7 +52,7 @@ public class NodeSplit {
      * @return list of children.
      */
     public List<TreeNode> split(TreeNode node) {
-        List<TreeNode> children = node.toConditional(featureId, value);
+        List<TreeNode> children = node.toConditional(featureId, val);
         node.setImpurity(impurity);
         return children;
     }
@@ -73,7 +73,7 @@ public class NodeSplit {
     }
 
     /** */
-    public double getValue() {
-        return value;
+    public double getVal() {
+        return val;
     }
 }

@@ -71,7 +71,7 @@ public class DataPageUpdateRecord extends PageDeltaRecord {
 
         AbstractDataPageIO io = PageIO.getPageIO(pageAddr);
 
-        io.updateRow(pageAddr, itemId, pageMem.pageSize(), payload, null, 0);
+        io.updateRow(pageAddr, itemId, pageMem.realPageSize(groupId()), payload, null, 0);
     }
 
     /** {@inheritDoc} */

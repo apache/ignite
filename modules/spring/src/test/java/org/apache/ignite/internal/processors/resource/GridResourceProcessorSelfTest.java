@@ -174,7 +174,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
         private String str2;
 
         /** */
-        @SuppressWarnings({"UnusedDeclaration"}) @TestAnnotation3
+        @TestAnnotation3
         private String str7;
 
         /**
@@ -226,11 +226,11 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
                 private String str6;
 
                 private Callable<String> c = new Callable<String>() {
-                    @SuppressWarnings({"UnusedDeclaration"}) @TestAnnotation
+                    @TestAnnotation
                     private String cStr;
 
                     private Runnable r = new Runnable() {
-                        @SuppressWarnings({"UnusedDeclaration"}) @TestAnnotation
+                        @TestAnnotation
                         private String rStr;
 
                         @Override public void run() {
@@ -471,7 +471,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
      */
     private static final class Test1 {
         /** */
-        @SuppressWarnings({"unused", "UnusedDeclaration"})
+        @SuppressWarnings({"unused"})
         @TestAnnotation1
         private String val1;
     }

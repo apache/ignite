@@ -30,7 +30,6 @@ import java.sql.Timestamp;
 /**
  * Result of the {@link PlatformDotNetSessionLockProcessor} execution.
  */
-@SuppressWarnings({"AssignmentToDateFieldFromParameter", "ReturnOfDateField"})
 public class PlatformDotNetSessionLockResult implements Binarylizable {
     /** Success flag. */
     private boolean success;

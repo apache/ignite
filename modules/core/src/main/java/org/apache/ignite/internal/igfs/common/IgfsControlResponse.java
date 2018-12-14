@@ -362,7 +362,6 @@ public class IgfsControlResponse extends IgfsMessage {
      * @param checkIo Whether to check for IO exception.
      * @return Error code.
      */
-    @SuppressWarnings("unchecked")
     private int errorCode(IgniteCheckedException e, boolean checkIo) {
         if (X.hasCause(e, IgfsPathNotFoundException.class))
             return ERR_FILE_NOT_FOUND;

@@ -32,9 +32,6 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class NearResultSetEnlistFuture extends GridNearTxQueryResultsEnlistFuture implements ResultSetEnlistFuture  {
-    /** */
-    private static final long serialVersionUID = 877907044489718378L;
-
     /**
      * @param nearNodeId   Near node ID.
      * @param nearLockVer  Near lock version.

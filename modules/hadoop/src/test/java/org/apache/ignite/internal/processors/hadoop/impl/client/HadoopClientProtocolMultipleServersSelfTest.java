@@ -54,7 +54,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 /**
  * Hadoop client protocol configured with multiple ignite servers tests.
  */
-@SuppressWarnings("ResultOfMethodCallIgnored")
 public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractSelfTest {
     /** Input path. */
     private static final String PATH_INPUT = "/input";
@@ -147,7 +146,6 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ConstantConditions")
     public void testMultipleAddresses() throws Exception {
         restPort = REST_PORT;
 
@@ -163,7 +161,6 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
     public void testSingleAddress() throws Exception {
         try {
             // Don't use REST_PORT to test connection fails if the only this port is configured
@@ -189,7 +186,6 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ConstantConditions")
     public void testMixedAddrs() throws Exception {
         restPort = REST_PORT;
 

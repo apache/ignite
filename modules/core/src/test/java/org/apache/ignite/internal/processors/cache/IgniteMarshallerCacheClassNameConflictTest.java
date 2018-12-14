@@ -32,14 +32,17 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -53,6 +56,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * and {@link org.apache.ignite.internal.processors.marshaller.MappingProposedMessage} is sent
  * with not-null <b>conflictingClsName</b> field.
  */
+@RunWith(JUnit4.class)
 public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstractTest {
     /** */
     private volatile boolean bbClsRejected;
@@ -104,6 +108,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCachePutGetClassesWithNameConflict() throws Exception {
         Ignite srv1 = startGrid(0);
         Ignite srv2 = startGrid(1);
@@ -193,7 +198,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
             }
 
             /** {@inheritDoc} */
-            @Override public void onDiscovery(
+            @Override public IgniteFuture<?> onDiscovery(
                     int type,
                     long topVer,
                     ClusterNode node,
@@ -219,7 +224,9 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
                 }
 
                 if (delegate != null)
-                    delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+                    return delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+
+                return new IgniteFinishedFutureImpl<>();
             }
 
             /** {@inheritDoc} */

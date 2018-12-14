@@ -28,6 +28,7 @@ import './ui-grid/index.scss';
 import './ui-grid-header/index.scss';
 import './ui-grid-settings/index.scss';
 import './page/index.scss';
+import './spinner-circle/index.scss';
 import './switcher/index.scss';
 import './form-field/index.scss';
 import './typography/index.scss';

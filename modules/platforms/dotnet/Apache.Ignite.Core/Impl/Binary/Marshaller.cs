@@ -268,7 +268,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             return new BinaryReader(this, stream, mode, null);
         }
-        
+
         /// <summary>
         /// Gets metadata for the given type ID.
         /// </summary>
@@ -297,7 +297,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             Debug.Assert(desc != null);
 
-            GetBinaryTypeHandler(desc);  // ensure that handler exists
+            GetBinaryTypeHandler(desc); // ensure that handler exists
 
             if (Ignite != null)
             {
@@ -505,7 +505,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             desc = desc == null
                 ? new BinaryFullTypeDescriptor(type, typeId, typeName, true, _cfg.NameMapper,
-                    _cfg.IdMapper, ser, false, AffinityKeyMappedAttribute.GetFieldNameFromAttribute(type), 
+                    _cfg.IdMapper, ser, false, AffinityKeyMappedAttribute.GetFieldNameFromAttribute(type),
                     BinaryUtils.IsIgniteEnum(type), registered)
                 : new BinaryFullTypeDescriptor(desc, type, ser, registered);
 
@@ -576,8 +576,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 // Type is found.
                 var typeName = GetTypeName(type, nameMapper);
                 int typeId = GetTypeId(typeName, idMapper);
-                var affKeyFld = typeCfg.AffinityKeyFieldName 
-                    ?? AffinityKeyMappedAttribute.GetFieldNameFromAttribute(type);
+                var affKeyFld = typeCfg.AffinityKeyFieldName
+                                ?? AffinityKeyMappedAttribute.GetFieldNameFromAttribute(type);
                 var serializer = GetSerializer(_cfg, typeCfg, type, typeId, nameMapper, idMapper, _log);
 
                 return AddType(type, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, serializer,
@@ -655,7 +655,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 ThrowConflictingTypeError(typeName, conflictingType.TypeName, typeId);
             }
 
-            var descriptor = new BinaryFullTypeDescriptor(type, typeId, typeName, userType, nameMapper, idMapper, 
+            var descriptor = new BinaryFullTypeDescriptor(type, typeId, typeName, userType, nameMapper, idMapper,
                 serializer, keepDeserialized, affKeyFieldName, isEnum);
 
             if (RegistrationDisabled)
@@ -781,6 +781,30 @@ namespace Apache.Ignite.Core.Impl.Binary
         public string GetTypeName(Type type, IBinaryNameMapper mapper = null)
         {
             return GetTypeName(type.AssemblyQualifiedName, mapper);
+        }
+
+        /// <summary>
+        /// Called when local client node has been reconnected to the cluster.
+        /// </summary>
+        /// <param name="clusterRestarted">Cluster restarted flag.</param>
+        public void OnClientReconnected(bool clusterRestarted)
+        {
+            if (!clusterRestarted)
+                return;
+            
+            // Reset all binary structures. Metadata must be sent again.
+            // _idToDesc enumerator is thread-safe (returns a snapshot).
+            // If there are new descriptors added concurrently, they are fine (we are already connected).
+            
+            // Race is possible when serialization is started before reconnect (or even before disconnect)
+            // and finished after reconnect, meta won't be sent to cluster because it is assumed to be known,
+            // but operation will succeed.
+            // We don't support this use case. Users should handle reconnect events properly when cluster is restarted.
+            // Supporting this very rare use case will complicate the code a lot with little benefit. 
+            foreach (var desc in _idToDesc)
+            {
+                desc.Value.ResetWriteStructure();
+            }
         }
 
         /// <summary>

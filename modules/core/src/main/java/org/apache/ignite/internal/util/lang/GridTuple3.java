@@ -172,7 +172,6 @@ public class GridTuple3<V1, V2, V3> implements Iterable<Object>, Externalizable,
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"OverriddenMethodCallDuringObjectConstruction", "CloneDoesntDeclareCloneNotSupportedException"})
     @Override public Object clone() {
         try {
             return super.clone();

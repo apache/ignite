@@ -21,7 +21,10 @@ const template = `
     >{{::title.text}}</h1>
 `;
 
-export default ['igniteHeaderTitle', ['IgniteBranding', (branding) => {
+/**
+ * @param {import('./branding.service').default} branding
+ */
+export default function factory(branding) {
     function controller() {
         const ctrl = this;
 
@@ -35,5 +38,7 @@ export default ['igniteHeaderTitle', ['IgniteBranding', (branding) => {
         controllerAs: 'title',
         replace: true
     };
-}]];
+}
+
+factory.$inject = ['IgniteBranding'];
 

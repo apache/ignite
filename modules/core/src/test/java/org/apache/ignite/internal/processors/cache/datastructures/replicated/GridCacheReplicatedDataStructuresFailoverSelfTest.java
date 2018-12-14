@@ -38,18 +38,4 @@ public class GridCacheReplicatedDataStructuresFailoverSelfTest
     @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
         return TRANSACTIONAL;
     }
-
-    /**
-     *
-     */
-    @Override public void testFairReentrantLockConstantMultipleTopologyChangeNonFailoverSafe() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-6454");
-    }
-
-    /**
-     *
-     */
-    @Override public void testReentrantLockConstantMultipleTopologyChangeNonFailoverSafe() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-6454");
-    }
 }

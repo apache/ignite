@@ -87,7 +87,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests basic client behavior with multiple nodes.
  */
-@SuppressWarnings("ThrowableResultOfMethodCallIgnored")
 public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -431,7 +430,6 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new ComputeJobAdapter() {
-                    @SuppressWarnings("OverlyStrongTypeCast")
                     @Override public Object execute() {
                         try {
                             Thread.sleep(1000);
@@ -475,7 +473,6 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     /**
      * Communication SPI which checks cache flags.
      */
-    @SuppressWarnings("unchecked")
     private static class TestCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)

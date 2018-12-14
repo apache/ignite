@@ -124,7 +124,7 @@ public class IgniteTxRemoteSingleStateImpl extends IgniteTxRemoteStateAdapter {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(IgniteTxRemoteSingleStateImpl.class, this);
     }
 
@@ -144,7 +144,7 @@ public class IgniteTxRemoteSingleStateImpl extends IgniteTxRemoteStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean mvccEnabled(GridCacheSharedContext cctx) {
+    @Override public boolean mvccEnabled() {
         return entry != null && entry.context().mvccEnabled();
     }
 }

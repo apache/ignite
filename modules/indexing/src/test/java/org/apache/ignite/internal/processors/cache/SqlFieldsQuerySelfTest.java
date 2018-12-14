@@ -34,7 +34,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
     /** INSERT statement. */
-    private final static String INSERT = "insert into Person(_key, name) values (5, 'x')";
+    private static final String INSERT = "insert into Person(_key, name) values (5, 'x')";
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {

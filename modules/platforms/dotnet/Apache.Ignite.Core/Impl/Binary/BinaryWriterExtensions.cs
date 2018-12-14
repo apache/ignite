@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Writes the nullable boolean.
+        /// Writes the nullable int.
         /// </summary>
         public static void WriteIntNullable(this IBinaryRawWriter writer, int? value)
         {
@@ -52,6 +52,20 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 writer.WriteBoolean(true);
                 writer.WriteInt(value.Value);
+            }
+            else
+                writer.WriteBoolean(false);
+        }
+
+        /// <summary>
+        /// Writes the nullable long.
+        /// </summary>
+        public static void WriteLongNullable(this IBinaryRawWriter writer, long? value)
+        {
+            if (value != null)
+            {
+                writer.WriteBoolean(true);
+                writer.WriteLong(value.Value);
             }
             else
                 writer.WriteBoolean(false);

@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
  * Cache entry transactional update result.
  */
 public class GridCacheUpdateTxResult {
-    /** Success flag.*/
+    /** Success flag. */
     private final boolean success;
 
     /** Partition update counter. */
@@ -40,13 +40,28 @@ public class GridCacheUpdateTxResult {
     private GridLongList mvccWaitTxs;
 
     /** */
-    private  GridFutureAdapter<GridCacheUpdateTxResult> fut;
+    private GridFutureAdapter<GridCacheUpdateTxResult> fut;
 
     /** */
     private WALPointer logPtr;
 
-    /** */
+    /** Mvcc history. */
     private List<MvccLinkAwareSearchRow> mvccHistory;
+
+    /** Previous value. */
+    private CacheObject prevVal;
+
+    /** Invoke result. */
+    private CacheInvokeResult invokeRes;
+
+    /** New value. */
+    private CacheObject newVal;
+
+    /** Value before the current tx. */
+    private CacheObject oldVal;
+
+    /** Filtered flag. */
+    private boolean filtered;
 
     /**
      * Constructor.
@@ -143,7 +158,6 @@ public class GridCacheUpdateTxResult {
     }
 
     /**
-     *
      * @return Mvcc history rows.
      */
     @Nullable public List<MvccLinkAwareSearchRow> mvccHistory() {
@@ -151,11 +165,80 @@ public class GridCacheUpdateTxResult {
     }
 
     /**
-     *
      * @param mvccHistory Mvcc history rows.
      */
     public void mvccHistory(List<MvccLinkAwareSearchRow> mvccHistory) {
         this.mvccHistory = mvccHistory;
+    }
+
+    /**
+     * @return Previous value.
+     */
+    @Nullable public CacheObject prevValue() {
+        return prevVal;
+    }
+
+    /**
+     * @param prevVal Previous value.
+     */
+    public void prevValue(@Nullable CacheObject prevVal) {
+        this.prevVal = prevVal;
+    }
+
+    /**
+     * @param result Entry processor invoke result.
+     */
+    public void invokeResult(CacheInvokeResult result) {
+        invokeRes = result;
+    }
+
+    /**
+     * @return Invoke result.
+     */
+    public CacheInvokeResult invokeResult() {
+        return invokeRes;
+    }
+
+    /**
+     * @return New value.
+     */
+    public CacheObject newValue() {
+        return newVal;
+    }
+
+    /**
+     * @return Old value.
+     */
+    public CacheObject oldValue() {
+        return oldVal;
+    }
+
+    /**
+     * @param newVal New value.
+     */
+    public void newValue(CacheObject newVal) {
+        this.newVal = newVal;
+    }
+
+    /**
+     * @param oldVal Old value.
+     */
+    public void oldValue(CacheObject oldVal) {
+        this.oldVal = oldVal;
+    }
+
+    /**
+     * @return Filtered flag.
+     */
+    public boolean filtered() {
+        return filtered;
+    }
+
+    /**
+     * @param filtered Filtered flag.
+     */
+    public void filtered(boolean filtered) {
+        this.filtered = filtered;
     }
 
     /** {@inheritDoc} */

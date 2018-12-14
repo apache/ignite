@@ -54,7 +54,7 @@ public class NoOpLogger implements MLLogger {
      */
     private static class Factory implements MLLogger.Factory {
         /** NoOpLogger instance. */
-        private final static NoOpLogger NO_OP_LOGGER = new NoOpLogger();
+        private static final NoOpLogger NO_OP_LOGGER = new NoOpLogger();
 
         /** {@inheritDoc} */
         @Override public <T> MLLogger create(Class<T> targetCls) {

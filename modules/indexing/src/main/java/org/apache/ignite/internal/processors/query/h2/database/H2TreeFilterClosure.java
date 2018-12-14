@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.database;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -27,6 +28,7 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 import org.apache.ignite.internal.transactions.IgniteTxMvccVersionCheckedException;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 
@@ -47,17 +49,22 @@ public class H2TreeFilterClosure implements H2Tree.TreeRowClosure<GridH2SearchRo
     /** */
     private final GridCacheContext cctx;
 
+    /** */
+    private final IgniteLogger log;
+
     /**
      * @param filter Cache filter.
      * @param mvccSnapshot MVCC snapshot.
      * @param cctx Cache context.
      */
-    public H2TreeFilterClosure(IndexingQueryCacheFilter filter, MvccSnapshot mvccSnapshot, GridCacheContext cctx) {
+    public H2TreeFilterClosure(IndexingQueryCacheFilter filter, MvccSnapshot mvccSnapshot, GridCacheContext cctx,
+        IgniteLogger log) {
         assert (filter != null || mvccSnapshot != null) && cctx != null ;
 
         this.filter = filter;
         this.mvccSnapshot = mvccSnapshot;
         this.cctx = cctx;
+        this.log = log;
     }
 
     /** {@inheritDoc} */
@@ -97,8 +104,14 @@ public class H2TreeFilterClosure implements H2Tree.TreeRowClosure<GridH2SearchRo
         try {
             return isVisible(cctx, mvccSnapshot, rowCrdVer, rowCntr, rowOpCntr, io.getLink(pageAddr, idx));
         }
-        catch (IgniteTxMvccVersionCheckedException ignored) {
-            return false; // The row is going to be removed.
+        catch (IgniteTxMvccVersionCheckedException e) {
+            // We expect the active tx state can be observed by read tx only in the cases when tx has been aborted
+            // asynchronously and node hasn't received finish message yet but coordinator has already removed it from
+            // the active txs map. Rows written by this tx are invisible to anyone and will be removed by the vacuum.
+            if (log.isDebugEnabled())
+                log.debug( "Unexpected tx state on index lookup. " + X.getFullStackTrace(e));
+
+            return false;
         }
     }
 

@@ -34,7 +34,7 @@ public class RandomForestTest {
     private final long seed = 0;
 
     /** Count of trees. */
-    private final int countOfTrees = 10;
+    private final int cntOfTrees = 10;
 
     /** Min imp delta. */
     private final double minImpDelta = 1.0;
@@ -55,12 +55,12 @@ public class RandomForestTest {
 
     /** Rf. */
     private RandomForestClassifierTrainer rf = new RandomForestClassifierTrainer(meta)
-        .withCountOfTrees(countOfTrees)
+        .withAmountOfTrees(cntOfTrees)
         .withSeed(seed)
         .withFeaturesCountSelectionStrgy(x -> 4)
         .withMaxDepth(maxDepth)
         .withMinImpurityDelta(minImpDelta)
-        .withSubsampleSize(0.1);
+        .withSubSampleSize(0.1);
 
     /** */
     @Test

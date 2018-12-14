@@ -20,13 +20,13 @@ package org.apache.ignite.ml.math.isolve.lsqr;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.TestUtils;
+import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -35,26 +35,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Tests for {@link LSQROnHeap}.
  */
-@RunWith(Parameterized.class)
-public class LSQROnHeapTest {
-    /** Parameters. */
-    @Parameterized.Parameters(name = "Data divided on {0} partitions")
-    public static Iterable<Integer[]> data() {
-        return Arrays.asList(
-            new Integer[] {1},
-            new Integer[] {2},
-            new Integer[] {3},
-            new Integer[] {5},
-            new Integer[] {7},
-            new Integer[] {100},
-            new Integer[] {1000}
-        );
-    }
-
-    /** Number of partitions. */
-    @Parameterized.Parameter
-    public int parts;
-
+public class LSQROnHeapTest extends TrainerTest {
     /** Tests solving simple linear system. */
     @Test
     public void testSolveLinearSystem() {
@@ -67,6 +48,7 @@ public class LSQROnHeapTest {
 
         LSQROnHeap<Integer, double[]> lsqr = new LSQROnHeap<>(
             datasetBuilder,
+            TestUtils.testEnvBuilder(),
             new SimpleLabeledDatasetDataBuilder<>(
                 (k, v) -> VectorUtils.of(Arrays.copyOf(v, v.length - 1)),
                 (k, v) -> new double[]{v[3]}
@@ -100,6 +82,7 @@ public class LSQROnHeapTest {
 
         LSQROnHeap<Integer, double[]> lsqr = new LSQROnHeap<>(
             datasetBuilder,
+            TestUtils.testEnvBuilder(),
             new SimpleLabeledDatasetDataBuilder<>(
                 (k, v) -> VectorUtils.of(Arrays.copyOf(v, v.length - 1)),
                 (k, v) -> new double[]{v[3]}
@@ -133,6 +116,7 @@ public class LSQROnHeapTest {
 
         try (LSQROnHeap<Integer, double[]> lsqr = new LSQROnHeap<>(
             datasetBuilder,
+            TestUtils.testEnvBuilder(),
             new SimpleLabeledDatasetDataBuilder<>(
                 (k, v) -> VectorUtils.of(Arrays.copyOf(v, v.length - 1)),
                 (k, v) -> new double[]{v[4]}

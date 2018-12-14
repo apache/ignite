@@ -136,15 +136,16 @@ public class RestExecutor implements AutoCloseable {
         if (res.code() == 404)
             return RestResult.fail(STATUS_FAILED, "Failed connect to cluster.");
 
-        return RestResult.fail(STATUS_FAILED, "Failed to execute REST command: " + res.message());
+        return RestResult.fail(STATUS_FAILED, "Failed to execute REST command: " + res);
     }
 
     /** */
     private RestResult sendRequest(String url, Map<String, Object> params, Map<String, Object> headers) throws IOException {
-        HttpUrl httpUrl = HttpUrl.parse(url);
-
-        HttpUrl.Builder urlBuilder = httpUrl.newBuilder()
-            .addPathSegment("ignite");
+        HttpUrl httpUrl = HttpUrl
+            .parse(url)
+            .newBuilder()
+            .addPathSegment("ignite")
+            .build();
 
         final Request.Builder reqBuilder = new Request.Builder();
 
@@ -163,8 +164,7 @@ public class RestExecutor implements AutoCloseable {
             }
         }
 
-        reqBuilder.url(urlBuilder.build())
-            .post(bodyParams.build());
+        reqBuilder.url(httpUrl).post(bodyParams.build());
 
         try (Response resp = httpClient.newCall(reqBuilder.build()).execute()) {
             return parseResponse(resp);
@@ -175,13 +175,19 @@ public class RestExecutor implements AutoCloseable {
     public RestResult sendRequest(List<String> nodeURIs, Map<String, Object> params, Map<String, Object> headers) throws IOException {
         Integer startIdx = startIdxs.getOrDefault(nodeURIs, 0);
 
-        for (int i = 0;  i < nodeURIs.size(); i++) {
-            Integer currIdx = (startIdx + i) % nodeURIs.size();
+        int urlsCnt = nodeURIs.size();
+
+        for (int i = 0;  i < urlsCnt; i++) {
+            Integer currIdx = (startIdx + i) % urlsCnt;
 
             String nodeUrl = nodeURIs.get(currIdx);
 
             try {
                 RestResult res = sendRequest(nodeUrl, params, headers);
+
+                // If first attempt failed then throttling should be cleared.
+                if (i > 0)
+                    LT.clear();
 
                 LT.info(log, "Connected to cluster [url=" + nodeUrl + "]");
 
@@ -190,7 +196,7 @@ public class RestExecutor implements AutoCloseable {
                 return res;
             }
             catch (ConnectException ignored) {
-                // No-op.
+                LT.warn(log, "Failed to connect to cluster [url=" + nodeUrl + "]");
             }
         }
 

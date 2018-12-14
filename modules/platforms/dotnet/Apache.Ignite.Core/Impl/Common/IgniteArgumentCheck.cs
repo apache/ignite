@@ -43,11 +43,13 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         /// <param name="arg">The argument.</param>
         /// <param name="argName">Name of the argument.</param>
-        public static void NotNullOrEmpty(string arg, string argName)
+        public static string NotNullOrEmpty(string arg, string argName)
         {
             if (string.IsNullOrEmpty(arg))
                 throw new ArgumentException(string.Format(CultureInfo.InvariantCulture,
                     "'{0}' argument should not be null or empty.", argName), argName);
+
+            return arg;
         }
 
         /// <summary>
@@ -58,7 +60,7 @@ namespace Apache.Ignite.Core.Impl.Common
         public static void NotNullOrEmpty<T>(ICollection<T> collection, string argName)
         {
             if (collection == null || collection.Count == 0)
-                throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, 
+                throw new ArgumentException(string.Format(CultureInfo.InvariantCulture,
                     "'{0}' argument should not be null or empty.", argName), argName);
         }
 
@@ -71,7 +73,7 @@ namespace Apache.Ignite.Core.Impl.Common
         public static void Ensure(bool condition, string argName, string message)
         {
             if (!condition)
-                throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, 
+                throw new ArgumentException(string.Format(CultureInfo.InvariantCulture,
                     "'{0}' argument is invalid: {1}", argName, message), argName);
         }
     }

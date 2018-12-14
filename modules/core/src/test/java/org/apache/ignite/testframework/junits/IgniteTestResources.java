@@ -79,6 +79,13 @@ public class IgniteTestResources {
     private GridResourceProcessor rsrcProc;
 
     /**
+     * @return Default MBean server or {@code null} if {@code IGNITE_MBEANS_DISABLED} is configured.
+     */
+    @Nullable private static MBeanServer prepareMBeanServer() {
+        return U.IGNITE_MBEANS_DISABLED ? null : ManagementFactory.getPlatformMBeanServer();
+    }
+
+    /**
      * @throws IgniteCheckedException If failed.
      */
     public IgniteTestResources() throws IgniteCheckedException {
@@ -87,7 +94,8 @@ public class IgniteTestResources {
         else
             log = rootLog.getLogger(getClass());
 
-        this.jmx = ManagementFactory.getPlatformMBeanServer();
+        this.jmx = prepareMBeanServer();
+
         this.rsrcProc = new GridResourceProcessor(new GridTestKernalContext(this.log));
     }
 
@@ -97,7 +105,7 @@ public class IgniteTestResources {
     public IgniteTestResources(IgniteConfiguration cfg) throws IgniteCheckedException {
         this.cfg = cfg;
         this.log = rootLog.getLogger(getClass());
-        this.jmx = ManagementFactory.getPlatformMBeanServer();
+        this.jmx = prepareMBeanServer();
         this.rsrcProc = new GridResourceProcessor(new GridTestKernalContext(this.log, this.cfg));
     }
 
@@ -119,7 +127,7 @@ public class IgniteTestResources {
         assert log != null;
 
         this.log = log.getLogger(getClass());
-        this.jmx = ManagementFactory.getPlatformMBeanServer();
+        this.jmx = prepareMBeanServer();
         this.rsrcProc = new GridResourceProcessor(new GridTestKernalContext(this.log));
     }
 

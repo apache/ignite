@@ -51,7 +51,7 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class JdbcThinSSLUtil {
     /** Trust all certificates manager. */
-    private final static X509TrustManager TRUST_ALL_MANAGER = new X509TrustManager() {
+    private static final X509TrustManager TRUST_ALL_MANAGER = new X509TrustManager() {
         @Override public X509Certificate[] getAcceptedIssuers() {
             return null;
         }
@@ -295,7 +295,7 @@ public class JdbcThinSSLUtil {
             }
         }
 
-        assert tms.size() != 0;
+        assert !tms.isEmpty();
 
         try {
             SSLContext sslContext = SSLContext.getInstance(sslProtocol);

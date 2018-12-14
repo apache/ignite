@@ -15,11 +15,18 @@
  * limitations under the License.
  */
 
-// Directive to workaround known issue with type ahead edit lost cursor position.
-export default ['igniteRetainSelection', ['$timeout', function($timeout) {
+/**
+ * Directive to workaround known issue with type ahead edit lost cursor position.
+ * @param {ng.ITimeoutService} $timeout
+ */
+export default function directive($timeout) {
     let promise;
 
-    return function(scope, elem) {
+    /**
+     * @param {ng.IScope} scope
+     * @param {JQLite} elem  [description]
+     */
+    function directive(scope, elem) {
         elem.on('keydown', function(evt) {
             const key = evt.which;
             const ctrlDown = evt.ctrlKey || evt.metaKey;
@@ -63,5 +70,9 @@ export default ['igniteRetainSelection', ['$timeout', function($timeout) {
         scope.$on('$destroy', function() {
             elem.off('keydown');
         });
-    };
-}]];
+    }
+
+    return directive;
+}
+
+directive.$inject = ['$timeout'];

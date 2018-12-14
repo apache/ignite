@@ -26,7 +26,7 @@ import org.apache.ignite.ml.tree.TreeFilter;
  */
 public class TreeDataIndex {
     /** Index containing IDs of rows as if they is sorted by feature values. */
-    private final int[][] index;
+    private final int[][] idx;
 
     /** Original features table. */
     private final double[][] features;
@@ -48,9 +48,9 @@ public class TreeDataIndex {
         int cols = features.length == 0 ? 0 : features[0].length;
 
         double[][] featuresCp = new double[rows][cols];
-        index = new int[rows][cols];
+        idx = new int[rows][cols];
         for (int row = 0; row < rows; row++) {
-            Arrays.fill(index[row], row);
+            Arrays.fill(idx[row], row);
             featuresCp[row] = Arrays.copyOf(features[row], cols);
         }
 
@@ -61,12 +61,12 @@ public class TreeDataIndex {
     /**
      * Constructs an instance of TreeDataIndex
      *
-     * @param indexProj Index projection.
+     * @param idxProj Index projection.
      * @param features Features.
      * @param labels Labels.
      */
-    private TreeDataIndex(int[][] indexProj, double[][] features, double[] labels) {
-        this.index = indexProj;
+    private TreeDataIndex(int[][] idxProj, double[][] features, double[] labels) {
+        this.idx = idxProj;
         this.features = features;
         this.labels = labels;
     }
@@ -79,7 +79,7 @@ public class TreeDataIndex {
      * @return Label value.
      */
     public double labelInSortedOrder(int k, int featureId) {
-        return labels[index[k][featureId]];
+        return labels[idx[k][featureId]];
     }
 
     /**
@@ -90,7 +90,7 @@ public class TreeDataIndex {
      * @return Features vector.
      */
     public double[] featuresInSortedOrder(int k, int featureId) {
-        return features[index[k][featureId]];
+        return features[idx[k][featureId]];
     }
 
     /**
@@ -117,30 +117,30 @@ public class TreeDataIndex {
                 projSize++;
         }
 
-        int[][] projection = new int[projSize][columnsCount()];
+        int[][] prj = new int[projSize][columnsCount()];
         for(int feature = 0; feature < columnsCount(); feature++) {
             int ptr = 0;
             for(int row = 0; row < rowsCount(); row++) {
                 if(filter.test(featuresInSortedOrder(row, feature)))
-                    projection[ptr++][feature] = index[row][feature];
+                    prj[ptr++][feature] = idx[row][feature];
             }
         }
 
-        return new TreeDataIndex(projection, features, labels);
+        return new TreeDataIndex(prj, features, labels);
     }
 
     /**
      * @return count of rows in current index.
      */
     public int rowsCount() {
-        return index.length;
+        return idx.length;
     }
 
     /**
      * @return count of columns in current index.
      */
     public int columnsCount() {
-        return rowsCount() == 0 ? 0 : index[0].length ;
+        return rowsCount() == 0 ? 0 : idx[0].length;
     }
 
     /**
@@ -168,9 +168,9 @@ public class TreeDataIndex {
                     features[i][col] = features[j][col];
                     features[j][col] = tmpFeature;
 
-                    int tmpLb = index[i][col];
-                    index[i][col] = index[j][col];
-                    index[j][col] = tmpLb;
+                    int tmpLb = idx[i][col];
+                    idx[i][col] = idx[j][col];
+                    idx[j][col] = tmpLb;
 
                     i++;
                     j--;

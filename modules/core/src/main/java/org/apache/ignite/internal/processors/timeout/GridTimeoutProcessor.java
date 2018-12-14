@@ -144,15 +144,15 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
     /**
      * Wait for a future (listen with timeout).
      * @param fut Future.
-     * @param timeout Timeout millis. -1 means expired timeout, 0 - no timeout.
+     * @param timeout Timeout millis. -1 means expired timeout, 0 means waiting without timeout.
      * @param clo Finish closure. First argument contains error on future or null if no errors,
-     * second is {@code true} if wait timed out.
+     * second is {@code true} if wait timed out or passed timeout argument means expired timeout.
      */
     public void waitAsync(final IgniteInternalFuture<?> fut,
         long timeout,
         IgniteBiInClosure<IgniteCheckedException, Boolean> clo) {
         if (timeout == -1) {
-            clo.apply(null, false);
+            clo.apply(null, true);
 
             return;
         }
@@ -200,8 +200,12 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
          *
          */
         TimeoutWorker() {
-            super(ctx.config().getIgniteInstanceName(), "grid-timeout-worker",
-                GridTimeoutProcessor.this.log, ctx.workersRegistry());
+            super(
+                ctx.config().getIgniteInstanceName(),
+                "grid-timeout-worker",
+                GridTimeoutProcessor.this.log,
+                ctx.workersRegistry()
+            );
         }
 
         /** {@inheritDoc} */
@@ -210,7 +214,11 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
             try {
                 while (!isCancelled()) {
+                    updateHeartbeat();
+
                     long now = U.currentTimeMillis();
+
+                    onIdle();
 
                     for (Iterator<GridTimeoutObject> iter = timeoutObjs.iterator(); iter.hasNext(); ) {
                         GridTimeoutObject timeoutObj = iter.next();
@@ -254,13 +262,29 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                             if (first != null) {
                                 long waitTime = first.endTime() - U.currentTimeMillis();
 
-                                if (waitTime > 0)
-                                    mux.wait(waitTime);
+                                if (waitTime > 0) {
+                                    blockingSectionBegin();
+
+                                    try {
+                                        mux.wait(waitTime);
+                                    }
+                                    finally {
+                                        blockingSectionEnd();
+                                    }
+                                }
                                 else
                                     break;
                             }
-                            else
-                                mux.wait(5000);
+                            else {
+                                blockingSectionBegin();
+
+                                try {
+                                    mux.wait(5000);
+                                }
+                                finally {
+                                    blockingSectionEnd();
+                                }
+                            }
                         }
                     }
                 }

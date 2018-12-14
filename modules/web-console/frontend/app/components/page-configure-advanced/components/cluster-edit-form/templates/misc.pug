@@ -25,34 +25,69 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-60
-                +text('Work directory:', model + '.workDirectory', '"workDirectory"', 'false', 'Input work directory',
-                    'Ignite work directory.<br/>\
-                    If not provided, the method will use work directory under IGNITE_HOME specified by IgniteConfiguration#setIgniteHome(String)\
-                    or IGNITE_HOME environment variable or system property.')
+                +form-field__text({
+                    label: 'Work directory:',
+                    model: `${model}.workDirectory`,
+                    name: '"workDirectory"',
+                    placeholder: 'Input work directory',
+                    tip: 'Ignite work directory.<br/>\
+                          If not provided, the method will use work directory under IGNITE_HOME specified by IgniteConfiguration#setIgniteHome(String)\
+                          or IGNITE_HOME environment variable or system property.'
+                })
 
             //- Since ignite 2.0
             .pc-form-grid-col-60(ng-if-start='$ctrl.available("2.0.0")')
-                +text('Consistent ID:', model + '.consistentId', '"ConsistentId"', 'false', 'Input consistent ID', 'Consistent globally unique node ID which survives node restarts')
+                +form-field__text({
+                    label: 'Consistent ID:',
+                    model: `${model}.consistentId`,
+                    name: '"ConsistentId"',
+                    placeholder: 'Input consistent ID',
+                    tip: 'Consistent globally unique node ID which survives node restarts'
+                })
             .pc-form-grid-col-60
-                +java-class('Warmup closure:', model + '.warmupClosure', '"warmupClosure"', 'true', 'false', 'This closure will be executed before actual grid instance start')
+                +form-field__java-class({
+                    label: 'Warmup closure:',
+                    model: `${model}.warmupClosure`,
+                    name: '"warmupClosure"',
+                    tip: 'This closure will be executed before actual grid instance start'
+                })
+
             .pc-form-grid-col-60
-                +checkbox('Active on start', model + '.activeOnStart', '"activeOnStart"',
-                    'If cluster is not active on start, there will be no cache partition map exchanges performed until the cluster is activated')
+                +form-field__checkbox({
+                    label: 'Active on start',
+                    model: model + '.activeOnStart',
+                    name: '"activeOnStart"',
+                    tip: 'If cluster is not active on start, there will be no cache partition map exchanges performed until the cluster is activated'
+                })
             .pc-form-grid-col-60(ng-if-end)
-                +checkbox('Cache sanity check enabled', model + '.cacheSanityCheckEnabled', '"cacheSanityCheckEnabled"',
-                    'If enabled, then Ignite will perform the following checks and throw an exception if check fails<br/>\
-                    <ul>\
-                    <li>Cache entry is not externally locked with lock or lockAsync methods when entry is enlisted to transaction</li>\
-                    <li>Each entry in affinity group - lock transaction has the same affinity key as was specified on affinity transaction start</li>\
-                    <li>Each entry in partition group - lock transaction belongs to the same partition as was specified on partition transaction start</li>\
-                    </ul>')
+                +form-field__checkbox({
+                    label: 'Cache sanity check enabled',
+                    model: model + '.cacheSanityCheckEnabled',
+                    name: '"cacheSanityCheckEnabled"',
+                    tip: 'If enabled, then Ignite will perform the following checks and throw an exception if check fails<br/>\
+                          <ul>\
+                              <li>Cache entry is not externally locked with lock or lockAsync methods when entry is enlisted to transaction</li>\
+                              <li>Each entry in affinity group - lock transaction has the same affinity key as was specified on affinity transaction start</li>\
+                              <li>Each entry in partition group - lock transaction belongs to the same partition as was specified on partition transaction start</li>\
+                          </ul>'
+                })
 
             .pc-form-grid-col-60(ng-if='$ctrl.available(["1.0.0", "2.1.0"])')
-                +checkbox('Late affinity assignment', model + '.lateAffinityAssignment', '"lateAffinityAssignment"',
-                    'With late affinity assignment mode if primary node was changed for some partition this nodes becomes primary only when rebalancing for all assigned primary partitions is finished')
+                +form-field__checkbox({
+                    label: 'Late affinity assignment',
+                    model: model + '.lateAffinityAssignment',
+                    name: '"lateAffinityAssignment"',
+                    tip: 'With late affinity assignment mode if primary node was changed for some partition this nodes becomes primary only when rebalancing for all assigned primary partitions is finished'
+                })
 
             .pc-form-grid-col-60(ng-if='$ctrl.available("2.1.0")')
-                +number('Long query timeout:', `${model}.longQueryWarningTimeout`, '"LongQueryWarningTimeout"', 'true', '3000', '0',
-                'Timeout in milliseconds after which long query warning will be printed')
+                +form-field__number({
+                    label: 'Long query timeout:',
+                    model: `${model}.longQueryWarningTimeout`,
+                    name: '"LongQueryWarningTimeout"',
+                    placeholder: '3000',
+                    min: '0',
+                    tip: 'Timeout in milliseconds after which long query warning will be printed'
+                })
         .pca-form-column-6
             +preview-xml-java(model, 'clusterMisc', 'caches')

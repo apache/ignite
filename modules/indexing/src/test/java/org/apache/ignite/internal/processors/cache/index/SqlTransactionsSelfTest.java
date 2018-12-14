@@ -35,7 +35,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -53,10 +52,10 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrid(commonConfiguration(0).setMvccEnabled(true));
+        startGrid(commonConfiguration(0));
 
         super.execute(node(), "CREATE TABLE INTS(k int primary key, v int) WITH \"wrap_value=false,cache_name=ints," +
-            "atomicity=transactional\"");
+            "atomicity=transactional_snapshot\"");
     }
 
     /** {@inheritDoc} */
@@ -182,7 +181,6 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that attempting to perform a cache API operation from within an SQL transaction fails.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void checkCacheOperationThrows(final String opName, final Object... args) {
         execute(node(), "BEGIN");
 
@@ -265,7 +263,6 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that attempting to perform a cache PUT operation from within an SQL transaction fails.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testCacheOperationsFromSqlTransaction() {
         checkCacheOperationThrows("get", 1);
 
@@ -362,7 +359,7 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     }
 
     /** */
-    private final static EntryProcessor<Integer, Integer, Object> ENTRY_PROC =
+    private static final EntryProcessor<Integer, Integer, Object> ENTRY_PROC =
         new EntryProcessor<Integer, Integer, Object>() {
         @Override public Object process(MutableEntry<Integer, Integer> entry, Object... arguments)
         throws EntryProcessorException {
@@ -371,7 +368,7 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     };
 
     /** */
-    private final static CacheEntryProcessor<Integer, Integer, Object> CACHE_ENTRY_PROC =
+    private static final CacheEntryProcessor<Integer, Integer, Object> CACHE_ENTRY_PROC =
         new CacheEntryProcessor<Integer, Integer, Object>() {
             @Override public Object process(MutableEntry<Integer, Integer> entry, Object... arguments)
                 throws EntryProcessorException {

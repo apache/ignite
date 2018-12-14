@@ -45,7 +45,7 @@ span(data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length > 1')
         aria-expanded='false'
     )
         span(ng-if='!$ctrl.cluster') No clusters available
-        
+
         span(ng-if='$ctrl.cluster')
             cluster-security-icon(secured='$ctrl.cluster.secured')
             | {{ $ctrl.cluster.name }}

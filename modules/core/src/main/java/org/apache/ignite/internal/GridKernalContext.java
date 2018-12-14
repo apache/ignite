@@ -28,11 +28,14 @@ import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
+import org.apache.ignite.internal.stat.IoStatisticsManager;
+import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
@@ -425,6 +428,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridIndexingManager indexing();
 
     /**
+     * Gets encryption manager.
+     *
+     * @return Encryption manager.
+     */
+    public GridEncryptionManager encryption();
+
+    /**
      * Gets workers registry.
      *
      * @return Workers registry.
@@ -685,4 +695,24 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return subscription processor to manage internal-only (strict node-local) subscriptions between components.
      */
     public GridInternalSubscriptionProcessor internalSubscriptionProcessor();
+
+    /**
+     * @return IO statistic manager.
+     */
+    public IoStatisticsManager ioStats();
+
+    /**
+     * @return Default uncaught exception handler used by thread pools.
+     */
+    public Thread.UncaughtExceptionHandler uncaughtExceptionHandler();
+
+    /**
+     * @return Compression processor.
+     */
+    public CompressionProcessor compress();
+
+    /**
+     * @return {@code True} if node is in recovery mode (before join to topology).
+     */
+    public boolean recoveryMode();
 }

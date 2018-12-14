@@ -34,14 +34,28 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestThread;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  * Multithreaded local cache locking test.
  */
+@RunWith(JUnit4.class)
 public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Before
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
+        super.setUp();
+    }
+
     /** Cache. */
     private IgniteCache<Integer, String> cache;
 
@@ -88,6 +102,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If test fails.
      */
+    @Test
     public void testBasicLocks() throws Throwable {
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             /** {@inheritDoc} */
@@ -114,6 +129,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If test fails.
      */
+    @Test
     public void testMultiLocks() throws Throwable {
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             /** {@inheritDoc} */
@@ -142,6 +158,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If test fails.
      */
+    @Test
     public void testSlidingKeysLocks() throws Throwable {
         final AtomicInteger cnt = new AtomicInteger();
 
@@ -174,6 +191,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If test fails.
      */
+    @Test
     public void testSingleLockTimeout() throws Exception {
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
@@ -240,6 +258,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If test fails.
      */
+    @Test
     public void testMultiLockTimeout() throws Exception {
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);

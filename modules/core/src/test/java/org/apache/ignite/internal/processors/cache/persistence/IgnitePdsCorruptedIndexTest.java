@@ -39,7 +39,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -48,11 +48,14 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
-import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test to reproduce corrupted indexes problem after partition file eviction and truncation.
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE = "cache";
@@ -124,6 +127,7 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCorruption() throws Exception {
         final String corruptedNodeName = "corrupted";
 
@@ -316,16 +320,6 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
          */
         private static boolean isPartitionFile(File file) {
             return file.getName().contains("part") && file.getName().endsWith("bin");
-        }
-
-        /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            FileIO delegate = delegateFactory.create(file);
-
-            if (isPartitionFile(file))
-                return new HaltOnTruncateFileIO(delegate, file);
-
-            return delegate;
         }
 
         /** {@inheritDoc} */

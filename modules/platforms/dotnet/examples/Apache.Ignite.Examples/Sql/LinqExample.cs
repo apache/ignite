@@ -173,7 +173,11 @@ namespace Apache.Ignite.Examples.Sql
         {
             const string orgName = "Apache";
 
-            var queryOptions = new QueryOptions {EnableDistributedJoins = true};
+            var queryOptions = new QueryOptions
+            {
+                EnableDistributedJoins = true,
+                Timeout = new TimeSpan(0, 1, 0)
+            };
 
             IQueryable<ICacheEntry<int, Employee>> employees = employeeCache.AsCacheQueryable(queryOptions);
             IQueryable<ICacheEntry<int, Organization>> organizations = organizationCache.AsCacheQueryable(queryOptions);

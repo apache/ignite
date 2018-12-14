@@ -36,6 +36,11 @@ const replacer = (key, value) => {
             __serializedType__: 'Symbol'
         };
     }
+    if (value instanceof Promise) {
+        return {
+            data: {}
+        };
+    }
     return value;
 };
 

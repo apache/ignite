@@ -1,0 +1,27 @@
+{
+    "name": "apache/apache-ignite-client",
+    "type": "library",
+    "description": "PHP Client for Apache Ignite",
+    "keywords": ["apache", "ignite", "client"],
+    "homepage": "https://github.com/apache/ignite",
+    "license": "Apache-2.0",
+    "authors": [
+    ],
+    "require": {
+        "php": ">=7.2.0",
+        "ext-mbstring": "*",
+        "php-ds/php-ds": "^1.2",
+        "brick/math": "^0.7"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^7.3.1"
+    },
+    "suggest": {
+    },
+    "autoload": {
+        "psr-4": {"Apache\\Ignite\\": "src/Apache/Ignite"}
+    },
+    "autoload-dev": {
+        "psr-4": { "Apache\\Ignite\\Tests\\": "tests/" }
+    }
+}

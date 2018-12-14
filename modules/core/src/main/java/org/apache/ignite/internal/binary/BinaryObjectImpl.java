@@ -205,7 +205,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     /**
      * @return Detached binary object.
      */
-    public BinaryObject detach() {
+    public BinaryObjectImpl detach() {
         if (!detachAllowed || detached())
             return this;
 

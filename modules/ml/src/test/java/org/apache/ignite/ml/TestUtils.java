@@ -18,6 +18,7 @@
 package org.apache.ignite.ml;
 
 import java.util.stream.IntStream;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.junit.Assert;
@@ -324,5 +325,83 @@ public class TestUtils {
             return isEqual && !Double.isNaN(x) && !Double.isNaN(y);
 
         }
+    }
+
+    /**
+     * Gets test learning environment builder.
+     *
+     * @return test learning environment builder.
+     */
+    public static LearningEnvironmentBuilder testEnvBuilder() {
+        return testEnvBuilder(123L);
+    }
+
+    /**
+     * Gets test learning environment builder with a given seed.
+     *
+     * @param seed Seed.
+     * @return test learning environment builder.
+     */
+    public static LearningEnvironmentBuilder testEnvBuilder(long seed) {
+        return LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(seed);
+    }
+
+    /**
+     * Simple wrapper class which adds {@link AutoCloseable} to given type.
+     *
+     * @param <T> Type to wrap.
+     */
+    public static class DataWrapper<T> implements AutoCloseable {
+        /**
+         * Value to wrap.
+         */
+        T val;
+
+        /**
+         * Wrap given value in {@link AutoCloseable}.
+         *
+         * @param val Value to wrap.
+         * @param <T> Type of value to wrap.
+         * @return Value wrapped as {@link AutoCloseable}.
+         */
+        public static <T> DataWrapper<T> of(T val) {
+            return new DataWrapper<>(val);
+        }
+
+        /**
+         * Construct instance of this class from given value.
+         *
+         * @param val Value to wrap.
+         */
+        public DataWrapper(T val) {
+            this.val = val;
+        }
+
+        /**
+         * Get wrapped value.
+         *
+         * @return Wrapped value.
+         */
+        public T val() {
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws Exception {
+            if (val instanceof AutoCloseable)
+                ((AutoCloseable)val).close();
+        }
+    }
+
+    /**
+     * Return model which returns given constant.
+     *
+     * @param v Constant value.
+     * @param <T> Type of input.
+     * @param <V> Type of output.
+     * @return Model which returns given constant.
+     */
+    public static <T, V> Model<T, V> constantModel(V v) {
+        return t -> v;
     }
 }

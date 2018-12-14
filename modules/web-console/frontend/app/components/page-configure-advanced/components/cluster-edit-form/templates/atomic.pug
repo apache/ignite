@@ -26,50 +26,95 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-title Atomic configuration
     panel-description
         | Configuration for atomic data structures.
-        | Atomics are distributed across the cluster, essentially enabling performing atomic operations (such as increment-and-get or compare-and-set) with the same globally-visible value. 
+        | Atomics are distributed across the cluster, essentially enabling performing atomic operations (such as increment-and-get or compare-and-set) with the same globally-visible value.
         | #[a.link-success(href="https://apacheignite.readme.io/docs/atomic-types" target="_blank") More info]
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-30
-                +dropdown('Cache mode:', `${model}.cacheMode`, '"cacheMode"', 'true', 'PARTITIONED',
-                    '[\
-                        {value: "LOCAL", label: "LOCAL"},\
-                        {value: "REPLICATED", label: "REPLICATED"},\
-                        {value: "PARTITIONED", label: "PARTITIONED"}\
-                    ]',
-                    'Cache modes:\
-                    <ul>\
-                        <li>Partitioned - in this mode the overall key set will be divided into partitions and all partitions will be split equally between participating nodes</li>\
-                        <li>Replicated - in this mode all the keys are distributed to all participating nodes</li>\
-                        <li>Local - in this mode caches residing on different grid nodes will not know about each other</li>\
-                    </ul>')
+                +form-field__dropdown({
+                    label: 'Cache mode:',
+                    model: `${model}.cacheMode`,
+                    name: '"cacheMode"',
+                    placeholder: 'PARTITIONED',
+                    options: '[\
+                                            {value: "LOCAL", label: "LOCAL"},\
+                                            {value: "REPLICATED", label: "REPLICATED"},\
+                                            {value: "PARTITIONED", label: "PARTITIONED"}\
+                                        ]',
+                    tip: 'Cache modes:\
+                                        <ul>\
+                                            <li>Partitioned - in this mode the overall key set will be divided into partitions and all partitions will be split equally between participating nodes</li>\
+                                            <li>Replicated - in this mode all the keys are distributed to all participating nodes</li>\
+                                            <li>Local - in this mode caches residing on different grid nodes will not know about each other</li>\
+                                        </ul>'
+                })
             .pc-form-grid-col-30
-                +number('Sequence reserve:', `${model}.atomicSequenceReserveSize`, '"atomicSequenceReserveSize"', 'true', '1000', '0',
-                    'Default number of sequence values reserved for IgniteAtomicSequence instances<br/>\
-                    After a certain number has been reserved, consequent increments of sequence will happen locally, without communication with other nodes, until the next reservation has to be made')
+                +form-field__number({
+                    label: 'Sequence reserve:',
+                    model: `${model}.atomicSequenceReserveSize`,
+                    name: '"atomicSequenceReserveSize"',
+                    placeholder: '1000',
+                    min: '0',
+                    tip: 'Default number of sequence values reserved for IgniteAtomicSequence instances<br/>\
+                          After a certain number has been reserved, consequent increments of sequence will happen locally, without communication with other nodes, until the next reservation has to be made'
+                })
             .pc-form-grid-col-60(ng-show=`!(${model}.cacheMode && ${model}.cacheMode != "PARTITIONED")`)
-                +number('Backups:', model + '.backups', '"backups"', 'true', '0', '0', 'Number of backup nodes')
+                +form-field__number({
+                    label: 'Backups:',
+                    model: model + '.backups',
+                    name: '"backups"',
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Number of backup nodes'
+                })
 
             .pc-form-grid-col-60(ng-if-start='$ctrl.available("2.1.0")')
-                +dropdown('Function:', `${affModel}.kind`, '"AffinityKind"', 'true', 'Default', '$ctrl.Clusters.affinityFunctions',
-                    'Key topology resolver to provide mapping from keys to nodes\
-                    <ul>\
-                        <li>Rendezvous - Based on Highest Random Weight algorithm<br/></li>\
-                        <li>Custom - Custom implementation of key affinity function<br/></li>\
-                        <li>Default - By default rendezvous affinity function  with 1024 partitions is used<br/></li>\
-                    </ul>')
+                +form-field__dropdown({
+                    label: 'Function:',
+                    model: `${affModel}.kind`,
+                    name: '"AffinityKind"',
+                    placeholder: 'Default',
+                    options: '$ctrl.Clusters.affinityFunctions',
+                    tip: 'Key topology resolver to provide mapping from keys to nodes\
+                                        <ul>\
+                                            <li>Rendezvous - Based on Highest Random Weight algorithm<br/></li>\
+                                            <li>Custom - Custom implementation of key affinity function<br/></li>\
+                                            <li>Default - By default rendezvous affinity function  with 1024 partitions is used<br/></li>\
+                                        </ul>'
+                })
             .pc-form-group(ng-if-end ng-if=rendezvousAff + ' || ' + customAff)
                 .pc-form-grid-row
                     .pc-form-grid-col-30(ng-if-start=rendezvousAff)
-                        +number-required('Partitions', `${affModel}.Rendezvous.partitions`, '"RendPartitions"', 'true', rendPartitionsRequired, '1024', '1', 'Number of partitions')
+                        +form-field__number({
+                            label: 'Partitions',
+                            model: `${affModel}.Rendezvous.partitions`,
+                            name: '"RendPartitions"',
+                            required: rendPartitionsRequired,
+                            placeholder: '1024',
+                            min: '1',
+                            tip: 'Number of partitions'
+                        })
                     .pc-form-grid-col-30
-                        +java-class('Backup filter', `${affModel}.Rendezvous.affinityBackupFilter`, '"RendAffinityBackupFilter"', 'true', 'false',
-                            'Backups will be selected from all nodes that pass this filter')
+                        +form-field__java-class({
+                            label: 'Backup filter',
+                            model: `${affModel}.Rendezvous.affinityBackupFilter`,
+                            name: '"RendAffinityBackupFilter"',
+                            tip: 'Backups will be selected from all nodes that pass this filter'
+                        })
                     .pc-form-grid-col-60(ng-if-end)
-                        +checkbox('Exclude neighbors', `${affModel}.Rendezvous.excludeNeighbors`, '"RendExcludeNeighbors"',
-                            'Exclude same - host - neighbors from being backups of each other and specified number of backups')
+                        +form-field__checkbox({
+                            label: 'Exclude neighbors',
+                            model: `${affModel}.Rendezvous.excludeNeighbors`,
+                            name: '"RendExcludeNeighbors"',
+                            tip: 'Exclude same - host - neighbors from being backups of each other and specified number of backups'
+                        })
                     .pc-form-grid-col-60(ng-if=customAff)
-                        +java-class('Class name:', `${affModel}.Custom.className`, '"AffCustomClassName"', 'true', customAff,
-                            'Custom key affinity function implementation class name')
+                        +form-field__java-class({
+                            label: 'Class name:',
+                            model: `${affModel}.Custom.className`,
+                            name: '"AffCustomClassName"',
+                            required: customAff,
+                            tip: 'Custom key affinity function implementation class name'
+                        })
         .pca-form-column-6
             +preview-xml-java(model, 'clusterAtomics')

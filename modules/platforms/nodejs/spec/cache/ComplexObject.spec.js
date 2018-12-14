@@ -28,6 +28,9 @@ const ComplexObjectType = IgniteClient.ComplexObjectType;
 const BinaryObject = IgniteClient.BinaryObject;
 
 const CACHE_NAME = '__test_cache';
+const ONE_BYTE_MAX_OFFSET = 0x100 - 1;
+const TWO_BYTES_MAX_OFFSET = 0x10000 - 1;
+const COMPLEX_OBJECT_HEADER_LENGTH = 24;
 
 class Class1 {
     constructor() {
@@ -322,6 +325,79 @@ describe('complex object test suite >', () => {
             then(done).
             catch(error => done.fail(error));
     });
+
+    it('put get complex objects with one byte offset', (done) => {
+        Promise.resolve().
+            then(async () => {
+                const key = new Date();
+                const valueType = new ComplexObjectType(new Class2(), 'Class2WithStrings');
+                const value = new Class2();
+                value.field_2_1 = 'x';
+                value.field_2_2 = 'y';
+                await putGetComplexObjects(key, value, null, valueType, value);
+                const oneByteMaxLen = getMaxFieldLength(true);
+                value.field_2_1 = 'x'.repeat(oneByteMaxLen);
+                value.field_2_2 = 'y';
+                await putGetComplexObjects(key, value, null, valueType, value);
+            }).
+            then(done).
+            catch(error => done.fail(error));
+    });
+
+    it('put get complex objects with two bytes offset', (done) => {
+        Promise.resolve().
+            then(async () => {
+                const key = new Date();
+                const valueType = new ComplexObjectType(new Class2(), 'Class2WithStrings');
+                const value = new Class2();
+                const oneByteMaxLen = getMaxFieldLength(true);
+                value.field_2_1 = 'x'.repeat(oneByteMaxLen + 1);
+                value.field_2_2 = 'y';
+                await putGetComplexObjects(key, value, null, valueType, value);
+                const twoBytesMaxLen = getMaxFieldLength(false);
+                value.field_2_1 = 'x'.repeat(twoBytesMaxLen);
+                value.field_2_2 = 'y';
+                await putGetComplexObjects(key, value, null, valueType, value);
+            }).
+            then(done).
+            catch(error => done.fail(error));
+    });
+
+    it('put get complex objects with four bytes offset', (done) => {
+        Promise.resolve().
+            then(async () => {
+                const key = new Date();
+                const valueType = new ComplexObjectType(new Class2(), 'Class2WithStrings');
+                const value = new Class2();
+                const twoBytesMaxLen = getMaxFieldLength(false);
+                value.field_2_1 = 'x'.repeat(twoBytesMaxLen + 1);
+                value.field_2_2 = 'y';
+                await putGetComplexObjects(key, value, null, valueType, value);
+                value.field_2_1 = 'x'.repeat(twoBytesMaxLen * 2);
+                value.field_2_2 = 'y';
+                await putGetComplexObjects(key, value, null, valueType, value);
+            }).
+            then(done).
+            catch(error => done.fail(error));
+    });
+
+    it('put get complex objects without schema', (done) => {
+        Promise.resolve().
+            then(async () => {
+                const key = new Date();
+                const valueType = new ComplexObjectType({});
+                const value = {};
+                await putGetComplexObjects(key, value, null, valueType, value);
+            }).
+            then(done).
+            catch(error => done.fail(error));
+    });
+
+    function getMaxFieldLength(oneByte) {
+        const maxOffset = oneByte ? ONE_BYTE_MAX_OFFSET : TWO_BYTES_MAX_OFFSET;
+        // max offset - field type code - field type (string) length - complex object header length
+        return maxOffset - 1 - 4 - COMPLEX_OBJECT_HEADER_LENGTH;
+    }
 
     async function testSuiteCleanup(done) {
         await TestingHelper.destroyCache(CACHE_NAME, done);

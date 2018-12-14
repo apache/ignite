@@ -28,9 +28,8 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -109,9 +108,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      */
     private GridDhtPartitionsFullMessage finishMsg;
 
-    /** */
-    private GridLongList activeQryTrackers;
-
     /**
      * Required by {@link Externalizable}.
      */
@@ -133,20 +129,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
         this.client = client;
         this.compress = compress;
-    }
-
-    /**
-     * @return Active queries started with previous coordinator.
-     */
-    GridLongList activeQueries() {
-        return activeQryTrackers;
-    }
-
-    /**
-     * @param activeQrys Active queries started with previous coordinator.
-     */
-    void activeQueries(GridLongList activeQrys) {
-        this.activeQryTrackers = activeQrys;
     }
 
     /**
@@ -473,12 +455,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         }
 
         switch (writer.state()) {
-            case 5:
-                if (!writer.writeMessage("activeQryTrackers", activeQryTrackers))
-                    return false;
-
-                writer.incrementState();
-
             case 6:
                 if (!writer.writeBoolean("client", client))
                     return false;
@@ -548,14 +524,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             return false;
 
         switch (reader.state()) {
-            case 5:
-                activeQryTrackers = reader.readMessage("activeQryTrackers");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
             case 6:
                 client = reader.readBoolean("client");
 

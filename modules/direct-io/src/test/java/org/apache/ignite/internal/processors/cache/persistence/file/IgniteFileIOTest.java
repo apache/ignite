@@ -55,6 +55,21 @@ public class IgniteFileIOTest extends TestCase {
         }
 
         /** {@inheritDoc} */
+        @Override public int getFileSystemBlockSize() {
+            return -1;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getSparseSize() {
+            return -1;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int punchHole(long position, int len) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
         @Override public long position() throws IOException {
             return position;
         }

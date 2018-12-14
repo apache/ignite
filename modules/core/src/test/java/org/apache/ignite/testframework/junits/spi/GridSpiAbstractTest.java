@@ -54,6 +54,8 @@ import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig.ConfigType;
 import org.jetbrains.annotations.Nullable;
+import org.junit.After;
+import org.junit.Before;
 
 import static org.apache.ignite.lang.IgniteProductVersion.fromString;
 
@@ -126,7 +128,8 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     /**
      * @throws Exception If failed.
      */
-    @Override protected final void setUp() throws Exception {
+    @Before
+    @Override public final void setUp() throws Exception {
         // Need to change classloader here, although it also handled in the parent class
         // the current test initialisation procedure doesn't allow us to setUp the parent first.
         cl = Thread.currentThread().getContextClassLoader();
@@ -171,7 +174,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"unchecked", "CastToIncompatibleInterface", "InstanceofIncompatibleInterface"})
+    @SuppressWarnings({"unchecked"})
     protected final void spiStart() throws Exception {
         GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
 
@@ -490,7 +493,8 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     /**
      * @throws Exception If failed.
      */
-    @Override protected final void tearDown() throws Exception {
+    @After
+    @Override public final void tearDown() throws Exception {
         getTestCounters().incrementStopped();
 
         boolean wasLast = isLastTest();

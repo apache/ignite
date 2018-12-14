@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 
 /**
  * JDBC response result.
@@ -87,21 +88,24 @@ public class JdbcResult implements JdbcRawBinarylizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
+    @Override public void writeBinary(BinaryWriterExImpl writer,
+        ClientListenerProtocolVersion ver) throws BinaryObjectException {
         writer.writeByte(type);
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
+    @Override public void readBinary(BinaryReaderExImpl reader,
+        ClientListenerProtocolVersion ver) throws BinaryObjectException {
         // No-op.
     }
 
     /**
      * @param reader Binary reader.
+     * @param ver Protocol verssion.
      * @return Request object.
      * @throws BinaryObjectException On error.
      */
-    public static JdbcResult readResult(BinaryReaderExImpl reader) throws BinaryObjectException {
+    public static JdbcResult readResult(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver) throws BinaryObjectException {
         int resId = reader.readByte();
 
         JdbcResult res;
@@ -191,7 +195,7 @@ public class JdbcResult implements JdbcRawBinarylizable {
                 throw new IgniteException("Unknown SQL listener request ID: [request ID=" + resId + ']');
         }
 
-        res.readBinary(reader);
+        res.readBinary(reader, ver);
 
         return res;
     }

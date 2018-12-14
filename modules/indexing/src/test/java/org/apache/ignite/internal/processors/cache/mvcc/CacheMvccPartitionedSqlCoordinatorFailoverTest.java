@@ -91,6 +91,46 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
+    public void testPutAllGetAll_ClientServer_Backups1_RestartRandomSrv_SqlDml() throws Exception {
+        putAllGetAll(RestartMode.RESTART_RND_SRV, 3, 1, 1, DFLT_PARTITION_COUNT,
+            new InitIndexing(Integer.class, Integer.class), SQL, DML);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllGetAll_ClientServer_Backups2_RestartRandomSrv_SqlDml() throws Exception {
+        putAllGetAll(RestartMode.RESTART_RND_SRV, 4, 1, 2, DFLT_PARTITION_COUNT,
+            new InitIndexing(Integer.class, Integer.class), SQL, DML);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllGetAll_Server_Backups2_RestartRandomSrv_SqlDml() throws Exception {
+        putAllGetAll(RestartMode.RESTART_RND_SRV, 4, 0, 2, DFLT_PARTITION_COUNT,
+            new InitIndexing(Integer.class, Integer.class), SQL, DML);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllGetAll_Server_Backups1_SinglePartition_RestartRandomSrv_SqlDml() throws Exception {
+        putAllGetAll(RestartMode.RESTART_RND_SRV, 4, 0, 1, 1,
+            new InitIndexing(Integer.class, Integer.class), SQL, DML);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllGetAll_ClientServer_Backups1_SinglePartition_RestartRandomSrv_SqlDml() throws Exception {
+        putAllGetAll(RestartMode.RESTART_RND_SRV, 3, 1, 1, 1,
+            new InitIndexing(Integer.class, Integer.class), SQL, DML);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testUpdate_N_Objects_ClientServer_Backups2_Sql() throws Exception {
         updateNObjectsTest(7, 3, 2, 2, DFLT_PARTITION_COUNT, DFLT_TEST_TIME,
             new InitIndexing(Integer.class, Integer.class), SQL, DML, RestartMode.RESTART_CRD);

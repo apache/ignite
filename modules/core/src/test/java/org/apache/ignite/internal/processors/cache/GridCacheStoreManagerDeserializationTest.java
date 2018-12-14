@@ -42,7 +42,12 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -56,6 +61,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *     https://issues.apache.org/jira/browse/IGNITE-2753
  *     </a>
  */
+@RunWith(JUnit4.class)
 public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstractTest {
     /** IP finder. */
     protected static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -65,6 +71,14 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
 
     /** Test cache name. */
     protected static final String CACHE_NAME = "cache_name";
+
+    /** {@inheritDoc} */
+    @Before
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        super.setUp();
+    }
 
     /**
      * @return Cache mode.
@@ -81,7 +95,6 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
@@ -124,7 +137,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
 
         cc.setBackups(0);
 
-        cc.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+        cc.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         return cc;
     }
@@ -144,6 +157,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testStream() throws Exception {
         final Ignite grid = startGrid();
 
@@ -169,6 +183,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionMove() throws Exception {
         final Ignite grid = startGrid("binaryGrid1");
 
@@ -203,13 +218,12 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
     }
 
     /**
-     * TODO GG-11148.
-     *
      * Check whether binary objects are stored without unmarshalling via stream API.
      *
      * @throws Exception If failed.
      */
-    public void _testBinaryStream() throws Exception {
+    @Test
+    public void testBinaryStream() throws Exception {
         final Ignite grid = startGrid("binaryGrid");
 
         final IgniteCache<BinaryObject, BinaryObject> cache = grid.createCache(CACHE_NAME).withKeepBinary();

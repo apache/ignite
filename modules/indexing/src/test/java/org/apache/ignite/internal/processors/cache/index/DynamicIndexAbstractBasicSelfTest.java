@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -48,7 +47,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * Tests for dynamic index creation.
  */
-@SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
+@SuppressWarnings({"unchecked"})
 public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbstractSelfTest {
     /** Node index for regular server (coordinator). */
     protected static final int IDX_SRV_CRD = 0;

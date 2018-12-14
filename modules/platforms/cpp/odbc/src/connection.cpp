@@ -30,7 +30,7 @@
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/ssl/ssl_mode.h"
-#include "ignite/odbc/ssl/ssl_gateway.h"
+#include "ignite/odbc/ssl/ssl_api.h"
 #include "ignite/odbc/ssl/secure_socket_client.h"
 #include "ignite/odbc/system/tcp_socket_client.h"
 #include "ignite/odbc/dsn_config.h"
@@ -63,9 +63,10 @@ namespace ignite
             autoCommit(true),
             parser(),
             config(),
-            info(config)
+            info(config),
+            streamingContext()
         {
-            // No-op.
+            streamingContext.SetConnection(*this);
         }
 
         Connection::~Connection()
@@ -154,7 +155,7 @@ namespace ignite
 
             if (sslMode != SslMode::DISABLE)
             {
-                bool loaded = ssl::SslGateway::GetInstance().LoadAll();
+                bool loaded = ssl::EnsureSslLoaded();
 
                 if (!loaded)
                 {
@@ -375,7 +376,7 @@ namespace ignite
             return config;
         }
 
-        bool Connection::IsAutoCommit()
+        bool Connection::IsAutoCommit() const
         {
             return autoCommit;
         }
@@ -670,8 +671,10 @@ namespace ignite
                 if (!rsp.GetError().empty())
                     constructor << "Additional info: " << rsp.GetError() << " ";
 
-                constructor << "Current node Apache Ignite version: " << rsp.GetCurrentVer().ToString() << ", "
-                            << "driver protocol version introduced in version: " << protocolVersion.ToString() << ".";
+                constructor << "Current version of the protocol, used by the server node is " 
+                            << rsp.GetCurrentVer().ToString() << ", "
+                            << "driver protocol version introduced in version "
+                            << protocolVersion.ToString() << ".";
 
                 AddStatusRecord(SqlState::S08004_CONNECTION_REJECTED, constructor.str());
 

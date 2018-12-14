@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.bulkload.pipeline;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.regex.Pattern;
 

@@ -47,10 +47,8 @@ public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
 
     /**
      * Test query without caches.
-     *
-     * @throws Exception If failed.
      */
-    public void testQuery() throws Exception {
+    public void testQuery() {
         GridQueryProcessor qryProc = node.context().query();
 
         SqlFieldsQuery qry = new SqlFieldsQuery(
@@ -92,10 +90,8 @@ public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
 
     /**
      * Test query without caches.
-     *
-     * @throws Exception If failed.
      */
-    public void testQueryWithParameters() throws Exception {
+    public void testQueryWithParameters() {
         GridQueryProcessor qryProc = node.context().query();
 
         SqlFieldsQuery qry = new SqlFieldsQuery(
@@ -137,9 +133,8 @@ public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
      */
-    public void testQueryMultipleStatementsFailed() throws Exception {
+    public void testQueryMultipleStatementsFailed() {
         final SqlFieldsQuery qry = new SqlFieldsQuery("select 1; select 1;").setSchema("PUBLIC");
 
         GridTestUtils.assertThrows(log,
@@ -150,5 +145,34 @@ public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
                     return null;
                 }
             }, IgniteSQLException.class, "Multiple statements queries are not supported");
+    }
+
+    /**
+     * Check cached two-steps query.
+     */
+    public void testCachedTwoSteps() {
+        List<FieldsQueryCursor<List<?>>> curs = sql("SELECT 1; SELECT 2");
+
+        assertEquals(2, curs.size());
+        assertEquals(1, curs.get(0).getAll().get(0).get(0));
+        assertEquals(2, curs.get(1).getAll().get(0).get(0));
+
+        curs = sql("SELECT 1; SELECT 2");
+
+        assertEquals(2, curs.size());
+        assertEquals(1, curs.get(0).getAll().get(0).get(0));
+        assertEquals(2, curs.get(1).getAll().get(0).get(0));
+    }
+
+    /**
+     * @param sql SQL query.
+     * @return Results.
+     */
+    private List<FieldsQueryCursor<List<?>>> sql(String sql) {
+        GridQueryProcessor qryProc = node.context().query();
+
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setSchema("PUBLIC");
+
+        return qryProc.querySqlFields(qry, true, false);
     }
 }

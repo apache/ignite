@@ -24,77 +24,209 @@ include /app/helpers/jade/mixins
 panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-title Connector configuration
     panel-description
-        | Configure HTTP REST configuration to enable HTTP server features. 
+        | Configure HTTP REST configuration to enable HTTP server features.
         | #[a.link-success(href="https://apacheignite.readme.io/docs/rest-api#general-configuration" target="_blank") More info]
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-60
-                +checkbox('Enabled', enabled, '"restEnabled"', 'Flag indicating whether to configure connector configuration')
+                +form-field__checkbox({
+                    label: 'Enabled',
+                    model: enabled,
+                    name: '"restEnabled"',
+                    tip: 'Flag indicating whether to configure connector configuration'
+                })
             .pc-form-grid-col-60
-                +text-enabled('Jetty configuration path:', `${model}.jettyPath`, '"connectorJettyPath"', enabled, 'false', 'Input path to Jetty configuration',
-                    'Path, either absolute or relative to IGNITE_HOME, to Jetty XML configuration file<br/>\
-                    Jetty is used to support REST over HTTP protocol for accessing Ignite APIs remotely<br/>\
-                    If not provided, Jetty instance with default configuration will be started picking IgniteSystemProperties.IGNITE_JETTY_HOST and IgniteSystemProperties.IGNITE_JETTY_PORT as host and port respectively')
+                +form-field__text({
+                    label: 'Jetty configuration path:',
+                    model: `${model}.jettyPath`,
+                    name: '"connectorJettyPath"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'Input path to Jetty configuration',
+                    tip: 'Path, either absolute or relative to IGNITE_HOME, to Jetty XML configuration file<br/>\
+                          Jetty is used to support REST over HTTP protocol for accessing Ignite APIs remotely<br/>\
+                          If not provided, Jetty instance with default configuration will be started picking IgniteSystemProperties.IGNITE_JETTY_HOST and IgniteSystemProperties.IGNITE_JETTY_PORT as host and port respectively'
+                })
             .pc-form-grid-col-20
-                +text-ip-address('TCP host:', `${model}.host`, '"connectorHost"', enabled, 'IgniteConfiguration#getLocalHost()',
-                    'Host for TCP binary protocol server<br/>\
-                    This can be either an IP address or a domain name<br/>\
-                    If not defined, system - wide local address will be used IgniteConfiguration#getLocalHost()<br/>\
-                    You can also use "0.0.0.0" value to bind to all locally - available IP addresses')
+                +form-field__ip-address({
+                    label:'TCP host:',
+                    model: `${model}.host`,
+                    name: '"connectorHost"',
+                    enabled: enabled,
+                    placeholder: 'IgniteConfiguration#getLocalHost()',
+                    tip: 'Host for TCP binary protocol server<br/>\
+                         This can be either an IP address or a domain name<br/>\
+                         If not defined, system - wide local address will be used IgniteConfiguration#getLocalHost()<br/>\
+                         You can also use "0.0.0.0" value to bind to all locally - available IP addresses'
+                })
             .pc-form-grid-col-20
-                +number-min-max('TCP port:', `${model}.port`, '"connectorPort"', enabled, '11211', '1024', '65535', 'Port for TCP binary protocol server')
+                +form-field__number({
+                    label: 'TCP port:',
+                    model: `${model}.port`,
+                    name: '"connectorPort"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '11211',
+                    min: '1024',
+                    max: '65535',
+                    tip: 'Port for TCP binary protocol server'
+                })
             .pc-form-grid-col-20
-                +number('TCP port range:', `${model}.portRange`, '"connectorPortRange"', enabled, '100', '1', 'Number of ports for TCP binary protocol server to try if configured port is already in use')
+                +form-field__number({
+                    label: 'TCP port range:',
+                    model: `${model}.portRange`,
+                    name: '"connectorPortRange"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '100',
+                    min: '1',
+                    tip: 'Number of ports for TCP binary protocol server to try if configured port is already in use'
+                })
             .pc-form-grid-col-60
-                +number('Idle query cursor timeout:', `${model}.idleQueryCursorTimeout`, '"connectorIdleQueryCursorTimeout"', enabled, '600000', '0',
-                    'Reject open query cursors that is not used timeout<br/>\
-                    If no fetch query request come within idle timeout, it will be removed on next check for old query cursors')
+                +form-field__number({
+                    label: 'Idle query cursor timeout:',
+                    model: `${model}.idleQueryCursorTimeout`,
+                    name: '"connectorIdleQueryCursorTimeout"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '600000',
+                    min: '0',
+                    tip: 'Reject open query cursors that is not used timeout<br/>\
+                          If no fetch query request come within idle timeout, it will be removed on next check for old query cursors'
+                })
             .pc-form-grid-col-60
-                +number('Idle query cursor check frequency:', `${model}.idleQueryCursorCheckFrequency`, '"connectorIdleQueryCursorCheckFrequency"', enabled, '60000', '0',
-                    'Idle query cursors check frequency<br/>\
-                    This setting is used to reject open query cursors that is not used')
+                +form-field__number({
+                    label: 'Idle query cursor check frequency:',
+                    model: `${model}.idleQueryCursorCheckFrequency`,
+                    name: '"connectorIdleQueryCursorCheckFrequency"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '60000',
+                    min: '0',
+                    tip: 'Idle query cursors check frequency<br/>\
+                          This setting is used to reject open query cursors that is not used'
+                })
             .pc-form-grid-col-30
-                +number('Idle timeout:', `${model}.idleTimeout`, '"connectorIdleTimeout"', enabled, '7000', '0',
-                    'Idle timeout for REST server<br/>\
-                    This setting is used to reject half - opened sockets<br/>\
-                    If no packets come within idle timeout, the connection is closed')
+                +form-field__number({
+                    label: 'Idle timeout:',
+                    model: `${model}.idleTimeout`,
+                    name: '"connectorIdleTimeout"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '7000',
+                    min: '0',
+                    tip: 'Idle timeout for REST server<br/>\
+                          This setting is used to reject half - opened sockets<br/>\
+                          If no packets come within idle timeout, the connection is closed'
+                })
             .pc-form-grid-col-30
-                +number('Receive buffer size:', `${model}.receiveBufferSize`, '"connectorReceiveBufferSize"', enabled, '32768', '0', 'REST TCP server receive buffer size')
+                +form-field__number({
+                    label: 'Receive buffer size:',
+                    model: `${model}.receiveBufferSize`,
+                    name: '"connectorReceiveBufferSize"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '32768',
+                    min: '0',
+                    tip: 'REST TCP server receive buffer size'
+                })
             .pc-form-grid-col-30
-                +number('Send buffer size:', `${model}.sendBufferSize`, '"connectorSendBufferSize"', enabled, '32768', '0', 'REST TCP server send buffer size')
+                +form-field__number({
+                    label: 'Send buffer size:',
+                    model: `${model}.sendBufferSize`,
+                    name: '"connectorSendBufferSize"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '32768',
+                    min: '0',
+                    tip: 'REST TCP server send buffer size'
+                })
             .pc-form-grid-col-30
-                +number('Send queue limit:', `${model}.sendQueueLimit`, '"connectorSendQueueLimit"', enabled, 'unlimited', '0',
-                    'REST TCP server send queue limit<br/>\
-                    If the limit exceeds, all successive writes will block until the queue has enough capacity')
+                +form-field__number({
+                    label: 'Send queue limit:',
+                    model: `${model}.sendQueueLimit`,
+                    name: '"connectorSendQueueLimit"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'unlimited',
+                    min: '0',
+                    tip: 'REST TCP server send queue limit<br/>\
+                         If the limit exceeds, all successive writes will block until the queue has enough capacity'
+                })
             .pc-form-grid-col-60
-                +checkbox-enabled('Direct buffer', `${model}.directBuffer`, '"connectorDirectBuffer"', enabled,
-                    'Flag indicating whether REST TCP server should use direct buffers<br/>\
-                    A direct buffer is a buffer that is allocated and accessed using native system calls, without using JVM heap<br/>\
-                    Enabling direct buffer may improve performance and avoid memory issues(long GC pauses due to huge buffer size)')
+                +form-field__checkbox({
+                    label: 'Direct buffer',
+                    model: `${model}.directBuffer`,
+                    name: '"connectorDirectBuffer"',
+                    disabled: `!${enabled}`,
+                    tip: 'Flag indicating whether REST TCP server should use direct buffers<br/>\
+                          A direct buffer is a buffer that is allocated and accessed using native system calls, without using JVM heap<br/>\
+                          Enabling direct buffer may improve performance and avoid memory issues(long GC pauses due to huge buffer size)'
+                })
             .pc-form-grid-col-60
-                +checkbox-enabled('TCP_NODELAY option', `${model}.noDelay`, '"connectorNoDelay"', enabled,
-                    'Flag indicating whether TCP_NODELAY option should be set for accepted client connections<br/>\
-                    Setting this option reduces network latency and should be enabled in majority of cases<br/>\
-                    For more information, see Socket#setTcpNoDelay(boolean)')
+                +form-field__checkbox({
+                    label: 'TCP_NODELAY option',
+                    model: `${model}.noDelay`,
+                    name: '"connectorNoDelay"',
+                    disabled: `!${enabled}`,
+                    tip: 'Flag indicating whether TCP_NODELAY option should be set for accepted client connections<br/>\
+                          Setting this option reduces network latency and should be enabled in majority of cases<br/>\
+                          For more information, see Socket#setTcpNoDelay(boolean)'
+                })
             .pc-form-grid-col-30
-                +number('Selector count:', `${model}.selectorCount`, '"connectorSelectorCount"', enabled, 'min(4, availableProcessors)', '1',
-                    'Number of selector threads in REST TCP server<br/>\
-                    Higher value for this parameter may increase throughput, but also increases context switching')
+                +form-field__number({
+                    label: 'Selector count:',
+                    model: `${model}.selectorCount`,
+                    name: '"connectorSelectorCount"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'min(4, availableProcessors)',
+                    min: '1',
+                    tip: 'Number of selector threads in REST TCP server<br/>\
+                          Higher value for this parameter may increase throughput, but also increases context switching'
+                })
             .pc-form-grid-col-30
-                +number('Thread pool size:', `${model}.threadPoolSize`, '"connectorThreadPoolSize"', enabled, 'max(8, availableProcessors) * 2', '1',
-                    'Thread pool size to use for processing of client messages (REST requests)')
+                +form-field__number({
+                    label: 'Thread pool size:',
+                    model: `${model}.threadPoolSize`,
+                    name: '"connectorThreadPoolSize"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'max(8, availableProcessors) * 2',
+                    min: '1',
+                    tip: 'Thread pool size to use for processing of client messages (REST requests)'
+                })
             .pc-form-grid-col-60
-                +java-class('Message interceptor:', `${model}.messageInterceptor`, '"connectorMessageInterceptor"', enabled, 'false',
-                    'Interceptor allows to transform all objects exchanged via REST protocol<br/>\
-                    For example if you use custom serialisation on client you can write interceptor to transform binary representations received from client to Java objects and later access them from java code directly')
+                +form-field__java-class({
+                    label: 'Message interceptor:',
+                    model: `${model}.messageInterceptor`,
+                    name: '"connectorMessageInterceptor"',
+                    disabled: `!(${enabled})`,
+                    tip: 'Interceptor allows to transform all objects exchanged via REST protocol<br/>\
+                         For example if you use custom serialisation on client you can write interceptor to transform binary representations received from client to Java objects and later access them from java code directly'
+                })
             .pc-form-grid-col-60
-                +text-enabled('Secret key:', `${model}.secretKey`, '"connectorSecretKey"', enabled, 'false', 'Specify to enable authentication', 'Secret key to authenticate REST requests')
+                +form-field__text({
+                    label: 'Secret key:',
+                    model: `${model}.secretKey`,
+                    name: '"connectorSecretKey"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'Specify to enable authentication',
+                    tip: 'Secret key to authenticate REST requests'
+                })
             .pc-form-grid-col-60
-                +checkbox-enabled('Enable SSL', `${model}.sslEnabled`, '"connectorSslEnabled"', enabled, 'Enables/disables SSL for REST TCP binary protocol')
+                +form-field__checkbox({
+                    label: 'Enable SSL',
+                    model: `${model}.sslEnabled`,
+                    name: '"connectorSslEnabled"',
+                    disabled: `!${enabled}`,
+                    tip: 'Enables/disables SSL for REST TCP binary protocol'
+                })
             .pc-form-grid-col-60
-                +checkbox-enabled('Enable SSL client auth', `${model}.sslClientAuth`, '"connectorSslClientAuth"', sslEnabled, 'Flag indicating whether or not SSL client authentication is required')
+                +form-field__checkbox({
+                    label: 'Enable SSL client auth',
+                    model: `${model}.sslClientAuth`,
+                    name: '"connectorSslClientAuth"',
+                    disabled: `!(${sslEnabled})`,
+                    tip: 'Flag indicating whether or not SSL client authentication is required'
+                })
             .pc-form-grid-col-60
-                +java-class('SSL factory:', `${model}.sslFactory`, '"connectorSslFactory"', sslEnabled, sslEnabled,
-                    'Instance of Factory that will be used to create an instance of SSLContext for Secure Socket Layer on TCP binary protocol')
+                +form-field__java-class({
+                    label: 'SSL factory:',
+                    model: `${model}.sslFactory`,
+                    name: '"connectorSslFactory"',
+                    disabled: `!(${sslEnabled})`,
+                    required: sslEnabled,
+                    tip: 'Instance of Factory that will be used to create an instance of SSLContext for Secure Socket Layer on TCP binary protocol'
+                })
         .pca-form-column-6
             +preview-xml-java(model, 'clusterConnector')

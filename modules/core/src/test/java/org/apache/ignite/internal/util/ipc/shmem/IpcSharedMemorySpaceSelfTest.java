@@ -30,10 +30,14 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
     /** */
     public static final int DATA_LEN = 1024 * 1024;
@@ -59,6 +63,7 @@ public class IpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBasicOperations() throws Exception {
         File tokFile = new File(IgniteSystemProperties.getString("java.io.tmpdir"), UUID.randomUUID().toString());
 
@@ -103,7 +108,7 @@ public class IpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut2 = multithreadedAsync(
             new Callable<Object>() {
-                @SuppressWarnings({"TooBroadScope", "StatementWithEmptyBody"})
+                @SuppressWarnings({"TooBroadScope"})
                 @Override public Object call() throws Exception {
                     IpcSharedMemorySpace inSpace;
 
@@ -155,6 +160,7 @@ public class IpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForceClose() throws Exception {
         File tokFile = new File(IgniteSystemProperties.getString("java.io.tmpdir"), getTestIgniteInstanceName());
 
@@ -196,6 +202,7 @@ public class IpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadAfterClose() throws Exception {
         File tokFile = new File(IgniteSystemProperties.getString("java.io.tmpdir"), getTestIgniteInstanceName());
 
@@ -234,6 +241,7 @@ public class IpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWriteAfterClose() throws Exception {
         File tokFile = new File(IgniteSystemProperties.getString("java.io.tmpdir"), getTestIgniteInstanceName());
 

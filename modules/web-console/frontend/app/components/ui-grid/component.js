@@ -24,13 +24,22 @@ export default {
     controller,
     bindings: {
         gridApi: '=?',
+        gridTreeView: '<?',
+        gridGrouping: '<?',
+        gridThin: '<?',
+        gridHeight: '<?',
+        tabName: '<?',
+        tableTitle: '<?',
+        maxRowsToShow: '<?',
 
         // Input Events.
         items: '<',
         columnDefs: '<',
-        categories: '<',
+        categories: '<?',
         oneWaySelection: '<?',
         rowIdentityKey: '@?',
+        selectedRows: '<?',
+        selectedRowsId: '<?',
 
         // Output events.
         onSelectionChange: '&?'

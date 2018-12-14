@@ -17,10 +17,10 @@
 
 import './centered.scss';
 
-export default ['centered', [function() {
+export default function() {
     return {
         restrict: 'E',
         transclude: true,
         template: '<div class="center-container"><div class="centered"><div ng-transclude></div></div></div>'
     };
-}]];
+}

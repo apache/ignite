@@ -18,18 +18,23 @@
 package org.apache.ignite.internal.processors.cache.multijvm;
 
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearEnabledMultiNodeFullApiSelfTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Multi-JVM tests.
  */
+@RunWith(JUnit4.class)
 public class GridCacheAtomicNearEnabledMultiJvmFullApiSelfTest extends
     GridCacheAtomicNearEnabledMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
-    protected boolean isMultiJvm() {
+    @Override protected boolean isMultiJvm() {
         return true;
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testPutAllPutAll() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-1112");
     }

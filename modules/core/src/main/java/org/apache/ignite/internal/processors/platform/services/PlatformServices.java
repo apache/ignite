@@ -54,7 +54,6 @@ import java.util.UUID;
 /**
  * Interop services.
  */
-@SuppressWarnings({"UnusedDeclaration"})
 public class PlatformServices extends PlatformAbstractTarget {
     /** */
     private static final int OP_DOTNET_DEPLOY = 1;
@@ -672,7 +671,6 @@ public class PlatformServices extends PlatformAbstractTarget {
          *
          * @return Primitive wrapper, or the same class.
          */
-        @SuppressWarnings("unchecked")
         private static Class wrap(Class c) {
             return c.isPrimitive() ? PRIMITIVES_TO_WRAPPERS.get(c) : c;
         }
