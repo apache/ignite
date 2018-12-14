@@ -112,9 +112,10 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Check tracking running queries for Select.
      */
-    public void testQueriesOriginalText() throws Exception {
+    @Test
+    public void testQueries() throws Exception {
         newBarrier(3);
 
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
@@ -146,8 +147,9 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Check tracking running queries for DML.
      */
+    @Test
     public void testQueryDML() throws Exception {
         newBarrier(2);
 
@@ -178,8 +180,9 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Check tracking running queries for DDL.
      */
+    @Test
     public void testQueryDDL() throws Exception {
         newBarrier(2);
 
@@ -206,6 +209,12 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
 
     }
 
+    /**
+     * Check tracking running queries for batches.
+     *
+     * @throws Exception Exception in case of failure.
+     */
+    @Test
     public void testJdbcBatchDML() throws Exception {
         newBarrier(2);
 
@@ -234,6 +243,12 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * Check tracking running queries for multistatements.
+     *
+     * @throws Exception Exception in case of failure.
+     */
+    @Test
     public void testMultiStatement() throws Exception {
         newBarrier(2);
 
@@ -259,6 +274,12 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * Check tracking running queries for stream batching.
+     *
+     * @throws Exception in case of failure.
+     */
+    @Test
     public void testJdbcStreamBatchUpdate() throws Exception {
         try (Connection conn = GridTestUtils.connect(ignite, null); Statement stmt = conn.createStatement()) {
             conn.setSchema("\"default\"");
