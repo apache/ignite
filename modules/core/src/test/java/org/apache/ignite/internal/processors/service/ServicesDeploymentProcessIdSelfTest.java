@@ -73,8 +73,8 @@ public class ServicesDeploymentProcessIdSelfTest {
         DiscoveryCustomEvent customEvt = new DiscoveryCustomEvent();
 
         customEvt.customMessage(
-            new DynamicServicesChangeRequestBatchMessage(Collections.singletonList(
-                DynamicServiceChangeRequest.undeploymentRequest(IgniteUuid.randomUuid())))
+            new ServiceChangeBatchRequest(Collections.singletonList(
+                new ServiceUndeploymentChange(IgniteUuid.randomUuid())))
         );
 
         ClusterNode node = new GridTestNode(UUID.randomUUID());

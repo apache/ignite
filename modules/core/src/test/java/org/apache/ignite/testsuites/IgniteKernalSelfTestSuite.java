@@ -52,7 +52,6 @@ import org.apache.ignite.internal.managers.events.GridEventStorageManagerSelfTes
 import org.apache.ignite.internal.processors.cluster.GridAddressResolverSelfTest;
 import org.apache.ignite.internal.processors.cluster.GridUpdateNotifierSelfTest;
 import org.apache.ignite.internal.processors.port.GridPortProcessorSelfTest;
-import org.apache.ignite.internal.processors.service.DynamicServiceChangeRequestTest;
 import org.apache.ignite.internal.processors.service.GridServiceClientNodeTest;
 import org.apache.ignite.internal.processors.service.GridServiceContinuousQueryRedeployTest;
 import org.apache.ignite.internal.processors.service.GridServiceDeploymentCompoundFutureSelfTest;
@@ -183,7 +182,6 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(ServiceReassignmentFunctionSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(ServiceInfoSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(ServicesDeploymentProcessIdSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(DynamicServiceChangeRequestTest.class));
 
         return suite;
     }

@@ -280,7 +280,7 @@ public class ServicesDeploymentManager {
 
         assert msg != null : "DiscoveryCustomMessage has been nullified concurrently, evt=" + evt;
 
-        if (msg instanceof DynamicServicesChangeRequestBatchMessage)
+        if (msg instanceof ServiceChangeBatchRequest)
             return evt;
 
         DiscoveryCustomEvent cp = new DiscoveryCustomEvent();
@@ -348,8 +348,8 @@ public class ServicesDeploymentManager {
 
                             if (msg instanceof ChangeGlobalStateMessage)
                                 depActions = ((ChangeGlobalStateMessage)msg).servicesDeploymentActions();
-                            else if (msg instanceof DynamicServicesChangeRequestBatchMessage) {
-                                depActions = ((DynamicServicesChangeRequestBatchMessage)msg)
+                            else if (msg instanceof ServiceChangeBatchRequest) {
+                                depActions = ((ServiceChangeBatchRequest)msg)
                                     .servicesDeploymentActions();
                             }
                             else if (msg instanceof DynamicCacheChangeBatch)

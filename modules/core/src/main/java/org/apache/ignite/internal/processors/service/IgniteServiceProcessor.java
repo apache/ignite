@@ -97,7 +97,7 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
  * @see ServicesDeploymentManager
  * @see ServicesDeploymentTask
  * @see ServicesDeploymentActions
- * @see DynamicServicesChangeRequestBatchMessage
+ * @see ServiceChangeBatchRequest
  */
 @SkipDaemon
 @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
@@ -177,10 +177,10 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             !F.isEmpty(cfg.getServiceConfiguration()))
             throw new IgniteCheckedException("Cannot deploy services in PRIVATE or ISOLATED deployment mode: " + depMode);
 
-        ctx.discovery().setCustomEventListener(DynamicServicesChangeRequestBatchMessage.class,
-            new CustomEventListener<DynamicServicesChangeRequestBatchMessage>() {
+        ctx.discovery().setCustomEventListener(ServiceChangeBatchRequest.class,
+            new CustomEventListener<ServiceChangeBatchRequest>() {
                 @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
-                    DynamicServicesChangeRequestBatchMessage msg) {
+                    ServiceChangeBatchRequest msg) {
                     processServicesChangeRequest(snd, msg);
                 }
             });
@@ -631,7 +631,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
             if (!cfgsCp.isEmpty()) {
                 try {
-                    Collection<DynamicServiceChangeRequest> reqs = new ArrayList<>();
+                    Collection<ServiceAbstractChange> reqs = new ArrayList<>();
 
                     for (ServiceConfiguration cfg : cfgsCp) {
                         IgniteUuid srvcId = IgniteUuid.randomUuid();
@@ -640,14 +640,12 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
                         res.add(fut, true);
 
-                        DynamicServiceChangeRequest req = DynamicServiceChangeRequest.deploymentRequest(srvcId, cfg);
-
-                        reqs.add(req);
+                        reqs.add(new ServiceDeploymentChange(srvcId, cfg));
 
                         depFuts.put(srvcId, fut);
                     }
 
-                    DynamicServicesChangeRequestBatchMessage msg = new DynamicServicesChangeRequestBatchMessage(reqs);
+                    ServiceChangeBatchRequest msg = new ServiceChangeBatchRequest(reqs);
 
                     ctx.discovery().sendCustomEvent(msg);
 
@@ -713,7 +711,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
             Set<IgniteUuid> toRollback = new HashSet<>();
 
-            List<DynamicServiceChangeRequest> reqs = new ArrayList<>();
+            List<ServiceAbstractChange> reqs = new ArrayList<>();
 
             try {
                 for (String name : servicesNames) {
@@ -744,13 +742,11 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
                     toRollback.add(srvcId);
 
-                    DynamicServiceChangeRequest req = DynamicServiceChangeRequest.undeploymentRequest(srvcId);
-
-                    reqs.add(req);
+                    reqs.add(new ServiceUndeploymentChange(srvcId));
                 }
 
                 if (!reqs.isEmpty()) {
-                    DynamicServicesChangeRequestBatchMessage msg = new DynamicServicesChangeRequestBatchMessage(reqs);
+                    ServiceChangeBatchRequest msg = new ServiceChangeBatchRequest(reqs);
 
                     ctx.discovery().sendCustomEvent(msg);
 
@@ -836,10 +832,13 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
             Collection<ServiceContextImpl> ctxs = serviceContexts(name);
 
-            if (F.isEmpty(ctxs))
+            if (ctxs == null)
                 return null;
 
             synchronized (ctxs) {
+                if (F.isEmpty(ctxs))
+                    return null;
+
                 for (ServiceContextImpl ctx : ctxs) {
                     Service srvc = ctx.service();
 
@@ -863,10 +862,13 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         try {
             Collection<ServiceContextImpl> ctxs = serviceContexts(name);
 
-            if (F.isEmpty(ctxs))
+            if (ctxs == null)
                 return null;
 
             synchronized (ctxs) {
+                if (F.isEmpty(ctxs))
+                    return null;
+
                 for (ServiceContextImpl ctx : ctxs) {
                     if (ctx.service() != null)
                         return ctx;
@@ -941,21 +943,24 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
             Collection<ServiceContextImpl> ctxs = serviceContexts(name);
 
-            if (F.isEmpty(ctxs))
+            if (ctxs == null)
                 return null;
 
-            Collection<T> res = new ArrayList<>(ctxs.size());
-
             synchronized (ctxs) {
+                if (F.isEmpty(ctxs))
+                    return null;
+
+                Collection<T> res = new ArrayList<>(ctxs.size());
+
                 for (ServiceContextImpl ctx : ctxs) {
                     Service srvc = ctx.service();
 
                     if (srvc != null)
                         res.add((T)srvc);
                 }
-            }
 
-            return res;
+                return res;
+            }
         }
         finally {
             leaveBusy();
@@ -1511,14 +1516,17 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * @param snd Sender.
      * @param msg Message.
      */
-    private void processServicesChangeRequest(ClusterNode snd, DynamicServicesChangeRequestBatchMessage msg) {
+    private void processServicesChangeRequest(ClusterNode snd, ServiceChangeBatchRequest msg) {
         DiscoveryDataClusterState state = ctx.state().clusterState();
 
         if (!state.active() || state.transition()) {
-            for (DynamicServiceChangeRequest req : msg.requests()) {
-                GridFutureAdapter<?> fut = req.deploy() ?
-                    depFuts.remove(req.serviceId()) :
-                    undepFuts.remove(req.serviceId());
+            for (ServiceAbstractChange req : msg.requests()) {
+                GridFutureAdapter<?> fut = null;
+
+                if (req instanceof ServiceDeploymentChange)
+                    fut = depFuts.remove(req.serviceId());
+                else if (req instanceof ServiceUndeploymentChange)
+                    fut = undepFuts.remove(req.serviceId());
 
                 if (fut != null) {
                     fut.onDone(new IgniteCheckedException("Operation has been canceled, cluster state " +
@@ -1532,11 +1540,11 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         Map<IgniteUuid, ServiceInfo> toDeploy = new HashMap<>();
         Map<IgniteUuid, ServiceInfo> toUndeploy = new HashMap<>();
 
-        for (DynamicServiceChangeRequest req : msg.requests()) {
+        for (ServiceAbstractChange req : msg.requests()) {
             IgniteUuid reqSrvcId = req.serviceId();
             ServiceInfo oldDesc = registeredServices.get(reqSrvcId);
 
-            if (req.deploy()) {
+            if (req instanceof ServiceDeploymentChange) {
                 IgniteCheckedException err = null;
 
                 if (oldDesc != null) { // In case of a collision of IgniteUuid.randomUuid() (almost impossible case)
@@ -1544,7 +1552,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                         "exists : [" + "srvcId" + reqSrvcId + ", srvcTop=" + oldDesc.topologySnapshot() + ']');
                 }
                 else {
-                    ServiceConfiguration cfg = req.configuration();
+                    ServiceConfiguration cfg = ((ServiceDeploymentChange)req).configuration();
 
                     oldDesc = lookupInRegisteredServices(cfg.getName());
 
@@ -1588,7 +1596,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                     U.warn(log, err.getMessage(), err);
                 }
             }
-            else if (req.undeploy()) {
+            else if (req instanceof ServiceUndeploymentChange) {
                 ServiceInfo rmv = registeredServices.remove(reqSrvcId);
 
                 assert oldDesc == rmv : "Concurrent map modification.";

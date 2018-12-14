@@ -31,9 +31,9 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Services changes requests batch discovery message.
+ * Service change batch request discovery message.
  */
-public class DynamicServicesChangeRequestBatchMessage implements DiscoveryCustomMessage {
+public class ServiceChangeBatchRequest implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -42,7 +42,7 @@ public class DynamicServicesChangeRequestBatchMessage implements DiscoveryCustom
 
     /** Change requests. */
     @GridToStringInclude
-    private final Collection<DynamicServiceChangeRequest> reqs;
+    private final Collection<ServiceAbstractChange> reqs;
 
     /** Services deployment actions to be processed on services deployment process. */
     @GridToStringExclude
@@ -51,7 +51,7 @@ public class DynamicServicesChangeRequestBatchMessage implements DiscoveryCustom
     /**
      * @param reqs Change requests.
      */
-    public DynamicServicesChangeRequestBatchMessage(Collection<DynamicServiceChangeRequest> reqs) {
+    public ServiceChangeBatchRequest(Collection<ServiceAbstractChange> reqs) {
         assert !F.isEmpty(reqs);
 
         this.reqs = reqs;
@@ -60,7 +60,7 @@ public class DynamicServicesChangeRequestBatchMessage implements DiscoveryCustom
     /**
      * @return Change requests.
      */
-    public Collection<DynamicServiceChangeRequest> requests() {
+    public Collection<ServiceAbstractChange> requests() {
         return Collections.unmodifiableCollection(reqs);
     }
 
@@ -108,6 +108,6 @@ public class DynamicServicesChangeRequestBatchMessage implements DiscoveryCustom
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DynamicServicesChangeRequestBatchMessage.class, this);
+        return S.toString(ServiceChangeBatchRequest.class, this);
     }
 }
