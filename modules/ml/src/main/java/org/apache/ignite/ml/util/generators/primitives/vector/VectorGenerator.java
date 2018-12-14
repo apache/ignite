@@ -20,13 +20,16 @@ package org.apache.ignite.ml.util.generators.primitives.vector;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.util.generators.datastream.DataStreamGenerator;
 import org.apache.ignite.ml.util.generators.primitives.variable.GaussRandomProducer;
 import org.apache.ignite.ml.util.generators.primitives.variable.RandomProducer;
 import org.apache.ignite.ml.util.generators.primitives.variable.UniformRandomProducer;
 
-public interface VectorGenerator extends Supplier<Vector> {
+public interface VectorGenerator extends Supplier<Vector>, DataStreamGenerator {
     public static VectorGenerator gauss(double[] pivots, double variance) {
         return gauss(pivots, variance, System.currentTimeMillis());
     }
@@ -82,5 +85,9 @@ public interface VectorGenerator extends Supplier<Vector> {
 
     static VectorGenerator concat(List<VectorGenerator> generators) {
         return () -> generators.stream().map(Supplier::get).reduce(VectorUtils::concat).get();
+    }
+
+    @Override default Stream<LabeledVector<Vector, Double>> labeled() {
+        return Stream.generate(this).map(v -> new LabeledVector<>(v, 0.0));
     }
 }

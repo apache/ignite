@@ -30,21 +30,23 @@ public class TwoSeparableClassesDataStream implements DataStreamGenerator {
     private final double margin;
     private final double minCordValue;
     private final double maxCordValue;
+    private final long seed;
 
     public TwoSeparableClassesDataStream(double margin, double variance) {
+        this(margin, variance, System.currentTimeMillis());
+    }
+
+    public TwoSeparableClassesDataStream(double margin, double variance, long seed) {
         this.margin = margin;
         this.minCordValue = -variance;
         this.maxCordValue = variance;
+        this.seed = seed;
     }
 
     @Override
     public Stream<LabeledVector<Vector, Double>> labeled() {
-        UniformRandomProducer urv = new UniformRandomProducer(minCordValue - Math.abs(margin), maxCordValue + Math.abs(margin));
-
-        VectorGenerator vectorGenerator = new ParametricVectorGenerator(UniformRandomProducer.zero(), t -> urv.get(), t -> -urv.get());
-        VectorGeneratorsFamily vectorsGenerator = new VectorGeneratorsFamily(vectorGenerator);
-        return vectorsGenerator.asStream()
-            .map(v -> new LabeledVector<>(applyMargin(v.vector()), isFirstClass(v.vector()) ? 1.0 : -1.0))
+        return VectorGenerator.uniform(minCordValue - Math.abs(margin), maxCordValue + Math.abs(margin), 2, seed).labeled()
+            .map(v -> new LabeledVector<>(applyMargin(v.features()), isFirstClass(v.features()) ? 1.0 : -1.0))
             .filter(v -> between(v.features().get(0), minCordValue, maxCordValue))
             .filter(v -> between(v.features().get(1), minCordValue, maxCordValue));
     }
