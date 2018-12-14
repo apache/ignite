@@ -1869,8 +1869,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             catch (IgniteCheckedException e) {
                 onDone(e);
 
-                // t0d0 handle properly
-                e.printStackTrace();
+                log.warning("Failed to send a lock wait check request [nodeId=" + nodeId + ']', e);
             }
         }
 
@@ -1986,8 +1985,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             sendMessage(nodeId, res);
         }
         catch (IgniteCheckedException e) {
-            // t0d0 handle properly
-            e.printStackTrace();
+            log.warning("Failed to send a lock wait check response [nodeId=" + nodeId + ']', e);
         }
     }
 
@@ -2013,9 +2011,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         if (fut != null)
             fut.onResponse(res);
-        else {
-            // t0d0 warning
-        }
+        else
+            log.error("Future for lock wait check response was not found [futId=" + res.futId() + ']');
     }
 
     /**

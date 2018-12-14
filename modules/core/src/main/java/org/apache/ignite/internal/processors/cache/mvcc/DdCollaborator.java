@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxAbstractEnlistFuture;
@@ -42,10 +43,13 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 public class DdCollaborator {
     /** */
     private final GridKernalContext ctx;
+    /** */
+    private final IgniteLogger logger;
 
     /** */
     public DdCollaborator(GridKernalContext ctx) {
         this.ctx = ctx;
+        this.logger = ctx.log(DdCollaborator.class);
     }
 
     /**
@@ -156,8 +160,7 @@ public class DdCollaborator {
             ctx.io().sendToGridTopic(blockerNearNodeId, TOPIC_CACHE_COORDINATOR, probe, SYSTEM_POOL);
         }
         catch (IgniteCheckedException e) {
-            // t0d0 handle send errors
-            e.printStackTrace();
+            logger.warning("Failed to send a deadlock probe [nodeId=" + blockerNearNodeId + ']', e);
         }
     }
 
