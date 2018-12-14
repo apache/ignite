@@ -49,6 +49,7 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -160,6 +161,9 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10261");
+
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -798,7 +802,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
 
                 IgniteCache<Integer, String> cache = ig.cache(cacheName).withAllowAtomicOpsInTx();
 
-                boolean pessimistic = r.nextBoolean();
+                boolean pessimistic = atomicityMode(cache) == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT || r.nextBoolean();
 
                 boolean rollback = r.nextBoolean();
 
@@ -874,7 +878,8 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
                 IgniteCache<Integer, String> cache1 = ig.cache(cacheName1);
                 IgniteCache<Integer, String> cache2 = ig.cache(cacheName2);
 
-                boolean pessimistic = r.nextBoolean();
+                boolean pessimistic = atomicityMode(cache1) == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT ||
+                    atomicityMode(cache2) == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT || r.nextBoolean();
 
                 boolean rollback = r.nextBoolean();
 

@@ -47,10 +47,14 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for running queries.
  */
+@RunWith(JUnit4.class)
 public class RunningQueriesTest extends GridCommonAbstractTest {
 
     /** Timeout in sec. */

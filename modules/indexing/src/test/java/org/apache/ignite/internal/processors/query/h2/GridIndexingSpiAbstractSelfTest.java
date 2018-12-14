@@ -36,10 +36,14 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for all SQL based indexing SPI implementations.
  */
+@RunWith(JUnit4.class)
 public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstractTest {
     /** */
     private static final LinkedHashMap<String, String> fieldsAA = new LinkedHashMap<>();
@@ -129,6 +133,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     @SuppressWarnings({"unchecked", "deprecation"})
+    @Test
     public void testLongQueries() throws Exception {
         IgniteH2Indexing spi = getIndexing();
 

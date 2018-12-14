@@ -76,7 +76,7 @@ public class ComputeUtils {
      */
     public static <R> Collection<R> affinityCallWithRetries(Ignite ignite, Collection<String> cacheNames,
         IgniteFunction<Integer, R> fun, int retries, int interval) {
-        assert cacheNames.size() > 0;
+        assert !cacheNames.isEmpty();
         assert interval >= 0;
 
         String primaryCache = cacheNames.iterator().next();

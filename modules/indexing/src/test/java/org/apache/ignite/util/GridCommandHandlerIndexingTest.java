@@ -45,10 +45,14 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.tree.SearchRow;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
@@ -56,6 +60,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
     /** Test cache name. */
     private static final String CACHE_NAME = "persons-cache-vi";
@@ -63,6 +68,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
     /**
      * Tests that validation doesn't fail if nothing is broken.
      */
+    @Test
     public void testValidateIndexesNoErrors() throws Exception {
         prepareGridForTest();
 
@@ -76,6 +82,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
     /**
      * Tests that missing rows in CacheDataTree are detected.
      */
+    @Test
     public void testBrokenCacheDataTreeShouldFailValidation() throws Exception {
         Ignite ignite = prepareGridForTest();
 
@@ -100,6 +107,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
     /**
      * Tests that missing rows in H2 indexes are detected.
      */
+    @Test
     public void testBrokenSqlIndexShouldFailValidation() throws Exception {
         Ignite ignite = prepareGridForTest();
 
@@ -115,6 +123,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
     /**
      * Tests that corrupted pages in the index partition are detected.
      */
+    @Test
     public void testCorruptedIndexPartitionShouldFailValidation() throws Exception {
         Ignite ignite = prepareGridForTest();
 
@@ -243,7 +252,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
                             new SearchRow(cacheId, ctx.toCacheKeyObject(entry.getKey())));
 
                         if (oldRow != null)
-                            U.invoke(rowStore.getClass(), rowStore, "removeRow", oldRow.link());
+                            U.invoke(rowStore.getClass(), rowStore, "removeRow", oldRow.link(), IoStatisticsHolderNoOp.INSTANCE);
                     }
                     catch (IgniteCheckedException e) {
                         System.out.println("Failed to remove key skipping indexes: " + entry);
