@@ -79,7 +79,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheReplicatedLocalStore
 import org.apache.ignite.internal.processors.cache.GridCacheReplicatedTxStoreExceptionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheStopSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheStoreValueBytesSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheSwapPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManagerSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheTxPartitionedLocalStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.GridDataStorageConfigurationConsistencySelfTest;
@@ -213,9 +212,6 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         // Warmup closure tests.
         GridTestUtils.addTestIfNeeded(suite, IgniteWarmupClosureSelfTest.class, ignoredTests);
-
-        // Swap tests.
-        GridTestUtils.addTestIfNeeded(suite, GridCacheSwapPreloadSelfTest.class, ignoredTests);
 
         // Common tests.
         GridTestUtils.addTestIfNeeded(suite, CacheNamesSelfTest.class, ignoredTests);
