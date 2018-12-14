@@ -56,9 +56,7 @@ public class IgniteMLTestSuite {
         suite.addTest(new JUnit4TestAdapter(RegressionsTestSuite.class));
         suite.addTest(new JUnit4TestAdapter(SVMTestSuite.class));
         suite.addTest(new JUnit4TestAdapter(ClusteringTestSuite.class));
-        suite.addTest(new JUnit4TestAdapter(DecisionTreeTestSuite.class));
         suite.addTest(new JUnit4TestAdapter(KNNTestSuite.class));
-        suite.addTest(new JUnit4TestAdapter(MLPTestSuite.class));
         suite.addTest(new JUnit4TestAdapter(PipelineTestSuite.class));
         suite.addTest(new JUnit4TestAdapter(PreprocessingTestSuite.class));
         suite.addTest(new JUnit4TestAdapter(GAGridTestSuite.class));
@@ -70,6 +68,8 @@ public class IgniteMLTestSuite {
         suite.addTest(new JUnit4TestAdapter(MultiClassTestSuite.class));
 
         /** JUnit 3 tests. */
+        suite.addTest(DecisionTreeTestSuite.suite());
+        suite.addTest(MLPTestSuite.suite());
         suite.addTest(InferenceTestSuite.suite());
         suite.addTest(DatasetTestSuite.suite());
         suite.addTest(SelectionTestSuite.suite());
