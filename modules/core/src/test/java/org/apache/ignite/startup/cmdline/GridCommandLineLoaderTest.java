@@ -30,6 +30,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RESTART_CODE;
 
@@ -37,6 +40,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_RESTART_CODE;
  * Command line loader test.
  */
 @GridCommonTest(group = "Loaders")
+@RunWith(JUnit4.class)
 public class GridCommandLineLoaderTest extends GridCommonAbstractTest {
     /** */
     private static final String GRID_CFG_PATH = "/modules/core/src/test/config/loaders/grid-cfg.xml";
@@ -44,6 +48,7 @@ public class GridCommandLineLoaderTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoader() throws Exception {
         String path = U.getIgniteHome() + GRID_CFG_PATH;
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.startup.cmdline.GridCommandLineTransformerSelfTest;
 
@@ -31,7 +32,7 @@ public class IgniteStartUpTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite StartUp Test Suite");
 
-        suite.addTest(new TestSuite(GridCommandLineTransformerSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCommandLineTransformerSelfTest.class));
 
         return suite;
     }

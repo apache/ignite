@@ -19,16 +19,21 @@ package org.apache.ignite.spi.collision.priorityqueue;
 
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Priority queue collision SPI config test.
  */
 @GridSpiTest(spi = PriorityQueueCollisionSpi.class, group = "Collision SPI")
+@RunWith(JUnit4.class)
 public class GridPriorityQueueCollisionSpiConfigSelfTest
     extends GridSpiAbstractConfigTest<PriorityQueueCollisionSpi> {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeConfig() throws Exception {
         checkNegativeSpiProperty(new PriorityQueueCollisionSpi(), "parallelJobsNumber", 0);
         checkNegativeSpiProperty(new PriorityQueueCollisionSpi(), "waitingJobsNumber", -1);

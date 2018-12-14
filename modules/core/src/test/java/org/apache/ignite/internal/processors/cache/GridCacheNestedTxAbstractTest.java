@@ -34,6 +34,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -43,6 +46,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Nested transaction emulation.
  */
+@RunWith(JUnit4.class)
 public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
     /** */
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -105,6 +109,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTwoTx() throws Exception {
         final IgniteCache<String, Integer> c = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -136,6 +141,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLockAndTx() throws Exception {
         final IgniteCache<String, Integer> c = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -212,6 +218,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLockAndTx1() throws Exception {
         final IgniteCache<String, Integer> c = grid(0).cache(DEFAULT_CACHE_NAME);
 

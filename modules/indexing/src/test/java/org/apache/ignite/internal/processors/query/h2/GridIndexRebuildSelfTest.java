@@ -24,12 +24,14 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -38,7 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
     /** Data size. */
-    protected static final int AMOUNT = 300;
+    protected static final int AMOUNT = 50;
 
     /** Data size. */
     protected static final String CACHE_NAME = "T";
@@ -113,7 +115,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
         IgniteEx srv = startServer();
 
         execute(srv, "CREATE TABLE T(k int primary key, v int) WITH \"cache_name=T,wrap_value=false," +
-            "atomicity=transactional_snapshot\"");
+            "atomicity=transactional\"");
 
         execute(srv, "CREATE INDEX IDX ON T(v)");
 
@@ -228,13 +230,14 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
         private boolean firstRbld = true;
 
         /** {@inheritDoc} */
-        @Override public void rebuildIndexesFromHash(String cacheName) throws IgniteCheckedException {
+        @Override protected void rebuildIndexesFromHash0(GridCacheContext cctx, SchemaIndexCacheVisitorClosure clo)
+            throws IgniteCheckedException {
             if (!firstRbld)
                 U.await(INSTANCE.rebuildLatch);
             else
                 firstRbld = false;
 
-            super.rebuildIndexesFromHash(cacheName);
+            super.rebuildIndexesFromHash0(cctx, clo);
         }
     }
 }

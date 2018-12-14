@@ -60,8 +60,8 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IgnitePersistenceCom
     }
 
     /** {@inheritDoc} */
-    @Override @NotNull protected Set<String> getExcluded(Collection<Dependency> dependencies) {
-        Set<String> excluded = super.getExcluded(dependencies);
+    @Override protected Set<String> getExcluded(String ver, Collection<Dependency> dependencies) {
+        Set<String> excluded = super.getExcluded(ver, dependencies);
 
         excluded.add("h2");
 

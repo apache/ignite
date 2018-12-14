@@ -27,6 +27,7 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
@@ -276,19 +277,12 @@ public interface GridQueryIndexing {
         throws IgniteCheckedException;
 
     /**
-     * Rebuilds all indexes of given type from hash index.
+     * Rebuild indexes for the given cache if necessary.
      *
-     * @param cacheName Cache name.
-     * @throws IgniteCheckedException If failed.
+     * @param cctx Cache context.
+     * @return Future completed when index rebuild finished.
      */
-    public void rebuildIndexesFromHash(String cacheName) throws IgniteCheckedException;
-
-    /**
-     * Marks all indexes of given type for rebuild from hash index, making them unusable until rebuild finishes.
-     *
-     * @param cacheName Cache name.
-     */
-    public void markForRebuildFromHash(String cacheName);
+    public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx);
 
     /**
      * Returns backup filter.

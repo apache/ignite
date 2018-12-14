@@ -41,6 +41,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -53,6 +56,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTAN
 /**
  * Continuous queries tests.
  */
+@RunWith(JUnit4.class)
 public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implements Serializable {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -118,6 +122,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartition() throws Exception {
         checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 1, ATOMIC, false));
     }
@@ -125,6 +130,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionWithFilter() throws Exception {
         filterOn.set(true);
 
@@ -134,6 +140,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionNoBackups() throws Exception {
         checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 0, ATOMIC, false));
     }
@@ -141,6 +148,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionTx() throws Exception {
         checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL, false));
     }
@@ -148,6 +156,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionTxWithFilter() throws Exception {
         filterOn.set(true);
 
@@ -157,6 +166,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionTxNoBackup() throws Exception {
         checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL, false));
     }
@@ -164,6 +174,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionTxNoBackupWithFilter() throws Exception {
         filterOn.set(true);
 
@@ -173,6 +184,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicated() throws Exception {
         checkBackupAcknowledgeMessage(cacheConfiguration(REPLICATED, 1, ATOMIC, false));
     }
@@ -180,6 +192,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedTx() throws Exception {
         checkBackupAcknowledgeMessage(cacheConfiguration(REPLICATED, 1, TRANSACTIONAL, false));
     }
@@ -187,6 +200,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedTxWithFilter() throws Exception {
         filterOn.set(true);
 
@@ -198,6 +212,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionMvccTx() throws Exception {
         checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL_SNAPSHOT, false));
     }
@@ -205,6 +220,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionMvccTxWithFilter() throws Exception {
         filterOn.set(true);
 
@@ -214,6 +230,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionMvccTxNoBackup() throws Exception {
         checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL_SNAPSHOT, false));
     }
@@ -221,6 +238,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionMvccTxNoBackupWithFilter() throws Exception {
         filterOn.set(true);
 
@@ -230,6 +248,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedMvccTx() throws Exception {
         checkBackupAcknowledgeMessage(cacheConfiguration(REPLICATED, 1, TRANSACTIONAL_SNAPSHOT, false));
     }
@@ -237,6 +256,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedMvccTxWithFilter() throws Exception {
         filterOn.set(true);
 
