@@ -121,9 +121,10 @@ public interface CommunicationSpi<T extends Serializable> extends IgniteSpi {
 
     /**
      * @param remote Destination cluster node to communicate with.
+     * @param msg Configuration channel message.
      * @throws IgniteSpiException If fails.
      */
-    public default GridNioSocketChannel getOrCreateChannel(ClusterNode remote) throws IgniteSpiException {
+    public default GridNioSocketChannel channel(ClusterNode remote, T msg) throws IgniteSpiException {
         throw new UnsupportedOperationException();
     }
 }

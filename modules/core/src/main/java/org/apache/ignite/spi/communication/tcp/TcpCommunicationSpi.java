@@ -4499,7 +4499,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioSocketChannel getOrCreateChannel(ClusterNode remote) throws IgniteSpiException {
+    @Override public GridNioSocketChannel channel(ClusterNode remote, Message msg) throws IgniteSpiException {
         connectGate.enter();
 
         ConnectionKey connKey = new ConnectionKey(remote.id(), sockConnPlc.connectionIndex(), -1);
