@@ -318,7 +318,6 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
             },
             GridClientException.class,
             msg
-            );
+        );
     }
-
 }
