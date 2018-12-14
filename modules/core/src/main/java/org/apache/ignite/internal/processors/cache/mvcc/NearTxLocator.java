@@ -20,20 +20,32 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
+/**
+ * Transaction locator can be used to find a transaction object in a cluster.
+ */
 public class NearTxLocator {
+    /** */
     private final UUID nodeId;
-    private final GridCacheVersion xidVersion;
+    /** */
+    private final GridCacheVersion xidVer;
 
-    public NearTxLocator(UUID nodeId, GridCacheVersion xidVersion) {
+    /** */
+    public NearTxLocator(UUID nodeId, GridCacheVersion xidVer) {
         this.nodeId = nodeId;
-        this.xidVersion = xidVersion;
+        this.xidVer = xidVer;
     }
 
+    /**
+     * @return Node started near transction.
+     */
     public UUID nodeId() {
         return nodeId;
     }
 
+    /**
+     * @return Identifier of near transaction.
+     */
     public GridCacheVersion xidVersion() {
-        return xidVersion;
+        return xidVer;
     }
 }
