@@ -411,6 +411,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.dynamicDeploymentId = deploymentId;
         this.recoveryMode = recoveryMode;
 
+        statisticsEnabled(statisticsEnabled);
+
         assert kernalContext().recoveryMode() == recoveryMode;
 
         if (!recoveryMode) {

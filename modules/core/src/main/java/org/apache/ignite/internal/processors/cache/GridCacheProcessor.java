@@ -1733,8 +1733,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 affMgr
             );
 
-            cacheCtx.statisticsEnabled(desc.cacheConfiguration().isStatisticsEnabled());
-
             cacheCtx.cacheObjectContext(cacheObjCtx);
 
             GridDhtCacheAdapter dht = null;
