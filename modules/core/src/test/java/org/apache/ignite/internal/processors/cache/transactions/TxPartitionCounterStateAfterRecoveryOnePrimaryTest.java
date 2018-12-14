@@ -245,26 +245,34 @@ public class TxPartitionCounterStateAfterRecoveryOnePrimaryTest extends TxPartit
                 commitOrder.add(aCommitOrd);
         }
 
+        /** */
         protected boolean onPrepared(IgniteEx from, IgniteInternalTx tx, int idx) {
             log.info("TX: prepared " + idx + ", tx=" + CU.txString(tx));
 
             return false;
         }
 
+        /** */
         protected void onAllPrepared() {
             log.info("TX: all prepared");
         }
 
+        /**
+         * @param primaryNode Primary node.
+         * @param idx Index.
+         */
         protected boolean onCommitted(IgniteEx primaryNode, int idx) {
             log.info("TX: committed " + idx);
 
             return false;
         }
 
+        /** */
         protected void onAllCommited() {
             log.info("TX: all committed");
         }
 
+        /** {@inheritDoc} */
         @Override public boolean beforePrimaryPrepare(IgniteEx node, IgniteUuid nearXidVer,
             GridFutureAdapter<?> proceedFut) {
             runAsync(() -> {
@@ -279,6 +287,7 @@ public class TxPartitionCounterStateAfterRecoveryOnePrimaryTest extends TxPartit
             return true;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean afterPrimaryPrepare(IgniteEx from, IgniteInternalTx tx, GridFutureAdapter<?> fut) {
             runAsync(() -> {
                 if (onPrepared(from, tx, order(tx.nearXidVersion().asGridUuid())))
@@ -296,6 +305,7 @@ public class TxPartitionCounterStateAfterRecoveryOnePrimaryTest extends TxPartit
             return false;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean beforePrimaryFinish(IgniteEx primaryNode, IgniteInternalTx tx, GridFutureAdapter<?>
             proceedFut) {
             runAsync(() -> {
@@ -310,6 +320,7 @@ public class TxPartitionCounterStateAfterRecoveryOnePrimaryTest extends TxPartit
             return true;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean afterPrimaryFinish(IgniteEx primaryNode, IgniteUuid nearXidVer, GridFutureAdapter<?> proceedFut) {
             runAsync(() -> {
                 if (onCommitted(primaryNode, order(nearXidVer)))

@@ -234,7 +234,7 @@ public class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest 
                     IgniteInternalTx primTx = findTx(from, nearVer, true);
                     IgniteInternalTx backupTx = findTx(to, nearVer, false);
 
-                    return cb.beforeBackupFinish(from, to, primTx, backupTx, createSendFuture(primWrapperSpi, msg));
+                    return cb.beforeBackupFinish(from, to, primTx, backupTx, nearVer.asGridUuid(), createSendFuture(primWrapperSpi, msg));
                 }
                 else if (msg instanceof GridNearTxPrepareResponse) {
                     GridNearTxPrepareResponse resp = (GridNearTxPrepareResponse)msg;
@@ -376,11 +376,12 @@ public class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest 
          * @param backup Backup.
          * @param primTx Prim tx. Null for 2pc.
          * @param backupTx Backup tx.
+         * @param nearXidVer
          * @param future Future.
          */
         boolean beforeBackupFinish(IgniteEx prim, IgniteEx backup, @Nullable IgniteInternalTx primTx,
             IgniteInternalTx backupTx,
-            GridFutureAdapter<?> future);
+            IgniteUuid nearXidVer, GridFutureAdapter<?> future);
 
         boolean afterPrimaryPrepare(IgniteEx from, IgniteInternalTx tx, GridFutureAdapter<?> fut);
 
@@ -424,7 +425,7 @@ public class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest 
 
         @Override public boolean beforeBackupFinish(IgniteEx prim, IgniteEx backup, IgniteInternalTx primTx,
             IgniteInternalTx backupTx,
-            GridFutureAdapter<?> future) {
+            IgniteUuid nearXidVer, GridFutureAdapter<?> future) {
             return false;
         }
 

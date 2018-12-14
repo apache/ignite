@@ -61,9 +61,10 @@ public class TxPartitionCounterStateBasicOrderingTest extends TxPartitionCounter
                 return false;
             }
 
-            @Override public boolean beforeBackupFinish(IgniteEx prim, IgniteEx backup, @Nullable IgniteInternalTx primTx,
+            @Override public boolean beforeBackupFinish(IgniteEx prim, IgniteEx backup,
+                @Nullable IgniteInternalTx primTx,
                 IgniteInternalTx backupTx,
-                GridFutureAdapter<?> fut) {
+                IgniteUuid nearXidVer, GridFutureAdapter<?> fut) {
                 log.info("TX: beforeBackupFinish: prim=" + prim.name() + ", backup=" + backup.name() + ", primNearXidVer=" +
                     (primTx == null ? "NA" : primTx.nearXidVersion().asGridUuid()) + ", backupNearXidVer=" + backupTx.nearXidVersion().asGridUuid());
 
