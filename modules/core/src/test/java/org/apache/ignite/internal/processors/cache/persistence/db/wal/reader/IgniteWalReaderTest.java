@@ -60,11 +60,9 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledDataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.LazyMvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.UnwrapMvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -87,7 +85,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -130,9 +130,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
     /** Custom wal mode. */
     private WALMode customWalMode;
-
-    /** Clear properties in afterTest() method. */
-    private boolean clearProps;
 
     /** Set WAL and Archive path to same value. */
     private boolean setWalAndArchiveToSameVal;
@@ -191,23 +188,23 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Before
     @Override protected void beforeTest() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10558");
-
-        stopAllGrids();
+        super.beforeTest();
 
         cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
+    @After
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
         cleanPersistenceDir();
 
-        if (clearProps)
-            System.clearProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS);
+        System.clearProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS);
+
+        super.afterTest();
     }
 
     /**
@@ -1067,8 +1064,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      */
     @Test
     public void testTxRecordsReadWoBinaryMeta() throws Exception {
-        clearProps = true;
-
         System.setProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS, "true");
 
         Ignite ignite = startGrid("node0");
