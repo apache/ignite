@@ -34,7 +34,7 @@ public class IgnitePdsNativeIoTestSuite2 extends TestSuite {
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite 2 (Native IO)");
 
-        IgnitePdsTestSuite2.addRealPageStoreTests(suite);
+        IgnitePdsTestSuite2.addRealPageStoreTests(suite, null);
 
         //Integrity test with reduced count of pages.
         suite.addTest(new JUnit4TestAdapter(IgniteNativeIoPdsRecoveryAfterFileCorruptionTest.class));

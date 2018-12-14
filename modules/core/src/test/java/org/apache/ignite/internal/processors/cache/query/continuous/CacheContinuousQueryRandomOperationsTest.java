@@ -1223,7 +1223,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
 
         Transaction tx = null;
 
-        CacheAtomicityMode atomicityMode = cache.getConfiguration(CacheConfiguration.class).getAtomicityMode();
+        CacheAtomicityMode atomicityMode = atomicityMode(cache);
 
         boolean mvccEnabled = atomicityMode == TRANSACTIONAL_SNAPSHOT;
 
