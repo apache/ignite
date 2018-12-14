@@ -19,6 +19,7 @@ JSIntentionPowerPack
 JSR45Plugin
 JSTestDriver Plugin
 JUnit
+Java EE: Web Services (JAX-WS)
 JavaScript
 JavaScriptDebugger
 Jetty
@@ -58,6 +59,7 @@ com.intellij.dmserver
 com.intellij.dsm
 com.intellij.flex
 com.intellij.freemarker
+com.intellij.guice
 com.intellij.gwt
 com.intellij.hibernate
 com.intellij.java-i18n
@@ -68,11 +70,11 @@ com.intellij.jsf
 com.intellij.jsp
 com.intellij.persistence
 com.intellij.phing
-com.intellij.properties
 com.intellij.seam
 com.intellij.seam.pageflow
 com.intellij.seam.pages
 com.intellij.spring
+com.intellij.spring.batc
 com.intellij.spring.data
 com.intellij.spring.integration
 com.intellij.spring.osgi
@@ -98,7 +100,6 @@ org.intellij.groovy
 org.intellij.intelliLang
 org.jetbrains.android
 org.jetbrains.idea.eclipse
-org.jetbrains.idea.maven
 org.jetbrains.idea.maven.ext
 org.jetbrains.plugins.django-db-config
 org.jetbrains.plugins.github
