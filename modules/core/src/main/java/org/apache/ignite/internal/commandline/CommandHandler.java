@@ -127,6 +127,7 @@ import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
 import org.apache.ignite.ssl.SslContextFactory;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
@@ -367,7 +368,7 @@ public class CommandHandler {
     private static final String UTILITY_NAME = "control.sh";
 
     /** Common options. */
-    private static final String COMMON_OPTIONS = String.join(" ", op(CMD_HOST, "HOST_OR_IP"), op(CMD_PORT, "PORT"),
+    private static final String COMMON_OPTIONS = j(" ", op(CMD_HOST, "HOST_OR_IP"), op(CMD_PORT, "PORT"),
         op(CMD_USER, "USER"), op(CMD_PASSWORD, "PASSWORD"),
         op(CMD_PING_INTERVAL, "PING_INTERVAL"), op(CMD_PING_TIMEOUT, "PING_TIMEOUT"),
         op(CMD_SSL_PROTOCOL, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ...]"),
@@ -377,7 +378,7 @@ public class CommandHandler {
         op(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE"), op(CMD_TRUSTSTORE, "TRUSTSTORE"), op(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD"));
 
     /** Utility name with common options. */
-    private static final String UTILITY_NAME_WITH_COMMON_OPTIONS = String.join(" ", UTILITY_NAME, COMMON_OPTIONS);
+    private static final String UTILITY_NAME_WITH_COMMON_OPTIONS = j(" ", UTILITY_NAME, COMMON_OPTIONS);
 
     /** Indent for help output. */
     private static final String INDENT = "  ";
@@ -1607,7 +1608,7 @@ public class CommandHandler {
      */
     private void usage(String desc, Command cmd, String... args) {
         log(desc);
-        log(i(UTILITY_NAME_WITH_COMMON_OPTIONS + " " + cmd.text() + " " + String.join(" ", args), 2));
+        log(i(j(" ", UTILITY_NAME_WITH_COMMON_OPTIONS, cmd, j(" ", args)), 2));
         nl();
     }
 
@@ -1631,7 +1632,7 @@ public class CommandHandler {
     private void usageCache(int indentsNum, CacheCommand cmd, String... args) {
         log(i(DELIM, indentsNum));
         nl();
-        log(i(CACHE.text() + " " + cmd.text() + " " + String.join(" ", args), indentsNum++));
+        log(i(j(" ", CACHE, cmd, j(" ", args)), indentsNum++));
         nl();
         log(i(getCacheSubcommandDesc(cmd), indentsNum));
         nl();
@@ -1746,16 +1747,38 @@ public class CommandHandler {
      * @return Joined parameters wrapped optional braces.
      */
     private static String op(Object param, Object... params) {
-        SB sb = new SB("[");
+        return j(new SB(), "["," ", param, params).a("]").toString();
+    }
 
-        sb.a(param);
+    /**
+     * Join input parameters with specified {@code delimeter} between them.
+     *
+     * @param delimeter Specified delimeter.
+     * @param params Other input parameter.
+     * @return Joined paramaters with specified {@code delimeter}.
+     */
+    private static String j(String delimeter, Object... params) {
+        return j(new SB(), "", delimeter, params).toString();
+    }
 
-        if(!F.isEmpty(params)) {
-            for(Object obj : params)
-                sb.a(" ").a(obj);
+    /**
+     * Join input parameters with specified {@code delimeter} between them and append to the end {@code delimeter}.
+     *
+     * @param sb Specified string builder.
+     * @param sbDelimeter Delimeter between {@code sb} and appended {@code param}.
+     * @param delimeter Specified delimeter.
+     * @param params Other input parameter.
+     * @return SB with appended to the end joined paramaters with specified {@code delimeter}.
+     */
+    private static SB j(@NotNull SB sb, @NotNull String sbDelimeter, String delimeter, Object... params) {
+        if (!F.isEmpty(params)) {
+            sb.a(sbDelimeter);
+
+            for (Object par : params)
+                sb.a(delimeter).a(par);
         }
 
-        return sb.a("]").toString();
+        return sb;
     }
 
     /**
@@ -2554,6 +2577,72 @@ public class CommandHandler {
             .collect(Collectors.toList());
     }
 
+    private String[] getTxOptions() {
+        List<String> list = new ArrayList<>();
+
+        list.add(op(TX_XID, "XID"));
+        list.add(op(TX_DURATION, "SECONDS"));
+        list.add(op(TX_SIZE, "SIZE"));
+        list.add(op(TX_LABEL, "PATTERN_REGEX"));
+        list.add(op(or(TX_SERVERS, TX_CLIENTS)));
+        list.add(op(TX_NODES, "consistentId1[,consistentId2,....,consistentIdN]"));
+        list.add(op(TX_LIMIT, "NUMBER"));
+        list.add(op(TX_ORDER, or("DURATION", "SIZE", CMD_TX_ORDER_START_TIME)));
+        list.add(op(TX_KILL));
+        list.add(op(CMD_AUTO_CONFIRMATION));
+
+        return list.toArray(new String[list.size()]);
+    }
+
+    /** */
+    private void printHelp() {
+        final String constistIds = "consistentId1[,consistentId2,....,consistentIdN]";
+
+        log("This utility can do the following commands:");
+
+        usage(i("Activate cluster:"), ACTIVATE);
+        usage(i("Deactivate cluster:"), DEACTIVATE, op(CMD_AUTO_CONFIRMATION));
+        usage(i("Print current cluster state:"), STATE);
+        usage(i("Print cluster baseline topology:"), BASELINE);
+        usage(i("Add nodes into baseline topology:"), BASELINE, BASELINE_ADD, constistIds, op(CMD_AUTO_CONFIRMATION));
+        usage(i("Remove nodes from baseline topology:"), BASELINE, BASELINE_REMOVE, constistIds, op(CMD_AUTO_CONFIRMATION));
+        usage(i("Set baseline topology:"), BASELINE, BASELINE_SET, constistIds, op(CMD_AUTO_CONFIRMATION));
+        usage(i("Set baseline topology based on version:"), BASELINE, BASELINE_SET_VERSION + " topologyVersion", op(CMD_AUTO_CONFIRMATION));
+        usage(i("List or kill transactions:"), TX, getTxOptions());
+
+        if (enableExperimental) {
+            usage(i("Print absolute paths of unused archived wal segments on each node:"), WAL, WAL_PRINT, "[consistentId1,consistentId2,....,consistentIdN]");
+            usage(i("Delete unused archived wal segments on each node:"), WAL, WAL_DELETE, "[consistentId1,consistentId2,....,consistentIdN] ", op(CMD_AUTO_CONFIRMATION));
+        }
+
+        log(i("View caches information in a cluster. For more details type:"));
+        log(i(j(" ", UTILITY_NAME, CACHE, HELP), 2));
+        nl();
+
+        log("By default commands affecting the cluster require interactive confirmation.");
+        log("Use " + CMD_AUTO_CONFIRMATION + " option to disable it.");
+        nl();
+
+        log("Default values:");
+        log(i("HOST_OR_IP=" + DFLT_HOST, 2));
+        log(i("PORT=" + DFLT_PORT, 2));
+        log(i("PING_INTERVAL=" + DFLT_PING_INTERVAL, 2));
+        log(i("PING_TIMEOUT=" + DFLT_PING_TIMEOUT, 2));
+        log(i("SSL_PROTOCOL=" + SslContextFactory.DFLT_SSL_PROTOCOL, 2));
+        log(i("SSL_KEY_ALGORITHM=" + SslContextFactory.DFLT_KEY_ALGORITHM, 2));
+        log(i("KEYSTORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
+        log(i("TRUSTSTORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
+
+        nl();
+
+        log("Exit codes:");
+        log(i(EXIT_CODE_OK + " - successful execution.", 2));
+        log(i(EXIT_CODE_INVALID_ARGUMENTS + " - invalid arguments.", 2));
+        log(i(EXIT_CODE_CONNECTION_FAILED + " - connection failed.", 2));
+        log(i(ERR_AUTHENTICATION_FAILED + " - authentication failed.", 2));
+        log(i(EXIT_CODE_UNEXPECTED_ERROR + " - unexpected error.", 2));
+    }
+
     /**
      * Parse and execute command.
      *
@@ -2568,48 +2657,7 @@ public class CommandHandler {
 
         try {
             if (F.isEmpty(rawArgs) || (rawArgs.size() == 1 && CMD_HELP.equalsIgnoreCase(rawArgs.get(0)))) {
-                log("This utility can do the following commands:");
-
-                usage(i("Activate cluster:"), ACTIVATE);
-                usage(i("Deactivate cluster:"), DEACTIVATE, op(CMD_AUTO_CONFIRMATION));
-                usage(i("Print current cluster state:"), STATE);
-                usage(i("Print cluster baseline topology:"), BASELINE);
-                usage(i("Add nodes into baseline topology:"), BASELINE, BASELINE_ADD, "consistentId1[,consistentId2,....,consistentIdN]", op(CMD_AUTO_CONFIRMATION));
-                usage(i("Remove nodes from baseline topology:"), BASELINE, BASELINE_REMOVE, "consistentId1[,consistentId2,....,consistentIdN]", op(CMD_AUTO_CONFIRMATION));
-                usage(i("Set baseline topology:"), BASELINE, BASELINE_SET, "consistentId1[,consistentId2,....,consistentIdN]", op(CMD_AUTO_CONFIRMATION));
-                usage(i("Set baseline topology based on version:"), BASELINE, BASELINE_SET_VERSION + " topologyVersion", op(CMD_AUTO_CONFIRMATION));
-                usage(i("List or kill transactions:"), TX, op(TX_XID, "XID"), op(TX_DURATION, "SECONDS"), op(TX_SIZE, "SIZE"), op(TX_LABEL, "PATTERN_REGEX"), op(or(TX_SERVERS, TX_CLIENTS)), op(TX_NODES, "consistentId1[,consistentId2,....,consistentIdN]"), op(TX_LIMIT, "NUMBER"), op(TX_ORDER, or("DURATION", "SIZE", CMD_TX_ORDER_START_TIME)), op(TX_KILL), op(CMD_AUTO_CONFIRMATION));
-
-                if (enableExperimental) {
-                    usage(i("Print absolute paths of unused archived wal segments on each node:"), WAL, WAL_PRINT, "[consistentId1,consistentId2,....,consistentIdN]");
-                    usage(i("Delete unused archived wal segments on each node:"), WAL, WAL_DELETE, "[consistentId1,consistentId2,....,consistentIdN] ", op(CMD_AUTO_CONFIRMATION));
-                }
-
-                log(i("View caches information in a cluster. For more details type:"));
-                log(i(String.join(" ", UTILITY_NAME, CACHE.text(), HELP.text()), 2));
-                nl();
-
-                log("By default commands affecting the cluster require interactive confirmation.");
-                log("Use " + CMD_AUTO_CONFIRMATION + " option to disable it.");
-                nl();
-
-                log("Default values:");
-                log(i("HOST_OR_IP=" + DFLT_HOST, 2));
-                log(i("PORT=" + DFLT_PORT, 2));
-                log(i("PING_INTERVAL=" + DFLT_PING_INTERVAL, 2));
-                log(i("PING_TIMEOUT=" + DFLT_PING_TIMEOUT, 2));
-                log(i("SSL_PROTOCOL=" + SslContextFactory.DFLT_SSL_PROTOCOL, 2));
-                log(i("SSL_KEY_ALGORITHM=" + SslContextFactory.DFLT_KEY_ALGORITHM, 2));
-                log(i("KEY_STORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
-                log(i("TRUST_STORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
-                nl();
-
-                log("Exit codes:");
-                log(i(EXIT_CODE_OK + " - successful execution.", 2));
-                log(i(EXIT_CODE_INVALID_ARGUMENTS + " - invalid arguments.", 2));
-                log(i(EXIT_CODE_CONNECTION_FAILED + " - connection failed.", 2));
-                log(i(ERR_AUTHENTICATION_FAILED + " - authentication failed.", 2));
-                log(i(EXIT_CODE_UNEXPECTED_ERROR + " - unexpected error.", 2));
+                printHelp();
 
                 return EXIT_CODE_OK;
             }
