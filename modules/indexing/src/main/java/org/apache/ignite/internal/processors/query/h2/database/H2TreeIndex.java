@@ -38,6 +38,8 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsType;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -71,7 +73,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
     /** Cache context. */
     private final GridCacheContext<?, ?> cctx;
 
-    /** Table name/ */
+    /** Table name. */
     private final String tblName;
 
     /** */
@@ -148,6 +150,12 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         AtomicInteger maxCalculatedInlineSize = new AtomicInteger();
 
+        IoStatisticsHolder stats = cctx.kernalContext().ioStats().register(
+            IoStatisticsType.SORTED_INDEX,
+            cctx.name(),
+            idxName
+        );
+
         for (int i = 0; i < segments.length; i++) {
             db.checkpointReadLock();
 
@@ -175,7 +183,8 @@ public class H2TreeIndex extends H2TreeIndexBase {
                     cctx.mvccEnabled(),
                     rowCache,
                     cctx.kernalContext().failure(),
-                    log) {
+                    log,
+                    stats) {
                     @Override public int compareValues(Value v1, Value v2) {
                         return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
                     }
@@ -270,10 +279,10 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow lower, SearchRow upper) {
-        try {
-            assert lower == null || lower instanceof GridH2SearchRow : lower;
-            assert upper == null || upper instanceof GridH2SearchRow : upper;
+        assert lower == null || lower instanceof GridH2SearchRow : lower;
+        assert upper == null || upper instanceof GridH2SearchRow : upper;
 
+        try {
             int seg = threadLocalSegment();
 
             H2Tree tree = treeForRead(seg);
@@ -361,9 +370,9 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
     /** {@inheritDoc} */
     @Override public boolean removex(SearchRow row) {
-        try {
-            assert row instanceof GridH2SearchRow : row;
+        assert row instanceof GridH2SearchRow : row;
 
+        try {
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
 
             int seg = segmentForRow(row);
@@ -412,9 +421,9 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public void destroy(boolean rmvIndex) {
+    @Override public void destroy(boolean rmvIdx) {
         try {
-            if (cctx.affinityNode() && rmvIndex) {
+            if (cctx.affinityNode() && rmvIdx) {
                 assert cctx.shared().database().checkpointLockIsHeldByThread();
 
                 for (int i = 0; i < segments.length; i++) {
@@ -430,7 +439,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
             throw new IgniteException(e);
         }
         finally {
-            super.destroy(rmvIndex);
+            super.destroy(rmvIdx);
         }
     }
 
