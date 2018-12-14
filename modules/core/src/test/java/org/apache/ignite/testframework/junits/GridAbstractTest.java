@@ -102,7 +102,6 @@ import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -213,8 +212,7 @@ public abstract class GridAbstractTest extends TestCase {
     private volatile Method currTestMtd;
 
     /**
-     * Shared static IP finder. Will be used in configuration at nodes startup <b>for all test methods in class</b> if
-     * {@link #useMulticastIpFinder()} is {@code false} (by default).
+     * Shared static IP finder which is used in configuration at nodes startup <b>for all test methods in class</b>.
      */
     protected static TcpDiscoveryIpFinder sharedStaticIpFinder;
 
@@ -1701,25 +1699,9 @@ public abstract class GridAbstractTest extends TestCase {
         cfg.setMetricsUpdateFrequency(1000);
 
         if (!isMultiJvm()) {
-            if (!useMulticastIpFinder()) {
-                assert sharedStaticIpFinder != null : "Shared static IP finder should be initialized at this point.";
+            assert sharedStaticIpFinder != null : "Shared static IP finder should be initialized at this point.";
 
-                discoSpi.setIpFinder(sharedStaticIpFinder);
-            }
-            else {
-                TcpDiscoveryMulticastIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
-
-                ipFinder.setAddresses(Collections.singleton("127.0.0.1:" + TcpDiscoverySpi.DFLT_PORT));
-
-                String mcastAddr = GridTestUtils.getNextMulticastGroup(getClass());
-
-                if (!F.isEmpty(mcastAddr)) {
-                    ipFinder.setMulticastGroup(mcastAddr);
-                    ipFinder.setMulticastPort(GridTestUtils.getNextMulticastPort(getClass()));
-                }
-
-                discoSpi.setIpFinder(ipFinder);
-            }
+            discoSpi.setIpFinder(sharedStaticIpFinder);
         }
         else
             discoSpi.setIpFinder(LOCAL_IP_FINDER);
@@ -1915,24 +1897,6 @@ public abstract class GridAbstractTest extends TestCase {
      * @see #executeOnLocalOrRemoteJvm(IgniteCache, TestCacheCallable)
      */
     protected boolean isMultiJvm() {
-        return false;
-    }
-
-    /**
-     * Gets flag whether {@link TcpDiscoveryMulticastIpFinder} should be used as IP finder during preparing of
-     * configuration at node startup in {@link #getConfiguration(String)}.
-     * <p/>
-     * Default is {@code false}, that means shared static IP finder will be used for all test methods in class.
-     * <p/>
-     * Override this method to return {@code true}, if you want to return back behaviour used before implementation of
-     * <a href="https://issues.apache.org/jira/browse/IGNITE-10555"</a>, when multicast IP finder was used.
-     * <p/>
-     * NOTE: this does not affect multi-JVM tests, because returned value of this method is ignored if {@link
-     * #isMultiJvm()} returns {@code true}.
-     *
-     * @return {@code true} if multicast IP finder will be used, otherwise shared static IP finder will be used.
-     */
-    protected boolean useMulticastIpFinder() {
         return false;
     }
 
