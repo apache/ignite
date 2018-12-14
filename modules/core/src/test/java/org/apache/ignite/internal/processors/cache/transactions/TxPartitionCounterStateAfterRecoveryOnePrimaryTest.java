@@ -12,19 +12,15 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.testframework.junits.Repeat;
-import org.apache.ignite.testframework.junits.RepeatRule;
-import org.jetbrains.annotations.Nullable;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Test partition update counter generation on single primary node and near client node.
+ * Test partition update counter generation on one primary node and near client node.
  */
 @RunWith(JUnit4.class)
-public class TxPartitionCounterStateAfterRecoverySinglePrimaryTest extends TxPartitionCounterStateAbstractTest {
+public class TxPartitionCounterStateAfterRecoveryOnePrimaryTest extends TxPartitionCounterStateAbstractTest {
     /** */
     private static final int[] PREPARE_ORDER = new int[] {0, 1, 2};
 
@@ -100,25 +96,17 @@ public class TxPartitionCounterStateAfterRecoverySinglePrimaryTest extends TxPar
      * @throws Exception
      */
     private void doTestSkipReservedCountersAfterRecovery(boolean skipCheckpointOnStop) throws Exception {
-        int[] prepOrd = new int[] {1, 0};
-        int[] sizes = new int[] {3, 7};
-
-        // For readability.
-        int partId = 0;
-        int backups = 0;
-        int nodes = 1;
-
-        runOnPartition(partId, backups, nodes, new PrimaryOrderingTxCallbackAdapter(prepOrd, new int[0]) {
+        runOnPartition(PARTITION_ID, BACKUPS, NODES_CNT, new PrimaryTxCallbackAdapter(PREPARE_ORDER, COMMIT_ORDER) {
             @Override protected void onAllPrepared() {
                 stopGrid(skipCheckpointOnStop, 0);
             }
-        }, sizes);
+        }, SIZES);
 
         stopGrid("client");
 
         startGrid(0);
 
-        PartitionUpdateCounter cntr = counter(partId);
+        PartitionUpdateCounter cntr = counter(PARTITION_ID);
 
         assertEquals(0, cntr.get());
         assertEquals(0, cntr.hwm());
@@ -129,7 +117,7 @@ public class TxPartitionCounterStateAfterRecoverySinglePrimaryTest extends TxPar
      */
     private void doTestPrepareCommitReorder(boolean skipCheckpointOnStop,
         boolean doCheckpoint) throws Exception {
-        runOnPartition(PARTITION_ID, BACKUPS, NODES_CNT, new PrimaryOrderingTxCallbackAdapter(PREPARE_ORDER, COMMIT_ORDER) {
+        runOnPartition(PARTITION_ID, BACKUPS, NODES_CNT, new PrimaryTxCallbackAdapter(PREPARE_ORDER, COMMIT_ORDER) {
             @Override protected boolean onCommitted(IgniteEx node, int idx) {
                 if (idx == COMMIT_ORDER[0] && doCheckpoint) {
                     try {
@@ -176,7 +164,7 @@ public class TxPartitionCounterStateAfterRecoverySinglePrimaryTest extends TxPar
      * Test correct update counter processing on updates reorder and node restart.
      */
     private void doTestPrepareCommitReorder2(boolean skipCheckpointOnStop) throws Exception {
-        runOnPartition(PARTITION_ID, BACKUPS, NODES_CNT, new PrimaryOrderingTxCallbackAdapter(PREPARE_ORDER, COMMIT_ORDER) {
+        runOnPartition(PARTITION_ID, BACKUPS, NODES_CNT, new PrimaryTxCallbackAdapter(PREPARE_ORDER, COMMIT_ORDER) {
             @Override protected boolean onCommitted(IgniteEx node, int idx) {
                 super.onCommitted(node, idx);
 
@@ -228,7 +216,7 @@ public class TxPartitionCounterStateAfterRecoverySinglePrimaryTest extends TxPar
     /**
      * The callback order prepares and commits on primary node.
      */
-    protected class PrimaryOrderingTxCallbackAdapter extends TxCallbackAdapter {
+    protected class PrimaryTxCallbackAdapter extends TxCallbackAdapter {
         /** */
         private Queue<Integer> prepOrder;
 
@@ -237,13 +225,15 @@ public class TxPartitionCounterStateAfterRecoverySinglePrimaryTest extends TxPar
 
         /** */
         private Map<IgniteUuid, GridFutureAdapter<?>> prepFuts = new ConcurrentHashMap<>();
+
+        /** */
         private Map<IgniteUuid, GridFutureAdapter<?>> finishFuts = new ConcurrentHashMap<>();
 
         /**
          * @param prepOrd Prepare order.
          * @param commitOrd Commit order.
          */
-        public PrimaryOrderingTxCallbackAdapter(int[] prepOrd, int[] commitOrd) {
+        public PrimaryTxCallbackAdapter(int[] prepOrd, int[] commitOrd) {
             prepOrder = new ConcurrentLinkedQueue<>();
 
             for (int aPrepOrd : prepOrd)
@@ -263,7 +253,6 @@ public class TxPartitionCounterStateAfterRecoverySinglePrimaryTest extends TxPar
 
         protected void onAllPrepared() {
             log.info("TX: all prepared");
-            // No-op.
         }
 
         protected boolean onCommitted(IgniteEx primaryNode, int idx) {
@@ -274,8 +263,6 @@ public class TxPartitionCounterStateAfterRecoverySinglePrimaryTest extends TxPar
 
         protected void onAllCommited() {
             log.info("TX: all committed");
-
-            // No-op.
         }
 
         @Override public boolean beforePrimaryPrepare(IgniteEx node, IgniteUuid nearXidVer,
@@ -339,20 +326,5 @@ public class TxPartitionCounterStateAfterRecoverySinglePrimaryTest extends TxPar
 
             return false;
         }
-    }
-
-    private void stopGrid(boolean skipCheckpointOnStop, int idx) {
-        IgniteEx grid = grid(0);
-
-        if (skipCheckpointOnStop) {
-            GridCacheDatabaseSharedManager db =
-                (GridCacheDatabaseSharedManager)grid.context().cache().context().database();
-
-            db.enableCheckpoints(false);
-        }
-
-        stopGrid(0, skipCheckpointOnStop);
-
-        stopGrid("client");
     }
 }

@@ -20,11 +20,8 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
@@ -55,8 +52,6 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.GridAbsClosure;
-import org.apache.ignite.internal.util.lang.GridAbsClosureX;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -77,6 +72,7 @@ import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 
 /**
+ * Mini framework for ordering transaction prepares and commits by intercepting messages and releasing then in desired order.
  */
 public class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest {
     /** IP finder. */
@@ -84,9 +80,6 @@ public class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest 
 
     /** */
     private static final int MB = 1024 * 1024;
-
-    /** */
-    public static final int COUNT = 5000;
 
     /** */
     private int backups;
@@ -496,64 +489,23 @@ public class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest 
         return internalCache(0).context().topology().localPartition(partId).dataStore().partUpdateCounter();
     }
 
+
     /**
-     * Forces checkpoint after completing stage of transaction with specific order.
+     * @param skipCheckpointOnStop Skip checkpoint on stop.
+     * @param idx Grid index.
      */
-    protected class DoCheckpointClosure extends GridAbsClosureX {
-        /** Grid index. */
-        private final int gridIdx;
+    protected void stopGrid(boolean skipCheckpointOnStop, int idx) {
+        IgniteEx grid = grid(0);
 
-        /**
-         * @param gridIdx Grid index.
-         */
-        public DoCheckpointClosure(int gridIdx) {
-            this.gridIdx = gridIdx;
+        if (skipCheckpointOnStop) {
+            GridCacheDatabaseSharedManager db =
+                (GridCacheDatabaseSharedManager)grid.context().cache().context().database();
+
+            db.enableCheckpoints(false);
         }
 
-        @Override public void applyx() throws IgniteCheckedException {
-            if (gridIdx >= 0)
-                forceCheckpoint(grid(gridIdx));
-            else
-                forceCheckpoint();
-        }
+        stopGrid(0, skipCheckpointOnStop);
+
+        stopGrid("client");
     }
-
-    /**
-     * Stops node after completing stage of transaction with specific order.
-     */
-    protected class StopNodeClosure implements IgniteInClosure<Integer> {
-        /** Skip checkpoint on stop. */
-        private final boolean skipCheckpointOnStop;
-
-        /** Tx index. */
-        private final int txIdx;
-
-        /** Grid index. */
-        private final int gridIdx;
-
-        /**
-         * @param txIdx Tx index.
-         */
-        public StopNodeClosure(int txIdx, boolean skipCheckpointOnStop, int gridIdx) {
-            this.txIdx = txIdx;
-
-            this.skipCheckpointOnStop = skipCheckpointOnStop;
-
-            this.gridIdx = gridIdx;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(Integer txIdx) {
-            if (this.txIdx == txIdx) {
-                if (skipCheckpointOnStop) {
-                    GridCacheDatabaseSharedManager db =
-                        (GridCacheDatabaseSharedManager)grid(gridIdx).context().cache().context().database();
-
-                    db.enableCheckpoints(false);
-                }
-
-                stopGrid(gridIdx, skipCheckpointOnStop);
-            }
-        }
-    };
 }
