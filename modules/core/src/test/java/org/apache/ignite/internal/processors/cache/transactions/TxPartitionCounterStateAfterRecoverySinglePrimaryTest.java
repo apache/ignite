@@ -21,10 +21,10 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Test partition update counter generation only on primary node.
+ * Test partition update counter generation on single primary node and near client node.
  */
 @RunWith(JUnit4.class)
-public class TxPartitionCounterStateAfterRecoveryPrimaryOnlyTest extends TxPartitionCounterStateAbstractTest {
+public class TxPartitionCounterStateAfterRecoverySinglePrimaryTest extends TxPartitionCounterStateAbstractTest {
     /** */
     private static final int[] PREPARE_ORDER = new int[] {0, 1, 2};
 
@@ -32,46 +32,52 @@ public class TxPartitionCounterStateAfterRecoveryPrimaryOnlyTest extends TxParti
     private static final int[] COMMIT_ORDER = new int[] {2, 1, 0};
 
     /** */
-    public static final int [] SIZES = new int[] {5, 7, 3};
+    private static final int [] SIZES = new int[] {5, 7, 3};
 
     /** */
-    public static final int TOTAL = IntStream.of(SIZES).sum();
+    private static final int TOTAL = IntStream.of(SIZES).sum();
 
     /** */
-    public static final int PARTITION_ID = 0;
+    private static final int PARTITION_ID = 0;
 
     /** */
-    public static final int BACKUPS = 0;
+    private static final int BACKUPS = 0;
 
     /** */
-    public static final int NODES_CNT = 1;
+    private static final int NODES_CNT = 1;
 
     /** */
+    @Test
     public void testPrepareCommitReorder() throws Exception {
         doTestPrepareCommitReorder(false, false);
     }
 
     /** */
+    @Test
     public void testPrepareCommitReorder2() throws Exception {
         doTestPrepareCommitReorder(true, false);
     }
 
     /** */
+    @Test
     public void testPrepareCommitReorderCheckpointBetweenCommits() throws Exception {
         doTestPrepareCommitReorder(false, true);
     }
 
     /** */
+    @Test
     public void testPrimaryPrepareCommitReorderNoStopCheckpoint2() throws Exception {
         doTestPrepareCommitReorder(true, true);
     }
 
     /** */
+    @Test
     public void testSkipReservedCountersAfterRecovery() throws Exception {
         doTestSkipReservedCountersAfterRecovery(false);
     }
 
     /** */
+    @Test
     public void testSkipReservedCountersAfterRecovery2() throws Exception {
         doTestSkipReservedCountersAfterRecovery(true);
     }
@@ -83,6 +89,7 @@ public class TxPartitionCounterStateAfterRecoveryPrimaryOnlyTest extends TxParti
     }
 
     /** */
+    @Test
     public void testMissedCommitsAfterRecovery2() throws Exception {
         doTestPrepareCommitReorder2(true);
     }
