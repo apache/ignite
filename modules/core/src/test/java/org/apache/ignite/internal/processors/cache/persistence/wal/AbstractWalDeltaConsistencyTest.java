@@ -28,6 +28,8 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.PageMemoryTrackerConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.After;
+import org.junit.Before;
 
 /**
  * Abstract WAL delta records consistency test.
@@ -54,13 +56,6 @@ public abstract class AbstractWalDeltaConsistencyTest extends GridCommonAbstract
     @SuppressWarnings("unchecked")
     protected  <K,V> CacheConfiguration<K, V> cacheConfiguration(String name) {
         return defaultCacheConfiguration().setName(name);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
     }
 
     /**
@@ -100,6 +95,7 @@ public abstract class AbstractWalDeltaConsistencyTest extends GridCommonAbstract
     }
 
     /** {@inheritDoc} */
+    @Before
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -107,6 +103,7 @@ public abstract class AbstractWalDeltaConsistencyTest extends GridCommonAbstract
     }
 
     /** {@inheritDoc} */
+    @After
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
