@@ -208,7 +208,13 @@ public abstract class WALRecord {
         MVCC_DATA_RECORD (LOGICAL),
 
         /** Mvcc Tx state change record. */
-        MVCC_TX_RECORD (LOGICAL);
+        MVCC_TX_RECORD (LOGICAL),
+
+        /** Insert mvcc data record. */
+        MVCC_DATA_PAGE_INSERT_RECORD (PHYSICAL),
+
+        /** Insert fragmented mvcc data record. */
+        MVCC_DATA_PAGE_INSERT_FRAGMENT_RECORD (PHYSICAL);
 
         /**
          * When you're adding a new record don't forget to choose record purpose explicitly

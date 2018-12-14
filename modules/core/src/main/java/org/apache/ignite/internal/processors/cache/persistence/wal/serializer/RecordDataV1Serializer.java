@@ -44,7 +44,9 @@ import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
 import org.apache.ignite.internal.pagemem.wal.record.WalRecordCacheGroupAware;
+import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentMvccRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertMvccRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccMarkUpdatedRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccUpdateNewTxStateHintRecord;
@@ -407,6 +409,16 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case DATA_PAGE_REMOVE_RECORD:
                 return 4 + 8 + 1;
 
+            case MVCC_DATA_PAGE_INSERT_RECORD:
+                DataPageInsertMvccRecord mvccDiRec = (DataPageInsertMvccRecord)record;
+
+                return 4 + 8 + 2 + mvccDiRec.payload().length;
+
+            case MVCC_DATA_PAGE_INSERT_FRAGMENT_RECORD:
+                final DataPageInsertFragmentMvccRecord mvccDifRec = (DataPageInsertFragmentMvccRecord)record;
+
+                return 4 + 8 + 8 + 4 + mvccDifRec.payloadSize();
+
             case DATA_PAGE_SET_FREE_LIST_PAGE:
                 return 4 + 8 + 8;
 
@@ -741,6 +753,39 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 res = new DataPageRemoveRecord(cacheId, pageId, itemId);
 
                 break;
+
+            case MVCC_DATA_PAGE_INSERT_RECORD: {
+                cacheId = in.readInt();
+                pageId = in.readLong();
+
+                int size = in.readUnsignedShort();
+
+                in.ensure(size);
+
+                byte[] payload = new byte[size];
+
+                in.readFully(payload);
+
+                res = new DataPageInsertMvccRecord(cacheId, pageId, payload);
+
+                break;
+            }
+
+            case MVCC_DATA_PAGE_INSERT_FRAGMENT_RECORD: {
+                cacheId = in.readInt();
+                pageId = in.readLong();
+
+                final long lastLink = in.readLong();
+                final int payloadSize = in.readInt();
+
+                final byte[] payload = new byte[payloadSize];
+
+                in.readFully(payload);
+
+                res = new DataPageInsertFragmentMvccRecord(cacheId, pageId, payload, lastLink);
+
+                break;
+            }
 
             case DATA_PAGE_SET_FREE_LIST_PAGE:
                 cacheId = in.readInt();
@@ -1317,6 +1362,30 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 buf.putLong(drRec.pageId());
 
                 buf.put((byte)drRec.itemId());
+
+                break;
+
+            case MVCC_DATA_PAGE_INSERT_RECORD:
+                DataPageInsertMvccRecord mvccDiRec = (DataPageInsertMvccRecord)rec;
+
+                buf.putInt(mvccDiRec.groupId());
+                buf.putLong(mvccDiRec.pageId());
+
+                buf.putShort((short)mvccDiRec.payload().length);
+
+                buf.put(mvccDiRec.payload());
+
+                break;
+
+            case MVCC_DATA_PAGE_INSERT_FRAGMENT_RECORD:
+                final DataPageInsertFragmentMvccRecord mvccDifRec = (DataPageInsertFragmentMvccRecord)rec;
+
+                buf.putInt(mvccDifRec.groupId());
+                buf.putLong(mvccDifRec.pageId());
+
+                buf.putLong(mvccDifRec.lastLink());
+                buf.putInt(mvccDifRec.payloadSize());
+                buf.put(mvccDifRec.payload());
 
                 break;
 

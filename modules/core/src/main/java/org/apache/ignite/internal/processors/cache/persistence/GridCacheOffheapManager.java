@@ -1328,6 +1328,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
+        @Override public boolean mvcc() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
         @Override public int hash() {
             return entry.key().hashCode();
         }

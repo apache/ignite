@@ -88,6 +88,11 @@ public class MetastorageDataRow implements MetastorageSearchRow, Storable {
         return link;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean mvcc() {
+        return false;
+    }
+
     /**
      * @return Value.
      */

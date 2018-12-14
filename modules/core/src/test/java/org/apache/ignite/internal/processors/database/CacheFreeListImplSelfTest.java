@@ -447,6 +447,11 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public boolean mvcc() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
         @Override public int hash() {
             throw new UnsupportedOperationException();
         }

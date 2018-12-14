@@ -24,7 +24,9 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentMvccRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertMvccRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
@@ -101,6 +103,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             int itemId,
             IoStatisticsHolder statHolder)
             throws IgniteCheckedException {
+            assert !row.mvcc(); // Mvcc inserts new row instead of updating an old one.
+
             AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
             int rowSize = row.size();
@@ -193,7 +197,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             T row,
             int rowSize
         ) throws IgniteCheckedException {
-            io.addRow(pageId, pageAddr, row, rowSize, pageSize());
+            io.addRow(pageId, pageAddr, row, rowSize, pageSize(), row.mvcc());
 
             if (needWalDeltaRecord(pageId, page, null)) {
                 // TODO IGNITE-5829 This record must contain only a reference to a logical WAL record with the actual data.
@@ -205,10 +209,11 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                 PageUtils.getBytes(pageAddr, data.offset(), payload, 0, rowSize);
 
-                wal.log(new DataPageInsertRecord(
-                    grpId,
-                    pageId,
-                    payload));
+                DataPageInsertRecord rec = row.mvcc() ?
+                    new DataPageInsertMvccRecord(grpId, pageId, payload) :
+                    new DataPageInsertRecord(grpId, pageId, payload);
+
+                wal.log(rec);
             }
 
             return rowSize;
@@ -237,7 +242,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             // Read last link before the fragment write, because it will be updated there.
             long lastLink = row.link();
 
-            int payloadSize = io.addRowFragment(pageMem, pageId, pageAddr, row, written, rowSize, pageSize());
+            int payloadSize = io.addRowFragment(pageMem, pageId, pageAddr, row, written, rowSize, pageSize(), row.mvcc());
 
             assert payloadSize > 0 : payloadSize;
 
@@ -249,7 +254,11 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                 PageUtils.getBytes(pageAddr, data.offset(), payload, 0, payloadSize);
 
-                wal.log(new DataPageInsertFragmentRecord(grpId, pageId, payload, lastLink));
+                DataPageInsertFragmentRecord rec = row.mvcc() ?
+                    new DataPageInsertFragmentMvccRecord(grpId, pageId, payload, lastLink) :
+                    new DataPageInsertFragmentRecord(grpId, pageId, payload, lastLink);
+
+                wal.log(rec);
             }
 
             return written + payloadSize;

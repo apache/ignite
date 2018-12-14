@@ -4579,8 +4579,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         // Nullify value after swap.
                         value(null);
 
-                        if (evictOffheap)
-                            removeValue();
+                        if (evictOffheap) {
+                            if (cctx.mvccEnabled())
+                                cctx.offheap().mvccRemoveAll(this);
+                            else
+                                removeValue();
+                        }
 
                         marked = true;
 

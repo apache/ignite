@@ -98,8 +98,6 @@ public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbst
      */
     @Test
     public void testPageEvictionMvcc() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10448");
-
         for (int i = 0; i < CACHE_MODES.length; i++) {
             CacheConfiguration<Object, Object> cfg = cacheConfig(
                 "evict" + i, null, CACHE_MODES[i], CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT,

@@ -49,4 +49,9 @@ public interface Storable {
      * which is entirely available on the very first page followed by the row link.
      */
     public int headerSize();
+
+    /**
+     * @return {@code True} if this is MVCC data.
+     */
+    public boolean mvcc();
 }

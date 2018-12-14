@@ -80,6 +80,9 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
     private static final int FRAGMENTED_FLAG = 0b10000000_00000000;
 
     /** */
+    protected static final int MVCC_FLAG = 0b01000000_00000000;
+
+    /** */
     public static final int MIN_DATA_PAGE_OVERHEAD = ITEMS_OFF + ITEM_SIZE + PAYLOAD_LEN_SIZE + LINK_SIZE;
 
     /**
@@ -127,12 +130,26 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
 
     /**
      * @param pageAddr Page address.
+     * @param itemId Item id.
+     * @param pageSize Page size.
+     * @return {@code True} if entry with the given index is an MVCC entry.
+     */
+    public boolean isMvccItem(long pageAddr, int itemId, int pageSize) {
+        int dataOff = getDataOffset(pageAddr, itemId, pageSize);
+
+        return (PageUtils.getShort(pageAddr, dataOff) & MVCC_FLAG) != 0;
+    }
+
+    /**
+     * @param pageAddr Page address.
      * @param dataOff Data offset.
      * @param show What elements of data page entry to show in the result.
      * @return Data page entry size.
      */
     private int getPageEntrySize(long pageAddr, int dataOff, int show) {
         int payloadLen = PageUtils.getShort(pageAddr, dataOff) & 0xFFFF;
+
+        payloadLen &= ~MVCC_FLAG; // Clear MVCC flag.
 
         if ((payloadLen & FRAGMENTED_FLAG) != 0)
             payloadLen &= ~FRAGMENTED_FLAG; // We are fragmented and have a link.
@@ -675,7 +692,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
         if (row != null)
             writeRowData(pageAddr, dataOff, rowSize, row, false);
         else
-            writeRowData(pageAddr, dataOff, payload);
+            writeRowData(pageAddr, dataOff, payload, false);
 
         return true;
     }
@@ -789,10 +806,12 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
     /**
      * Adds row to this data page and sets respective link to the given row object.
      *
+     * @param pageId Page id.
      * @param pageAddr Page address.
      * @param row Data row.
      * @param rowSize Row size.
      * @param pageSize Page size.
+     * @param mvcc {@code True} if this is a MVCC record.
      * @throws IgniteCheckedException If failed.
      */
     public void addRow(
@@ -800,7 +819,8 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
         final long pageAddr,
         T row,
         final int rowSize,
-        final int pageSize
+        final int pageSize,
+        boolean mvcc
     ) throws IgniteCheckedException {
         assert rowSize <= getFreeSpace(pageAddr) : "can't call addRow if not enough space for the whole row";
 
@@ -824,13 +844,15 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
      * @param pageAddr Page address.
      * @param payload Payload.
      * @param pageSize Page size.
+     * @param mvcc {@code True} if this is a MVCC record.
      * @return Item ID.
      * @throws IgniteCheckedException If failed.
      */
     public int addRow(
         long pageAddr,
         byte[] payload,
-        int pageSize
+        int pageSize,
+        boolean mvcc
     ) throws IgniteCheckedException {
         assert payload.length <= getFreeSpace(pageAddr) : "can't call addRow if not enough space for the whole row";
 
@@ -841,7 +863,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
 
         int dataOff = getDataOffsetForWrite(pageAddr, fullEntrySize, directCnt, indirectCnt, pageSize);
 
-        writeRowData(pageAddr, dataOff, payload);
+        writeRowData(pageAddr, dataOff, payload, mvcc);
 
         return addItem(pageAddr, fullEntrySize, directCnt, indirectCnt, dataOff, pageSize);
     }
@@ -934,6 +956,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
      * @param written Number of bytes of row size that was already written.
      * @param rowSize Row size.
      * @param pageSize Page size.
+     * @param mvcc {@code True} if this is a MVCC record.
      * @return Written payload size.
      * @throws IgniteCheckedException If failed.
      */
@@ -944,9 +967,10 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
         T row,
         int written,
         int rowSize,
-        int pageSize
+        int pageSize,
+        boolean mvcc
     ) throws IgniteCheckedException {
-        return addRowFragment(pageMem, pageId, pageAddr, written, rowSize, row.link(), row, null, pageSize);
+        return addRowFragment(pageMem, pageId, pageAddr, written, rowSize, row.link(), row, null, pageSize, mvcc);
     }
 
     /**
@@ -957,6 +981,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
      * @param payload Payload bytes.
      * @param lastLink Link to the previous written fragment (link to the tail).
      * @param pageSize Page size.
+     * @param mvcc {@code True} if this is a MVCC record.
      * @throws IgniteCheckedException If failed.
      */
     public void addRowFragment(
@@ -964,9 +989,10 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
         long pageAddr,
         byte[] payload,
         long lastLink,
-        int pageSize
+        int pageSize,
+        boolean mvcc
     ) throws IgniteCheckedException {
-        addRowFragment(null, pageId, pageAddr, 0, 0, lastLink, null, payload, pageSize);
+        addRowFragment(null, pageId, pageAddr, 0, 0, lastLink, null, payload, pageSize, mvcc);
     }
 
     /**
@@ -981,6 +1007,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
      * @param row Row.
      * @param payload Payload bytes.
      * @param pageSize Page size.
+     * @param mvcc {@code True} if this is a MVCC record.
      * @return Written payload size.
      * @throws IgniteCheckedException If failed.
      */
@@ -993,7 +1020,8 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
         long lastLink,
         T row,
         byte[] payload,
-        int pageSize
+        int pageSize,
+        boolean mvcc
     ) throws IgniteCheckedException {
         assert payload == null ^ row == null;
 
@@ -1013,6 +1041,14 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
                 payloadSize -= hdrSize - remain;
         }
 
+        short p = (short)(payloadSize | FRAGMENTED_FLAG);
+
+        if (mvcc) {
+            assert row == null || row.mvcc();
+
+            p |= MVCC_FLAG;
+        }
+
         int fullEntrySize = getPageEntrySize(payloadSize, SHOW_PAYLOAD_LEN | SHOW_LINK | SHOW_ITEM);
         int dataOff = getDataOffsetForWrite(pageAddr, fullEntrySize, directCnt, indirectCnt, pageSize);
 
@@ -1020,9 +1056,6 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
             ByteBuffer buf = pageMem.pageBuffer(pageAddr);
 
             buf.position(dataOff);
-
-            short p = (short)(payloadSize | FRAGMENTED_FLAG);
-
             buf.putShort(p);
             buf.putLong(lastLink);
 
@@ -1031,7 +1064,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
             writeFragmentData(row, buf, rowOff, payloadSize);
         }
         else {
-            PageUtils.putShort(pageAddr, dataOff, (short)(payloadSize | FRAGMENTED_FLAG));
+            PageUtils.putShort(pageAddr, dataOff, p);
 
             PageUtils.putLong(pageAddr, dataOff + 2, lastLink);
 
@@ -1315,9 +1348,15 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
     protected void writeRowData(
         long pageAddr,
         int dataOff,
-        byte[] payload
+        byte[] payload,
+        boolean mvcc
     ) {
-        PageUtils.putShort(pageAddr, dataOff, (short)payload.length);
+        short p = (short)payload.length;
+
+        if (mvcc)
+            p |= MVCC_FLAG;
+
+        PageUtils.putShort(pageAddr, dataOff, p);
         dataOff += 2;
 
         PageUtils.putBytes(pageAddr, dataOff, payload);

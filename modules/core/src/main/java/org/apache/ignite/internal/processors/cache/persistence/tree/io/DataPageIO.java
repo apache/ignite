@@ -63,10 +63,15 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
         long addr = pageAddr + dataOff;
 
         int cacheIdSize = row.cacheId() != 0 ? 4 : 0;
-        int mvccInfoSize = row.mvccCoordinatorVersion() > 0 ? MVCC_INFO_SIZE : 0;
+        int mvccInfoSize = row.mvcc() ? MVCC_INFO_SIZE : 0;
 
         if (newRow) {
-            PageUtils.putShort(addr, 0, (short)payloadSize);
+            short p = (short)payloadSize;
+
+            if (row.mvcc())
+                p |= MVCC_FLAG;
+
+            PageUtils.putShort(addr, 0, p);
             addr += 2;
 
             if (mvccInfoSize > 0) {

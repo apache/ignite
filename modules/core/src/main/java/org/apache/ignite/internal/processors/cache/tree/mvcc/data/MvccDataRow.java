@@ -285,6 +285,11 @@ public class MvccDataRow extends DataRow {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean mvcc() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(MvccDataRow.class, this, "super", super.toString());
     }

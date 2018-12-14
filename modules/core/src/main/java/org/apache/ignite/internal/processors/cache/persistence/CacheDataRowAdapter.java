@@ -627,6 +627,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean mvcc() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public long mvccCoordinatorVersion() {
         return MVCC_CRD_COUNTER_NA;
     }
