@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.util.generators.variable.vector;
+package org.apache.ignite.ml.util.generators.primitives.vector;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,7 +28,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.Utils;
 import org.apache.ignite.ml.util.generators.datastream.DataStreamGenerator;
-import org.apache.ignite.ml.util.generators.variable.DiscreteRandomProducer;
+import org.apache.ignite.ml.util.generators.primitives.variable.DiscreteRandomProducer;
 
 public class VectorGeneratorsFamily implements VectorGenerator, DataStreamGenerator, Iterator<VectorGeneratorsFamily.VectorWithDistributionId> {
     private final List<VectorGenerator> family;

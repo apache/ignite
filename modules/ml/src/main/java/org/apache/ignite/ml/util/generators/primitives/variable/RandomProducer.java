@@ -15,23 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.util.generators.function;
+package org.apache.ignite.ml.util.generators.primitives.variable;
 
-import org.apache.ignite.ml.util.generators.variable.RandomProducer;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
+import java.util.function.Supplier;
 
-public class FunctionWithNoize<I> implements RandomFunction<I> {
-    private final IgniteFunction<I, Double> baselineFunction;
-    private final RandomProducer noize;
+public interface RandomProducer extends Supplier<Double> {
 
-    public FunctionWithNoize(IgniteFunction<I, Double> baselineFunction,
-        RandomProducer noize) {
-
-        this.baselineFunction = baselineFunction;
-        this.noize = noize;
-    }
-
-    @Override public Double apply(I x) {
-        return baselineFunction.apply(x) + noize.get();
-    }
 }

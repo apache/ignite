@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.util.generators.function;
+package org.apache.ignite.ml.util.generators.primitives.function;
 
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 

@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.util.generators.variable.vector;
+package org.apache.ignite.ml.util.generators.primitives.vector;
 
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.util.generators.variable.RandomProducer;
+import org.apache.ignite.ml.util.generators.primitives.variable.RandomProducer;
 
 public class ParametricVectorGenerator implements VectorGenerator {
     private final List<IgniteFunction<Double, Double>> perDimensionGenerators;

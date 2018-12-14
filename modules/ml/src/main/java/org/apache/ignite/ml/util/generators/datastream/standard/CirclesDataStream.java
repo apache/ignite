@@ -21,11 +21,11 @@ import java.util.stream.Stream;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.generators.datastream.DataStreamGenerator;
-import org.apache.ignite.ml.util.generators.function.FunctionWithNoize;
-import org.apache.ignite.ml.util.generators.variable.GaussRandomProducer;
-import org.apache.ignite.ml.util.generators.variable.UniformRandomProducer;
-import org.apache.ignite.ml.util.generators.variable.vector.ParametricVectorGenerator;
-import org.apache.ignite.ml.util.generators.variable.vector.VectorGeneratorsFamily;
+import org.apache.ignite.ml.util.generators.primitives.function.FunctionWithNoize;
+import org.apache.ignite.ml.util.generators.primitives.variable.GaussRandomProducer;
+import org.apache.ignite.ml.util.generators.primitives.variable.UniformRandomProducer;
+import org.apache.ignite.ml.util.generators.primitives.vector.ParametricVectorGenerator;
+import org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorsFamily;
 
 public class CirclesDataStream implements DataStreamGenerator {
     private final int countOfCircles;
