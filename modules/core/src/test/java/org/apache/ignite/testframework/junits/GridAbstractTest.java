@@ -182,6 +182,9 @@ public abstract class GridAbstractTest extends TestCase {
         }
     };
 
+    /** Allows easy repeating for test. */
+    @Rule public transient RepeatRule repeatRule = new RepeatRule();
+
     /** */
     private transient boolean startGrid;
 

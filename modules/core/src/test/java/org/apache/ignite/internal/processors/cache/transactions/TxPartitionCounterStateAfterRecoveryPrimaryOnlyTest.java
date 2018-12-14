@@ -10,11 +10,20 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.testframework.junits.Repeat;
+import org.apache.ignite.testframework.junits.RepeatRule;
+import org.jetbrains.annotations.Nullable;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test partition update counter generation only on primary node.
  */
+@RunWith(JUnit4.class)
 public class TxPartitionCounterStateAfterRecoveryPrimaryOnlyTest extends TxPartitionCounterStateAbstractTest {
     /** */
     private static final int[] PREPARE_ORDER = new int[] {0, 1, 2};
@@ -30,6 +39,12 @@ public class TxPartitionCounterStateAfterRecoveryPrimaryOnlyTest extends TxParti
 
     /** */
     public static final int PARTITION_ID = 0;
+
+    /** */
+    public static final int BACKUPS = 0;
+
+    /** */
+    public static final int NODES_CNT = 1;
 
     /** */
     public void testPrepareCommitReorder() throws Exception {
@@ -62,6 +77,7 @@ public class TxPartitionCounterStateAfterRecoveryPrimaryOnlyTest extends TxParti
     }
 
     /** */
+    @Test
     public void testMissedCommitsAfterRecovery() throws Exception {
         doTestPrepareCommitReorder2(false);
     }
@@ -87,7 +103,7 @@ public class TxPartitionCounterStateAfterRecoveryPrimaryOnlyTest extends TxParti
 
         runOnPartition(partId, backups, nodes, new PrimaryOrderingTxCallbackAdapter(prepOrd, new int[0]) {
             @Override protected void onAllPrepared() {
-                stopGridNoCheckpoint(skipCheckpointOnStop, 0);
+                stopGrid(skipCheckpointOnStop, 0);
             }
         }, sizes);
 
@@ -106,9 +122,9 @@ public class TxPartitionCounterStateAfterRecoveryPrimaryOnlyTest extends TxParti
      */
     private void doTestPrepareCommitReorder(boolean skipCheckpointOnStop,
         boolean doCheckpoint) throws Exception {
-        runOnPartition(PARTITION_ID, 0, 1, new PrimaryOrderingTxCallbackAdapter(PREPARE_ORDER, COMMIT_ORDER) {
+        runOnPartition(PARTITION_ID, BACKUPS, NODES_CNT, new PrimaryOrderingTxCallbackAdapter(PREPARE_ORDER, COMMIT_ORDER) {
             @Override protected boolean onCommitted(IgniteEx node, int idx) {
-                if (idx == 2 && doCheckpoint) {
+                if (idx == COMMIT_ORDER[0] && doCheckpoint) {
                     try {
                         forceCheckpoint(grid(0));
                     }
@@ -153,10 +169,12 @@ public class TxPartitionCounterStateAfterRecoveryPrimaryOnlyTest extends TxParti
      * Test correct update counter processing on updates reorder and node restart.
      */
     private void doTestPrepareCommitReorder2(boolean skipCheckpointOnStop) throws Exception {
-        runOnPartition(PARTITION_ID, 0, 1, new PrimaryOrderingTxCallbackAdapter(PREPARE_ORDER, COMMIT_ORDER) {
+        runOnPartition(PARTITION_ID, BACKUPS, NODES_CNT, new PrimaryOrderingTxCallbackAdapter(PREPARE_ORDER, COMMIT_ORDER) {
             @Override protected boolean onCommitted(IgniteEx node, int idx) {
+                super.onCommitted(node, idx);
+
                 if (idx == COMMIT_ORDER[0]) {
-                    stopGridNoCheckpoint(skipCheckpointOnStop, 0);
+                    stopGrid(skipCheckpointOnStop, 0);
 
                     return true; // Stop further processing.
                 }
@@ -174,15 +192,20 @@ public class TxPartitionCounterStateAfterRecoveryPrimaryOnlyTest extends TxParti
         // Only one transaction is applied with counter: 12-15
         PartitionUpdateCounter cntr = counter(PARTITION_ID);
 
-        assertEquals(0, cntr.get());
-        assertEquals(TOTAL, cntr.hwm());
+        try {
+            assertEquals(0, cntr.get());
+            assertEquals(TOTAL, cntr.hwm());
 
-        assertEquals(1, cntr.holes().size());
+            assertEquals(1, cntr.holes().size());
 
-        PartitionUpdateCounter.Item hole = cntr.holes().first();
+            PartitionUpdateCounter.Item hole = cntr.holes().first();
 
-        assertEquals(SIZES[0] + SIZES[1], hole.start());
-        assertEquals(SIZES[2], hole.delta());
+            assertEquals(SIZES[0] + SIZES[1], hole.start());
+            assertEquals(SIZES[2], hole.delta());
+        }
+        catch (Throwable e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -196,7 +219,8 @@ public class TxPartitionCounterStateAfterRecoveryPrimaryOnlyTest extends TxParti
         private Queue<Integer> commitOrder;
 
         /** */
-        private Map<IgniteUuid, GridFutureAdapter<?>> futs = new ConcurrentHashMap<>();
+        private Map<IgniteUuid, GridFutureAdapter<?>> prepFuts = new ConcurrentHashMap<>();
+        private Map<IgniteUuid, GridFutureAdapter<?>> finishFuts = new ConcurrentHashMap<>();
 
         /**
          * @param prepOrd Prepare order.
@@ -214,45 +238,57 @@ public class TxPartitionCounterStateAfterRecoveryPrimaryOnlyTest extends TxParti
                 commitOrder.add(aCommitOrd);
         }
 
+        protected boolean onPrepared(IgniteEx from, IgniteInternalTx tx, int idx) {
+            @Nullable TxCounters txCounters = tx.txCounters(false);
+
+            log.info("TX: prepared " + idx + ", tx=" + CU.txString(tx));
+
+            return false;
+        }
+
+        protected void onAllPrepared() {
+            log.info("TX: all prepared");
+            // No-op.
+        }
+
+        protected boolean onCommitted(IgniteEx primaryNode, int idx) {
+            log.info("TX: committed " + idx);
+
+            return false;
+        }
+
+        protected void onAllCommited() {
+            log.info("TX: all committed");
+
+            // No-op.
+        }
+
         @Override public boolean beforePrimaryPrepare(IgniteEx node, IgniteUuid nearXidVer,
             GridFutureAdapter<?> proceedFut) {
             runAsync(() -> {
-                futs.put(nearXidVer, proceedFut);
+                prepFuts.put(nearXidVer, proceedFut);
 
                 // Order prepares.
-                if (futs.size() == prepOrder.size()) {// Wait until all prep requests queued and force prepare order.
-                    futs.remove(version(prepOrder.poll())).onDone();
+                if (prepFuts.size() == prepOrder.size()) {// Wait until all prep requests queued and force prepare order.
+                    prepFuts.remove(version(prepOrder.poll())).onDone();
                 }
             });
 
             return true;
         }
 
-        protected boolean onPrepared(IgniteEx from, int idx) {
-            return false;
-        }
-
-        protected void onAllPrepared() {
-            // No-op.
-        }
-
-        protected boolean onCommitted(IgniteEx primaryNode, int idx) {
-            return false;
-        }
-
-        protected void onAllCommited() {
-            // No-op.
-        }
-
         @Override public boolean afterPrimaryPrepare(IgniteEx from, IgniteInternalTx tx, GridFutureAdapter<?> fut) {
             runAsync(() -> {
-                if (onPrepared(from, order(tx.nearXidVersion().asGridUuid())) || prepOrder.isEmpty())
+                if (onPrepared(from, tx, order(tx.nearXidVersion().asGridUuid())))
                     return;
 
-                futs.remove(version(prepOrder.poll())).onDone();
-
-                if (prepOrder.isEmpty())
+                if (prepOrder.isEmpty()) {
                     onAllPrepared();
+
+                    return;
+                }
+
+                prepFuts.remove(version(prepOrder.poll())).onDone();
             });
 
             return false;
@@ -261,11 +297,11 @@ public class TxPartitionCounterStateAfterRecoveryPrimaryOnlyTest extends TxParti
         @Override public boolean beforePrimaryFinish(IgniteEx primaryNode, IgniteInternalTx tx, GridFutureAdapter<?>
             proceedFut) {
             runAsync(() -> {
-                futs.put(tx.nearXidVersion().asGridUuid(), proceedFut);
+                finishFuts.put(tx.nearXidVersion().asGridUuid(), proceedFut);
 
                 // Order prepares.
-                if (futs.size() == 3)
-                    futs.remove(version(commitOrder.poll())).onDone();
+                if (finishFuts.size() == 3)
+                    finishFuts.remove(version(commitOrder.poll())).onDone();
 
             });
 
@@ -274,22 +310,23 @@ public class TxPartitionCounterStateAfterRecoveryPrimaryOnlyTest extends TxParti
 
         @Override public boolean afterPrimaryFinish(IgniteEx primaryNode, IgniteUuid nearXidVer, GridFutureAdapter<?> proceedFut) {
             runAsync(() -> {
-                if (onCommitted(primaryNode, order(nearXidVer)) || commitOrder.isEmpty())
+                if (onCommitted(primaryNode, order(nearXidVer)))
                     return;
 
-                futs.remove(version(commitOrder.poll())).onDone();
-
-                if (commitOrder.isEmpty())
+                if (commitOrder.isEmpty()) {
                     onAllCommited();
+
+                    return;
+                }
+
+                finishFuts.remove(version(commitOrder.poll())).onDone();
             });
 
             return false;
         }
     }
 
-    private void stopGridNoCheckpoint(boolean skipCheckpointOnStop, int idx) {
-        stopGrid("client");
-
+    private void stopGrid(boolean skipCheckpointOnStop, int idx) {
         IgniteEx grid = grid(0);
 
         if (skipCheckpointOnStop) {
@@ -300,5 +337,7 @@ public class TxPartitionCounterStateAfterRecoveryPrimaryOnlyTest extends TxParti
         }
 
         stopGrid(0, skipCheckpointOnStop);
+
+        stopGrid("client");
     }
 }

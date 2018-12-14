@@ -156,6 +156,8 @@ public class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest 
 
         IgniteEx crd = (IgniteEx)startGridsMultiThreaded(nodesCnt);
 
+        assertEquals(0, crd.cache(DEFAULT_CACHE_NAME).size());
+
         int[][] ranges = new int[sizes.length][2];
 
         int totalKeys = 0;
@@ -335,14 +337,7 @@ public class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest 
             @Override public void apply(IgniteInternalFuture<?> fut) {
                 wrapperSpi.stopBlock(true, new IgnitePredicate<T2<ClusterNode, GridIoMessage>>() {
                     @Override public boolean apply(T2<ClusterNode, GridIoMessage> objects) {
-                        boolean res = objects.get2().message() == msg;
-
-                        if (res) {
-                            Message message = objects.get2().message();
-                            System.out.println("EBAT: " + message.hashCode());
-                        }
-
-                        return res;
+                        return objects.get2().message() == msg;
                     }
                 }, false);
             }
