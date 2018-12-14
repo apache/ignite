@@ -15,26 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.composition;
-
-import org.apache.ignite.ml.composition.boosting.GDBTrainerTest;
-import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregatorTest;
-import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregatorTest;
-import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregatorTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
 /**
- * Test suite for all ensemble models tests.
+ * <!-- Package description. -->
+ * Contains classes used for training with stacking technique.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    GDBTrainerTest.class,
-    MeanValuePredictionsAggregatorTest.class,
-    OnMajorityPredictionsAggregatorTest.class,
-    BaggingTest.class,
-    StackingTest.class,
-    WeightedPredictionsAggregatorTest.class
-})
-public class CompositionTestSuite {
-}
+package org.apache.ignite.ml.composition.stacking;

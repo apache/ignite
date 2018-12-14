@@ -34,7 +34,6 @@ import org.apache.ignite.ml.regressions.RegressionsTestSuite;
 import org.apache.ignite.ml.selection.SelectionTestSuite;
 import org.apache.ignite.ml.structures.StructuresTestSuite;
 import org.apache.ignite.ml.svm.SVMTestSuite;
-import org.apache.ignite.ml.trainers.BaggingTest;
 import org.apache.ignite.ml.tree.DecisionTreeTestSuite;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -62,7 +61,6 @@ import org.junit.runners.Suite;
     StructuresTestSuite.class,
     CommonTestSuite.class,
     InferenceTestSuite.class,
-    BaggingTest.class,
     MultiClassTestSuite.class
 })
 public class IgniteMLTestSuite {
