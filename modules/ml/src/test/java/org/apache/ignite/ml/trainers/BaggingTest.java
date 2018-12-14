@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.trainers;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.TestUtils;
@@ -66,10 +65,10 @@ public class BaggingTest extends TrainerTest {
      */
     @Test
     public void testNaiveBaggingLogRegression() {
-        Map<Integer, Double[]> cacheMock = getCacheMock();
+        Map<Integer, Double[]> cacheMock = getCacheMock(twoLinearlySeparableClasses);
 
         DatasetTrainer<LogisticRegressionModel, Double> trainer =
-            (LogisticRegressionSGDTrainer<?>)new LogisticRegressionSGDTrainer<>()
+            new LogisticRegressionSGDTrainer()
                 .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
                     SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
                 .withMaxIterations(30000)
@@ -102,17 +101,17 @@ public class BaggingTest extends TrainerTest {
     /**
      * Method used to test counts of data passed in context and in data builders.
      *
-     * @param counter Function specifying which data we should count.
+     * @param cntr Function specifying which data we should count.
      */
-    protected void count(IgniteTriFunction<Long, CountData, LearningEnvironment, Long> counter) {
-        Map<Integer, Double[]> cacheMock = getCacheMock();
+    protected void count(IgniteTriFunction<Long, CountData, LearningEnvironment, Long> cntr) {
+        Map<Integer, Double[]> cacheMock = getCacheMock(twoLinearlySeparableClasses);
 
-        CountTrainer countTrainer = new CountTrainer(counter);
+        CountTrainer cntTrainer = new CountTrainer(cntr);
 
         double subsampleRatio = 0.3;
 
-        ModelsComposition model = TrainerTransformers.makeBagged(
-            countTrainer,
+        ModelsComposition mdl = TrainerTransformers.makeBagged(
+            cntTrainer,
             100,
             subsampleRatio,
             2,
@@ -120,27 +119,9 @@ public class BaggingTest extends TrainerTest {
             new MeanValuePredictionsAggregator())
             .fit(cacheMock, parts, null, null);
 
-        Double res = model.apply(null);
+        Double res = mdl.apply(null);
 
         TestUtils.assertEquals(twoLinearlySeparableClasses.length * subsampleRatio, res, twoLinearlySeparableClasses.length / 10);
-    }
-
-    /**
-     * Create cache mock.
-     *
-     * @return Cache mock.
-     */
-    private Map<Integer, Double[]> getCacheMock() {
-        Map<Integer, Double[]> cacheMock = new HashMap<>();
-
-        for (int i = 0; i < twoLinearlySeparableClasses.length; i++) {
-            double[] row = twoLinearlySeparableClasses[i];
-            Double[] convertedRow = new Double[row.length];
-            for (int j = 0; j < row.length; j++)
-                convertedRow[j] = row[j];
-            cacheMock.put(i, convertedRow);
-        }
-        return cacheMock;
     }
 
     /**
@@ -167,15 +148,15 @@ public class BaggingTest extends TrainerTest {
         /**
          * Function specifying which entries to count.
          */
-        private final IgniteTriFunction<Long, CountData, LearningEnvironment, Long> counter;
+        private final IgniteTriFunction<Long, CountData, LearningEnvironment, Long> cntr;
 
         /**
          * Construct instance of this class.
          *
-         * @param counter Function specifying which entries to count.
+         * @param cntr Function specifying which entries to count.
          */
-        public CountTrainer(IgniteTriFunction<Long, CountData, LearningEnvironment, Long> counter) {
-            this.counter = counter;
+        public CountTrainer(IgniteTriFunction<Long, CountData, LearningEnvironment, Long> cntr) {
+            this.cntr = cntr;
         }
 
         /** {@inheritDoc} */
@@ -189,7 +170,7 @@ public class BaggingTest extends TrainerTest {
                 (env, upstreamData, upstreamDataSize, ctx) -> new CountData(upstreamDataSize)
             );
 
-            Long cnt = dataset.computeWithCtx(counter, BaggingTest::plusOfNullables);
+            Long cnt = dataset.computeWithCtx(cntr, BaggingTest::plusOfNullables);
 
             return x -> Double.valueOf(cnt);
         }
