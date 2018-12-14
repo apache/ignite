@@ -165,8 +165,6 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     private void checkSwapMultithreaded() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-614");
-
         final AtomicBoolean done = new AtomicBoolean();
         IgniteInternalFuture<?> fut = null;
 
