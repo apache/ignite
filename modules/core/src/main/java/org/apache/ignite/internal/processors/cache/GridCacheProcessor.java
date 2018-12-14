@@ -5315,17 +5315,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             }
             else {
+                CacheConfiguration cfg = new CacheConfiguration(ccfg);
+
                 req.deploymentId(IgniteUuid.randomUuid());
 
-                CacheConfiguration cfg = new CacheConfiguration(ccfg);
+                req.startCacheConfiguration(cfg);
 
                 CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(cfg);
 
                 initialize(cfg, cacheObjCtx);
 
-                req.startCacheConfiguration(cfg);
-                req.schema(new QuerySchema(qryEntities != null ? QueryUtils.normalizeQueryEntities(qryEntities, cfg)
-                    : cfg.getQueryEntities()));
+                if (cachesInfo.restartingCaches().contains(req.cacheName()))
+                    req.schema(new QuerySchema(qryEntities));
+                else
+                    req.schema(new QuerySchema(qryEntities != null ? QueryUtils.normalizeQueryEntities(qryEntities, cfg)
+                            : cfg.getQueryEntities()));
             }
         }
         else {

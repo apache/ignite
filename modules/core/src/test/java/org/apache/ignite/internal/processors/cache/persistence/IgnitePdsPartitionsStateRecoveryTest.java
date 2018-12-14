@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
@@ -40,9 +41,6 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest {
-    /** Cache name. */
-    private static final String CACHE = "cache";
-
     /** Partitions count. */
     private static final int PARTS_CNT = 32;
 
@@ -64,7 +62,7 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
 
         cfg.setDataStorageConfiguration(dsCfg);
 
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(CACHE)
+        CacheConfiguration ccfg = defaultCacheConfiguration()
             .setBackups(0)
             .setRebalanceMode(CacheRebalanceMode.NONE) // Disable rebalance to prevent owning MOVING partitions.
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
@@ -104,7 +102,7 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
 
         ignite.cluster().active(true);
 
-        IgniteCache<Object, Object> cache = ignite.getOrCreateCache(CACHE);
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         for (int key = 0; key < 4096; key++)
             cache.put(key, key);
@@ -118,7 +116,7 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
             cache.put(key, payload);
         }
 
-        GridDhtPartitionTopology topology = ignite.cachex(CACHE).context().topology();
+        GridDhtPartitionTopology topology = ignite.cachex(DEFAULT_CACHE_NAME).context().topology();
 
         Assert.assertFalse(topology.hasMovingPartitions());
 
@@ -130,7 +128,7 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
 
         awaitPartitionMapExchange();
 
-        topology = ignite.cachex(CACHE).context().topology();
+        topology = ignite.cachex(DEFAULT_CACHE_NAME).context().topology();
 
         Assert.assertFalse("Node restored moving partitions after join to topology.", topology.hasMovingPartitions());
     }
@@ -142,11 +140,14 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
      */
     @Test
     public void testPartitionsStateConsistencyAfterRecoveryNoCheckpoints() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10603");
+
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().active(true);
 
-        IgniteCache<Object, Object> cache = ignite.getOrCreateCache(CACHE);
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         forceCheckpoint();
 
@@ -157,7 +158,7 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
             cache.put(key, payload);
         }
 
-        GridDhtPartitionTopology topology = ignite.cachex(CACHE).context().topology();
+        GridDhtPartitionTopology topology = ignite.cachex(DEFAULT_CACHE_NAME).context().topology();
 
         Assert.assertFalse(topology.hasMovingPartitions());
 
@@ -169,7 +170,7 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
 
         awaitPartitionMapExchange();
 
-        topology = ignite.cachex(CACHE).context().topology();
+        topology = ignite.cachex(DEFAULT_CACHE_NAME).context().topology();
 
         Assert.assertFalse("Node restored moving partitions after join to topology.", topology.hasMovingPartitions());
     }
