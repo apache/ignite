@@ -98,7 +98,7 @@ public class TxPartitionCounterStateAfterRecoveryOnePrimaryTest extends TxPartit
     private void doTestSkipReservedCountersAfterRecovery(boolean skipCheckpointOnStop) throws Exception {
         runOnPartition(PARTITION_ID, BACKUPS, NODES_CNT, new PrimaryTxCallbackAdapter(PREPARE_ORDER, COMMIT_ORDER) {
             @Override protected void onAllPrepared() {
-                stopGrid(skipCheckpointOnStop, 0);
+                stopGrid(skipCheckpointOnStop, grid(0).name());
             }
         }, SIZES);
 
@@ -131,6 +131,8 @@ public class TxPartitionCounterStateAfterRecoveryOnePrimaryTest extends TxPartit
                 return super.onCommitted(node, idx);
             }
         }, SIZES);
+
+        waitForTopology(2);
 
         int size = grid("client").cache(DEFAULT_CACHE_NAME).size();
 
@@ -179,7 +181,7 @@ public class TxPartitionCounterStateAfterRecoveryOnePrimaryTest extends TxPartit
                 assertEquals(gap.delta(), SIZES[COMMIT_ORDER[0]]);
 
                 if (idx == COMMIT_ORDER[0]) {
-                    stopGrid(skipCheckpointOnStop, 0);
+                    stopGrid(skipCheckpointOnStop, grid(0).name());
 
                     return true; // Stop further processing.
                 }
@@ -187,6 +189,8 @@ public class TxPartitionCounterStateAfterRecoveryOnePrimaryTest extends TxPartit
                 return false;
             }
         }, SIZES);
+
+        stopGrid("client");
 
         IgniteEx ex = startGrid(0);
 

@@ -69,12 +69,13 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
+import static org.apache.ignite.testframework.GridTestUtils.retryAssert;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 
 /**
- * Mini framework for ordering transaction prepares and commits by intercepting messages and releasing then in desired order.
+ * Mini test framework for ordering transaction's prepares and commits by intercepting messages and releasing then in user defined order.
  */
-public class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest {
+public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -212,7 +213,6 @@ public class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest 
 
         primWrapperSpi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode node, Message msg) {
-                IgniteEx from = IgnitionEx.gridxx(primWrapperSpi.getSpiContext().localNode().id());
                 IgniteEx to = IgnitionEx.gridxx(node.id());
 
                 if (msg instanceof GridDhtTxPrepareRequest) {
@@ -220,6 +220,8 @@ public class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest 
 
                     futMap.put(req.futureId(), req.nearXidVersion());
                     nearToLocVerMap.put(req.version(), req.nearXidVersion());
+
+                    IgniteEx from = fromNode(primWrapperSpi);
 
                     IgniteInternalTx primTx = findTx(from, req.nearXidVersion(), true);
 
@@ -231,6 +233,8 @@ public class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest 
                     GridCacheVersion nearVer = nearToLocVerMap.get(req.version());
                     futMap.put(req.futureId(), nearVer);
 
+                    IgniteEx from = fromNode(primWrapperSpi);
+
                     IgniteInternalTx primTx = findTx(from, nearVer, true);
                     IgniteInternalTx backupTx = findTx(to, nearVer, false);
 
@@ -239,12 +243,16 @@ public class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest 
                 else if (msg instanceof GridNearTxPrepareResponse) {
                     GridNearTxPrepareResponse resp = (GridNearTxPrepareResponse)msg;
 
+                    IgniteEx from = fromNode(primWrapperSpi);
+
                     IgniteInternalTx primTx = findTx(from, futMap.get(resp.futureId()), true);
 
                     return cb.afterPrimaryPrepare(from, primTx, createSendFuture(primWrapperSpi, msg));
                 }
                 else if (msg instanceof GridNearTxFinishResponse) {
                     GridNearTxFinishResponse req = (GridNearTxFinishResponse)msg;
+
+                    IgniteEx from = fromNode(primWrapperSpi);
 
                     IgniteUuid nearVer = futMap.get(req.futureId()).asGridUuid();
 
@@ -490,13 +498,20 @@ public class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest 
         return internalCache(0).context().topology().localPartition(partId).dataStore().partUpdateCounter();
     }
 
+    /**
+     * @param partId Partition id.
+     */
+    protected PartitionUpdateCounter counter(int partId, String gridName) {
+        return internalCache(grid(gridName).cache(DEFAULT_CACHE_NAME)).context().topology().localPartition(partId).dataStore().partUpdateCounter();
+    }
+
 
     /**
      * @param skipCheckpointOnStop Skip checkpoint on stop.
-     * @param idx Grid index.
+     * @param name Grid instance.
      */
-    protected void stopGrid(boolean skipCheckpointOnStop, int idx) {
-        IgniteEx grid = grid(0);
+    protected void stopGrid(boolean skipCheckpointOnStop, String name) {
+        IgniteEx grid = grid(name);
 
         if (skipCheckpointOnStop) {
             GridCacheDatabaseSharedManager db =
@@ -505,8 +520,10 @@ public class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest 
             db.enableCheckpoints(false);
         }
 
-        stopGrid(0, skipCheckpointOnStop);
+        stopGrid(grid.name(), skipCheckpointOnStop);
+    }
 
-        stopGrid("client");
+    private IgniteEx fromNode(TestRecordingCommunicationSpi primWrapperSpi) {
+        return IgnitionEx.gridxx(primWrapperSpi.getSpiContext().localNode().id());
     }
 }

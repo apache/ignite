@@ -1,12 +1,23 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.IntStream;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -22,10 +33,10 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
     private static final int[] PREPARE_ORDER = new int[] {0, 1, 2};
 
     /** */
-    private static final int[] PRIMARY_COMMIT_ORDER = new int[] {2, 1, 0};
+    private static final int[] PRIMARY_COMMIT_ORDER = new int[] {1, 2, 0};
 
     /** */
-    private static final int[] BACKUP_COMMIT_ORDER = new int[] {0, 2, 1};
+    private static final int[] BACKUP_COMMIT_ORDER = new int[] {2, 1, 0};
 
     /** */
     private static final int [] SIZES = new int[] {5, 7, 3};
@@ -45,14 +56,85 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
     /** */
     @Test
     public void testPrepareCommitReorder() throws Exception {
+        doTestPrepareCommitReorder(false);
+    }
+
+    /**
+     * @param skipCheckpoint Skip checkpoint.
+     */
+    private void doTestPrepareCommitReorder(boolean skipCheckpoint) throws Exception {
         runOnPartition(PARTITION_ID, BACKUPS, NODES_CNT,
-            new TwoPhasePrimaryBackupTxCallbackAdapter(PREPARE_ORDER, PRIMARY_COMMIT_ORDER, BACKUP_COMMIT_ORDER), SIZES);
+            new TwoPhasePessimisticPrimaryBackupTxCallbackAdapter(PREPARE_ORDER, PRIMARY_COMMIT_ORDER, BACKUP_COMMIT_ORDER) {
+                @Override protected boolean onBackupCommitted(IgniteEx backup, int idx) {
+                    super.onBackupCommitted(backup, idx);
+
+                    if (idx == BACKUP_COMMIT_ORDER[0]) {
+                        Collection<ClusterNode> nodes = backup.affinity(DEFAULT_CACHE_NAME).mapPartitionToPrimaryAndBackups(PARTITION_ID);
+                        List<ClusterNode> nodesList = new ArrayList<>(nodes);
+
+                        Ignite backupNode = Ignition.ignite(nodesList.get(1).id());
+
+                        PartitionUpdateCounter cntr = counter(PARTITION_ID, backupNode.name());
+
+                        assertFalse(cntr.holes().isEmpty());
+
+                        PartitionUpdateCounter.Item gap = cntr.holes().first();
+
+                        assertEquals(gap.start(), SIZES[BACKUP_COMMIT_ORDER[1]] + SIZES[BACKUP_COMMIT_ORDER[2]]);
+                        assertEquals(gap.delta(), SIZES[BACKUP_COMMIT_ORDER[0]]);
+
+                        stopGrid(skipCheckpoint, backupNode.name()); // Will stop backup node before all commits are applied.
+
+                        return true;
+                    }
+
+                    throw new IgniteException("Should not commit other transactions");
+                }
+            }, SIZES);
+
+        waitForTopology(2);
+
+        IgniteEx client = grid("client");
+
+        assertEquals("Primary has not all committed transactions", TOTAL, client.cache(DEFAULT_CACHE_NAME).size());
+
+        for (Ignite ignite : G.allGrids())
+            TestRecordingCommunicationSpi.spi(ignite).stopBlock(false);
+
+        IgniteEx backup = startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        IdleVerifyResultV2 res = idleVerify(client, DEFAULT_CACHE_NAME);
+
+        if (res.hasConflicts()) {
+            StringBuilder b = new StringBuilder();
+
+            res.print(b::append);
+
+            fail(b.toString());
+        }
+
+        // Check if holes are closed on rebalance.
+        PartitionUpdateCounter cntr = counter(PARTITION_ID, backup.name());
+
+        assertTrue(cntr.holes().isEmpty());
+
+        assertEquals(TOTAL, cntr.get());
+
+        stopGrid(0);
+
+        awaitPartitionMapExchange();
+
+        cntr = counter(PARTITION_ID, backup.name());
+
+        assertEquals(TOTAL, cntr.reserved());
     }
 
     /**
      * The callback order prepares and commits on primary node.
      */
-    protected class TwoPhasePrimaryBackupTxCallbackAdapter extends TxCallbackAdapter {
+    protected class TwoPhasePessimisticPrimaryBackupTxCallbackAdapter extends TxCallbackAdapter {
         /** */
         private Queue<Integer> prepOrder;
 
@@ -75,7 +157,8 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
          * @param prepOrd Prepare order.
          * @param primCommitOrder Commit order.
          */
-        public TwoPhasePrimaryBackupTxCallbackAdapter(int[] prepOrd, int[] primCommitOrder, int[] backupCommitOrder) {
+        public TwoPhasePessimisticPrimaryBackupTxCallbackAdapter(int[] prepOrd, int[] primCommitOrder,
+            int[] backupCommitOrder) {
             prepOrder = new ConcurrentLinkedQueue<>();
 
             for (int aPrepOrd : prepOrd)
@@ -115,10 +198,10 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
         }
 
         /**
-         * @param primary Backup node.
+         * @param backup Backup node.
          * @param idx Index.
          */
-        protected boolean onBackupCommitted(IgniteEx primary, int idx) {
+        protected boolean onBackupCommitted(IgniteEx backup, int idx) {
             log.info("TX: backup committed " + idx);
 
             return false;
@@ -190,7 +273,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
                 if (onPrimaryCommitted(prim, order(nearXidVer)))
                     return;
 
-                if (primCommitOrder.isEmpty()) {
+                if (primCommitOrder.isEmpty() && backupFinishFuts.size() == SIZES.length) {
                     onAllPrimaryCommited();
 
                     assertEquals(SIZES.length, backupFinishFuts.size());

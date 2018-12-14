@@ -23,6 +23,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.NavigableSet;
+import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteException;
@@ -113,20 +114,16 @@ public class PartitionUpdateCounter {
     }
 
     /**
-     * Sets value to update counter,
+     * Sets value to update counter clearing all gaps below the new counter.
      *
      * @param val Values.
      */
-    public void update(long val) {
-        while (true) {
-            long val0 = cntr.get();
+    public synchronized void update(long val) {
+        cntr.set(val);
 
-            if (val0 >= val)
-                break;
-
-            if (cntr.compareAndSet(val0, val))
-                break;
-        }
+        // Reset gaps below the counter.
+        if (!queue.isEmpty())
+            queue.headSet(new Item(val, 0)).clear();
     }
 
     /**
@@ -201,23 +198,16 @@ public class PartitionUpdateCounter {
         if (cntr <= cntr0) // These counter updates was already applied before checkpoint.
             return;
 
+        // TODO FIXME fix inefficient assertion next 3 lines.
         long tmp = cntr - 1;
 
         NavigableSet<Item> items = queue.headSet(new Item(tmp, 0), true);
 
         assert items.isEmpty() || !items.last().within(tmp) : "Invalid counter";
 
-        //releaseOne(cntr);
-
-        // TODO FIXME assert what counter not within any gap.
         update(tmp, 1); // We expecting only unapplied updates.
 
         initCntr = get();
-
-//        if (get() < cntr)
-//            update(cntr);
-//
-//        initCntr = cntr;
     }
 
     /**
