@@ -24,6 +24,9 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -32,6 +35,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteTxGetAfterStopTest extends IgniteCacheAbstractTest {
     /** */
     private CacheMode cacheMode;
@@ -74,6 +78,7 @@ public class IgniteTxGetAfterStopTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicated() throws Exception {
         getAfterStop(REPLICATED, null);
     }
@@ -81,6 +86,7 @@ public class IgniteTxGetAfterStopTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitioned() throws Exception {
         getAfterStop(PARTITIONED, new NearCacheConfiguration());
     }
@@ -88,6 +94,7 @@ public class IgniteTxGetAfterStopTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedNearDisabled() throws Exception {
         getAfterStop(PARTITIONED, null);
     }

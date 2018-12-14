@@ -37,11 +37,16 @@ import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import java.util.concurrent.TimeUnit;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVariationsAbstractTest {
     /** */
     private static final int TIMEOUT = 400;
@@ -50,6 +55,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
     private static final int KEYS = 100;
 
     /** {@inheritDoc} */
+    @Before
     @Override public void setUp() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
@@ -64,6 +70,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testReadThroughWithExpirePolicy() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
 
@@ -106,6 +113,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testReadThroughExpirePolicyConfigured() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
 
@@ -161,6 +169,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testReadThroughEvictionPolicy() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
 
@@ -199,6 +208,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testReadThroughSkipStore() throws Exception {
         Ignite ig = testedGrid();
 

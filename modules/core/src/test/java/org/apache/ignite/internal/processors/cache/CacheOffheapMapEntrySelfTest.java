@@ -25,6 +25,9 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCacheEntry;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -37,6 +40,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * Cache map entry self test.
  */
+@RunWith(JUnit4.class)
 public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -87,6 +91,7 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheMapEntry() throws Exception {
         checkCacheMapEntry(ATOMIC, LOCAL, GridLocalCacheEntry.class);
 

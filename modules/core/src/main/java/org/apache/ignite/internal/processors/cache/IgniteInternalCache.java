@@ -301,11 +301,10 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     /**
      * @param key Key.
      * @param peekModes Peek modes.
-     * @param plc Expiry policy if TTL should be updated.
      * @return Value.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public V localPeek(K key, CachePeekMode[] peekModes, @Nullable IgniteCacheExpiryPolicy plc)
+    @Nullable public V localPeek(K key, CachePeekMode[] peekModes)
         throws IgniteCheckedException;
 
     /**

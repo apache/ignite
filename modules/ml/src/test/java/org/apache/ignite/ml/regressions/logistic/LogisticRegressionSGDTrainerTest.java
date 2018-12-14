@@ -48,7 +48,7 @@ public class LogisticRegressionSGDTrainerTest extends TrainerTest {
                 SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
             .withMaxIterations(100000)
             .withLocIterations(100)
-            .withBatchSize(10)
+            .withBatchSize(14)
             .withSeed(123L);
 
         LogisticRegressionModel mdl = trainer.fit(

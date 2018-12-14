@@ -34,8 +34,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -49,10 +47,14 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests error recovery while node flushing
  */
+@RunWith(JUnit4.class)
 public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String TEST_CACHE = "testCache";
@@ -93,11 +95,6 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 120_000;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
     }
 
     /**
@@ -145,6 +142,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
      *
      * @throws Exception In case of fail
      */
+    @Test
     public void testFailWhileStart() throws Exception {
         failWhilePut(true);
     }
@@ -154,6 +152,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
      *
      * @throws Exception In case of fail
      */
+    @Test
     public void testFailAfterStart() throws Exception {
         failWhilePut(false);
     }

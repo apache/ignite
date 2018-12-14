@@ -31,10 +31,14 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE = "cache";
@@ -94,6 +98,7 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionsStateConsistencyAfterRecovery() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -135,6 +140,7 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionsStateConsistencyAfterRecoveryNoCheckpoints() throws Exception {
         IgniteEx ignite = startGrid(0);
 

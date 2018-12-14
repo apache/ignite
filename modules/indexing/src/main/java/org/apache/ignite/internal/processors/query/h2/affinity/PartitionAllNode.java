@@ -15,36 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testframework.junits;
+package org.apache.ignite.internal.processors.query.h2.affinity;
 
-import junit.framework.TestCase;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import java.util.Collection;
 
 /**
- * Stops node and fails test.
+ * Node denoting all available partitions
  */
-public class TestFailingFailureHandler extends StopNodeFailureHandler {
+public class PartitionAllNode implements PartitionNode {
+    /** Singleton. */
+    public static final PartitionAllNode INSTANCE = new PartitionAllNode();
+
+    /**
+     * Constructor.
+     */
+    private PartitionAllNode() {
+        // No-op.
+    }
+
     /** {@inheritDoc} */
-    @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
-        if (!GridAbstractTest.testIsRunning) {
-            ignite.log().info("Critical issue detected after test finished. Test failure handler ignore it.");
-
-            return true;
-        }
-
-        boolean nodeStopped = super.handle(ignite, failureCtx);
-
-        TestCase.fail(failureCtx.toString());
-
-        return nodeStopped;
+    @Override public Collection<Integer> apply(Object... args) {
+        return null;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TestFailingFailureHandler.class, this);
+        return S.toString(PartitionAllNode.class, this);
     }
 }

@@ -28,10 +28,14 @@ import java.net.Socket;
 import java.util.Random;
 import junit.framework.TestCase;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests pure round trip time on network.
  */
+@RunWith(JUnit4.class)
 public class GridRoundTripTest extends TestCase {
     /** Communication port. */
     public static final int PORT = 47600;
@@ -43,6 +47,7 @@ public class GridRoundTripTest extends TestCase {
      * @throws IOException If error occurs.
      * @throws InterruptedException If interrupted
      */
+    @Test
     public void testRunServer() throws IOException, InterruptedException {
         final ServerSocket sock = new ServerSocket();
 
@@ -74,6 +79,7 @@ public class GridRoundTripTest extends TestCase {
      * Runs client test
      */
     @SuppressWarnings("InfiniteLoopStatement")
+    @Test
     public void testRunClient() {
         Socket sock = new Socket();
 

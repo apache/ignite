@@ -15,30 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.context;
+package org.apache.ignite.spi.communication.tcp;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
- *
+ * Testing {@link IgniteTcpCommunicationHandshakeWaitTest} with SSL enabled.
  */
-public class IgniteCachePartitionedExecutionContextTest extends IgniteCacheAbstractExecutionContextTest {
+public class IgniteTcpCommunicationHandshakeWaitSslTest extends IgniteTcpCommunicationHandshakeWaitTest {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return CacheMode.PARTITIONED;
-    }
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
-    }
+        cfg.setSslContextFactory(GridTestUtils.sslFactory());
 
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return null;
+        return cfg;
     }
 }

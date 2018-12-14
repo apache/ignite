@@ -26,8 +26,6 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -42,10 +40,14 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Indexing Spi transactional query test
  */
+@RunWith(JUnit4.class)
 public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -72,12 +74,8 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /** */
+    @Test
     public void testIndexingSpiWithTxClient() throws Exception {
         IgniteEx client = startGrid("client");
 
@@ -87,6 +85,7 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** */
+    @Test
     public void testIndexingSpiWithTxLocal() throws Exception {
         IgniteEx ignite = (IgniteEx)primaryNode(0, DEFAULT_CACHE_NAME);
 
@@ -94,6 +93,7 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** */
+    @Test
     public void testIndexingSpiWithTxNotLocal() throws Exception {
         IgniteEx ignite = (IgniteEx)primaryNode(0, DEFAULT_CACHE_NAME);
 
