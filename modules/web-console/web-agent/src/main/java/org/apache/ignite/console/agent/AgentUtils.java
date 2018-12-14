@@ -33,6 +33,7 @@ import java.security.ProtectionDomain;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -43,10 +44,8 @@ import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 import okhttp3.ConnectionSpec;
 import okhttp3.OkHttpClient;
-import okhttp3.TlsVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.log4j.Logger;
-import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -263,24 +262,6 @@ public class AgentUtils {
     }
 
     /**
-     * Parse comma-separated string to array.
-     *
-     * @param s String to parse.
-     * @return Array of strings or {@code null}.
-     */
-    @Nullable private static String[] parseArray(String s) {
-        if (F.isEmpty(s))
-            return null;
-
-        String[] res = Arrays.stream(s.split(","))
-            .map(String::trim)
-            .filter(item -> !item.isEmpty())
-            .toArray(String[]::new);
-
-        return F.isEmpty(res) ? null : res;
-    }
-
-    /**
      * Initialize SSL.
      *
      * @param builder HTTP client builder.
@@ -298,7 +279,7 @@ public class AgentUtils {
         String keyStorePwd,
         String trustStore,
         String trustStorePwd,
-        String cipherSuites
+        List<String> cipherSuites
     ) throws GeneralSecurityException, IOException {
         boolean trustAll = Boolean.getBoolean("trust.all");
         boolean hasKeyStore = keyStore != null;
@@ -329,7 +310,7 @@ public class AgentUtils {
 
             ctx.init(keyMgrs, new TrustManager[] {trustMgr}, null);
 
-            String[] cs = parseArray(cipherSuites);
+            String[] cs = F.isEmpty(cipherSuites) ? null : cipherSuites.toArray(new String[0]);
 
             SSLSocketFactory sslSocketFactory = ctx.getSocketFactory();
 

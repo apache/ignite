@@ -19,8 +19,10 @@ package org.apache.ignite.console.agent.rest;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import javax.net.ssl.SSLHandshakeException;
@@ -74,16 +76,19 @@ public class RestExecutorSelfTest {
     private static final String JETTY_WITH_CIPHERS_2 = "jetty-with-ciphers-2.xml";
 
     /** This cipher is disabled by default in JDK 8. */
-    private static final String CIPHER_0 = "TLS_DH_anon_WITH_AES_256_GCM_SHA384";
+    private static final List<String> CIPHER_0 = Collections.singletonList("TLS_DH_anon_WITH_AES_256_GCM_SHA384");
 
     /** */
-    private static final String CIPHER_1 = "TLS_RSA_WITH_NULL_SHA256";
+    private static final List<String> CIPHER_1 = Collections.singletonList("TLS_RSA_WITH_NULL_SHA256");
 
     /** */
-    private static final String CIPHER_2 = "TLS_ECDHE_ECDSA_WITH_NULL_SHA";
+    private static final List<String> CIPHER_2 = Collections.singletonList("TLS_ECDHE_ECDSA_WITH_NULL_SHA");
 
     /** */
-    private static final String COMMON_CIPHERS = "TLS_RSA_WITH_NULL_SHA256,TLS_ECDHE_ECDSA_WITH_NULL_SHA";
+    private static final List<String> COMMON_CIPHERS = Arrays.asList(
+        "TLS_RSA_WITH_NULL_SHA256",
+        "TLS_ECDHE_ECDSA_WITH_NULL_SHA"
+    );
 
     /** */
     @Rule
@@ -174,7 +179,7 @@ public class RestExecutorSelfTest {
         String keyStorePwd,
         String trustStore,
         String trustStorePwd,
-        String cipherSuites
+        List<String> cipherSuites
     ) throws Exception {
         try(
             Ignite ignite = Ignition.getOrStart(nodeCfg);

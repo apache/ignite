@@ -88,7 +88,7 @@ public class RestExecutor implements AutoCloseable {
         String keyStorePwd,
         String trustStore,
         String trustStorePwd,
-        String cipherSuites
+        List<String> cipherSuites
     ) throws GeneralSecurityException, IOException {
         Dispatcher dispatcher = new Dispatcher();
 

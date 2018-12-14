@@ -138,7 +138,7 @@ public class AgentConfiguration {
     /** */
     @Parameter(names = {"-cs", "--cipher-suites"},
         description = "Optional comma-separated list of SSL cipher suites to be used to connect to server and cluster")
-    private String cipherSuites;
+    private List<String> cipherSuites;
 
     /** */
     @Parameter(names = {"-h", "--help"}, help = true, description = "Print this help message")
@@ -378,14 +378,14 @@ public class AgentConfiguration {
     /**
      * @return SSL cipher suites.
      */
-    public String cipherSuites() {
+    public List<String> cipherSuites() {
         return cipherSuites;
     }
 
     /**
      * @param cipherSuites SSL cipher suites.
      */
-    public void cipherSuites(String cipherSuites) {
+    public void cipherSuites(List<String> cipherSuites) {
         this.cipherSuites = cipherSuites;
     }
 
