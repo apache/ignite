@@ -24,7 +24,9 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -89,8 +91,11 @@ public class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest 
     /** */
     private int backups;
 
-    /** Futures tracking map. */
-    private Queue<IgniteInternalFuture<?>> taskFuts = new ConcurrentLinkedQueue<>();
+    /** */
+    public static final int TEST_TIMEOUT = 10_000;
+
+    /** */
+    private AtomicReference<Throwable> testFailed = new AtomicReference<>();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -319,11 +324,17 @@ public class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest 
             }
         }, sizes.length, "tx-thread");
 
-        fut.get();
+        try {
+            fut.get(TEST_TIMEOUT);
+        }
+        catch (IgniteCheckedException e) {
+            Throwable err = testFailed.get();
 
-        // Wait and check if futures are executed without errors.
-        for (IgniteInternalFuture<?> f : taskFuts)
-            f.get();
+            if (err != null)
+                log.error("Test execution failed", err);
+
+            fail("Test is timed out");
+        }
     }
 
     /**
@@ -465,7 +476,17 @@ public class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest 
     public void runAsync(Runnable r) {
         IgniteInternalFuture fut = GridTestUtils.runAsync(r);
 
-        taskFuts.add(fut);
+        // Fail test if future failed to finish normally.
+        fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
+            @Override public void apply(IgniteInternalFuture fut0) {
+                try {
+                    fut0.get();
+                }
+                catch (Throwable t) {
+                    testFailed.set(t);
+                }
+            }
+        });
     }
 
     /**

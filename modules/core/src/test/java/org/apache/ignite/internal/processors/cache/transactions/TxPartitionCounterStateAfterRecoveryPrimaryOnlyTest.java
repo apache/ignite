@@ -173,6 +173,16 @@ public class TxPartitionCounterStateAfterRecoveryPrimaryOnlyTest extends TxParti
             @Override protected boolean onCommitted(IgniteEx node, int idx) {
                 super.onCommitted(node, idx);
 
+                // After reordered commit partition update counter must contain single hole corresponding to committed tx.
+                PartitionUpdateCounter cntr = counter(PARTITION_ID);
+
+                assertFalse(cntr.holes().isEmpty());
+
+                PartitionUpdateCounter.Item gap = cntr.holes().first();
+
+                assertEquals(gap.start(), SIZES[COMMIT_ORDER[1]] + SIZES[COMMIT_ORDER[2]]);
+                assertEquals(gap.delta(), SIZES[COMMIT_ORDER[0]]);
+
                 if (idx == COMMIT_ORDER[0]) {
                     stopGrid(skipCheckpointOnStop, 0);
 
@@ -239,8 +249,6 @@ public class TxPartitionCounterStateAfterRecoveryPrimaryOnlyTest extends TxParti
         }
 
         protected boolean onPrepared(IgniteEx from, IgniteInternalTx tx, int idx) {
-            @Nullable TxCounters txCounters = tx.txCounters(false);
-
             log.info("TX: prepared " + idx + ", tx=" + CU.txString(tx));
 
             return false;
