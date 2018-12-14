@@ -87,6 +87,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1472,7 +1473,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 ignite0.context().cache().context().database().checkpointReadLock();
 
                 try {
-                    long page = pageMem.acquirePage(fullId.groupId(), fullId.pageId(), true);
+                    long page = pageMem.acquirePage(
+                        fullId.groupId(), fullId.pageId(), IoStatisticsHolderNoOp.INSTANCE, true);
 
                     try {
                         long bufPtr = pageMem.writeLock(fullId.groupId(), fullId.pageId(), page, true);

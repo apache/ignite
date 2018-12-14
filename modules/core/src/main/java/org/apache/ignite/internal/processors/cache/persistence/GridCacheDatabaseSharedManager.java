@@ -62,12 +62,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.management.ObjectName;
+import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CheckpointWriteOrder;
@@ -140,7 +140,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointe
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.GridCountDownCallback;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.GridReadOnlyArrayView;
@@ -2317,7 +2317,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             if (skipRemovedIndexUpdates(grpId, partId))
                                 break;
 
-                            long page = pageMem.acquirePage(grpId, pageId, true);
+                            long page = pageMem.acquirePage(grpId, pageId, IoStatisticsHolderNoOp.INSTANCE, true);
 
                             try {
                                 long pageAddr = pageMem.writeLock(grpId, pageId, page, true);
@@ -2388,12 +2388,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             if (pageMem == null)
                                 break;
 
-                            if (skipRemovedIndexUpdates(grpId, partId))
+                                if (skipRemovedIndexUpdates(grpId, partId))
                                 break;
 
                             // Here we do not require tag check because we may be applying memory changes after
                             // several repetitive restarts and the same pages may have changed several times.
-                            long page = pageMem.acquirePage(grpId, pageId, true);
+                            long page = pageMem.acquirePage(grpId, pageId, IoStatisticsHolderNoOp.INSTANCE, true);
 
                             try {
                                 long pageAddr = pageMem.writeLock(grpId, pageId, page, true);
@@ -2639,7 +2639,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         if (pageMem == null)
                             break;
 
-                        long page = pageMem.acquirePage(rec0.groupId(), rec0.pageId(), true);
+                        long page = pageMem.acquirePage(
+                            rec0.groupId(), rec0.pageId(), IoStatisticsHolderNoOp.INSTANCE, true);
 
                         try {
                             long addr = pageMem.writeLock(rec0.groupId(), rec0.pageId(), page, true);
