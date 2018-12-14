@@ -32,13 +32,14 @@ public class JdbcQueryDescriptor {
     /** Usage count of given descriptor. */
     private int usageCnt;
 
+    /** Execution started flag.  */
+    private boolean executionStarted;
+
     /**
      * Constructor.
-     *
-     * @param cancelHook Hook for cancellation.
      */
-    public JdbcQueryDescriptor(GridQueryCancel cancelHook) {
-        this.cancelHook = cancelHook;
+    public JdbcQueryDescriptor() {
+        this.cancelHook = new GridQueryCancel();
     }
 
     /**
@@ -67,6 +68,8 @@ public class JdbcQueryDescriptor {
      */
     public void incrementUsageCount() {
         usageCnt++;
+
+        executionStarted = true;
     }
 
     /**
@@ -81,5 +84,12 @@ public class JdbcQueryDescriptor {
      */
     public int usageCount() {
         return usageCnt;
+    }
+
+    /**
+     * @return True if execution was started, false otherwise.
+     */
+    public boolean isExecutionStarted() {
+        return executionStarted;
     }
 }
