@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -445,8 +444,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         final KeyCacheObject key;
         final CacheObject val;
-        final File marshallerMappingFileStoreDir =
-            fakeCacheObjCtx.kernalContext().marshallerContext().getMarshallerMappingFileStoreDir();
+        boolean keepBinary = this.keepBinary || !fakeCacheObjCtx.kernalContext().marshallerContext().initialized();
 
         if (dataEntry instanceof LazyDataEntry) {
             final LazyDataEntry lazyDataEntry = (LazyDataEntry)dataEntry;
@@ -467,7 +465,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             val = dataEntry.value();
         }
 
-        return unwrapDataEntry(fakeCacheObjCtx, dataEntry, key, val, marshallerMappingFileStoreDir);
+        return unwrapDataEntry(fakeCacheObjCtx, dataEntry, key, val, keepBinary);
     }
 
     /**
@@ -476,11 +474,11 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * @param dataEntry Data entry.
      * @param key Entry key.
      * @param val Entry value.
-     * @param marshallerMappingFileStoreDir Marshaller directory.
+     * @param keepBinary Don't convert non primitive types.
      * @return Unwrapped entry.
      */
     private @NotNull DataEntry unwrapDataEntry(CacheObjectContext coCtx, DataEntry dataEntry,
-        KeyCacheObject key, CacheObject val, File marshallerMappingFileStoreDir) {
+        KeyCacheObject key, CacheObject val, boolean keepBinary) {
         if (dataEntry instanceof MvccDataEntry)
             return new UnwrapMvccDataEntry(
                 dataEntry.cacheId(),
@@ -494,7 +492,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
                 dataEntry.partitionCounter(),
                 ((MvccDataEntry)dataEntry).mvccVer(),
                 coCtx,
-                keepBinary || marshallerMappingFileStoreDir == null);
+                keepBinary);
         else
             return new UnwrapDataEntry(
                 dataEntry.cacheId(),
@@ -507,7 +505,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
                 dataEntry.partitionId(),
                 dataEntry.partitionCounter(),
                 coCtx,
-                keepBinary || marshallerMappingFileStoreDir == null);
+                keepBinary);
     }
 
     /** {@inheritDoc} */
