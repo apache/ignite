@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -94,9 +95,8 @@ public class PageEvictionPagesRecyclingAndReusingTest extends PageEvictionAbstra
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10694")
     public void testPagesRecyclingAndReusingMvccTxPartitioned() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10448");
-
         testPagesRecyclingAndReusing(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.PARTITIONED);
     }
 
@@ -105,9 +105,8 @@ public class PageEvictionPagesRecyclingAndReusingTest extends PageEvictionAbstra
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10694")
     public void testPagesRecyclingAndReusingMvccTxReplicated() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10448");
-
         testPagesRecyclingAndReusing(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.REPLICATED);
     }
 
@@ -144,7 +143,8 @@ public class PageEvictionPagesRecyclingAndReusingTest extends PageEvictionAbstra
 
         long recycledPagesCnt2 = reuseList.recycledPagesCount();
 
-        assert recycledPagesCnt1 == recycledPagesCnt2 : "Possible recycled pages leak!";
+        assert recycledPagesCnt1 == recycledPagesCnt2 : "Possible recycled pages leak! cnt1=" + recycledPagesCnt1 +
+            ", cnt2=" + recycledPagesCnt2;
     }
 
     /**
