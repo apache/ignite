@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -29,16 +32,20 @@ import java.util.stream.Stream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 
 /**
@@ -49,6 +56,12 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
     /** Timeout in sec. */
     private static final long TIMEOUT_IN_SEC = 5;
 
+    /** Timeout in sec. */
+    private static final long TIMEOUT_IN_MS = TIMEOUT_IN_SEC * 1000;
+
+    /** Barrier. */
+    static CyclicBarrier barrier;
+
     /** Ignite. */
     private static IgniteEx ignite;
 
@@ -58,6 +71,8 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
+
+        GridQueryProcessor.idxCls = BlockingIndexing.class;
 
         ignite = (IgniteEx)startGrids(NODE_CNT);
     }
@@ -71,10 +86,9 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
             .setName(DEFAULT_CACHE_NAME)
             .setQueryEntities(Collections.singletonList(new QueryEntity(Integer.class, Integer.class)))
-            .setSqlFunctionClasses(TestSQLFunctions.class)
         );
 
-        cache.put(0, 0);
+        cache.put(100000, 0);
     }
 
     /** {@inheritDoc} */
@@ -88,25 +102,28 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        Assert.assertEquals(0, TestSQLFunctions.barrier.getNumberWaiting());
+        Assert.assertEquals(0, barrier.getNumberWaiting());
+
+        assertNoRunningQueries();
     }
 
     /**
      *
      */
     public void testQueriesOriginalText() throws Exception {
-        TestSQLFunctions.newBarrier(3);
+        newBarrier(3);
 
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<List<List<?>>> fut1 = GridTestUtils.runAsync(() -> cache.query(new SqlFieldsQuery(
-            "SELECT * FROM /* comment */ Integer WHERE awaitBarrier() = 0")).getAll());
+            "SELECT * FROM /* comment */ Integer WHERE 1 = 1")).getAll());
 
         IgniteInternalFuture<List<Cache.Entry<Integer, Integer>>> fut2 = GridTestUtils.runAsync(() -> cache.query(
-            new SqlQuery<Integer, Integer>(Integer.class, "FROM /* comment */ Integer WHERE awaitBarrier() = 0"))
+            new SqlQuery<Integer, Integer>(Integer.class, "FROM /* comment */ Integer WHERE 1 = 1"))
             .getAll());
 
-        GridTestUtils.waitForCondition(() -> TestSQLFunctions.barrier.getNumberWaiting() == 1, TIMEOUT_IN_SEC * 1000);
+        Assert.assertTrue(GridTestUtils.waitForCondition(
+            () -> barrier.getNumberWaiting() == 2, TIMEOUT_IN_MS));
 
         Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningQueries(-1);
 
@@ -117,28 +134,27 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
 
         assertNoRunningQueries(ignite);
 
-        TestSQLFunctions.barrier.await(TIMEOUT_IN_SEC, TimeUnit.SECONDS);
+        barrier.await(TIMEOUT_IN_SEC, TimeUnit.SECONDS);
 
-        fut1.get(TIMEOUT_IN_SEC, TimeUnit.SECONDS);
+        fut1.get(TIMEOUT_IN_MS);
 
-        fut2.get(TIMEOUT_IN_SEC, TimeUnit.SECONDS);
-
-        assertNoRunningQueries();
+        fut2.get(TIMEOUT_IN_MS);
     }
 
     /**
      *
      */
-    public void testDML() throws Exception {
-        TestSQLFunctions.newBarrier(2);
+    public void testQueryDML() throws Exception {
+        newBarrier(2);
 
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-        SqlFieldsQuery qry = new SqlFieldsQuery("DELETE FROM /* comment */ Integer WHERE awaitBarrier() = 0 and 1=1");
+        SqlFieldsQuery qry = new SqlFieldsQuery("DELETE FROM /* comment */ Integer");
 
         IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> cache.query(qry).getAll());
 
-        GridTestUtils.waitForCondition(() -> TestSQLFunctions.barrier.getNumberWaiting() == 1, TIMEOUT_IN_SEC * 1000);
+        Assert.assertTrue("Still waiting " + barrier.getNumberWaiting() + " parties",
+            GridTestUtils.waitForCondition(() -> barrier.getNumberWaiting() == 1, TIMEOUT_IN_MS));
 
         Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningQueries(-1);
 
@@ -148,11 +164,129 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
 
         runningQueries.forEach((info) -> Assert.assertEquals(qry.getSql(), info.query()));
 
-        TestSQLFunctions.barrier.await(TIMEOUT_IN_SEC, TimeUnit.SECONDS);
+        IgniteInternalFuture<Integer> fut1 = GridTestUtils.runAsync(() -> barrier.await());
 
-        fut.get(TIMEOUT_IN_SEC, TimeUnit.SECONDS);
+        barrier.await(TIMEOUT_IN_SEC, TimeUnit.SECONDS);
 
-        assertNoRunningQueries();
+        fut1.get(TIMEOUT_IN_MS);
+
+        fut.get(TIMEOUT_IN_MS);
+    }
+
+    /**
+     *
+     */
+    public void testQueryDDL() throws Exception {
+        newBarrier(2);
+
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        SqlFieldsQuery qry = new SqlFieldsQuery("CREATE TABLE tst(id long PRIMARY KEY, cnt integer)");
+
+        IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> cache.query(qry).getAll());
+
+        Assert.assertTrue("Still waiting " + barrier.getNumberWaiting() + " parties",
+            GridTestUtils.waitForCondition(() -> barrier.getNumberWaiting() == 1, TIMEOUT_IN_MS));
+
+        Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningQueries(-1);
+
+        assertEquals(1, runningQueries.size());
+
+        assertNoRunningQueries(ignite);
+
+        runningQueries.forEach((info) -> Assert.assertEquals(qry.getSql(), info.query()));
+
+        barrier.await(TIMEOUT_IN_SEC, TimeUnit.SECONDS);
+
+        fut.get(TIMEOUT_IN_MS);
+
+    }
+
+    public void testJdbcBatchDML() throws Exception {
+        newBarrier(2);
+
+        try (Connection conn = GridTestUtils.connect(ignite, null); Statement stmt = conn.createStatement()) {
+            conn.setSchema("\"default\"");
+
+            final int BATCH_SIZE = 10;
+
+            for (int i = 0; i < BATCH_SIZE; i++)
+                stmt.addBatch("insert into Integer (_key, _val) values (" + i + "," + i + ")");
+
+            IgniteInternalFuture<int[]> fut = GridTestUtils.runAsync(() -> stmt.executeBatch());
+
+            for (int i = 0; i < BATCH_SIZE; i++) {
+                Assert.assertTrue("Still waiting " + barrier.getNumberWaiting() + " parties",
+                    GridTestUtils.waitForCondition(() -> barrier.getNumberWaiting() == 1, TIMEOUT_IN_MS));
+
+                Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningQueries(-1);
+
+                assertEquals(1, runningQueries.size());
+
+                barrier.await(TIMEOUT_IN_SEC, TimeUnit.SECONDS);
+            }
+
+            fut.get(TIMEOUT_IN_MS);
+        }
+    }
+
+    public void testMultiStatement() throws Exception {
+        newBarrier(2);
+
+        String sql =
+            "create table test(ID int primary key, NAME varchar(20)); " +
+                "insert into test (ID, NAME) values (1, 'name_1');" +
+                "insert into test (ID, NAME) values (2, 'name_2'), (3, 'name_3');" +
+                "SELECT * FROM test";
+
+        try (Connection conn = GridTestUtils.connect(ignite, null); Statement stmt = conn.createStatement()) {
+            IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(() -> stmt.execute(sql));
+
+            Assert.assertTrue("Still waiting " + barrier.getNumberWaiting() + " parties",
+                GridTestUtils.waitForCondition(() -> barrier.getNumberWaiting() == 1, TIMEOUT_IN_MS));
+
+            Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningQueries(-1);
+
+            assertEquals(4, runningQueries.size());
+
+            barrier.await(TIMEOUT_IN_SEC, TimeUnit.SECONDS);
+
+            fut.get(TIMEOUT_IN_MS);
+        }
+    }
+
+    public void testJdbcStreamBatchUpdate() throws Exception {
+        try (Connection conn = GridTestUtils.connect(ignite, null); Statement stmt = conn.createStatement()) {
+            conn.setSchema("\"default\"");
+
+            newBarrier(1);
+
+            final int BATCH_SIZE = 10;
+
+            stmt.executeUpdate("SET STREAMING ON BATCH_SIZE " + BATCH_SIZE);
+
+            newBarrier(2);
+
+            for (int i = 0; i < BATCH_SIZE; i++)
+                stmt.addBatch("insert into Integer (_key, _val) values (" + i + "," + i + ")");
+
+            for (int i = 0; i < BATCH_SIZE; i++) {
+                Assert.assertTrue("Still waiting " + barrier.getNumberWaiting() + " parties",
+                    GridTestUtils.waitForCondition(() -> barrier.getNumberWaiting() == 1, TIMEOUT_IN_MS));
+
+                barrier.await(TIMEOUT_IN_MS, TimeUnit.SECONDS);
+
+                Assert.assertTrue("Still waiting " + barrier.getNumberWaiting() + " parties",
+                    GridTestUtils.waitForCondition(() -> barrier.getNumberWaiting() == 1, TIMEOUT_IN_MS));
+
+                Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningQueries(-1);
+
+                assertEquals(1, runningQueries.size());
+
+                barrier.await(TIMEOUT_IN_MS, TimeUnit.SECONDS);
+            }
+        }
+
     }
 
     /**
@@ -174,37 +308,46 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * Create and set new CyclicBarrier for the function.
+     *
+     * @param parties the number of threads that must invoke await method before the barrier is tripped
+     */
+    static void newBarrier(int parties) {
+        barrier = new CyclicBarrier(parties);
+    }
 
     /**
-     * Utility class with custom SQL functions.
+     * Blocking indexing processor.
      */
-    public static class TestSQLFunctions {
-        /** Barrier. */
-        static CyclicBarrier barrier = new CyclicBarrier(2);
+    private static class BlockingIndexing extends IgniteH2Indexing {
+        @Override public void checkStatementStreamable(PreparedStatement nativeStmt) {
+            super.checkStatementStreamable(nativeStmt);
 
-        /**
-         * Create and set new CyclicBarrier for the function.
-         *
-         * @param parties the number of threads that must invoke await method before the barrier is tripped
-         */
-        static void newBarrier(int parties) {
-            barrier = new CyclicBarrier(parties);
-        }
-
-        /**
-         * Await cyclic barrier twice, first time to wait for enter method, second time to wait for collecting running
-         * queries.
-         */
-        @QuerySqlFunction
-        public static long awaitBarrier() {
             try {
                 barrier.await();
             }
-            catch (Exception ignored) {
-                // No-op.
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
+            @Nullable SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts,
+            MvccQueryTracker tracker,
+            GridQueryCancel cancel, boolean clientReq) {
+
+            List<FieldsQueryCursor<List<?>>> res = super.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, tracker, cancel,
+                clientReq);
+            try {
+                barrier.await();
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
             }
 
-            return 0;
+            return res;
         }
     }
 }

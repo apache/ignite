@@ -737,6 +737,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private void executeBatchedQuery(SqlFieldsQueryEx qry, List<Integer> updCntsAcc,
         IgniteBiTuple<Integer, String> firstErr) {
+        List<FieldsQueryCursor<List<?>>> qryRes = null;
         try {
             if (cliCtx.isStream()) {
                 List<Long> cnt = ctx.query().streamBatchedUpdateQuery(qry.getSchema(), cliCtx, qry.getSql(),
@@ -748,7 +749,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 return;
             }
 
-            List<FieldsQueryCursor<List<?>>> qryRes = ctx.query().querySqlFields(null, qry, cliCtx, true, true);
+            qryRes = ctx.query().querySqlFields(null, qry, cliCtx, true, true);
 
             for (FieldsQueryCursor<List<?>> cur : qryRes) {
                 if (cur instanceof BulkLoadContextCursor)
@@ -805,6 +806,19 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 firstErr.set(code, msg);
             else
                 U.error(log, "Failed to execute batch query [qry=" + qry +']', e);
+        }
+        finally {
+            if (!F.isEmpty(qryRes)) {
+                for (FieldsQueryCursor<List<?>> cur : qryRes) {
+                    try {
+                        cur.close();
+                    }
+                    catch (Exception e) {
+                        U.warn(log, "Can't close cursor", e);
+                    }
+                }
+
+            }
         }
     }
 

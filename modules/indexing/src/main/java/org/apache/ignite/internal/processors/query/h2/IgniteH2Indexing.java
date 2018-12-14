@@ -1593,6 +1593,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
+    /**
+     * Register close listener for running query on given cursors.
+     *
+     * @param cursors Cursors.
+     * @param runningQryInfo Runnig query info related to cursors.
+     */
     private void registerCloseListener(List<? extends FieldsQueryCursor<List<?>>> cursors,
         final GridRunningQueryInfo runningQryInfo) {
         for (FieldsQueryCursor<List<?>> cursor : cursors) {
