@@ -34,6 +34,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
@@ -43,6 +46,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Test for issue GG-3997 Total Hits and Misses display wrong value for in-memory database.
  */
+@RunWith(JUnit4.class)
 public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstractTest {
     /** Amount of grids to start. */
     private static final int GRID_CNT = 3;
@@ -99,6 +103,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testHitsAndMisses() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.METRICS);
 

@@ -55,12 +55,16 @@ import org.apache.ignite.testframework.junits.IgniteMock;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @SuppressWarnings("unchecked")
 @GridSpiTest(spi = TcpCommunicationSpi.class, group = "Communication SPI")
+@RunWith(JUnit4.class)
 public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi> extends GridSpiAbstractTest<T> {
     /** */
     private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
@@ -197,6 +201,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBlockListener() throws Exception {
         // Test listener throws exception and stops selector thread, so must restart SPI.
         for (int i = 0; i < ITERS; i++) {
@@ -285,6 +290,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBlockRead1() throws Exception {
         createSpis();
 
@@ -403,6 +409,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBlockRead2() throws Exception {
         createSpis();
 
@@ -538,6 +545,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBlockRead3() throws Exception {
         createSpis();
 

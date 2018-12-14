@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -37,6 +38,10 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.lang.String.valueOf;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
@@ -47,13 +52,16 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /**
  *
  */
-public class LocalWacModeNoChangeDuringRebalanceOnNonNodeAssignTest extends GridCommonAbstractTest {
-
+@RunWith(JUnit4.class)
+public class LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private final int NODES = 3;
+
+    /** */
+    private CacheAtomicityMode atomicityMode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
@@ -76,8 +84,8 @@ public class LocalWacModeNoChangeDuringRebalanceOnNonNodeAssignTest extends Grid
 
         cfg.setCacheConfiguration(
             new CacheConfiguration(DEFAULT_CACHE_NAME)
-                .setAffinity(
-                    new RendezvousAffinityFunction(false, 3))
+                .setAtomicityMode(atomicityMode)
+                .setAffinity(new RendezvousAffinityFunction(false, 3))
         );
 
         return cfg;
@@ -97,15 +105,48 @@ public class LocalWacModeNoChangeDuringRebalanceOnNonNodeAssignTest extends Grid
         super.afterTest();
 
         System.clearProperty(IGNITE_DISABLE_WAL_DURING_REBALANCING);
+
+        stopAllGrids();
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void test() throws Exception {
-        Ignite ig = startGrids(NODES);
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10652")
+    @Test
+    public void testAtomic() throws Exception {
+        atomicityMode = CacheAtomicityMode.ATOMIC;
 
-        ig.cluster().active(true);
+        check();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10652")
+    @Test
+    public void testTx() throws Exception {
+        atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
+
+        check();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10421")
+    @Test
+    public void testMvcc() throws Exception {
+        atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+
+        check();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void check() throws Exception {
+        Ignite ig = startGridsMultiThreaded(NODES);
 
         int entries = 100_000;
 

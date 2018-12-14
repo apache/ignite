@@ -22,17 +22,23 @@ import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Testing registration of MBeans with special characters in group name or bean name.
  */
+@RunWith(JUnit4.class)
 public class GridMBeanExoticNamesSelfTest extends GridCommonAbstractTest {
     /** Test registration of a bean with special characters in group name. */
+    @Test
     public void testGroupWithSpecialSymbols() throws Exception {
         checkMBeanRegistration("dummy!@#$^&*()?\\grp", "dummy");
     }
 
     /** Test registration of a bean with special characters in name. */
+    @Test
     public void testNameWithSpecialSymbols() throws Exception {
         checkMBeanRegistration("dummygrp", "dum!@#$^&*()?\\my");
     }

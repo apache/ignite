@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import java.util.Collection;
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.cache.IgniteCacheEntryProcessorSequentialCallTest;
 import org.apache.ignite.cache.IgniteWarmupClosureSelfTest;
@@ -358,7 +359,7 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         GridTestUtils.addTestIfNeeded(suite, BinaryMetadataRegistrationInsideEntryProcessorTest.class, ignoredTests);
 
-        suite.addTestSuite(IgniteGetNonPlainKeyReadThroughSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteGetNonPlainKeyReadThroughSelfTest.class));
 
         return suite;
     }

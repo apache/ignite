@@ -39,6 +39,10 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -46,6 +50,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * Affinity routing tests.
  */
+@RunWith(JUnit4.class)
 public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
     /** */
     private static final Random RAND = new Random();
@@ -54,6 +59,7 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
+    @Before
     @Override public void setUp() throws Exception {
         if (MvccFeatureChecker.forcedMvcc())
             fail("https://issues.apache.org/jira/browse/IGNITE-7388");
@@ -117,6 +123,7 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testNodeStop() throws Exception {
         // -- Test parameters. -- //
         int nodeCnt = 3;

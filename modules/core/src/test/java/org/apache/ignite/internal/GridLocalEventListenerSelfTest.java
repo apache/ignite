@@ -26,10 +26,14 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test ensuring that event listeners are picked by started node.
  */
+@RunWith(JUnit4.class)
 public class GridLocalEventListenerSelfTest extends GridCommonAbstractTest {
     /** Whether event fired. */
     private final CountDownLatch fired = new CountDownLatch(1);
@@ -67,6 +71,7 @@ public class GridLocalEventListenerSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testListener() throws Exception {
         startGrids(2);
 

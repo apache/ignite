@@ -26,10 +26,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Puts data into grid, waits for checkpoint to start and then verifies data
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsCheckpointSimpleTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
@@ -64,6 +68,7 @@ public class IgnitePdsCheckpointSimpleTest extends GridCommonAbstractTest {
      * Checks if same data can be loaded after checkpoint.
      * @throws Exception if failed.
      */
+    @Test
     public void testRecoveryAfterCpEnd() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -93,7 +98,7 @@ public class IgnitePdsCheckpointSimpleTest extends GridCommonAbstractTest {
      * @param i key.
      * @return value with extra data, which allows to verify
      */
-    @NotNull private String valueWithRedundancyForKey(int i) {
+    private @NotNull String valueWithRedundancyForKey(int i) {
         return Strings.repeat(Integer.toString(i), 10);
     }
 }

@@ -47,6 +47,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -116,6 +117,8 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.After;
+import org.junit.Before;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
@@ -395,6 +398,14 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * @param cache Ignite cache.
+     * @return CacheAtomicityMode for given cache.
+     */
+    public static CacheAtomicityMode atomicityMode(IgniteCache cache) {
+        return ((CacheConfiguration)cache.getConfiguration(CacheConfiguration.class)).getAtomicityMode();
+    }
+
+    /**
      * @param cache Cache.
      * @param keys Keys.
      * @param replaceExistingValues Replace existing values.
@@ -481,6 +492,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Before
     @Override public void setUp() throws Exception {
         // Disable SSL hostname verifier.
         HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
@@ -495,6 +507,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @After
     @Override public void tearDown() throws Exception {
         getTestCounters().incrementStopped();
 

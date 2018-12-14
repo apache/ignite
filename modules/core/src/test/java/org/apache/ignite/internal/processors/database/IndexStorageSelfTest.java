@@ -35,10 +35,14 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetrics
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IndexStorageSelfTest extends GridCommonAbstractTest {
     /** Make sure page is small enough to trigger multiple pages in a linked list. */
     private static final int PAGE_SIZE = 1024;
@@ -57,6 +61,7 @@ public class IndexStorageSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testMetaIndexAllocation() throws Exception {
         metaAllocation();
     }

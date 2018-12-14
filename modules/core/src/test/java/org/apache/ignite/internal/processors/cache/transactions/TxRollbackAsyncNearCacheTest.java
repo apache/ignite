@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Before;
 
 /**
  * Tests an ability to async rollback near transactions.
@@ -29,6 +30,7 @@ public class TxRollbackAsyncNearCacheTest extends TxRollbackAsyncTest {
     }
 
     /** {@inheritDoc} */
+    @Before
     @Override public void setUp() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
