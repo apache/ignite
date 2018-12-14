@@ -40,10 +40,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.custom.DummyEventFilterFactory;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Checks that Optimized Marshaller is not used on any stage of Continuous Query handling.
  */
+@RunWith(JUnit4.class)
 public class ContinuousQueryMarshallerTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE_NAME = "test-cache";
@@ -65,6 +69,7 @@ public class ContinuousQueryMarshallerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteFilterFactoryClient() throws Exception {
         check("server", "client");
     }
@@ -72,6 +77,7 @@ public class ContinuousQueryMarshallerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteFilterFactoryServer() throws Exception {
         check("server1", "server2");
     }

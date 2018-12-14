@@ -60,9 +60,11 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.LazyMvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.UnwrapMvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -80,11 +82,15 @@ import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.Arrays.fill;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
@@ -99,6 +105,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
 /**
  * Test suite for WAL segments reader and event generator.
  */
+@RunWith(JUnit4.class)
 public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -185,6 +192,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10558");
+
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -203,6 +213,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testFillWalAndReadRecords() throws Exception {
         setWalAndArchiveToSameVal = false;
 
@@ -294,6 +305,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testArchiveCompletedEventFired() throws Exception {
         assertTrue(checkWhetherWALRelatedEventFired(EVT_WAL_SEGMENT_ARCHIVED));
     }
@@ -303,6 +315,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testArchiveCompactedEventFired() throws Exception {
         boolean oldEnableWalCompaction = enableWalCompaction;
 
@@ -354,6 +367,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failure occurs.
      */
+    @Test
     public void testArchiveIncompleteSegmentAfterInactivity() throws Exception {
         AtomicBoolean waitingForEvt = new AtomicBoolean();
 
@@ -400,6 +414,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testFillWalForExactSegmentsCount() throws Exception {
         customWalMode = WALMode.FSYNC;
 
@@ -484,6 +499,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testTxFillWalAndExtractDataRecords() throws Exception {
         Ignite ignite0 = startGrid();
 
@@ -585,6 +601,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testFillWalWithDifferentTypes() throws Exception {
         Ignite ig = startGrid();
 
@@ -779,6 +796,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testReadEmptyWal() throws Exception {
         customWalMode = WALMode.FSYNC;
 
@@ -846,6 +864,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testRemoveOperationPresentedForDataEntry() throws Exception {
         runRemoveOperationTest(CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -855,7 +874,11 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testRemoveOperationPresentedForDataEntryForAtomic() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            return;
+
         runRemoveOperationTest(CacheAtomicityMode.ATOMIC);
     }
 
@@ -942,6 +965,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testPutAllTxIntoTwoNodes() throws Exception {
         Ignite ignite = startGrid("node0");
         Ignite ignite1 = startGrid(1);
@@ -1041,6 +1065,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testTxRecordsReadWoBinaryMeta() throws Exception {
         clearProps = true;
 
@@ -1082,6 +1107,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckBoundsIterator() throws Exception {
         Ignite ignite = startGrid("node0");
 
@@ -1290,10 +1316,13 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
                 WALRecord.RecordType type = walRecord.type();
 
+                //noinspection EnumSwitchStatementWhichMissesCases
                 switch (type) {
+                    case DATA_RECORD:
+                        // Fallthrough.
+                    case MVCC_DATA_RECORD: {
+                        assert walRecord instanceof DataRecord;
 
-                    case MVCC_DATA_RECORD:
-                    case DATA_RECORD: {
                         DataRecord dataRecord = (DataRecord)walRecord;
 
                         if (dataRecordHnd != null)
@@ -1341,11 +1370,12 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
                             entriesUnderTxFound.put(globalTxId, entriesUnderTx == null ? 1 : entriesUnderTx + 1);
                         }
-
-                        break;
                     }
 
+                    break;
+
                     case TX_RECORD:
+                        // Fallthrough
                     case MVCC_TX_RECORD: {
                         assert walRecord instanceof TxRecord;
 

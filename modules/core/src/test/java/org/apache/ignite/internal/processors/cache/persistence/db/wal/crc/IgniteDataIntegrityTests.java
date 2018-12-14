@@ -32,10 +32,16 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleFileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteDataIntegrityTests extends TestCase {
     /** File input. */
     private SimpleFileInput fileInput;
@@ -44,7 +50,8 @@ public class IgniteDataIntegrityTests extends TestCase {
     private ByteBufferExpander expBuf;
 
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Before
+    @Override public void setUp() throws Exception {
         super.setUp();
 
         File file = File.createTempFile("integrity", "dat");
@@ -78,7 +85,8 @@ public class IgniteDataIntegrityTests extends TestCase {
     }
 
     /** {@inheritDoc} */
-    @Override protected void tearDown() throws Exception {
+    @After
+    @Override public void tearDown() throws Exception {
         fileInput.io().close();
         expBuf.close();
     }
@@ -86,6 +94,7 @@ public class IgniteDataIntegrityTests extends TestCase {
     /**
      *
      */
+    @Test
     public void testSuccessfulPath() throws Exception {
         checkIntegrity();
     }
@@ -93,6 +102,7 @@ public class IgniteDataIntegrityTests extends TestCase {
     /**
      *
      */
+    @Test
     public void testIntegrityViolationChecking() throws Exception {
         toggleOneRandomBit(0, 1024 - 16);
 
@@ -108,6 +118,7 @@ public class IgniteDataIntegrityTests extends TestCase {
     /**
      *
      */
+    @Test
     public void testSkipingLastCorruptedEntry() throws Exception {
         toggleOneRandomBit(1024 - 16, 1024);
 
@@ -123,6 +134,7 @@ public class IgniteDataIntegrityTests extends TestCase {
     /**
      *
      */
+    @Test
     public void testExpandBuffer() {
         ByteBufferExpander expBuf = new ByteBufferExpander(24, ByteOrder.nativeOrder());
 

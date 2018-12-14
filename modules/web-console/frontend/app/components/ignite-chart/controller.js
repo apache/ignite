@@ -87,6 +87,7 @@ export class IgniteChartController {
         if ((changes.chartDataPoint && _.isNil(changes.chartDataPoint.currentValue)) ||
             (changes.chartHistory && _.isEmpty(changes.chartHistory.currentValue))) {
             this.clearDatasets();
+            this.localHistory = [];
 
             return;
         }
