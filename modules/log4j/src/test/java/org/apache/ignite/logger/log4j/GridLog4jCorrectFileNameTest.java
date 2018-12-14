@@ -44,7 +44,7 @@ public class GridLog4jCorrectFileNameTest {
     /** Appender */
     private Log4jRollingFileAppender appender;
 
-    /** */
+    /** TODO IGNITE-10177 add annotation @Before here. */
     private void setUp() {
         Logger root = Logger.getRootLogger();
 
@@ -58,7 +58,7 @@ public class GridLog4jCorrectFileNameTest {
         root.addAppender(appender);
     }
 
-    /** */
+    /** TODO IGNITE-10177 add annotation @After here. */
     private void tearDown() {
         if (appender != null) {
             Logger.getRootLogger().removeAppender(Log4jRollingFileAppender.class.getSimpleName());
