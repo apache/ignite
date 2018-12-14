@@ -108,9 +108,7 @@ public class DdCollaborator {
             }
             else {
                 // probe each blocker
-                // t0d0 check if holding some lock already
-                // t0d0 first find all peers then send messages
-                // t0d0 consider grouping (only if it will lead to correct results!)
+                // t0d0 check if holds some lock already
                 collectBlockers(nearTx).forEach(fut -> {
                     fut.listen(fut0 -> {
                         try {
@@ -153,8 +151,6 @@ public class DdCollaborator {
     /** */
     private void sendProbe(GridCacheVersion initiatorVer, GridCacheVersion waiterVer, GridCacheVersion blockerVer,
         UUID blockerNearNodeId) {
-        // t0d0 review if message order is important here
-        // t0d0 PROPER TOPIC
         DeadlockProbe probe = new DeadlockProbe(initiatorVer, waiterVer, blockerVer);
         try {
             ctx.io().sendToGridTopic(blockerNearNodeId, TOPIC_CACHE_COORDINATOR, probe, SYSTEM_POOL);
