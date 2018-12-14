@@ -326,13 +326,10 @@ public class CommandHandler {
     private static final String VALIDATE_INDEXES_TASK = "org.apache.ignite.internal.visor.verify.VisorValidateIndexesTask";
 
     /** */
-    private static final String TX_LIMIT = "limit";
+    private static final String TX_LIMIT = "--limit";
 
     /** */
-    private static final String TX_ORDER = "order";
-
-    /** */
-    public static final String CMD_TX_ORDER_START_TIME = "START_TIME";
+    private static final String TX_ORDER = "--order";
 
     /** */
     private static final String TX_SERVERS = "servers";
@@ -341,19 +338,19 @@ public class CommandHandler {
     private static final String TX_CLIENTS = "clients";
 
     /** */
-    private static final String TX_DURATION = "minDuration";
+    private static final String TX_DURATION = "--min-duration";
 
     /** */
-    private static final String TX_SIZE = "min-size";
+    private static final String TX_SIZE = "--min-size";
 
     /** */
-    private static final String TX_LABEL = "label";
+    private static final String TX_LABEL = "--label";
 
     /** */
-    private static final String TX_NODES = "nodes";
+    private static final String TX_NODES = "--nodes";
 
     /** */
-    private static final String TX_XID = "xid";
+    private static final String TX_XID = "--xid";
 
     /** */
     private static final String TX_KILL = "kill";
@@ -2353,7 +2350,7 @@ public class CommandHandler {
                 case TX_ORDER:
                     nextArg("");
 
-                    sortOrder = VisorTxSortOrder.fromString(nextArg(TX_ORDER));
+                    sortOrder = VisorTxSortOrder.valueOf(nextArg(TX_ORDER).toUpperCase());
 
                     break;
 
@@ -2584,7 +2581,7 @@ public class CommandHandler {
         list.add(op(or(TX_SERVERS, TX_CLIENTS)));
         list.add(op(TX_NODES, "consistentId1[,consistentId2,....,consistentIdN]"));
         list.add(op(TX_LIMIT, "NUMBER"));
-        list.add(op(TX_ORDER, or("DURATION", "SIZE", CMD_TX_ORDER_START_TIME)));
+        list.add(op(TX_ORDER, or(VisorTxSortOrder.values())));
         list.add(op(TX_KILL));
         list.add(op(CMD_AUTO_CONFIRMATION));
 

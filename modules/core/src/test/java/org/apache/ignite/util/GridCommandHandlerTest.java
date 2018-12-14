@@ -120,6 +120,12 @@ import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.HELP;
 import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREMIX;
+import static org.apache.ignite.internal.visor.tx.VisorTxSortOrder.DURATION;
+import static org.apache.ignite.internal.visor.tx.VisorTxSortOrder.SIZE;
+import static org.apache.ignite.internal.visor.tx.VisorTxSortOrder.START_TIME;
+import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.*;
+import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.NOT_PERSISTENT;
+import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.PERSISTENT;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -515,7 +521,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
             for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : map.entrySet())
                 assertEquals(entry.getKey().equals(node) ? 1 : 0, entry.getValue().getInfos().size());
-        }, "--tx", "label", "label1");
+        }, "--tx", "--label", "label1");
 
         // Test filter by label regex.
         validate(h, map -> {
@@ -537,7 +543,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
                     assertTrue(entry.getValue().getInfos().isEmpty());
 
             }
-        }, "--tx", "label", "^label[0-9]");
+        }, "--tx", "--label", "^label[0-9]");
 
         // Test filter by empty label.
         validate(h, map -> {
@@ -546,7 +552,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             for (VisorTxInfo info : res.getInfos())
                 assertNull(info.getLabel());
 
-        }, "--tx", "label", "null");
+        }, "--tx", "--label", "null");
 
         // test check minSize
         int minSize = 10;
@@ -558,21 +564,21 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
             for (VisorTxInfo txInfo : res.getInfos())
                 assertTrue(txInfo.getSize() >= minSize);
-        }, "--tx", "minSize", Integer.toString(minSize));
+        }, "--tx", "--min-size", Integer.toString(minSize));
 
         // test order by size.
         validate(h, map -> {
             VisorTxTaskResult res = map.get(grid(0).localNode());
 
             assertTrue(res.getInfos().get(0).getSize() >= res.getInfos().get(1).getSize());
-        }, "--tx", "order", "SIZE");
+        }, "--tx", "--order", SIZE.toString());
 
         // test order by duration.
         validate(h, map -> {
             VisorTxTaskResult res = map.get(grid(0).localNode());
 
             assertTrue(res.getInfos().get(0).getDuration() >= res.getInfos().get(1).getDuration());
-        }, "--tx", "order", "DURATION");
+        }, "--tx", "--order", DURATION.toString());
 
         // test order by start_time.
         validate(h, map -> {
@@ -580,7 +586,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
             for (int i = res.getInfos().size() - 1; i > 1; i--)
                 assertTrue(res.getInfos().get(i - 1).getStartTime() >= res.getInfos().get(i).getStartTime());
-        }, "--tx", "order", CommandHandler.CMD_TX_ORDER_START_TIME);
+        }, "--tx", "--order", START_TIME.toString());
 
         // Trigger topology change and test connection.
         IgniteInternalFuture<?> startFut = multithreadedAsync(() -> {
@@ -606,8 +612,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
                 assertEquals(toKill[0].getXid(), info.getXid());
             }, "--tx", "kill",
-            "xid", toKill[0].getXid().toString(), // Use saved on first run value.
-            "nodes", grid(0).localNode().consistentId().toString());
+            "--xid", toKill[0].getXid().toString(), // Use saved on first run value.
+            "--nodes", grid(0).localNode().consistentId().toString());
 
         unlockLatch.countDown();
 
@@ -1007,7 +1013,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", DEFAULT_CACHE_NAME));
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--skipZeros", DEFAULT_CACHE_NAME));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--skip-zeros", DEFAULT_CACHE_NAME));
 
         Matcher fileNameMatcher = dumpFileNameMatcher();
 
@@ -1077,7 +1083,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        corruptingAndCheckDefaultCache(ignite, CacheFilterEnum.ALL);
+        corruptingAndCheckDefaultCache(ignite, ALL);
     }
 
     /**
@@ -1093,7 +1099,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         corruptDataEntry(cacheCtx, cacheCtx.config().getAffinity().partitions() / 2, false, true);
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--cacheFilter", cacheFilterEnum.toString()));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--cache-filter", cacheFilterEnum.toString()));
 
         Matcher fileNameMatcher = dumpFileNameMatcher();
 
@@ -1277,7 +1283,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         corruptDataEntry(memorySysCacheCtx.caches().get(0), new GridCacheInternalKeyImpl("s" + parts / 2,
             "default-volatile-ds-group"), false, true);
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--cacheFilter", CacheFilterEnum.SYSTEM.toString()));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--cache-filter", SYSTEM.toString()));
 
         Matcher fileNameMatcher = dumpFileNameMatcher();
 
@@ -1304,7 +1310,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         createCacheAndPreload(ignite, 100);
 
-        corruptingAndCheckDefaultCache(ignite, CacheFilterEnum.PERSISTENT);
+        corruptingAndCheckDefaultCache(ignite, PERSISTENT);
     }
 
     /**
@@ -1341,8 +1347,10 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         corruptDataEntry(cacheCtx, parts / 2, false, true);
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--cacheFilter", CacheFilterEnum
-            .NOT_PERSISTENT.toString()));
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--cache", "idle_verify", "--dump", "--cache-filter", NOT_PERSISTENT.toString())
+        );
 
         Matcher fileNameMatcher = dumpFileNameMatcher();
 
