@@ -417,24 +417,26 @@ public class CommandHandler {
     }
 
     /**
-     * Adds indent to begin of input string.
+     * Adds indent to begin of object's string representation.
      *
-     * @param s Input string.
+     * @param o Input object.
      * @return Indented string.
      */
-    private static String i(String s) {
-        return i(s, 1);
+    private static String i(Object o) {
+        return i(o, 1);
     }
 
     /**
-     * Adds specified indents to begin of input string.
+     * Adds specified indents to begin of object's string representation.
      *
-     * @param s Input string.
+     * @param o Input object.
      * @param indentCnt Number of indents.
      * @return Indented string.
      */
-    private static String i(String s, int indentCnt) {
+    private static String i(Object o, int indentCnt) {
         assert indentCnt >= 0;
+
+        String s = o == null ? null : o.toString();
 
         switch (indentCnt) {
             case 0:
@@ -444,14 +446,15 @@ public class CommandHandler {
                 return INDENT + s;
 
             default:
-                SB sb = new SB(s.length() + indentCnt * INDENT.length());
+                int sLen = s == null ? 4 : s.length();
+
+                SB sb = new SB(sLen + indentCnt * INDENT.length());
 
                 for (int i = 0; i < indentCnt; i++)
                     sb.a(INDENT);
 
                 return sb.a(s).toString();
         }
-
     }
 
     /**
@@ -679,7 +682,7 @@ public class CommandHandler {
                     node.tcpAddresses() == null ? Stream.empty() : node.tcpAddresses().stream(),
                     node.tcpHostNames() == null ? Stream.empty() : node.tcpHostNames().stream()
                 )
-                .map(addr -> addr + ":" + node.tcpPort()).collect(Collectors.toList()))
+                    .map(addr -> addr + ":" + node.tcpPort()).collect(Collectors.toList()))
             );
     }
 
@@ -822,9 +825,7 @@ public class CommandHandler {
         }
     }
 
-    /**
-     *
-     */
+    /** */
     private void printCacheHelp() {
         log(i("The '" + CACHE + " subcommand' is used to get information about and perform actions with caches. The command has the following syntax:"));
         nl();
@@ -835,7 +836,7 @@ public class CommandHandler {
         nl();
         log(i("Subcommands:"));
 
-        usageCache(LIST, "regexPattern", op(or("groups","seq")), OP_NODE_ID, op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE));
+        usageCache(LIST, "regexPattern", op(or("groups", "seq")), OP_NODE_ID, op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE));
         usageCache(CONTENTION, "minQueueSize", OP_NODE_ID, op("maxPrint"));
         usageCache(IDLE_VERIFY, op(CMD_DUMP), op(CMD_SKIP_ZEROS), "[cache1,...,cacheN]", op(CACHE_FILTER, or(CacheFilterEnum.values())));
         usageCache(VALIDATE_INDEXES, "[cache1,...,cacheN]", OP_NODE_ID, op(or(VI_CHECK_FIRST + " N", VI_CHECK_THROUGH + " K")));
@@ -916,7 +917,7 @@ public class CommandHandler {
 
             if (!integrityCheckFailures.isEmpty()) {
                 for (IndexIntegrityCheckIssue is : integrityCheckFailures)
-                    log(i(is.toString()));
+                    log(i(is));
             }
 
             Map<PartitionKey, ValidateIndexesPartitionResult> partRes = nodeEntry.getValue().partitionResult();
@@ -925,10 +926,10 @@ public class CommandHandler {
                 ValidateIndexesPartitionResult res = e.getValue();
 
                 if (!res.issues().isEmpty()) {
-                    log(i(e.getKey().toString() + " " + e.getValue().toString()));
+                    log(i(j(" ", e.getKey(), e.getValue())));
 
                     for (IndexValidationIssue is : res.issues())
-                        log(i(is.toString(), 2));
+                        log(i(is, 2));
                 }
             }
 
@@ -938,10 +939,10 @@ public class CommandHandler {
                 ValidateIndexesPartitionResult res = e.getValue();
 
                 if (!res.issues().isEmpty()) {
-                    log(i("SQL Index " + e.getKey() + " " + e.getValue().toString()));
+                    log(i(j(" ", "SQL Index", e.getKey(), e.getValue())));
 
                     for (IndexValidationIssue is : res.issues())
-                        log(i(is.toString(),2));
+                        log(i(is, 2));
                 }
             }
         }
@@ -1747,7 +1748,7 @@ public class CommandHandler {
      * @return Joined parameters wrapped optional braces.
      */
     private static String op(Object param, Object... params) {
-        return j(new SB(), "["," ", param, params).a("]").toString();
+        return j(new SB(), "[", " ", param, params).a("]").toString();
     }
 
     /**
@@ -1789,14 +1790,7 @@ public class CommandHandler {
      * @return Concatenated string.
      */
     private static String or(Object param1, Object... params) {
-        SB sb = new SB();
-
-        sb.a(param1);
-
-        for (Object param : params)
-            sb.a("|").a(param);
-
-        return sb.toString();
+        return j("|", param1, params);
     }
 
     /**
