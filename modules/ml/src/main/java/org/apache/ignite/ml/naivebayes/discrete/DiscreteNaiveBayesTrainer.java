@@ -80,8 +80,9 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
         try (Dataset<EmptyContext, DiscreteNaiveBayesSumsHolder> dataset = datasetBuilder.build(
-            (upstream, upstreamSize) -> new EmptyContext(),
-            (upstream, upstreamSize, ctx) -> {
+            envBuilder,
+            (env, upstream, upstreamSize) -> new EmptyContext(),
+            (env, upstream, upstreamSize, ctx) -> {
                 DiscreteNaiveBayesSumsHolder res = new DiscreteNaiveBayesSumsHolder();
                 while (upstream.hasNext()) {
                     UpstreamEntry<K, V> entity = upstream.next();
