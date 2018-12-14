@@ -22,8 +22,12 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processor.security.cache.ClientNodeCachePermissionsTest;
 import org.apache.ignite.internal.processor.security.cache.EntryProcessorSecurityTest;
 import org.apache.ignite.internal.processor.security.cache.ServerNodeCachePermissionsTest;
-import org.apache.ignite.internal.processor.security.compute.ClientNodeExecuteTaskPermissionTest;
-import org.apache.ignite.internal.processor.security.compute.ServerNodeExecuteTaskPermissionTest;
+import org.apache.ignite.internal.processor.security.compute.ClientNodeTaskExecutePermissionForComputeTaskTest;
+import org.apache.ignite.internal.processor.security.compute.ClientNodeTaskExecutePermissionForDistributedClosureTest;
+import org.apache.ignite.internal.processor.security.compute.ClientNodeTaskExecutePermissionForExecutorServiceTest;
+import org.apache.ignite.internal.processor.security.compute.ServerNodeTaskExecutePermissionForComputeTaskTest;
+import org.apache.ignite.internal.processor.security.compute.ServerNodeTaskExecutePermissionForDistributedClosureTest;
+import org.apache.ignite.internal.processor.security.compute.ServerNodeTaskExecutePermissionForExecutorServiceTest;
 import org.apache.ignite.internal.processor.security.datastreamer.ClientNodeDataStreamerCachePermissionTest;
 import org.apache.ignite.internal.processor.security.datastreamer.IgniteDataStreamerSecurityTest;
 import org.apache.ignite.internal.processor.security.cache.LoadCacheSecurityTest;
@@ -55,6 +59,17 @@ public class AuthorizeOperationsTestSuite extends TestSuite {
     public static TestSuite suite(final @Nullable Set<Class> ignoredTests) {
         TestSuite suite = new TestSuite("Initiator Node's Security Context Test Suite");
 
+        suite.addTest(new TestSuite(ClientNodeCachePermissionsTest.class));
+        suite.addTest(new TestSuite(ServerNodeCachePermissionsTest.class));
+        suite.addTest(new TestSuite(ClientNodeDataStreamerCachePermissionTest.class));
+        suite.addTest(new TestSuite(ServerNodeDataStreamerCachePermissionTest.class));
+        suite.addTest(new TestSuite(ClientNodeTaskExecutePermissionForExecutorServiceTest.class));
+        suite.addTest(new TestSuite(ServerNodeTaskExecutePermissionForExecutorServiceTest.class));
+        suite.addTest(new TestSuite(ClientNodeTaskExecutePermissionForDistributedClosureTest.class));
+        suite.addTest(new TestSuite(ServerNodeTaskExecutePermissionForDistributedClosureTest.class));
+        suite.addTest(new TestSuite(ClientNodeTaskExecutePermissionForComputeTaskTest.class));
+        suite.addTest(new TestSuite(ServerNodeTaskExecutePermissionForComputeTaskTest.class));
+
         suite.addTest(new TestSuite(DistributedClosureSecurityTest.class));
         suite.addTest(new TestSuite(ComputeTaskSecurityTest.class));
         suite.addTest(new TestSuite(ExecuteServiceTaskSecurityTest.class));
@@ -64,12 +79,6 @@ public class AuthorizeOperationsTestSuite extends TestSuite {
         suite.addTest(new TestSuite(LoadCacheSecurityTest.class));
         suite.addTest(new TestSuite(ThinClientSecurityTest.class));
         suite.addTest(new TestSuite(IgniteMessagingTest.class));
-        suite.addTest(new TestSuite(ClientNodeCachePermissionsTest.class));
-        suite.addTest(new TestSuite(ServerNodeCachePermissionsTest.class));
-        suite.addTest(new TestSuite(ClientNodeDataStreamerCachePermissionTest.class));
-        suite.addTest(new TestSuite(ServerNodeDataStreamerCachePermissionTest.class));
-        suite.addTest(new TestSuite(ClientNodeExecuteTaskPermissionTest.class));
-        suite.addTest(new TestSuite(ServerNodeExecuteTaskPermissionTest.class));
 
         return suite;
     }
