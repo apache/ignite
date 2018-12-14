@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.util;
+package org.apache.ignite.ml.util;
 
 /**
  * The names of popular datasets used in examples.
