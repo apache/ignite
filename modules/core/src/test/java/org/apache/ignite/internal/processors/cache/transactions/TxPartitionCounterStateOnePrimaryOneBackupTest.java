@@ -46,13 +46,13 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
     @Test
     public void testPrepareCommitReorder() throws Exception {
         runOnPartition(PARTITION_ID, BACKUPS, NODES_CNT,
-            new PrimaryBackupTxCallbackAdapter(PREPARE_ORDER, PRIMARY_COMMIT_ORDER, BACKUP_COMMIT_ORDER), SIZES);
+            new TwoPhasePrimaryBackupTxCallbackAdapter(PREPARE_ORDER, PRIMARY_COMMIT_ORDER, BACKUP_COMMIT_ORDER), SIZES);
     }
 
     /**
      * The callback order prepares and commits on primary node.
      */
-    protected class PrimaryBackupTxCallbackAdapter extends TxCallbackAdapter {
+    protected class TwoPhasePrimaryBackupTxCallbackAdapter extends TxCallbackAdapter {
         /** */
         private Queue<Integer> prepOrder;
 
@@ -75,7 +75,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
          * @param prepOrd Prepare order.
          * @param primCommitOrder Commit order.
          */
-        public PrimaryBackupTxCallbackAdapter(int[] prepOrd, int[] primCommitOrder, int[] backupCommitOrder) {
+        public TwoPhasePrimaryBackupTxCallbackAdapter(int[] prepOrd, int[] primCommitOrder, int[] backupCommitOrder) {
             prepOrder = new ConcurrentLinkedQueue<>();
 
             for (int aPrepOrd : prepOrd)
