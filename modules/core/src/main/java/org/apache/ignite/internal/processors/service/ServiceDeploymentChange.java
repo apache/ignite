@@ -26,6 +26,9 @@ import org.jetbrains.annotations.NotNull;
  * Service deployment request.
  */
 public class ServiceDeploymentChange extends ServiceAbstractChange {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Service configuration. */
     private final ServiceConfiguration cfg;
 
