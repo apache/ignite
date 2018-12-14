@@ -604,8 +604,6 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
         assert res != null;
 
         if (this.res != null || !RES_UPD.compareAndSet(this, null, res.result())) {
-            assert !needRes; // Single getAnd*update* operation. (not putAll) cannot have several responses.
-
             GridCacheReturn res0 = this.res;
 
             if (res.result().invokeResult())
