@@ -25,10 +25,14 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
 import org.apache.ignite.testsuites.IgniteCloudTestSuite;
 import org.apache.ignite.testsuites.IgniteIgnore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * TcpDiscoveryCloudIpFinder test.
  */
+@RunWith(JUnit4.class)
 public class TcpDiscoveryCloudIpFinderSelfTest extends
     TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryCloudIpFinder> {
     /**
@@ -51,6 +55,7 @@ public class TcpDiscoveryCloudIpFinderSelfTest extends
     }
 
     /* {@inheritDoc} */
+    @Test
     @Override public void testIpFinder() throws Exception {
         // No-op
     }
@@ -61,6 +66,7 @@ public class TcpDiscoveryCloudIpFinderSelfTest extends
      * @throws Exception If any error occurs.
      */
     @IgniteIgnore("https://issues.apache.org/jira/browse/IGNITE-845")
+    @Test
     public void testAmazonWebServices() throws Exception {
         testCloudProvider("aws-ec2");
     }
@@ -71,6 +77,7 @@ public class TcpDiscoveryCloudIpFinderSelfTest extends
      * @throws Exception If any error occurs.
      */
     @IgniteIgnore("https://issues.apache.org/jira/browse/IGNITE-1585")
+    @Test
     public void testGoogleComputeEngine() throws Exception {
         testCloudProvider("google-compute-engine");
     }
@@ -80,6 +87,7 @@ public class TcpDiscoveryCloudIpFinderSelfTest extends
      *
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testRackspace() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9444");
 
