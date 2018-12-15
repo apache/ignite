@@ -41,6 +41,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import junit.framework.Assert;
@@ -123,6 +125,7 @@ import org.apache.log4j.RollingFileAppender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestName;
 import org.junit.rules.TestRule;
 import org.junit.runners.model.Statement;
@@ -172,13 +175,21 @@ public abstract class GridAbstractTest1 extends Assert {
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
 
+    /** */
+    private final Lock runSerializer = new ReentrantLock();
+
     /** Supports obtaining test name for JUnit4 cases. */
     @Rule public transient TestName nameRule = new TestName();
 
     /** Manages test execution and reporting. */
     @Rule public transient TestRule runRule = (base, description) -> new Statement() {
         @Override public void evaluate() throws Throwable {
-            runTestCase(base);
+            runSerializer.lock();
+            try {
+                runTestCase(base);
+            } finally {
+                runSerializer.unlock();
+            }
         }
     };
 
@@ -2644,7 +2655,7 @@ public abstract class GridAbstractTest1 extends Assert {
                     cnt = 0;
 
                     for (Method m : this0.getClass().getMethods())
-                        if (m.getName().startsWith("test") && Modifier.isPublic(m.getModifiers()) && m.getParameterCount() == 0)
+                        if (m.getAnnotation(Test.class) != null)
                             cnt++;
                 }
 
