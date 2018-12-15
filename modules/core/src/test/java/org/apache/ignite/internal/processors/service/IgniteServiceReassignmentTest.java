@@ -96,7 +96,7 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
     public void testNodeRestart1() throws Exception {
         srvcCfg = serviceConfiguration();
 
-        Ignite node1 = startGrid(1);
+        IgniteEx node1 = startGrid(1);
 
         waitForService(node1);
 
@@ -104,7 +104,7 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
 
         srvcCfg = serviceConfiguration();
 
-        Ignite node2 = startGrid(2);
+        IgniteEx node2 = startGrid(2);
 
         node1.close();
 
@@ -114,13 +114,19 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
 
         srvcCfg = serviceConfiguration();
 
-        Ignite node3 = startGrid(3);
+        IgniteEx node3 = startGrid(3);
+
+        waitForService(node3);
 
         assertEquals(42, serviceProxy(node3).foo());
 
         srvcCfg = serviceConfiguration();
 
         node1 = startGrid(1);
+
+        waitForService(node1);
+        waitForService(node2);
+        waitForService(node3);
 
         assertEquals(42, serviceProxy(node1).foo());
         assertEquals(42, serviceProxy(node2).foo());
@@ -186,7 +192,7 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
                 if (nodeIdx == stopIdx)
                     continue;
 
-                waitForService(ignite(nodeIdx));
+                waitForService(grid(nodeIdx));
 
                 assertEquals(42, serviceProxy(ignite(nodeIdx)).foo());
             }
@@ -302,19 +308,23 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
      * @param node Node.
      * @throws Exception If failed.
      */
-    private void waitForService(final Ignite node) throws Exception {
-        assertTrue(GridTestUtils.waitForCondition(new PA() {
-            @Override public boolean apply() {
-                try {
-                    serviceProxy(node).foo();
+    private void waitForService(final IgniteEx node) throws Exception {
+        if (node.context().service().eventDrivenServiceProcessorEnabled())
+            waitForServicesReadyTopology(node, node.context().discovery().topologyVersionEx());
+        else {
+            assertTrue(GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    try {
+                        serviceProxy(node).foo();
 
-                    return true;
+                        return true;
+                    }
+                    catch (IgniteException ignored) {
+                        return false;
+                    }
                 }
-                catch (IgniteException ignored) {
-                    return false;
-                }
-            }
-        }, 5000));
+            }, 5000));
+        }
     }
 
     /**
