@@ -4047,10 +4047,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                final Boolean locSrvcProcMode = locNode.attribute(ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED);
+                final Boolean locSrvcProcModeAttr = locNode.attribute(ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED);
+                // Can be null only in module tests of discovery spi (without node startup).
+                final Boolean locSrvcProcMode = locSrvcProcModeAttr != null ? locSrvcProcModeAttr : false;
 
                 final Boolean rmtSrvcProcModeAttr = node.attribute(ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED);
-
                 final boolean rmtSrvcProcMode = rmtSrvcProcModeAttr != null ? rmtSrvcProcModeAttr : false;
 
                 if (!F.eq(locSrvcProcMode, rmtSrvcProcMode)) {
