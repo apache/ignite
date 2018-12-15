@@ -48,6 +48,8 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest1;
 import org.apache.ignite.thread.IgniteThread;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.ml.TestUtils.testEnvBuilder;
 import static org.junit.Assert.assertArrayEquals;
@@ -56,6 +58,9 @@ import static org.junit.Assert.assertArrayEquals;
  * Tests for {@link Evaluator} that require to start the whole Ignite infrastructure. IMPL NOTE based on
  * Step_8_CV_with_Param_Grid example.
  */
+@RunWith(JUnit4.class) // Experiment proving that this annotation, although useless here, is nevertheless harmless so
+// that thousands of its occurrences that are currently spread over whole project can be cleaned up in a separate ticket
+// and PR which in turn is expected to simplity review and merge to master.
 public class EvaluatorTest extends GridCommonAbstractTest1 {
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 3;
