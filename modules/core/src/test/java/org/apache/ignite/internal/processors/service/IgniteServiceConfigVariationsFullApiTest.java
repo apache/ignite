@@ -39,10 +39,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import static org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest.DataMode.CUSTOM_SERIALIZABLE;
-import static org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest.DataMode.EXTERNALIZABLE;
-import static org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest.DataMode.SERIALIZABLE;
-
 /**
  * Full API services test.
  */
@@ -56,9 +52,6 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
 
     /** Test service name. */
     private static final String CACHE_NAME = "testCache";
-
-    /** Test data modes. */
-    private static final DataMode[] DATA_MODES = new DataMode[] {SERIALIZABLE, CUSTOM_SERIALIZABLE, EXTERNALIZABLE};
 
     /** */
     protected static final int CLIENT_NODE_IDX_2 = 4;
@@ -107,7 +100,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
 
                 waitForServiceDeploymentIfNeeded(services, svcName);
             }
-        }), DATA_MODES);
+        }));
     }
 
     /**
@@ -123,7 +116,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
 
                 waitForServiceDeploymentIfNeeded(services, svcName);
             }
-        }), DATA_MODES);
+        }));
     }
 
     /**
@@ -144,7 +137,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
                     throw new IgniteException(e);
                 }
             }
-        }), DATA_MODES);
+        }));
     }
 
     /**
@@ -160,7 +153,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
 
                 waitForServiceDeploymentIfNeeded(services, svcName);
             }
-        }), DATA_MODES);
+        }));
     }
 
     /**
@@ -190,7 +183,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
 
                 waitForServiceDeploymentIfNeeded(services, svcName);
             }
-        }), DATA_MODES);
+        }));
     }
 
     /**
@@ -288,6 +281,18 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
             else
                 services.cancel(SERVICE_NAME);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean isCompatible() throws Exception {
+        switch (dataMode) {
+            case SERIALIZABLE:
+            case CUSTOM_SERIALIZABLE:
+            case EXTERNALIZABLE:
+                return true;
+        }
+
+        return false;
     }
 
     /**
