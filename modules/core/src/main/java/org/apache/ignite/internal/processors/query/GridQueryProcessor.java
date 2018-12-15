@@ -989,6 +989,36 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
             }
 
+            for (Map.Entry<QueryIndexKey, QueryIndexDescriptorImpl> e : idxs.entrySet()) {
+                if (cacheName.equals(e.getValue().typeDescriptor().cacheName())) {
+                    Collection<String> idxFields = e.getValue().fields();
+
+                    Map<String, Boolean> curFields = idx.getFields();
+
+                    if (idxFields.size() == curFields.size()) {
+                        boolean copy = true;
+
+                        for (String fieldName : idxFields) {
+                            Boolean direction = curFields.get(fieldName);
+
+                            GridQueryIndexDescriptor desc = e.getValue();
+
+                            if (direction != null && direction.equals(desc.descending(fieldName))) {
+                                copy = false;
+
+                                break;
+                            }
+                        }
+
+                        if (copy) {
+                            log.warning("Create index idx=\"" + idx.getName() + "\" duplication, " +
+                                "index with such column list: " + curFields.keySet() + " already exist, " +
+                                "idx=\"" + e.getKey().name() + "\", possible performance drop.");
+                        }
+                    }
+                }
+            }
+
             // Check conflict with other indexes.
             if (err == null) {
                 String idxName = op0.index().getName();

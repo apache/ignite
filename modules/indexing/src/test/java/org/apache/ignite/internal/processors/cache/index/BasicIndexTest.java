@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -41,6 +42,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -66,6 +69,15 @@ public class BasicIndexTest extends GridCommonAbstractTest {
     /** */
     private String affKeyFieldName;
 
+    /** */
+    ListeningTestLogger srvLog;
+
+    /** */
+    ListeningTestLogger clntLog;
+
+    /** */
+    private static final String CLIENT_NAME = "client";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         assertNotNull(indexes);
@@ -79,6 +91,15 @@ public class BasicIndexTest extends GridCommonAbstractTest {
         }
 
         IgniteConfiguration igniteCfg = super.getConfiguration(igniteInstanceName);
+
+        if (igniteInstanceName.startsWith(CLIENT_NAME)) {
+            igniteCfg.setClientMode(true);
+            if (clntLog != null)
+                igniteCfg.setGridLogger(clntLog);
+        } else {
+            if (srvLog != null)
+                igniteCfg.setGridLogger(srvLog);
+        }
 
         igniteCfg.setDiscoverySpi(
             new TcpDiscoverySpi().setIpFinder(IP_FINDER)
@@ -144,6 +165,8 @@ public class BasicIndexTest extends GridCommonAbstractTest {
         isPersistenceEnabled = null;
 
         affKeyFieldName = null;
+
+        srvLog = clntLog = null;
 
         super.afterTest();
     }
@@ -234,6 +257,84 @@ public class BasicIndexTest extends GridCommonAbstractTest {
 
             stopGrid();
         }
+    }
+
+    /**
+     * Test dynamic indexes creation with equal fields.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testEqualFieldsDynamicIndexesNoPersistence() throws Exception {
+        runEqualFieldsDynamicIndexesNoPersistence(false);
+    }
+
+    /**
+     * Test dynamic indexes creation with equal fields.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testEqualFieldsDynamicIndexesWithPersistence() throws Exception {
+        runEqualFieldsDynamicIndexesNoPersistence(true);
+    }
+
+    /** */
+    public void runEqualFieldsDynamicIndexesNoPersistence(boolean persistEnabled) throws Exception {
+        isPersistenceEnabled = persistEnabled;
+
+        indexes = Collections.singletonList(new QueryIndex("keyLong"));
+
+        inlineSize = 10;
+
+        srvLog = clntLog = new ListeningTestLogger(false, log);
+
+        String msg1 = "duplication, index with such column list:";
+
+        LogListener lsnr = LogListener.matches(msg1).times(2).build();
+
+        srvLog.registerListener(lsnr);
+
+        IgniteEx ig0 = (IgniteEx)startGrid();
+
+        if (persistEnabled)
+            ig0.cluster().active(true);
+
+        IgniteCache<Key, Val> cache = grid().cache(DEFAULT_CACHE_NAME);
+
+        populateCache();
+
+        cache.query(new SqlFieldsQuery("create index \"idx1\" on Val(keyStr, keyLong)"));
+
+        cache.query(new SqlFieldsQuery("create index \"idx2\" on Val(keyStr desc, keyLong)"));
+
+        assertFalse(lsnr.check());
+
+        cache.query(new SqlFieldsQuery("create index \"idx3\" on Val(keyStr, keyLong)"));
+
+        cache.query(new SqlFieldsQuery("create index \"idx4\" on Val(keyLong)"));
+
+        cache.indexReadyFuture().get();
+
+        assertTrue(lsnr.check());
+
+        srvLog.clearListeners();
+
+        clntLog.registerListener(lsnr);
+
+        IgniteEx ig = startGrid(CLIENT_NAME);
+
+        cache = ig.cache(DEFAULT_CACHE_NAME);
+
+        cache.query(new SqlFieldsQuery("create index \"idx5\" on Val(keyStr desc, keyLong)"));
+
+        cache.indexReadyFuture().get();
+
+        assertTrue(lsnr.check());
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** */

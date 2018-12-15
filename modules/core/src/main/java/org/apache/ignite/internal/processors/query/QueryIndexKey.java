@@ -46,6 +46,19 @@ public class QueryIndexKey implements Serializable {
         this.name = name;
     }
 
+    /**
+     * @return Schema name.
+     */
+    public String schemaName() {
+        return schemaName;
+    }
+    /**
+     * @return Index name.
+     */
+    public String name() {
+        return name;
+    }
+
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return 31 * (schemaName != null ? schemaName.hashCode() : 0) + (name != null ? name.hashCode() : 0);
