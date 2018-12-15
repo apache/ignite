@@ -560,7 +560,10 @@ public abstract class GridAbstractTest1 extends Assert {
      * Do not annotate with Before in overriding methods.</p>
      *
      * @throws Exception If failed. {@link #afterTest()} will be called in this case.
+     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
+     * method with {@code @Before} annotation.
      */
+    @Deprecated
     protected void beforeTest() throws Exception {
         // No-op.
     }
@@ -572,7 +575,10 @@ public abstract class GridAbstractTest1 extends Assert {
      * Do not annotate with After in overriding methods.</p>
      *
      * @throws Exception If failed.
+     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
+     * method with {@code @After} annotation.
      */
+    @Deprecated
     protected void afterTest() throws Exception {
         // No-op.
     }
@@ -583,7 +589,10 @@ public abstract class GridAbstractTest1 extends Assert {
      * Do not annotate with BeforeClass in overriding methods.</p>
      *
      * @throws Exception If failed. {@link #afterTestsStopped()} will be called in this case.
+     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
+     * method with {@code @BeforeClass} annotation.
      */
+    @Deprecated
     protected void beforeTestsStarted() throws Exception {
         // Will clean and re-create marshaller directory from scratch.
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", true);
@@ -597,7 +606,10 @@ public abstract class GridAbstractTest1 extends Assert {
      * Do not annotate with AfterClass in overriding methods.</p>
      *
      * @throws Exception If failed.
+     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
+     * method with {@code @AfterClass} annotation.
      */
+    @Deprecated
     protected void afterTestsStopped() throws Exception {
         // No-op.
     }
@@ -606,7 +618,10 @@ public abstract class GridAbstractTest1 extends Assert {
      * This method is called before a test is executed.
      * <p>
      * Do not annotate with Before in overriding methods.</p>
+     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
+     * method with {@code @Before} annotation.
      */
+    @Deprecated
     protected void setUp() throws Exception {
         stopGridErr = false;
 
@@ -1790,7 +1805,10 @@ public abstract class GridAbstractTest1 extends Assert {
      * This method is called after a test is executed.
      * <p>
      * Do not annotate with After in overriding methods.</p>
+     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
+     * method with {@code @After} annotation.
      */
+    @Deprecated
     protected void tearDown() throws Exception {
         long dur = System.currentTimeMillis() - ts;
 
