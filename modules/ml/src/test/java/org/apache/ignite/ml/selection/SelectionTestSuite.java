@@ -43,19 +43,19 @@ public class SelectionTestSuite {
         TestSuite suite = new TestSuite();
 
         /** JUnit 4 tests. */
-        suite.addTest(new JUnit4TestAdapter(CrossValidationTest.class));
-        suite.addTest(new JUnit4TestAdapter(ParameterSetGeneratorTest.class));
-        suite.addTest(new JUnit4TestAdapter(LocalLabelPairCursorTest.class));
-        suite.addTest(new JUnit4TestAdapter(AccuracyTest.class));
-        suite.addTest(new JUnit4TestAdapter(PrecisionTest.class));
-        suite.addTest(new JUnit4TestAdapter(RecallTest.class));
+//        suite.addTest(new JUnit4TestAdapter(CrossValidationTest.class));
+//        suite.addTest(new JUnit4TestAdapter(ParameterSetGeneratorTest.class));
+//        suite.addTest(new JUnit4TestAdapter(LocalLabelPairCursorTest.class));
+//        suite.addTest(new JUnit4TestAdapter(AccuracyTest.class));
+//        suite.addTest(new JUnit4TestAdapter(PrecisionTest.class));
+//        suite.addTest(new JUnit4TestAdapter(RecallTest.class));
         suite.addTest(new JUnit4TestAdapter(FmeasureTest.class));
-        suite.addTest(new JUnit4TestAdapter(SHA256UniformMapperTest.class));
-        suite.addTest(new JUnit4TestAdapter(TrainTestDatasetSplitterTest.class));
+//        suite.addTest(new JUnit4TestAdapter(SHA256UniformMapperTest.class));
+//        suite.addTest(new JUnit4TestAdapter(TrainTestDatasetSplitterTest.class));
 
         /** JUnit 3 tests. */
-        suite.addTestSuite(EvaluatorTest.class);
-        suite.addTestSuite(CacheBasedLabelPairCursorTest.class);
+        suite.addTest(new JUnit4TestAdapter(EvaluatorTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheBasedLabelPairCursorTest.class));
 
         return suite;
     }
