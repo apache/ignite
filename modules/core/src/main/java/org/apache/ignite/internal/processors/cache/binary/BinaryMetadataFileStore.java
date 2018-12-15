@@ -22,9 +22,12 @@ import java.io.FileOutputStream;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -91,17 +94,27 @@ class BinaryMetadataFileStore {
             return;
 
         try {
-            File file = new File(workDir, Integer.toString(binMeta.typeId()) + ".bin");
+            File file = new File(workDir, binMeta.typeId() + ".bin");
 
-            try(FileOutputStream out = new FileOutputStream(file, false)) {
-                byte[] marshalled = U.marshal(ctx, binMeta);
+            byte[] marshalled = U.marshal(ctx, binMeta);
 
-                out.write(marshalled);
+            if (ctx.config() != null
+                && ctx.config().getDataStorageConfiguration() != null
+                && ctx.config().getDataStorageConfiguration().getFileIOFactory() != null) {
+                try (final FileIO out = ctx.config().getDataStorageConfiguration().getFileIOFactory().create(file)) {
+                    out.write(marshalled, 0, marshalled.length);
+                }
+            }
+            else {
+                try (FileOutputStream out = new FileOutputStream(file, false)) {
+                    out.write(marshalled);
+                }
             }
         }
         catch (Exception e) {
-            U.warn(log, "Failed to save metadata for typeId: " + binMeta.typeId() +
+            U.error(log, "Failed to save metadata for typeId: " + binMeta.typeId() +
                 "; exception was thrown: " + e.getMessage());
+            ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
         }
     }
 
