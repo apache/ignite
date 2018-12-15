@@ -175,7 +175,7 @@ public abstract class GridAbstractTest1 extends Assert {
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
 
-    /** */
+    /** Lock to maintain integrity of {@link TestCounters}. */
     private final Lock runSerializer = new ReentrantLock();
 
     /** Supports obtaining test name for JUnit4 cases. */
@@ -2553,6 +2553,12 @@ public abstract class GridAbstractTest1 extends Assert {
 
     /**
      * Test counters.
+     *
+     * TODO IGNITE-10197 Try to make this class go away since its primary (possibly even only) purpose appears to
+     * support methods isFirstTest() and isLastTest() which in turn look like JUnit 3-specific workaround for
+     * functionality that is natively available in JUnit 4 via BeforeClass and AfterClass annotations. Along the way,
+     * find out if this will allow to get rid of runSerializer lock which is introduced with sole purpose to
+     * maintain integrity of TestCounters.
      */
     protected class TestCounters {
         /** */
