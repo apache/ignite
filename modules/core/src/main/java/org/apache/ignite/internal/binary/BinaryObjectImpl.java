@@ -504,6 +504,35 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public Byte fieldTypeByOrder(int order) {
+        if (order == BinarySchema.ORDER_NOT_FOUND)
+            return null;
+
+        // Calculate field position.
+        int schemaOff = BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
+
+        short flags = BinaryPrimitives.readShort(arr, start + GridBinaryMarshaller.FLAGS_POS);
+
+        int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
+        int fieldOffLen = BinaryUtils.fieldOffsetLength(flags);
+
+        int fieldOffsetPos = start + schemaOff + order * (fieldIdLen + fieldOffLen) + fieldIdLen;
+
+        int fieldPos;
+
+        if (fieldOffLen == BinaryUtils.OFFSET_1)
+            fieldPos = start + ((int)BinaryPrimitives.readByte(arr, fieldOffsetPos) & 0xFF);
+        else if (fieldOffLen == BinaryUtils.OFFSET_2)
+            fieldPos = start + ((int)BinaryPrimitives.readShort(arr, fieldOffsetPos) & 0xFFFF);
+        else
+            fieldPos = start + BinaryPrimitives.readInt(arr, fieldOffsetPos);
+
+        byte hdr = BinaryPrimitives.readByte(arr, fieldPos);
+
+        return hdr;
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("IfMayBeConditional")
     @Override public boolean writeFieldByOrder(int order, ByteBuffer buf) {
         // Calculate field position.

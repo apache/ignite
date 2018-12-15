@@ -408,6 +408,23 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
     }
 
     /**
+     * Test missing field.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testIsNull() throws Exception {
+        TestContext ctxNull = context(dfltMarsh, "fNull");
+        assertTrue(ctxNull.field.isNull(ctxNull.portObj));
+
+        TestContext ctxMissing = context(dfltMarsh, "fMissing");
+        assertFalse(ctxMissing.field.isNull(ctxMissing.portObj));
+
+        TestContext ctxNonNull = context(dfltMarsh, "fObj");
+        assertFalse(ctxNonNull.field.isNull(ctxNonNull.portObj));
+    }
+
+    /**
      * Check field resolution in both normal and nested modes.
      *
      * @param fieldName Field name.

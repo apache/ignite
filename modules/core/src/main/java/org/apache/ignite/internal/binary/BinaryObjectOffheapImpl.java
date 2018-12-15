@@ -403,6 +403,35 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public Byte fieldTypeByOrder(int order) {
+        if (order == BinarySchema.ORDER_NOT_FOUND)
+            return null;
+
+        // Calculate field position.
+        int schemaOff = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
+
+        short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
+
+        int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
+        int fieldOffLen = BinaryUtils.fieldOffsetLength(flags);
+
+        int fieldOffsetPos = start + schemaOff + order * (fieldIdLen + fieldOffLen) + fieldIdLen;
+
+        int fieldPos;
+
+        if (fieldOffLen == BinaryUtils.OFFSET_1)
+            fieldPos = start + ((int)BinaryPrimitives.readByte(ptr, fieldOffsetPos) & 0xFF);
+        else if (fieldOffLen == BinaryUtils.OFFSET_2)
+            fieldPos = start + ((int)BinaryPrimitives.readShort(ptr, fieldOffsetPos) & 0xFFFF);
+        else
+            fieldPos = start + BinaryPrimitives.readInt(ptr, fieldOffsetPos);
+
+        byte hdr = BinaryPrimitives.readByte(ptr, fieldPos);
+
+        return hdr;
+    }
+
+    /** {@inheritDoc} */
     @Override protected boolean writeFieldByOrder(int fieldOffset, ByteBuffer buf) {
         return false;
     }

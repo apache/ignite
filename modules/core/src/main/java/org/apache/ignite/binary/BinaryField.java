@@ -43,4 +43,12 @@ public interface BinaryField {
      * @return Value.
      */
     public <T> T value(BinaryObject obj);
+
+    /**
+     * Check whether field's value is null.
+     *
+     * @param obj Object.
+     * @return {@code True} if field's value is null.
+     */
+    public boolean isNull(BinaryObject obj);
 }

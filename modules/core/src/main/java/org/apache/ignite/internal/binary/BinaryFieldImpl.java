@@ -112,6 +112,17 @@ public class BinaryFieldImpl implements BinaryFieldEx {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isNull(BinaryObject obj) {
+        BinaryObjectExImpl obj0 = (BinaryObjectExImpl)obj;
+
+        int order = fieldOrder(obj0);
+
+        Byte fieldType = obj0.fieldTypeByOrder(order);
+
+        return fieldType != null ? fieldType == GridBinaryMarshaller.NULL : false;
+    }
+
+    /** {@inheritDoc} */
     @Override public int typeId() {
         return typeId;
     }

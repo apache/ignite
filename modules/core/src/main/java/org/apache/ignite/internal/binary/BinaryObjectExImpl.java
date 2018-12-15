@@ -106,6 +106,14 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
     @Nullable public abstract <F> F fieldByOrder(int order);
 
     /**
+     * Get field type by offset.
+     *
+     * @param order Field offset.
+     * @return Field type.
+     */
+    @Nullable public abstract Byte fieldTypeByOrder(int order);
+
+    /**
      * Create field comparator.
      *
      * @return Comparator.
