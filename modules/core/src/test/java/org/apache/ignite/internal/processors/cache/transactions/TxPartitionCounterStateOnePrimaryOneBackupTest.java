@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.ArrayList;
@@ -15,7 +32,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -59,7 +75,15 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
         doTestPrepareCommitReorder(false);
     }
 
+    /** */
+    @Test
+    public void testPrepareCommitReorderSkipCheckpoint() throws Exception {
+        doTestPrepareCommitReorder(true);
+    }
+
     /**
+     * Test scenario
+     *
      * @param skipCheckpoint Skip checkpoint.
      */
     private void doTestPrepareCommitReorder(boolean skipCheckpoint) throws Exception {
@@ -105,15 +129,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
 
         awaitPartitionMapExchange();
 
-        IdleVerifyResultV2 res = idleVerify(client, DEFAULT_CACHE_NAME);
-
-        if (res.hasConflicts()) {
-            StringBuilder b = new StringBuilder();
-
-            res.print(b::append);
-
-            fail(b.toString());
-        }
+        assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
 
         // Check if holes are closed on rebalance.
         PartitionUpdateCounter cntr = counter(PARTITION_ID, backup.name());
@@ -133,9 +149,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
         // Make update to advance a counter.
         int addCnt = 10;
 
-        List<Integer> keys = loadDataToPartition(PARTITION_ID, grid(1).name(), DEFAULT_CACHE_NAME, addCnt, TOTAL, addCnt);
-
-        cntr = counter(PARTITION_ID, backup.name());
+        loadDataToPartition(PARTITION_ID, grid(1).name(), DEFAULT_CACHE_NAME, addCnt, TOTAL, addCnt);
 
         IgniteEx grid0 = startGrid(0);
 
@@ -145,15 +159,9 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
 
         assertEquals(TOTAL + addCnt, cntr.get());
 
-        res = idleVerify(client, DEFAULT_CACHE_NAME);
+        assertEquals(TOTAL + addCnt, cntr.reserved());
 
-        if (res.hasConflicts()) {
-            StringBuilder b = new StringBuilder();
-
-            res.print(b::append);
-
-            fail(b.toString());
-        }
+        assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
     }
 
     /**

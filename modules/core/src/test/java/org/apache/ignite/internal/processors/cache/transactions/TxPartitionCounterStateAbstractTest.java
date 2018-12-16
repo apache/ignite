@@ -25,6 +25,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -525,5 +527,18 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
     private IgniteEx fromNode(TestRecordingCommunicationSpi primWrapperSpi) {
         return IgnitionEx.gridxx(primWrapperSpi.getSpiContext().localNode().id());
+    }
+
+    /**
+     * @param res Response.
+     */
+    protected void assertPartitionsSame(IdleVerifyResultV2 res) throws AssertionFailedError {
+        if (res.hasConflicts()) {
+            StringBuilder b = new StringBuilder();
+
+            res.print(b::append);
+
+            fail(b.toString());
+        }
     }
 }
