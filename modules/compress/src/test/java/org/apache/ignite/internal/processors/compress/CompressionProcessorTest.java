@@ -844,7 +844,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
             if (io.getFreeSpace(pageAddr) < row.length)
                 break;
 
-            itemIds.add(io.addRow(pageAddr, row, pageSize));
+            itemIds.add(io.addRow(pageAddr, row, pageSize, false));
         }
 
         int freeSpace = io.getFreeSpace(pageAddr);
@@ -853,7 +853,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
             byte[] lastRow = new byte[freeSpace];
             rnd.nextBytes(lastRow);
 
-            io.addRowFragment(pageId, pageAddr, lastRow, 777L, pageSize);
+            io.addRowFragment(pageId, pageAddr, lastRow, 777L, pageSize, false);
 
             assertEquals(0, io.getRealFreeSpace(pageAddr));
         }
