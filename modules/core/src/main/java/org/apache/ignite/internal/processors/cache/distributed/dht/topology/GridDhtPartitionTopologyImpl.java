@@ -1405,9 +1405,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             long updCntr = incomeCntrMap.updateCounter(part.id());
                             long curCntr = part.updateCounter();
 
-                            if (updCntr != 0 && updCntr > curCntr) {
-                                part.updateCounter(updCntr);
 
+                            part.updateCounter(updCntr);
+
+                            if (updCntr != 0 && updCntr > curCntr) { // TODO FIXME use retval from updateCounter to understand if counter changes.
                                 if (log.isDebugEnabled())
                                     log.debug("Partition update counter has updated [grp=" + grp.cacheOrGroupName() + ", p=" + part.id()
                                         + ", state=" + part.state() + ", prevCntr=" + curCntr + ", nextCntr=" + updCntr + "]");
@@ -1696,11 +1697,13 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     long updCntr = cntrMap.updateCounter(part.id());
 
-                    if (updCntr > part.updateCounter())
-                        part.updateCounter(updCntr);
-                    else if (part.updateCounter() > 0) {
+                    long locUpdCntr = part.updateCounter();
+
+                    part.updateCounter(updCntr);
+
+                    if (locUpdCntr > updCntr) {
                         cntrMap.initialUpdateCounter(part.id(), part.initialUpdateCounter());
-                        cntrMap.updateCounter(part.id(), part.updateCounter());
+                        cntrMap.updateCounter(part.id(), locUpdCntr);
                     }
                 }
                 finally {

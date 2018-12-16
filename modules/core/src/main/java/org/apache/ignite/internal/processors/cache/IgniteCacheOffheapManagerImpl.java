@@ -3051,6 +3051,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             // No-op.
         }
 
+        @Override public void resetUpdateCounters() {
+            pCntr.resetCounters();
+        }
+
         /**
          * @param cctx Cache context.
          * @param key Key.

@@ -86,7 +86,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
     private int backups;
 
     /** */
-    public static final int TEST_TIMEOUT = 10_000;
+    public static final int TEST_TIMEOUT = 30_000;
 
     /** */
     private AtomicReference<Throwable> testFailed = new AtomicReference<>();

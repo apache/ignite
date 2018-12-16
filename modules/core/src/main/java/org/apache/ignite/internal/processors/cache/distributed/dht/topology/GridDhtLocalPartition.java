@@ -50,7 +50,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
-import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -1086,13 +1085,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * Reset partition counters.
      */
     public void resetCounters() {
-        long updateCntr = updateCounter();
-
-        updateCounter(updateCntr, -updateCntr);
-
-        initialUpdateCounter(0);
-
-        updateCounter(0);
+        store.resetUpdateCounters();
     }
 
     /**

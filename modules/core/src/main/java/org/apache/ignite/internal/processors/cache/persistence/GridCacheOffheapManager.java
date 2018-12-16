@@ -2500,6 +2500,20 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 delegate0.preload();
         }
 
+        /** {@inheritDoc} */
+        @Override public void resetUpdateCounters() {
+            try {
+                CacheDataStore delegate0 = init0(true);
+
+                if (delegate0 == null)
+                    return;
+
+                delegate0.resetUpdateCounters();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
     }
 
     /**

@@ -119,11 +119,21 @@ public class PartitionUpdateCounter {
      * @param val Values.
      */
     public synchronized void update(long val) {
+        long cur = cntr.get();
+
+        reserveCntr.set(Math.max(cur, val));
+
+        if (val <= cur)
+            return;
+
+        // New counter should be greater when last seen update.
+        assert val >= hwm();
+
         cntr.set(val);
 
         // Reset gaps below the counter.
         if (!queue.isEmpty())
-            queue.headSet(new Item(val, 0)).clear();
+            queue.clear();
     }
 
     /**
@@ -376,6 +386,16 @@ public class PartitionUpdateCounter {
 
     public TreeSet<Item> holes() {
         return queue;
+    }
+
+    public synchronized void resetCounters() {
+        initCntr = 0;
+
+        cntr.set(0);
+
+        reserveCntr.set(0);
+
+        queue = new TreeSet<>();
     }
 
     /**

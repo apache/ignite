@@ -180,7 +180,7 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
             final int txCnt = 2;
 
-            List<Integer> keys = loadDataToPartition(part, DEFAULT_CACHE_NAME, 5000, 0, txCnt);
+            List<Integer> keys = loadDataToPartition(part, grid(0).name(), DEFAULT_CACHE_NAME, 5000, 0, txCnt);
 
             CountDownLatch[] latches = new CountDownLatch[txCnt - 1];
 

@@ -129,6 +129,31 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
         cntr = counter(PARTITION_ID, backup.name());
 
         assertEquals(TOTAL, cntr.reserved());
+
+        // Make update to advance a counter.
+        int addCnt = 10;
+
+        List<Integer> keys = loadDataToPartition(PARTITION_ID, grid(1).name(), DEFAULT_CACHE_NAME, addCnt, TOTAL, addCnt);
+
+        cntr = counter(PARTITION_ID, backup.name());
+
+        IgniteEx grid0 = startGrid(0);
+
+        awaitPartitionMapExchange();
+
+        cntr = counter(PARTITION_ID, grid0.name());
+
+        assertEquals(TOTAL + addCnt, cntr.get());
+
+        res = idleVerify(client, DEFAULT_CACHE_NAME);
+
+        if (res.hasConflicts()) {
+            StringBuilder b = new StringBuilder();
+
+            res.print(b::append);
+
+            fail(b.toString());
+        }
     }
 
     /**

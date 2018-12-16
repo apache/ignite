@@ -2092,10 +2092,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      *
      * @return List of last keys.
      */
-    protected List<Integer> loadDataToPartition(int p, String cacheName, int total, int skip, int returnKeys) {
+    protected List<Integer> loadDataToPartition(int p, String gridName, String cacheName, int total, int skip, int returnKeys) {
         int c = 0, k = 0;
 
-        ClusterNode node = grid(0).affinity(cacheName).mapPartitionToNode(p);
+        ClusterNode node = grid(gridName).affinity(cacheName).mapPartitionToNode(p);
 
         Ignite primary = G.allGrids().stream().filter(new Predicate<Ignite>() {
             @Override public boolean test(Ignite ignite) {
@@ -2109,6 +2109,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         // Preload
         try (IgniteDataStreamer<Object, Object> streamer = primary.dataStreamer(DEFAULT_CACHE_NAME)) {
+            streamer.allowOverwrite(true);
+
             while (c < total) {
                 if (primary.affinity(DEFAULT_CACHE_NAME).partition(k) == p) {
                     if (skip0 < skip) {
