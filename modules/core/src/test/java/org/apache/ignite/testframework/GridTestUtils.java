@@ -66,6 +66,7 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import junit.framework.JUnit4TestAdapter;
+import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.apache.ignite.Ignite;
@@ -190,13 +191,13 @@ public final class GridTestUtils {
     private static final Map<Class<?>, String> addrs = new HashMap<>();
 
     /** */
-    private static final Map<Class<? extends Object>, Integer> mcastPorts = new HashMap<>();
+    private static final Map<Class<? extends Test>, Integer> mcastPorts = new HashMap<>();
 
     /** */
-    private static final Map<Class<? extends Object>, Integer> discoPorts = new HashMap<>();
+    private static final Map<Class<? extends Test>, Integer> discoPorts = new HashMap<>();
 
     /** */
-    private static final Map<Class<? extends Object>, Integer> commPorts = new HashMap<>();
+    private static final Map<Class<? extends Test>, Integer> commPorts = new HashMap<>();
 
     /** */
     private static int[] addr;
@@ -603,7 +604,7 @@ public final class GridTestUtils {
      * @param cls Class.
      * @return Next multicast port.
      */
-    public static synchronized int getNextMulticastPort(Class<? extends Object> cls) {
+    public static synchronized int getNextMulticastPort(Class<? extends Test> cls) {
         Integer portRet = mcastPorts.get(cls);
 
         if (portRet != null)
@@ -650,7 +651,7 @@ public final class GridTestUtils {
      * @param cls Class.
      * @return Next communication port.
      */
-    public static synchronized int getNextCommPort(Class<? extends Object> cls) {
+    public static synchronized int getNextCommPort(Class<? extends Test> cls) {
         Integer portRet = commPorts.get(cls);
 
         if (portRet != null)
@@ -677,7 +678,7 @@ public final class GridTestUtils {
      * @param cls Class.
      * @return Next discovery port.
      */
-    public static synchronized int getNextDiscoPort(Class<? extends Object> cls) {
+    public static synchronized int getNextDiscoPort(Class<? extends Test> cls) {
         Integer portRet = discoPorts.get(cls);
 
         if (portRet != null)

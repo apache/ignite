@@ -39,7 +39,7 @@ import org.junit.runners.AllTests;
 public class DatasetTestSuite {
     /** */
     public static TestSuite suite() {
-        TestSuite suite = new TestSuite();
+        TestSuite suite = new TestSuite(DatasetTestSuite.class.getSimpleName());
 
         /** JUnit 4 tests. */
         suite.addTest(new JUnit4TestAdapter(DatasetWrapperTest.class));

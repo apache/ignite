@@ -45,7 +45,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
-import junit.framework.Assert;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -148,9 +147,8 @@ import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_C
 @SuppressWarnings({
     "TransientFieldInNonSerializableClass",
     "ProhibitedExceptionDeclared",
-    "JUnitTestCaseWithNonTrivialConstructors"
-    , "ExtendsUtilityClass"})
-public abstract class GridAbstractTest1 extends Assert {
+    "JUnitTestCaseWithNonTrivialConstructors"})
+public abstract class GridAbstractTest1 extends LegacySupport {
     /**************************************************************
      * DO NOT REMOVE TRANSIENT - THIS OBJECT MIGHT BE TRANSFERRED *
      *                  TO ANOTHER NODE.                          *
@@ -615,14 +613,14 @@ public abstract class GridAbstractTest1 extends Assert {
     }
 
     /**
-     * This method is called before a test is executed.
+     * {@inheritDoc}
      * <p>
      * Do not annotate with Before in overriding methods.</p>
      * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
      * method with {@code @Before} annotation.
      */
     @Deprecated
-    protected void setUp() throws Exception {
+    @Override protected void setUp() throws Exception {
         stopGridErr = false;
 
         clsLdr = Thread.currentThread().getContextClassLoader();
@@ -1802,14 +1800,14 @@ public abstract class GridAbstractTest1 extends Assert {
     }
 
     /**
-     * This method is called after a test is executed.
+     * {@inheritDoc}
      * <p>
      * Do not annotate with After in overriding methods.</p>
      * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
      * method with {@code @After} annotation.
      */
     @Deprecated
-    protected void tearDown() throws Exception {
+    @Override protected void tearDown() throws Exception {
         long dur = System.currentTimeMillis() - ts;
 
         info(">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
@@ -2134,33 +2132,8 @@ public abstract class GridAbstractTest1 extends Assert {
         return new TestCounters(cfg);
     }
 
-    /**
-     * Runs the bare test sequence like in JUnit 3 class TestCase.
-     *
-     * @throws Throwable if any exception is thrown
-     */
-    private void runTestCase(Statement testRoutine) throws Throwable {
-        Throwable e = null;
-        U.warn(null, "setUp: " + getName()); // todo remove after testing is over
-        setUp();
-        try {
-            U.warn(null, "running: " + getName()); // todo remove after testing is over
-            runTest(testRoutine);
-        } catch (Throwable running) {
-            e = running;
-        } finally {
-            try {
-                U.warn(null, "tearDown: " + getName()); // todo remove after testing is over
-                tearDown();
-            } catch (Throwable tearingDown) {
-                if (e == null) e = tearingDown;
-            }
-        }
-        if (e != null) throw e;
-    }
-
-    /** */
-    private void runTest(Statement testRoutine) throws Throwable {
+    /** {@inheritDoc} */
+    @Override void runTest(Statement testRoutine) throws Throwable {
         final AtomicReference<Throwable> ex = new AtomicReference<>();
 
         Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
