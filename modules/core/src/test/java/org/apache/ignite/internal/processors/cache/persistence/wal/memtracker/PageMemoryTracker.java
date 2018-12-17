@@ -567,40 +567,8 @@ public class PageMemoryTracker implements IgnitePlugin {
 
                             dumpHistory(page);
                         }
-                        else {
-                            ByteBuffer locBuf = GridUnsafe.wrapPointer(page.address(), pageSize);
-                            ByteBuffer rmtBuf = GridUnsafe.wrapPointer(rmtPageAddr, pageSize);
-
-                            PageIO pageIo = PageIO.getPageIO(rmtPageAddr);
-
-                            if (pageIo.getType() == T_DATA_REF_MVCC_LEAF ||
-                                pageIo.getType() == T_CACHE_ID_DATA_REF_MVCC_LEAF) {
-                                assert fullPageId.groupId() != MetaStorage.METASTORAGE_CACHE_ID &&
-                                    fullPageId.groupId() != TxLog.TX_LOG_CACHE_ID : fullPageId.groupId();
-
-                                assert cacheProc.cacheGroup(fullPageId.groupId()).mvccEnabled();
-
-                                AbstractDataLeafIO io = (AbstractDataLeafIO)pageIo;
-
-                                int cnt = io.getCount(rmtPageAddr);
-
-                                // Reset. Lock info doesn't logged into WAL.
-                                for (int i = 0; i < cnt; i++) {
-                                    io.setMvccLockCoordinatorVersion(page.address(), i, io.getMvccLockCoordinatorVersion(rmtPageAddr, i));
-                                    io.setMvccLockCounter(page.address(), i, io.getMvccLockCounter(rmtPageAddr, i));
-                                }
-                            }
-
-                            if (!locBuf.equals(rmtBuf)) {
-                                res = false;
-
-                                log.error("Page buffers are not equals: " + fullPageId);
-
-                                dumpDiff(locBuf, rmtBuf);
-
-                                dumpHistory(page);
-                            }
-                        }
+                        else if (!comparePages(fullPageId, page, rmtPageAddr))
+                            res = false;
 
                         if (!res && !checkAll)
                             return false;
@@ -620,6 +588,52 @@ public class PageMemoryTracker implements IgnitePlugin {
         }
 
         return res;
+    }
+
+    /**
+     * Compare pages content.
+     *
+     * @param fullPageId Full page ID.
+     * @param expectedPage Expected page.
+     * @param actualPageAddr Actual page address.
+     * @return {@code True} if pages are equals, {@code False} otherwise.
+     * @throws IgniteCheckedException If fails.
+     */
+    private boolean comparePages(FullPageId fullPageId, DirectMemoryPage expectedPage, long actualPageAddr) throws IgniteCheckedException {
+        long expPageArrd = expectedPage.address();
+
+        GridCacheProcessor cacheProc = gridCtx.cache();
+
+        ByteBuffer locBuf = GridUnsafe.wrapPointer(expPageArrd, pageSize);
+        ByteBuffer rmtBuf = GridUnsafe.wrapPointer(actualPageAddr, pageSize);
+
+        PageIO pageIo = PageIO.getPageIO(actualPageAddr);
+
+        if (pageIo.getType() == T_DATA_REF_MVCC_LEAF || pageIo.getType() == T_CACHE_ID_DATA_REF_MVCC_LEAF) {
+            assert cacheProc.cacheGroup(fullPageId.groupId()).mvccEnabled();
+
+            AbstractDataLeafIO io = (AbstractDataLeafIO)pageIo;
+
+            int cnt = io.getCount(actualPageAddr);
+
+            // Reset lock info as there is no sense to log it into WAL.
+            for (int i = 0; i < cnt; i++) {
+                io.setMvccLockCoordinatorVersion(expPageArrd, i, io.getMvccLockCoordinatorVersion(actualPageAddr, i));
+                io.setMvccLockCounter(expPageArrd, i, io.getMvccLockCounter(actualPageAddr, i));
+            }
+        }
+
+        if (!locBuf.equals(rmtBuf)) {
+            log.error("Page buffers are not equals: " + fullPageId);
+
+            dumpDiff(locBuf, rmtBuf);
+
+            dumpHistory(expectedPage);
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
