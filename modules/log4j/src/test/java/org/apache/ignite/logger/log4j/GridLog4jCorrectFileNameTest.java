@@ -31,6 +31,8 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.varia.LevelRangeFilter;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertNotNull;
@@ -45,7 +47,8 @@ public class GridLog4jCorrectFileNameTest {
     private Log4jRollingFileAppender appender;
 
     /** */
-    private void setUp() {
+    @Before
+    public void setUp() {
         Logger root = Logger.getRootLogger();
 
         for (Enumeration appenders = root.getAllAppenders(); appenders.hasMoreElements(); ) {
@@ -59,7 +62,8 @@ public class GridLog4jCorrectFileNameTest {
     }
 
     /** */
-    private void tearDown() {
+    @After
+    public void tearDown() {
         if (appender != null) {
             Logger.getRootLogger().removeAppender(Log4jRollingFileAppender.class.getSimpleName());
 
@@ -74,10 +78,8 @@ public class GridLog4jCorrectFileNameTest {
      */
     @Test
     public void testLogFilesTwoNodes() throws Exception {
-        setUp();
         checkOneNode(0);
         checkOneNode(1);
-        tearDown();
     }
 
     /**
