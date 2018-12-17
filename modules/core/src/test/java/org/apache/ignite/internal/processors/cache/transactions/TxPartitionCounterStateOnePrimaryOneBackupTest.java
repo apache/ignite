@@ -159,9 +159,9 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
 
         cntr = counter(PARTITION_ID, grid0.name());
 
-        assertEquals(TOTAL + addCnt + PRELOAD_KEYS_CNT, cntr.get());
+        assertEquals(TOTAL + addCnt, cntr.get());
 
-        assertEquals(TOTAL + addCnt + PRELOAD_KEYS_CNT, cntr.reserved());
+        assertEquals(TOTAL + addCnt, cntr.reserved());
 
         assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
     }
