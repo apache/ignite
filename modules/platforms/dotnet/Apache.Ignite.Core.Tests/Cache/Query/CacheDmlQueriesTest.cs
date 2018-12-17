@@ -283,8 +283,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 ValueTypeName = "Foo",
                 Fields = new[]
                 {
+                    /// Next two fieleds belong to the <see cref="Key"/> object, so should have been marked with <see cref="QueryField.IsKeyField"/>
                     new QueryField("Lo", typeof(int)),
                     new QueryField("Hi", typeof(int)),
+
                     new QueryField("Id", typeof(int)),
                     new QueryField("Name", typeof(string))
                 }
@@ -296,8 +298,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 () => cache.Query(new SqlFieldsQuery("insert into foo(lo, hi, id, name) " +
                                                            "values (1, 2, 3, 'John'), (4, 5, 6, 'Mary')")));
 
-            Assert.AreEqual("Ownership flag not set for binary property. Have you set 'keyFields' " +
-                            "property of QueryEntity in programmatic or XML configuration?", ex.Message);
+            Assert.AreEqual("Insert and merge queries requires at least one key column specified.", ex.Message);
         }
 
         /// <summary>

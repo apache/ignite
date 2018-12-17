@@ -19,11 +19,16 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -38,6 +43,12 @@ public class IgniteCacheSqlInsertValidationSelfTest extends GridCommonAbstractTe
     /** Entry point for sql api. Contains table configurations too. */
     private static IgniteCache<Object, Object> cache;
 
+    /** Default value for fk2 field of WITH_KEY_FLDS table. */
+    private static final Long DEFAULT_FK2_VAL = 42L;
+
+    /** Default value for fk2 field of WITH_KEY_FLDS table. */
+    private static final Long DEFAULT_FK1_VAL = null;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -49,24 +60,32 @@ public class IgniteCacheSqlInsertValidationSelfTest extends GridCommonAbstractTe
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        if (false)
-            return;
+        Map<String, Object> defsFK2 = new HashMap<>();
+        defsFK2.put("fk2", DEFAULT_FK2_VAL);
 
         cache = jcache(grid(0), defaultCacheConfiguration()
-                .setName("cacheComplex")
+                .setName("testCache")
                 .setQueryEntities(Arrays.asList(
                     new QueryEntity(Key.class.getName(), Val.class.getName())
                         .addQueryField("fk1", "java.lang.Long", null)
                         .addQueryField("fk2", "java.lang.Long", null)
                         .addQueryField("fv1", "java.lang.Long", null)
                         .addQueryField("fv2", "java.lang.Long", null)
-                        .setTableName("VAL"),
+                        .setTableName("FORGOTTEN_KEY_FLDS"),
+                    new QueryEntity(Key.class.getName(), Integer.class.getName())
+                        .addQueryField("fk1", "java.lang.Long", null)
+                        .addQueryField("fk2", "java.lang.Long", null)
+                        .setDefaultFieldValues(defsFK2)
+                        .setKeyFields(new HashSet<>(Arrays.asList("fk1", "fk2")))
+                        .setTableName("WITH_KEY_FLDS"),
                     new QueryEntity(Integer.class.getName(), Val2.class.getName())
                         .addQueryField("fv1", "java.lang.Long", null)
                         .addQueryField("fv2", "java.lang.Long", null)
-                        .setTableName("INT_KEY_TAB")
+                        .setTableName("INT_KEY_TAB"),
+                    new QueryEntity(SuperKey.class, String.class)
+                        .setTableName("SUPER_TAB")
                 ))
-            , "cacheComplex");
+            , "testCache");
     }
 
     /** {@inheritDoc} */
@@ -86,7 +105,7 @@ public class IgniteCacheSqlInsertValidationSelfTest extends GridCommonAbstractTe
     }
 
     /**
-     * Check that we are able to perform sql insert using special "_key" field.
+     * Check that we are able to perform sql insert using special "_key" field. Even in case of non sql key.
      */
     public void testInsertDefaultKeyName() {
         Object cnt = execute("INSERT INTO INT_KEY_TAB (_key, fv1, fv2) VALUES (1 , 2 , 3)").get(0).get(0);
@@ -94,15 +113,77 @@ public class IgniteCacheSqlInsertValidationSelfTest extends GridCommonAbstractTe
         assertEquals("Expected one row successfully inserted ", 1L, cnt);
     }
 
+    /**
+     * Check that we can't perform insert without at least one key field specified.
+     */
     public void testIncorrectComplex() {
         GridTestUtils.assertThrows(log(),
-            () -> execute("INSERT INTO VAL(FK1, FK2, FV1, FV2) VALUES (2,3,4,5)"),
+            () -> execute("INSERT INTO FORGOTTEN_KEY_FLDS(FK1, FK2, FV1, FV2) VALUES (2,3,4,5)"),
             IgniteSQLException.class,
-            "Query is expected to contain all primary key columns");
+            "Insert and merge queries requires at least one key column specified.");
     }
 
-    private List<List<?>> execute(String sql) {
-        return cache.query(new SqlFieldsQuery(sql)).getAll();
+    /**
+     * Check that we can specify only one pk column (out of two). Second one should be of default value for type;
+     */
+    public void testNotAllKeyColsComplex() {
+        execute("INSERT INTO WITH_KEY_FLDS(FK1, _val) VALUES (7, 1)"); // Missing FK2 -> (7, 42, 1)
+        execute("INSERT INTO WITH_KEY_FLDS(FK2, _val) VALUES (15, 2)"); // Missing FK1 -> (null, 15, 2)
+
+        Long fk2 = (Long)execute("SELECT FK2 FROM WITH_KEY_FLDS WHERE _val = 1").get(0).get(0);
+        Long fk1 = (Long)execute("SELECT FK1 FROM WITH_KEY_FLDS WHERE _val = 2").get(0).get(0);
+
+        assertEquals(DEFAULT_FK2_VAL, fk2);
+        assertEquals(DEFAULT_FK1_VAL, fk1);
+    }
+
+    /**
+     * Check that we can't perform insert without at least one key field specified.
+     */
+    public void testMixedPlaceholderWithOtherKeyFields() {
+        GridTestUtils.assertThrows(log(),
+            () -> execute("INSERT INTO WITH_KEY_FLDS(_key, FK1, _val) VALUES (?, ?, ?)",
+                new Key(1, 2), 42, 43),
+            IgniteSQLException.class,
+            "Key columns must not be mixed with '_key' placeholder.");
+    }
+
+    /**
+     * Check that key can contain nested field with its own fields. Check that we can insert mixing sql and non sql
+     * values.
+     */
+    public void testSuperKey() {
+        execute("INSERT INTO SUPER_TAB (SUPERKEYID, NESTEDKEY, _val) VALUES (?, ?, ?)",
+            123, new NestedKey("the name "), "the _val value");
+    }
+
+    /**
+     * Check that key can contain nested field with its own fields. Check that we can insert using _key placeholder.
+     */
+    public void testSuperKeyNative() {
+        execute("INSERT INTO SUPER_TAB (_key, _val) VALUES (?, ?)",
+            new SuperKey(1, new NestedKey("the name")),
+            "_val value");
+    }
+
+    /**
+     * Check we can amend fields list part.
+     */
+    public void testInsertImplicitAllFields() {
+        execute("CREATE TABLE PUBLIC.IMPLICIT_INS (id1 BIGINT, id2 BIGINT, val BIGINT, PRIMARY KEY(id1, id2))");
+
+        execute("INSERT INTO PUBLIC.IMPLICIT_INS VALUES (1,2,3)");
+    }
+
+    /**
+     * Execute native sql.
+     *
+     * @param sql query.
+     * @param args arguments of SqlFieldsQuery.
+     * @return {@link QueryCursor#getAll()} - result of the query.
+     */
+    private List<List<?>> execute(String sql, Object... args) {
+        return cache.query(new SqlFieldsQuery(sql).setArgs(args)).getAll();
     }
 
     /**
@@ -141,6 +222,28 @@ public class IgniteCacheSqlInsertValidationSelfTest extends GridCommonAbstractTe
 
         @Override public int hashCode() {
             return Objects.hash(fk1, fk2);
+        }
+    }
+
+    private static class SuperKey {
+        @QuerySqlField
+        private long superKeyId;
+
+        @QuerySqlField
+        private NestedKey nestedKey;
+
+        public SuperKey(long superKeyId, NestedKey nestedKey) {
+            this.superKeyId = superKeyId;
+            this.nestedKey = nestedKey;
+        }
+    }
+
+    private static class NestedKey {
+        @QuerySqlField
+        private String name;
+
+        public NestedKey(String name) {
+            this.name = name;
         }
     }
 
