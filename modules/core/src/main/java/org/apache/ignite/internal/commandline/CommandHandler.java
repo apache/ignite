@@ -332,10 +332,10 @@ public class CommandHandler {
     private static final String TX_ORDER = "--order";
 
     /** */
-    private static final String TX_SERVERS = "servers";
+    private static final String TX_SERVERS = "--servers";
 
     /** */
-    private static final String TX_CLIENTS = "clients";
+    private static final String TX_CLIENTS = "--clients";
 
     /** */
     private static final String TX_DURATION = "--min-duration";
@@ -353,7 +353,7 @@ public class CommandHandler {
     private static final String TX_XID = "--xid";
 
     /** */
-    private static final String TX_KILL = "kill";
+    private static final String TX_KILL = "--kill";
 
     /** */
     private static final String OUTPUT_FORMAT = "--output-format";
@@ -369,10 +369,10 @@ public class CommandHandler {
         op(CMD_USER, "USER"), op(CMD_PASSWORD, "PASSWORD"),
         op(CMD_PING_INTERVAL, "PING_INTERVAL"), op(CMD_PING_TIMEOUT, "PING_TIMEOUT"),
         op(CMD_SSL_PROTOCOL, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ...]"),
-        op(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1[, SSL_CIPHER_2, ...]"),
+        op(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1, [SSL_CIPHER_2, ...]"),
         op(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM"),
-        op(CMD_KEYSTORE_TYPE, "KEYSTORE_TYPE"), op(CMD_KEYSTORE, "KEYSTORE"), op(CMD_KEYSTORE_PASSWORD, "KEYSTORE_PASSWORD"),
-        op(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE"), op(CMD_TRUSTSTORE, "TRUSTSTORE"), op(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD"));
+        op(CMD_KEYSTORE_TYPE, "KEYSTORE_TYPE"), op(CMD_KEYSTORE, "KEYSTORE_PATH"), op(CMD_KEYSTORE_PASSWORD, "KEYSTORE_PASSWORD"),
+        op(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE"), op(CMD_TRUSTSTORE, "TRUSTSTORE_PATH"), op(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD"));
 
     /** Utility name with common options. */
     private static final String UTILITY_NAME_WITH_COMMON_OPTIONS = j(" ", UTILITY_NAME, COMMON_OPTIONS);
