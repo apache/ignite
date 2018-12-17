@@ -38,6 +38,9 @@ public final class ScanQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private Integer part;
 
+    /** */
+    private Boolean dataPageScanEnabled;
+
     /**
      * Create scan query returning all entries.
      */
@@ -116,6 +119,24 @@ public final class ScanQuery<K, V> extends Query<Cache.Entry<K, V>> {
      */
     @Nullable public Integer getPartition() {
         return part;
+    }
+
+    /**
+     * Sets data page scan enabled or disabled.
+     *
+     * @param dataPageScanEnabled {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
+     */
+    public void setDataPageScanEnabled(Boolean dataPageScanEnabled) {
+        this.dataPageScanEnabled = dataPageScanEnabled;
+    }
+
+    /**
+     * Checks if data page scan enabled.
+     *
+     * @return {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
+     */
+    public Boolean isDataPageScanEnabled() {
+        return dataPageScanEnabled;
     }
 
     /** {@inheritDoc} */

@@ -799,10 +799,12 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         if (notifyExisting) {
             assert locLsnr != null : "Local listener can't be null if notification for existing entries are enabled";
 
-            final Iterator<CacheDataRow> it = cctx.offheap().cacheIterator(cctx.cacheId(),
+            final Iterator<CacheDataRow> it = cctx.offheap().cacheIterator(
+                cctx.cacheId(),
                 true,
                 true,
                 AffinityTopologyVersion.NONE,
+                null,
                 null);
 
             locLsnr.onUpdated(new Iterable<CacheEntryEvent>() {

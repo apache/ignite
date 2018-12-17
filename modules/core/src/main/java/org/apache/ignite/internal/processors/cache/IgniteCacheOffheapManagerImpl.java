@@ -769,7 +769,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     @Override public void clearCache(GridCacheContext cctx, boolean readers) {
         GridCacheVersion obsoleteVer = null;
 
-        try (GridCloseableIterator<CacheDataRow> it = grp.isLocal() ? iterator(cctx.cacheId(), cacheDataStores().iterator(), null) :
+        try (GridCloseableIterator<CacheDataRow> it = grp.isLocal() ?
+            iterator(cctx.cacheId(), cacheDataStores().iterator(), null, null) :
             evictionSafeIterator(cctx.cacheId(), cacheDataStores().iterator())) {
             while (it.hasNext()) {
                 cctx.shared().database().checkpointReadLock();
@@ -822,8 +823,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         final boolean backup,
         final AffinityTopologyVersion topVer,
         final boolean keepBinary,
-        @Nullable final MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
-        final Iterator<CacheDataRow> it = cacheIterator(cctx.cacheId(), primary, backup, topVer, mvccSnapshot);
+        @Nullable final MvccSnapshot mvccSnapshot,
+        Boolean dataPageScanEnabled
+    ) {
+        final Iterator<CacheDataRow> it = cacheIterator(cctx.cacheId(), primary, backup,
+            topVer, mvccSnapshot, dataPageScanEnabled);
 
         return new GridCloseableIteratorAdapter<Cache.Entry<K, V>>() {
             /** */
@@ -907,30 +911,31 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         boolean primary,
         boolean backups,
         final AffinityTopologyVersion topVer,
-        @Nullable MvccSnapshot mvccSnapshot)
-        throws IgniteCheckedException {
-        return iterator(cacheId, cacheData(primary, backups, topVer), mvccSnapshot);
+        @Nullable MvccSnapshot mvccSnapshot,
+        Boolean dataPageScanEnabled
+    ) {
+        return iterator(cacheId, cacheData(primary, backups, topVer), mvccSnapshot, dataPageScanEnabled);
     }
 
     /** {@inheritDoc} */
     @Override public GridIterator<CacheDataRow> cachePartitionIterator(int cacheId, int part,
-        @Nullable MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
+        @Nullable MvccSnapshot mvccSnapshot, Boolean dataPageScanEnabled) {
         CacheDataStore data = partitionData(part);
 
         if (data == null)
             return new GridEmptyCloseableIterator<>();
 
-        return iterator(cacheId, singletonIterator(data), mvccSnapshot);
+        return iterator(cacheId, singletonIterator(data), mvccSnapshot, dataPageScanEnabled);
     }
 
     /** {@inheritDoc} */
-    @Override public GridIterator<CacheDataRow> partitionIterator(int part) throws IgniteCheckedException {
+    @Override public GridIterator<CacheDataRow> partitionIterator(int part) {
         CacheDataStore data = partitionData(part);
 
         if (data == null)
             return new GridEmptyCloseableIterator<>();
 
-        return iterator(CU.UNDEFINED_CACHE_ID, singletonIterator(data), null);
+        return iterator(CU.UNDEFINED_CACHE_ID, singletonIterator(data), null, null);
     }
 
     /**
@@ -938,12 +943,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      * @param cacheId Cache ID.
      * @param dataIt Data store iterator.
      * @param mvccSnapshot Mvcc snapshot.
+     * @param dataPageScanEnabled Flag to enable data page scan.
      * @return Rows iterator
      */
     private GridCloseableIterator<CacheDataRow> iterator(final int cacheId,
         final Iterator<CacheDataStore> dataIt,
-        final MvccSnapshot mvccSnapshot)
-    {
+        final MvccSnapshot mvccSnapshot,
+        Boolean dataPageScanEnabled
+    ) {
         return new GridCloseableIteratorAdapter<CacheDataRow>() {
             /** */
             private GridCursor<? extends CacheDataRow> cur;
@@ -973,11 +980,18 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                             curPart = ds.partId();
 
-                            if (mvccSnapshot == null)
-                                cur = cacheId == CU.UNDEFINED_CACHE_ID ? ds.cursor() : ds.cursor(cacheId);
-                            else {
-                                cur = cacheId == CU.UNDEFINED_CACHE_ID ?
-                                    ds.cursor(mvccSnapshot) : ds.cursor(cacheId, mvccSnapshot);
+                            CacheDataTree.setDataPageScanEnabled(dataPageScanEnabled);
+
+                            try {
+                                if (mvccSnapshot == null)
+                                    cur = cacheId == CU.UNDEFINED_CACHE_ID ? ds.cursor() : ds.cursor(cacheId);
+                                else {
+                                    cur = cacheId == CU.UNDEFINED_CACHE_ID ?
+                                        ds.cursor(mvccSnapshot) : ds.cursor(cacheId, mvccSnapshot);
+                                }
+                            }
+                            finally {
+                                CacheDataTree.resetDataPageScanEnabled();
                             }
                         }
                         else

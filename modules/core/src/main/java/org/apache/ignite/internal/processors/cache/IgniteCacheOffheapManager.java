@@ -466,6 +466,7 @@ public interface IgniteCacheOffheapManager {
      * @param backup Backup entries flag.
      * @param topVer Topology version.
      * @param mvccSnapshot MVCC snapshot.
+     * @param dataPageScanEnabled Flag to enable data page scan.
      * @return Rows iterator.
      * @throws IgniteCheckedException If failed.
      */
@@ -473,29 +474,20 @@ public interface IgniteCacheOffheapManager {
         boolean primary,
         boolean backup,
         AffinityTopologyVersion topVer,
-        @Nullable MvccSnapshot mvccSnapshot)
-        throws IgniteCheckedException;
-
-    /**
-     * @param cacheId Cache ID.
-     * @param part Partition.
-     * @return Partition data iterator.
-     * @throws IgniteCheckedException If failed.
-     */
-    public default GridIterator<CacheDataRow> cachePartitionIterator(int cacheId, final int part)
-        throws IgniteCheckedException {
-        return cachePartitionIterator(cacheId, part, null);
-    }
+        @Nullable MvccSnapshot mvccSnapshot,
+        Boolean dataPageScanEnabled
+    ) throws IgniteCheckedException;
 
     /**
      * @param cacheId Cache ID.
      * @param part Partition.
      * @param mvccSnapshot MVCC snapshot.
+     * @param dataPageScanEnabled Flag to enable data page scan.
      * @return Partition data iterator.
      * @throws IgniteCheckedException If failed.
      */
     public GridIterator<CacheDataRow> cachePartitionIterator(int cacheId, final int part,
-        @Nullable MvccSnapshot mvccSnapshot) throws IgniteCheckedException;
+        @Nullable MvccSnapshot mvccSnapshot, Boolean dataPageScanEnabled) throws IgniteCheckedException;
 
     /**
      * @param part Partition number.
@@ -529,6 +521,7 @@ public interface IgniteCacheOffheapManager {
      * @param topVer Topology version.
      * @param keepBinary Keep binary flag.
      * @param mvccSnapshot MVCC snapshot.
+     * @param dataPageScanEnabled Flag to enable data page scan.
      * @return Entries iterator.
      * @throws IgniteCheckedException If failed.
      */
@@ -538,7 +531,9 @@ public interface IgniteCacheOffheapManager {
         final boolean backup,
         final AffinityTopologyVersion topVer,
         final boolean keepBinary,
-        @Nullable final MvccSnapshot mvccSnapshot) throws IgniteCheckedException;
+        @Nullable final MvccSnapshot mvccSnapshot,
+        Boolean dataPageScanEnabled
+    ) throws IgniteCheckedException;
 
     /**
      * @param cacheId Cache ID.

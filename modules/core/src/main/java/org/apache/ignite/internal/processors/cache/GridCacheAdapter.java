@@ -785,8 +785,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                 MvccSnapshot mvccSnapshot = ctx.mvccEnabled() ? MvccUtils.MVCC_MAX_SNAPSHOT : null;
 
-                its.add(offheapMgr
-                    .cacheEntriesIterator(ctx, modes.primary, modes.backup, topVer, ctx.keepBinary(), mvccSnapshot));
+                its.add(offheapMgr.cacheEntriesIterator(ctx, modes.primary, modes.backup, topVer, ctx.keepBinary(),
+                        mvccSnapshot, null));
             }
         }
         else if (modes.heap) {
@@ -3144,8 +3144,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         List<K> keys = new ArrayList<>(Math.min(REMOVE_ALL_KEYS_BATCH, size()));
 
         do {
-            for (Iterator<CacheDataRow> it = ctx.offheap().cacheIterator(ctx.cacheId(), true, true, null, null);
-                it.hasNext() && keys.size() < REMOVE_ALL_KEYS_BATCH; )
+            Iterator<CacheDataRow> it = ctx.offheap().cacheIterator(ctx.cacheId(),
+                true, true, null, null, null);
+
+            while (it.hasNext() && keys.size() < REMOVE_ALL_KEYS_BATCH)
                 keys.add((K)it.next().key());
 
             removeAll(keys);
@@ -4099,7 +4101,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        final GridCloseableIterator<Map.Entry<K, V>> iter = ctx0.queries().createScanQuery(p, null, keepBinary)
+        final GridCloseableIterator<Map.Entry<K, V>> iter = ctx0.queries().createScanQuery(p, null, keepBinary, null)
             .executeScanQuery();
 
         return ctx.itHolder().iterator(iter, new CacheIteratorConverter<Cache.Entry<K, V>, Map.Entry<K, V>>() {

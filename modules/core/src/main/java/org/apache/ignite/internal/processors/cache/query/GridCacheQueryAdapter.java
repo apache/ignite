@@ -140,6 +140,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /** */
     private MvccSnapshot mvccSnapshot;
 
+    /** */
+    private Boolean dataPageScanEnabled;
+
     /**
      * @param cctx Context.
      * @param type Query type.
@@ -147,14 +150,18 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param part Partition.
      * @param keepBinary Keep binary flag.
      * @param forceLocal Flag to force local query.
+     * @param dataPageScanEnabled Flag to enable data page scan.
      */
-    public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx,
+    public GridCacheQueryAdapter(
+        GridCacheContext<?, ?> cctx,
         GridCacheQueryType type,
         @Nullable IgniteBiPredicate<Object, Object> filter,
         @Nullable IgniteClosure<Map.Entry, Object> transform,
         @Nullable Integer part,
         boolean keepBinary,
-        boolean forceLocal) {
+        boolean forceLocal,
+        Boolean dataPageScanEnabled
+    ) {
         assert cctx != null;
         assert type != null;
         assert part == null || part >= 0;
@@ -166,6 +173,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.part = part;
         this.keepBinary = keepBinary;
         this.forceLocal = forceLocal;
+        this.dataPageScanEnabled = dataPageScanEnabled;
 
         log = cctx.logger(getClass());
 
@@ -185,15 +193,19 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param part Partition.
      * @param incMeta Include metadata flag.
      * @param keepBinary Keep binary flag.
+     * @param dataPageScanEnabled Flag to enable data page scan.
      */
-    public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx,
+    public GridCacheQueryAdapter(
+        GridCacheContext<?, ?> cctx,
         GridCacheQueryType type,
         @Nullable String clsName,
         @Nullable String clause,
         @Nullable IgniteBiPredicate<Object, Object> filter,
         @Nullable Integer part,
         boolean incMeta,
-        boolean keepBinary) {
+        boolean keepBinary,
+        Boolean dataPageScanEnabled
+    ) {
         assert cctx != null;
         assert type != null;
         assert part == null || part >= 0;
@@ -206,6 +218,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.part = part;
         this.incMeta = incMeta;
         this.keepBinary = keepBinary;
+        this.dataPageScanEnabled = dataPageScanEnabled;
 
         log = cctx.logger(getClass());
 
@@ -230,8 +243,10 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param subjId Security subject ID.
      * @param taskHash Task hash.
      * @param mvccSnapshot Mvcc version.
+     * @param dataPageScanEnabled Flag to enable data page scan.
      */
-    public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx,
+    public GridCacheQueryAdapter(
+        GridCacheContext<?, ?> cctx,
         GridCacheQueryType type,
         IgniteLogger log,
         int pageSize,
@@ -247,7 +262,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         boolean keepBinary,
         UUID subjId,
         int taskHash,
-        MvccSnapshot mvccSnapshot) {
+        MvccSnapshot mvccSnapshot,
+        Boolean dataPageScanEnabled
+    ) {
         this.cctx = cctx;
         this.type = type;
         this.log = log;
@@ -265,6 +282,14 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.subjId = subjId;
         this.taskHash = taskHash;
         this.mvccSnapshot = mvccSnapshot;
+        this.dataPageScanEnabled = dataPageScanEnabled;
+    }
+
+    /**
+     * @return Flag to enable data page scan.
+     */
+    public Boolean isDataPageScanEnabled() {
+        return dataPageScanEnabled;
     }
 
     /**

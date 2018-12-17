@@ -748,8 +748,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param qry Query.
      * @return Cache set items iterator.
      */
-    private GridCloseableIterator<IgniteBiTuple<K, V>> sharedCacheSetIterator(
-        GridCacheQueryAdapter<?> qry) throws IgniteCheckedException {
+    private GridCloseableIterator<IgniteBiTuple<K, V>> sharedCacheSetIterator(GridCacheQueryAdapter<?> qry)
+        throws IgniteCheckedException {
         final GridSetQueryPredicate filter = (GridSetQueryPredicate)qry.scanFilter();
 
         IgniteUuid id = filter.setId();
@@ -768,7 +768,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             },
             qry.partition(),
             false,
-            true);
+            true,
+            qry.isDataPageScanEnabled());
 
         return scanQueryLocal(qry0, false);
     }
@@ -826,12 +827,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 locPart = locPart0;
 
-                it = cctx.offheap().cachePartitionIterator(cctx.cacheId(), part, qry.mvccSnapshot());
+                it = cctx.offheap().cachePartitionIterator(cctx.cacheId(), part, qry.mvccSnapshot(),
+                    qry.isDataPageScanEnabled());
             }
             else {
                 locPart = null;
 
-                it = cctx.offheap().cacheIterator(cctx.cacheId(), true, backups, topVer, qry.mvccSnapshot());
+                it = cctx.offheap().cacheIterator(cctx.cacheId(), true, backups, topVer,
+                    qry.mvccSnapshot(), qry.isDataPageScanEnabled());
             }
 
             return new ScanQueryIterator(it, qry, topVer, locPart, keyValFilter, transformer, locNode, cctx, log);
@@ -2688,7 +2691,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             null,
             null,
             false,
-            keepBinary);
+            keepBinary,
+            null);
     }
 
     /**
@@ -2697,11 +2701,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param filter Scan filter.
      * @param part Partition.
      * @param keepBinary Keep binary flag.
+     * @param dataPageScanEnabled Flag to enable data page scan.
      * @return Created query.
      */
     public <R> CacheQuery<R> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter,
-        @Nullable Integer part, boolean keepBinary) {
-        return createScanQuery(filter, null, part, keepBinary, false);
+        @Nullable Integer part, boolean keepBinary, Boolean dataPageScanEnabled) {
+        return createScanQuery(filter, null, part, keepBinary, false, dataPageScanEnabled);
     }
 
     /**
@@ -2712,19 +2717,26 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param part Partition.
      * @param keepBinary Keep binary flag.
      * @param forceLocal Flag to force local scan.
+     * @param dataPageScanEnabled Flag to enable data page scan.
      * @return Created query.
      */
-    public <T, R> CacheQuery<R> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter,
+    @SuppressWarnings("unchecked")
+    public <T, R> CacheQuery<R> createScanQuery(
+        @Nullable IgniteBiPredicate<K, V> filter,
         @Nullable IgniteClosure<T, R> trans,
-        @Nullable Integer part, boolean keepBinary, boolean forceLocal) {
-
+        @Nullable Integer part,
+        boolean keepBinary,
+        boolean forceLocal,
+        Boolean dataPageScanEnabled
+    ) {
         return new GridCacheQueryAdapter(cctx,
             SCAN,
             filter,
             trans,
             part,
             keepBinary,
-            forceLocal);
+            forceLocal,
+            dataPageScanEnabled);
     }
 
     /**
@@ -2748,28 +2760,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             null,
             null,
             false,
-            keepBinary);
-    }
-
-    /**
-     * Creates user's SQL fields query for given clause. For more information refer to {@link CacheQuery}
-     * documentation.
-     *
-     * @param qry Query.
-     * @param keepBinary Keep binary flag.
-     * @return Created query.
-     */
-    public CacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean keepBinary) {
-        A.notNull(qry, "qry");
-
-        return new GridCacheQueryAdapter<>(cctx,
-            SQL_FIELDS,
-            null,
-            qry,
-            null,
-            null,
-            false,
-            keepBinary);
+            keepBinary,
+            null);
     }
 
     /**

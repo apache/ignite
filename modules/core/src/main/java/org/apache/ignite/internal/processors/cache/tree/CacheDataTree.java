@@ -60,6 +60,13 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     private static CacheDataRow[] EMPTY_ROWS = {};
 
     /** */
+    private static final Boolean DFLT_DATA_PAGE_SCAN_ENABLED = false;
+
+    /** */
+    private static final ThreadLocal<Boolean> dataPageScanEnabled = ThreadLocal.withInitial(
+        () -> DFLT_DATA_PAGE_SCAN_ENABLED);
+
+    /** */
     private final CacheDataRowStore rowStore;
 
     /** */
@@ -103,6 +110,24 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         initTree(initNew);
     }
 
+    /**
+     * Enable or disable data page scan.
+     * @param enabled {code true} If enabled.
+     */
+    public static void setDataPageScanEnabled(Boolean enabled) {
+        if (enabled == null)
+            enabled = DFLT_DATA_PAGE_SCAN_ENABLED;
+
+        dataPageScanEnabled.set(enabled);
+    }
+
+    /**
+     * Resets `data page scan enabled` flag to default.
+     */
+    public static void resetDataPageScanEnabled() {
+        setDataPageScanEnabled(DFLT_DATA_PAGE_SCAN_ENABLED);
+    }
+
     /** {@inheritDoc} */
     @Override public GridCursor<CacheDataRow> find(
         CacheSearchRow lower,
@@ -111,7 +136,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         Object x
     ) throws IgniteCheckedException {
         // If there is a group of caches, lower and upper bounds will not be null here.
-        if (lower == null && upper == null && grp.persistenceEnabled() && (c == null || c instanceof MvccDataPageClosure))
+        if (lower == null && upper == null && grp.persistenceEnabled() && dataPageScanEnabled.get() &&
+            (c == null || c instanceof MvccDataPageClosure))
             return scanDataPages(asRowData(x), (MvccDataPageClosure)c);
 
         return super.find(lower, upper, c, x);
