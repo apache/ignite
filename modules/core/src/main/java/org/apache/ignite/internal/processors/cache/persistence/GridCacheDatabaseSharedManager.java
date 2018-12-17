@@ -1308,6 +1308,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     return null;
                 }
             );
+
+            fut.timeBag().finishLocalStage("Restore partition states");
         }
 
         if (cctx.kernalContext().query().moduleEnabled()) {

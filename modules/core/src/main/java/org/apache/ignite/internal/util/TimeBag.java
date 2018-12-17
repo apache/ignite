@@ -13,6 +13,9 @@ public class TimeBag {
     /** Initial global stage. */
     private static final GlobalStage INITIAL_STAGE = new GlobalStage("", 0, new HashMap<>());
 
+    /** Padding element for pretty print. */
+    private static final String PADDING = "  ^-- ";
+
     /** Lock. */
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
@@ -25,8 +28,8 @@ public class TimeBag {
     /** List of global stages (guarded by {@code lock}). */
     private final List<GlobalStage> stages;
 
-    /** List of current local stages (guarded by {@code lock}). */
-    private Map<String, List<LocalStage>> localStages;
+    /** List of current local stages separated by threads (guarded by {@code lock}). */
+    private Map<String, List<Stage>> localStages;
 
     /** Last seen global stage by thread. */
     private final ThreadLocal<GlobalStage> tlLastSeenStage = ThreadLocal.withInitial(() -> INITIAL_STAGE);
@@ -80,21 +83,18 @@ public class TimeBag {
             GlobalStage lastCompleted = lastCompletedGlobalStage();
             IgniteStopwatch localStopWatch = tlStopwatch.get();
 
-            LocalStage stage;
+            Stage stage;
 
             // We see this stage first time, get elapsed time from global stopwatch and start local stopwatch.
             if (lastSeen != lastCompleted) {
-                stage = new LocalStage(description, globalStopwatch.elapsed(measurementUnit));
+                stage = new Stage(description, globalStopwatch.elapsed(measurementUnit));
 
                 tlLastSeenStage.set(lastCompleted);
-
-                localStopWatch.start();
             }
-            else {
-                stage = new LocalStage(description, localStopWatch.elapsed(measurementUnit));
+            else
+                stage = new Stage(description, localStopWatch.elapsed(measurementUnit));
 
-                localStopWatch.reset().start();
-            }
+            localStopWatch.reset().start();
 
             // Associate local stage with current thread name.
             String threadName = Thread.currentThread().getName();
@@ -106,41 +106,121 @@ public class TimeBag {
         }
     }
 
-    public String stagesPrettyPrint() {
+    private void addStageTiming(Stage stage, List<String> result) {
+        StringBuilder sb = new StringBuilder();
+
+        if (!(stage instanceof GlobalStage))
+            sb.append(PADDING);
+
+        sb.append(stage.name()).append(' ');
+        sb.append('[');
+        sb.append("desc=").append(stage.description()).append(", ");
+        sb.append("time=").append(stage.time()).append(' ').append(measurementUnitShort());
+        sb.append(']');
+
+        result.add(sb.toString());
+    }
+
+    private String measurementUnitShort() {
+        switch (measurementUnit) {
+            case MILLISECONDS:
+                return "ms";
+            case SECONDS:
+                return "s";
+            case NANOSECONDS:
+                return "ns";
+            case MICROSECONDS:
+                return "mcs";
+            case HOURS:
+                return "h";
+            case MINUTES:
+                return "min";
+            case DAYS:
+                return "days";
+            default:
+                return "";
+        }
+    }
+
+    public List<String> stagesTimings() {
         lock.readLock().lock();
 
         try {
-            StringBuilder prettyPrint = new StringBuilder();
+            List<String> result = new ArrayList<>();
 
+            long totalTime = 0;
 
+            // Skip initial stage.
+            for (int i = 1; i < stages.size(); i++) {
+                GlobalStage globStage = stages.get(i);
 
-            return prettyPrint.toString();
+                totalTime += globStage.time();
+
+                addStageTiming(globStage, result);
+
+                if (!globStage.localStages.isEmpty()) {
+                    // Take a thread with longest local stages sequence.
+                    Map<String, List<Stage>> locStages = globStage.localStages;
+
+                    String longestTimeThread = null;
+                    long longestTime = -1;
+
+                    for (Map.Entry<String, List<Stage>> locStage : locStages.entrySet()) {
+                        long locStagesSummaryTime = locStage.getValue().stream()
+                            .map(stage -> stage.time)
+                            .reduce((a, b) -> a + b)
+                            .orElse(-1L);
+
+                        if (locStagesSummaryTime > longestTime) {
+                            longestTime = locStagesSummaryTime;
+                            longestTimeThread = locStage.getKey();
+                        }
+                    }
+
+                    assert longestTimeThread != null;
+
+                    result.add(PADDING + "Longest execution thread " + longestTimeThread + ":");
+
+                    List<Stage> longestStagesSeq = locStages.get(longestTimeThread);
+
+                    for (Stage stage : longestStagesSeq)
+                        addStageTiming(stage, result);
+                }
+            }
+
+            result.add("Total time of all stages: " + totalTime + " " + measurementUnitShort());
+
+            return result;
         }
         finally {
             lock.readLock().unlock();
         }
     }
 
-    public static class GlobalStage extends LocalStage {
-        private final Map<String, List<LocalStage>> localStages;
+    public static class GlobalStage extends Stage {
+        private final Map<String, List<Stage>> localStages;
 
-        public GlobalStage(String description, long time, Map<String, List<LocalStage>> localStages) {
+        public GlobalStage(String description, long time, Map<String, List<Stage>> localStages) {
             super(description, time);
 
             this.localStages = localStages;
         }
 
-        public Map<String, List<LocalStage>> localStages() {
+        public Map<String, List<Stage>> localStages() {
             return localStages;
+        }
+
+        @Override public String name() {
+            return "Global stage";
         }
     }
 
-    public static class LocalStage {
+    public static class Stage {
         private final String description;
 
         private final long time;
 
-        public LocalStage(String description, long time) {
+        public Stage(String description, long time) {
             this.description = description;
             this.time = time;
         }
@@ -151,6 +231,10 @@ public class TimeBag {
 
         public long time() {
             return time;
+        }
+
+        public String name() {
+            return "Local stage";
         }
     }
 }
