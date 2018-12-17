@@ -84,8 +84,6 @@ public class CacheJdbcBlobStoreFactorySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testIncorrectBeanConfiguration() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1094");
-
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 try(Ignite ignite = Ignition.start("modules/spring/src/test/config/incorrect-store-cache.xml")) {

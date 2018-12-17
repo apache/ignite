@@ -91,9 +91,7 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCaseSensitive() throws Exception {
-        //TODO rewrite with dynamic cache creation, and GRID start in #beforeTest after resolve of
-        //TODO https://issues.apache.org/jira/browse/IGNITE-1094
-        fail("https://issues.apache.org/jira/browse/IGNITE-1094");
+        //TODO rewrite with dynamic cache creation, and GRID start in #beforeTest - IGNITE-1094 resolved
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -121,9 +119,7 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCustomSchemaMultipleCachesTablesCollision() throws Exception {
-        //TODO: Rewrite with dynamic cache creation, and GRID start in #beforeTest after resolve of
-        //TODO: https://issues.apache.org/jira/browse/IGNITE-1094
-        fail("https://issues.apache.org/jira/browse/IGNITE-1094");
+        //TODO: Rewrite with dynamic cache creation, and GRID start in #beforeTest - IGNITE-1094 resolved
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -246,7 +242,7 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
         }
     }
 
-    // TODO add tests with dynamic cache unregistration, after resolve of https://issues.apache.org/jira/browse/IGNITE-1094
+    // TODO add tests with dynamic cache unregistration - IGNITE-1094 resolved
 
     /** Test class as query entity */
     private static class Fact {

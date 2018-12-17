@@ -18,20 +18,18 @@
 package org.apache.ignite.logger.slf4j;
 
 import java.io.File;
+import junit.framework.TestCase;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.slf4j.LoggerFactory;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Testing that markers are supported by log4j2 implementation.
  */
-public class Slf4jLoggerMarkerTest {
+@RunWith(JUnit4.class)
+public class Slf4jLoggerMarkerTest extends TestCase {
     /** Path to full log. */
     private static final String LOG_ALL = "work/log/all.log";
 
@@ -39,14 +37,16 @@ public class Slf4jLoggerMarkerTest {
     private static final String LOG_FILTERED = "work/log/filtered.log";
 
     /** */
-    @Before
-    public void setUp() throws Exception {
+    @Override protected void setUp() throws Exception {
+        super.setUp();
+
         deleteLogs();
     }
 
     /** */
-    @After
-    public void tearDown() throws Exception {
+    @Override protected void tearDown() throws Exception {
+        super.tearDown();
+
         deleteLogs();
     }
 

@@ -65,7 +65,7 @@ public class MLPTrainerMnistIntegrationTest extends GridCommonAbstractTest {
     /**
      * {@inheritDoc}
      */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTest() {
         /* Grid instance. */
         ignite = grid(NODE_COUNT);
         ignite.configuration().setPeerClassLoadingEnabled(true);
@@ -111,7 +111,7 @@ public class MLPTrainerMnistIntegrationTest extends GridCommonAbstractTest {
             ignite,
             trainingSet,
             (k, v) -> VectorUtils.of(v.getPixels()),
-            (k, v) -> VectorUtils.num2Vec(v.getLabel(), 10).getStorage().data()
+            (k, v) -> VectorUtils.oneHot(v.getLabel(), 10).getStorage().data()
         );
         System.out.println("Training completed in " + (System.currentTimeMillis() - start) + "ms");
 

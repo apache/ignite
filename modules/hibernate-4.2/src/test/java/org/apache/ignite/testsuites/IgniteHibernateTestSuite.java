@@ -29,14 +29,11 @@ import org.apache.ignite.cache.store.hibernate.CacheHibernateBlobStoreNodeRestar
 import org.apache.ignite.cache.store.hibernate.CacheHibernateBlobStoreSelfTest;
 import org.apache.ignite.cache.store.hibernate.CacheHibernateStoreFactorySelfTest;
 import org.apache.ignite.cache.store.hibernate.CacheHibernateStoreSessionListenerSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
 
 /**
  * Hibernate integration tests.
  */
-@RunWith(AllTests.class)
-public class IgniteHibernateTestSuite {
+public class IgniteHibernateTestSuite extends TestSuite {
     /**
      * @return Test suite.
      */
@@ -45,7 +42,7 @@ public class IgniteHibernateTestSuite {
 
         // Hibernate L2 cache.
         suite.addTest(new JUnit4TestAdapter(HibernateL2CacheSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(HibernateL2CacheTransactionalSelfTest.class));
+        suite.addTestSuite(HibernateL2CacheTransactionalSelfTest.class);
         suite.addTest(new JUnit4TestAdapter(HibernateL2CacheTransactionalUseSyncSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(HibernateL2CacheConfigurationSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(HibernateL2CacheStrategySelfTest.class));

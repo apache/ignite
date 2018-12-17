@@ -17,17 +17,19 @@
 
 package org.apache.ignite.tests;
 
+import junit.framework.TestCase;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.store.cassandra.persistence.KeyPersistenceSettings;
 import org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Simple test for DDL generator.
  */
-public class CassandraConfigTest {
+@RunWith(JUnit4.class)
+public class CassandraConfigTest extends TestCase {
     /**
      * Check if same DDL generated for similar keys and same KeyPersistenceConfiguration.
      *

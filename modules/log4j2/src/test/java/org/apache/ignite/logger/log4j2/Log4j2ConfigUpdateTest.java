@@ -21,16 +21,17 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Date;
+import junit.framework.TestCase;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Checking that Log4j2 configuration is updated when its source file is changed.
  */
-public class Log4j2ConfigUpdateTest {
+@RunWith(JUnit4.class)
+public class Log4j2ConfigUpdateTest extends TestCase {
     /** Path to log4j2 configuration with INFO enabled. */
     private static final String LOG_CONFIG_INFO = "modules/log4j2/src/test/config/log4j2-info.xml";
 

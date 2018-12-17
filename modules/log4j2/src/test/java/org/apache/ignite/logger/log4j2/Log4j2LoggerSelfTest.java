@@ -32,6 +32,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -40,6 +42,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Grid Log4j2 SPI test.
  */
+@RunWith(JUnit4.class)
 public class Log4j2LoggerSelfTest {
     /** */
     private static final String LOG_PATH_TEST = "modules/core/src/test/config/log4j2-test.xml";
@@ -47,11 +50,9 @@ public class Log4j2LoggerSelfTest {
     /** */
     private static final String LOG_PATH_MAIN = "config/ignite-log4j2.xml";
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         Log4J2Logger.cleanup();
     }
 
@@ -135,6 +136,7 @@ public class Log4j2LoggerSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSystemNodeId() throws Exception {
         UUID id = UUID.randomUUID();
 
@@ -148,6 +150,7 @@ public class Log4j2LoggerSelfTest {
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testLogFilesTwoNodes() throws Exception {
         checkOneNode(0);
         checkOneNode(1);

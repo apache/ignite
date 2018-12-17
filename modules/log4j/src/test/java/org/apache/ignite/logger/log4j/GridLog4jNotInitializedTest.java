@@ -17,17 +17,19 @@
 
 package org.apache.ignite.logger.log4j;
 
+import junit.framework.TestCase;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
-
-import static org.junit.Assert.assertTrue;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Log4j not initialized test.
  */
 @GridCommonTest(group = "Logger")
-public class GridLog4jNotInitializedTest {
+@RunWith(JUnit4.class)
+public class GridLog4jNotInitializedTest extends TestCase {
     /** */
     @Test
     public void testLogInitialize() {

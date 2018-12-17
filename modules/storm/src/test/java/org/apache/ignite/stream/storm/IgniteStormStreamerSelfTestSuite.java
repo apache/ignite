@@ -19,14 +19,11 @@ package org.apache.ignite.stream.storm;
 
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
-import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
 
 /**
  * Apache Storm streamer tests.
  */
-@RunWith(AllTests.class)
-public class IgniteStormStreamerSelfTestSuite {
+public class IgniteStormStreamerSelfTestSuite extends TestSuite {
     /**
      * @return Test suite.
      */
