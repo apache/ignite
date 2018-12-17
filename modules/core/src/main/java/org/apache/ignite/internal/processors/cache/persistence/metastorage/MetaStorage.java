@@ -570,6 +570,11 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+        onCheckpointBegin(ctx);
+    }
+
     /**
      * @throws IgniteCheckedException If failed.
      */

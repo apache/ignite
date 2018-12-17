@@ -271,6 +271,8 @@ public abstract class PagesList extends DataStructure {
         if (!changed)
             return;
 
+        changed = false;
+
         try {
             for (int bucket = 0; bucket < buckets; bucket++) {
                 Stripe[] tails = getBucket(bucket);
@@ -350,8 +352,6 @@ public abstract class PagesList extends DataStructure {
                 releasePage(pageId, page);
             }
         }
-
-        changed = false;
     }
 
     /**
@@ -423,7 +423,7 @@ public abstract class PagesList extends DataStructure {
 
         Stripe stripe = new Stripe(pageId, true);
 
-        for (;;) {
+        for (; ; ) {
             Stripe[] old = getBucket(bucket);
             Stripe[] upd;
 
@@ -435,10 +435,13 @@ public abstract class PagesList extends DataStructure {
                 upd[len] = stripe;
             }
             else
-                upd = new Stripe[]{stripe};
+                upd = new Stripe[] {stripe};
 
-            if (casBucket(bucket, old, upd))
+            if (casBucket(bucket, old, upd)) {
+                changed();
+
                 return stripe;
+            }
         }
     }
 
@@ -451,44 +454,49 @@ public abstract class PagesList extends DataStructure {
     private boolean updateTail(int bucket, long oldTailId, long newTailId) {
         int idx = -1;
 
-        for (;;) {
-            Stripe[] tails = getBucket(bucket);
+        try {
+            for (; ; ) {
+                Stripe[] tails = getBucket(bucket);
 
-            // Tail must exist to be updated.
-            assert !F.isEmpty(tails) : "Missing tails [bucket=" + bucket + ", tails=" + Arrays.toString(tails) +
-                ", metaPage=" + U.hexLong(metaPageId) + ']';
+                // Tail must exist to be updated.
+                assert !F.isEmpty(tails) : "Missing tails [bucket=" + bucket + ", tails=" + Arrays.toString(tails) +
+                    ", metaPage=" + U.hexLong(metaPageId) + ']';
 
-            idx = findTailIndex(tails, oldTailId, idx);
+                idx = findTailIndex(tails, oldTailId, idx);
 
-            assert tails[idx].tailId == oldTailId;
+                assert tails[idx].tailId == oldTailId;
 
-            if (newTailId == 0L) {
-                if (tails.length <= MAX_STRIPES_PER_BUCKET / 2) {
-                    tails[idx].empty = true;
+                if (newTailId == 0L) {
+                    if (tails.length <= MAX_STRIPES_PER_BUCKET / 2) {
+                        tails[idx].empty = true;
 
-                    return false;
+                        return false;
+                    }
+
+                    Stripe[] newTails;
+
+                    if (tails.length != 1)
+                        newTails = GridArrays.remove(tails, idx);
+                    else
+                        newTails = null; // Drop the bucket completely.
+
+                    if (casBucket(bucket, tails, newTails)) {
+                        // Reset tailId for invalidation of locking when stripe was taken concurrently.
+                        tails[idx].tailId = 0L;
+
+                        return true;
+                    }
                 }
-
-                Stripe[] newTails;
-
-                if (tails.length != 1)
-                    newTails = GridArrays.remove(tails, idx);
-                else
-                    newTails = null; // Drop the bucket completely.
-
-                if (casBucket(bucket, tails, newTails)) {
-                    // Reset tailId for invalidation of locking when stripe was taken concurrently.
-                    tails[idx].tailId = 0L;
+                else {
+                    // It is safe to assign new tail since we do it only when write lock on tail is held.
+                    tails[idx].tailId = newTailId;
 
                     return true;
                 }
             }
-            else {
-                // It is safe to assign new tail since we do it only when write lock on tail is held.
-                tails[idx].tailId = newTailId;
-
-                return true;
-            }
+        }
+        finally {
+            changed();
         }
     }
 
@@ -1526,10 +1534,6 @@ public abstract class PagesList extends DataStructure {
      */
     private void incrementBucketSize(int bucket) {
         bucketsSize[bucket].incrementAndGet();
-
-        // Ok to have a race here, see the field javadoc.
-        if (!changed)
-            changed = true;
     }
 
     /**
@@ -1539,7 +1543,12 @@ public abstract class PagesList extends DataStructure {
      */
     private void decrementBucketSize(int bucket) {
         bucketsSize[bucket].decrementAndGet();
+    }
 
+    /**
+     * Mark that free list was changed.
+     */
+    private void changed() {
         // Ok to have a race here, see the field javadoc.
         if (!changed)
             changed = true;

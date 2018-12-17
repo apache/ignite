@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.database;
 import java.io.Serializable;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -264,6 +265,10 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
         db.addCheckpointListener(new DbCheckpointListener() {
             @Override public void onCheckpointBegin(Context ctx) {
                 cnt.countDown();
+            }
+
+            @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+
             }
         });
 

@@ -197,6 +197,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         syncMetadata(execSvc, ctx, needSnapshot);
     }
 
+    /** {@inheritDoc} */
+    public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+        onCheckpointBegin(ctx);
+    }
+
     /**
      * Syncs and saves meta-information of all data structures to page memory.
      *

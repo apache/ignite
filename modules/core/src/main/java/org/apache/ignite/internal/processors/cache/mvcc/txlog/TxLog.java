@@ -205,6 +205,11 @@ public class TxLog implements DbCheckpointListener {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+        onCheckpointBegin(ctx);
+    }
+
     /**
      *
      * @param major Major version.
