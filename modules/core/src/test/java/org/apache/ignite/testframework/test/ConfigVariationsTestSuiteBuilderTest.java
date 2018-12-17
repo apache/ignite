@@ -25,14 +25,19 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class ConfigVariationsTestSuiteBuilderTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaults() throws Exception {
         TestSuite dfltSuite = new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class).build();
 
@@ -59,6 +64,7 @@ public class ConfigVariationsTestSuiteBuilderTest extends TestCase {
      * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
+    @Test
     public void testIgniteConfigFilter() throws Exception {
         TestSuite dfltSuite = new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class).build();
 
@@ -79,6 +85,7 @@ public class ConfigVariationsTestSuiteBuilderTest extends TestCase {
      * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
+    @Test
     public void testCacheConfigFilter() throws Exception {
         TestSuite dfltSuite = new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class)
             .withBasicCacheParams()

@@ -37,11 +37,15 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * SSL connection test.
  */
 @SuppressWarnings("ThrowableNotThrown")
+@RunWith(JUnit4.class)
 public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -95,6 +99,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnection() throws Exception {
         setSslCtxFactoryToCli = true;
         sslCtxFactory = getTestSslContextFactory();
@@ -118,6 +123,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionTrustAll() throws Exception {
         setSslCtxFactoryToCli = true;
         sslCtxFactory = getTestSslContextFactory();
@@ -140,6 +146,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectionUseIgniteFactory() throws Exception {
         setSslCtxFactoryToIgnite = true;
         sslCtxFactory = getTestSslContextFactory();
@@ -163,6 +170,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultContext() throws Exception {
         // Store exists default SSL context to restore after test.
         final SSLContext dfltSslCtx = SSLContext.getDefault();
@@ -200,6 +208,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContextFactory() throws Exception {
         setSslCtxFactoryToCli = true;
         sslCtxFactory = getTestSslContextFactory();
@@ -218,6 +227,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSslServerAndPlainClient() throws Exception {
         setSslCtxFactoryToCli = true;
         sslCtxFactory = getTestSslContextFactory();
@@ -241,6 +251,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvalidKeystoreConfig() throws Exception {
         setSslCtxFactoryToCli = true;
 
@@ -329,6 +340,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUnknownClientCertificate() throws Exception {
         setSslCtxFactoryToCli = true;
         sslCtxFactory = getTestSslContextFactory();
@@ -356,6 +368,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUnsupportedSslProtocol() throws Exception {
         setSslCtxFactoryToCli = true;
         sslCtxFactory = getTestSslContextFactory();
@@ -384,6 +397,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvalidKeyAlgorithm() throws Exception {
         setSslCtxFactoryToCli = true;
         sslCtxFactory = getTestSslContextFactory();
@@ -412,6 +426,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvalidKeyStoreType() throws Exception {
         setSslCtxFactoryToCli = true;
         sslCtxFactory = getTestSslContextFactory();

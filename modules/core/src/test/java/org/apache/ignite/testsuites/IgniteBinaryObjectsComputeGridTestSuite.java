@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.GridComputationBinarylizableClosuresSelfTest;
 
@@ -31,7 +32,7 @@ public class IgniteBinaryObjectsComputeGridTestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = IgniteComputeGridTestSuite.suite();
 
-        suite.addTestSuite(GridComputationBinarylizableClosuresSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridComputationBinarylizableClosuresSelfTest.class));
 
         return suite;
     }

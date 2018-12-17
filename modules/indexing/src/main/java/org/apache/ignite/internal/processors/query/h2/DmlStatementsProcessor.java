@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.bulkload.BulkLoadCacheWriter;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadParser;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadStreamerWriter;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
@@ -112,11 +113,23 @@ public class DmlStatementsProcessor {
     /** Default number of attempts to re-run DELETE and UPDATE queries in case of concurrent modifications of values. */
     private static final int DFLT_DML_RERUN_ATTEMPTS = 4;
 
+    /** Kernal context. */
+    private final GridKernalContext ctx;
+
     /** Indexing. */
-    private IgniteH2Indexing idx;
+    private final IgniteH2Indexing idx;
+
+    /** Object value context. */
+    private final CacheObjectValueContext coCtx;
+
+    /** Connection manager. */
+    private final ConnectionManager connMgr;
+
+    /** Schema manager. */
+    private final SchemaManager schemaMgr;
 
     /** Logger. */
-    private IgniteLogger log;
+    private final IgniteLogger log;
 
     /** Default size for update plan cache. */
     private static final int PLAN_CACHE_SIZE = 1024;
@@ -124,27 +137,24 @@ public class DmlStatementsProcessor {
     /** Cached value of {@code IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION}. */
     private final boolean isDmlAllowedOverride;
 
-    /**
-     * Default constructor.
-     */
-    public DmlStatementsProcessor() {
-        isDmlAllowedOverride = Boolean.getBoolean(IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION);
-    }
-
     /** Update plans cache. */
     private final ConcurrentMap<H2CachedStatementKey, UpdatePlan> planCache =
         new GridBoundedConcurrentLinkedHashMap<>(PLAN_CACHE_SIZE);
 
     /**
-     * Constructor.
-     *
-     * @param ctx Kernal context.
-     * @param idx indexing.
+     * Default constructor.
      */
-    public void start(GridKernalContext ctx, IgniteH2Indexing idx) {
+    public DmlStatementsProcessor(GridKernalContext ctx, IgniteH2Indexing idx) {
+        this.ctx = ctx;
         this.idx = idx;
 
+        coCtx = idx.objectContext();
+        connMgr = idx.connections();
+        schemaMgr = idx.schemaManager();
+
         log = ctx.log(DmlStatementsProcessor.class);
+
+        isDmlAllowedOverride = Boolean.getBoolean(IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION);
     }
 
     /**
@@ -446,7 +456,7 @@ public class DmlStatementsProcessor {
                     else
                         it = plan.createRows(U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY)).iterator();
 
-                    return new GridQueryCacheObjectsIterator(it, idx.objectContext(), cctx.keepBinary());
+                    return new GridQueryCacheObjectsIterator(it, coCtx, cctx.keepBinary());
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -552,7 +562,7 @@ public class DmlStatementsProcessor {
                         FieldsQueryCursor<List<?>> cur = idx.querySqlFields(schemaName, newFieldsQry, null,
                             true, true, mvccTracker(cctx, tx), cancel).get(0);
 
-                        it = plan.iteratorForTransaction(idx, cur);
+                        it = plan.iteratorForTransaction(connMgr, cur);
                     }
 
                     IgniteInternalFuture<Long> fut = tx.updateAsync(cctx, it,
@@ -650,7 +660,7 @@ public class DmlStatementsProcessor {
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
                     try {
-                        return new GridQueryCacheObjectsIterator(res.iterator(), idx.objectContext(), true);
+                        return new GridQueryCacheObjectsIterator(res.iterator(), coCtx, true);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -1177,7 +1187,7 @@ public class DmlStatementsProcessor {
             }, cancel);
         }
 
-        return plan.iteratorForTransaction(idx, cur);
+        return plan.iteratorForTransaction(connMgr, cur);
     }
 
     /**
@@ -1216,7 +1226,7 @@ public class DmlStatementsProcessor {
         if (cmd.packetSize() == null)
             cmd.packetSize(BulkLoadAckClientParameters.DFLT_PACKET_SIZE);
 
-        GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+        GridH2Table tbl = schemaMgr.dataTable(cmd.schemaName(), cmd.tableName());
 
         if (tbl == null) {
             throw new IgniteSQLException("Table does not exist: " + cmd.tableName(),
@@ -1229,7 +1239,7 @@ public class DmlStatementsProcessor {
 
         IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter = new BulkLoadDataConverter(plan);
 
-        IgniteDataStreamer<Object, Object> streamer = idx.kernalContext().grid().dataStreamer(tbl.cacheName());
+        IgniteDataStreamer<Object, Object> streamer = ctx.grid().dataStreamer(tbl.cacheName());
 
         BulkLoadCacheWriter outputWriter = new BulkLoadStreamerWriter(streamer);
 
@@ -1423,12 +1433,12 @@ public class DmlStatementsProcessor {
         }
 
         /** {@inheritDoc} */
-        public boolean hasNextX() {
+        @Override public boolean hasNextX() {
             return it.hasNext();
         }
 
         /** {@inheritDoc} */
-        public Object nextX() throws IgniteCheckedException {
+        @Override public Object nextX() throws IgniteCheckedException {
             return plan.processRowForTx(it.next());
         }
     }
@@ -1459,12 +1469,12 @@ public class DmlStatementsProcessor {
         }
 
         /** {@inheritDoc} */
-        public boolean hasNextX() {
+        @Override public boolean hasNextX() {
             return first;
         }
 
         /** {@inheritDoc} */
-        public T nextX() {
+        @Override public T nextX() {
             T res = first ? entry : null;
 
             first = false;

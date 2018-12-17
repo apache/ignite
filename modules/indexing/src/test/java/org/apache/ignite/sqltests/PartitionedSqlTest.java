@@ -19,10 +19,14 @@ package org.apache.ignite.sqltests;
 
 import java.util.Arrays;
 import java.util.List;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Includes all base sql test plus tests that make sense in partitioned mode.
  */
+@RunWith(JUnit4.class)
 public class PartitionedSqlTest extends BaseSqlTest {
     /** {@inheritDoc} */
     @Override protected void setupData() {
@@ -34,6 +38,7 @@ public class PartitionedSqlTest extends BaseSqlTest {
     /**
      * Check distributed INNER JOIN.
      */
+    @Test
     public void testInnerDistributedJoin() {
         Arrays.asList(true, false).forEach(forceOrder -> testAllNodes(node -> {
             final String qryTpl = "SELECT d.id, d.name, a.address " +
@@ -57,6 +62,7 @@ public class PartitionedSqlTest extends BaseSqlTest {
     /**
      * Check that if required index is missed, correct exception will be thrown.
      */
+    @Test
     public void testInnerDistJoinMissedIndex() {
         Arrays.asList(true, false).forEach(forceOrder -> testAllNodes(node -> {
             String qryTpl = "SELECT d.id, d.name, a.address " +
@@ -74,6 +80,7 @@ public class PartitionedSqlTest extends BaseSqlTest {
     /**
      * Check distributed LEFT JOIN.
      */
+    @Test
     public void testLeftDistributedJoin() {
         Arrays.asList(true, false).forEach(forceOrder -> testAllNodes(node -> {
             final String qryTpl = "SELECT d.id, d.name, a.depId, a.address " +
@@ -97,6 +104,7 @@ public class PartitionedSqlTest extends BaseSqlTest {
     /**
      * Check that if required index is missed, correct exception will be thrown.
      */
+    @Test
     public void testLeftDistributedJoinMissedIndex() {
         Arrays.asList(true, false).forEach(forceOrder -> testAllNodes(node -> {
             String qryTpl = "SELECT d.id, d.name, a.address " +
@@ -114,6 +122,7 @@ public class PartitionedSqlTest extends BaseSqlTest {
     /**
      * Check distributed RIGHT JOIN.
      */
+    @Test
     public void testRightDistributedJoin() {
         setExplain(true);
 
@@ -140,6 +149,7 @@ public class PartitionedSqlTest extends BaseSqlTest {
     /**
      * Check that if required index is missed, correct exception will be thrown.
      */
+    @Test
     public void testRightDistributedJoinMissedIndex() {
         Arrays.asList(true, false).forEach(forceOrder -> testAllNodes(node -> {
             String qryTpl = "SELECT d.id, d.name, a.address " +

@@ -38,12 +38,16 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CachePageWriteLockUnlockTest extends GridCommonAbstractTest {
     /** */
     public static final int PARTITION = 0;
@@ -74,6 +78,7 @@ public class CachePageWriteLockUnlockTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testPreloadPartition() throws Exception {
         try {
             IgniteEx grid0 = startGrid(0);

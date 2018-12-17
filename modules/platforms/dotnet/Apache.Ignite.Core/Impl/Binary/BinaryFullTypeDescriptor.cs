@@ -245,6 +245,17 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
         }
 
+        /// <summary>
+        /// Resets writer structure.
+        /// </summary>
+        public void ResetWriteStructure()
+        {
+            lock (this)
+            {
+                _writerTypeStruct = null;
+            }
+        }
+
         /** <inheritDoc /> */
         public void UpdateReadStructure(int pathIdx, IList<BinaryStructureUpdate> updates)
         {

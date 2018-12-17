@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.spi.deployment.local.GridLocalDeploymentSpiSelfTest;
 import org.apache.ignite.spi.deployment.local.GridLocalDeploymentSpiStartStopSelfTest;
@@ -33,8 +34,8 @@ public class IgniteSpiDeploymentSelfTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Deployment SPI Test Suite");
 
         // LocalDeploymentSpi tests
-        suite.addTest(new TestSuite(GridLocalDeploymentSpiSelfTest.class));
-        suite.addTest(new TestSuite(GridLocalDeploymentSpiStartStopSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridLocalDeploymentSpiSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridLocalDeploymentSpiStartStopSelfTest.class));
 
         return suite;
     }

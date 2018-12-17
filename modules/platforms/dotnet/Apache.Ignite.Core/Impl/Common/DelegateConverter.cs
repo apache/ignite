@@ -47,6 +47,7 @@ namespace Apache.Ignite.Core.Impl.Common
         public static Func<object, object> CompileFunc(Type targetType)
         {
             var method = targetType.GetMethod(DefaultMethodName);
+            Debug.Assert(method != null, "method != null");
 
             var targetParam = Expression.Parameter(typeof(object));
             var targetParamConverted = Expression.Convert(targetParam, targetType);

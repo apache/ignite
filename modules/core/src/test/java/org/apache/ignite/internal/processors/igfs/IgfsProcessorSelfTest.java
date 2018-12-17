@@ -17,6 +17,17 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.Cache;
 import org.apache.commons.io.IOUtils;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -46,18 +57,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import javax.cache.Cache;
-import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -67,6 +69,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * Tests for {@link IgfsProcessor}.
  */
+@RunWith(JUnit4.class)
 public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     /** Test IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -165,6 +168,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testigfsEnabled() throws Exception {
         IgniteFileSystem igfs = grid(0).fileSystem(igfsName());
 
@@ -176,6 +180,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateProperties() throws Exception {
         IgfsPath p = path("/tmp/my");
 
@@ -209,6 +214,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreate() throws Exception {
         IgfsPath path = path("/file");
 
@@ -219,7 +225,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
             for (int i = 0; i < nodesCount(); i++) {
                 IgfsEntryInfo fileInfo =
-                    (IgfsEntryInfo)grid(i).cachex(metaCacheName).localPeek(info.fileId(), null, null);
+                    (IgfsEntryInfo)grid(i).cachex(metaCacheName).localPeek(info.fileId(), null);
 
                 assertNotNull(fileInfo);
                 assertNotNull(fileInfo.listing());
@@ -235,6 +241,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception In case of any exception.
      */
+    @Test
     public void testMakeListDeleteDirs() throws Exception {
         assertListDir("/");
 
@@ -293,6 +300,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception In case of any exception.
      */
     @SuppressWarnings("TooBroadScope")
+    @Test
     public void testMakeListDeleteDirsMultithreaded() throws Exception {
         assertListDir("/");
 
@@ -343,6 +351,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testBasicOps() throws Exception {
         // Create directories.
         igfs.mkdirs(path("/A/B1/C1"));
@@ -423,6 +432,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSize() throws Exception {
         IgfsPath dir1 = path("/dir1");
         IgfsPath subDir1 = path("/dir1/subdir1");
@@ -469,6 +479,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testRename() throws Exception {
         // Create directories.
         igfs.mkdirs(path("/A/B1/C1"));
@@ -616,6 +627,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateOpenAppend() throws Exception {
         // Error - path points to root directory.
         assertCreateFails("/", false);
@@ -676,6 +688,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @SuppressWarnings("BusyWait")
+    @Test
     public void testDeleteCacheConsistency() throws Exception {
         IgfsPath path = new IgfsPath("/someFile");
 
@@ -735,21 +748,25 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateAppendLongData1() throws Exception {
         checkCreateAppendLongData(123, 1024, 100);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateAppendLongData2() throws Exception {
         checkCreateAppendLongData(123 + 1024, 1024, 100);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateAppendLongData3() throws Exception {
         checkCreateAppendLongData(123, 1024, 1000);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateAppendLongData4() throws Exception {
         checkCreateAppendLongData(123 + 1024, 1024, 1000);
     }
@@ -759,6 +776,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFormatNonEmpty() throws Exception {
         String dirPath = "/A/B/C";
 
@@ -793,6 +811,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFormatEmpty() throws Exception {
         igfs.clear();
     }
