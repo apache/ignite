@@ -71,6 +71,8 @@ public class PartitionUpdateCounter {
     public void init(long initUpdCntr, @Nullable byte[] rawData) {
         cntr.set(initUpdCntr);
 
+        initCntr = initUpdCntr;
+
         queue = fromBytes(rawData);
     }
 
