@@ -152,7 +152,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private final ConcurrentMap<QueryTypeNameKey, QueryTypeDescriptorImpl> typesByName = new ConcurrentHashMap<>();
 
     /** */
-    private final GridQueryIndexing idx;
+    private final @Nullable GridQueryIndexing idx;
 
     /** Value object context. */
     private final CacheQueryObjectValueContext valCtx;
