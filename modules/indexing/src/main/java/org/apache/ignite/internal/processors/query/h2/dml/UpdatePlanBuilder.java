@@ -21,11 +21,8 @@ import java.lang.reflect.Constructor;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -280,6 +277,10 @@ public final class UpdatePlanBuilder {
 
         int[] colTypes = new int[cols.length];
 
+        int pkColsCnt = QueryUtils.primaryKeyColumnsCount(desc.type());
+
+        int qryPkColsCnt = 0;
+
         for (int i = 0; i < cols.length; i++) {
             GridSqlColumn col = cols[i];
 
@@ -290,15 +291,24 @@ public final class UpdatePlanBuilder {
             colTypes[i] = col.resultType().type();
 
             int colId = col.column().getColumnId();
+
             if (desc.isKeyColumn(colId)) {
+                qryPkColsCnt++;
+
                 keyColIdx = i;
+
                 continue;
             }
 
             if (desc.isValueColumn(colId)) {
                 valColIdx = i;
+
                 continue;
             }
+
+            if (colId >= DEFAULT_COLUMNS_COUNT
+                && desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT))
+                qryPkColsCnt++;
 
             GridQueryProperty prop = desc.type().property(colName);
 
@@ -308,6 +318,14 @@ public final class UpdatePlanBuilder {
                 hasKeyProps = true;
             else
                 hasValProps = true;
+        }
+
+        if (qryPkColsCnt != pkColsCnt) {
+            List<String> tabPkCols = QueryUtils.primaryKeyColumns(desc.type());
+
+            throw new IgniteSQLException("Query is expected to contain all primary key columns " +
+                    "[expected=" + tabPkCols + ", query=" + Arrays.toString(colNames) + "].",
+                    IgniteQueryErrorCode.PARSING);
         }
 
         KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true, false);

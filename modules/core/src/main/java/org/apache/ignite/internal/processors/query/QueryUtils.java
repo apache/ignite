@@ -21,18 +21,7 @@ import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -167,6 +156,52 @@ public class QueryUtils {
     public static String indexName(QueryEntity entity, QueryIndex idx) {
         return indexName(tableName(entity), idx);
     }
+
+
+    /**
+     * Computest list of table columns that
+     *
+     * @param tab descriptor of the table.
+     * @return list of pk columns.
+     */
+    public static List<String> primaryKeyColumns(GridQueryTypeDescriptor tab) {
+        List<String> pkFlds = new ArrayList<>();
+
+        for (String fldName : tab.fields().keySet()) {
+            if (tab.property(fldName).key())
+                pkFlds.add(fldName);
+        }
+
+        if (!pkFlds.isEmpty()) {
+            return pkFlds;
+        }
+
+        String cacheKey = tab.keyFieldName() != null ? tab.keyFieldName() : KEY_FIELD_NAME;
+
+        return Collections.singletonList(cacheKey);
+    }
+
+
+    /**
+     * Computes number of primary key columns.
+     *
+     * @param tab descriptor of the table.
+     * @return how many columns PK has.
+     */
+    public static int primaryKeyColumnsCount(GridQueryTypeDescriptor tab) {
+        int pkFldsCnt = 0;
+
+        for (String fldName : tab.fields().keySet()) {
+            if (tab.property(fldName).key())
+                pkFldsCnt++;
+        }
+
+        if (pkFldsCnt == 0)
+            return 1; // Cache key is a simple object.
+
+        return pkFldsCnt;
+    }
+
 
     /**
      * Get index name.
