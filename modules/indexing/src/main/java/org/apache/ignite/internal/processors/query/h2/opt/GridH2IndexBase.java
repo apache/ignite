@@ -87,6 +87,7 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2Collocati
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.PREPARE;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor.COL_NOT_EXISTS;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_ERROR;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_NOT_FOUND;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_OK;
@@ -305,28 +306,30 @@ public abstract class GridH2IndexBase extends BaseIndex {
     @Override public IndexLookupBatch createLookupBatch(TableFilter[] filters, int filter) {
         GridH2QueryContext qctx = GridH2QueryContext.get();
 
-        if (qctx == null || qctx.distributedJoinMode() == OFF || !getTable().isPartitioned())
+        GridH2Table tbl = getTable();
+
+        if (qctx == null || qctx.distributedJoinMode() == OFF || !tbl.isPartitioned())
             return null;
 
-        IndexColumn affCol = getTable().getAffinityKeyColumn();
-        GridH2RowDescriptor desc = getTable().rowDescriptor();
+        GridH2RowDescriptor desc = tbl.rowDescriptor();
 
-        int affColId = -1;
+        int[] masks = filters[filter].getMasks();
+
+        int affColId = COL_NOT_EXISTS;
         boolean ucast = false;
+
+        IndexColumn affCol = tbl.getAffinityKeyColumn();
 
         if (affCol != null) {
             affColId = affCol.column.getColumnId();
-            int[] masks = filters[filter].getMasks();
 
-            if (masks != null) {
-                ucast = (masks[affColId] & IndexCondition.EQUALITY) != 0 ||
-                        desc.checkKeyIndexCondition(masks, IndexCondition.EQUALITY);
-            }
+            ucast = masks != null && (masks[affColId] & IndexCondition.EQUALITY) != 0;
         }
 
-        GridCacheContext<?, ?> cctx = getTable().rowDescriptor().context();
+        if (!ucast)
+            ucast = masks != null && desc.checkKeyIndexCondition(masks, IndexCondition.EQUALITY);
 
-        return new DistributedLookupBatch(cctx, ucast, affColId);
+        return new DistributedLookupBatch(desc.context(), ucast, affColId);
     }
 
     /** {@inheritDoc} */
@@ -1048,6 +1051,9 @@ public abstract class GridH2IndexBase extends BaseIndex {
          * @return Affinity key or {@code null}.
          */
         private Object getAffinityKey(SearchRow firstRow, SearchRow lastRow) {
+            if (affColId == COL_NOT_EXISTS)
+                return null;
+
             if (firstRow == null || lastRow == null)
                 return null;
 
@@ -1109,7 +1115,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 rangeStreams = new HashMap<>();
             }
 
-            Object affKey = affColId == -1 ? null : getAffinityKey(firstRow, lastRow);
+            Object affKey = getAffinityKey(firstRow, lastRow);
 
             boolean locQry = localQuery();
 
