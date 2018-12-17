@@ -46,7 +46,7 @@ public class Slf4jLoggerMarkerTest {
 
     /** */
     @After
-    void tearDown() {
+    public void tearDown() {
         deleteLogs();
     }
 
