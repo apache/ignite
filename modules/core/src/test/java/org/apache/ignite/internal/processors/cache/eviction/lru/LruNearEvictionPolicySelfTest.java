@@ -111,6 +111,7 @@ public class LruNearEvictionPolicySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccTransactionalNearEvictionMaxSize() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-7187");
         fail("https://issues.apache.org/jira/browse/IGNITE-7956");

@@ -216,6 +216,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
     /**
      * Test DDL operation for not started cache on client node.
      */
+    @Test
     public void testCreateIdxOnClient() {
         getDefaultCacheOnClient().query(new SqlFieldsQuery("CREATE INDEX IDX_11 ON " + FULL_TABLE_NAME + " (name asc)")).getAll();
     }
@@ -223,6 +224,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
     /**
      * Test DDL operation for not started cache on client node.
      */
+    @Test
     public void testDropIdxOnClient() {
         srvNode.getOrCreateCache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("CREATE INDEX IDX_TST ON " + FULL_TABLE_NAME + " (name desc)")).getAll();
 

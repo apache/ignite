@@ -196,6 +196,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeliveryAllFailedMessagesInCorrectOrder() throws Exception {
         IgniteEx coord = startGrid("coordinator");
         TcpDiscoverySpi coordDisco = (TcpDiscoverySpi)coord.configuration().getDiscoverySpi();

@@ -247,6 +247,7 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
 
     /**
      */
+    @Test
     public void testMvccPessimisticOnePhaseCommitWithNearCache() {
         fail("https://issues.apache.org/jira/browse/IGNITE-7187");
 

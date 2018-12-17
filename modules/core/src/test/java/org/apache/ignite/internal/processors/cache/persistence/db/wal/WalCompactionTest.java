@@ -333,6 +333,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSeekingStartInCompactedSegment() throws Exception {
         IgniteEx ig = (IgniteEx)startGrids(3);
         ig.cluster().active(true);

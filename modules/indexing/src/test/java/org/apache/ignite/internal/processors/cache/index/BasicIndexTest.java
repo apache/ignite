@@ -332,6 +332,7 @@ public class BasicIndexTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testDynamicIndexesDropWithPersistence() throws Exception {
         isPersistenceEnabled = true;
 

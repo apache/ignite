@@ -90,6 +90,7 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
     /**
      * Test 'XOR' operation training with {@link RPropUpdateCalculator}.
      */
+    @Test
     public void testXORRProp() {
         xorTest(new UpdatesStrategy<>(
             new RPropUpdateCalculator(),
@@ -101,6 +102,7 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
     /**
      * Test 'XOR' operation training with {@link NesterovUpdateCalculator}.
      */
+    @Test
     public void testXORNesterov() {
         xorTest(new UpdatesStrategy<>(
             new NesterovUpdateCalculator<MultilayerPerceptron>(0.1, 0.7),
