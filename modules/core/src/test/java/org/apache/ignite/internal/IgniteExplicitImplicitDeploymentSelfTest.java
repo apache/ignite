@@ -46,11 +46,15 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTest {
     /** */
     public IgniteExplicitImplicitDeploymentSelfTest() {
@@ -73,6 +77,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testImplicitDeployLocally() throws Exception {
         execImplicitDeployLocally(true, true, true);
     }
@@ -80,6 +85,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testImplicitDeployP2P() throws Exception {
         execImplicitDeployP2P(true, true, true);
     }
@@ -87,6 +93,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testExplicitDeployLocally() throws Exception {
         execExplicitDeployLocally(true, true, true);
     }
@@ -94,6 +101,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testExplicitDeployP2P() throws Exception {
         execExplicitDeployP2P(true, true, true);
     }
@@ -101,7 +109,6 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
     /**
      * @param ignite Grid.
      */
-    @SuppressWarnings({"CatchGenericClass"})
     private void stopGrid(Ignite ignite) {
         try {
             if (ignite != null)

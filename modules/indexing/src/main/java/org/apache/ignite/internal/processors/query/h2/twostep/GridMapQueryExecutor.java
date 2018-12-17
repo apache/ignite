@@ -875,7 +875,7 @@ public class GridMapQueryExecutor {
                 .mvccSnapshot(mvccSnapshot)
                 .lazyWorker(worker);
 
-            Connection conn = h2.connectionForSchema(schemaName);
+            Connection conn = h2.connections().connectionForThread(schemaName);
 
             H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder);
 
@@ -910,7 +910,7 @@ public class GridMapQueryExecutor {
                         PreparedStatement stmt;
 
                         try {
-                            stmt = h2.prepareStatement(conn, sql, true);
+                            stmt = h2.connections().prepareStatement(conn, sql);
                         }
                         catch (SQLException e) {
                             throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
@@ -920,7 +920,7 @@ public class GridMapQueryExecutor {
 
                         if (GridSqlQueryParser.isForUpdateQuery(p)) {
                             sql = GridSqlQueryParser.rewriteQueryForUpdateIfNeeded(p, inTx);
-                            stmt = h2.prepareStatement(conn, sql, true);
+                            stmt = h2.connections().prepareStatement(conn, sql);
                         }
 
                         h2.bindParameters(stmt, params0);
@@ -1341,7 +1341,6 @@ public class GridMapQueryExecutor {
      * @param pageSize Page size.
      * @param removeMapping Remove mapping flag.
      */
-    @SuppressWarnings("unchecked")
     private void sendNextPage(MapNodeResults nodeRess, ClusterNode node, MapQueryResults qr, int qry, int segmentId,
         int pageSize, boolean removeMapping) {
         try {

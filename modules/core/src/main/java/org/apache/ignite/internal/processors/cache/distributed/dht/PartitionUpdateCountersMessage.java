@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -28,6 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Partition update counters message.
  */
+@IgniteCodeGeneratingFail
 public class PartitionUpdateCountersMessage implements Message {
     /** */
     private static final int ITEM_SIZE = 4 /* partition */ + 8 /* initial counter */ + 8 /* updates count */;

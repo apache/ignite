@@ -190,7 +190,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      * @param nodeId Sender.
      * @param res Result.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void onResult(UUID nodeId, GridNearTxFinishResponse res) {
         if (!isDone()) {
             FinishMiniFuture finishFut = null;

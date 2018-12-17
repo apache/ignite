@@ -270,7 +270,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"NullableProblems", "unchecked"})
+    @SuppressWarnings({"unchecked"})
     @Override public void writeAll(final Collection<Cache.Entry<? extends K, ? extends V>> entries) {
         assert entries != null;
         try {

@@ -816,7 +816,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     /** {@inheritDoc} */
     @Nullable @Override public V localPeek(K key, CachePeekMode... peekModes) {
         try {
-            return delegate.localPeek(key, peekModes, null);
+            return delegate.localPeek(key, peekModes);
         }
         catch (IgniteException | IgniteCheckedException e) {
             throw cacheException(e);
@@ -1709,7 +1709,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      *
      * @return Projection for binary objects.
      */
-    @SuppressWarnings("unchecked")
     @Override public <K1, V1> IgniteCache<K1, V1> keepBinary() {
         throw new UnsupportedOperationException();
     }
@@ -1718,7 +1717,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * @param dataCenterId Data center ID.
      * @return Projection for data center id.
      */
-    @SuppressWarnings("unchecked")
     @Override public IgniteCache<K, V> withDataCenterId(byte dataCenterId) {
         throw new UnsupportedOperationException();
     }

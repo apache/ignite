@@ -34,6 +34,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -45,6 +48,7 @@ import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 /**
  * Cache + Deployment test.
  */
+@RunWith(JUnit4.class)
 public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -124,6 +128,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @SuppressWarnings("unchecked")
+    @Test
     public void testDeployment() throws Exception {
         try {
             depMode = CONTINUOUS;
@@ -150,6 +155,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @SuppressWarnings("unchecked")
+    @Test
     public void testDeployment2() throws Exception {
         try {
             depMode = CONTINUOUS;
@@ -185,6 +191,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @SuppressWarnings("unchecked")
+    @Test
     public void testDeployment3() throws Exception {
         try {
             depMode = SHARED;
@@ -231,12 +238,14 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @SuppressWarnings("unchecked")
+    @Test
     public void testDeployment4() throws Exception {
         doDeployment4(false);
     }
 
     /** @throws Exception If failed. */
     @SuppressWarnings("unchecked")
+    @Test
     public void testDeployment4BackupLeavesGrid() throws Exception {
         doDeployment4(true);
     }
@@ -288,6 +297,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @SuppressWarnings("unchecked")
+    @Test
     public void testDeployment5() throws Exception {
         ClassLoader ldr = getExternalClassLoader();
 
@@ -345,6 +355,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @SuppressWarnings("unchecked")
+    @Test
     public void testDeployment6() throws Exception {
         try {
             depMode = SHARED;
@@ -378,6 +389,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @SuppressWarnings("unchecked")
+    @Test
     public void testDeployment7() throws Exception {
         try {
             depMode = SHARED;
@@ -410,6 +422,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPartitionedDeploymentPreloading() throws Exception {
         ClassLoader ldr = getExternalClassLoader();
 
@@ -434,6 +447,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheUndeploymentSharedMode() throws Exception {
         testCacheUndeployment(SHARED);
     }
@@ -441,6 +455,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheUndeploymentContMode() throws Exception {
         testCacheUndeployment(CONTINUOUS);
     }

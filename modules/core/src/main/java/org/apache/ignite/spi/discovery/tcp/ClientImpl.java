@@ -732,7 +732,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     TcpDiscoveryNode node = locNode;
 
                     if (locNode.order() > 0) {
-                        node = locNode.clientReconnectNode(spi.spiCtx.nodeAttributes());
+                        node = locNode.clientReconnectNode(spi.locNodeAttrs);
 
                         marshalCredentials(node);
                     }
@@ -1653,7 +1653,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("InfiniteLoopStatement")
         @Override protected void body() throws InterruptedException {
             state = STARTING;
 

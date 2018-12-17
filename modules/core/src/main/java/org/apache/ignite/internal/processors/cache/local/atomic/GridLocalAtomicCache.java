@@ -427,6 +427,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                         if (evt) {
                             ctx.events().readEvent(cacheKey,
                                 null,
+                                null,
                                 row.value(),
                                 subjId,
                                 taskName,
@@ -1347,7 +1348,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
      * @param transformed {@code True} if transform operation performed.
      * @return Partial update exception.
      */
-    @SuppressWarnings({"unchecked", "ConstantConditions", "ForLoopReplaceableByForEach"})
+    @SuppressWarnings({"unchecked", "ConstantConditions"})
     @Nullable private CachePartialUpdateCheckedException updatePartialBatch(
         List<GridCacheEntryEx> entries,
         final GridCacheVersion ver,

@@ -23,7 +23,6 @@ import org.apache.ignite.internal.GridKernalContext;
 /**
  *
  */
-@SuppressWarnings("TypeMayBeWeakened")
 public class CacheObjectContext implements CacheObjectValueContext {
     /** */
     private GridKernalContext kernalCtx;

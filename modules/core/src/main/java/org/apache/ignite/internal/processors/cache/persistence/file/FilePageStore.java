@@ -27,8 +27,8 @@ import java.nio.file.Files;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -71,7 +71,7 @@ public class FilePageStore implements PageStore {
     private final FileIOFactory ioFactory;
 
     /** I/O interface for read/write operations with file */
-    private volatile FileIO fileIO;
+    protected volatile FileIO fileIO;
 
     /** */
     private final AtomicLong allocated;
@@ -80,7 +80,7 @@ public class FilePageStore implements PageStore {
     private final AllocatedPageTracker allocatedTracker;
 
     /** */
-    private final int pageSize;
+    protected final int pageSize;
 
     /** */
     private volatile boolean inited;
@@ -105,7 +105,8 @@ public class FilePageStore implements PageStore {
         File file,
         FileIOFactory factory,
         DataStorageConfiguration cfg,
-        AllocatedPageTracker allocatedTracker) {
+        AllocatedPageTracker allocatedTracker
+    ) {
         this.type = type;
         this.cfgFile = file;
         this.dbCfg = cfg;
@@ -113,6 +114,38 @@ public class FilePageStore implements PageStore {
         this.allocated = new AtomicLong();
         this.pageSize = dbCfg.getPageSize();
         this.allocatedTracker = allocatedTracker;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getPageSize() {
+        return pageSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getBlockSize() {
+        return -1; // Header is unaligned in this version.
+    }
+
+    /** {@inheritDoc} */
+    @Override public long size() {
+        try {
+            FileIO io = fileIO;
+
+            return io == null ? 0 : io.size();
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSparseSize() {
+        return -1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void punchHole(long pageId, int usefulBytes) {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -228,10 +261,8 @@ public class FilePageStore implements PageStore {
         if (fileSize == headerSize()) // Every file has a special meta page.
             fileSize = pageSize + headerSize();
 
-        if ((fileSize - headerSize()) % pageSize != 0)
-            throw new IOException(prefix + "(invalid file size)" +
-                " [fileSize=" + U.hexLong(fileSize) +
-                ", pageSize=" + U.hexLong(pageSize) + ']');
+        if (fileSize % pageSize != 0) // In the case of compressed pages we can miss the tail of the page.
+            fileSize = (fileSize / pageSize + 1) * pageSize;
 
         return fileSize;
     }
@@ -258,6 +289,10 @@ public class FilePageStore implements PageStore {
                 + ", delete=" + delete + "]", e);
         }
         finally {
+            allocatedTracker.updateTotalAllocatedPages(-1L * allocated.getAndSet(0) / pageSize);
+
+            inited = false;
+
             lock.writeLock().unlock();
         }
     }
@@ -329,6 +364,26 @@ public class FilePageStore implements PageStore {
         }
     }
 
+    /**
+     * @param pageId Page ID.
+     * @param pageBuf Page buffer.
+     * @return Number of bytes to calculate CRC on.
+     */
+    private int getCrcSize(long pageId, ByteBuffer pageBuf) throws IOException {
+        int compressedSize = PageIO.getCompressedSize(pageBuf);
+
+        if (compressedSize == 0)
+            return pageSize; // Page is not compressed.
+
+        if (compressedSize < 0 || compressedSize > pageSize) {
+            throw new IgniteDataIntegrityViolationException("Failed to read page (CRC validation failed) " +
+                "[id=" + U.hexLong(pageId) + ", file=" + cfgFile.getAbsolutePath() + ", fileSize=" + fileIO.size() +
+                ", page=" + U.toHexString(pageBuf) + "]");
+        }
+
+        return compressedSize;
+    }
+
     /** {@inheritDoc} */
     @Override public void read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
         init();
@@ -359,7 +414,7 @@ public class FilePageStore implements PageStore {
             pageBuf.position(0);
 
             if (!skipCrc) {
-                int curCrc32 = FastCrc.calcCrc(pageBuf, pageSize);
+                int curCrc32 = FastCrc.calcCrc(pageBuf, getCrcSize(pageId, pageBuf));
 
                 if ((savedCrc32 ^ curCrc32) != 0)
                     throw new IgniteDataIntegrityViolationException("Failed to read page (CRC validation failed) " +
@@ -542,9 +597,9 @@ public class FilePageStore implements PageStore {
                     long off = pageOffset(pageId);
 
                     assert (off >= 0 && off <= allocated.get()) || recover :
-                        "off=" + U.hexLong(off) + ", allocated=" + U.hexLong(allocated.get()) + ", pageId=" + U.hexLong(pageId);
+                        "off=" + U.hexLong(off) + ", allocated=" + U.hexLong(allocated.get()) +
+                            ", pageId=" + U.hexLong(pageId) + ", file=" + cfgFile.getPath();
 
-                    assert pageBuf.capacity() == pageSize;
                     assert pageBuf.position() == 0;
                     assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()
                         + " should be same with " + ByteOrder.nativeOrder();
@@ -554,7 +609,7 @@ public class FilePageStore implements PageStore {
                     if (calculateCrc && !skipCrc) {
                         assert PageIO.getCrc(pageBuf) == 0 : U.hexLong(pageId);
 
-                        PageIO.setCrc(pageBuf, calcCrc32(pageBuf, pageSize));
+                        PageIO.setCrc(pageBuf, calcCrc32(pageBuf, getCrcSize(pageId, pageBuf)));
                     }
 
                     // Check whether crc was calculated somewhere above the stack if it is forcibly skipped.

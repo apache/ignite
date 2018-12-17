@@ -32,14 +32,25 @@ import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
+import org.apache.ignite.internal.pagemem.wal.record.LazyMvccDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.MvccDataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
  * Record data V2 serializer.
@@ -80,6 +91,9 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer implements Re
 
                 return 18 + cacheStatesSize + (walPtr == null ? 0 : 16);
 
+            case MVCC_DATA_RECORD:
+                return 4/*entry count*/ + 8/*timestamp*/ + dataSize((DataRecord)rec);
+
             case DATA_RECORD:
                 return super.plainSize(rec) + 8/*timestamp*/;
 
@@ -91,6 +105,9 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer implements Re
 
             case TX_RECORD:
                 return txRecordSerializer.size((TxRecord)rec);
+
+            case MVCC_TX_RECORD:
+                return txRecordSerializer.size((MvccTxRecord)rec);
 
             default:
                 return super.plainSize(rec);
@@ -135,6 +152,17 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer implements Re
 
                 return new DataRecord(entries, timeStamp);
 
+            case MVCC_DATA_RECORD:
+                entryCnt = in.readInt();
+                timeStamp = in.readLong();
+
+                entries = new ArrayList<>(entryCnt);
+
+                for (int i = 0; i < entryCnt; i++)
+                    entries.add(readMvccDataEntry(in));
+
+                return new MvccDataRecord(entries, timeStamp);
+
             case ENCRYPTED_DATA_RECORD:
                 entryCnt = in.readInt();
                 timeStamp = in.readLong();
@@ -160,7 +188,10 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer implements Re
                 return new ExchangeRecord(constId, ExchangeRecord.Type.values()[idx], ts);
 
             case TX_RECORD:
-                return txRecordSerializer.read(in);
+                return txRecordSerializer.readTx(in);
+
+            case MVCC_TX_RECORD:
+                return txRecordSerializer.readMvccTx(in);
 
             default:
                 return super.readPlainRecord(type, in, encrypted);
@@ -199,6 +230,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer implements Re
 
                 break;
 
+            case MVCC_DATA_RECORD:
             case DATA_RECORD:
                 DataRecord dataRec = (DataRecord)rec;
 
@@ -238,9 +270,116 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer implements Re
 
                 break;
 
+            case MVCC_TX_RECORD:
+                txRecordSerializer.write((MvccTxRecord)rec, buf);
+
+                break;
+
             default:
                 super.writePlainRecord(rec, buf);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override void putPlainDataEntry(ByteBuffer buf, DataEntry entry) throws IgniteCheckedException {
+        if (entry instanceof MvccDataEntry)
+            putMvccDataEntry(buf, (MvccDataEntry)entry);
+        else
+            super.putPlainDataEntry(buf, entry);
+    }
+
+    /**
+     * @param buf Buffer to write to.
+     * @param entry Data entry.
+     */
+    private void putMvccDataEntry(ByteBuffer buf, MvccDataEntry entry) throws IgniteCheckedException {
+        super.putPlainDataEntry(buf, entry);
+
+        txRecordSerializer.putMvccVersion(buf, entry.mvccVer());
+    }
+
+    /**
+     * @param in Input to read from.
+     * @return Read entry.
+     */
+    private MvccDataEntry readMvccDataEntry(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
+        int cacheId = in.readInt();
+
+        int keySize = in.readInt();
+        byte keyType = in.readByte();
+        byte[] keyBytes = new byte[keySize];
+        in.readFully(keyBytes);
+
+        int valSize = in.readInt();
+
+        byte valType = 0;
+        byte[] valBytes = null;
+
+        if (valSize >= 0) {
+            valType = in.readByte();
+            valBytes = new byte[valSize];
+            in.readFully(valBytes);
+        }
+
+        byte ord = in.readByte();
+
+        GridCacheOperation op = GridCacheOperation.fromOrdinal(ord & 0xFF);
+
+        GridCacheVersion nearXidVer = readVersion(in, true);
+        GridCacheVersion writeVer = readVersion(in, false);
+
+        int partId = in.readInt();
+        long partCntr = in.readLong();
+        long expireTime = in.readLong();
+
+        MvccVersion mvccVer = txRecordSerializer.readMvccVersion(in);
+
+        GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+
+        if (cacheCtx != null) {
+            CacheObjectContext coCtx = cacheCtx.cacheObjectContext();
+
+            KeyCacheObject key = co.toKeyCacheObject(coCtx, keyType, keyBytes);
+
+            if (key.partition() == -1)
+                key.partition(partId);
+
+            CacheObject val = valBytes != null ? co.toCacheObject(coCtx, valType, valBytes) : null;
+
+            return new MvccDataEntry(
+                cacheId,
+                key,
+                val,
+                op,
+                nearXidVer,
+                writeVer,
+                expireTime,
+                partId,
+                partCntr,
+                mvccVer
+            );
+        }
+        else
+            return new LazyMvccDataEntry(
+                cctx,
+                cacheId,
+                keyType,
+                keyBytes,
+                valType,
+                valBytes,
+                op,
+                nearXidVer,
+                writeVer,
+                expireTime,
+                partId,
+                partCntr,
+                mvccVer);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int entrySize(DataEntry entry) throws IgniteCheckedException {
+        return super.entrySize(entry) +
+            /*mvcc version*/ ((entry instanceof MvccDataEntry) ? (8 + 8 + 4) : 0);
     }
 
     /**

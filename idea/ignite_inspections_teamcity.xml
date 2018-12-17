@@ -2,7 +2,7 @@
     <option name="myName" value="ignite_inspections_teamcity" />
     <!-- Enabled inspetions -->
     <inspection_tool class="SizeReplaceableByIsEmpty" enabled="true" level="ERROR" enabled_by_default="true" />
-    <inspection_tool class="UNUSED_IMPORT" enabled="true" level="ERROR" enabled_by_default="true" />
+    <inspection_tool class="UnusedImport" enabled="true" level="ERROR" enabled_by_default="true"/>
     <inspection_tool class="MissingOverrideAnnotation" enabled="true" level="ERROR" enabled_by_default="true">
         <option name="ignoreObjectMethods" value="true" />
         <option name="ignoreAnonymousClassMethods" value="false" />
@@ -10,6 +10,7 @@
     <inspection_tool class="MissortedModifiers" enabled="true" level="ERROR" enabled_by_default="true">
         <option name="m_requireAnnotationsFirst" value="false" />
     </inspection_tool>
+    <inspection_tool class="RedundantSuppression" enabled="true" level="ERROR" enabled_by_default="true" />
     <!-- Disabled inspetions -->
     <inspection_tool class="AbsoluteAlignmentInUserInterface" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="AbstractBeanReferencesInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
@@ -1349,7 +1350,6 @@
         <option name="ADD_SERVLET_TO_ENTRIES" value="false"/>
         <option name="ADD_NONJAVA_TO_ENTRIES" value="true"/>
     </inspection_tool>
-    <inspection_tool class="UnusedImport" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="UnusedLabel" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="UnusedLibrary" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="UnusedMessageFormatParameter" enabled="false" level="WARNING" enabled_by_default="false"/>

@@ -70,7 +70,6 @@ public class PlatformClusterNodeFilterImpl extends PlatformAbstractPredicate imp
     /**
      * @param ignite Ignite instance.
      */
-    @SuppressWarnings("UnusedDeclaration")
     @IgniteInstanceResource
     public void setIgniteInstance(Ignite ignite) {
         ctx = PlatformUtils.platformContext(ignite);

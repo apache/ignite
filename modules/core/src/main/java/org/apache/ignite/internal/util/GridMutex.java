@@ -26,7 +26,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Serializable mutex.
  */
-@SuppressWarnings( {"CloneDoesntDeclareCloneNotSupportedException"})
 public class GridMutex implements Externalizable, Cloneable {
     /** */
     private static final long serialVersionUID = 0L;

@@ -47,10 +47,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import javax.cache.processor.EntryProcessorException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests command handler directly.
  */
+@RunWith(JUnit4.class)
 public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
     /**
      * Constructor.
@@ -102,6 +106,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheGetFailsSyncNotify() throws Exception {
         GridRestCommandHandler hnd = new TestableCacheCommandHandler(grid().context(), "getAsync");
 
@@ -128,7 +133,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of any exception.
      */
-    @SuppressWarnings("NullableProblems")
+    @Test
     public void testAppendPrepend() throws Exception {
         assertEquals("as" + "df", testAppend("as", "df", true));
         assertEquals("df" + "as", testAppend("as", "df", false));
@@ -217,6 +222,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheClear() throws Exception {
         GridRestCommandHandler hnd = new GridCacheCommandHandler(((IgniteKernal)grid()).context());
 

@@ -214,7 +214,6 @@ public class FetchingQueryCursorStressTest {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("InfiniteLoopStatement")
         @Override public void run() {
             System.out.println("Executor started: " + Thread.currentThread().getName());
 
@@ -250,7 +249,6 @@ public class FetchingQueryCursorStressTest {
      */
     private static class ThroughputPrinter implements Runnable {
         /** {@inheritDoc} */
-        @SuppressWarnings("InfiniteLoopStatement")
         @Override public void run() {
             while (error.get()==null) {
                 long before = CNT.get();

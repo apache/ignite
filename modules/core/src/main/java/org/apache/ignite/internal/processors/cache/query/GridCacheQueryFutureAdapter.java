@@ -360,7 +360,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @param err Error (if was).
      * @param finished Finished or not.
      */
-    @SuppressWarnings({"unchecked", "NonPrivateFieldAccessedInSynchronizedContext"})
+    @SuppressWarnings({"unchecked"})
     public void onPage(@Nullable UUID nodeId, @Nullable Collection<?> data, @Nullable Throwable err, boolean finished) {
         if (isCancelled())
             return;
@@ -438,7 +438,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @param col Collection.
      * @return Collection with masked {@code null} values.
      */
-    @SuppressWarnings("unchecked")
     private Collection<Object> maskNulls(Collection<Object> col) {
         assert col != null;
 
@@ -453,7 +452,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @param col Collection.
      * @return Collection with unmasked {@code null} values.
      */
-    @SuppressWarnings("unchecked")
     private Collection<Object> unmaskNulls(Collection<Object> col) {
         assert col != null;
 

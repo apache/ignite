@@ -36,9 +36,6 @@
 
     <properties>
         <mesos.version>1.5.0</mesos.version>
-        <ignite.version.url>https://ignite.apache.org/latest</ignite.version.url>
-        <ignite.path>/ignite/%s/apache-ignite-%s-bin.zip</ignite.path>
-        <apache.mirror.url>https://www.apache.org/dyn/closer.cgi?as_json=1</apache.mirror.url>
     </properties>
 
     <dependencies>
@@ -70,51 +67,6 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.7</version>
-                <executions>
-                    <execution>
-                        <id>update-versions</id>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <phase>generate-sources</phase>
-                        <configuration>
-                            <target>
-                                <echo message="Update download url in mesos module."/>
-                                <echo message="Latest version ${ignite.version.url}."/>
-
-                                <replaceregexp byline="true" encoding="UTF-8">
-                                    <regexp pattern="(.*IGNITE_LATEST_VERSION_URL = &quot;)(.*)(&quot;.*)"/>
-                                    <substitution expression="\1${ignite.version.url}\3"/>
-                                    <fileset dir="${basedir}/">
-                                        <include name="**/IgniteProvider.java"/>
-                                    </fileset>
-                                </replaceregexp>
-
-                                <replaceregexp byline="true" encoding="UTF-8">
-                                    <regexp pattern="(.*APACHE_MIRROR_URL = &quot;)(.*)(&quot;.*)"/>
-                                    <substitution expression="\1${apache.mirror.url}\3"/>
-                                    <fileset dir="${basedir}/">
-                                        <include name="**/IgniteProvider.java"/>
-                                    </fileset>
-                                </replaceregexp>
-
-                                <replaceregexp byline="true" encoding="UTF-8">
-                                    <regexp pattern="(.*IGNITE_PATH = &quot;)(.*)(&quot;.*)"/>
-                                    <substitution expression="\1${ignite.path}\3"/>
-                                    <fileset dir="${basedir}/">
-                                        <include name="**/IgniteProvider.java"/>
-                                    </fileset>
-                                </replaceregexp>
-                            </target>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>2.4.1</version>

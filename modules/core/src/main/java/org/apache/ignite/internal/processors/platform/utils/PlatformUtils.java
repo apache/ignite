@@ -81,7 +81,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
 /**
  * Platform utility methods.
  */
-@SuppressWarnings({"UnusedDeclaration", "unchecked"})
+@SuppressWarnings({"unchecked"})
 public class PlatformUtils {
     /** Node attribute: platform. */
     public static final String ATTR_PLATFORM = ATTR_PREFIX  + ".platform";
@@ -620,7 +620,6 @@ public class PlatformUtils {
      * @param ex Error.
      * @param writer Writer.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public static void writeError(Throwable ex, BinaryRawWriterEx writer) {
         writer.writeObjectDetached(ex.getClass().getName());
 
@@ -731,7 +730,6 @@ public class PlatformUtils {
      * @param err Error.
      * @return Error data.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public static byte[] errorData(Throwable err) {
         if (err instanceof PlatformExtendedException) {
             PlatformContext ctx = ((PlatformExtendedException)err).context();
@@ -850,7 +848,6 @@ public class PlatformUtils {
      *
      * @return Marshaller.
      */
-    @SuppressWarnings("deprecation")
     public static GridBinaryMarshaller marshaller() {
         BinaryContext ctx =
             new BinaryContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration(), new NullLogger());

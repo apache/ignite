@@ -576,10 +576,10 @@ public class MarshallerContextImpl implements MarshallerContext {
     }
 
     /**
-     * @return custom marshaller mapping files directory. Used for standalone WAL iteration
+     * @return {@code True} if marshaller context is initialized.
      */
-    @Nullable public File getMarshallerMappingFileStoreDir() {
-        return marshallerMappingFileStoreDir;
+    public boolean initialized() {
+        return fileStore != null;
     }
 
     /**

@@ -32,7 +32,12 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -41,12 +46,21 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Basic get and transform store test.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Cache store. */
     private static final GridCacheTestStore store = new GridCacheTestStore();
+
+    /** {@inheritDoc} */
+    @Before
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        super.setUp();
+    }
 
     /**
      *
@@ -108,6 +122,7 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndTransform() throws Exception {
         final AtomicBoolean finish = new AtomicBoolean();
 

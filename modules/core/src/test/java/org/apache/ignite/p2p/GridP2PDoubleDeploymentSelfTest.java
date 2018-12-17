@@ -28,12 +28,16 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @SuppressWarnings({"ProhibitedExceptionDeclared"})
 @GridCommonTest(group = "P2P")
+@RunWith(JUnit4.class)
 public class GridP2PDoubleDeploymentSelfTest extends GridCommonAbstractTest {
     /** Deployment mode. */
     private DeploymentMode depMode;
@@ -114,6 +118,7 @@ public class GridP2PDoubleDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if error occur.
      */
+    @Test
     public void testPrivateMode() throws Exception {
         processTestBothNodesDeploy(DeploymentMode.PRIVATE);
     }
@@ -121,6 +126,7 @@ public class GridP2PDoubleDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if error occur.
      */
+    @Test
     public void testIsolatedMode() throws Exception {
         processTestBothNodesDeploy(DeploymentMode.ISOLATED);
     }
@@ -128,6 +134,7 @@ public class GridP2PDoubleDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if error occur.
      */
+    @Test
     public void testContinuousMode() throws Exception {
         processTestBothNodesDeploy(DeploymentMode.CONTINUOUS);
     }
@@ -135,6 +142,7 @@ public class GridP2PDoubleDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if error occur.
      */
+    @Test
     public void testSharedMode() throws Exception {
         processTestBothNodesDeploy(DeploymentMode.SHARED);
     }

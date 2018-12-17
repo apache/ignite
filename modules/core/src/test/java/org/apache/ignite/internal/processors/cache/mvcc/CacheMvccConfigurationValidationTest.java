@@ -43,6 +43,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -53,6 +56,7 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
  *
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -77,6 +81,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testMvccModeMismatchForGroup1() throws Exception {
         final Ignite node = startGrid(0);
 
@@ -98,6 +103,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testMvccModeMismatchForGroup2() throws Exception {
         final Ignite node = startGrid(0);
 
@@ -120,6 +126,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testMvccLocalCacheDisabled() throws Exception {
         final Ignite node1 = startGrid(1);
         final Ignite node2 = startGrid(2);
@@ -152,6 +159,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testNodeRestartWithCacheModeChangedTxToMvcc() throws Exception {
         cleanPersistenceDir();
 
@@ -199,6 +207,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testNodeRestartWithCacheModeChangedMvccToTx() throws Exception {
         cleanPersistenceDir();
 
@@ -248,6 +257,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testTransactionalSnapshotLimitations() throws Exception {
         assertCannotStart(
             mvccCacheConfig().setCacheMode(LOCAL),
@@ -286,6 +296,41 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
     }
 
     /**
+     * Checks if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy
+     * <b>including</b> that throwable itself and it contains passed message.
+     * <p>
+     * Note that this method follows includes {@link Throwable#getSuppressed()}
+     * into check.
+     *
+     * @param t Throwable to check (if {@code null}, {@code false} is returned).
+     * @param cls Cause class to check (if {@code null}, {@code false} is returned).
+     * @param msg Message to check.
+     * @return {@code True} if one of the causing exception is an instance of passed in classes
+     *      and it contains the passed message, {@code false} otherwise.
+     */
+    private boolean hasCauseWithMessage(@Nullable Throwable t, Class<?> cls, String msg) {
+        if (t == null)
+            return false;
+
+        assert cls != null;
+
+        for (Throwable th = t; th != null; th = th.getCause()) {
+            if (cls.isAssignableFrom(th.getClass()) && th.getMessage() != null && th.getMessage().contains(msg))
+                return true;
+
+            for (Throwable n : th.getSuppressed()) {
+                if (hasCauseWithMessage(n, cls, msg))
+                    return true;
+            }
+
+            if (th.getCause() == th)
+                break;
+        }
+
+        return false;
+    }
+
+    /**
      * Make sure cache cannot be started with the given configuration.
      *
      * @param ccfg Cache configuration.
@@ -305,7 +350,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
             catch (Exception e) {
                 if (msg != null) {
                     assert e.getMessage() != null : "Error message is null";
-                    assert e.getMessage().contains(msg) : "Wrong error message: " + e.getMessage();
+                    assertTrue(hasCauseWithMessage(e, IgniteCheckedException.class, msg));
                 }
             }
         }

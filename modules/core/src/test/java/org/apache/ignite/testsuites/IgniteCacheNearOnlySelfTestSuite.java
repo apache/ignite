@@ -17,10 +17,12 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.Collection;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheClientOnlySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearOnlySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearOnlyTopologySelfTest;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Test suite for near-only cache.
@@ -28,22 +30,29 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNea
 public class IgniteCacheNearOnlySelfTestSuite {
     /**
      * @return Suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
+        return suite(null);
+    }
+
+    /**
+     * @param ignoredTests Ignored tests.
+     * @return IgniteCache test suite.
+     */
+    public static TestSuite suite(Collection<Class> ignoredTests) {
         TestSuite suite = new TestSuite("Near-only cache test suite.");
 
-        suite.addTest(new TestSuite(GridCacheClientOnlySelfTest.CasePartitionedAtomic.class));
-        suite.addTest(new TestSuite(GridCacheClientOnlySelfTest.CasePartitionedTransactional.class));
-        suite.addTest(new TestSuite(GridCacheClientOnlySelfTest.CaseReplicatedAtomic.class));
-        suite.addTest(new TestSuite(GridCacheClientOnlySelfTest.CaseReplicatedTransactional.class));
+        GridTestUtils.addTestIfNeeded(suite,GridCacheClientOnlySelfTest.CasePartitionedAtomic.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite,GridCacheClientOnlySelfTest.CasePartitionedTransactional.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite,GridCacheClientOnlySelfTest.CaseReplicatedAtomic.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite,GridCacheClientOnlySelfTest.CaseReplicatedTransactional.class, ignoredTests);
 
-        suite.addTest(new TestSuite(GridCacheNearOnlyTopologySelfTest.class));
+        GridTestUtils.addTestIfNeeded(suite,GridCacheNearOnlyTopologySelfTest.class, ignoredTests);
 
-        suite.addTest(new TestSuite(GridCacheNearOnlySelfTest.CasePartitionedAtomic.class));
-        suite.addTest(new TestSuite(GridCacheNearOnlySelfTest.CasePartitionedTransactional.class));
-        suite.addTest(new TestSuite(GridCacheNearOnlySelfTest.CaseReplicatedAtomic.class));
-        suite.addTest(new TestSuite(GridCacheNearOnlySelfTest.CaseReplicatedTransactional.class));
+        GridTestUtils.addTestIfNeeded(suite,GridCacheNearOnlySelfTest.CasePartitionedAtomic.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite,GridCacheNearOnlySelfTest.CasePartitionedTransactional.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite,GridCacheNearOnlySelfTest.CaseReplicatedAtomic.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite,GridCacheNearOnlySelfTest.CaseReplicatedTransactional.class, ignoredTests);
 
         return suite;
     }

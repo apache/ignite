@@ -642,6 +642,13 @@ public interface IgniteInternalTx {
     public void commitError(Throwable e);
 
     /**
+     * Returns label of transactions.
+     *
+     * @return Label of transaction or {@code null} if there was not set.
+     */
+    @Nullable public String label();
+
+    /**
      * @param mvccSnapshot Mvcc snapshot.
      */
     public void mvccSnapshot(MvccSnapshot mvccSnapshot);

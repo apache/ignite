@@ -59,6 +59,9 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 import static org.apache.ignite.igfs.IgfsMode.PROXY;
@@ -66,7 +69,8 @@ import static org.apache.ignite.igfs.IgfsMode.PROXY;
 /**
  * Test fo regular igfs operations.
  */
-@SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "ConstantConditions"})
+@SuppressWarnings({"ConstantConditions"})
+@RunWith(JUnit4.class)
 public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
     /**
      * Constructor.
@@ -82,6 +86,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testExists() throws Exception {
         create(igfs, paths(DIR), null);
 
@@ -93,6 +98,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testExistsPathDoesNotExist() throws Exception {
         assert !igfs.exists(DIR);
     }
@@ -102,6 +108,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testListFiles() throws Exception {
         create(igfs, paths(DIR, SUBDIR, SUBSUBDIR), paths(FILE));
 
@@ -124,6 +131,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testListFilesPathDoesNotExist() throws Exception {
         Collection<IgfsFile> paths = null;
 
@@ -142,6 +150,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testInfo() throws Exception {
         create(igfs, paths(DIR), null);
 
@@ -157,6 +166,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testInfoPathDoesNotExist() throws Exception {
         IgfsFile info = null;
 
@@ -176,6 +186,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRenameFile() throws Exception {
         create(igfs, paths(DIR, SUBDIR), paths(FILE));
 
@@ -190,6 +201,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRenameFileParentRoot() throws Exception {
         IgfsPath file1 = new IgfsPath("/file1");
         IgfsPath file2 = new IgfsPath("/file2");
@@ -208,6 +220,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRenameDirectory() throws Exception {
         create(igfs, paths(DIR, SUBDIR), null);
 
@@ -222,6 +235,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRenameDirectoryParentRoot() throws Exception {
         IgfsPath dir1 = new IgfsPath("/dir1");
         IgfsPath dir2 = new IgfsPath("/dir2");
@@ -240,6 +254,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveFile() throws Exception {
         create(igfs, paths(DIR, SUBDIR, DIR_NEW, SUBDIR_NEW), paths(FILE));
 
@@ -254,6 +269,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveFileDestinationRoot() throws Exception {
         create(igfs, paths(DIR, SUBDIR), paths(FILE));
 
@@ -268,6 +284,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveFileSourceParentRoot() throws Exception {
         IgfsPath file = new IgfsPath("/" + FILE.name());
 
@@ -285,6 +302,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameFile() throws Exception {
         create(igfs, paths(DIR, SUBDIR, DIR_NEW, SUBDIR_NEW), paths(FILE));
 
@@ -299,6 +317,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameFileDestinationRoot() throws Exception {
         IgfsPath file = new IgfsPath("/" + FILE.name());
 
@@ -315,6 +334,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameFileSourceParentRoot() throws Exception {
         IgfsPath file = new IgfsPath("/" + FILE_NEW.name());
 
@@ -332,6 +352,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveDirectory() throws Exception {
         create(igfs, paths(DIR, SUBDIR, SUBSUBDIR, DIR_NEW, SUBDIR_NEW), null);
 
@@ -346,6 +367,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveDirectoryDestinationRoot() throws Exception {
         create(igfs, paths(DIR, SUBDIR, SUBSUBDIR), null);
 
@@ -360,6 +382,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveDirectorySourceParentRoot() throws Exception {
         IgfsPath dir = new IgfsPath("/" + SUBSUBDIR.name());
 
@@ -377,6 +400,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameDirectory() throws Exception {
         create(igfs, paths(DIR, SUBDIR, SUBSUBDIR, DIR_NEW, SUBDIR_NEW), null);
 
@@ -391,6 +415,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameDirectoryDestinationRoot() throws Exception {
         IgfsPath dir = new IgfsPath("/" + SUBSUBDIR.name());
 
@@ -407,6 +432,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameDirectorySourceParentRoot() throws Exception {
         IgfsPath dir = new IgfsPath("/" + SUBSUBDIR_NEW.name());
 
@@ -423,6 +449,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameSourceDoesNotExist() throws Exception {
         create(igfs, paths(DIR, DIR_NEW), null);
 
@@ -443,6 +470,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
+    @Test
     public void testMkdirs() throws Exception {
         if (!propertiesSupported())
             return;
@@ -520,6 +548,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
+    @Test
     public void testMkdirsParentRoot() throws Exception {
         Map<String, String> props = null;
 
@@ -546,6 +575,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDelete() throws Exception {
         create(igfs, paths(DIR, SUBDIR, SUBSUBDIR), paths(FILE));
 
@@ -559,6 +589,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeleteParentRoot() throws Exception {
         create(igfs, paths(DIR, SUBDIR, SUBSUBDIR), paths(FILE));
 
@@ -572,6 +603,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeleteDirectoryNotEmpty() throws Exception {
         create(igfs, paths(DIR, SUBDIR, SUBSUBDIR), paths(FILE));
         checkExist(igfs, igfsSecondary, SUBDIR, SUBSUBDIR, FILE);
@@ -594,6 +626,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
+    @Test
     public void testUpdate() throws Exception {
         if(!propertiesSupported())
             return;
@@ -616,6 +649,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
+    @Test
     public void testUpdateParentRoot() throws Exception {
         if(!propertiesSupported())
             return;
@@ -637,6 +671,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdatePathDoesNotExist() throws Exception {
         final Map<String, String> props = properties("owner", "group", "0555");
 
@@ -651,6 +686,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
+    @Test
     public void testFormat() throws Exception {
         if (mode == PROXY)
             return;
@@ -721,6 +757,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRootPropertiesPersistAfterFormat() throws Exception {
         if(!propertiesSupported())
             return;
@@ -761,6 +798,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOpen() throws Exception {
         create(igfs, paths(DIR, SUBDIR), null);
 
@@ -777,6 +815,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOpenDoesNotExist() throws Exception {
         igfsSecondary.delete(FILE.toString(), false);
 
@@ -800,6 +839,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSetTimes() throws Exception {
         createFile(igfs, FILE, true, chunk);
 
@@ -908,7 +948,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"ConstantConditions", "EmptyTryBlock", "UnusedDeclaration"})
+    @SuppressWarnings({"ConstantConditions", "EmptyTryBlock"})
+    @Test
     public void testCreate() throws Exception {
         create(igfs, paths(DIR, SUBDIR), null);
 
@@ -993,6 +1034,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateParentRoot() throws Exception {
         IgfsPath file = new IgfsPath("/" + FILE.name());
 
@@ -1006,6 +1048,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateNoClose() throws Exception {
         if (mode != PRIMARY)
             return;
@@ -1035,6 +1078,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateRenameNoClose() throws Exception {
         if (dual)
             return;
@@ -1060,6 +1104,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateRenameParentNoClose() throws Exception {
         if (dual)
             return;
@@ -1085,6 +1130,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateDeleteNoClose() throws Exception {
         if (mode != PRIMARY)
             return;
@@ -1139,6 +1185,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateDeleteParentNoClose() throws Exception {
         if (mode != PRIMARY)
             return;
@@ -1193,6 +1240,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateUpdateNoClose() throws Exception {
         if (dual)
             return;
@@ -1223,6 +1271,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception On error.
      */
+    @Test
     public void testSimpleWrite() throws Exception {
         IgfsPath path = new IgfsPath("/file1");
 
@@ -1258,6 +1307,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateConsistency() throws Exception {
         final AtomicInteger ctr = new AtomicInteger();
         final AtomicReference<Exception> err = new AtomicReference<>();
@@ -1300,6 +1350,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateConsistencyMultithreaded() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -1378,7 +1429,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"TryFinallyCanBeTryWithResources", "EmptyTryBlock"})
+    @SuppressWarnings({"EmptyTryBlock"})
+    @Test
     public void testAppend() throws Exception {
         if (appendSupported()) {
             create(igfs, paths(DIR, SUBDIR), null);
@@ -1519,6 +1571,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAppendParentRoot() throws Exception {
         if (appendSupported()) {
             IgfsPath file = new IgfsPath("/" + FILE.name());
@@ -1536,6 +1589,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAppendNoClose() throws Exception {
         if (mode != PRIMARY)
             return;
@@ -1570,6 +1624,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAppendRenameNoClose() throws Exception {
         if (dual)
             return;
@@ -1598,6 +1653,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAppendRenameParentNoClose() throws Exception {
         if (dual)
             return;
@@ -1626,6 +1682,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAppendDeleteNoClose() throws Exception {
         if (mode != PRIMARY)
             return;
@@ -1681,6 +1738,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAppendDeleteParentNoClose() throws Exception {
         if (mode != PRIMARY)
             return;
@@ -1736,6 +1794,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAppendUpdateNoClose() throws Exception {
         if (dual)
             return;
@@ -1767,6 +1826,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAppendConsistency() throws Exception {
         if (appendSupported()) {
             final AtomicInteger ctr = new AtomicInteger();
@@ -1818,6 +1878,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAppendConsistencyMultithreaded() throws Exception {
         if (appendSupported()) {
             final AtomicBoolean stop = new AtomicBoolean();
@@ -1891,6 +1952,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testStop() throws Exception {
         create(igfs, paths(DIR, SUBDIR), null);
 
@@ -1911,6 +1973,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentMkdirsDelete() throws Exception {
         for (int i = 0; i < REPEAT_CNT; i++) {
             final CyclicBarrier barrier = new CyclicBarrier(2);
@@ -1959,6 +2022,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentRenameDeleteSource() throws Exception {
         for (int i = 0; i < REPEAT_CNT; i++) {
             final CyclicBarrier barrier = new CyclicBarrier(2);
@@ -2023,6 +2087,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentRenameDeleteDestination() throws Exception {
         for (int i = 0; i < REPEAT_CNT; i++) {
             final CyclicBarrier barrier = new CyclicBarrier(2);
@@ -2079,6 +2144,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentRenames() throws Exception {
         for (int i = 0; i < REPEAT_CNT; i++) {
             final CyclicBarrier barrier = new CyclicBarrier(2);
@@ -2139,6 +2205,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentDeletes() throws Exception {
         for (int i = 0; i < REPEAT_CNT; i++) {
             final CyclicBarrier barrier = new CyclicBarrier(2);
@@ -2186,6 +2253,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksRename() throws Exception {
         checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, 0, 0, 0, 0);
     }
@@ -2195,6 +2263,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksDelete() throws Exception {
          checkDeadlocksRepeat(5, 2, 2, 2,  0, DELETE_CNT, 0, 0, 0);
     }
@@ -2204,6 +2273,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksUpdate() throws Exception {
         checkDeadlocksRepeat(5, 2, 2, 2, 0, 0, UPDATE_CNT, 0, 0);
     }
@@ -2213,6 +2283,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksMkdirs() throws Exception {
          checkDeadlocksRepeat(5, 2, 2, 2,  0, 0, 0, MKDIRS_CNT, 0);
     }
@@ -2222,6 +2293,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksDeleteRename() throws Exception {
         checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, DELETE_CNT, 0, 0, 0);
     }
@@ -2231,6 +2303,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksDeleteMkdirsRename() throws Exception {
         checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, DELETE_CNT, 0, MKDIRS_CNT, 0);
     }
@@ -2240,6 +2313,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksDeleteMkdirs() throws Exception {
         checkDeadlocksRepeat(5, 2, 2, 2,  0, DELETE_CNT, 0, MKDIRS_CNT, 0);
     }
@@ -2249,6 +2323,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksCreate() throws Exception {
         checkDeadlocksRepeat(5, 2, 2, 2, 0, 0, 0, 0, CREATE_CNT);
     }
@@ -2258,6 +2333,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocks() throws Exception {
         checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, DELETE_CNT, UPDATE_CNT, MKDIRS_CNT, CREATE_CNT);
     }

@@ -363,7 +363,6 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @return Tuple with version and value of this entry, or {@code null} if entry is new.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext"})
     @Nullable public IgniteBiTuple<GridCacheVersion, CacheObject> versionedValue(
         AffinityTopologyVersion topVer)
         throws GridCacheEntryRemovedException {
@@ -649,10 +648,10 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                     ']');
             }
 
-                if (cctx.mvccEnabled())
-                    cctx.offheap().mvccRemoveAll(this);
-                else
-                    removeValue();
+            if (cctx.mvccEnabled())
+                cctx.offheap().mvccRemoveAll(this);
+            else
+                removeValue();
 
             // Give to GC.
             update(null, 0L, 0L, ver, true);

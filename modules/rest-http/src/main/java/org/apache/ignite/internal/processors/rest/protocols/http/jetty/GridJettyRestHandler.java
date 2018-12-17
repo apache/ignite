@@ -979,7 +979,6 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @param req Request.
      * @return Map of parsed parameters.
      */
-    @SuppressWarnings({"unchecked"})
     private Map<String, Object> parameters(ServletRequest req) {
         Map<String, String[]> params = req.getParameterMap();
 

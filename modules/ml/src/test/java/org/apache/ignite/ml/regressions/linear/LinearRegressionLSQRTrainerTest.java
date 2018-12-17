@@ -138,7 +138,7 @@ public class LinearRegressionLSQRTrainerTest extends TrainerTest {
             (k, v) -> v[coef.length]
         );
 
-        LinearRegressionModel updatedOnEmpyDS = trainer.update(
+        LinearRegressionModel updatedOnEmptyDS = trainer.update(
             originalMdl,
             new HashMap<Integer, double[]>(),
             parts,
@@ -149,7 +149,7 @@ public class LinearRegressionLSQRTrainerTest extends TrainerTest {
         assertArrayEquals(originalMdl.getWeights().getStorage().data(), updatedOnSameDS.getWeights().getStorage().data(), 1e-6);
         assertEquals(originalMdl.getIntercept(), updatedOnSameDS.getIntercept(), 1e-6);
 
-        assertArrayEquals(originalMdl.getWeights().getStorage().data(), updatedOnEmpyDS.getWeights().getStorage().data(), 1e-6);
-        assertEquals(originalMdl.getIntercept(), updatedOnEmpyDS.getIntercept(), 1e-6);
+        assertArrayEquals(originalMdl.getWeights().getStorage().data(), updatedOnEmptyDS.getWeights().getStorage().data(), 1e-6);
+        assertEquals(originalMdl.getIntercept(), updatedOnEmptyDS.getIntercept(), 1e-6);
     }
 }

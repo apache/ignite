@@ -178,8 +178,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             Thread curThread = Thread.currentThread();
 
             if (curThread instanceof IgniteThread)
-                writer.failIfUnregistered(((IgniteThread)curThread).executingEntryProcessor() &&
-                    ((IgniteThread)curThread).holdsTopLock());
+                writer.failIfUnregistered(((IgniteThread)curThread).isForbiddenToRequestBinaryMetadata());
 
             writer.typeId(typeId);
 
@@ -199,7 +198,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * @param writer Writer.
      * @param serializer Serializer.
      */
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     void serializeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer serializer) {
         try {
             writer.preWrite(registeredType ? null : clsNameToWrite);
@@ -340,7 +338,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 reader.position(start + BinaryUtils.length(reader, start));
             }
 
-            //noinspection NumberEquality
             writer.postWrite(true, registeredType);
 
             // Update metadata if needed.
