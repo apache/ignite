@@ -476,7 +476,10 @@ public final class GridH2CollocationModel {
 
             IndexColumn affCol = t0.getAffinityKeyColumn();
 
-            return affCol != null && col.getColumnId() == affCol.column.getColumnId();
+            if (affCol != null && col.getColumnId() == affCol.column.getColumnId())
+                return true;
+
+            return t0.rowDescriptor().isKeyColumn(col.getColumnId());
         }
 
         return false;
