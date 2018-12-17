@@ -24,6 +24,9 @@ import java.security.GeneralSecurityException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.X509TrustManager;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -75,18 +78,18 @@ public class RestExecutor implements AutoCloseable {
     /**
      * Constructor.
      *
-     * @param keyStore Optional path to key store file.
+     * @param keyStorePath Optional path to key store file.
      * @param keyStorePwd Optional password for key store.
-     * @param trustStore Optional path to trust store file.
+     * @param trustStorePath Optional path to trust store file.
      * @param trustStorePwd Optional password for trust store.
      * @param cipherSuites Optional cipher suites.
      * @throws GeneralSecurityException If failed to initialize SSL.
      * @throws IOException If failed to load content of key stores.
      */
     public RestExecutor(
-        String keyStore,
+        String keyStorePath,
         String keyStorePwd,
-        String trustStore,
+        String trustStorePath,
         String trustStorePwd,
         List<String> cipherSuites
     ) throws GeneralSecurityException, IOException {
@@ -99,7 +102,26 @@ public class RestExecutor implements AutoCloseable {
             .readTimeout(0, TimeUnit.MILLISECONDS)
             .dispatcher(dispatcher);
 
-        AgentUtils.initSsl(builder, keyStore, keyStorePwd, trustStore, trustStorePwd, cipherSuites);
+        boolean trustAll = Boolean.getBoolean("trust.all");
+        boolean hasTrustStore = trustStorePath != null;
+
+        if (trustAll && hasTrustStore) {
+            log.warning("Options contains both '--node-trust-store' and '-Dtrust.all=true'. " +
+                "Option '-Dtrust.all=true' will be ignored.");
+        }
+
+        X509TrustManager trustMgr = hasTrustStore
+            ? AgentUtils.trustManager(trustStorePath, trustStorePwd)
+            : (trustAll ? AgentUtils.disabledTrustManager() : null);
+
+        KeyManager[] keyMgrs = AgentUtils.keyManagers(keyStorePath, keyStorePwd);
+
+        SSLSocketFactory sslSocketFactory = AgentUtils.sslSocketFactory(keyMgrs, trustMgr, cipherSuites);
+
+        if (sslSocketFactory != null)
+            builder.sslSocketFactory(sslSocketFactory, trustMgr);
+
+        AgentUtils.setCiphers(builder, cipherSuites);
 
         httpClient = builder.build();
     }
@@ -285,10 +307,10 @@ public class RestExecutor implements AutoCloseable {
         }
 
         /**
-         * @param sesTokStr String representation of session token.
+         * @param sesTok String representation of session token.
          */
-        public void setSessionToken(String sesTokStr) {
-            this.sesTok = sesTokStr;
+        public void setSessionToken(String sesTok) {
+            this.sesTok = sesTok;
         }
     }
 

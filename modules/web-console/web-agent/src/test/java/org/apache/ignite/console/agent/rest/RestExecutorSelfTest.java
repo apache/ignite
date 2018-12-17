@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -157,7 +158,7 @@ public class RestExecutorSelfTest {
      * @return Path to file.
      */
     private String resolvePath(String file) {
-        return PATH_TO_RESOURCES + file;
+        return IgniteUtils.resolveIgnitePath(PATH_TO_RESOURCES + file).getAbsolutePath();
     }
 
     /**

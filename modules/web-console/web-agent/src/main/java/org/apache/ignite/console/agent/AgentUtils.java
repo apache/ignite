@@ -23,8 +23,6 @@ import io.socket.client.Ack;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.GeneralSecurityException;
@@ -37,7 +35,7 @@ import java.util.List;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
@@ -45,6 +43,7 @@ import javax.net.ssl.X509TrustManager;
 import okhttp3.ConnectionSpec;
 import okhttp3.OkHttpClient;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.ssl.AgentSSLSocketFactoryWrapper;
 import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -221,34 +220,41 @@ public class AgentUtils {
     }
 
     /**
-     * @param pathToJks Path to key store.
-     * @param pwd Key store password.
+     * @param keyStorePath Path to key store.
+     * @param keyStorePwd Key store password.
      * @return Key managers.
      * @throws GeneralSecurityException If failed to load key store.
      * @throws IOException If failed to load key store file content.
      */
-    private static KeyManager[] keyManagers(String pathToJks, String pwd) throws GeneralSecurityException, IOException {
-        char[] p = pwd != null ? pwd.toCharArray() : EMPTY_PWD;
+    public static KeyManager[] keyManagers(String keyStorePath, String keyStorePwd)
+        throws GeneralSecurityException, IOException {
+        if (keyStorePath == null)
+            return null;
 
-        KeyStore keyStore = keyStore(pathToJks, p);
+        char[] keyPwd = keyStorePwd != null ? keyStorePwd.toCharArray() : EMPTY_PWD;
+
+        KeyStore keyStore = keyStore(keyStorePath, keyPwd);
 
         KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        kmf.init(keyStore, p);
+        kmf.init(keyStore, keyPwd);
 
         return kmf.getKeyManagers();
     }
 
     /**
-     * @param pathToJks Path to trust store file.
-     * @param pwd Trust store password.
+     * @param trustStorePath Path to trust store file.
+     * @param trustStorePwd Trust store password.
      * @return Trust manager
      * @throws GeneralSecurityException If failed to load trust store.
      * @throws IOException If failed to load trust store file content.
      */
-    private static X509TrustManager trustManager(String pathToJks, String pwd)
+    public static X509TrustManager trustManager(String trustStorePath, String trustStorePwd)
         throws GeneralSecurityException, IOException {
-        char[] trustPwd = pwd != null ? pwd.toCharArray() : EMPTY_PWD;
-        KeyStore trustKeyStore = keyStore(pathToJks, trustPwd);
+        if (trustStorePath == null)
+            return null;
+
+        char[] trustPwd = trustStorePwd != null ? trustStorePwd.toCharArray() : EMPTY_PWD;
+        KeyStore trustKeyStore = keyStore(trustStorePath, trustPwd);
 
         TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
         tmf.init(trustKeyStore);
@@ -264,67 +270,47 @@ public class AgentUtils {
     /**
      * Initialize SSL.
      *
-     * @param builder HTTP client builder.
-     * @param keyStore Optional path to key store file.
-     * @param keyStorePwd Optional password for key store.
-     * @param trustStore Optional path to trust store file.
-     * @param trustStorePwd Optional password for trust store.
      * @param cipherSuites Optional cipher suites.
      * @throws GeneralSecurityException If failed to load trust store.
-     * @throws IOException If failed to load trust store file content.
      */
-    public static void initSsl(
-        OkHttpClient.Builder builder,
-        String keyStore,
-        String keyStorePwd,
-        String trustStore,
-        String trustStorePwd,
+    public static SSLSocketFactory sslSocketFactory(
+        KeyManager[] keyMgrs,
+        X509TrustManager trustMgr,
         List<String> cipherSuites
-    ) throws GeneralSecurityException, IOException {
-        boolean trustAll = Boolean.getBoolean("trust.all");
-        boolean hasKeyStore = keyStore != null;
-        boolean hasTrustStore = trustStore != null;
+    ) throws GeneralSecurityException {
+        if (keyMgrs == null && trustMgr == null)
+            return null;
 
-        if (trustAll || hasKeyStore || hasTrustStore) {
-            if (trustAll && hasTrustStore) {
-                log.warn("Options contains both '--XXXX-trust-store' and '-Dtrust.all=true'. " +
-                    "Option '-Dtrust.all=true' will be ignored.");
-            }
+        SSLContext ctx = SSLContext.getInstance("TLS");
 
-            X509TrustManager trustMgr = null;
+        ctx.init(keyMgrs, new TrustManager[] {trustMgr}, null);
 
-            if (hasTrustStore)
-                trustMgr = trustManager(trustStore, trustStorePwd);
-            else if (trustAll) {
-                trustMgr = disabledTrustManager();
+        SSLSocketFactory sslSocketFactory = ctx.getSocketFactory();
 
-                builder.hostnameVerifier((hostname, session) -> true);
-            }
+        if (!F.isEmpty(cipherSuites)) {
+            String[] cs = cipherSuites.toArray(new String[0]);
 
-            KeyManager[] keyMgrs = null;
+            sslSocketFactory = new AgentSSLSocketFactoryWrapper(sslSocketFactory, new SSLParameters(cs));
+        }
 
-            if (hasKeyStore)
-                keyMgrs = keyManagers(keyStore, keyStorePwd);
+        return sslSocketFactory;
+    }
 
-            SSLContext ctx = SSLContext.getInstance("TLS");
-
-            ctx.init(keyMgrs, new TrustManager[] {trustMgr}, null);
-
+    /**
+     * Set SSL cipher suites for HTTP builder.
+     *
+     * @param builder Builder.
+     * @param cipherSuites SSL cipher suites.
+     */
+    public static void setCiphers(OkHttpClient.Builder builder, List<String> cipherSuites) {
+        if (!F.isEmpty(cipherSuites)) {
             String[] cs = F.isEmpty(cipherSuites) ? null : cipherSuites.toArray(new String[0]);
 
-            SSLSocketFactory sslSocketFactory = ctx.getSocketFactory();
+            ConnectionSpec spec = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+                .cipherSuites(cs)
+                .build();
 
-            if (!F.isEmpty(cs)) {
-                ConnectionSpec spec = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
-                    .cipherSuites(cs)
-                    .build();
-
-                builder.connectionSpecs(Collections.singletonList(spec));
-
-                sslSocketFactory = new SSLSocketFactoryWithCiphers(sslSocketFactory, cs);
-            }
-
-            builder.sslSocketFactory(sslSocketFactory, trustMgr);
+            builder.connectionSpecs(Collections.singletonList(spec));
         }
     }
 
@@ -335,7 +321,7 @@ public class AgentUtils {
         return new X509TrustManager() {
             /** {@inheritDoc} */
             @Override public X509Certificate[] getAcceptedIssuers() {
-                return new X509Certificate[0];
+                return null;
             }
 
             /** {@inheritDoc} */
@@ -348,70 +334,5 @@ public class AgentUtils {
                 // No-op.
             }
         };
-    }
-
-    /**
-     * SSL socket factory that configure socket ciphers.
-     */
-    private static class SSLSocketFactoryWithCiphers extends SSLSocketFactory {
-        /** */
-        private final SSLSocketFactory delegate;
-
-        /** */
-        private final String[] cipherSuites;
-
-        /**
-         * @param delegate Wrapped socket factory.
-         */
-        SSLSocketFactoryWithCiphers(SSLSocketFactory delegate, String[] cipherSuites) {
-            this.delegate = delegate;
-            this.cipherSuites = cipherSuites;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String[] getDefaultCipherSuites() {
-            return delegate.getDefaultCipherSuites();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String[] getSupportedCipherSuites() {
-            return delegate.getSupportedCipherSuites();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Socket createSocket(Socket socket, String host, int port, boolean autoClose) throws IOException {
-            return configureSocket(delegate.createSocket(socket, host, port, autoClose));
-        }
-
-        /** {@inheritDoc} */
-        @Override public Socket createSocket(String host, int port) throws IOException {
-            return configureSocket(delegate.createSocket(host, port));
-        }
-
-        /** {@inheritDoc} */
-        @Override public Socket createSocket(String host, int port, InetAddress localHost, int localPort) throws IOException {
-            return configureSocket(delegate.createSocket(host, port, localHost, localPort));
-        }
-
-        /** {@inheritDoc} */
-        @Override public Socket createSocket(InetAddress host, int port) throws IOException {
-            return configureSocket(delegate.createSocket(host, port));
-        }
-
-        /** {@inheritDoc} */
-        @Override public Socket createSocket(InetAddress addr, int port, InetAddress localAddr, int localPort) throws IOException {
-            return configureSocket(delegate.createSocket(addr, port, localAddr, localPort));
-        }
-
-        /**
-         * Configure socket cipher suites.
-         * @param socket Socket to configure.
-         * @return Configured socket.
-         */
-        private Socket configureSocket(Socket socket) {
-            ((SSLSocket)socket).setEnabledCipherSuites(cipherSuites);
-
-            return socket;
-        }
     }
 }

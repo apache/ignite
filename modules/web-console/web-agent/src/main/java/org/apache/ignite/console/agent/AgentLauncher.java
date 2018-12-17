@@ -40,7 +40,10 @@ import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.X509TrustManager;
 import okhttp3.OkHttpClient;
 import org.apache.ignite.console.agent.handlers.ClusterListener;
 import org.apache.ignite.console.agent.handlers.DatabaseListener;
@@ -318,17 +321,35 @@ public class AgentLauncher {
         IO.Options opts = new IO.Options();
         opts.path = "/agents";
 
+        boolean trustAll = Boolean.getBoolean("trust.all");
+        boolean hasTrustStore = cfg.serverTrustStore() != null;
+
+        if (trustAll && hasTrustStore) {
+            log.warn("Options contains both '--server-trust-store' and '-Dtrust.all=true'. " +
+                "Option '-Dtrust.all=true' will be ignored.");
+        }
+
+        List<String> cipherSuites = cfg.cipherSuites();
+
         if (
-            Boolean.getBoolean("trust.all") ||
-            cfg.serverKeyStore() != null ||
-            cfg.serverTrustStore() != null
+            trustAll ||
+            hasTrustStore ||
+            cfg.serverKeyStore() != null
         ) {
             OkHttpClient.Builder builder = new OkHttpClient.Builder();
 
-            AgentUtils.initSsl(builder,
-                cfg.serverKeyStore(), cfg.serverKeyStorePassword(),
-                cfg.serverTrustStore(), cfg.serverTrustStorePassword(),
-                cfg.cipherSuites());
+            X509TrustManager trustMgr = hasTrustStore
+                ? AgentUtils.trustManager(cfg.serverTrustStore(), cfg.serverTrustStorePassword())
+                : (trustAll ? AgentUtils.disabledTrustManager() : null);
+
+            KeyManager[] keyMgrs = AgentUtils.keyManagers(cfg.serverKeyStore(), cfg.serverKeyStorePassword());
+
+            SSLSocketFactory sslSocketFactory = AgentUtils.sslSocketFactory(keyMgrs, trustMgr, cipherSuites);
+
+            if (sslSocketFactory != null)
+                builder.sslSocketFactory(sslSocketFactory, trustMgr);
+
+            AgentUtils.setCiphers(builder, cipherSuites);
 
             OkHttpClient sslFactory = builder.build();
 
@@ -343,9 +364,9 @@ public class AgentLauncher {
             RestExecutor restExecutor = new RestExecutor(
                 cfg.nodeKeyStore(), cfg.nodeKeyStorePassword(),
                 cfg.nodeTrustStore(), cfg.nodeTrustStorePassword(),
-                cfg.cipherSuites());
+                cipherSuites);
 
-             ClusterListener clusterLsnr = new ClusterListener(cfg, client, restExecutor)
+            ClusterListener clusterLsnr = new ClusterListener(cfg, client, restExecutor)
         ) {
             Emitter.Listener onConnect = connectRes -> {
                 log.info("Connection established.");
