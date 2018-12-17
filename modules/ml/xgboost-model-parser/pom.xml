@@ -39,35 +39,6 @@
     <version>2.7.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.antlr</groupId>
-                <artifactId>antlr4-maven-plugin</artifactId>
-                <version>${antlr.version}</version>
-                <executions>
-                    <execution>
-                        <id>antlr</id>
-                        <goals>
-                            <goal>antlr4</goal>
-                        </goals>
-                        <configuration>
-                            <visitor>true</visitor>
-                        </configuration>
-                    </execution>
-                </executions>
-                <configuration>
-                    <arguments>
-                        <argument>-visitor</argument>
-                    </arguments>
-                    <outputDirectory>
-                        ${project.build.directory}/generated-sources/antlr4/org/apache/ignite/ml/xgboost/parser
-                    </outputDirectory>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
-
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>
