@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.multijvm;
 
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedNearOnlyMultiNodeFullApiSelfTest;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
@@ -31,12 +30,5 @@ public class GridCacheReplicatedNearOnlyMultiJvmFullApiSelfTest extends
     /** {@inheritDoc} */
     @Override protected boolean isMultiJvm() {
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Test
-    @Override public void testNearDhtKeySize() throws Exception {
-        if (isMultiJvm())
-            fail("https://issues.apache.org/jira/browse/IGNITE-648");
     }
 }

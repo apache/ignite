@@ -42,12 +42,16 @@ import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.springframework.util.Assert;
 
 /**
  * Unit tests for grid resource processor.
  */
 @GridCommonTest(group = "Resource Self")
+@RunWith(JUnit4.class)
 public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
     /** */
     private GridTestKernalContext ctx;
@@ -116,6 +120,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInjectResourceToAnnotatedField() throws Exception {
         TestClassWithAnnotatedField target = new TestClassWithAnnotatedField();
 
@@ -148,6 +153,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInjectResourceToAnnotatedMethod() throws Exception {
         TestClassWithAnnotatedMethod target = new TestClassWithAnnotatedMethod();
 
@@ -269,6 +275,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInjectResourceInnerClasses() throws Exception {
         // Test fields.
         TestClassWithAnnotationsOuter outer = new TestClassWithAnnotationsOuter();
@@ -383,6 +390,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInjectResourceGridTaskAndJob() throws Exception {
         Ignite g = startGrid();
 
@@ -398,6 +406,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInjectResourcePerformance() throws Exception {
         int injNum = 50000;
 
@@ -417,6 +426,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("TooBroadScope")
+    @Test
     public void testInjectResourceMultiThreaded() throws Exception {
         final int threadsCnt = 100;
         final int iters = 2000000;

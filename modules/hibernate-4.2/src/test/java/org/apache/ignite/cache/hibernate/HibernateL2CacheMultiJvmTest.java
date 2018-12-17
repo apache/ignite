@@ -36,6 +36,9 @@ import org.hibernate.Transaction;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.service.ServiceRegistryBuilder;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.hibernate.HibernateAccessStrategyFactory.DFLT_CACHE_NAME_PROPERTY;
@@ -46,6 +49,7 @@ import static org.hibernate.cache.spi.access.AccessType.NONSTRICT_READ_WRITE;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class HibernateL2CacheMultiJvmTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "hibernateCache";
@@ -89,6 +93,7 @@ public class HibernateL2CacheMultiJvmTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testL2Cache() throws Exception {
         Ignite srv = ignite(0);
 

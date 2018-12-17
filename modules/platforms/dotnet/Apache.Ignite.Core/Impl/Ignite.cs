@@ -1002,6 +1002,8 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="clusterRestarted">Cluster restarted flag.</param>
         internal void OnClientReconnected(bool clusterRestarted)
         {
+            _marsh.OnClientReconnected(clusterRestarted);
+            
             _clientReconnectTaskCompletionSource.TrySetResult(clusterRestarted);
 
             var handler = ClientReconnected;
