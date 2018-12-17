@@ -44,7 +44,7 @@ public interface UpstreamTransformer<K, V> extends Serializable {
      * @param other Other transformer.
      * @return Composition of this and other transformer.
      */
-    default UpstreamTransformer<K, V> andThen(UpstreamTransformer<K, V> other) {
+    public default UpstreamTransformer<K, V> andThen(UpstreamTransformer<K, V> other) {
         return upstream -> other.transform(transform(upstream));
     }
 }
