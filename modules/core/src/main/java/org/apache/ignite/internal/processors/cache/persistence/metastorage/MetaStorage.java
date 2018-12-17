@@ -294,13 +294,13 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
                         if (valBytes == TOMBSTONE)
                             continue;
 
-                        if (unmarshal)
-                            cb.accept(key, valBytes);
-                        else {
+                        if (unmarshal) {
                             Serializable val = marshaller.unmarshal(valBytes, getClass().getClassLoader());
 
                             cb.accept(key, val);
                         }
+                        else
+                            cb.accept(key, valBytes);
                     }
                 }
             }

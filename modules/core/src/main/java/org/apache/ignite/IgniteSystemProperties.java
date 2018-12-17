@@ -1062,6 +1062,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE = "IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE";
 
     /**
+     *
+     */
+    public static final String IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES = "IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

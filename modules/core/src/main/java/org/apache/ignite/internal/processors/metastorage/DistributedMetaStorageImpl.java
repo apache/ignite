@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.metastorage;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,6 +31,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
@@ -51,6 +53,7 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.META_STORAGE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
 
@@ -58,6 +61,9 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersi
 public class DistributedMetaStorageImpl extends GridProcessorAdapter implements DistributedMetaStorage {
     /** */
     private static final int COMPONENT_ID = META_STORAGE.ordinal();
+
+    /** */
+    private static final long DFLT_MAX_HISTORY_BYTES = 10 * 1024 * 1024;
 
     /** */
     private static final String GLOBAL_KEY_PREFIX = "\u0000";
@@ -75,7 +81,10 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
     private static final String HISTORY_ITEM_KEY_PREFIX = "ms-hist-item-";
 
     /** */
-    private static final byte[] HISTORY_GUARD_VALUE = {};
+    private static final String CLEANUP_KEY = "ms-cleanup";
+
+    /** */
+    private static final byte[] DUMMY_VALUE = {};
 
     /** */
     private DistributedMetaStorageBridge bridge = new NotAvailableDistributedMetaStorageBridge();
@@ -89,6 +98,15 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
 
     /** */
     private final Map<Long, DistributedMetaStorageHistoryItem> histCache = new ConcurrentHashMap<>();
+
+    /** */
+    private long histSizeApproximation;
+
+    /** */
+    private long histMaxBytes = IgniteSystemProperties.getLong(
+        IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES,
+        DFLT_MAX_HISTORY_BYTES
+    );
 
     /** */
     private final ConcurrentMap<UUID, GridFutureAdapter<?>> updateFuts = new ConcurrentHashMap<>();
@@ -142,6 +160,27 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
         );
     }
 
+    /** {@inheritDoc} */
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        if (!isPersistenceEnabled(ctx.config())) {
+            InMemoryCachedDistributedMetaStorageBridge memCachedBridge =
+                new InMemoryCachedDistributedMetaStorageBridge();
+
+            memCachedBridge.restore();
+
+            executeDeferredUpdates(memCachedBridge);
+
+            bridge = memCachedBridge;
+
+            startupExtras = null;
+
+            GridInternalSubscriptionProcessor isp = ctx.internalSubscriptionProcessor();
+
+            for (GlobalMetastorageLifecycleListener subscriber : isp.getGlobalMetastorageSubscribers())
+                subscriber.onReadyForWrite(this);
+        }
+    }
+
     /** */
     private void onMetaStorageReadyForRead(
         ReadOnlyMetastorage metastorage,
@@ -187,6 +226,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
         executeDeferredUpdates(writableBridge);
 
         bridge = writableBridge;
+
+        long metaStorageMaxSize = ctx.config().getDataStorageConfiguration().getSystemRegionMaxSize();
+
+        histMaxBytes = Math.min(histMaxBytes, metaStorageMaxSize / 2);
+
+        shrinkHistory();
 
         startupExtras = null;
 
@@ -280,20 +325,18 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
             DistributedMetaStorageHistoryItem[] hist = joiningData.hist;
 
             if (remoteVer - ver <= hist.length) {
-                try {
-                    for (int i = (int)(ver - remoteVer + hist.length); i < hist.length; i++)
-                        completeWrite(bridge, hist[i]);
-                }
-                catch (IgniteCheckedException | Error e) {
-                    criticalError(e);
-                }
+                assert bridge instanceof ReadOnlyDistributedMetaStorageBridge
+                    || bridge instanceof EmptyDistributedMetaStorageBridge;
+
+                for (int i = (int)(ver - remoteVer + hist.length); i < hist.length; i++)
+                    updateLater(hist[i]);
 
                 Serializable nodeData = new DistributedMetaStorageNodeData(remoteVer, null, null);
 
                 dataBag.addGridCommonData(COMPONENT_ID, nodeData);
             }
             else {
-                //TODO SHIT!
+                //TODO ???
             }
         }
         else {
@@ -347,7 +390,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
             );
         }
         catch (IgniteCheckedException e) {
-            //TODO Shit.
+            //TODO Shit?
             throw U.convertException(e);
         }
 
@@ -365,30 +408,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
             }
         }
         else {
-            //TODO Clean everything. Write new data. Ensure that this operation won't break data consistency.
-        }
-    }
+            clearLocalDataLater();
 
-    /** {@inheritDoc} */
-    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
-        if (!isPersistenceEnabled(ctx.config())) {
-            DistributedMetaStorageBridge memCachedBridge = new InMemoryCachedDistributedMetaStorageBridge();
-
-            try {
-                executeDeferredUpdates(memCachedBridge);
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-
-            bridge = memCachedBridge;
-
-            startupExtras = null;
-
-            GridInternalSubscriptionProcessor isp = ctx.internalSubscriptionProcessor();
-
-            for (GlobalMetastorageLifecycleListener subscriber : isp.getGlobalMetastorageSubscribers())
-                subscriber.onReadyForWrite(this);
+            writeFullDataLater(nodeData);
         }
     }
 
@@ -459,7 +481,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
             unlock();
         }
 
-        addToHistoryCache(histItem);
+        addToHistoryCache(ver, histItem);
 
         shrinkHistory();
     }
@@ -470,13 +492,30 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
     }
 
     /** */
-    private void addToHistoryCache(DistributedMetaStorageHistoryItem histItem) {
+    private void addToHistoryCache(long ver, DistributedMetaStorageHistoryItem histItem) {
         histCache.put(ver, histItem);
+
+        histSizeApproximation += histItem.approximateSize();
     }
 
     /** */
-    private void shrinkHistory() {
-        // No-op.
+    private void shrinkHistory() throws IgniteCheckedException {
+        long maxBytes = histMaxBytes;
+
+        if (histSizeApproximation > maxBytes && histCache.size() > 1) {
+            lock();
+
+            try {
+                while (histSizeApproximation > maxBytes && histCache.size() > 1) {
+                    DistributedMetaStorageHistoryItem histItem = bridge.removeHistoryItem(ver + 1 - histCache.size());
+
+                    histSizeApproximation -= histItem.approximateSize();
+                }
+            }
+            finally {
+                unlock();
+            }
+        }
     }
 
     /** */
@@ -503,6 +542,18 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
 
         for (DistributedMetaStorageHistoryItem histItem : startupExtras.deferredUpdates)
             completeWrite(bridge, histItem);
+    }
+
+    /** */
+    private void clearLocalDataLater() {
+        startupExtras.clearLocData = true;
+    }
+
+    /** */
+    private void writeFullDataLater(DistributedMetaStorageNodeData nodeData) {
+        assert nodeData.fullData != null;
+
+        startupExtras.fullNodeData = nodeData;
     }
 
     /** */
@@ -558,8 +609,20 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
     }
 
     /** */
+    private static long historyItemVer(String histItemKey) {
+        assert isHistoryItemKey(histItemKey);
+
+        return Long.parseLong(histItemKey.substring((GLOBAL_KEY_PREFIX + HISTORY_ITEM_KEY_PREFIX).length()));
+    }
+
+    /** */
     private static String historyVersionKey() {
         return GLOBAL_KEY_PREFIX + HISTORY_VER_KEY;
+    }
+
+    /** */
+    private static String cleanupKey() {
+        return GLOBAL_KEY_PREFIX + CLEANUP_KEY;
     }
 
     /** */
@@ -608,6 +671,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
 
         /** */
         public DistributedMetaStorageHistoryItem firstToWrite;
+
+        /** */
+        public DistributedMetaStorageNodeData fullNodeData;
+
+        /** */
+        public boolean clearLocData;
     }
 
     /** */
@@ -627,6 +696,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
 
         /** */
         void onUpdateMessage(DistributedMetaStorageHistoryItem histItem, Serializable val) throws IgniteCheckedException;
+
+        /** */
+        DistributedMetaStorageHistoryItem removeHistoryItem(long ver) throws IgniteCheckedException;
     }
 
     /** */
@@ -654,6 +726,11 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
         @Override public void onUpdateMessage(DistributedMetaStorageHistoryItem histItem, Serializable val) {
             throw new UnsupportedOperationException("onUpdateMessage");
         }
+
+        /** {@inheritDoc} */
+        @Override public DistributedMetaStorageHistoryItem removeHistoryItem(long ver) {
+            throw new UnsupportedOperationException("removeHistoryItem");
+        }
     }
 
     /** */
@@ -680,6 +757,11 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
         /** {@inheritDoc} */
         @Override public void onUpdateMessage(DistributedMetaStorageHistoryItem histItem, Serializable val) {
             throw new UnsupportedOperationException("onUpdateMessage");
+        }
+
+        /** {@inheritDoc} */
+        @Override public DistributedMetaStorageHistoryItem removeHistoryItem(long ver) {
+            throw new UnsupportedOperationException("removeHistoryItem");
         }
     }
 
@@ -721,54 +803,67 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
             throw new UnsupportedOperationException("onUpdateMessage");
         }
 
+        /** {@inheritDoc} */
+        @Override public DistributedMetaStorageHistoryItem removeHistoryItem(long ver) {
+            throw new UnsupportedOperationException("removeHistoryItem");
+        }
+
         /** */
         public void readInitialData() throws IgniteCheckedException {
-            Long storedVer = (Long)metastorage.read(historyVersionKey());
+            String cleanupKey = cleanupKey();
+            if (metastorage.getData(cleanupKey) != null) {
+                clearLocalDataLater();
 
-            if (storedVer == null)
                 startupExtras.verToSnd = ver = 0;
+            }
             else {
-                startupExtras.verToSnd = ver = storedVer;
+                Long storedVer = (Long)metastorage.read(historyVersionKey());
 
-                Serializable guard = metastorage.read(historyGuardKey(ver));
-
-                if (guard != null) {
-                    // New value is already known, but listeners may not have been invoked.
-                    DistributedMetaStorageHistoryItem histItem = (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(ver));
-
-                    assert histItem != null;
-
-                    updateLater(histItem);
-                }
+                if (storedVer == null)
+                    startupExtras.verToSnd = ver = 0;
                 else {
-                    guard = metastorage.read(historyGuardKey(ver + 1));
+                    startupExtras.verToSnd = ver = storedVer;
+
+                    Serializable guard = metastorage.read(historyGuardKey(ver));
 
                     if (guard != null) {
-                        DistributedMetaStorageHistoryItem histItem = (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(ver + 1));
-
-                        if (histItem != null) {
-                            ++startupExtras.verToSnd;
-
-                            updateLater(histItem);
-                        }
-                    }
-                    else {
+                        // New value is already known, but listeners may not have been invoked.
                         DistributedMetaStorageHistoryItem histItem = (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(ver));
 
-                        if (histItem != null) {
-                            byte[] valBytes = metastorage.getData(localKey(histItem.key));
+                        assert histItem != null;
 
-                            if (!Arrays.equals(valBytes, histItem.valBytes))
-                                startupExtras.firstToWrite = histItem;
+                        updateLater(histItem);
+                    }
+                    else {
+                        guard = metastorage.read(historyGuardKey(ver + 1));
+
+                        if (guard != null) {
+                            DistributedMetaStorageHistoryItem histItem = (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(ver + 1));
+
+                            if (histItem != null) {
+                                ++startupExtras.verToSnd;
+
+                                updateLater(histItem);
+                            }
+                        }
+                        else {
+                            DistributedMetaStorageHistoryItem histItem = (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(ver));
+
+                            if (histItem != null) {
+                                byte[] valBytes = metastorage.getData(localKey(histItem.key));
+
+                                if (!Arrays.equals(valBytes, histItem.valBytes))
+                                    startupExtras.firstToWrite = histItem;
+                            }
                         }
                     }
-                }
 
-                metastorage.iterate(
-                    DistributedMetaStorageImpl::isHistoryItemKey,
-                    (key, val) -> addToHistoryCache((DistributedMetaStorageHistoryItem)val),
-                    true
-                );
+                    metastorage.iterate(
+                        DistributedMetaStorageImpl::isHistoryItemKey,
+                        (key, val) -> addToHistoryCache(historyItemVer(key), (DistributedMetaStorageHistoryItem)val),
+                        true
+                    );
+                }
             }
         }
     }
@@ -783,7 +878,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
             this.metastorage = metastorage;
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public Serializable read(String globalKey) throws IgniteCheckedException {
             return metastorage.read(localKey(globalKey));
         }
@@ -813,7 +908,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
         @Override public void onUpdateMessage(DistributedMetaStorageHistoryItem histItem, Serializable val) throws IgniteCheckedException {
             String histGuardKey = historyGuardKey(ver + 1);
 
-            metastorage.write(histGuardKey, HISTORY_GUARD_VALUE);
+            metastorage.write(histGuardKey, DUMMY_VALUE);
 
             metastorage.write(historyItemKey(ver + 1), histItem);
 
@@ -826,9 +921,63 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
             metastorage.remove(histGuardKey);
         }
 
+        /** {@inheritDoc} */
+        @Override public DistributedMetaStorageHistoryItem removeHistoryItem(long ver) throws IgniteCheckedException {
+            metastorage.remove(historyItemKey(ver));
+
+            return histCache.remove(ver);
+        }
+
         /** */
         private void restore() throws IgniteCheckedException {
             assert startupExtras != null;
+
+            if (startupExtras.clearLocData || startupExtras.fullNodeData != null) {
+                String cleanupKey = cleanupKey();
+
+                metastorage.putData(cleanupKey, DUMMY_VALUE);
+
+                if (startupExtras.clearLocData) {
+                    Set<String> allKeys = new HashSet<>();
+
+                    metastorage.iterate(key -> key.startsWith(GLOBAL_KEY_PREFIX), (key, val) -> allKeys.add(key), false);
+
+                    for (String key : allKeys)
+                        metastorage.remove(key);
+                }
+
+                if (startupExtras.fullNodeData != null) {
+                    DistributedMetaStorageNodeData fullNodeData = startupExtras.fullNodeData;
+
+                    startupExtras.firstToWrite = null;
+
+                    startupExtras.deferredUpdates.clear();
+
+                    ver = fullNodeData.ver;
+
+                    histCache.clear();
+
+                    for (DistributedMetaStorageHistoryItem item : fullNodeData.fullData)
+                        metastorage.putData(item.key, item.valBytes);
+
+                    for (int i = 0, len = fullNodeData.hist.length; i < len; i++) {
+                        DistributedMetaStorageHistoryItem histItem = fullNodeData.hist[i];
+
+                        addToHistoryCache(ver + i + 1 - len, histItem);
+                    }
+
+                    for (DistributedMetaStorageHistoryItem item : fullNodeData.fullData) {
+                        Serializable val = unmarshal(item.valBytes);
+
+                        for (IgniteBiTuple<Predicate<String>, DistributedMetaStorageListener<Serializable>> entry : lsnrs) {
+                            if (entry.get1().test(item.key))
+                                entry.get2().onInit(item.key, val);
+                        }
+                    }
+                }
+
+                metastorage.remove(cleanupKey);
+            }
 
             Long storedVer = (Long)metastorage.read(historyVersionKey());
 
@@ -884,6 +1033,42 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
             ++ver;
 
             notifyListeners(histItem.key, val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public DistributedMetaStorageHistoryItem removeHistoryItem(long ver) {
+            return histCache.remove(ver);
+        }
+
+        /** */
+        public void restore() throws IgniteCheckedException {
+            if (startupExtras.fullNodeData != null) {
+                DistributedMetaStorageNodeData fullNodeData = startupExtras.fullNodeData;
+
+                assert startupExtras.firstToWrite == null;
+
+                assert startupExtras.deferredUpdates.isEmpty();
+
+                ver = fullNodeData.ver;
+
+                for (DistributedMetaStorageHistoryItem item : fullNodeData.fullData)
+                    cache.put(item.key, item.valBytes);
+
+                for (int i = 0, len = fullNodeData.hist.length; i < len; i++) {
+                    DistributedMetaStorageHistoryItem histItem = fullNodeData.hist[i];
+
+                    addToHistoryCache(ver + i + 1 - len, histItem);
+                }
+
+                for (DistributedMetaStorageHistoryItem item : fullNodeData.fullData) {
+                    Serializable val = unmarshal(item.valBytes);
+
+                    for (IgniteBiTuple<Predicate<String>, DistributedMetaStorageListener<Serializable>> entry : lsnrs) {
+                        if (entry.get1().test(item.key))
+                            entry.get2().onInit(item.key, val);
+                    }
+                }
+            }
         }
     }
 }

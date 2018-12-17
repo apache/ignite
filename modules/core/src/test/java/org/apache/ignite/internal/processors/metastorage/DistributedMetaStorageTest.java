@@ -23,8 +23,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -33,6 +31,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
+
 /** */
 @RunWith(JUnit4.class)
 public class DistributedMetaStorageTest extends GridCommonAbstractTest {
@@ -40,36 +40,35 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setConsistentId(gridName);
+        cfg.setConsistentId(igniteInstanceName);
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setPersistenceEnabled(isPersistent())
+            )
         );
 
         return cfg;
     }
 
+    /** */
+    protected boolean isPersistent() {
+        return false;
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
-
-        cleanPersistenceDir();
-
-        super.beforeTest();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
         stopAllGrids();
-
-        cleanPersistenceDir();
     }
 
     /** */
@@ -177,26 +176,6 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testRestart() throws Exception {
-        IgniteEx ignite = startGrid(0);
-
-        ignite.cluster().active(true);
-
-        ignite.context().globalMetastorage().write("key", "value");
-
-        Thread.sleep(150L); // Remove later.
-
-        stopGrid(0);
-
-        ignite = startGrid(0);
-
-        ignite.cluster().active(true);
-
-        assertEquals("value", ignite.context().globalMetastorage().read("key"));
-    }
-
-    /** */
-    @Test
     public void testJoinCleanNode() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -211,99 +190,31 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         assertEquals("value", newNode.context().globalMetastorage().read("key"));
     }
 
-    /** */
-    @Test
-    public void testJoinDirtyNode() throws Exception {
-        IgniteEx ignite = startGrid(0);
-
-        startGrid(1);
-
-        ignite.cluster().active(true);
-
-        ignite.context().globalMetastorage().write("key1", "value1");
-
-        Thread.sleep(150L); // Remove later.
-
-        stopGrid(1);
-
-        stopGrid(0);
-
-        ignite = startGrid(0);
-
-        ignite.cluster().active(true);
-
-        ignite.context().globalMetastorage().write("key2", "value2");
-
-        Thread.sleep(150L); // Remove later.
-
-        IgniteEx newNode = startGrid(1);
-
-        assertEquals("value1", newNode.context().globalMetastorage().read("key1"));
-
-        assertEquals("value2", newNode.context().globalMetastorage().read("key2"));
-    }
 
     /** */
     @Test
-    public void testRerunListenerOnRestore() throws Exception {
-        IgniteEx ignite = startGrid(0);
-
-        ignite.cluster().active(true);
-
-        DistributedMetaStorage metastorage = ignite.context().globalMetastorage();
-
-        metastorage.listen("key"::equals, (key, val) -> {
-            throw new RuntimeException();
-        });
-
-        metastorage.write("key", "value");
-
-        Thread.sleep(150L); // Remove later.
-
-        stopGrid(0);
-
-        ignite = startGrid(0); // Add another listener somehow.
-
-        ignite.cluster().active(true);
-
-        assertEquals("value", ignite.context().globalMetastorage().read("key"));
-    }
-
-    /** */
-    @Test
-    public void testNamesCollision() throws Exception {
-        IgniteEx ignite = startGrid(0);
-
-        ignite.cluster().active(true);
-
-        IgniteCacheDatabaseSharedManager dbSharedMgr = ignite.context().cache().context().database();
-
-        MetaStorage locMetastorage = dbSharedMgr.metaStorage();
-
-        DistributedMetaStorage globalMetastorage = ignite.context().globalMetastorage();
-
-        dbSharedMgr.checkpointReadLock();
+    public void testJoinCleanNodeFullData() throws Exception {
+        System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
 
         try {
-            locMetastorage.write("key", "localValue");
+            IgniteEx ignite = startGrid(0);
+
+            ignite.cluster().active(true);
+
+            ignite.context().globalMetastorage().write("key1", "value1");
+
+            ignite.context().globalMetastorage().write("key2", "value2");
+
+            Thread.sleep(150L); // Remove later.
+
+            IgniteEx newNode = startGrid(1);
+
+            assertEquals("value1", newNode.context().globalMetastorage().read("key1"));
+
+            assertEquals("value2", newNode.context().globalMetastorage().read("key2"));
         }
         finally {
-            dbSharedMgr.checkpointReadUnlock();
+            System.clearProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES);
         }
-
-        globalMetastorage.write("key", "globalValue");
-
-        Thread.sleep(150L); // Remove later.
-
-        dbSharedMgr.checkpointReadLock();
-
-        try {
-            assertEquals("localValue", locMetastorage.read("key"));
-        }
-        finally {
-            dbSharedMgr.checkpointReadUnlock();
-        }
-
-        assertEquals("globalValue", globalMetastorage.read("key"));
     }
 }

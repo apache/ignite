@@ -39,4 +39,10 @@ public class DistributedMetaStorageHistoryItem implements Serializable {
         this.key = key;
         this.valBytes = valBytes;
     }
+
+    /** */
+    public long approximateSize() {
+        // String encoding is ignored to make approximation faster. 2 "size" values added as well.
+        return 8 + key.length() * 2 + (valBytes == null ? 0 : valBytes.length);
+    }
 }
