@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.composition;
+package org.apache.ignite.ml.composition.combinators.sequential;
 
 import org.apache.ignite.ml.Model;
 

@@ -15,17 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.composition;
+package org.apache.ignite.ml.composition.combinators.sequential;
 
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.composition.ModelsSequentialComposition;
+import org.apache.ignite.ml.composition.DatasetMapping;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.trainers.AdaptableDatasetModel;
-import org.apache.ignite.ml.trainers.AdaptableDatasetTrainer;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 

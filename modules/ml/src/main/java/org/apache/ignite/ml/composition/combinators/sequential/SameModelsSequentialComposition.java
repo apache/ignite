@@ -15,11 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.composition;
+package org.apache.ignite.ml.composition.combinators.sequential;
 
+import java.util.List;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.trainers.DatasetTrainer;
 
-public class SameTrainersSequentialComposition<I, O, M extends Model<I, O>, L, T extends DatasetTrainer<M, L>>
-    extends TrainersParallelComposition<I, O, M, L, T, > {
+public class SameModelsSequentialComposition<I, M extends Model<I, I>>
+    extends ModelsSequentialComposition<I, I, M, List<I>, SameModelsSequentialComposition<I, M>> {
+    public SameModelsSequentialComposition(M mdl1, SameModelsSequentialComposition<I, M> mdl2) {
+        super(mdl1, mdl2);
+    }
 }

@@ -15,28 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.composition;
+package org.apache.ignite.ml.composition.combinators.parallel;
 
+import java.util.List;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
-public class ModelsParallelComposition<I, O1, M1 extends Model<I, O1>, M2 extends Model<I, O1>, O2>
-    implements Model<I,O2> {
-    private M1 mdl1;
-    private M2 mdl2;
-    private IgniteBiFunction<O1, O1, O2> merger;
-
-    public ModelsParallelComposition(M1 mdl1, M2 mdl2,
-        IgniteBiFunction<O1, O1, O2> merger) {
-        this.mdl1 = mdl1;
-        this.mdl2 = mdl2;
-        this.merger = merger;
+public class SameModelsParallelComposition<I, O, M extends Model<I, O>>
+    extends ModelsParallelComposition<I, O, M, List<O>, SameModelsParallelComposition<I, O, M>, List<O>> {
+    public SameModelsParallelComposition(M mdl1,
+        SameModelsParallelComposition<I, O, M> mdl2,
+        IgniteBiFunction<O, List<O>, List<O>> merger) {
+        super(mdl1, mdl2, merger);
     }
 
-    @Override public O2 apply(I i) {
-        O1 res1 = mdl1.apply(i);
-        O1 res2 = mdl2.apply(i);
-
-        return merger.apply(res1, res2);
+    @Override public List<O> apply(I i) {
+        return super.apply(i);
     }
 }
