@@ -27,22 +27,22 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class MetaPageUpdateNextSnapshotId extends PageDeltaRecord {
     /** */
-    private final long nextSnapshotTag;
+    private final long nextSnapshotId;
 
     /**
      * @param pageId Meta page ID.
      */
-    public MetaPageUpdateNextSnapshotId(int grpId, long pageId, long nextSnapshotTag) {
+    public MetaPageUpdateNextSnapshotId(int grpId, long pageId, long nextSnapshotId) {
         super(grpId, pageId);
 
-        this.nextSnapshotTag = nextSnapshotTag;
+        this.nextSnapshotId = nextSnapshotId;
     }
 
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
         PageMetaIO io = PageMetaIO.VERSIONS.forPage(pageAddr);
 
-        io.setNextSnapshotTag(pageAddr, nextSnapshotTag);
+        io.setNextSnapshotTag(pageAddr, nextSnapshotId);
     }
 
     /** {@inheritDoc} */
@@ -54,7 +54,7 @@ public class MetaPageUpdateNextSnapshotId extends PageDeltaRecord {
      * @return Root ID.
      */
     public long nextSnapshotId() {
-        return nextSnapshotTag;
+        return nextSnapshotId;
     }
 
     /** {@inheritDoc} */
