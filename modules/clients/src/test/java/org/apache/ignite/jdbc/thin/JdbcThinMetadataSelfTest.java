@@ -51,16 +51,22 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.sql.Types.INTEGER;
-import static java.sql.Types.OTHER;
 import static java.sql.Types.VARCHAR;
+import static java.sql.Types.DECIMAL;
+import static java.sql.Types.DATE;
+import static java.sql.Types.OTHER;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Metadata tests.
  */
+@RunWith(JUnit4.class)
 public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -104,7 +110,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         startGridsMultiThreaded(3);
 
         Map<String, Integer> orgPrecision = new HashMap<>();
-        
+
         orgPrecision.put("name", 42);
 
         IgniteCache<String, Organization> orgCache = jcache(grid(0),
@@ -145,7 +151,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         personCache.put(new AffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
         personCache.put(new AffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
 
-        IgniteCache<Integer, Department> departmentCache = jcache(grid(0), 
+        IgniteCache<Integer, Department> departmentCache = jcache(grid(0),
             defaultCacheConfiguration().setIndexedTypes(Integer.class, Department.class), "dep");
 
         try (Connection conn = DriverManager.getConnection(URL)) {
@@ -158,12 +164,14 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             stmt.execute("CREATE INDEX IDX ON TEST (ID ASC)");
             stmt.execute("CREATE TABLE TEST_DECIMAL_COLUMN (ID INT primary key, DEC_COL DECIMAL(8, 3))");
             stmt.execute("CREATE TABLE TEST_DECIMAL_COLUMN_PRECISION (ID INT primary key, DEC_COL DECIMAL(8))");
+            stmt.execute("CREATE TABLE TEST_DECIMAL_DATE_COLUMN_META (ID INT primary key, DEC_COL DECIMAL(8), DATE_COL DATE)");
         }
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testResultSetMetaData() throws Exception {
         Connection conn = DriverManager.getConnection(URL);
 
@@ -200,6 +208,42 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testDecimalAndDateTypeMetaData() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            Statement stmt = conn.createStatement();
+
+            ResultSet rs = stmt.executeQuery(
+                    "select t.dec_col, t.date_col from TEST_DECIMAL_DATE_COLUMN_META as t");
+
+            assert rs != null;
+
+            ResultSetMetaData meta = rs.getMetaData();
+
+            assert meta != null;
+
+            assert meta.getColumnCount() == 2;
+
+            assert "TEST_DECIMAL_DATE_COLUMN_META".equalsIgnoreCase(meta.getTableName(1));
+            assert "DEC_COL".equalsIgnoreCase(meta.getColumnName(1));
+            assert "DEC_COL".equalsIgnoreCase(meta.getColumnLabel(1));
+            assert meta.getColumnType(1) == DECIMAL;
+            assert "DECIMAL".equals(meta.getColumnTypeName(1));
+            assert "java.math.BigDecimal".equals(meta.getColumnClassName(1));
+
+            assert "TEST_DECIMAL_DATE_COLUMN_META".equalsIgnoreCase(meta.getTableName(2));
+            assert "DATE_COL".equalsIgnoreCase(meta.getColumnName(2));
+            assert "DATE_COL".equalsIgnoreCase(meta.getColumnLabel(2));
+            assert meta.getColumnType(2) == DATE;
+            assert "DATE".equals(meta.getColumnTypeName(2));
+            assert "java.sql.Date".equals(meta.getColumnClassName(2));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testGetTables() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData meta = conn.getMetaData();
@@ -248,6 +292,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAllTables() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData meta = conn.getMetaData();
@@ -261,7 +306,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "PUBLIC.TEST",
                 "PUBLIC.Quoted",
                 "PUBLIC.TEST_DECIMAL_COLUMN",
-                "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION"));
+                "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION",
+                "PUBLIC.TEST_DECIMAL_DATE_COLUMN_META"));
 
             Set<String> actualTbls = new HashSet<>(expectedTbls.size());
 
@@ -278,6 +324,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetColumns() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setSchema("pers");
@@ -390,6 +437,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAllColumns() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData meta = conn.getMetaData();
@@ -413,7 +461,10 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "PUBLIC.TEST_DECIMAL_COLUMN.ID.null",
                 "PUBLIC.TEST_DECIMAL_COLUMN.DEC_COL.null.8.3",
                 "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION.ID.null",
-                "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION.DEC_COL.null.8"
+                "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION.DEC_COL.null.8",
+                "PUBLIC.TEST_DECIMAL_DATE_COLUMN_META.ID.null",
+                "PUBLIC.TEST_DECIMAL_DATE_COLUMN_META.DEC_COL.null.8",
+                "PUBLIC.TEST_DECIMAL_DATE_COLUMN_META.DATE_COL.null"
             ));
 
             Set<String> actualCols = new HashSet<>(expectedCols.size());
@@ -440,6 +491,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvalidCatalog() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData meta = conn.getMetaData();
@@ -469,6 +521,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIndexMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL);
              ResultSet rs = conn.getMetaData().getIndexInfo(null, "pers", "PERSON", false, false)) {
@@ -507,6 +560,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAllIndexes() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             ResultSet rs = conn.getMetaData().getIndexInfo(null, null, null, false, false);
@@ -535,6 +589,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryKeyMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL);
              ResultSet rs = conn.getMetaData().getPrimaryKeys(null, "pers", "PERSON")) {
@@ -554,6 +609,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAllPrimaryKeys() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             ResultSet rs = conn.getMetaData().getPrimaryKeys(null, null, null);
@@ -566,7 +622,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "PUBLIC.TEST.PK_PUBLIC_TEST.NAME",
                 "PUBLIC.Quoted.PK_PUBLIC_Quoted.Id",
                 "PUBLIC.TEST_DECIMAL_COLUMN.ID.ID",
-                "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION.ID.ID"));
+                "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION.ID.ID",
+                "PUBLIC.TEST_DECIMAL_DATE_COLUMN_META.ID.ID"));
 
             Set<String> actualPks = new HashSet<>(expectedPks.size());
 
@@ -585,6 +642,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testParametersMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setSchema("\"pers\"");
@@ -609,6 +667,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSchemasMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             ResultSet rs = conn.getMetaData().getSchemas();
@@ -632,6 +691,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      * Negative scenarios for catalog name.
      * Perform metadata lookups, that use incorrect catalog names.
      */
+    @Test
     public void testCatalogWithNotExistingName() throws SQLException {
         checkNoEntitiesFoundForCatalog("");
         checkNoEntitiesFoundForCatalog("NOT_EXISTING_CATALOG");
@@ -683,6 +743,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEmptySchemasMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             ResultSet rs = conn.getMetaData().getSchemas(null, "qqq");
@@ -694,6 +755,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersions() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             assert conn.getMetaData().getDatabaseProductVersion().equals(IgniteVersionUtils.VER.toString());

@@ -32,6 +32,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -44,6 +47,7 @@ import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
  * Test large cache counts.
  */
 @SuppressWarnings({"BusyWait"})
+@RunWith(JUnit4.class)
 public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
     /** Default backups. */
     private static final int DFLT_BACKUPS = 1;
@@ -121,6 +125,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testUnloadZeroBackupsTwoNodes() throws Exception {
         preloadMode = SYNC;
         backups = 0;
@@ -148,6 +153,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testUnloadOneBackupTwoNodes() throws Exception {
         preloadMode = SYNC;
         backups = 1;
@@ -226,6 +232,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testUnloadOneBackupThreeNodes() throws Exception {
         preloadMode = SYNC;
         backups = 1;
@@ -258,6 +265,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testUnloadOneBackThreeNodesWithLifeCycleBean() throws Exception {
         preloadMode = SYNC;
         backups = 1;

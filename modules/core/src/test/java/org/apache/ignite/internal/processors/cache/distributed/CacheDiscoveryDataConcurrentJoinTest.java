@@ -37,12 +37,16 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheDiscoveryDataConcurrentJoinTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -119,6 +123,7 @@ public class CacheDiscoveryDataConcurrentJoinTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentJoin() throws Exception {
         for (int iter = 0; iter < ITERATIONS; iter++) {
             log.info("Iteration: " + iter);
@@ -169,6 +174,7 @@ public class CacheDiscoveryDataConcurrentJoinTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentJoinCacheWithGroup() throws Exception {
         withCacheGrp = true;
 

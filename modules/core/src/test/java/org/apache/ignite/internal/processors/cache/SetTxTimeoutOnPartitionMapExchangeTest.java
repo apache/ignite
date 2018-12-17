@@ -49,6 +49,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.util.typedef.X.hasCause;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -57,6 +60,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -83,6 +87,7 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
     /**
      *
      */
+    @Test
     public void testDefaultTxTimeoutOnPartitionMapExchange() throws Exception {
         IgniteEx ig1 = startGrid(1);
         IgniteEx ig2 = startGrid(2);
@@ -99,6 +104,7 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
     /**
      *
      */
+    @Test
     public void testJmxSetTxTimeoutOnPartitionMapExchange() throws Exception {
         startGrid(1);
         startGrid(2);
@@ -121,6 +127,7 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
     /**
      *
      */
+    @Test
     public void testClusterSetTxTimeoutOnPartitionMapExchange() throws Exception {
         Ignite ig1 = startGrid(1);
         Ignite ig2 = startGrid(2);
@@ -140,6 +147,7 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
      *
      * @throws Exception If fails.
      */
+    @Test
     public void testSetTxTimeoutDuringPartitionMapExchange() throws Exception {
         IgniteEx ig = (IgniteEx) startGrids(2);
 
@@ -151,6 +159,7 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
      *
      * @throws Exception If fails.
      */
+    @Test
     public void testSetTxTimeoutOnClientDuringPartitionMapExchange() throws Exception {
         IgniteEx ig = (IgniteEx) startGrids(2);
         IgniteEx client = startGrid(getConfiguration("client").setClientMode(true));

@@ -22,6 +22,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -39,6 +40,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.DmlStatementsProcessor;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -93,6 +95,7 @@ public final class UpdatePlanBuilder {
      * @param fieldsQry Original query.
      * @return Update plan.
      */
+    @SuppressWarnings("ConstantConditions")
     public static UpdatePlan planForStatement(Prepared prepared, boolean loc, IgniteH2Indexing idx,
         @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQry, @Nullable Integer errKeysPos,
         boolean dmlInsideTxAllowed)
@@ -103,15 +106,60 @@ public final class UpdatePlanBuilder {
 
         GridSqlStatement stmt = parser.parse(prepared);
 
-        boolean mvccEnabled = false;
+
+        List<GridH2Table> tbls = extractTablesParticipateAtQuery(parser);
 
         GridCacheContext prevCctx = null;
+        boolean mvccEnabled = false;
 
-        for (Object o : parser.objectsMap().values()) {
-            if (o instanceof GridSqlInsert)
-                o = ((GridSqlInsert)o).into();
-            else if (o instanceof GridSqlMerge)
+        for (GridH2Table h2tbl : tbls) {
+            H2Utils.checkAndStartNotStartedCache(h2tbl);
+
+            if (prevCctx == null) {
+                prevCctx = h2tbl.cacheContext();
+
+                assert prevCctx != null : h2tbl.cacheName() + " is not initted";
+
+                mvccEnabled = prevCctx.mvccEnabled();
+
+                if (!mvccEnabled && !dmlInsideTxAllowed && prevCctx.cache().context().tm().inUserTx()) {
+                    throw new IgniteSQLException("DML statements are not allowed inside a transaction over " +
+                        "cache(s) with TRANSACTIONAL atomicity mode (change atomicity mode to " +
+                        "TRANSACTIONAL_SNAPSHOT or disable this error message with system property " +
+                        "\"IGNITE_ALLOW_DML_INSIDE_TRANSACTION\" [cacheName=" + prevCctx.name() + ']');
+                }
+            }
+            else if (h2tbl.cacheContext().mvccEnabled() != mvccEnabled)
+                MvccUtils.throwAtomicityModesMismatchException(prevCctx, h2tbl.cacheContext());
+        }
+
+        if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
+            return planForInsert(stmt, loc, idx, mvccEnabled, conn, fieldsQry);
+        else if (stmt instanceof GridSqlUpdate || stmt instanceof GridSqlDelete)
+            return planForUpdate(stmt, loc, idx, mvccEnabled, conn, fieldsQry, errKeysPos);
+        else
+            throw new IgniteSQLException("Unsupported operation: " + prepared.getSQL(),
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+    }
+
+    /**
+     * Extract all tables participate at query
+     *
+     * @param parser Parser related to the query.
+     * @return List of tables participate at query.
+     * @throws IgniteSQLException in case query contains virtual tables.
+     */
+    private static List<GridH2Table> extractTablesParticipateAtQuery(GridSqlQueryParser parser) throws IgniteSQLException {
+        Collection<?> parserObjects = parser.objectsMap().values();
+
+        List<GridH2Table> tbls = new ArrayList<>(parserObjects.size());
+
+        // check all involved caches
+        for (Object o : parserObjects) {
+            if (o instanceof GridSqlMerge)
                 o = ((GridSqlMerge)o).into();
+            else if (o instanceof GridSqlInsert)
+                o = ((GridSqlInsert)o).into();
             else if (o instanceof GridSqlUpdate)
                 o = ((GridSqlUpdate)o).target();
             else if (o instanceof GridSqlDelete)
@@ -121,39 +169,18 @@ public final class UpdatePlanBuilder {
                 o = GridSqlAlias.unwrap((GridSqlAst)o);
 
             if (o instanceof GridSqlTable) {
-                if (((GridSqlTable)o).dataTable() == null) { // Check for virtual tables.
+                GridH2Table h2tbl = ((GridSqlTable)o).dataTable();
+
+                if (h2tbl == null) { // Check for virtual tables.
                     throw new IgniteSQLException("Operation not supported for table '" +
                         ((GridSqlTable)o).tableName() + "'", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
                 }
 
-                if (prevCctx == null) {
-                    prevCctx = (((GridSqlTable)o).dataTable()).cache();
-
-                    mvccEnabled = prevCctx.mvccEnabled();
-
-                    if (!mvccEnabled && !dmlInsideTxAllowed && prevCctx.cache().context().tm().inUserTx()) {
-                        throw new IgniteSQLException("DML statements are not allowed inside a transaction over " +
-                            "cache(s) with TRANSACTIONAL atomicity mode (change atomicity mode to " +
-                            "TRANSACTIONAL_SNAPSHOT or disable this error message with system property " +
-                            "\"IGNITE_ALLOW_DML_INSIDE_TRANSACTION\" [cacheName=" + prevCctx.name() + ']');
-                    }
-                }
-                else {
-                    GridCacheContext cctx = ((GridSqlTable)o).dataTable().cache();
-
-                    if (cctx.mvccEnabled() != mvccEnabled)
-                        MvccUtils.throwAtomicityModesMismatchException(prevCctx, cctx);
-                }
+                tbls.add(h2tbl);
             }
         }
 
-        if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
-            return planForInsert(stmt, loc, idx, mvccEnabled, conn, fieldsQry);
-        else if (stmt instanceof GridSqlUpdate || stmt instanceof GridSqlDelete)
-            return planForUpdate(stmt, loc, idx, mvccEnabled, conn, fieldsQry, errKeysPos);
-        else
-            throw new IgniteSQLException("Unsupported operation: " + prepared.getSQL(),
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        return tbls;
     }
 
     /**

@@ -36,14 +36,20 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
-import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteTxConcurrentRemoveObjectsTest extends GridCommonAbstractTest {
     /** Cache partitions. */
     private static final int CACHE_PARTITIONS = 16;
@@ -67,25 +73,22 @@ public class IgniteTxConcurrentRemoveObjectsTest extends GridCommonAbstractTest 
         oldIgniteCacheRmvEntriesTtl = Long.getLong(IGNITE_CACHE_REMOVED_ENTRIES_TTL, 10_000);
 
         System.setProperty(IGNITE_CACHE_REMOVED_ENTRIES_TTL, Long.toString(newIgniteCacheRemovedEntriesTtl));
+
+        startGrid(0);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
         System.setProperty(IGNITE_CACHE_REMOVED_ENTRIES_TTL, Long.toString(oldIgniteCacheRmvEntriesTtl));
 
         super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        stopAllGrids();
+        grid(0).destroyCache(DEFAULT_CACHE_NAME);
 
         super.afterTest();
     }
@@ -102,7 +105,7 @@ public class IgniteTxConcurrentRemoveObjectsTest extends GridCommonAbstractTest 
     /**
      * @return Cache configuration.
      */
-    private CacheConfiguration<Integer, String> getCacheCfg() {
+    private CacheConfiguration<Integer, String> cacheConfiguration() {
         CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>();
 
         ccfg.setName(DEFAULT_CACHE_NAME);
@@ -115,16 +118,42 @@ public class IgniteTxConcurrentRemoveObjectsTest extends GridCommonAbstractTest 
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testOptimisticTxLeavesObjectsInLocalPartition() throws Exception {
+        checkTxLeavesObjectsInLocalPartition(cacheConfiguration(), TransactionConcurrency.OPTIMISTIC, SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPessimisticTxLeavesObjectsInLocalPartition() throws Exception {
+        checkTxLeavesObjectsInLocalPartition(cacheConfiguration(), TransactionConcurrency.PESSIMISTIC, SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMvccTxLeavesObjectsInLocalPartition() throws Exception {
+        checkTxLeavesObjectsInLocalPartition(cacheConfiguration().setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT),
+            TransactionConcurrency.PESSIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
      * Too many deletes in single transaction may overflow {@link GridDhtLocalPartition#rmvQueue} and entries will be
      * deleted synchronously in {@link GridDhtLocalPartition#onDeferredDelete(int, KeyCacheObject, GridCacheVersion)}.
      * This should not corrupt internal map state in {@link GridDhtLocalPartition}.
      *
      * @throws Exception If failed.
      */
-    public void testTxLeavesObjectsInLocalPartition() throws Exception {
-        IgniteEx igniteEx = startGrid(getConfiguration());
+    public void checkTxLeavesObjectsInLocalPartition(CacheConfiguration<Integer, String> ccfg,
+        TransactionConcurrency optimistic, TransactionIsolation isolation) throws Exception {
+        IgniteEx igniteEx = grid(0);
 
-        igniteEx.getOrCreateCache(getCacheCfg());
+        igniteEx.getOrCreateCache(ccfg);
 
         try (IgniteDataStreamer<Integer, String> dataStreamer = igniteEx.dataStreamer(DEFAULT_CACHE_NAME)) {
             for (int i = 0; i < CACHE_ENTRIES_COUNT; i++)
@@ -141,8 +170,8 @@ public class IgniteTxConcurrentRemoveObjectsTest extends GridCommonAbstractTest 
 
         assertEquals(CACHE_ENTRIES_COUNT, client.getOrCreateCache(DEFAULT_CACHE_NAME).size());
 
-        try (Transaction tx = client.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
-            IgniteCache<Integer, String> cache = client.getOrCreateCache(getCacheCfg());
+        try (Transaction tx = client.transactions().txStart(optimistic, isolation)) {
+            IgniteCache<Integer, String> cache = client.getOrCreateCache(cacheConfiguration());
 
             for (int v = 0; v < CACHE_ENTRIES_COUNT; v++) {
                 cache.get(v);

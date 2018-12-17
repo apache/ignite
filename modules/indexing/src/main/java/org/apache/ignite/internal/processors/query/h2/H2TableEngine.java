@@ -80,7 +80,7 @@ public class H2TableEngine implements TableEngine {
 
     /** {@inheritDoc} */
     @Override public TableBase createTable(CreateTableData createTblData) {
-        resTbl0 = new GridH2Table(createTblData, rowDesc0, rowFactory0, tblDesc0, tblDesc0.cache());
+        resTbl0 = new GridH2Table(createTblData, rowDesc0, rowFactory0, tblDesc0, tblDesc0.cacheInfo());
 
         return resTbl0;
     }

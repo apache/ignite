@@ -24,10 +24,6 @@ export default class {
     constructor(Version) {
         this.titleSuffix = ' - Apache Ignite Web Console';
 
-        this.headerLogo = '/images/ignite-logo.svg';
-
-        this.headerText = 'Management console for Apache Ignite';
-
         this.showIgniteLogo = false;
 
         this.footerHtml = [

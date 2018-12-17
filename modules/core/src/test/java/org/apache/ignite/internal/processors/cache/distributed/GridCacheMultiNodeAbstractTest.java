@@ -37,6 +37,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -48,6 +51,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
 /**
  * Multi-node cache test.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractTest {
     /** Grid 1. */
     private static Ignite ignite1;
@@ -88,8 +92,6 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
-
         ignite1 = startGrid(1);
         ignite2 = startGrid(2);
         ignite3 = startGrid(3);
@@ -97,6 +99,11 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
         cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
         cache3 = ignite3.cache(DEFAULT_CACHE_NAME);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
     }
 
     /** {@inheritDoc} */
@@ -147,6 +154,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testBasicPut() throws Exception {
         checkPuts(3, ignite1);
     }
@@ -154,6 +162,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     /**
      * @throws Exception If test fails.
      */
+    @Test
     public void testMultiNodePut() throws Exception {
         checkPuts(1, ignite1, ignite2, ignite3);
         checkPuts(1, ignite2, ignite1, ignite3);
@@ -163,6 +172,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     /**
      * @throws Exception If test fails.
      */
+    @Test
     public void testMultiValuePut() throws Exception {
         checkPuts(1, ignite1);
     }
@@ -170,6 +180,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     /**
      * @throws Exception If test fails.
      */
+    @Test
     public void testMultiValueMultiNodePut() throws Exception {
         checkPuts(3, ignite1, ignite2, ignite3);
         checkPuts(3, ignite2, ignite1, ignite3);
@@ -184,6 +195,8 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
      * @throws Exception If check fails.
      */
     private void checkPuts(int cnt, Ignite... ignites) throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+
         CountDownLatch latch = new CountDownLatch(ignites.length * cnt);
 
         CacheEventListener lsnr = new CacheEventListener(latch, EVT_CACHE_OBJECT_PUT);
@@ -230,6 +243,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testLockUnlock() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
@@ -278,6 +292,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testConcurrentPutAsync() throws Exception {
         CountDownLatch latch = new CountDownLatch(9);
 
@@ -328,6 +343,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testGlobalClearAll() throws Exception {
         cache1.put(1, "val1");
         cache2.put(2, "val2");

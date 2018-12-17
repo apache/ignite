@@ -24,14 +24,19 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.util.typedef.G;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests cache get/put/remove and data streaming in read-only cluster mode.
  */
+@RunWith(JUnit4.class)
 public class ClusterReadOnlyModeTest extends ClusterReadOnlyModeAbstractTest {
     /**
      * Tests cache get/put/remove.
      */
+    @Test
     public void testCacheGetPutRemove() {
         assertCachesReadOnlyMode(false);
 
@@ -47,6 +52,7 @@ public class ClusterReadOnlyModeTest extends ClusterReadOnlyModeAbstractTest {
     /**
      * Tests data streamer.
      */
+    @Test
     public void testDataStreamerReadOnly() {
         assertDataStreamerReadOnlyMode(false);
 

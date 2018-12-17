@@ -22,14 +22,19 @@ import java.util.regex.Pattern;
 import junit.framework.TestCase;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Java reg exp test.
  */
+@RunWith(JUnit4.class)
 public class RegExpTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRegExp() throws Exception {
         String normal =
             "swap-spaces/space1/b53b3a3d6ab90ce0268229151c9bde11|b53b3a3d6ab90ce0268229151c9bde11|1315392441288";

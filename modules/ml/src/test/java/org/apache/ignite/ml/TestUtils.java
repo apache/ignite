@@ -18,8 +18,12 @@
 package org.apache.ignite.ml;
 
 import java.util.stream.IntStream;
+import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.junit.Assert;
 
 import static org.junit.Assert.assertTrue;
@@ -226,7 +230,8 @@ public class TestUtils {
     public static boolean checkIsInEpsilonNeighbourhoodBoolean(Vector v1, Vector v2, double epsilon) {
         try {
             checkIsInEpsilonNeighbourhood(new Vector[] {v1}, new Vector[] {v2}, epsilon);
-        } catch (Throwable e) {
+        }
+        catch (Throwable e) {
             return false;
         }
 
@@ -324,5 +329,115 @@ public class TestUtils {
             return isEqual && !Double.isNaN(x) && !Double.isNaN(y);
 
         }
+    }
+
+    /**
+     * Gets test learning environment builder.
+     *
+     * @return test learning environment builder.
+     */
+    public static LearningEnvironmentBuilder testEnvBuilder() {
+        return testEnvBuilder(123L);
+    }
+
+    /**
+     * Gets test learning environment builder with a given seed.
+     *
+     * @param seed Seed.
+     * @return test learning environment builder.
+     */
+    public static LearningEnvironmentBuilder testEnvBuilder(long seed) {
+        return LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(seed);
+    }
+
+    /**
+     * Simple wrapper class which adds {@link AutoCloseable} to given type.
+     *
+     * @param <T> Type to wrap.
+     */
+    public static class DataWrapper<T> implements AutoCloseable {
+        /**
+         * Value to wrap.
+         */
+        T val;
+
+        /**
+         * Wrap given value in {@link AutoCloseable}.
+         *
+         * @param val Value to wrap.
+         * @param <T> Type of value to wrap.
+         * @return Value wrapped as {@link AutoCloseable}.
+         */
+        public static <T> DataWrapper<T> of(T val) {
+            return new DataWrapper<>(val);
+        }
+
+        /**
+         * Construct instance of this class from given value.
+         *
+         * @param val Value to wrap.
+         */
+        public DataWrapper(T val) {
+            this.val = val;
+        }
+
+        /**
+         * Get wrapped value.
+         *
+         * @return Wrapped value.
+         */
+        public T val() {
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws Exception {
+            if (val instanceof AutoCloseable)
+                ((AutoCloseable)val).close();
+        }
+    }
+
+    /**
+     * Return model which returns given constant.
+     *
+     * @param v Constant value.
+     * @param <T> Type of input.
+     * @param <V> Type of output.
+     * @return Model which returns given constant.
+     */
+    public static <T, V> Model<T, V> constantModel(V v) {
+        return t -> v;
+    }
+
+    /**
+     * Returns trainer which independently of dataset outputs given model.
+     *
+     * @param ml Model.
+     * @param <I> Type of model input.
+     * @param <O> Type of model output.
+     * @param <M> Type of model.
+     * @param <L> Type of dataset labels.
+     * @return Trainer which independently of dataset outputs given model.
+     */
+    public static <I, O, M extends Model<I, O>, L> DatasetTrainer<M, L> constantTrainer(M ml) {
+        return new DatasetTrainer<M, L>() {
+            /** {@inheritDoc} */
+            @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor,
+                IgniteBiFunction<K, V, L> lbExtractor) {
+                return ml;
+            }
+
+            /** {@inheritDoc} */
+            @Override public boolean checkState(M mdl) {
+                return true;
+            }
+
+            /** {@inheritDoc} */
+            @Override public <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+                return ml;
+            }
+        };
     }
 }

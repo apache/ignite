@@ -52,6 +52,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -59,6 +62,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbstractTest {
     /** */
     public static final int CLN_GRD = 0;
@@ -165,6 +169,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPut() throws Exception {
         executeTest(new Callable<Integer>() {
             /** {@inheritDoc} */
@@ -183,6 +188,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemove() throws Exception {
         executeTest(new Callable<Integer>() {
             /** {@inheritDoc} */
@@ -201,6 +207,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAsync() throws Exception {
         executeTest(new Callable<Object>() {
             /** {@inheritDoc} */
@@ -219,6 +226,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGet() throws Exception {
         bannedMsg.set(GridNearSingleGetRequest.class);
 
@@ -239,6 +247,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAll() throws Exception {
         bannedMsg.set(GridNearGetRequest.class);
 
@@ -302,6 +311,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutBatch() throws Exception {
         assert !suspended.get();
 

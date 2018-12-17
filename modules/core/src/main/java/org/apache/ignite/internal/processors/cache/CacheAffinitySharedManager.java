@@ -361,7 +361,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     void onCacheGroupCreated(CacheGroupContext grp) {
         if (!grpHolders.containsKey(grp.groupId())) {
             cctx.io().addCacheGroupHandler(grp.groupId(), GridDhtAffinityAssignmentResponse.class,
-                (IgniteBiInClosure<UUID, GridDhtAffinityAssignmentResponse>) this::processAffinityAssignmentResponse);
+                (IgniteBiInClosure<UUID, GridDhtAffinityAssignmentResponse>)this::processAffinityAssignmentResponse);
         }
     }
 
@@ -430,10 +430,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 DynamicCacheChangeRequest changeReq = startReqs.get(desc.cacheName());
 
                 return new StartCacheInfo(
+                    desc.cacheConfiguration(),
                     desc,
                     changeReq.nearCacheConfiguration(),
                     topVer,
-                    changeReq.disabledAfterStart()
+                    changeReq.disabledAfterStart(),
+                    true
                 );
             })
             .collect(Collectors.toList());
@@ -869,7 +871,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         final ExchangeDiscoveryEvents evts = fut.context().events();
 
-        long time = System.currentTimeMillis();
+        long time = U.currentTimeMillis();
 
         Map<StartCacheInfo, DynamicCacheChangeRequest> startCacheInfos = new LinkedHashMap<>();
 
@@ -920,6 +922,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     req
                 );
             }
+            else
+                cctx.kernalContext().cache().initQueryStructuresForNotStartedCache(cacheDesc);
         }
 
         Map<StartCacheInfo, IgniteCheckedException> failedCaches = cctx.cache().prepareStartCachesIfPossible(startCacheInfos.keySet());
@@ -951,14 +955,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         if (log.isInfoEnabled())
-            log.info("Caches starting performed in " + (System.currentTimeMillis() - time) + " ms.");
+            log.info("Caches starting performed in " + (U.currentTimeMillis() - time) + " ms.");
 
-        time = System.currentTimeMillis();
+        time = U.currentTimeMillis();
 
         initAffinityOnCacheGroupsStart(fut, exchActions, crd);
 
         if (log.isInfoEnabled())
-            log.info("Affinity initialization for started caches performed in " + (System.currentTimeMillis() - time) + " ms.");
+            log.info("Affinity initialization for started caches performed in " + (U.currentTimeMillis() - time) + " ms.");
     }
 
     /**
@@ -1522,9 +1526,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         assert F.isEmpty(affReq) || (!F.isEmpty(receivedAff) && receivedAff.size() >= affReq.size())
             : ("Requested and received affinity are different " +
-                "[requestedCnt=" + (affReq != null ? affReq.size() : "none") +
-                ", receivedCnt=" + (receivedAff != null ? receivedAff.size() : "none") +
-                ", msg=" + msg + "]");
+            "[requestedCnt=" + (affReq != null ? affReq.size() : "none") +
+            ", receivedCnt=" + (receivedAff != null ? receivedAff.size() : "none") +
+            ", msg=" + msg + "]");
 
         final Map<Long, ClusterNode> nodesByOrder = new ConcurrentHashMap<>();
 

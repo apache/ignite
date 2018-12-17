@@ -27,6 +27,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -45,7 +46,11 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
+@RunWith(JUnit4.class)
 public class IgniteDynamicCacheStartCoordinatorFailoverTest extends GridCommonAbstractTest {
     /** Default IP finder for single-JVM cloud grid. */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -101,6 +106,7 @@ public class IgniteDynamicCacheStartCoordinatorFailoverTest extends GridCommonAb
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testCoordinatorFailure() throws Exception {
         // Start coordinator node.
         appendCustomAttribute = true;
@@ -117,6 +123,8 @@ public class IgniteDynamicCacheStartCoordinatorFailoverTest extends GridCommonAb
         CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setName("test-coordinator-failover");
+
+        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         cfg.setAffinity(new BrokenAffinityFunction(false, getTestIgniteInstanceName(2)));
 

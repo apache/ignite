@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
 
 import javax.cache.configuration.Factory;
@@ -36,17 +37,30 @@ import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import java.util.concurrent.TimeUnit;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVariationsAbstractTest {
     /** */
     private static final int TIMEOUT = 400;
 
     /** */
     private static final int KEYS = 100;
+
+    /** {@inheritDoc} */
+    @Before
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        super.setUp();
+    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -56,7 +70,10 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testReadThroughWithExpirePolicy() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
+
         Ignite ig = testedGrid();
 
         CacheConfiguration<Object, Object> cc = variationConfig("expire");
@@ -96,7 +113,10 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testReadThroughExpirePolicyConfigured() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
+
         Ignite ig = testedGrid();
 
         CacheConfiguration<Object, Object> cc = variationConfig("expireConfig");
@@ -149,7 +169,10 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testReadThroughEvictionPolicy() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+
         Ignite ig = testedGrid();
 
         CacheConfiguration<Object, Object> cc = variationConfig("eviction");
@@ -185,6 +208,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testReadThroughSkipStore() throws Exception {
         Ignite ig = testedGrid();
 

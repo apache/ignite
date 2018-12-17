@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.cache.BinarySerializationQueryWithR
 import org.apache.ignite.internal.processors.cache.CacheIteratorScanQueryTest;
 import org.apache.ignite.internal.processors.cache.CacheLocalQueryDetailMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheLocalQueryMetricsSelfTest;
-import org.apache.ignite.internal.processors.cache.CacheOffheapBatchIndexingBaseTest;
 import org.apache.ignite.internal.processors.cache.CacheOffheapBatchIndexingMultiTypeTest;
 import org.apache.ignite.internal.processors.cache.CacheOffheapBatchIndexingSingleTypeTest;
 import org.apache.ignite.internal.processors.cache.CachePartitionedQueryDetailMetricsDistributedSelfTest;
@@ -43,6 +42,8 @@ import org.apache.ignite.internal.processors.cache.CacheReplicatedQueryMetricsLo
 import org.apache.ignite.internal.processors.cache.CacheSqlQueryValueCopySelfTest;
 import org.apache.ignite.internal.processors.cache.DdlTransactionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheCrossCacheQuerySelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheDynamicLoadOnClientPersistentTest;
+import org.apache.ignite.internal.processors.cache.GridCacheDynamicLoadOnClientTest;
 import org.apache.ignite.internal.processors.cache.GridCacheFullTextQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheLazyQueryPartitionsReleaseTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQueryIndexDisabledSelfTest;
@@ -109,7 +110,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheP
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCachePartitionedQueryP2PDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCachePartitionedQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCachePartitionedSnapshotEnabledQuerySelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryAbstractDistributedJoinSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryNoRebalanceSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedFieldsQueryJoinNoPrimaryPartitionsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedFieldsQueryP2PEnabledSelfTest;
@@ -119,6 +119,7 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.Ignite
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQueryP2PDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.encryption.EncryptedSqlTableTest;
+import org.apache.ignite.internal.processors.cache.index.BasicIndexMultinodeTest;
 import org.apache.ignite.internal.processors.cache.index.BasicIndexTest;
 import org.apache.ignite.internal.processors.cache.index.ComplexPrimaryKeyUnwrapSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DuplicateKeyValueClassesSelfTest;
@@ -212,6 +213,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.ExplainSelfTest;
 import org.apache.ignite.internal.processors.query.h2.sql.GridQueryParsingTest;
 import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryDistributedJoinsTest;
 import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryTest;
+import org.apache.ignite.internal.processors.query.h2.twostep.AndOperationExtractPartitionSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.InOperationExtractPartitionSelfTest;
 import org.apache.ignite.internal.processors.sql.IgniteCachePartitionedAtomicColumnConstraintsTest;
 import org.apache.ignite.internal.processors.sql.IgniteCachePartitionedTransactionalColumnConstraintsTest;
@@ -239,9 +241,8 @@ import org.apache.ignite.testframework.IgniteTestSuite;
 public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
     /**
      * @return Test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         IgniteTestSuite suite = new IgniteTestSuite("Ignite Cache Queries Test Suite");
 
         suite.addTestSuite(AffinityKeyNameAndValueFieldNameConflictTest.class);
@@ -270,25 +271,26 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
         suite.addTestSuite(MultipleStatementsSqlQuerySelfTest.class);
 
         suite.addTestSuite(BasicIndexTest.class);
+        suite.addTestSuite(BasicIndexMultinodeTest.class);
 
         // Misc tests.
-        suite.addTest(new TestSuite(QueryEntityValidationSelfTest.class));
-        suite.addTest(new TestSuite(DuplicateKeyValueClassesSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheLazyQueryPartitionsReleaseTest.class));
+        suite.addTestSuite(QueryEntityValidationSelfTest.class);
+        suite.addTestSuite(DuplicateKeyValueClassesSelfTest.class);
+        suite.addTestSuite(GridCacheLazyQueryPartitionsReleaseTest.class);
 
         // Dynamic index create/drop tests.
-        suite.addTest(new TestSuite(SchemaExchangeSelfTest.class));
+        suite.addTestSuite(SchemaExchangeSelfTest.class);
 
-        suite.addTest(new TestSuite(DynamicIndexServerCoordinatorBasicSelfTest.class));
-        suite.addTest(new TestSuite(DynamicIndexServerBasicSelfTest.class));
-        suite.addTest(new TestSuite(DynamicIndexServerNodeFilterCoordinatorBasicSelfTest.class));
-        suite.addTest(new TestSuite(DynamicIndexServerNodeFIlterBasicSelfTest.class));
-        suite.addTest(new TestSuite(DynamicIndexClientBasicSelfTest.class));
+        suite.addTestSuite(DynamicIndexServerCoordinatorBasicSelfTest.class);
+        suite.addTestSuite(DynamicIndexServerBasicSelfTest.class);
+        suite.addTestSuite(DynamicIndexServerNodeFilterCoordinatorBasicSelfTest.class);
+        suite.addTestSuite(DynamicIndexServerNodeFIlterBasicSelfTest.class);
+        suite.addTestSuite(DynamicIndexClientBasicSelfTest.class);
 
         // H2 tests.
 
-        suite.addTest(new TestSuite(GridH2IndexingInMemSelfTest.class));
-        suite.addTest(new TestSuite(GridH2IndexingOffheapSelfTest.class));
+        suite.addTestSuite(GridH2IndexingInMemSelfTest.class);
+        suite.addTestSuite(GridH2IndexingOffheapSelfTest.class);
 
         // Parsing
         suite.addTestSuite(GridQueryParsingTest.class);
@@ -327,7 +329,6 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
         suite.addTestSuite(IgniteErrorOnRebalanceTest.class);
         suite.addTestSuite(CacheQueryBuildValueTest.class);
         suite.addTestSuite(CacheOffheapBatchIndexingMultiTypeTest.class);
-        suite.addTestSuite(CacheOffheapBatchIndexingBaseTest.class);
 
         suite.addTestSuite(IgniteCacheQueryIndexSelfTest.class);
         suite.addTestSuite(IgniteCacheCollocatedQuerySelfTest.class);
@@ -337,8 +338,6 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
         suite.addTestSuite(IgniteSqlBigIntegerKeyTest.class);
         suite.addTestSuite(IgniteCacheOffheapEvictQueryTest.class);
         suite.addTestSuite(IgniteCacheOffheapIndexScanTest.class);
-
-        suite.addTestSuite(IgniteCacheQueryAbstractDistributedJoinSelfTest.class);
 
         suite.addTestSuite(GridCacheCrossCacheQuerySelfTest.class);
         suite.addTestSuite(GridCacheQuerySerializationSelfTest.class);
@@ -532,6 +531,10 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
 
         // Partition pruning.
         suite.addTestSuite(InOperationExtractPartitionSelfTest.class);
+        suite.addTestSuite(AndOperationExtractPartitionSelfTest.class);
+
+        suite.addTestSuite(GridCacheDynamicLoadOnClientTest.class);
+        suite.addTestSuite(GridCacheDynamicLoadOnClientPersistentTest.class);
 
         return suite;
     }

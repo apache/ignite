@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.result.SearchRow;
@@ -87,6 +88,9 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     private final String idxName;
 
     /** */
+    private final IoStatisticsHolder stats;
+
+    /** */
     private final Comparator<Value> comp = new Comparator<Value>() {
         @Override public int compare(Value o1, Value o2) {
             return compareValues(o1, o2);
@@ -108,7 +112,11 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     /** */
     private final IgniteLogger log;
 
+    /** Whether PK is stored in unwrapped form. */
     private boolean unwrappedPk;
+
+    /** Whether index was created from scratch during owning node lifecycle. */
+    private final boolean created;
 
     /**
      * Constructor.
@@ -130,6 +138,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
      * @param mvccEnabled Mvcc flag.
      * @param failureProcessor if the tree is corrupted.
      * @param log Logger.
+     * @param stats Statistics holder.
      * @throws IgniteCheckedException If failed.
      */
     protected H2Tree(
@@ -153,9 +162,12 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
         boolean mvccEnabled,
         @Nullable H2RowCache rowCache,
         @Nullable FailureProcessor failureProcessor,
-        IgniteLogger log
+        IgniteLogger log,
+        IoStatisticsHolder stats
     ) throws IgniteCheckedException {
         super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList, failureProcessor);
+
+        this.stats = stats;
 
         if (!initNew) {
             // Page is ready - read meta information.
@@ -200,6 +212,8 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
         this.log = log;
 
         initTree(initNew, inlineSize);
+
+        this.created = initNew;
     }
 
     /**
@@ -509,6 +523,11 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override protected IoStatisticsHolder statisticsHolder() {
+        return stats;
+    }
+
     /**
      * @return {@code true} In case use unwrapped columns for PK
      */
@@ -555,6 +574,14 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
      * @return Comparison result.
      */
     public abstract int compareValues(Value v1, Value v2);
+
+    /**
+     * @return {@code True} if index was created during curren node's lifetime, {@code False} if it was restored from
+     * disk.
+     */
+    public boolean created() {
+        return created;
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -19,8 +19,10 @@ package org.apache.ignite.ml.preprocessing.minmaxscaling;
 
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
@@ -33,11 +35,15 @@ import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
  */
 public class MinMaxScalerTrainer<K, V> implements PreprocessingTrainer<K, V, Vector, Vector> {
     /** {@inheritDoc} */
-    @Override public MinMaxScalerPreprocessor<K, V> fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public MinMaxScalerPreprocessor<K, V> fit(
+        LearningEnvironmentBuilder envBuilder,
+        DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> basePreprocessor) {
+        PartitionContextBuilder<K, V, EmptyContext> ctxBuilder = (env, upstream, upstreamSize) -> new EmptyContext();
         try (Dataset<EmptyContext, MinMaxScalerPartitionData> dataset = datasetBuilder.build(
-            (upstream, upstreamSize) -> new EmptyContext(),
-            (upstream, upstreamSize, ctx) -> {
+            envBuilder,
+            ctxBuilder,
+            (env, upstream, upstreamSize, ctx) -> {
                 double[] min = null;
                 double[] max = null;
 

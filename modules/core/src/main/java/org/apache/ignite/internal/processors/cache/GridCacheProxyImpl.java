@@ -926,13 +926,12 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
 
     /** {@inheritDoc} */
     @Nullable @Override public V localPeek(K key,
-        CachePeekMode[] peekModes,
-        @Nullable IgniteCacheExpiryPolicy plc)
+        CachePeekMode[] peekModes)
         throws IgniteCheckedException {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
-            return delegate.localPeek(key, peekModes, plc);
+            return delegate.localPeek(key, peekModes);
         }
         finally {
             gate.leave(prev);
