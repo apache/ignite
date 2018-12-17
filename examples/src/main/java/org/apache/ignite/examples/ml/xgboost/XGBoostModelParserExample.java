@@ -18,6 +18,7 @@
 package org.apache.ignite.examples.ml.xgboost;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -39,27 +40,39 @@ import org.apache.ignite.ml.xgboost.parser.XGModelParser;
  */
 public class XGBoostModelParserExample {
     /** Test model resource name. */
-    private static final String TEST_MODEL_RESOURCE = "examples/src/main/resources/models/xgboost/agaricus-model.txt";
+    private static final String TEST_MODEL_RES = "examples/src/main/resources/models/xgboost/agaricus-model.txt";
+
+    /** Test data. */
+    private static final String TEST_DATA_RES = "examples/src/main/resources/datasets/agaricus-test-data.txt";
+
+    /** Test expected results. */
+    private static final String TEST_ER_RES = "examples/src/main/resources/datasets/agaricus-test-expected-results.txt";
 
     /** Parser. */
     private static final XGModelParser parser = new XGModelParser();
 
     /** Run example. */
-    public static void main(String... args) throws ExecutionException, InterruptedException {
+    public static void main(String... args) throws ExecutionException, InterruptedException, FileNotFoundException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            File mdlRsrc = IgniteUtils.resolveIgnitePath(TEST_MODEL_RESOURCE);
+            File mdlRsrc = IgniteUtils.resolveIgnitePath(TEST_MODEL_RES);
             if (mdlRsrc == null)
-                throw new IllegalArgumentException("File not found [resource_path=" + TEST_MODEL_RESOURCE + "]");
+                throw new IllegalArgumentException("File not found [resource_path=" + TEST_MODEL_RES + "]");
 
             InfModelReader reader = new FileSystemInfModelReader(mdlRsrc.getPath());
 
-            AsyncInfModelBuilder mdlBuilder =  new IgniteDistributedInfModelBuilder(ignite, 4, 4);
+            AsyncInfModelBuilder mdlBuilder = new IgniteDistributedInfModelBuilder(ignite, 4, 4);
+
+            File testData = IgniteUtils.resolveIgnitePath(TEST_DATA_RES);
+            if (testData == null)
+                throw new IllegalArgumentException("File not found [resource_path=" + TEST_DATA_RES + "]");
+
+            File testExpRes = IgniteUtils.resolveIgnitePath(TEST_ER_RES);
+            if (testExpRes == null)
+                throw new IllegalArgumentException("File not found [resource_path=" + TEST_ER_RES + "]");
 
             try (InfModel<XGObject, Future<Double>> mdl = mdlBuilder.build(reader, parser);
-                 Scanner testDataScanner = new Scanner(XGBoostModelParserExample.class.getClassLoader()
-                     .getResourceAsStream("datasets/agaricus-test-data.txt"));
-                 Scanner testExpResultsScanner = new Scanner(XGBoostModelParserExample.class.getClassLoader()
-                     .getResourceAsStream("datasets/agaricus-test-expected-results.txt"))) {
+                 Scanner testDataScanner = new Scanner(testData);
+                 Scanner testExpResultsScanner = new Scanner(testExpRes)) {
 
                 while (testDataScanner.hasNextLine()) {
                     String testDataStr = testDataScanner.nextLine();
