@@ -1079,7 +1079,6 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"TooBroadScope"})
     @Override public void finishCheckpoint() {
         if (segments == null)
             return;
