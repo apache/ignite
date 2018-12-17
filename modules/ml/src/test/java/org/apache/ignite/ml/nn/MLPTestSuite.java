@@ -29,15 +29,12 @@ import org.junit.runners.AllTests;
 public class MLPTestSuite {
     /** */
     public static TestSuite suite() {
-        TestSuite suite = new TestSuite();
+        TestSuite suite = new TestSuite(MLPTestSuite.class.getSimpleName());
 
-        /** JUnit 4 tests. */
         suite.addTest(new JUnit4TestAdapter(MLPTest.class));
         suite.addTest(new JUnit4TestAdapter(MLPTrainerTest.class));
         suite.addTest(new JUnit4TestAdapter(LossFunctionsTest.class));
-
-        /** JUnit 3 tests. */
-        suite.addTestSuite(MLPTrainerIntegrationTest.class);
+        suite.addTest(new JUnit4TestAdapter(MLPTrainerIntegrationTest.class));
 
         return suite;
     }

@@ -25,16 +25,18 @@ import org.apache.ignite.internal.processors.cache.datastructures.partitioned.Gr
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedQueueApiSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.IgnitePartitionedQueueNoBackupsTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedQueueApiSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for binary cache data structures.
  */
-public class IgniteCacheDataStructuresBinarySelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheDataStructuresBinarySelfTestSuite {
     /**
      * @return Cache test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Cache Data Structures Binary Test Suite");
 
         System.setProperty(GridCacheQueueApiSelfAbstractTest.BINARY_QUEUE, "true");

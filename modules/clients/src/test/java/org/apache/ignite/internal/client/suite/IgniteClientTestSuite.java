@@ -173,7 +173,7 @@ public class IgniteClientTestSuite {
         suite.addTest(new JUnit4TestAdapter(ClientTcpTaskExecutionAfterTopologyRestartSelfTest.class));
 
         // SSL params.
-        suite.addTestSuite(ClientSslParametersTest.class);
+        suite.addTest(new JUnit4TestAdapter(ClientSslParametersTest.class));
 
         return suite;
     }
