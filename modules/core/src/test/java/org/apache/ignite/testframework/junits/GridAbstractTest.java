@@ -103,7 +103,6 @@ import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -165,6 +164,9 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     public static final TcpDiscoveryIpFinder LOCAL_IP_FINDER = new TcpDiscoveryVmIpFinder(false) {{
         setAddresses(Collections.singleton("127.0.0.1:47500..47509"));
     }};
+
+    /** Shared static IP finder which is used in configuration at nodes startup <b>for all test methods in class</b>. */
+    protected static TcpDiscoveryIpFinder sharedStaticIpFinder;
 
     /** */
     private static final int DFLT_TOP_WAIT_TIMEOUT = 2000;
@@ -595,6 +597,8 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         }
 
         if (isFirstTest()) {
+            sharedStaticIpFinder = new TcpDiscoveryVmIpFinder(true);
+
             info(">>> Starting test class: " + testClassDescription() + " <<<");
 
             if (isSafeTopology())
@@ -1518,9 +1522,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         if (cfg.getDiscoverySpi() instanceof TcpDiscoverySpi)
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(getTestTimeout());
 
-        if (isMultiJvm())
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(LOCAL_IP_FINDER);
-
         return cfg;
     }
 
@@ -1671,18 +1672,13 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         // Set metrics update interval to 1 second to speed up tests.
         cfg.setMetricsUpdateFrequency(1000);
 
-        String mcastAddr = GridTestUtils.getNextMulticastGroup(getClass());
+        if (!isMultiJvm()) {
+            assert sharedStaticIpFinder != null : "Shared static IP finder should be initialized at this point.";
 
-        TcpDiscoveryMulticastIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
-
-        ipFinder.setAddresses(Collections.singleton("127.0.0.1:" + TcpDiscoverySpi.DFLT_PORT));
-
-        if (!F.isEmpty(mcastAddr)) {
-            ipFinder.setMulticastGroup(mcastAddr);
-            ipFinder.setMulticastPort(GridTestUtils.getNextMulticastPort(getClass()));
+            discoSpi.setIpFinder(sharedStaticIpFinder);
         }
-
-        discoSpi.setIpFinder(ipFinder);
+        else
+            discoSpi.setIpFinder(LOCAL_IP_FINDER);
 
         cfg.setDiscoverySpi(discoSpi);
 
