@@ -1102,6 +1102,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          *  It means that no further iteration is needed. */
         private boolean doneAllPartitions;
 
+        /** Rebalanced counters in the range from initialUpdateCntr to updateCntr. */
+        private long[] rebalancedCntrs;
+
         /**
          * @param grp Cache context.
          * @param walIt WAL iterator.
@@ -1112,6 +1115,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             this.walIt = walIt;
 
             cacheIds = grp.cacheIds();
+
+            rebalancedCntrs = new long[partMap.size()];
+
+            for (int i = 0; i < rebalancedCntrs.length; i++)
+                rebalancedCntrs[i] = partMap.initialUpdateCounterAt(i);
 
             reservePartitions();
 
@@ -1254,7 +1262,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             long to = partMap.updateCounterAt(idx);
 
                             if (entry.partitionCounter() > from && entry.partitionCounter() <= to) {
-                                if (entry.partitionCounter() == to)
+                                if (++rebalancedCntrs[idx] == to) // No entries should be skipped on owner with max counter.
                                     reachedPartitionEnd = true;
 
                                 next = entry;

@@ -2831,10 +2831,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         Map<Integer, CounterWithNodes> maxCntrs = new HashMap<>();
         Map<Integer, Long> minCntrs = new HashMap<>();
 
-        if (top.groupId() == CU.cacheId("default")) {
-            System.out.println();
-        }
-
         for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
             CachePartitionPartialCountersMap nodeCntrs = e.getValue().partitionUpdateCounters(top.groupId(),
                 top.partitions());
