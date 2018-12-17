@@ -44,6 +44,7 @@ Weblogic
 XPathView
 XSLT-Debugger
 ZKM
+com.android.tools.idea.smali
 com.intellij.aop
 com.intellij.apacheConfig
 com.intellij.appengine
@@ -74,7 +75,7 @@ com.intellij.seam
 com.intellij.seam.pageflow
 com.intellij.seam.pages
 com.intellij.spring
-com.intellij.spring.batc
+com.intellij.spring.batch
 com.intellij.spring.data
 com.intellij.spring.integration
 com.intellij.spring.osgi
@@ -101,6 +102,7 @@ org.intellij.intelliLang
 org.jetbrains.android
 org.jetbrains.idea.eclipse
 org.jetbrains.idea.maven.ext
+org.jetbrains.kotlin
 org.jetbrains.plugins.django-db-config
 org.jetbrains.plugins.github
 org.jetbrains.plugins.gradle
