@@ -688,7 +688,7 @@ public class BasicIndexTest extends GridCommonAbstractTest {
             String schemaName = DEFAULT_CACHE_NAME;
 
             cache.query(new SqlFieldsQuery(
-                String.format("create index %s on \"%s\".Val(%s) INLINE_SIZE %s;", indexName, schemaName, col, inlineSize)
+                String.format("create index %s on \"%s\".Val(%s) INLINE_SIZE %s", indexName, schemaName, col, inlineSize)
             )).getAll();
         }
 
@@ -703,7 +703,7 @@ public class BasicIndexTest extends GridCommonAbstractTest {
             String indexName = col + "_idx";
 
             cache.query(new SqlFieldsQuery(
-                String.format("drop index %s;", indexName)
+                String.format("drop index %s", indexName)
             )).getAll();
         }
 
