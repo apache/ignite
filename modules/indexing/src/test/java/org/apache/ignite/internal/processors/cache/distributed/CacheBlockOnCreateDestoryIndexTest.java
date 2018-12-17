@@ -36,6 +36,9 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -45,6 +48,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
     /** */
     private final List<? extends CacheBlockOnReadAbstractTest> tests = Arrays.asList(
@@ -89,6 +93,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(0)
     @Params(atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    @Test
     public void testCreateIndexAtomicPartitionedGet() throws Exception {
         doTestCreateIndex();
     }
@@ -98,6 +103,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(0)
     @Params(atomicityMode = ATOMIC, cacheMode = REPLICATED)
+    @Test
     public void testCreateIndexAtomicReplicatedGet() throws Exception {
         doTestCreateIndex();
     }
@@ -107,6 +113,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(0)
     @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    @Test
     public void testCreateIndexTransactionalPartitionedGet() throws Exception {
         doTestCreateIndex();
     }
@@ -116,6 +123,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(0)
     @Params(atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
+    @Test
     public void testCreateIndexTransactionalReplicatedGet() throws Exception {
         doTestCreateIndex();
     }
@@ -125,6 +133,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(1)
     @Params(atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    @Test
     public void testCreateIndexAtomicPartitionedGetAll() throws Exception {
         doTestCreateIndex();
     }
@@ -134,6 +143,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(1)
     @Params(atomicityMode = ATOMIC, cacheMode = REPLICATED)
+    @Test
     public void testCreateIndexAtomicReplicatedGetAll() throws Exception {
         doTestCreateIndex();
     }
@@ -143,6 +153,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(1)
     @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    @Test
     public void testCreateIndexTransactionalPartitionedGetAll() throws Exception {
         doTestCreateIndex();
     }
@@ -152,6 +163,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(1)
     @Params(atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
+    @Test
     public void testCreateIndexTransactionalReplicatedGetAll() throws Exception {
         doTestCreateIndex();
     }
@@ -161,6 +173,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(2)
     @Params(atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    @Test
     public void testCreateIndexAtomicPartitionedScan() throws Exception {
         doTestCreateIndex();
     }
@@ -170,6 +183,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(2)
     @Params(atomicityMode = ATOMIC, cacheMode = REPLICATED)
+    @Test
     public void testCreateIndexAtomicReplicatedScan() throws Exception {
         doTestCreateIndex();
     }
@@ -179,6 +193,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(2)
     @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    @Test
     public void testCreateIndexTransactionalPartitionedScan() throws Exception {
         doTestCreateIndex();
     }
@@ -188,6 +203,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(2)
     @Params(atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
+    @Test
     public void testCreateIndexTransactionalReplicatedScan() throws Exception {
         doTestCreateIndex();
     }
@@ -197,6 +213,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(3)
     @Params(atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    @Test
     public void testCreateIndexAtomicPartitionedSqlQuery() throws Exception {
         doTestCreateIndex();
     }
@@ -206,6 +223,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(3)
     @Params(atomicityMode = ATOMIC, cacheMode = REPLICATED)
+    @Test
     public void testCreateIndexAtomicReplicatedSqlQuery() throws Exception {
         doTestCreateIndex();
     }
@@ -215,6 +233,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(3)
     @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    @Test
     public void testCreateIndexTransactionalPartitionedSqlQuery() throws Exception {
         doTestCreateIndex();
     }
@@ -224,6 +243,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(3)
     @Params(atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
+    @Test
     public void testCreateIndexTransactionalReplicatedSqlQuery() throws Exception {
         doTestCreateIndex();
     }
@@ -233,6 +253,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(0)
     @Params(atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    @Test
     public void testDestroyIndexAtomicPartitionedGet() throws Exception {
         doTestDestroyIndex();
     }
@@ -242,6 +263,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(0)
     @Params(atomicityMode = ATOMIC, cacheMode = REPLICATED)
+    @Test
     public void testDestroyIndexAtomicReplicatedGet() throws Exception {
         doTestDestroyIndex();
     }
@@ -251,6 +273,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(0)
     @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    @Test
     public void testDestroyIndexTransactionalPartitionedGet() throws Exception {
         doTestDestroyIndex();
     }
@@ -260,6 +283,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(0)
     @Params(atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
+    @Test
     public void testDestroyIndexTransactionalReplicatedGet() throws Exception {
         doTestDestroyIndex();
     }
@@ -269,6 +293,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(1)
     @Params(atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    @Test
     public void testDestroyIndexAtomicPartitionedGetAll() throws Exception {
         doTestDestroyIndex();
     }
@@ -278,6 +303,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(1)
     @Params(atomicityMode = ATOMIC, cacheMode = REPLICATED)
+    @Test
     public void testDestroyIndexAtomicReplicatedGetAll() throws Exception {
         doTestDestroyIndex();
     }
@@ -287,6 +313,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(1)
     @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    @Test
     public void testDestroyIndexTransactionalPartitionedGetAll() throws Exception {
         doTestDestroyIndex();
     }
@@ -296,6 +323,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(1)
     @Params(atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
+    @Test
     public void testDestroyIndexTransactionalReplicatedGetAll() throws Exception {
         doTestDestroyIndex();
     }
@@ -305,6 +333,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(2)
     @Params(atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    @Test
     public void testDestroyIndexAtomicPartitionedScan() throws Exception {
         doTestDestroyIndex();
     }
@@ -314,6 +343,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(2)
     @Params(atomicityMode = ATOMIC, cacheMode = REPLICATED)
+    @Test
     public void testDestroyIndexAtomicReplicatedScan() throws Exception {
         doTestDestroyIndex();
     }
@@ -323,6 +353,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(2)
     @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    @Test
     public void testDestroyIndexTransactionalPartitionedScan() throws Exception {
         doTestDestroyIndex();
     }
@@ -332,6 +363,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(2)
     @Params(atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
+    @Test
     public void testDestroyIndexTransactionalReplicatedScan() throws Exception {
         doTestDestroyIndex();
     }
@@ -341,6 +373,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(3)
     @Params(atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    @Test
     public void testDestroyIndexAtomicPartitionedSqlQuery() throws Exception {
         doTestDestroyIndex();
     }
@@ -350,6 +383,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(3)
     @Params(atomicityMode = ATOMIC, cacheMode = REPLICATED)
+    @Test
     public void testDestroyIndexAtomicReplicatedSqlQuery() throws Exception {
         doTestDestroyIndex();
     }
@@ -359,6 +393,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(3)
     @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    @Test
     public void testDestroyIndexTransactionalPartitionedSqlQuery() throws Exception {
         doTestDestroyIndex();
     }
@@ -368,6 +403,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
      */
     @TestIndex(3)
     @Params(atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
+    @Test
     public void testDestroyIndexTransactionalReplicatedSqlQuery() throws Exception {
         doTestDestroyIndex();
     }

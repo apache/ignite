@@ -42,7 +42,7 @@ public class DenseVectorStorage implements VectorStorage {
      * @param size Vector size.
      */
     public DenseVectorStorage(int size) {
-        assert size > 0;
+        assert size >= 0;
 
         data = new double[size];
     }
