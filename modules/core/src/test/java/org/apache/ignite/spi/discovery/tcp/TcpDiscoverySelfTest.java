@@ -1946,6 +1946,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailedCoordinatorNode() throws Exception {
         checkFailedCoordinatorNode(SegmentationPolicy.STOP);
     }
@@ -1953,6 +1954,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailedCoordinatorNodeNoopSegmentationPolicy() throws Exception {
         checkFailedCoordinatorNode(SegmentationPolicy.NOOP);
     }
