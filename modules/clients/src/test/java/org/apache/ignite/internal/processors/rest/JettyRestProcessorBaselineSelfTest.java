@@ -30,6 +30,9 @@ import org.apache.ignite.internal.processors.rest.handlers.cluster.GridBaselineC
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.configuration.WALMode.NONE;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
@@ -37,6 +40,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
 /**
  * Test REST with enabled authentication.
  */
+@RunWith(JUnit4.class)
 public class JettyRestProcessorBaselineSelfTest extends JettyRestProcessorCommonSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -119,6 +123,7 @@ public class JettyRestProcessorBaselineSelfTest extends JettyRestProcessorCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBaseline() throws Exception {
         int sz = gridCount();
         
@@ -136,6 +141,7 @@ public class JettyRestProcessorBaselineSelfTest extends JettyRestProcessorCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBaselineSet() throws Exception {
         int sz = gridCount();
         
@@ -174,6 +180,7 @@ public class JettyRestProcessorBaselineSelfTest extends JettyRestProcessorCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBaselineAdd() throws Exception {
         int sz = gridCount();
         
@@ -191,6 +198,7 @@ public class JettyRestProcessorBaselineSelfTest extends JettyRestProcessorCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBaselineRemove() throws Exception {
         int sz = gridCount();
         
