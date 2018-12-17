@@ -93,6 +93,9 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
     /** */
     private AtomicReference<Throwable> testFailed = new AtomicReference<>();
 
+    /** Number of keys to preload before txs to enable historical rebalance. */
+    protected static final int PRELOAD_KEYS_CNT = 1;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -171,9 +174,18 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
             totalKeys += size;
         }
 
-        List<Integer> keys = partitionKeys(crd.cache(DEFAULT_CACHE_NAME), partId, totalKeys);
-
         IgniteEx client = startGrid("client");
+
+        // Preload one key to partition to enable historical rebalance.
+        List<Integer> preloadKeys = loadDataToPartition(partId, "client", DEFAULT_CACHE_NAME, PRELOAD_KEYS_CNT, 0);
+
+        forceCheckpoint();
+
+        assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
+
+        List<Integer> keys = partitionKeys(crd.cache(DEFAULT_CACHE_NAME), partId, totalKeys, PRELOAD_KEYS_CNT);
+
+        assertFalse(preloadKeys.get(0).equals(keys.get(0)));
 
         Ignite prim = primaryNode(keys.get(0), DEFAULT_CACHE_NAME);
 

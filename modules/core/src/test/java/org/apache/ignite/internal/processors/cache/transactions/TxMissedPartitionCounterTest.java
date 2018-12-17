@@ -134,193 +134,193 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
      * Tests partition consistency with lost update and historical rebalance.
      * @throws Exception if failed.
      */
-    public void testMissedPartitionCounterWALRebalance() throws Exception {
-        try {
-            System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
-
-            doTestMissedPartitionCounter(false);
-
-            assertFalse(IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.allRebalances().isEmpty());
-        }
-        finally {
-            System.clearProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
-
-            IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.cleanup();
-        }
-    }
-
-    /**
-     * Tests partition consistency with lost update and historical rebalance.
-     * @throws Exception if failed.
-     */
-    public void testMissedPartitionCounter() throws Exception {
-        doTestMissedPartitionCounter(false);
-    }
+//    public void testMissedPartitionCounterWALRebalance() throws Exception {
+//        try {
+//            System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
+//
+//            doTestMissedPartitionCounter(false);
+//
+//            assertFalse(IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.allRebalances().isEmpty());
+//        }
+//        finally {
+//            System.clearProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
+//
+//            IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.cleanup();
+//        }
+//    }
+//
+//    /**
+//     * Tests partition consistency with lost update and historical rebalance.
+//     * @throws Exception if failed.
+//     */
+//    public void testMissedPartitionCounter() throws Exception {
+//        doTestMissedPartitionCounter(false);
+//    }
 
     /**
      * Tests partition consistency with reordering of updates on backup.
      * Primary order: 1(keys[0]) | cp | 2(keys[1])
      * Backup order: 2 fail node
      */
-    private void doTestMissedPartitionCounter(boolean skipCheckpointOnNodeStop) throws Exception {
-        try {
-            IgniteEx ex0 = startGrid(0);
-            startGrid(1);
-            startGrid(2);
-
-            ex0.cluster().active(true);
-
-            awaitPartitionMapExchange();
-
-            IgniteEx client = startGrid("client");
-
-            assertNotNull(client.cache(DEFAULT_CACHE_NAME));
-
-            int part = 0;
-
-            final int txCnt = 2;
-
-            List<Integer> keys = loadDataToPartition(part, grid(0).name(), DEFAULT_CACHE_NAME, 5000, 0, txCnt);
-
-            CountDownLatch[] latches = new CountDownLatch[txCnt - 1];
-
-            Arrays.setAll(latches, val -> {
-                return new CountDownLatch(1);
-            });
-
-            forceCheckpoint();
-
-            Ignite primaryNode = primaryNode(keys.get(0), DEFAULT_CACHE_NAME);
-
-            IgniteEx backupNode = (IgniteEx)backupNodes(keys.get(0), DEFAULT_CACHE_NAME).get(1);
-
-            TestRecordingCommunicationSpi.spi(primaryNode).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-                @Override public boolean apply(ClusterNode node, Message msg) {
-                    if (node.id().equals(backupNode.cluster().localNode().id()) && msg instanceof GridDhtTxFinishRequest) {
-                        GridDhtTxFinishRequest req = (GridDhtTxFinishRequest)msg;
-
-                        int cntr = (int)req.partUpdateCounters().get(0) - COUNT;
-
-//                        try {
-//                            forceCheckpoint(primaryNode);
+//    private void doTestMissedPartitionCounter(boolean skipCheckpointOnNodeStop) throws Exception {
+//        try {
+//            IgniteEx ex0 = startGrid(0);
+//            startGrid(1);
+//            startGrid(2);
+//
+//            ex0.cluster().active(true);
+//
+//            awaitPartitionMapExchange();
+//
+//            IgniteEx client = startGrid("client");
+//
+//            assertNotNull(client.cache(DEFAULT_CACHE_NAME));
+//
+//            int part = 0;
+//
+//            final int txCnt = 2;
+//
+//            List<Integer> keys = loadDataToPartition(part, grid(0).name(), DEFAULT_CACHE_NAME, 5000, 0, txCnt);
+//
+//            CountDownLatch[] latches = new CountDownLatch[txCnt - 1];
+//
+//            Arrays.setAll(latches, val -> {
+//                return new CountDownLatch(1);
+//            });
+//
+//            forceCheckpoint();
+//
+//            Ignite primaryNode = primaryNode(keys.get(0), DEFAULT_CACHE_NAME);
+//
+//            IgniteEx backupNode = (IgniteEx)backupNodes(keys.get(0), DEFAULT_CACHE_NAME).get(1);
+//
+//            TestRecordingCommunicationSpi.spi(primaryNode).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+//                @Override public boolean apply(ClusterNode node, Message msg) {
+//                    if (node.id().equals(backupNode.cluster().localNode().id()) && msg instanceof GridDhtTxFinishRequest) {
+//                        GridDhtTxFinishRequest req = (GridDhtTxFinishRequest)msg;
+//
+//                        int cntr = (int)req.partUpdateCounters().get(0) - COUNT;
+//
+////                        try {
+////                            forceCheckpoint(primaryNode);
+////                        }
+////                        catch (IgniteCheckedException e) {
+////                            fail();
+////                        }
+//
+//                        if (cntr != txCnt)
+//                            latches[cntr - 1].countDown();
+//
+//                        return true;
+//                    }
+//
+//                    return false;
+//                }
+//            });
+//
+//            // Reorder updates on primary and backup.
+//            IgniteInternalFuture fut0 = runAsync(new Runnable() {
+//                @Override public void run() {
+//                    try {
+//                        TestRecordingCommunicationSpi.spi(primaryNode).waitForBlocked(txCnt);
+//                    }
+//                    catch (InterruptedException e) {
+//                        fail();
+//                    }
+////
+////                    IgniteCacheProxy<?, ?> cache = backupNode.context().cache().jcache(DEFAULT_CACHE_NAME);
+////
+////                    GridDhtCacheAdapter<?, ?> dht = dht(cache);
+////
+////                    GridDhtPartitionTopology top = dht.topology();
+////
+////                    @Nullable GridDhtLocalPartition part0 = top.localPartition(0);
+////
+////                    long uc0 = part0.updateCounter();
+////                    long iuc0 = part0.initialUpdateCounter();
+////                    long size0 = part0.fullSize();
+//
+//                    TestRecordingCommunicationSpi.spi(primaryNode).stopBlock(true, new IgnitePredicate<T2<ClusterNode, GridIoMessage>>() {
+//                        @Override public boolean apply(T2<ClusterNode, GridIoMessage> objects) {
+//                            GridIoMessage ioMsg = objects.get2();
+//
+//                            GridDhtTxFinishRequest req = (GridDhtTxFinishRequest)ioMsg.message();
+//
+//                            long cntr = req.partUpdateCounters().get(0);
+//
+//                            return cntr - COUNT == 2;
 //                        }
-//                        catch (IgniteCheckedException e) {
-//                            fail();
-//                        }
-
-                        if (cntr != txCnt)
-                            latches[cntr - 1].countDown();
-
-                        return true;
-                    }
-
-                    return false;
-                }
-            });
-
-            // Reorder updates on primary and backup.
-            IgniteInternalFuture fut0 = runAsync(new Runnable() {
-                @Override public void run() {
-                    try {
-                        TestRecordingCommunicationSpi.spi(primaryNode).waitForBlocked(txCnt);
-                    }
-                    catch (InterruptedException e) {
-                        fail();
-                    }
+//                    });
 //
-//                    IgniteCacheProxy<?, ?> cache = backupNode.context().cache().jcache(DEFAULT_CACHE_NAME);
+//                    doSleep(3000); // Give time to commit. TODO: dispose of sleep.
 //
-//                    GridDhtCacheAdapter<?, ?> dht = dht(cache);
+////                    GridDhtLocalPartition part1 = top.localPartition(0);
+////
+////                    long uc1 = part1.updateCounter();
+////                    long iuc1 = part1.initialUpdateCounter();
+////                    long size1 = part1.fullSize();
 //
-//                    GridDhtPartitionTopology top = dht.topology();
+//                    // Skipping commit on node stop will cause logical recovery on node start afterwards.
+//                    // TODO add test for stopping node during checkpoint.
+//                    if (skipCheckpointOnNodeStop) {
+//                        GridCacheDatabaseSharedManager db =
+//                            (GridCacheDatabaseSharedManager)backupNode.context().cache().context().database();
 //
-//                    @Nullable GridDhtLocalPartition part0 = top.localPartition(0);
+//                        db.enableCheckpoints(false);
+//                    }
 //
-//                    long uc0 = part0.updateCounter();
-//                    long iuc0 = part0.initialUpdateCounter();
-//                    long size0 = part0.fullSize();
-
-                    TestRecordingCommunicationSpi.spi(primaryNode).stopBlock(true, new IgnitePredicate<T2<ClusterNode, GridIoMessage>>() {
-                        @Override public boolean apply(T2<ClusterNode, GridIoMessage> objects) {
-                            GridIoMessage ioMsg = objects.get2();
-
-                            GridDhtTxFinishRequest req = (GridDhtTxFinishRequest)ioMsg.message();
-
-                            long cntr = req.partUpdateCounters().get(0);
-
-                            return cntr - COUNT == 2;
-                        }
-                    });
-
-                    doSleep(3000); // Give time to commit. TODO: dispose of sleep.
-
-//                    GridDhtLocalPartition part1 = top.localPartition(0);
+//                    stopGrid(backupNode.name());
 //
-//                    long uc1 = part1.updateCounter();
-//                    long iuc1 = part1.initialUpdateCounter();
-//                    long size1 = part1.fullSize();
-
-                    // Skipping commit on node stop will cause logical recovery on node start afterwards.
-                    // TODO add test for stopping node during checkpoint.
-                    if (skipCheckpointOnNodeStop) {
-                        GridCacheDatabaseSharedManager db =
-                            (GridCacheDatabaseSharedManager)backupNode.context().cache().context().database();
-
-                        db.enableCheckpoints(false);
-                    }
-
-                    stopGrid(backupNode.name());
-
-                    TestRecordingCommunicationSpi.spi(primaryNode).stopBlock(); // Finish first tx
-                }
-            });
-
-            AtomicInteger id = new AtomicInteger();
-
-            IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
-                try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
-                    int idx = id.getAndIncrement();
-
-                    if (idx > 0)
-                        assertTrue(U.await(latches[idx - 1], 10, TimeUnit.SECONDS));
-
-                    client.cache(DEFAULT_CACHE_NAME).put(keys.get(idx), idx);
-
-                    tx.commit();
-                }
-                catch (IgniteInterruptedCheckedException e) {
-                    fail();
-                }
-            }, txCnt, "tx-thread");
-
-            fut.get();
-            fut0.get();
-
-            for (int i = 0; i < txCnt; i++)
-                assertEquals(i, client.cache(DEFAULT_CACHE_NAME).get(keys.get(i)));
-
-            stopAllGrids();
-
-            Ignite ex = startGrid(0);
-            ex.cluster().active(true);
-
-            startGrid(1);
-
-            IdleVerifyResultV2 res = idleVerify(grid(0), DEFAULT_CACHE_NAME);
-
-            if (res.hasConflicts()) {
-                StringBuilder b = new StringBuilder();
-
-                res.print(b::append);
-
-                fail(b.toString());
-
-            }
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
+//                    TestRecordingCommunicationSpi.spi(primaryNode).stopBlock(); // Finish first tx
+//                }
+//            });
+//
+//            AtomicInteger id = new AtomicInteger();
+//
+//            IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+//                try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
+//                    int idx = id.getAndIncrement();
+//
+//                    if (idx > 0)
+//                        assertTrue(U.await(latches[idx - 1], 10, TimeUnit.SECONDS));
+//
+//                    client.cache(DEFAULT_CACHE_NAME).put(keys.get(idx), idx);
+//
+//                    tx.commit();
+//                }
+//                catch (IgniteInterruptedCheckedException e) {
+//                    fail();
+//                }
+//            }, txCnt, "tx-thread");
+//
+//            fut.get();
+//            fut0.get();
+//
+//            for (int i = 0; i < txCnt; i++)
+//                assertEquals(i, client.cache(DEFAULT_CACHE_NAME).get(keys.get(i)));
+//
+//            stopAllGrids();
+//
+//            Ignite ex = startGrid(0);
+//            ex.cluster().active(true);
+//
+//            startGrid(1);
+//
+//            IdleVerifyResultV2 res = idleVerify(grid(0), DEFAULT_CACHE_NAME);
+//
+//            if (res.hasConflicts()) {
+//                StringBuilder b = new StringBuilder();
+//
+//                res.print(b::append);
+//
+//                fail(b.toString());
+//
+//            }
+//        }
+//        finally {
+//            stopAllGrids();
+//        }
+//    }
 
     /**
      * Tests partition consistency with lost update and full rebalance.

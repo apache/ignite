@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
+import org.apache.ignite.spi.communication.CommunicationSpi;
+
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 
 /**
@@ -32,8 +35,20 @@ public class TxPartitionCounterStateOnePrimaryOneBackupHistoryRebalanceTest exte
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        boolean walRebalanceInvoked = !IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.allRebalances()
+            .isEmpty();
+
+        IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.cleanup();
+
         super.afterTest();
 
         System.clearProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
+
+        if (!walRebalanceInvoked)
+            throw new AssertionError("WAL rebalance hasn't been invoked.");
+    }
+
+    @Override public void testPrepareCommitReorder() throws Exception {
+        super.testPrepareCommitReorder();
     }
 }
