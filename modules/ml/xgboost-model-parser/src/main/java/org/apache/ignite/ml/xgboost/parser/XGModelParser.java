@@ -63,6 +63,7 @@ import org.apache.ignite.ml.xgboost.parser.visitor.XGModelVisitor;
  * xgModel : xgTree+ ;
  * </pre>
  */
+// TODO: IGNITE-10718 Merge XGBoost and Ignite ML trees together.
 public class XGModelParser implements InfModelParser<XGObject, Double> {
     /** */
     private static final long serialVersionUID = -5819843559270294718L;
