@@ -33,12 +33,16 @@ import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.h2.jdbc.JdbcSQLException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
 
 /**
  * Test to check dynamic columns related features.
  */
+@RunWith(JUnit4.class)
 public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColumnsAbstractTest {
     /**
      * Index of coordinator node.
@@ -105,6 +109,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     /**
      * Test column addition to the end of the columns list.
      */
+    @Test
     public void testAddColumnSimple() throws SQLException {
         run("ALTER TABLE Person ADD COLUMN age int");
 
@@ -118,6 +123,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     /**
      * Test column addition to the end of the columns list.
      */
+    @Test
     public void testAddFewColumnsSimple() throws SQLException {
         run("ALTER TABLE Person ADD COLUMN (age int, \"city\" varchar)");
 
@@ -130,6 +136,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     /**
      * Test {@code IF EXISTS} handling.
      */
+    @Test
     public void testIfTableExists() {
         run("ALTER TABLE if exists City ADD COLUMN population int");
     }
@@ -137,6 +144,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     /**
      * Test {@code IF NOT EXISTS} handling.
      */
+    @Test
     public void testIfColumnNotExists() {
         run("ALTER TABLE Person ADD COLUMN if not exists name varchar");
     }
@@ -144,6 +152,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     /**
      * Test {@code IF NOT EXISTS} handling.
      */
+    @Test
     public void testDuplicateColumnName() {
         assertThrows("ALTER TABLE Person ADD COLUMN name varchar", "Column already exists: NAME");
     }
@@ -151,12 +160,14 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     /**
      * Test behavior in case of missing table.
      */
+    @Test
     public void testMissingTable() {
         assertThrows("ALTER TABLE City ADD COLUMN name varchar", "Table doesn't exist: CITY");
     }
 
     /** */
     @SuppressWarnings("unchecked")
+    @Test
     public void testComplexOperations() {
         IgniteCache<BinaryObject, BinaryObject> cache = ignite(nodeIndex())
             .cache(QueryUtils.createTableCacheName(QueryUtils.DFLT_SCHEMA, "PERSON"));
@@ -229,6 +240,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     /**
      * Test that we can add columns dynamically to tables associated with non dynamic caches as well.
      */
+    @Test
     public void testAddColumnToNonDynamicCache() throws SQLException {
         run("ALTER TABLE \"idx\".PERSON ADD COLUMN CITY varchar");
 
@@ -243,6 +255,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      * Test that we can add columns dynamically to tables associated with non dynamic caches storing user types as well.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testAddColumnToNonDynamicCacheWithRealValueType() throws SQLException {
         CacheConfiguration<Integer, City> ccfg = defaultCacheConfiguration().setName("City")
             .setIndexedTypes(Integer.class, City.class);
@@ -289,6 +302,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      * @throws SQLException If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testAddColumnUUID() throws SQLException {
         CacheConfiguration<Integer, Object> ccfg = defaultCacheConfiguration().setName("GuidTest")
                 .setIndexedTypes(Integer.class, GuidTest.class);
@@ -356,6 +370,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     /**
      * Test addition of column with not null constraint.
      */
+    @Test
     public void testAddNotNullColumn() throws SQLException {
         run("ALTER TABLE Person ADD COLUMN age int NOT NULL");
 
@@ -369,6 +384,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     /**
      * Test addition of column explicitly defined as nullable.
      */
+    @Test
     public void testAddNullColumn() throws SQLException {
         run("ALTER TABLE Person ADD COLUMN age int NULL");
 
@@ -383,6 +399,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      * Test that {@code ADD COLUMN} fails for non dynamic table that has flat value.
      */
     @SuppressWarnings({"unchecked"})
+    @Test
     public void testTestAlterTableOnFlatValueNonDynamicTable() {
         CacheConfiguration c =
             new CacheConfiguration("ints").setIndexedTypes(Integer.class, Integer.class)
@@ -401,6 +418,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     /**
      * Test that {@code ADD COLUMN} fails for dynamic table that has flat value.
      */
+    @Test
     public void testTestAlterTableOnFlatValueDynamicTable() {
         try {
             run("CREATE TABLE TEST (id int primary key, x varchar) with \"wrap_value=false\"");
@@ -416,6 +434,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testDropColumn() throws Exception {
         try {
             run("CREATE TABLE test (id INT PRIMARY KEY, a INT, b CHAR)");
@@ -444,6 +463,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testDroppedColumnMeta() throws Exception {
         try {
             run("CREATE TABLE test (id INT PRIMARY KEY, a INT, b CHAR)");
@@ -466,6 +486,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testDropMultipleColumns() throws Exception {
         try {
             run("CREATE TABLE test (id INT PRIMARY KEY, a INT, b CHAR, c INT)");
@@ -491,6 +512,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testDropNonExistingColumn() throws Exception {
         try {
             run("CREATE TABLE test (id INT PRIMARY KEY, a INT)");
@@ -506,6 +528,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testDropColumnNonExistingTable() throws Exception {
         assertThrowsAnyCause("ALTER TABLE nosuchtable DROP COLUMN a", JdbcSQLException.class,
             "Table \"NOSUCHTABLE\" not found");
@@ -515,6 +538,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testDropColumnIfTableExists() throws Exception {
         try {
             run("CREATE TABLE test (id INT PRIMARY KEY, a INT, b CHAR)");
@@ -534,6 +558,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testDropColumnIfExists() throws Exception {
         try {
             run("CREATE TABLE test (id INT PRIMARY KEY, a INT)");
@@ -554,6 +579,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testDropColumnIndexPresent() throws Exception {
         try {
             run("CREATE TABLE test (id INT PRIMARY KEY, a INT, b INT)");
@@ -580,6 +606,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testDropColumnOnRealClassValuedTable() throws Exception {
         try {
             run("CREATE TABLE test (id INT PRIMARY KEY, x VARCHAR) with \"wrap_value=false\"");
@@ -596,6 +623,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testDropColumnThatIsPartOfKey() throws Exception {
         try {
             run("CREATE TABLE test(id INT, a INT, b CHAR, PRIMARY KEY(id, a))");
@@ -612,6 +640,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testDropColumnThatIsKey() throws Exception {
         try {
             run("CREATE TABLE test(id INT PRIMARY KEY, a INT, b CHAR)");
@@ -628,6 +657,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testDropColumnThatIsValue() throws Exception {
         try {
             run("CREATE TABLE test(id INT PRIMARY KEY, a INT, b CHAR)");
@@ -647,6 +677,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      * @throws SQLException if failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testDropColumnFromNonDynamicCacheWithRealValueType() throws SQLException {
         CacheConfiguration<Integer, City> ccfg = defaultCacheConfiguration().setName("City")
             .setIndexedTypes(Integer.class, City.class);
@@ -712,6 +743,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testDropColumnPriorToIndexedColumn() throws Exception {
         try {
             run("CREATE TABLE test(id INT PRIMARY KEY, a CHAR, b INT)");
