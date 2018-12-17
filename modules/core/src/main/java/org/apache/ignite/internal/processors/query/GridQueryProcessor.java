@@ -336,7 +336,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
         synchronized (stateMux) {
             // Preserve proposals.

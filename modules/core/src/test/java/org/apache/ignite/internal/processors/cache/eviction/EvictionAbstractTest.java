@@ -658,7 +658,6 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
      * @param c Collection.
      * @return String.
      */
-    @SuppressWarnings("unchecked")
     protected static String string(Iterable<? extends Cache.Entry> c) {
         return "[" +
             F.fold(
@@ -956,7 +955,6 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public <T> T unwrap(Class<T> clazz) {
             if (clazz.isAssignableFrom(IgniteCache.class))
                 return (T)parent;

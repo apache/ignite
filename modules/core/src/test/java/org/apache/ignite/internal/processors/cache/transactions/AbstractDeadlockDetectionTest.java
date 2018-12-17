@@ -125,7 +125,6 @@ public abstract class AbstractDeadlockDetectionTest extends GridCommonAbstractTe
      * @param startFrom Start value for keys search.
      * @return Collection of keys for which given node is primary.
      */
-    @SuppressWarnings("unchecked")
     private <T> List<T> findPrimaryKeys(IgniteCache<?, ?> cache, final int cnt, final T startFrom) {
         A.ensure(cnt > 0, "cnt");
 

@@ -1079,7 +1079,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked", "TooBroadScope"})
+    @SuppressWarnings({"TooBroadScope"})
     @Override public void finishCheckpoint() {
         if (segments == null)
             return;

@@ -423,7 +423,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /**
      * @return Key-value filter.
      */
-    @SuppressWarnings("unchecked")
     @Nullable public <K, V> IgniteBiPredicate<K, V> scanFilter() {
         return (IgniteBiPredicate<K, V>)filter;
     }
@@ -431,7 +430,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /**
      * @return Transformer.
      */
-    @SuppressWarnings("unchecked")
     @Nullable public <K, V> IgniteClosure<Map.Entry<K, V>, Object> transform() {
         return (IgniteClosure<Map.Entry<K, V>, Object>)transform;
     }
@@ -476,7 +474,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param args Arguments.
      * @return Future.
      */
-    @SuppressWarnings({"IfMayBeConditional", "unchecked"})
+    @SuppressWarnings({"IfMayBeConditional"})
     private <R> CacheQueryFuture<R> execute0(@Nullable IgniteReducer<T, R> rmtReducer, @Nullable Object... args) {
         assert type != SCAN : this;
 
@@ -527,7 +525,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override public GridCloseableIterator executeScanQuery() throws IgniteCheckedException {
         assert type == SCAN : "Wrong processing of query: " + type;
 

@@ -1138,7 +1138,6 @@ public abstract class GridAbstractTest extends TestCase {
      * @param igniteInstanceName Ignite instance name.
      * @param cancel Cancel flag.
      */
-    @SuppressWarnings({"deprecation"})
     protected void stopGrid(@Nullable String igniteInstanceName, boolean cancel) {
         stopGrid(igniteInstanceName, cancel, true);
     }
@@ -1148,7 +1147,6 @@ public abstract class GridAbstractTest extends TestCase {
      * @param cancel Cancel flag.
      * @param awaitTop Await topology change flag.
      */
-    @SuppressWarnings({"deprecation"})
     protected void stopGrid(@Nullable String igniteInstanceName, boolean cancel, boolean awaitTop) {
         try {
             IgniteEx ignite = grid(igniteInstanceName);
@@ -1623,7 +1621,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param marshaller Marshaller to get checkpoint path for.
      * @return Path for specific marshaller.
      */
-    @SuppressWarnings({"IfMayBeConditional", "deprecation"})
+    @SuppressWarnings({"IfMayBeConditional"})
     protected String getDefaultCheckpointPath(Marshaller marshaller) {
         if (marshaller instanceof JdkMarshaller)
             return SharedFsCheckpointSpi.DFLT_DIR_PATH + "/jdk/";

@@ -443,7 +443,6 @@ public class PlatformEvents extends PlatformAbstractTarget {
         }
 
         /** <inheritDoc /> */
-        @SuppressWarnings("unchecked")
         @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
             Collection<Event> events = (Collection<Event>)obj;
 

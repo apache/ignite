@@ -2791,7 +2791,6 @@ public class CommandHandler {
      *
      * @return Last operation result;
      */
-    @SuppressWarnings("unchecked")
     public <T> T getLastOperationResult() {
         return (T)lastOperationRes;
     }

@@ -91,7 +91,6 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
     protected abstract AffinityFunction affinityFunction();
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"ConstantConditions"})
     @Override protected void beforeTestsStarted() throws Exception {
         assert NODES_CNT >= 1;
 

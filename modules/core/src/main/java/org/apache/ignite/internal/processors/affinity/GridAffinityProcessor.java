@@ -559,7 +559,6 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @return Affinity map.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings({"unchecked"})
     private <K> Map<ClusterNode, Collection<K>> affinityMap(AffinityInfo aff, Collection<? extends K> keys)
         throws IgniteCheckedException {
         assert aff != null;
