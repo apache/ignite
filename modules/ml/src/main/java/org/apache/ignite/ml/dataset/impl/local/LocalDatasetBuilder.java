@@ -22,12 +22,17 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
-import org.apache.ignite.ml.dataset.UpstreamTransformerChain;
+import org.apache.ignite.ml.dataset.UpstreamTransformer;
+import org.apache.ignite.ml.dataset.UpstreamTransformerBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.util.Utils;
 
@@ -49,7 +54,7 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     private final IgniteBiPredicate<K, V> filter;
 
     /** Upstream transformers. */
-    private final UpstreamTransformerChain<K, V> upstreamTransformers;
+    private final UpstreamTransformerBuilder<K, V> upstreamTransformerBuilder;
 
     /**
      * Constructs a new instance of local dataset builder that makes {@link LocalDataset} with default predicate that
@@ -68,16 +73,34 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
      * @param upstreamMap {@code Map} with upstream data.
      * @param filter Filter for {@code upstream} data.
      * @param partitions Number of partitions.
+     * @param upstreamTransformerBuilder Builder of upstream transformer.
      */
-    public LocalDatasetBuilder(Map<K, V> upstreamMap, IgniteBiPredicate<K, V> filter, int partitions) {
+    public LocalDatasetBuilder(Map<K, V> upstreamMap,
+        IgniteBiPredicate<K, V> filter,
+        int partitions,
+        UpstreamTransformerBuilder<K, V> upstreamTransformerBuilder) {
         this.upstreamMap = upstreamMap;
         this.filter = filter;
         this.partitions = partitions;
-        this.upstreamTransformers = UpstreamTransformerChain.empty();
+        this.upstreamTransformerBuilder = upstreamTransformerBuilder;
+    }
+
+    /**
+     * Constructs a new instance of local dataset builder that makes {@link LocalDataset}.
+     *
+     * @param upstreamMap {@code Map} with upstream data.
+     * @param filter Filter for {@code upstream} data.
+     * @param partitions Number of partitions.
+     */
+    public LocalDatasetBuilder(Map<K, V> upstreamMap,
+        IgniteBiPredicate<K, V> filter,
+        int partitions) {
+        this(upstreamMap, filter, partitions, UpstreamTransformerBuilder.identity());
     }
 
     /** {@inheritDoc} */
     @Override public <C extends Serializable, D extends AutoCloseable> LocalDataset<C, D> build(
+        LearningEnvironmentBuilder envBuilder,
         PartitionContextBuilder<K, V, C> partCtxBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder) {
         List<C> ctxList = new ArrayList<>();
         List<D> dataList = new ArrayList<>();
@@ -99,37 +122,29 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
 
         int ptr = 0;
 
+        List<LearningEnvironment> envs = IntStream.range(0, partitions).boxed().map(envBuilder::buildForWorker)
+            .collect(Collectors.toList());
+
         for (int part = 0; part < partitions; part++) {
-            int cnt = part == partitions - 1 ? entriesList.size() - ptr : Math.min(partSize, entriesList.size() - ptr);
+            int cntBeforeTransform =
+                part == partitions - 1 ? entriesList.size() - ptr : Math.min(partSize, entriesList.size() - ptr);
+            LearningEnvironment env = envs.get(part);
+            UpstreamTransformer<K, V> transformer1 = upstreamTransformerBuilder.build(env);
+            UpstreamTransformer<K, V> transformer2 = Utils.copy(transformer1);
+            UpstreamTransformer<K, V> transformer3 = Utils.copy(transformer1);
 
-            int p = part;
-            upstreamTransformers.modifySeed(s -> s + p);
+            int cnt = (int)transformer1.transform(Utils.asStream(new IteratorWindow<>(thirdKeysIter, k -> k, cntBeforeTransform))).count();
 
-            if (!upstreamTransformers.isEmpty()) {
-                cnt = (int)upstreamTransformers.transform(
-                    Utils.asStream(new IteratorWindow<>(thirdKeysIter, k -> k, cnt))).count();
-            }
+            Iterator<UpstreamEntry<K, V>> iter =
+                transformer2.transform(Utils.asStream(new IteratorWindow<>(firstKeysIter, k -> k, cntBeforeTransform))).iterator();
 
-            Iterator<UpstreamEntry<K, V>> iter;
-            if (upstreamTransformers.isEmpty()) {
-                iter = new IteratorWindow<>(firstKeysIter, k -> k, cnt);
-            }
-            else {
-                iter = upstreamTransformers.transform(
-                    Utils.asStream(new IteratorWindow<>(firstKeysIter, k -> k, cnt))).iterator();
-            }
-            C ctx = cnt > 0 ? partCtxBuilder.build(iter, cnt) : null;
+            C ctx = cntBeforeTransform > 0 ? partCtxBuilder.build(env, iter, cnt) : null;
 
-            Iterator<UpstreamEntry<K, V>> iter1;
-            if (upstreamTransformers.isEmpty()) {
-                iter1 = upstreamTransformers.transform(
-                    Utils.asStream(new IteratorWindow<>(secondKeysIter, k -> k, cnt))).iterator();
-            }
-            else {
-                iter1 = new IteratorWindow<>(secondKeysIter, k -> k, cnt);
-            }
+            Iterator<UpstreamEntry<K, V>> iter1 = transformer3.transform(
+                    Utils.asStream(new IteratorWindow<>(secondKeysIter, k -> k, cntBeforeTransform))).iterator();
 
-            D data = cnt > 0 ? partDataBuilder.build(
+            D data = cntBeforeTransform > 0 ? partDataBuilder.build(
+                env,
                 iter1,
                 cnt,
                 ctx
@@ -138,20 +153,18 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
             ctxList.add(ctx);
             dataList.add(data);
 
-            ptr += cnt;
+            ptr += cntBeforeTransform;
         }
 
-        return new LocalDataset<>(ctxList, dataList);
+        return new LocalDataset<>(envs, ctxList, dataList);
     }
 
     /** {@inheritDoc} */
-    @Override public UpstreamTransformerChain<K, V> upstreamTransformersChain() {
-        return upstreamTransformers;
+    @Override public DatasetBuilder<K, V> withUpstreamTransformer(UpstreamTransformerBuilder<K, V> builder) {
+        return new LocalDatasetBuilder<>(upstreamMap, filter, partitions, upstreamTransformerBuilder.andThen(builder));
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public DatasetBuilder<K, V> withFilter(IgniteBiPredicate<K, V> filterToAdd) {
         return new LocalDatasetBuilder<>(upstreamMap,
             (e1, e2) -> filter.apply(e1, e2) && filterToAdd.apply(e1, e2), partitions);
@@ -165,24 +178,16 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
      * @param <T> Target type of entries.
      */
     private static class IteratorWindow<K, T> implements Iterator<T> {
-        /**
-         * Delegate iterator.
-         */
+        /** Delegate iterator. */
         private final Iterator<K> delegate;
 
-        /**
-         * Transformer that transforms entries from one type to another.
-         */
+        /** Transformer that transforms entries from one type to another. */
         private final IgniteFunction<K, T> map;
 
-        /**
-         * Count of entries to produce.
-         */
+        /** Count of entries to produce. */
         private final int cnt;
 
-        /**
-         * Number of already produced entries.
-         */
+        /** Number of already produced entries. */
         private int ptr;
 
         /**
@@ -198,16 +203,12 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
             this.cnt = cnt;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public boolean hasNext() {
             return delegate.hasNext() && ptr < cnt;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public T next() {
             ++ptr;
 

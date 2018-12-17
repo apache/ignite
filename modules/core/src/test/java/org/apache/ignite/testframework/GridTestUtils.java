@@ -65,6 +65,7 @@ import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
@@ -1959,7 +1960,7 @@ public final class GridTestUtils {
         if (ignoredTests != null && ignoredTests.contains(test))
             return;
 
-        suite.addTestSuite(test);
+        suite.addTest(new JUnit4TestAdapter(test));
     }
 
     /**

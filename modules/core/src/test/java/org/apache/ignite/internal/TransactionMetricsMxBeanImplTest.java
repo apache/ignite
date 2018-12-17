@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal;
 
-import javax.management.MBeanServer;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import javax.management.MBeanServer;
+import javax.management.MBeanServerInvocationHandler;
+import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -35,8 +35,12 @@ import org.apache.ignite.mxbean.TransactionMetricsMxBean;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -46,6 +50,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -81,9 +86,17 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
         super.afterTest();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.METRICS);
+
+        super.beforeTestsStarted();
+    }
+
     /**
      *
      */
+    @Test
     public void testTxMetric() throws Exception {
         //given:
         int keysNumber = 10;
@@ -171,6 +184,7 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testNearTxInfo() throws Exception {
         IgniteEx primaryNode1 = startGrid(0);
         IgniteEx primaryNode2 = startGrid(1);

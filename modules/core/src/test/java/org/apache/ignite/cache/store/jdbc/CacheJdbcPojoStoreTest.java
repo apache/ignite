@@ -50,10 +50,14 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.cache.GridAbstractCacheStoreSelfTest;
 import org.h2.jdbcx.JdbcConnectionPool;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Class for {@code PojoCacheStore} tests.
  */
+@RunWith(JUnit4.class)
 public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<CacheJdbcPojoStore<Object, Object>> {
     /** DB connection URL. */
     private static final String DFLT_CONN_URL = "jdbc:h2:mem:autoCacheStore;DB_CLOSE_DELAY=-1";
@@ -269,6 +273,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCache() throws Exception {
         Connection conn = store.openConnection(false);
 
@@ -442,6 +447,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testParallelLoad() throws Exception {
         Connection conn = store.openConnection(false);
 
@@ -503,6 +509,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWriteRetry() throws Exception {
         CacheJdbcPojoStore<Object, Object> store = store();
 
@@ -556,6 +563,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTimestamp() throws Exception {
         Timestamp k = new Timestamp(System.currentTimeMillis());
 

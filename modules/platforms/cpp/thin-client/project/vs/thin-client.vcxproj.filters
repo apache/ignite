@@ -67,6 +67,9 @@
     <ClCompile Include="..\..\src\impl\cache\cache_affinity_info.cpp">
       <Filter>Code\impl\cache</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\impl\ssl\ssl_api.cpp">
+      <Filter>Code\impl\ssl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\thin\ignite_client.h">
@@ -123,9 +126,6 @@
     <ClInclude Include="..\..\src\impl\ssl\secure_socket_client.h">
       <Filter>Code\impl\ssl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\impl\ssl\ssl_bindings.h">
-      <Filter>Code\impl\ssl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\impl\ssl\ssl_gateway.h">
       <Filter>Code\impl\ssl</Filter>
     </ClInclude>
@@ -152,6 +152,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\impl\cache\cache_affinity_info.h">
       <Filter>Code\impl\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\ssl\ssl_api.h">
+      <Filter>Code\impl\ssl</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

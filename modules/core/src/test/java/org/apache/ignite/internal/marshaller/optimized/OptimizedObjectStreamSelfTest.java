@@ -68,12 +68,16 @@ import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Test for optimized object streams.
  */
+@RunWith(JUnit4.class)
 public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /** */
     private static final MarshallerContext CTX = new MarshallerContextTestImpl();
@@ -84,6 +88,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNull() throws Exception {
         assertNull(marshalUnmarshal(null));
     }
@@ -91,6 +96,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testByte() throws Exception {
         byte val = 10;
 
@@ -100,6 +106,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testShort() throws Exception {
         short val = 100;
 
@@ -109,6 +116,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInteger() throws Exception {
         int val = 100;
 
@@ -118,6 +126,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLong() throws Exception {
         long val = 1000L;
 
@@ -127,6 +136,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFloat() throws Exception {
         float val = 10.0f;
 
@@ -136,6 +146,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDouble() throws Exception {
         double val = 100.0d;
 
@@ -145,6 +156,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBoolean() throws Exception {
         assertEquals(Boolean.TRUE, marshalUnmarshal(Boolean.TRUE));
 
@@ -154,6 +166,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testChar() throws Exception {
         char val = 10;
 
@@ -163,6 +176,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testByteArray() throws Exception {
         byte[] arr = marshalUnmarshal(new byte[] {1, 2});
 
@@ -172,6 +186,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testShortArray() throws Exception {
         short[] arr = marshalUnmarshal(new short[] {1, 2});
 
@@ -181,6 +196,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIntArray() throws Exception {
         int[] arr = marshalUnmarshal(new int[] {1, 2});
 
@@ -190,6 +206,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLongArray() throws Exception {
         long[] arr = marshalUnmarshal(new long[] {1L, 2L});
 
@@ -199,6 +216,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFloatArray() throws Exception {
         float[] arr = marshalUnmarshal(new float[] {1.0f, 2.0f});
 
@@ -208,6 +226,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDoubleArray() throws Exception {
         double[] arr = marshalUnmarshal(new double[] {1.0d, 2.0d});
 
@@ -217,6 +236,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBooleanArray() throws Exception {
         boolean[] arr = marshalUnmarshal(new boolean[] {true, false, false});
 
@@ -229,6 +249,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCharArray() throws Exception {
         char[] arr = marshalUnmarshal(new char[] {1, 2});
 
@@ -238,6 +259,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testObject() throws Exception {
         TestObject obj = new TestObject();
 
@@ -252,6 +274,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRequireSerializable() throws Exception {
         try {
             OptimizedMarshaller marsh = new OptimizedMarshaller(true);
@@ -275,6 +298,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFailedUnmarshallingLogging() throws Exception {
         OptimizedMarshaller marsh = new OptimizedMarshaller(true);
 
@@ -297,6 +321,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFailedMarshallingLogging() throws Exception {
         OptimizedMarshaller marsh = new OptimizedMarshaller(true);
 
@@ -316,6 +341,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPool() throws Exception {
         final TestObject obj = new TestObject();
 
@@ -351,6 +377,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testObjectWithNulls() throws Exception {
         TestObject obj = new TestObject();
 
@@ -363,6 +390,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testObjectArray() throws Exception {
         TestObject obj1 = new TestObject();
 
@@ -390,6 +418,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExternalizable() throws Exception {
         ExternalizableTestObject1 obj = new ExternalizableTestObject1();
 
@@ -404,6 +433,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExternalizableWithNulls() throws Exception {
         ExternalizableTestObject2 obj = new ExternalizableTestObject2();
 
@@ -423,6 +453,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLink() throws Exception {
         for (int i = 0; i < 20; i++) {
             LinkTestObject1 obj1 = new LinkTestObject1();
@@ -442,6 +473,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCycleLink() throws Exception {
         for (int i = 0; i < 20; i++) {
             CycleLinkTestObject obj = new CycleLinkTestObject();
@@ -456,6 +488,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoDefaultConstructor() throws Exception {
         NoDefaultConstructorTestObject obj = new NoDefaultConstructorTestObject(100);
 
@@ -465,6 +498,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEnum() throws Exception {
         assertEquals(TestEnum.B, marshalUnmarshal(TestEnum.B));
 
@@ -476,6 +510,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollection() throws Exception {
         TestObject obj1 = new TestObject();
 
@@ -499,6 +534,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMap() throws Exception {
         TestObject obj1 = new TestObject();
 
@@ -522,6 +558,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUuid() throws Exception {
         UUID uuid = UUID.randomUUID();
 
@@ -531,6 +568,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDate() throws Exception {
         Date date = new Date();
 
@@ -540,6 +578,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransient() throws Exception {
         TransientTestObject obj = marshalUnmarshal(new TransientTestObject(100, 200, "str1", "str2"));
 
@@ -552,6 +591,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWriteReadObject() throws Exception {
         WriteReadTestObject obj = marshalUnmarshal(new WriteReadTestObject(100, "str"));
 
@@ -562,6 +602,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWriteReplace() throws Exception {
         ReplaceTestObject obj = marshalUnmarshal(new ReplaceTestObject(100));
 
@@ -571,6 +612,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWriteReplaceNull() throws Exception {
         ReplaceNullTestObject obj = marshalUnmarshal(new ReplaceNullTestObject());
 
@@ -580,6 +622,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadResolve() throws Exception {
         ResolveTestObject obj = marshalUnmarshal(new ResolveTestObject(100));
 
@@ -589,6 +632,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testArrayDeque() throws Exception {
         Queue<Integer> queue = new ArrayDeque<>();
 
@@ -608,6 +652,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testArrayList() throws Exception {
         Collection<Integer> list = new ArrayList<>();
 
@@ -620,6 +665,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testHashMap() throws Exception {
         Map<Integer, Integer> map = new HashMap<>();
 
@@ -632,6 +678,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testHashSet() throws Exception {
         Collection<Integer> set = new HashSet<>();
 
@@ -645,6 +692,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("UseOfObsoleteCollectionType")
+    @Test
     public void testHashtable() throws Exception {
         Map<Integer, Integer> map = new Hashtable<>();
 
@@ -657,6 +705,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIdentityHashMap() throws Exception {
         Map<Integer, Integer> map = new IdentityHashMap<>();
 
@@ -669,6 +718,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLinkedHashMap() throws Exception {
         Map<Integer, Integer> map = new LinkedHashMap<>();
 
@@ -681,6 +731,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLinkedHashSet() throws Exception {
         Collection<Integer> set = new LinkedHashSet<>();
 
@@ -693,6 +744,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLinkedList() throws Exception {
         Collection<Integer> list = new LinkedList<>();
 
@@ -705,6 +757,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPriorityQueue() throws Exception {
         Queue<Integer> queue = new PriorityQueue<>();
 
@@ -724,6 +777,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testProperties() throws Exception {
         Properties dflts = new Properties();
 
@@ -743,6 +797,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTreeMap() throws Exception {
         Map<Integer, Integer> map = new TreeMap<>();
 
@@ -755,6 +810,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTreeSet() throws Exception {
         Collection<Integer> set = new TreeSet<>();
 
@@ -768,6 +824,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("UseOfObsoleteCollectionType")
+    @Test
     public void testVector() throws Exception {
         Collection<Integer> vector = new Vector<>();
 
@@ -780,6 +837,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testString() throws Exception {
         assertEquals("Latin", marshalUnmarshal("Latin"));
         assertEquals("Кириллица", marshalUnmarshal("Кириллица"));
@@ -789,6 +847,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadLine() throws Exception {
         OptimizedObjectInputStream in = new OptimizedObjectInputStream(new GridUnsafeDataInput());
 
@@ -805,6 +864,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testHierarchy() throws Exception {
         C c = new C(100, "str", 200, "str", 300, "str");
 
@@ -821,6 +881,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInet4Address() throws Exception {
         Inet4Address addr = (Inet4Address)InetAddress.getByName("localhost");
 
@@ -830,6 +891,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClass() throws Exception {
         assertEquals(int.class, marshalUnmarshal(int.class));
         assertEquals(Long.class, marshalUnmarshal(Long.class));
@@ -839,6 +901,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWriteReadFields() throws Exception {
         WriteReadFieldsTestObject obj = marshalUnmarshal(new WriteReadFieldsTestObject(100, "str"));
 
@@ -849,6 +912,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWriteFields() throws Exception {
         WriteFieldsTestObject obj = marshalUnmarshal(new WriteFieldsTestObject(100, "str"));
 
@@ -859,6 +923,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBigInteger() throws Exception {
         BigInteger b = new BigInteger("54654865468745468465321414646834562346475457488");
 
@@ -868,6 +933,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBigDecimal() throws Exception {
         BigDecimal b = new BigDecimal("849572389457208934572093574.123512938654126458542145");
 
@@ -877,6 +943,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleDateFormat() throws Exception {
         SimpleDateFormat f = new SimpleDateFormat("MM/dd/yyyy");
 
@@ -886,6 +953,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testComplexObject() throws Exception {
         ComplexTestObject obj = new ComplexTestObject();
 
@@ -959,6 +1027,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadToArray() throws Exception {
         OptimizedObjectInputStream in = OptimizedObjectStreamRegistry.in();
 
@@ -1006,6 +1075,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testHandleTableGrow() throws Exception {
         List<String> c = new ArrayList<>();
 
@@ -1025,6 +1095,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIncorrectExternalizable() throws Exception {
         GridTestUtils.assertThrows(
             log,
@@ -1040,6 +1111,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExcludedClass() throws Exception {
         Class<?>[] exclClasses = U.staticField(MarshallerExclusions.class, "EXCL_CLASSES");
 
@@ -1052,6 +1124,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInet6Address() throws Exception {
         final InetAddress address = Inet6Address.getByAddress(new byte[16]);
 
@@ -1061,6 +1134,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutFieldsWithDefaultWriteObject() throws Exception {
         try {
             marshalUnmarshal(new CustomWriteObjectMethodObject("test"));
@@ -1073,6 +1147,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testThrowable() throws Exception {
         Throwable t = new Throwable("Throwable");
 
@@ -1082,6 +1157,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNestedReadWriteObject() throws Exception {
         NestedReadWriteObject[] arr = new NestedReadWriteObject[5];
 

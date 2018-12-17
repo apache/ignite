@@ -26,12 +26,16 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteComputeTopologyExceptionTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -46,6 +50,7 @@ public class IgniteComputeTopologyExceptionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCorrectException() throws Exception {
         Ignite ignite = ignite(0);
 
@@ -72,6 +77,7 @@ public class IgniteComputeTopologyExceptionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCorrectCheckedException() throws Exception {
         IgniteKernal ignite0 = (IgniteKernal)ignite(0);
 
