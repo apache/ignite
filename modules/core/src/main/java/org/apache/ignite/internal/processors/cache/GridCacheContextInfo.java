@@ -54,7 +54,7 @@ public class GridCacheContextInfo<K, V> {
      */
     public GridCacheContextInfo(GridCacheContext<K, V> cctx, boolean clientCache) {
         config = cctx.config();
-        dynamicDeploymentId = cctx.dynamicDeploymentId();
+        dynamicDeploymentId = null;
         groupId = cctx.groupId();
         cacheId = cctx.cacheId();
 
@@ -123,6 +123,13 @@ public class GridCacheContextInfo<K, V> {
      * @return Dynamic deployment ID.
      */
     public IgniteUuid dynamicDeploymentId() {
+        GridCacheContext ctx = gridCacheContext;
+
+        if (ctx != null)
+            return ctx.dynamicDeploymentId();
+
+        assert dynamicDeploymentId != null : "Deployment id is not set and cache context is not initialized: " + this;
+
         return dynamicDeploymentId;
     }
 
