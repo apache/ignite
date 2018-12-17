@@ -18,29 +18,48 @@
 package org.apache.ignite.spi.communication.tcp.messages;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.util.nio.channel.GridNioSocketChannel;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.HANDSHAKE_WAIT_MSG_TYPE;
 
 /**
- * Message requesting to wait until node's SPI context initialize.
+ * Message requesting to creation of {@link GridNioSocketChannel}.
  */
-public class HandshakeWaitMessage implements Message {
+public class ChannelCreateRequestMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Full message size (with message type) in bytes. */
-    public static final int MESSAGE_FULL_SIZE = DIRECT_TYPE_SIZE;
+    /** Message. */
+    private Message message;
 
     /**
      * Default constructor required by {@link Message}.
      */
-    public HandshakeWaitMessage() {
-        // No-op.
+    @SuppressWarnings("RedundantNoArgConstructor")
+    public ChannelCreateRequestMessage() {
+    }
+
+    /**
+     * @param message {@link Message} to wrap.
+     */
+    public ChannelCreateRequestMessage(Message message) {
+        this.message = message;
+    }
+
+    /**
+     * @return Message.
+     */
+    public Message getMessage() {
+        return message;
+    }
+
+    /**
+     * @param message Message.
+     */
+    public void setMessage(Message message) {
+        this.message = message;
     }
 
     /** {@inheritDoc} */
@@ -50,32 +69,59 @@ public class HandshakeWaitMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        if (buf.remaining() < MESSAGE_FULL_SIZE)
-            return false;
+        writer.setBuffer(buf);
 
-        TcpCommunicationSpi.writeMessageType(buf, directType());
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeMessage("message", message))
+                    return false;
+
+                writer.incrementState();
+        }
 
         return true;
     }
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        return true;
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
+            case 0:
+                message = reader.readMessage("message");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+        }
+
+        return reader.afterMessageRead(ChannelCreateRequestMessage.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return HANDSHAKE_WAIT_MSG_TYPE;
+        return -29;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 0;
+        return 1;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(HandshakeWaitMessage.class, this);
+        return S.toString(ChannelCreateRequestMessage.class, this);
     }
 
 }

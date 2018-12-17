@@ -282,6 +282,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     lsnr.onNodeDisconnected(nodeId);
             }
 
+            @Override public void onChannelConfigure(UUID nodeId, Serializable msg) {
+                GridIoMessage msg0 = (GridIoMessage)msg;
+
+            }
+
             @Override public void onChannelCreated(GridNioSocketChannel ch) {
                 for (GridIoChannelListener lsnr : channelLsnrs)
                     lsnr.onChannelCreated(ch);

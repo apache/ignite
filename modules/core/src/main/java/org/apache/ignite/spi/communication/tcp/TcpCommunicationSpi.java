@@ -347,8 +347,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** Message tracker meta for session. */
     private static final int TRACKER_META = GridNioSessionMetaKey.nextUniqueKey();
 
-    /** */
-    public static final int CHANNEL_META = GridNioSessionMetaKey.nextUniqueKey();
+    /** Connection configuration messages. */
+    public static final int CHNL_CFG_META = GridNioSessionMetaKey.nextUniqueKey();
 
     /**
      * Default local port range (value is <tt>100</tt>).
@@ -591,6 +591,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                 // Session is not needed for the channel connections.
                 if (msg instanceof HandshakeMessage2 && ((HandshakeMessage2) msg).useChannelTransfer()) {
+                    ses.addMeta(CHNL_CFG_META, true);
+
                     if (log.isInfoEnabled())
                         log.info("Handle channel connection creation [" +
                             "locNodeId=" + locNode.id() + ", rmtNodeId=" + sndId + ']');
@@ -778,6 +780,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     finally {
                         connectGate.leave();
                     }
+                }
+                else if (ses.meta(CHNL_CFG_META)) {
+                    if (lsnr != null)
+                        lsnr.onChannelConfigure(connKey.nodeId(), msg);
                 }
                 else {
                     if (msg instanceof RecoveryLastReceivedMessage) {
@@ -4504,26 +4510,30 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         ConnectionKey connKey = new ConnectionKey(remote.id(), sockConnPlc.connectionIndex(), -1);
 
-        GridNioSocketChannel nioCh;
+        GridNioSocketChannel nioCh = null;
+        GridNioSession ses = null;
 
         try {
             // TODO: add retry count for connKey
             if (nioSrvr.channelKeys().contains(connKey))
                 throw new IgniteCheckedException("Connection key already used: " + connKey);
 
-            final long start = System.currentTimeMillis();
-
             nioCh = createGridNioSocketChannel(remote, connKey);
 
-            final long time = System.currentTimeMillis() - start;
+            // GridNioSession ses = createGridNioSession()
 
-            if (log.isDebugEnabled())
-                log.debug("Tcp channel created [channel=" + nioCh + ", duration=" + time + " ms]");
+            // Send configuration message.
+            ses.sendNoFuture(msg, null);
+
+            // Recive successfull result.
 
             return nioCh;
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            if (e.getCause() instanceof IOException)
+                ses.close();
+
+            throw new IgniteSpiException("Failed to send message [client=" + this + ']', e);
         }
         finally {
             connectGate.leave();
