@@ -34,7 +34,6 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class SysPropWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyTest {
     /** {@inheritDoc} */
-    @BeforeClass
     @Override public void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
@@ -42,7 +41,6 @@ public class SysPropWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyT
     }
 
     /** {@inheritDoc} */
-    @AfterClass
     @Override public void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
