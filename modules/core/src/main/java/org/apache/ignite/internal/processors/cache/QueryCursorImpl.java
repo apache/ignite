@@ -157,6 +157,7 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
                     return;
             }
         }
+        // TODO: Should be called only once per cursor lifecycle.
         finally {
             if (closeLsnr != null) {
                 try {

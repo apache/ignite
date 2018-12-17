@@ -28,5 +28,6 @@ public interface CloseListener {
      *
      * @param closeLsnr Close listener.
      */
+    // TODO: Try to streamline (e.g. subclass in indexing module)
     void closeListener(Runnable closeLsnr);
 }

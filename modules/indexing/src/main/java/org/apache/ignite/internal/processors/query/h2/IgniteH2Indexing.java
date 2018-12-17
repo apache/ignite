@@ -457,6 +457,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String cacheName, String qry, String typeName, IndexingQueryFilter filters) throws IgniteCheckedException {
         H2TableDescriptor tbl = schemaMgr.tableForType(schemaName, cacheName, typeName);
 
+        // TODO: Return running info
         if (tbl != null && tbl.luceneIndex() != null)
             return tbl.luceneIndex().query(qry.toUpperCase(), filters);
 

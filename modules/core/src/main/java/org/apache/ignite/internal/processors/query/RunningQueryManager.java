@@ -51,6 +51,7 @@ public class RunningQueryManager {
 
         long qryId = createUniqueQueryId();
 
+        // TODO: Be careful with cancel. Looks wrong wrt to IgniteH2Indexing.querySqlFields API
         GridQueryCancel cancel = new GridQueryCancel();
 
         long startTime = U.currentTimeMillis();

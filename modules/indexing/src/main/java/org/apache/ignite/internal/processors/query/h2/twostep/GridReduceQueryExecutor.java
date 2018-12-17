@@ -470,6 +470,7 @@ public class GridReduceQueryExecutor {
                 }
             }
 
+            // TODO: This should be separate generator
             long qryReqId = h2.runningQueryManager().createUniqueQueryId();
 
             final ReduceQueryRun r = new ReduceQueryRun(h2.connections().connectionForThread(schemaName),

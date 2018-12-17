@@ -89,6 +89,8 @@ public interface GridQueryIndexing {
      * @param clientReq {@code true} in case it's client request, {@code false} otherwise.
      * @return Cursor.
      */
+    // TODO: clientReq -> ???
+
     public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
         SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker,
         GridQueryCancel cancel, boolean clientReq);
