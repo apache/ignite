@@ -123,10 +123,10 @@ public class GridCacheContextInfo<K, V> {
      * @return Dynamic deployment ID.
      */
     public IgniteUuid dynamicDeploymentId() {
-        GridCacheContext ctx = gridCacheContext;
+        GridCacheContext cctx0 = cctx;
 
-        if (ctx != null)
-            return ctx.dynamicDeploymentId();
+        if (cctx0 != null)
+            return cctx0.dynamicDeploymentId();
 
         assert dynamicDeploymentId != null : "Deployment id is not set and cache context is not initialized: " + this;
 

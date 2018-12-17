@@ -461,20 +461,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @param dynamicDeploymentId Dynamic deployment ID.
-     */
-    void dynamicDeploymentId(IgniteUuid dynamicDeploymentId) {
-        this.dynamicDeploymentId = dynamicDeploymentId;
-    }
-
-    /**
-     * @return {@code True} if custom {@link AffinityKeyMapper} is configured for cache.
-     */
-    public boolean customAffinityMapper() {
-        return customAffMapper;
-    }
-
-    /**
      * @return Dynamic deployment ID.
      */
     public IgniteUuid dynamicDeploymentId() {
