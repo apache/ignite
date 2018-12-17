@@ -121,6 +121,7 @@
     <inspection_tool class="CanBeParameter" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="CanBePrimaryConstructorProperty" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="CanBeVal" enabled="false" level="WARNING" enabled_by_default="false"/>
+    <inspection_tool class="CastCanBeRemovedNarrowingVariableType" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="CastConflictsWithInstanceof" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="CastThatLosesPrecision" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="CastToConcreteClass" enabled="false" level="WARNING" enabled_by_default="false"/>
@@ -132,6 +133,7 @@
     <inspection_tool class="ChannelResource" enabled="false" level="WARNING" enabled_by_default="false">
         <option name="insideTryAllowed" value="false"/>
     </inspection_tool>
+    <inspection_tool class="CharsetObjectCanBeUsed" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="CharUsedInArithmeticContext" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="CharacterComparison" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="CheckDtdRefs" enabled="false" level="ERROR" enabled_by_default="false"/>
@@ -203,6 +205,7 @@
         <option name="IGNORE_NON_PUBLIC" value="true"/>
     </inspection_tool>
     <inspection_tool class="ComponentRegistrationProblems" enabled="false" level="ERROR" enabled_by_default="false"/>
+    <inspection_tool class="ConditionalBreakInInfiniteLoop" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="ConditionSignal" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="ConditionalExpression" enabled="false" level="WARNING" enabled_by_default="false">
         <option name="ignoreSimpleAssignmentsAndReturns" value="false"/>
@@ -256,6 +259,7 @@
     <inspection_tool class="ConvertJavadoc" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="ConvertOldAnnotations" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="ConvertToStringTemplate" enabled="false" level="INFO" enabled_by_default="false"/>
+    <inspection_tool class="CopyConstructorMissesField" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="CovariantCompareTo" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="CovariantEquals" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="CyclicClassDependency" enabled="false" level="WARNING" enabled_by_default="false"/>
@@ -301,6 +305,7 @@
     <inspection_tool class="DuplicateCondition" enabled="false" level="WARNING" enabled_by_default="false">
         <option name="ignoreMethodCalls" value="false"/>
     </inspection_tool>
+    <inspection_tool class="DuplicateExpressions" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
     <inspection_tool class="DuplicateMnemonic" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="DuplicatePropertyInspection" enabled="false" level="WARNING" enabled_by_default="false">
         <option name="CURRENT_FILE" value="true"/>
@@ -943,6 +948,9 @@
         <option name="IGNORE_ANNOTATED_METHODS" value="true"/>
         <option name="IGNORE_SUSPICIOUS_METHOD_CALLS" value="true"/>
     </inspection_tool>
+    <inspection_tool class="RedundantClassCall" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RedundantCollectionOperation" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RedundantCompareCall" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="RedundantFieldInitialization" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="RedundantImplements" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="RedundantLambdaParameterType" enabled="false" level="INFORMATION" enabled_by_default="false"/>
