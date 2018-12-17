@@ -46,8 +46,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
@@ -765,19 +763,20 @@ public class CacheGroupContext {
         UUID originalReceivedFrom,
         boolean affinityNode
     ) throws IgniteCheckedException {
-        if (recoveryMode.compareAndSet(true, false)) {
-            affNode = affinityNode;
+        if (!recoveryMode.compareAndSet(true, false))
+            return;
 
-            rcvdFrom = originalReceivedFrom;
+        affNode = affinityNode;
 
-            locStartVer = startVer;
+        rcvdFrom = originalReceivedFrom;
 
-            persistGlobalWalState(globalWalEnabled);
+        locStartVer = startVer;
 
-            initializeIO();
+        persistGlobalWalState(globalWalEnabled);
 
-            ctx.affinity().onCacheGroupCreated(this);
-        }
+        initializeIO();
+
+        ctx.affinity().onCacheGroupCreated(this);
     }
 
     /**
