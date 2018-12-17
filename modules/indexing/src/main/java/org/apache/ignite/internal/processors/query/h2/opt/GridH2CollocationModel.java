@@ -386,41 +386,44 @@ public final class GridH2CollocationModel {
         }
 
         IndexColumn affCol = tbl.getAffinityKeyColumn();
-        int affColId = affCol != null ? affCol.column.getColumnId() : GridH2RowDescriptor.COL_NOT_EXISTS;
 
         boolean affKeyCondFound = false;
 
-        ArrayList<IndexCondition> idxConditions = tf.getIndexConditions();
+        if (affCol != null) {
+            ArrayList<IndexCondition> idxConditions = tf.getIndexConditions();
 
-        for (int i = 0; i < idxConditions.size(); i++) {
-            IndexCondition c = idxConditions.get(i);
-            int colId = c.getColumn().getColumnId();
-            int cmpType = c.getCompareType();
+            int affColId = affCol.column.getColumnId();
 
-            if ((cmpType == Comparison.EQUAL || cmpType == Comparison.EQUAL_NULL_SAFE) &&
-                (colId == affColId || tbl.rowDescriptor().isKeyColumn(colId)) && c.isEvaluatable()) {
-                affKeyCondFound = true;
+            for (int i = 0; i < idxConditions.size(); i++) {
+                IndexCondition c = idxConditions.get(i);
+                int colId = c.getColumn().getColumnId();
+                int cmpType = c.getCompareType();
 
-                Expression exp = c.getExpression();
-                exp = exp.getNonAliasExpression();
+                if ((cmpType == Comparison.EQUAL || cmpType == Comparison.EQUAL_NULL_SAFE) &&
+                    (colId == affColId || tbl.rowDescriptor().isKeyColumn(colId)) && c.isEvaluatable()) {
+                    affKeyCondFound = true;
 
-                if (exp instanceof ExpressionColumn) {
-                    ExpressionColumn expCol = (ExpressionColumn)exp;
+                    Expression exp = c.getExpression();
+                    exp = exp.getNonAliasExpression();
 
-                    // This is one of our previous joins.
-                    TableFilter prevJoin = expCol.getTableFilter();
+                    if (exp instanceof ExpressionColumn) {
+                        ExpressionColumn expCol = (ExpressionColumn)exp;
 
-                    if (prevJoin != null) {
-                        GridH2CollocationModel cm = child(indexOf(prevJoin), true);
+                        // This is one of our previous joins.
+                        TableFilter prevJoin = expCol.getTableFilter();
 
-                        // If the previous joined model is a subquery (view), we can not be sure that
-                        // the found affinity column is the needed one, since we can select multiple
-                        // different affinity columns from different tables.
-                        if (cm != null && !cm.view) {
-                            Type t = cm.type(true);
+                        if (prevJoin != null) {
+                            GridH2CollocationModel cm = child(indexOf(prevJoin), true);
 
-                            if (t.isPartitioned() && t.isCollocated() && isAffinityColumn(prevJoin, expCol, validate))
-                                return Affinity.COLLOCATED_JOIN;
+                            // If the previous joined model is a subquery (view), we can not be sure that
+                            // the found affinity column is the needed one, since we can select multiple
+                            // different affinity columns from different tables.
+                            if (cm != null && !cm.view) {
+                                Type t = cm.type(true);
+
+                                if (t.isPartitioned() && t.isCollocated() && isAffinityColumn(prevJoin, expCol, validate))
+                                    return Affinity.COLLOCATED_JOIN;
+                            }
                         }
                     }
                 }
@@ -476,10 +479,7 @@ public final class GridH2CollocationModel {
 
             IndexColumn affCol = t0.getAffinityKeyColumn();
 
-            if (affCol != null && col.getColumnId() == affCol.column.getColumnId())
-                return true;
-
-            return t0.rowDescriptor().isKeyColumn(col.getColumnId());
+            return affCol != null && col.getColumnId() == affCol.column.getColumnId();
         }
 
         return false;

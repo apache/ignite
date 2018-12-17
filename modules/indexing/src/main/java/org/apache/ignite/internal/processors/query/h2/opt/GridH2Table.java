@@ -141,18 +141,30 @@ public class GridH2Table extends TableBase {
         this.desc = desc;
         this.cacheInfo = cacheInfo;
 
-        String affKeyFieldName = desc.type().affinityKey();
+        if (!desc.type().customAffinityKeyMapper()) {
+            String affKeyFieldName = desc.type().affinityKey();
 
-        if (affKeyFieldName != null && doesColumnExist(affKeyFieldName)) {
-            int colId = getColumn(affKeyFieldName).getColumnId();
+            if (affKeyFieldName != null) {
+                if (doesColumnExist(affKeyFieldName)) {
+                    int colId = getColumn(affKeyFieldName).getColumnId();
 
-            if (desc.isKeyColumn(colId)) {
-                affKeyCol = null;
-                affKeyColId = COL_NOT_EXISTS;
+                    if (desc.isKeyColumn(colId)) {
+                        affKeyCol = indexColumn(GridH2KeyValueRowOnheap.KEY_COL, SortOrder.ASCENDING);
+                        affKeyColId = GridH2KeyValueRowOnheap.KEY_COL;
+                    }
+                    else {
+                        affKeyCol = indexColumn(colId, SortOrder.ASCENDING);
+                        affKeyColId = colId;
+                    }
+                }
+                else {
+                    affKeyCol = null;
+                    affKeyColId = COL_NOT_EXISTS;
+                }
             }
             else {
-                affKeyCol = indexColumn(colId, SortOrder.ASCENDING);
-                affKeyColId = colId;
+                affKeyCol = indexColumn(GridH2KeyValueRowOnheap.KEY_COL, SortOrder.ASCENDING);
+                affKeyColId = GridH2KeyValueRowOnheap.KEY_COL;
             }
         }
         else {
@@ -227,7 +239,7 @@ public class GridH2Table extends TableBase {
      * @return Whether custom affintiy mapper is used.
      */
     public boolean isCustomAffinityMapper() {
-        return desc.context().cacheObjectContext().customAffinityMapper();
+        return desc.type().customAffinityKeyMapper();
     }
 
     /** {@inheritDoc} */

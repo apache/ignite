@@ -108,6 +108,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     private String affKey;
 
     /** */
+    private boolean customAffKeyMapper;
+
+    /** */
     private String keyFieldName;
 
     /** */
@@ -479,6 +482,18 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      */
     public void affinityKey(String affKey) {
         this.affKey = affKey;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean customAffinityKeyMapper() {
+        return customAffKeyMapper;
+    }
+
+    /**
+     * @param customAffKeyMapper Whether custom affinity key mapper is set.
+     */
+    public void customAffinityKeyMapper(boolean customAffKeyMapper) {
+        this.customAffKeyMapper = customAffKeyMapper;
     }
 
     /**

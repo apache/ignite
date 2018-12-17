@@ -513,6 +513,8 @@ public class QueryUtils {
                     }
                 }
             }
+            else
+                desc.customAffinityKeyMapper(true);
 
             desc.affinityKey(affField);
         }
@@ -532,6 +534,8 @@ public class QueryUtils {
                     desc.affinityKey(affField);
                 }
             }
+            else
+                desc.customAffinityKeyMapper(true);
 
             typeId = new QueryTypeIdKey(cacheName, valCls);
             altTypeId = new QueryTypeIdKey(cacheName, valTypeId);

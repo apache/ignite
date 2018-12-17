@@ -306,30 +306,28 @@ public abstract class GridH2IndexBase extends BaseIndex {
     @Override public IndexLookupBatch createLookupBatch(TableFilter[] filters, int filter) {
         GridH2QueryContext qctx = GridH2QueryContext.get();
 
-        GridH2Table tbl = getTable();
-
-        if (qctx == null || qctx.distributedJoinMode() == OFF || !tbl.isPartitioned())
+        if (qctx == null || qctx.distributedJoinMode() == OFF || !getTable().isPartitioned())
             return null;
 
-        GridH2RowDescriptor desc = tbl.rowDescriptor();
+        IndexColumn affCol = getTable().getAffinityKeyColumn();
+        GridH2RowDescriptor desc = getTable().rowDescriptor();
 
-        int[] masks = filters[filter].getMasks();
-
-        int affColId = COL_NOT_EXISTS;
+        int affColId = -1;
         boolean ucast = false;
-
-        IndexColumn affCol = tbl.getAffinityKeyColumn();
 
         if (affCol != null) {
             affColId = affCol.column.getColumnId();
+            int[] masks = filters[filter].getMasks();
 
-            ucast = masks != null && (masks[affColId] & IndexCondition.EQUALITY) != 0;
+            if (masks != null) {
+                ucast = (masks[affColId] & IndexCondition.EQUALITY) != 0 ||
+                        desc.checkKeyIndexCondition(masks, IndexCondition.EQUALITY);
+            }
         }
 
-        if (!ucast)
-            ucast = masks != null && desc.checkKeyIndexCondition(masks, IndexCondition.EQUALITY);
+        GridCacheContext<?, ?> cctx = getTable().rowDescriptor().context();
 
-        return new DistributedLookupBatch(desc.context(), ucast, affColId);
+        return new DistributedLookupBatch(cctx, ucast, affColId);
     }
 
     /** {@inheritDoc} */
