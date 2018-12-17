@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.query;
 
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -33,6 +35,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
@@ -47,12 +51,15 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.util.lang.GridNodePredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -745,6 +752,103 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test partition states system view.
+     */
+    public void testPartitionStatesView() throws Exception {
+        cleanPersistenceDir();
+
+        IgniteEx ignite0 = (IgniteEx)startGrid(getTestIgniteInstanceName(), getPdsConfiguration("node0"));
+        IgniteEx ignite1 = (IgniteEx)startGrid(getTestIgniteInstanceName(1), getPdsConfiguration("node1"));
+
+        ignite0.cluster().active(true);
+
+        IgniteCache<Integer, Integer> cache1 = ignite0.createCache(new CacheConfiguration<Integer, Integer>()
+            .setName("cache1")
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setAffinity(new TestAffinityFunction(new String[][] {{"node0", "node1"}, {"node1", "node2"},
+                {"node2", "node0"}})));
+
+        IgniteCache<Integer, Integer> cache2 = ignite0.createCache(new CacheConfiguration<Integer, Integer>()
+            .setName("cache2")
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setAffinity(new TestAffinityFunction(new String[][] {{"node0", "node1", "node2"}, {"node1"}})));
+
+        for (int i = 0; i < 100; i++) {
+            cache1.put(i, i);
+            cache2.put(i, i);
+        }
+
+        IgniteEx ignite2 = (IgniteEx)startGrid(getTestIgniteInstanceName(2), getPdsConfiguration("node2"));
+
+        ignite2.rebalanceEnabled(false);
+
+        ignite0.cluster().setBaselineTopology(ignite0.cluster().topologyVersion());
+
+        List<List<?>> resAll = execSql("SELECT CACHE_GROUP_ID, NODE_ID, PARTITION, STATE FROM IGNITE.PARTITION_STATES");
+
+        assertColumnTypes(resAll.get(0), Integer.class, UUID.class, Integer.class, String.class);
+
+        String partStateSql = "SELECT STATE FROM IGNITE.PARTITION_STATES WHERE CACHE_GROUP_ID = ? AND NODE_ID = ? " +
+            "AND PARTITION = ?";
+
+        UUID nodeId0 = ignite0.cluster().localNode().id();
+        UUID nodeId1 = ignite1.cluster().localNode().id();
+        UUID nodeId2 = ignite2.cluster().localNode().id();
+
+        Integer cacheGrpId1 = ignite0.cachex("cache1").context().groupId();
+        Integer cacheGrpId2 = ignite0.cachex("cache2").context().groupId();
+
+        String owningState = GridDhtPartitionState.OWNING.name();
+        String movingState = GridDhtPartitionState.MOVING.name();
+
+        for (Ignite ignite : Arrays.asList(ignite0, ignite1, ignite2)) {
+            // Check partitions for cache1.
+            assertEquals(owningState, execSql(ignite, partStateSql, cacheGrpId1, nodeId0, 0).get(0).get(0));
+            assertEquals(owningState, execSql(ignite, partStateSql, cacheGrpId1, nodeId1, 0).get(0).get(0));
+            assertEquals(owningState, execSql(ignite, partStateSql, cacheGrpId1, nodeId1, 1).get(0).get(0));
+            assertEquals(movingState, execSql(ignite, partStateSql, cacheGrpId1, nodeId2, 1).get(0).get(0));
+            assertEquals(owningState, execSql(ignite, partStateSql, cacheGrpId1, nodeId0, 2).get(0).get(0));
+            assertEquals(movingState, execSql(ignite, partStateSql, cacheGrpId1, nodeId2, 2).get(0).get(0));
+
+            // Check partitions for cache2.
+            assertEquals(owningState, execSql(ignite, partStateSql, cacheGrpId2, nodeId0, 0).get(0).get(0));
+            assertEquals(owningState, execSql(ignite, partStateSql, cacheGrpId2, nodeId1, 0).get(0).get(0));
+            assertEquals(movingState, execSql(ignite, partStateSql, cacheGrpId2, nodeId2, 0).get(0).get(0));
+            assertEquals(owningState, execSql(ignite, partStateSql, cacheGrpId2, nodeId1, 1).get(0).get(0));
+        }
+
+        // Check joins with cache groups and nodes views.
+        assertEquals(owningState, execSql("SELECT p.STATE " +
+            "FROM IGNITE.PARTITION_STATES p " +
+            "JOIN IGNITE.CACHE_GROUPS g ON p.CACHE_GROUP_ID = g.ID " +
+            "JOIN IGNITE.NODES n ON p.NODE_ID = n.ID " +
+            "WHERE g.GROUP_NAME = 'cache2' AND n.CONSISTENT_ID = 'node1' AND p.PARTITION = 1").get(0).get(0));
+
+        // Check malformed or invalid values for indexed columns.
+        assertEquals(0, execSql("SELECT * FROM IGNITE.PARTITION_STATES WHERE PARTITION = ?", Integer.MAX_VALUE).size());
+        assertEquals(0, execSql("SELECT * FROM IGNITE.PARTITION_STATES WHERE PARTITION = -1").size());
+        assertEquals(0, execSql("SELECT * FROM IGNITE.PARTITION_STATES WHERE NODE_ID = '123'").size());
+        assertEquals(0, execSql("SELECT * FROM IGNITE.PARTITION_STATES WHERE NODE_ID = ?", UUID.randomUUID()).size());
+        assertEquals(0, execSql("SELECT * FROM IGNITE.PARTITION_STATES WHERE CACHE_GROUP_ID = 0").size());
+
+        AffinityTopologyVersion topVer = ignite0.context().discovery().topologyVersionEx();
+
+        ignite2.rebalanceEnabled(true);
+
+        // Wait until rebalance complete.
+        assertTrue(GridTestUtils.waitForCondition(() -> ignite0.context().discovery().topologyVersionEx()
+                .compareTo(topVer) > 0, 5_000L));
+
+        // Check that all partitions are in OWNING state now.
+        String cntByStateSql = "SELECT COUNT(*) FROM IGNITE.PARTITION_STATES WHERE CACHE_GROUP_ID IN (?, ?) AND STATE = ?";
+
+        for (Ignite ignite : Arrays.asList(ignite0, ignite1, ignite2)) {
+            assertEquals(10L, execSql(ignite, cntByStateSql, cacheGrpId1, cacheGrpId2, owningState).get(0).get(0));
+            assertEquals(0L, execSql(ignite, cntByStateSql, cacheGrpId1, cacheGrpId2, movingState).get(0).get(0));
+        }
+    }
+
+    /**
      * Gets ignite configuration with persistence enabled.
      */
     private IgniteConfiguration getPdsConfiguration(String consistentId) throws Exception {
@@ -772,6 +876,62 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
         Time time0 = (Time)sqlTime;
 
         return time0.getTime() + TimeZone.getDefault().getOffset(time0.getTime());
+    }
+
+    /**
+     * Affinity function with fixed partition allocation.
+     */
+    private static class TestAffinityFunction implements AffinityFunction {
+        /** Partitions to nodes map. */
+        private final String[][] partMap;
+
+        /**
+         * @param partMap Parition allocation map, contains nodes consistent ids for each partition.
+         */
+        private TestAffinityFunction(String[][] partMap) {
+            this.partMap = partMap;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void reset() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public int partitions() {
+            return partMap.length;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int partition(Object key) {
+            return key.hashCode() % partitions();
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
+            List<List<ClusterNode>> parts = new ArrayList<>(partMap.length);
+
+            for (String[] nodes : partMap) {
+                List<ClusterNode> nodesList = new ArrayList<>();
+
+                for (String nodeConsistentId: nodes) {
+                    ClusterNode affNode = F.find(affCtx.currentTopologySnapshot(), null,
+                        (IgnitePredicate<ClusterNode>)node -> node.consistentId().equals(nodeConsistentId));
+
+                    if (affNode != null)
+                        nodesList.add(affNode);
+                }
+
+                parts.add(nodesList);
+            }
+
+            return parts;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeNode(UUID nodeId) {
+            // No-op.
+        }
     }
 
     /**
