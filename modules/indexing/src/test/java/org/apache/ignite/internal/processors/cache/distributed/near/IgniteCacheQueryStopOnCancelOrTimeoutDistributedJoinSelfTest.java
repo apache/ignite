@@ -33,47 +33,59 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for cancel of query containing distributed joins.
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest extends IgniteCacheQueryAbstractDistributedJoinSelfTest {
     /** */
+    @Test
     public void testCancel1() throws Exception {
         testQueryCancel(grid(0), "pe", QRY_0, 1, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
+    @Test
     public void testCancel2() throws Exception {
         testQueryCancel(grid(0), "pe", QRY_0, 50, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
+    @Test
     public void testCancel3() throws Exception {
         testQueryCancel(grid(0), "pe", QRY_0, 100, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
+    @Test
     public void testCancel4() throws Exception {
         testQueryCancel(grid(0), "pe", QRY_0, 500, TimeUnit.MILLISECONDS, false);
     }
 
     /** */
+    @Test
     public void testTimeout1() throws Exception {
         testQueryCancel(grid(0), "pe", QRY_0, 1, TimeUnit.MILLISECONDS, true);
     }
 
     /** */
+    @Test
     public void testTimeout2() throws Exception {
         testQueryCancel(grid(0), "pe", QRY_0, 50, TimeUnit.MILLISECONDS, true);
     }
 
     /** */
+    @Test
     public void testTimeout3() throws Exception {
         testQueryCancel(grid(0), "pe", QRY_0, 100, TimeUnit.MILLISECONDS, true);
     }
 
     /** */
+    @Test
     public void testTimeout4() throws Exception {
         testQueryCancel(grid(0), "pe", QRY_0, 500, TimeUnit.MILLISECONDS, true);
     }

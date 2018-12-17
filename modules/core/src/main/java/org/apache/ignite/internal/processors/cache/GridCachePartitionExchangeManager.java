@@ -2914,7 +2914,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                             "topVer=" + exchFut.initialVersion() +
                                             ", node=" + cctx.localNodeId() + "]. " +
                                             (curTimeout <= 0 && !txRolledBack ? "Consider changing " +
-                                            "TransactionConfiguration.txTimeoutOnPartitionMapSynchronization" +
+                                            "TransactionConfiguration.txTimeoutOnPartitionMapExchange" +
                                             " to non default value to avoid this message. " : "") +
                                             "Dumping pending objects that might be the cause: ");
 

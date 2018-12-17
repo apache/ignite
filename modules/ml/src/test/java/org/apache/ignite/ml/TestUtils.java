@@ -18,9 +18,12 @@
 package org.apache.ignite.ml;
 
 import java.util.stream.IntStream;
+import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.junit.Assert;
 
 import static org.junit.Assert.assertTrue;
@@ -227,7 +230,8 @@ public class TestUtils {
     public static boolean checkIsInEpsilonNeighbourhoodBoolean(Vector v1, Vector v2, double epsilon) {
         try {
             checkIsInEpsilonNeighbourhood(new Vector[] {v1}, new Vector[] {v2}, epsilon);
-        } catch (Throwable e) {
+        }
+        catch (Throwable e) {
             return false;
         }
 
@@ -403,5 +407,37 @@ public class TestUtils {
      */
     public static <T, V> Model<T, V> constantModel(V v) {
         return t -> v;
+    }
+
+    /**
+     * Returns trainer which independently of dataset outputs given model.
+     *
+     * @param ml Model.
+     * @param <I> Type of model input.
+     * @param <O> Type of model output.
+     * @param <M> Type of model.
+     * @param <L> Type of dataset labels.
+     * @return Trainer which independently of dataset outputs given model.
+     */
+    public static <I, O, M extends Model<I, O>, L> DatasetTrainer<M, L> constantTrainer(M ml) {
+        return new DatasetTrainer<M, L>() {
+            /** {@inheritDoc} */
+            @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor,
+                IgniteBiFunction<K, V, L> lbExtractor) {
+                return ml;
+            }
+
+            /** {@inheritDoc} */
+            @Override public boolean checkState(M mdl) {
+                return true;
+            }
+
+            /** {@inheritDoc} */
+            @Override public <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+                return ml;
+            }
+        };
     }
 }
