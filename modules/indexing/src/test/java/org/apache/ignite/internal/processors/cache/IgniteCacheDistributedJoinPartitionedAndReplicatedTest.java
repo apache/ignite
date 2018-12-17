@@ -38,6 +38,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -47,6 +50,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheDistributedJoinPartitionedAndReplicatedTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -179,6 +183,7 @@ public class IgniteCacheDistributedJoinPartitionedAndReplicatedTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoin1() throws Exception {
         join(true, REPLICATED, PARTITIONED, PARTITIONED);
     }
@@ -186,6 +191,7 @@ public class IgniteCacheDistributedJoinPartitionedAndReplicatedTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoin2() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-5956");
 
@@ -195,6 +201,7 @@ public class IgniteCacheDistributedJoinPartitionedAndReplicatedTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoin3() throws Exception {
         join(true, PARTITIONED, PARTITIONED, REPLICATED);
     }

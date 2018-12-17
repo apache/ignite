@@ -36,6 +36,9 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.X;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Executes one big query (and subqueries of the big query) to compare query results from h2 database instance and
@@ -72,6 +75,7 @@ import org.apache.ignite.internal.util.typedef.X;
  *  </pre>
  *
  */
+@RunWith(JUnit4.class)
 public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
     /** Root order count. */
     private static final int ROOT_ORDER_CNT = 1000;
@@ -280,6 +284,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBigQuery() throws Exception {
         X.println();
         X.println(bigQry);

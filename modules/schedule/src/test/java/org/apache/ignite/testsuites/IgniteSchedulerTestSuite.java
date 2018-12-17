@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.schedule.GridScheduleSelfTest;
 
@@ -26,12 +27,11 @@ import org.apache.ignite.internal.processors.schedule.GridScheduleSelfTest;
 public class IgniteSchedulerTestSuite extends TestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Grid Scheduler Test Suite");
 
-        suite.addTestSuite(GridScheduleSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridScheduleSelfTest.class));
 
         return suite;
     }
