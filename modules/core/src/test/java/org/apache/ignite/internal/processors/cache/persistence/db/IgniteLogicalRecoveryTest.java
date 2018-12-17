@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -203,6 +204,8 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         cacheLoader.consistencyCheck(node);
 
         checkNoRebalanceAfterRecovery();
+
+        checkCacheContextsConsistencyAfterRecovery();
     }
 
     /**
@@ -236,6 +239,8 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         checkNoRebalanceAfterRecovery();
 
         cacheLoader.consistencyCheck(node);
+
+        checkCacheContextsConsistencyAfterRecovery();
     }
 
     /**
@@ -296,6 +301,8 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         for (int idx = 0; idx < 3; idx++)
             cacheLoader.consistencyCheck(grid(idx));
+
+        checkCacheContextsConsistencyAfterRecovery();
     }
 
     /**
@@ -328,6 +335,8 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         for (int idx = 0; idx < 3; idx++)
             cacheLoader.consistencyCheck(grid(idx));
+
+        checkCacheContextsConsistencyAfterRecovery();
     }
 
     /**
@@ -382,6 +391,47 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         for (int idx = 0; idx < 3; idx++)
             cacheLoader.consistencyCheck(grid(idx));
+    }
+
+    /**
+     * Checks that cache contexts have consistent parameters after recovery finished and nodes have joined to topology.
+     */
+    private void checkCacheContextsConsistencyAfterRecovery() throws Exception {
+        IgniteEx crd = grid(0);
+
+        Collection<String> cacheNames = crd.cacheNames();
+
+        for (String cacheName : cacheNames) {
+            for (int nodeIdx = 1; nodeIdx < 3; nodeIdx++) {
+                IgniteEx node = grid(nodeIdx);
+
+                GridCacheContext one = cacheContext(crd, cacheName);
+                GridCacheContext other = cacheContext(node, cacheName);
+
+                checkCacheContextsConsistency(one, other);
+            }
+        }
+    }
+
+    /**
+     * @return Cache context with given name from node.
+     */
+    private GridCacheContext cacheContext(IgniteEx node, String cacheName) {
+        return node.cachex(cacheName).context();
+    }
+
+    /**
+     * Checks that cluster-wide parameters are consistent between two caches.
+     *
+     * @param one Cache context.
+     * @param other Cache context.
+     */
+    private void checkCacheContextsConsistency(GridCacheContext one, GridCacheContext other) {
+        Assert.assertEquals(one.statisticsEnabled(), other.statisticsEnabled());
+        Assert.assertEquals(one.dynamicDeploymentId(), other.dynamicDeploymentId());
+        Assert.assertEquals(one.keepBinary(), other.keepBinary());
+        Assert.assertEquals(one.updatesAllowed(), other.updatesAllowed());
+        Assert.assertEquals(one.group().receivedFrom(), other.group().receivedFrom());
     }
 
     /** {@inheritDoc} */
