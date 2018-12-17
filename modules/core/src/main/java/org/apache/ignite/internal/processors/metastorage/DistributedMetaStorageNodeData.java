@@ -17,11 +17,28 @@
 
 package org.apache.ignite.internal.processors.metastorage;
 
+import java.io.Serializable;
+
 /** */
-public interface GlobalMetastorageLifecycleListener {
+@SuppressWarnings("PublicField")
+public class DistributedMetaStorageNodeData implements Serializable {
     /** */
-    default void onReadyForRead(ReadableDistributedMetaStorage metastorage) { }
+    public final long ver;
 
     /** */
-    default void onReadyForWrite(DistributedMetaStorage metastorage) { }
+    public final DistributedMetaStorageHistoryItem[] fullData;
+
+    /** */
+    public final DistributedMetaStorageHistoryItem[] hist;
+
+    /** */
+    public DistributedMetaStorageNodeData(
+        long ver,
+        DistributedMetaStorageHistoryItem[] fullData,
+        DistributedMetaStorageHistoryItem[] hist
+    ) {
+        this.fullData = fullData;
+        this.ver = ver;
+        this.hist = hist;
+    }
 }

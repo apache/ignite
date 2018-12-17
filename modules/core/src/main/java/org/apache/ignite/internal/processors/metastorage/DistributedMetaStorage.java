@@ -19,31 +19,13 @@ package org.apache.ignite.internal.processors.metastorage;
 
 import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /** */
-public interface DistributedMetaStorage {
-    /** */
-    @Nullable <S extends Serializable> S read(@NotNull String key) throws IgniteCheckedException;
-
+public interface DistributedMetaStorage extends ReadableDistributedMetaStorage {
     /** */
     void write(@NotNull String key, @NotNull Serializable val) throws IgniteCheckedException;
 
     /** */
     void remove(@NotNull String key) throws IgniteCheckedException;
-
-    /** */
-    void iterate(@NotNull IgnitePredicate<String> keyPred, @NotNull IgniteBiInClosure<String, ? super Serializable> cb) throws IgniteCheckedException;
-
-    /** */
-    void listen(@NotNull String key, @NotNull IgniteBiInClosure<String, ? extends Serializable> lsnr);
-
-    /** */
-    void listen(
-        @NotNull IgnitePredicate<String> keyPred,
-        @NotNull IgniteBiInClosure<String, ? extends Serializable> lsnr
-    );
 }

@@ -22,8 +22,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -126,18 +124,10 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         grid(0).cluster().active(true);
 
-        AtomicInteger strictCntr = new AtomicInteger();
-
         AtomicInteger predCntr = new AtomicInteger();
 
         for (int i = 0; i < cnt; i++) {
             DistributedMetaStorage metastorage = grid(i).context().globalMetastorage();
-
-            metastorage.listen("key", (key, val) -> {
-                assertEquals("value", val);
-
-                strictCntr.incrementAndGet();
-            });
 
             metastorage.listen(key -> key.startsWith("k"), (key, val) -> {
                 assertEquals("value", val);
@@ -149,8 +139,6 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         grid(0).context().globalMetastorage().write("key", "value");
 
         Thread.sleep(150L); // Remove later.
-
-        assertEquals(cnt, strictCntr.get());
 
         assertEquals(cnt, predCntr.get());
     }
@@ -168,18 +156,10 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         Thread.sleep(150L); // Remove later.
 
-        AtomicInteger strictCntr = new AtomicInteger();
-
         AtomicInteger predCntr = new AtomicInteger();
 
         for (int i = 0; i < cnt; i++) {
             DistributedMetaStorage metastorage = grid(i).context().globalMetastorage();
-
-            metastorage.listen("key", (key, val) -> {
-                assertNull(val);
-
-                strictCntr.incrementAndGet();
-            });
 
             metastorage.listen(key -> key.startsWith("k"), (key, val) -> {
                 assertNull(val);
@@ -191,8 +171,6 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         grid(0).context().globalMetastorage().remove("key");
 
         Thread.sleep(150L); // Remove later.
-
-        assertEquals(cnt, strictCntr.get());
 
         assertEquals(cnt, predCntr.get());
     }
@@ -274,7 +252,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         DistributedMetaStorage metastorage = ignite.context().globalMetastorage();
 
-        metastorage.listen("key", (key, val) -> {
+        metastorage.listen("key"::equals, (key, val) -> {
             throw new RuntimeException();
         });
 
