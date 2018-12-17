@@ -33,16 +33,21 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class HadoopHashMapSelfTest extends HadoopAbstractMapTest {
     /**
      * Test simple map.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMapSimple() throws Exception {
         GridUnsafeMemory mem = new GridUnsafeMemory(0);
 

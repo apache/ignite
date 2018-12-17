@@ -101,7 +101,7 @@ public class SslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-        @Test
+    @Test
     public void testSameCipherSuite() throws Exception {
         cipherSuites = new String[] {
             "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
