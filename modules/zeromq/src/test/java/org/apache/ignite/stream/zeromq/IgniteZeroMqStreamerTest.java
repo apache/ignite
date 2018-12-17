@@ -27,6 +27,9 @@ import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.zeromq.ZMQ;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
@@ -34,6 +37,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 /**
  * Tests {@link IgniteZeroMqStreamer}.
  */
+@RunWith(JUnit4.class)
 public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
     /** Cache entries count. */
     private static final int CACHE_ENTRY_COUNT = 1000;
@@ -65,6 +69,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Test exception.
      */
+    @Test
     public void testZeroMqPairSocket() throws Exception {
         try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(DEFAULT_CACHE_NAME)) {
             try (IgniteZeroMqStreamer streamer = newStreamerInstance(
@@ -77,6 +82,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Test exception.
      */
+    @Test
     public void testZeroMqSubSocketMultipart() throws Exception {
         try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(DEFAULT_CACHE_NAME)) {
             try (IgniteZeroMqStreamer streamer = newStreamerInstance(
@@ -90,6 +96,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Test exception.
      */
+    @Test
     public void testZeroMqSubSocket() throws Exception {
         try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(DEFAULT_CACHE_NAME)) {
             try (IgniteZeroMqStreamer streamer = newStreamerInstance(
@@ -102,6 +109,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Test exception.
      */
+    @Test
     public void testZeroMqPullSocket() throws Exception {
         try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(DEFAULT_CACHE_NAME)) {
             try (IgniteZeroMqStreamer streamer = newStreamerInstance(
