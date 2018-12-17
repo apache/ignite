@@ -2121,7 +2121,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 long page = pageMem.acquirePage(grpId, pageId, IoStatisticsHolderNoOp.INSTANCE, true);
 
                             try {
-                                long pageAddr = pageMem.writeLock(grpId, pageId, page);
+                                long pageAddr = pageMem.writeLock(grpId, pageId, page, true);
 
                                 try {
                                     PageUtils.putBytes(pageAddr, 0, pageRec.pageData());
@@ -2193,7 +2193,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 long page = pageMem.acquirePage(grpId, pageId, IoStatisticsHolderNoOp.INSTANCE, true);
 
                             try {
-                                long pageAddr = pageMem.writeLock(grpId, pageId, page);
+                                long pageAddr = pageMem.writeLock(grpId, pageId, page, true);
 
                                 try {
                                     r.applyDelta(pageMem, pageAddr);
