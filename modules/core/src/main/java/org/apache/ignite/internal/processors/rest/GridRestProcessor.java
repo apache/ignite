@@ -500,6 +500,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
                             if (ses.isTimedOut(sesTtl)) {
                                 clientId2SesId.remove(ses.clientId, ses.sesId);
                                 sesId2Ses.remove(ses.sesId, ses);
+
+                                if (ctx.security().enabled() && ses.secCtx != null && ses.secCtx.subject() != null)
+                                    ctx.security().onSessionExpired(ses.secCtx.subject().id());
                             }
                         }
                     }
