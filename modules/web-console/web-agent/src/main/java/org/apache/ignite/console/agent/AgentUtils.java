@@ -30,7 +30,6 @@ import java.security.KeyStore;
 import java.security.ProtectionDomain;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -41,7 +40,6 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 import okhttp3.ConnectionSpec;
-import okhttp3.OkHttpClient;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.ssl.SSLContextWrapper;
 import org.apache.log4j.Logger;
@@ -226,7 +224,7 @@ public class AgentUtils {
      * @throws GeneralSecurityException If failed to load key store.
      * @throws IOException If failed to load key store file content.
      */
-    public static KeyManager[] keyManagers(String keyStorePath, String keyStorePwd)
+    private static KeyManager[] keyManagers(String keyStorePath, String keyStorePwd)
         throws GeneralSecurityException, IOException {
         if (keyStorePath == null)
             return null;
@@ -242,14 +240,18 @@ public class AgentUtils {
     }
 
     /**
+     * @param trustAll {@code true} If we trust to self-signed sertificates.
      * @param trustStorePath Path to trust store file.
      * @param trustStorePwd Trust store password.
      * @return Trust manager
      * @throws GeneralSecurityException If failed to load trust store.
      * @throws IOException If failed to load trust store file content.
      */
-    public static X509TrustManager trustManager(String trustStorePath, String trustStorePwd)
+    public static X509TrustManager trustManager(boolean trustAll, String trustStorePath, String trustStorePwd)
         throws GeneralSecurityException, IOException {
+        if (trustAll)
+            return disabledTrustManager();
+
         if (trustStorePath == null)
             return null;
 
@@ -268,16 +270,22 @@ public class AgentUtils {
     }
 
     /**
-     * Initialize SSL.
+     * Create SSL socket factory.
      *
+     * @param keyStorePath Path to key store.
+     * @param keyStorePwd Key store password.
+     * @param trustMgr Trust manager.
      * @param cipherSuites Optional cipher suites.
      * @throws GeneralSecurityException If failed to load trust store.
+     * @throws IOException If failed to load store file content.
      */
     public static SSLSocketFactory sslSocketFactory(
-        KeyManager[] keyMgrs,
+        String keyStorePath, String keyStorePwd,
         X509TrustManager trustMgr,
         List<String> cipherSuites
-    ) throws GeneralSecurityException {
+    ) throws GeneralSecurityException, IOException {
+        KeyManager[] keyMgrs = keyManagers(keyStorePath, keyStorePwd);
+
         if (keyMgrs == null && trustMgr == null)
             return null;
 
@@ -288,34 +296,27 @@ public class AgentUtils {
 
         ctx.init(keyMgrs, new TrustManager[] {trustMgr}, null);
 
-        SSLSocketFactory sslSocketFactory = ctx.getSocketFactory();
-
-
-        return sslSocketFactory;
+        return ctx.getSocketFactory();
     }
 
     /**
-     * Set SSL cipher suites for HTTP builder.
+     * Create SSL configuration.
      *
-     * @param builder Builder.
      * @param cipherSuites SSL cipher suites.
      */
-    public static void setCiphers(OkHttpClient.Builder builder, List<String> cipherSuites) {
-        if (!F.isEmpty(cipherSuites)) {
-            String[] cs = F.isEmpty(cipherSuites) ? null : cipherSuites.toArray(new String[0]);
+    public static ConnectionSpec sslConnectionSpec(List<String> cipherSuites) {
+        if (F.isEmpty(cipherSuites))
+            return null;
 
-            ConnectionSpec spec = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
-                .cipherSuites(cs)
-                .build();
-
-            builder.connectionSpecs(Collections.singletonList(spec));
-        }
+        return new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+            .cipherSuites(cipherSuites.toArray(new String[0]))
+            .build();
     }
 
     /**
      * Create a trust manager that trusts all certificates.
      */
-    public static X509TrustManager disabledTrustManager() {
+    private static X509TrustManager disabledTrustManager() {
         return new X509TrustManager() {
             /** {@inheritDoc} */
             @Override public X509Certificate[] getAcceptedIssuers() {

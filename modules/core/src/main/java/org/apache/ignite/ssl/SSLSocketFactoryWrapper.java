@@ -65,12 +65,7 @@ class SSLSocketFactoryWrapper extends SSLSocketFactory {
 
     /** {@inheritDoc} */
     @Override public Socket createSocket() throws IOException {
-        SSLSocket sock = (SSLSocket)delegate.createSocket();
-
-        if (parameters != null)
-            sock.setSSLParameters(parameters);
-
-        return sock;
+        return configureSocket(delegate.createSocket());
     }
 
     /** {@inheritDoc} */

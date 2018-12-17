@@ -21,10 +21,10 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.net.ConnectException;
 import java.security.GeneralSecurityException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.X509TrustManager;
 
@@ -37,6 +37,7 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
+import okhttp3.ConnectionSpec;
 import okhttp3.Dispatcher;
 import okhttp3.FormBody;
 import okhttp3.HttpUrl;
@@ -108,20 +109,25 @@ public class RestExecutor implements AutoCloseable {
         if (trustAll && hasTrustStore) {
             log.warning("Options contains both '--node-trust-store' and '-Dtrust.all=true'. " +
                 "Option '-Dtrust.all=true' will be ignored.");
+
+            trustAll = false;
         }
 
-        X509TrustManager trustMgr = hasTrustStore
-            ? AgentUtils.trustManager(trustStorePath, trustStorePwd)
-            : (trustAll ? AgentUtils.disabledTrustManager() : null);
+        X509TrustManager trustMgr = AgentUtils.trustManager(trustAll, trustStorePath, trustStorePwd);
 
-        KeyManager[] keyMgrs = AgentUtils.keyManagers(keyStorePath, keyStorePwd);
-
-        SSLSocketFactory sslSocketFactory = AgentUtils.sslSocketFactory(keyMgrs, trustMgr, cipherSuites);
+        SSLSocketFactory sslSocketFactory = AgentUtils.sslSocketFactory(
+            keyStorePath, keyStorePwd,
+            trustMgr,
+            cipherSuites
+        );
 
         if (sslSocketFactory != null)
             builder.sslSocketFactory(sslSocketFactory, trustMgr);
 
-        AgentUtils.setCiphers(builder, cipherSuites);
+        ConnectionSpec sslConnSpec = AgentUtils.sslConnectionSpec(cipherSuites);
+
+        if (sslConnSpec != null)
+            builder.connectionSpecs(Collections.singletonList(sslConnSpec));
 
         httpClient = builder.build();
     }

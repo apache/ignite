@@ -35,15 +35,16 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.X509TrustManager;
+import okhttp3.ConnectionSpec;
 import okhttp3.OkHttpClient;
 import org.apache.ignite.console.agent.handlers.ClusterListener;
 import org.apache.ignite.console.agent.handlers.DatabaseListener;
@@ -327,6 +328,8 @@ public class AgentLauncher {
         if (trustAll && hasTrustStore) {
             log.warn("Options contains both '--server-trust-store' and '-Dtrust.all=true'. " +
                 "Option '-Dtrust.all=true' will be ignored.");
+
+            trustAll = false;
         }
 
         List<String> cipherSuites = cfg.cipherSuites();
@@ -338,18 +341,26 @@ public class AgentLauncher {
         ) {
             OkHttpClient.Builder builder = new OkHttpClient.Builder();
 
-            X509TrustManager trustMgr = hasTrustStore
-                ? AgentUtils.trustManager(cfg.serverTrustStore(), cfg.serverTrustStorePassword())
-                : (trustAll ? AgentUtils.disabledTrustManager() : null);
+            X509TrustManager trustMgr = AgentUtils.trustManager(
+                trustAll,
+                cfg.serverTrustStore(),
+                cfg.serverTrustStorePassword()
+            );
 
-            KeyManager[] keyMgrs = AgentUtils.keyManagers(cfg.serverKeyStore(), cfg.serverKeyStorePassword());
-
-            SSLSocketFactory sslSocketFactory = AgentUtils.sslSocketFactory(keyMgrs, trustMgr, cipherSuites);
+            SSLSocketFactory sslSocketFactory = AgentUtils.sslSocketFactory(
+                cfg.serverKeyStore(),
+                cfg.serverKeyStorePassword(),
+                trustMgr,
+                cipherSuites
+            );
 
             if (sslSocketFactory != null)
                 builder.sslSocketFactory(sslSocketFactory, trustMgr);
 
-            AgentUtils.setCiphers(builder, cipherSuites);
+            ConnectionSpec sslConnSpec = AgentUtils.sslConnectionSpec(cipherSuites);
+
+            if (sslConnSpec != null)
+                builder.connectionSpecs(Collections.singletonList(sslConnSpec));
 
             OkHttpClient sslFactory = builder.build();
 
