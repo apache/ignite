@@ -1467,8 +1467,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             grp,
             desc.cacheType(),
             locStartTopVer,
+            desc.deploymentId(),
             affNode,
             updatesAllowed,
+            desc.cacheConfiguration().isStatisticsEnabled(),
             recoveryMode,
             /*
              * Managers in starting order!
@@ -1486,8 +1488,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             pluginMgr,
             affMgr
         );
-
-        cacheCtx.statisticsEnabled(desc.cacheConfiguration().isStatisticsEnabled());
 
         cacheCtx.cacheObjectContext(cacheObjCtx);
 
@@ -1600,8 +1600,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 grp,
                 desc.cacheType(),
                 locStartTopVer,
+                desc.deploymentId(),
                 affNode,
                 true,
+                desc.cacheConfiguration().isStatisticsEnabled(),
                 recoveryMode,
                 /*
                  * Managers in starting order!
@@ -1619,8 +1621,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 pluginMgr,
                 affMgr
             );
-
-            cacheCtx.statisticsEnabled(desc.cacheConfiguration().isStatisticsEnabled());
 
             cacheCtx.cacheObjectContext(cacheObjCtx);
 
@@ -2101,7 +2101,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cacheCtx.isRecoveryMode())
             finishRecovery(exchTopVer, cacheCtx);
         else {
-            ctx.query().onCacheStart(cacheCtx, desc.schema() != null ? desc.schema() : new QuerySchema());
+            ctx.query().onCacheStart(cacheCtx,  desc.schema() != null ? desc.schema() : new QuerySchema());
 
             onCacheStarted(cacheCtx);
         }
@@ -2166,7 +2166,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             false
         );
 
-        initCacheContext(cacheCtx, ccfg, desc.deploymentId());
+        initCacheContext(cacheCtx, ccfg);
 
         return cacheCtx;
     }
@@ -2197,7 +2197,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cacheContext Cache context.
      * @throws IgniteCheckedException If failed.
      */
-    private void finishRecovery(AffinityTopologyVersion cacheStartVer, GridCacheContext<?, ?> cacheContext) throws IgniteCheckedException {
+    private void finishRecovery(
+        AffinityTopologyVersion cacheStartVer, GridCacheContext<?, ?> cacheContext
+    ) throws IgniteCheckedException {
         CacheGroupContext groupContext = cacheContext.group();
 
         // Take cluster-wide cache descriptor and try to update local cache and cache group parameters.
@@ -2209,7 +2211,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             isLocalAffinity(updatedDescriptor.cacheConfiguration())
         );
 
-        cacheContext.finishRecovery(cacheStartVer, updatedDescriptor.cacheConfiguration().isStatisticsEnabled());
+        cacheContext.finishRecovery(cacheStartVer, updatedDescriptor);
 
         onKernalStart(cacheContext.cache());
 
@@ -2329,16 +2331,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param cacheCtx Cache context to initializtion.
      * @param cfg Cache configuration.
-     * @param deploymentId Dynamic deployment ID.
      * @throws IgniteCheckedException if failed.
      */
     private void initCacheContext(
         GridCacheContext<?, ?> cacheCtx,
-        CacheConfiguration cfg,
-        IgniteUuid deploymentId
+        CacheConfiguration cfg
     ) throws IgniteCheckedException {
-        cacheCtx.dynamicDeploymentId(deploymentId);
-
         GridCacheAdapter cache = cacheCtx.cache();
 
         sharedCtx.addCacheContext(cacheCtx);
@@ -2445,7 +2443,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             true
         );
 
-        initCacheContext(cacheCtx, cfg, desc.deploymentId());
+        initCacheContext(cacheCtx, cfg);
 
         cacheCtx.onStarted();
 

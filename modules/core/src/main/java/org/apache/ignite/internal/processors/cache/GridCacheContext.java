@@ -240,7 +240,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private volatile AffinityTopologyVersion locStartTopVer;
 
     /** Dynamic cache deployment ID. */
-    private IgniteUuid dynamicDeploymentId;
+    private volatile IgniteUuid dynamicDeploymentId;
 
     /** Updates allowed flag. */
     private boolean updatesAllowed;
@@ -311,8 +311,10 @@ public class GridCacheContext<K, V> implements Externalizable {
         CacheGroupContext grp,
         CacheType cacheType,
         AffinityTopologyVersion locStartTopVer,
+        IgniteUuid deploymentId,
         boolean affNode,
         boolean updatesAllowed,
+        boolean statisticsEnabled,
         boolean recoveryMode,
 
         /*
@@ -398,7 +400,10 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         readFromBackup = cacheCfg.isReadFromBackup();
 
+        this.dynamicDeploymentId = deploymentId;
         this.recoveryMode = recoveryMode;
+
+        statisticsEnabled(statisticsEnabled);
 
         assert kernalContext().recoveryMode() == recoveryMode;
 
@@ -413,10 +418,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      * Called when cache was restored during recovery and node has joined to topology.
      *
      * @param topVer Cache topology join version.
-     * @param statisticsEnabled Flag indicates is statistics enabled or not for that cache.
-     *                          Value may be changed after node joined to topology.
+     * @param clusterWideDesc Cluster-wide cache descriptor received during exchange.
      */
-    public void finishRecovery(AffinityTopologyVersion topVer, boolean statisticsEnabled) {
+    public void finishRecovery(AffinityTopologyVersion topVer, DynamicCacheDescriptor clusterWideDesc) {
         assert recoveryMode : this;
 
         recoveryMode = false;
@@ -425,9 +429,10 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         locMacs = localNode().attribute(ATTR_MACS);
 
-        this.statisticsEnabled = statisticsEnabled;
-
         assert locMacs != null;
+
+        this.statisticsEnabled = clusterWideDesc.cacheConfiguration().isStatisticsEnabled();
+        this.dynamicDeploymentId = clusterWideDesc.deploymentId();
     }
 
     /**
@@ -456,13 +461,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean customAffinityMapper() {
         return customAffMapper;
-    }
-
-    /**
-     * @param dynamicDeploymentId Dynamic deployment ID.
-     */
-    void dynamicDeploymentId(IgniteUuid dynamicDeploymentId) {
-        this.dynamicDeploymentId = dynamicDeploymentId;
     }
 
     /**
