@@ -64,11 +64,15 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test checks whether cache initialization error on client side
  * doesn't causes hangs and doesn't impact other caches.
  */
+@RunWith(JUnit4.class)
 public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractTest {
     /** Failed cache name. */
     private static final String CACHE_NAME = "cache";
@@ -150,6 +154,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicCacheInitialization() throws Exception {
         checkCacheInitialization(ATOMIC_CACHE_NAME);
     }
@@ -157,6 +162,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransactionalCacheInitialization() throws Exception {
         checkCacheInitialization(TX_CACHE_NAME);
     }
@@ -164,6 +170,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccTransactionalCacheInitialization() throws Exception {
         checkCacheInitialization(MVCC_TX_CACHE_NAME);
     }
@@ -171,6 +178,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicNearCacheInitialization() throws Exception {
         checkCacheInitialization(NEAR_ATOMIC_CACHE_NAME);
     }
@@ -178,6 +186,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransactionalNearCacheInitialization() throws Exception {
         checkCacheInitialization(NEAR_TX_CACHE_NAME);
     }
@@ -185,6 +194,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccTransactionalNearCacheInitialization() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-7187");
 

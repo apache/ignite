@@ -36,10 +36,14 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test cases for checking cancellation rebalancing process if some events occurs.
  */
+@RunWith(JUnit4.class)
 public class GridCacheRebalancingCancelTest extends GridCommonAbstractTest {
     /** */
     private static final String DHT_PARTITIONED_CACHE = "cacheP";
@@ -63,6 +67,7 @@ public class GridCacheRebalancingCancelTest extends GridCommonAbstractTest {
      *
      * @throws Exception Exception.
      */
+    @Test
     public void testClientNodeJoinAtRebalancing() throws Exception {
         final IgniteEx ignite0 = startGrid(0);
 

@@ -39,10 +39,14 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.configvariations.Parameters;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Full API services test.
  */
+@RunWith(JUnit4.class)
 public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariationsAbstractTest {
     /** Test service name. */
     private static final String SERVICE_NAME = "testService";
@@ -83,6 +87,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeSingletonDeploy() throws Exception {
         runInAllDataModes(new ServiceTestRunnable(true, new DeployClosure() {
             @Override public void run(IgniteServices services, String svcName, TestService svc) throws Exception {
@@ -99,6 +104,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClusterSingletonDeploy() throws Exception {
         runInAllDataModes(new ServiceTestRunnable(false, new DeployClosure() {
             @Override public void run(IgniteServices services, String svcName, TestService svc) throws Exception {
@@ -115,6 +121,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testKeyAffinityDeploy() throws Exception {
         runInAllDataModes(new ServiceTestRunnable(false, new DeployClosure() {
             @Override public void run(IgniteServices services, String svcName, TestService svc) {
@@ -135,6 +142,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleDeploy() throws Exception {
         runInAllDataModes(new ServiceTestRunnable(true, new DeployClosure() {
             @Override public void run(IgniteServices services, String svcName, TestService svc) {
@@ -148,6 +156,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeploy() throws Exception {
         runInAllDataModes(new ServiceTestRunnable(false, new DeployClosure() {
             @Override public void run(IgniteServices services, String svcName, TestService svc) throws Exception {

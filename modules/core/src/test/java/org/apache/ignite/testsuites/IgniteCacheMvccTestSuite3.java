@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import java.util.HashSet;
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.CacheInterceptorPartitionCounterLocalSanityTest;
@@ -124,9 +125,9 @@ public class IgniteCacheMvccTestSuite3 extends TestSuite {
         suite.addTest(IgniteBinaryObjectsCacheTestSuite3.suite(ignoredTests));
 
         // Add Mvcc clones.
-        suite.addTestSuite(GridCacheReplicatedMvccTxSingleThreadedSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedMvccTxMultiThreadedSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedMvccTxTimeoutSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedMvccTxSingleThreadedSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedMvccTxMultiThreadedSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedMvccTxTimeoutSelfTest.class));
 
         return suite;
     }

@@ -44,10 +44,14 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * A set of basic tests for caches with indexes.
  */
+@RunWith(JUnit4.class)
 public class BasicIndexTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -142,6 +146,7 @@ public class BasicIndexTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testNoIndexesNoPersistence() throws Exception {
         int[] inlineSizes = {0, 10, 20, 50, 100};
 
@@ -161,6 +166,7 @@ public class BasicIndexTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testAllIndexesNoPersistence() throws Exception {
         indexes = Arrays.asList(
             new QueryIndex("keyStr"),
@@ -189,6 +195,7 @@ public class BasicIndexTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testDynamicIndexesNoPersistence() throws Exception {
         int[] inlineSizes = {0, 10, 20, 50, 100};
 
@@ -217,6 +224,7 @@ public class BasicIndexTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testNoIndexesWithPersistence() throws Exception {
         isPersistenceEnabled = true;
 
@@ -246,6 +254,7 @@ public class BasicIndexTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testAllIndexesWithPersistence() throws Exception {
         indexes = Arrays.asList(
             new QueryIndex("keyStr"),
@@ -284,6 +293,7 @@ public class BasicIndexTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testDynamicIndexesWithPersistence() throws Exception {
         isPersistenceEnabled = true;
 
@@ -366,6 +376,7 @@ public class BasicIndexTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testNoIndexesWithPersistenceIndexRebuild() throws Exception {
         isPersistenceEnabled = true;
 
@@ -405,6 +416,7 @@ public class BasicIndexTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testAllIndexesWithPersistenceIndexRebuild() throws Exception {
         indexes = Arrays.asList(
             new QueryIndex("keyStr"),
@@ -453,6 +465,7 @@ public class BasicIndexTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testDynamicIndexesWithPersistenceIndexRebuild() throws Exception {
         isPersistenceEnabled = true;
 

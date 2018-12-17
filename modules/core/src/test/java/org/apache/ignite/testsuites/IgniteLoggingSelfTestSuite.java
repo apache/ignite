@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.logger.java.JavaLoggerTest;
 
@@ -30,7 +31,7 @@ public class IgniteLoggingSelfTestSuite extends TestSuite {
    public static TestSuite suite() {
        TestSuite suite = new TestSuite("Ignite Logging Test Suite");
 
-       suite.addTest(new TestSuite(JavaLoggerTest.class));
+       suite.addTest(new JUnit4TestAdapter(JavaLoggerTest.class));
 
        return suite;
    }

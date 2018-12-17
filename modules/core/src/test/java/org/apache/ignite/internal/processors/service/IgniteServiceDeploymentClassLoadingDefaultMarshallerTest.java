@@ -29,10 +29,14 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests that not all nodes in cluster need user's service definition (only nodes according to filter).
  */
+@RunWith(JUnit4.class)
 public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends GridCommonAbstractTest {
     /** */
     private static final String NOOP_SERVICE_CLS_NAME = "org.apache.ignite.tests.p2p.NoopService";
@@ -124,6 +128,7 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServiceDeployment1() throws Exception {
         startGrid(SERVER_NODE);
 
@@ -141,6 +146,7 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServiceDeployment2() throws Exception {
         startGrid(SERVER_NODE);
 
@@ -154,6 +160,7 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServiceDeployment3() throws Exception {
         startGrid(SERVER_NODE_WITH_EXT_CLASS_LOADER).services().deploy(serviceConfig());
 

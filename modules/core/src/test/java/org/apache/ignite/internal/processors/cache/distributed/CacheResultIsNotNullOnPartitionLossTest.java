@@ -45,10 +45,14 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheResultIsNotNullOnPartitionLossTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -126,6 +130,7 @@ public class CacheResultIsNotNullOnPartitionLossTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheResultIsNotNullOnClient() throws Exception {
         testCacheResultIsNotNull0(client);
     }
@@ -133,6 +138,7 @@ public class CacheResultIsNotNullOnPartitionLossTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheResultIsNotNullOnLastServer() throws Exception {
         testCacheResultIsNotNull0(grid(SERVERS - 1));
     }
@@ -140,6 +146,7 @@ public class CacheResultIsNotNullOnPartitionLossTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheResultIsNotNullOnServer() throws Exception {
         testCacheResultIsNotNull0(grid(SERVERS - 2));
     }

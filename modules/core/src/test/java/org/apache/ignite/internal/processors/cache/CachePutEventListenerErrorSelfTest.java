@@ -36,10 +36,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for cache put with error in event listener.
  */
+@RunWith(JUnit4.class)
 public class CachePutEventListenerErrorSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -92,6 +96,7 @@ public class CachePutEventListenerErrorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedAtomicOnHeap() throws Exception {
         doTest(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC);
     }
@@ -99,6 +104,7 @@ public class CachePutEventListenerErrorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedTransactionalOnHeap() throws Exception {
         doTest(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -106,6 +112,7 @@ public class CachePutEventListenerErrorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedAtomicOnHeap() throws Exception {
         doTest(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC);
     }
@@ -113,6 +120,7 @@ public class CachePutEventListenerErrorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedTransactionalOnHeap() throws Exception {
         doTest(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL);
     }

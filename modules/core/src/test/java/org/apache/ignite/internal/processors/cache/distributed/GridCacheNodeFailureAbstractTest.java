@@ -42,6 +42,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteState.STOPPED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_SALVAGE_TIMEOUT;
@@ -57,6 +61,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Tests for node failure in transactions.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstractTest {
     /** Random number generator. */
     private static final Random RAND = new Random();
@@ -77,6 +82,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
     private static final List<Ignite> IGNITEs = new ArrayList<>();
 
     /** {@inheritDoc} */
+    @Before
     @Override public void setUp() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
@@ -145,10 +151,11 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
     /**
      * @throws IgniteCheckedException If test failed.
-     * 
+     *
      * Note: test was disabled for REPPLICATED cache case because IGNITE-601.
      * This comment should be removed if test passed stably.
      */
+    @Test
     public void testPessimisticReadCommitted() throws Throwable {
         checkTransaction(PESSIMISTIC, READ_COMMITTED);
     }
@@ -156,6 +163,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticRepeatableRead() throws Throwable {
         checkTransaction(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -163,6 +171,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticSerializable() throws Throwable {
         checkTransaction(PESSIMISTIC, SERIALIZABLE);
     }
@@ -240,10 +249,11 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
     /**
      * @throws Exception If check failed.
-     * 
+     *
      * Note: test was disabled for REPPLICATED cache case because IGNITE-601.
      * This comment should be removed if test passed stably.
      */
+    @Test
     public void testLock() throws Exception {
         int idx = 0;
 
