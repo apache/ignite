@@ -189,7 +189,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Before
-    @Override protected void beforeTest() throws Exception {
+    @Override public void beforeTest() throws Exception {
         super.beforeTest();
 
         cleanPersistenceDir();
@@ -197,7 +197,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @After
-    @Override protected void afterTest() throws Exception {
+    @Override public void afterTest() throws Exception {
         stopAllGrids();
 
         cleanPersistenceDir();
