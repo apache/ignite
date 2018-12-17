@@ -135,33 +135,35 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
         PartitionUpdateCounter cntr = counter(PARTITION_ID, backup.name());
 
         assertTrue(cntr.holes().isEmpty());
-//
-//        assertEquals(TOTAL, cntr.get());
-//
-//        stopGrid(0);
-//
-//        awaitPartitionMapExchange();
-//
-//        cntr = counter(PARTITION_ID, backup.name());
-//
-//        assertEquals(TOTAL, cntr.reserved());
-//
-//        // Make update to advance a counter.
-//        int addCnt = 10;
-//
-//        loadDataToPartition(PARTITION_ID, grid(1).name(), DEFAULT_CACHE_NAME, addCnt, TOTAL, addCnt);
-//
-//        IgniteEx grid0 = startGrid(0);
-//
-//        awaitPartitionMapExchange();
-//
-//        cntr = counter(PARTITION_ID, grid0.name());
-//
-//        assertEquals(TOTAL + addCnt + 1, cntr.get());
-//
-//        assertEquals(TOTAL + addCnt + 1, cntr.reserved());
-//
-//        assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
+
+        assertEquals(TOTAL, cntr.get());
+
+        stopGrid(0);
+
+        awaitPartitionMapExchange();
+
+        cntr = counter(PARTITION_ID, backup.name());
+
+        assertEquals(TOTAL, cntr.reserved());
+
+        // Make update to advance a counter.
+        int addCnt = 10;
+
+        loadDataToPartition(PARTITION_ID, grid(1).name(), DEFAULT_CACHE_NAME, addCnt, TOTAL);
+
+        // Historical rebalance is not possible from checkpoint containing rebalance entries.
+        // Next rebalance will be full. TODO FIXME repair this scenario ?
+        IgniteEx grid0 = startGrid(0);
+
+        awaitPartitionMapExchange();
+
+        cntr = counter(PARTITION_ID, grid0.name());
+
+        assertEquals(TOTAL + addCnt + PRELOAD_KEYS_CNT, cntr.get());
+
+        assertEquals(TOTAL + addCnt + PRELOAD_KEYS_CNT, cntr.reserved());
+
+        assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
     }
 
     /**

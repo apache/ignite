@@ -35,8 +35,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupHistoryRebalanceTest exte
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        boolean walRebalanceInvoked = !IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.allRebalances()
-            .isEmpty();
+        int histRebCnt = IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.allRebalances().size();
 
         IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.cleanup();
 
@@ -44,8 +43,8 @@ public class TxPartitionCounterStateOnePrimaryOneBackupHistoryRebalanceTest exte
 
         System.clearProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
 
-        if (!walRebalanceInvoked)
-            throw new AssertionError("WAL rebalance hasn't been invoked.");
+        // Expecting only one historical rebalance for test scenario.
+        assertEquals("WAL rebalance hasn't been invoked 1 times", 1, histRebCnt);
     }
 
     @Override public void testPrepareCommitReorder() throws Exception {
