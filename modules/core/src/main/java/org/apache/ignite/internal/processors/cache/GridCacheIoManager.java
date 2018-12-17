@@ -50,6 +50,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryEnlistRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryEnlistResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicNearResponse;
@@ -72,10 +74,16 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxEnlistRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxEnlistResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryResultsEnlistRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryResultsEnlistResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
@@ -1014,6 +1022,66 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             }
 
             break;
+
+            case 151: {
+                GridNearTxQueryEnlistRequest req = (GridNearTxQueryEnlistRequest)msg;
+
+                GridNearTxQueryEnlistResponse res = new GridNearTxQueryEnlistResponse(
+                    req.cacheId(),
+                    req.futureId(),
+                    req.miniId(),
+                    req.version(),
+                    req.classError());
+
+                sendResponseOnFailedMessage(nodeId, res, cctx, plc);
+
+                break;
+            }
+
+            case 153: {
+                GridNearTxQueryResultsEnlistRequest req = (GridNearTxQueryResultsEnlistRequest)msg;
+
+                GridNearTxQueryEnlistResponse res = new GridNearTxQueryResultsEnlistResponse(
+                    req.cacheId(),
+                    req.futureId(),
+                    req.miniId(),
+                    req.version(),
+                    req.classError());
+
+                sendResponseOnFailedMessage(nodeId, res, cctx, plc);
+
+                break;
+            }
+
+            case 155: /* GridDhtTxQueryEnlistRequest */
+            case 156: /* GridDhtTxQueryFirstEnlistRequest */ {
+                GridDhtTxQueryEnlistRequest req = (GridDhtTxQueryEnlistRequest)msg;
+
+                GridDhtTxQueryEnlistResponse res = new GridDhtTxQueryEnlistResponse(
+                    req.cacheId(),
+                    req.dhtFutureId(),
+                    req.batchId(),
+                    req.classError());
+
+                sendResponseOnFailedMessage(nodeId, res, cctx, plc);
+
+                break;
+            }
+
+            case 159: {
+                GridNearTxEnlistRequest req = (GridNearTxEnlistRequest)msg;
+
+                GridNearTxEnlistResponse res = new GridNearTxEnlistResponse(
+                    req.cacheId(),
+                    req.futureId(),
+                    req.miniId(),
+                    req.version(),
+                    req.classError());
+
+                sendResponseOnFailedMessage(nodeId, res, cctx, plc);
+
+                break;
+            }
 
             case -36: {
                 GridDhtAtomicSingleUpdateRequest req = (GridDhtAtomicSingleUpdateRequest)msg;
