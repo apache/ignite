@@ -43,7 +43,7 @@ import javax.net.ssl.X509TrustManager;
 import okhttp3.ConnectionSpec;
 import okhttp3.OkHttpClient;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.ssl.AgentSSLSocketFactoryWrapper;
+import org.apache.ignite.ssl.SSLContextWrapper;
 import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -283,15 +283,13 @@ public class AgentUtils {
 
         SSLContext ctx = SSLContext.getInstance("TLS");
 
+        if (!F.isEmpty(cipherSuites))
+            ctx = new SSLContextWrapper(ctx, new SSLParameters(cipherSuites.toArray(new String[0])));
+
         ctx.init(keyMgrs, new TrustManager[] {trustMgr}, null);
 
         SSLSocketFactory sslSocketFactory = ctx.getSocketFactory();
 
-        if (!F.isEmpty(cipherSuites)) {
-            String[] cs = cipherSuites.toArray(new String[0]);
-
-            sslSocketFactory = new AgentSSLSocketFactoryWrapper(sslSocketFactory, new SSLParameters(cs));
-        }
 
         return sslSocketFactory;
     }
