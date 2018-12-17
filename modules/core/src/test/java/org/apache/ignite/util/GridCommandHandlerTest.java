@@ -64,7 +64,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandHandler;
-import org.apache.ignite.internal.commandline.OutputFormat;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -1595,16 +1594,16 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
     /** */
     private void testCacheConfigSingleLineOutputFormat(int nodesCnt, int cachesCnt) throws Exception {
-        testCacheConfig(SINGLE_LINE, nodesCnt, cachesCnt);
+        testCacheConfig("single-line", nodesCnt, cachesCnt);
     }
 
     /** */
     private void testCacheConfigMultiLineOutputFormat(int nodesCnt, int cachesCnt) throws Exception {
-        testCacheConfig(MULTI_LINE, nodesCnt, cachesCnt);
+        testCacheConfig("multi-line", nodesCnt, cachesCnt);
     }
 
     /** */
-    private void testCacheConfig(OutputFormat outputFormat, int nodesCnt, int cachesCnt) throws Exception {
+    private void testCacheConfig(String outputFormat, int nodesCnt, int cachesCnt) throws Exception {
         assertTrue("Invalid number of nodes or caches", nodesCnt > 0 && cachesCnt > 0);
 
         Ignite ignite = startGrid(nodesCnt);
@@ -1636,26 +1635,27 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         if (outputFormat == null)
             exitCode = execute("--cache", "list", ".*", "--config");
         else
-            exitCode = execute("--cache", "list", ".*", "--config", "--output-format", outputFormat.text());
+            exitCode = execute("--cache", "list", ".*", "--config", "--output-format", outputFormat);
 
         assertEquals(EXIT_CODE_OK, exitCode);
 
         String outStr = testOut.toString();
 
-        if (outputFormat == null || outputFormat == SINGLE_LINE) {
+        if (outputFormat == null || SINGLE_LINE.text().equals(outputFormat)) {
             for (int i = 0; i < cachesCnt; i++)
                 assertTrue(outStr.contains("name=" + DEFAULT_CACHE_NAME + i));
 
             assertTrue(outStr.contains("partitions=32"));
             assertTrue(outStr.contains("function=o.a.i.cache.affinity.rendezvous.RendezvousAffinityFunction"));
         }
-        else if (outputFormat == MULTI_LINE) {
+        else if (MULTI_LINE.text().equals(outputFormat)) {
             for (int i = 0; i < cachesCnt; i++)
                 assertTrue(outStr.contains("[cache = '" + DEFAULT_CACHE_NAME + i + "']"));
 
             assertTrue(outStr.contains("Affinity Partitions: 32"));
             assertTrue(outStr.contains("Affinity Function: o.a.i.cache.affinity.rendezvous.RendezvousAffinityFunction"));
-        }
+        } else
+            fail("Unknown output format: " + outputFormat);
     }
 
     /**
