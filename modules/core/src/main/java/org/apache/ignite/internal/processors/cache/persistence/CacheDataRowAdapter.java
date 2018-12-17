@@ -35,6 +35,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVers
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -131,8 +133,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
         CacheObjectContext coctx = grp != null ?  grp.cacheObjectContext() : null;
         boolean readCacheId = grp == null || grp.storeCacheIdInDataPage();
         int grpId = grp != null ? grp.groupId() : 0;
+        IoStatisticsHolder statHolder = grp != null ? grp.statisticsHolderData() : IoStatisticsHolderNoOp.INSTANCE;
 
-        doInitFromLink(link, sharedCtx, coctx, pageMem, grpId, readCacheId, rowData, null);
+        doInitFromLink(link, sharedCtx, coctx, pageMem, grpId, statHolder, readCacheId, rowData, null);
     }
 
     /**
@@ -160,6 +163,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         CacheObjectContext coctx = grp != null ?  grp.cacheObjectContext() : null;
         boolean readCacheId = grp == null || grp.storeCacheIdInDataPage();
         int grpId = grp != null ? grp.groupId() : 0;
+        IoStatisticsHolder statHolder = grp != null ? grp.statisticsHolderData() : IoStatisticsHolderNoOp.INSTANCE;
 
         IncompleteObject<?> incomplete = readIncomplete(null, sharedCtx, coctx, pageMem,
             grpId, pageAddr, itemId, io, rowData, readCacheId);
@@ -169,7 +173,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
             long nextLink = incomplete.getNextLink();
 
             if (nextLink != 0L)
-                doInitFromLink(nextLink, sharedCtx, coctx, pageMem, grpId, readCacheId, rowData, incomplete);
+                doInitFromLink(nextLink, sharedCtx, coctx, pageMem, grpId, statHolder, readCacheId, rowData, incomplete);
         }
     }
 
@@ -190,6 +194,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         CacheObjectContext coctx,
         PageMemory pageMem,
         int grpId,
+        IoStatisticsHolder statHolder,
         boolean readCacheId,
         RowData rowData,
         IncompleteObject<?> incomplete
@@ -202,7 +207,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         do {
             final long pageId = pageId(nextLink);
 
-            final long page = pageMem.acquirePage(grpId, pageId);
+            final long page = pageMem.acquirePage(grpId, pageId, statHolder);
 
             try {
                 long pageAddr = pageMem.readLock(grpId, pageId, page); // Non-empty data page must not be recycled.
