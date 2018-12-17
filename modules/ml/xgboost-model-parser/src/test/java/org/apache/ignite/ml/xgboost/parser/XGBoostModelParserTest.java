@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.xgboost.parser;
 
 import java.net.URL;
-import java.nio.file.Path;
 import java.util.Scanner;
 import org.apache.ignite.ml.inference.InfModel;
 import org.apache.ignite.ml.inference.builder.SingleInfModelBuilder;
@@ -26,7 +25,6 @@ import org.apache.ignite.ml.inference.builder.SyncInfModelBuilder;
 import org.apache.ignite.ml.inference.reader.FileSystemInfModelReader;
 import org.apache.ignite.ml.inference.reader.InfModelReader;
 import org.apache.ignite.ml.xgboost.MapBasedXGObject;
-import org.apache.ignite.ml.xgboost.XGModel;
 import org.apache.ignite.ml.xgboost.XGObject;
 import org.junit.Test;
 
@@ -38,7 +36,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class XGBoostModelParserTest {
     /** Test model resource name. */
-    private static final String TEST_MODEL_RESOURCE = "agaricus-model.txt";
+    private static final String TEST_MODEL_RESOURCE = "datasets/agaricus-model.txt";
 
     /** Parser. */
     private final XGModelParser parser = new XGModelParser();
@@ -57,9 +55,9 @@ public class XGBoostModelParserTest {
 
         try (InfModel<XGObject, Double> mdl = mdlBuilder.build(reader, parser);
              Scanner testDataScanner = new Scanner(XGBoostModelParserTest.class.getClassLoader()
-                 .getResourceAsStream("agaricus-test-data.txt"));
+                 .getResourceAsStream("datasets/agaricus-test-data.txt"));
              Scanner testExpResultsScanner = new Scanner(XGBoostModelParserTest.class.getClassLoader()
-                 .getResourceAsStream("agaricus-test-expected-results.txt"))) {
+                 .getResourceAsStream("datasets/agaricus-test-expected-results.txt"))) {
 
             while (testDataScanner.hasNextLine()) {
                 assertTrue(testExpResultsScanner.hasNextLine());

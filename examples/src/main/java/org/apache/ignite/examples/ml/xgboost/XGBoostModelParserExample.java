@@ -17,12 +17,13 @@
 
 package org.apache.ignite.examples.ml.xgboost;
 
-import java.net.URL;
+import java.io.File;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.inference.InfModel;
 import org.apache.ignite.ml.inference.builder.AsyncInfModelBuilder;
 import org.apache.ignite.ml.inference.builder.IgniteDistributedInfModelBuilder;
@@ -38,7 +39,7 @@ import org.apache.ignite.ml.xgboost.parser.XGModelParser;
  */
 public class XGBoostModelParserExample {
     /** Test model resource name. */
-    private static final String TEST_MODEL_RESOURCE = "models/xgboost/agaricus-model.txt";
+    private static final String TEST_MODEL_RESOURCE = "examples/src/main/resources/models/xgboost/agaricus-model.txt";
 
     /** Parser. */
     private static final XGModelParser parser = new XGModelParser();
@@ -46,11 +47,11 @@ public class XGBoostModelParserExample {
     /** Run example. */
     public static void main(String... args) throws ExecutionException, InterruptedException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            URL url = XGBoostModelParserExample.class.getClassLoader().getResource(TEST_MODEL_RESOURCE);
-            if (url == null)
-                throw new IllegalStateException("File not found [resource_name=" + TEST_MODEL_RESOURCE + "]");
+            File mdlRsrc = IgniteUtils.resolveIgnitePath(TEST_MODEL_RESOURCE);
+            if (mdlRsrc == null)
+                throw new IllegalArgumentException("File not found [resource_path=" + TEST_MODEL_RESOURCE + "]");
 
-            InfModelReader reader = new FileSystemInfModelReader(url.getPath());
+            InfModelReader reader = new FileSystemInfModelReader(mdlRsrc.getPath());
 
             AsyncInfModelBuilder mdlBuilder =  new IgniteDistributedInfModelBuilder(ignite, 4, 4);
 
