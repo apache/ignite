@@ -1055,14 +1055,14 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             // If curr != null - previous checkpoint was canceled.
             if (seg.currChpPages != null) {
-                collections[i + 1] = seg.prevChpPages = seg.currChpPages;
+                collections[(i * 2) + 1] = seg.prevChpPages = seg.currChpPages;
 
                 seg.checkpointIdx++;
             }
             else
-                collections[i + 1] = Collections.emptySet();
+                collections[(i * 2) + 1] = Collections.emptySet();
 
-            collections[i] = seg.currChpPages = seg.dirtyPages;
+            collections[(i * 2)] = seg.currChpPages = seg.dirtyPages;
 
             seg.dirtyPages = new GridConcurrentHashSet<>();
         }

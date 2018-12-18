@@ -3843,7 +3843,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             CheckpointProgress curr = scheduled;
 
             // If previous checkpoint was canceled.
-            if (last.canceled) {
+            if (last != null && last.canceled) {
                 curr.prevCanceled = true;
 
                 // Copy stores by reference, no need to do addAll under cpWriteLock.
@@ -4479,7 +4479,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         private Iterator<FullPageId> iteratorPages(FullPageId[] pageIds) {
-            int size = pageIds.length - hightBound;
+            int size = hightBound - lowBound;
 
             return new Iterator<FullPageId>() {
                 private int idx;
@@ -4496,7 +4496,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     written++;
 
                     // Set null as marker pages written or outdated, if next checkpoint merge will required.
-                    pageIds[idx - 1] = null;
+                    pageIds[lowBound + (idx - 1)] = null;
                 }
             };
         }
