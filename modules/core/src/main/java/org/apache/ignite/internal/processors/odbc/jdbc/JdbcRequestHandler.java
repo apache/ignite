@@ -22,7 +22,6 @@ import java.sql.ParameterMetaData;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -142,6 +141,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Authentication context */
     private AuthorizationContext actx;
 
+    /** Facade that hides transformations internal cache api entities -> jdbc metadata. */
+    private final JdbcMetadataInfo meta;
+
     /**
      * Constructor.
      * @param ctx Context.
@@ -165,6 +167,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         AuthorizationContext actx, ClientListenerProtocolVersion protocolVer) {
         this.ctx = ctx;
         this.sender = sender;
+
+        this.meta = new JdbcMetadataInfo(ctx);
 
         Factory<GridWorker> orderedFactory = new Factory<GridWorker>() {
             @Override public GridWorker create() {
@@ -980,41 +984,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private ClientListenerResponse getPrimaryKeys(JdbcMetaPrimaryKeysRequest req) {
         try {
-            Collection<JdbcPrimaryKeyMeta> meta = new HashSet<>();
+            Collection<JdbcPrimaryKeyMeta> pkMeta = meta.getPrimaryKeys(req.schemaName(), req.tableName());
 
-            for (String cacheName : ctx.cache().publicCacheNames()) {
-                for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
-                    if (!matches(table.schemaName(), req.schemaName()))
-                        continue;
-
-                    if (!matches(table.tableName(), req.tableName()))
-                        continue;
-
-                    List<String> fields = new ArrayList<>();
-
-                    for (String field : table.fields().keySet()) {
-                        if (table.property(field).key())
-                            fields.add(field);
-                    }
-
-
-                    final String keyName = table.keyFieldName() == null ?
-                        "PK_" + table.schemaName() + "_" + table.tableName() :
-                        table.keyFieldName();
-
-                    if (fields.isEmpty()) {
-                        String keyColName =
-                            table.keyFieldName() == null ? QueryUtils.KEY_FIELD_NAME : table.keyFieldName();
-
-                        meta.add(new JdbcPrimaryKeyMeta(table.schemaName(), table.tableName(), keyName,
-                            Collections.singletonList(keyColName)));
-                    }
-                    else
-                        meta.add(new JdbcPrimaryKeyMeta(table.schemaName(), table.tableName(), keyName, fields));
-                }
-            }
-
-            return new JdbcResponse(new JdbcMetaPrimaryKeysResult(meta));
+            return new JdbcResponse(new JdbcMetaPrimaryKeysResult(pkMeta));
         }
         catch (Exception e) {
             U.error(log, "Failed to get parameters metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
