@@ -29,6 +29,7 @@ import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtNewMethod;
 import javassist.NotFoundException;
+import junit.framework.TestResult;
 import junit.framework.TestSuite;
 import org.apache.ignite.examples.ml.util.MLExamplesCommonArgs;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -69,7 +70,11 @@ public class IgniteExamplesMLTestSuite {
         TestSuite suite = new TestSuite("Ignite ML Examples Test Suite");
 
         for (Class clazz : getClasses(basePkgForTests))
-            suite.addTest(new TestSuite(makeTestClass(clazz)));
+            suite.addTest(new TestSuite(makeTestClass(clazz)) {
+                @Override public final void run(TestResult res) {
+                    super.run(res);
+                }
+            });
 
         return suite;
     }

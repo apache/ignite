@@ -95,7 +95,7 @@ public class IgniteSpiCommunicationSelfTestSuite {
         suite.addTest(new JUnit4TestAdapter(IgniteTcpCommunicationHandshakeWaitTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteTcpCommunicationHandshakeWaitSslTest.class));
 
-        //suite.addTest(new TestSuite(GridCacheDhtLockBackupSelfTest.class));
+        //suite.addTest(new JUnit4TestAdapter(GridCacheDhtLockBackupSelfTest.class));
 
         return suite;
     }
