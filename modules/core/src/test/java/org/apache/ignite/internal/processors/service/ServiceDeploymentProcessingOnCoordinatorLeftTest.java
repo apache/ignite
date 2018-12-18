@@ -18,18 +18,10 @@
 package org.apache.ignite.internal.processors.service;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.service.inner.LongInitializedTestService;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assume;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -37,37 +29,16 @@ import org.junit.runners.JUnit4;
 /**
  * Tests that requests of change service's state won't be missed and will be handled correctly on a coordinator change.
  *
- * It uses {@link LongInitializedTestService} with long running #init method to delay requests processing.
+ * It uses {@link LongInitializedTestService} with long running #init method to delay requests processing and blocking
+ * discovery spi to be sure that full deployments message won't be sent by a coordinator at shutdown.
  */
 @RunWith(JUnit4.class)
-public class ServiceDeploymentProcessingOnCoordinatorChangeTest extends GridCommonAbstractTest {
-    /** Timeout to avoid tests hang. */
-    private static final long TEST_FUTURE_WAIT_TIMEOUT = 60_000;
-
-    /** */
-    @BeforeClass
-    public static void check() {
-        Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi discSpi = new BlockingTcpDiscoverySpi();
-
-        discSpi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder());
-
-        cfg.setDiscoverySpi(discSpi);
-
-        return cfg;
-    }
-
+public class ServiceDeploymentProcessingOnCoordinatorLeftTest extends ServiceDeploymentProcessAbstractTest {
     /**
      * @throws Exception In case of an error.
      */
     @Test
-    public void testDeploymentProcessingOnCoordinatorStop() throws Exception {
+    public void testDeploymentProcessingOnCoordinatorLeaveTopology() throws Exception {
         try {
             IgniteEx ignite0 = (IgniteEx)startGrids(4);
 
@@ -84,7 +55,7 @@ public class ServiceDeploymentProcessingOnCoordinatorChangeTest extends GridComm
 
             assertEquals(ignite0.localNode(), U.oldest(ignite2.cluster().nodes(), null));
 
-            ignite0.close();
+            stopNode(ignite0);
 
             fut.get(TEST_FUTURE_WAIT_TIMEOUT);
             fut2.get(TEST_FUTURE_WAIT_TIMEOUT);
@@ -105,7 +76,7 @@ public class ServiceDeploymentProcessingOnCoordinatorChangeTest extends GridComm
      * @throws Exception In case of an error.
      */
     @Test
-    public void testDeploymentProcessingOnCoordinatorStop2() throws Exception {
+    public void testDeploymentProcessingOnCoordinatorLeaveTopology2() throws Exception {
         try {
             IgniteEx ignite0 = (IgniteEx)startGrids(5);
 
@@ -120,7 +91,7 @@ public class ServiceDeploymentProcessingOnCoordinatorChangeTest extends GridComm
 
             assertEquals(ignite0.localNode(), U.oldest(ignite4.cluster().nodes(), null));
 
-            ignite0.close();
+            stopNode(ignite0);
 
             depFut.get(getTestTimeout());
             depFut2.get(TEST_FUTURE_WAIT_TIMEOUT);
@@ -139,7 +110,7 @@ public class ServiceDeploymentProcessingOnCoordinatorChangeTest extends GridComm
 
             assertEquals(ignite1.localNode(), U.oldest(ignite4.cluster().nodes(), null));
 
-            ignite1.close();
+            stopNode(ignite1);
 
             undepFut.get(TEST_FUTURE_WAIT_TIMEOUT);
             undepFut2.get(TEST_FUTURE_WAIT_TIMEOUT);
@@ -149,27 +120,6 @@ public class ServiceDeploymentProcessingOnCoordinatorChangeTest extends GridComm
         }
         finally {
             stopAllGrids();
-        }
-    }
-
-    /** */
-    private static class BlockingTcpDiscoverySpi extends TcpDiscoverySpi {
-        /** Block flag. */
-        private volatile boolean block;
-
-        /** {@inheritDoc} */
-        @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
-            if (block && GridTestUtils.getFieldValue(msg, "delegate") instanceof ServicesFullDeploymentsMessage)
-                return;
-
-            super.sendCustomEvent(msg);
-        }
-
-        /**
-         * Set {@link #block} flag to {@code true}.
-         */
-        void block() {
-            block = true;
         }
     }
 }

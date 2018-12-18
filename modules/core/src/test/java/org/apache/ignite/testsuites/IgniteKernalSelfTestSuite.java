@@ -78,7 +78,10 @@ import org.apache.ignite.internal.processors.service.IgniteServiceProxyTimeoutIn
 import org.apache.ignite.internal.processors.service.IgniteServiceReassignmentTest;
 import org.apache.ignite.internal.processors.service.NonSerializableStaticServiceDeploymentTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOnClientDisconnectTest;
-import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessingOnCoordinatorChangeTest;
+import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessingOnCoordinatorFailTest;
+import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessingOnCoordinatorLeftTest;
+import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessingOnNodesFailTest;
+import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessingOnNodesLeftTest;
 import org.apache.ignite.internal.processors.service.ServiceInfoSelfTest;
 import org.apache.ignite.internal.processors.service.ServicePredicateAccessCacheTest;
 import org.apache.ignite.internal.processors.service.ServiceReassignmentFunctionSelfTest;
@@ -176,7 +179,10 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(IgniteServiceDeployment2ClassLoadersOptimizedMarshallerTest.class));
 
         suite.addTest(new JUnit4TestAdapter(GridServiceDeploymentExceptionPropagationTest.class));
-        suite.addTest(new JUnit4TestAdapter(ServiceDeploymentProcessingOnCoordinatorChangeTest.class));
+        suite.addTest(new JUnit4TestAdapter(ServiceDeploymentProcessingOnCoordinatorLeftTest.class));
+        suite.addTest(new JUnit4TestAdapter(ServiceDeploymentProcessingOnCoordinatorFailTest.class));
+        suite.addTest(new JUnit4TestAdapter(ServiceDeploymentProcessingOnNodesLeftTest.class));
+        suite.addTest(new JUnit4TestAdapter(ServiceDeploymentProcessingOnNodesFailTest.class));
         suite.addTest(new JUnit4TestAdapter(ServiceDeploymentOnClientDisconnectTest.class));
         suite.addTest(new JUnit4TestAdapter(NonSerializableStaticServiceDeploymentTest.class));
         suite.addTest(new JUnit4TestAdapter(ServiceReassignmentFunctionSelfTest.class));
