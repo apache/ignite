@@ -4119,7 +4119,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     doneFut.onDone((Void)null);
                 else {
                     if (retryWriteExecutor == null) {
-                        while (!writePageIds.isEmpty())
+                        while (!writePageIds.isEmpty() && !checkCancel.get())
                             writePages(writePageIds);
 
                         doneFut.onDone((Void)null);
@@ -4540,8 +4540,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         private void onCheckpointBegin() {
+            int cpPages = checkpointPages();
+
             // Init array for all checkpoint page Ids.
-            pageIds = new FullPageId[checkpointPages()];
+            pageIds = new FullPageId[cpPages];
+            totalCpPages = cpPages;
+            lowBound = 0;
+            hightBound = cpPages;
 
             // Add all pages from current checkpoint.
             markChpBeginPages.forEach(this::addPages);
