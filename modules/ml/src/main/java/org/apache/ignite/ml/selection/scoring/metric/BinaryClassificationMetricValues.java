@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Provides access
+ * Provides access to binary metric values.
  */
 public class BinaryClassificationMetricValues {
     /** True Positive (TP). */
@@ -67,14 +67,43 @@ public class BinaryClassificationMetricValues {
     /** F1-Score is the harmonic mean of Precision and Sensitivity. */
     private double f1Score;
 
-    /** */
-    public double tp() {
-        return tp;
+    /**
+     * Initialize an example by 4 metrics.
+     *
+     * @param tp True Positive (TP).
+     * @param tn True Negative (TN).
+     * @param fp False Positive (FP).
+     * @param fn False Negative (FN).
+     */
+    public BinaryClassificationMetricValues(long tp, long tn, long fp, long fn) {
+        this.tp = tp;
+        this.tn = tn;
+        this.fp = fp;
+        this.fn = fn;
+
+        long p = tp + fn;
+        long n = tn + fp;
+        long positivePredictions = tp + fp;
+        long negativePredictions = tn + fn;
+
+        // according to https://github.com/dice-group/gerbil/wiki/Precision,-Recall-and-F1-measure
+        recall = p == 0 ? 1 : (double)tp / p;
+        precision = positivePredictions == 0 ? 1 : (double)tp / positivePredictions;
+        specificity = n == 0 ? 1 : (double)tn / n;
+        npv = negativePredictions == 0 ? 1 : (double)tn / negativePredictions;
+        fallOut = n == 0 ? 1 : (double)fp / n;
+        fdr = positivePredictions == 0 ? 1 : (double)fp / positivePredictions;
+        missRate = p == 0 ? 1 : (double)fn / p;
+
+        f1Score = 2 * (recall * precision) / (recall + precision);
+
+        accuracy = (p + n) == 0 ? 1 : (double)(tp + tn) / (p + n); // multiplication on 1.0 to make double
+        balancedAccuracy = p == 0 && n == 0 ? 1 : ((double)tp / p + (double)tn / n) / 2;
     }
 
     /** */
-    public void setTp(double tp) {
-        this.tp = tp;
+    public double tp() {
+        return tp;
     }
 
     /** */
@@ -83,18 +112,8 @@ public class BinaryClassificationMetricValues {
     }
 
     /** */
-    public void setTn(double tn) {
-        this.tn = tn;
-    }
-
-    /** */
     public double fp() {
         return fp;
-    }
-
-    /** */
-    public void setFp(double fp) {
-        this.fp = fp;
     }
 
     /** */
@@ -102,115 +121,60 @@ public class BinaryClassificationMetricValues {
         return fn;
     }
 
-    /** */
-    public void setFn(double fn) {
-        this.fn = fn;
-    }
-
-    /** */
+    /** Returns Sensitivity or True Positive Rate (TPR). */
     public double recall() {
         return recall;
     }
 
-    /** */
-    public void setRecall(double recall) {
-        this.recall = recall;
-    }
-
-    /** */
+    /** Returns Specificity (SPC) or True Negative Rate (TNR). */
     public double specificity() {
         return specificity;
     }
 
-    /** */
-    public void setSpecificity(double specificity) {
-        this.specificity = specificity;
-    }
-
-    /** */
+    /** Returns Precision or Positive Predictive Value (PPV). */
     public double precision() {
         return precision;
     }
 
-    /** */
-    public void setPrecision(double precision) {
-        this.precision = precision;
-    }
-
-    /** */
+    /** Returns Negative Predictive Value (NPV). */
     public double npv() {
         return npv;
     }
 
-    /** */
-    public void setNpv(double npv) {
-        this.npv = npv;
-    }
-
-    /** */
+    /** Returns Fall-out or False Positive Rate (FPR). */
     public double fallOut() {
         return fallOut;
     }
 
-    /** */
-    public void setFallOut(double fallOut) {
-        this.fallOut = fallOut;
-    }
-
-    /** */
+    /** Returns False Discovery Rate (FDR). */
     public double fdr() {
         return fdr;
     }
 
-    /** */
-    public void setFdr(double fdr) {
-        this.fdr = fdr;
-    }
-
-    /** */
+    /** Returns Miss Rate or False Negative Rate (FNR). */
     public double missRate() {
         return missRate;
     }
 
-    /** */
-    public void setMissRate(double missRate) {
-        this.missRate = missRate;
-    }
-
-    /** */
+    /** Returns Accuracy. */
     public double accuracy() {
         return accuracy;
     }
 
-    /** */
-    public void setAccuracy(double accuracy) {
-        this.accuracy = accuracy;
-    }
-
-    /** */
+    /** Returns Balanced accuracy. */
     public double balancedAccuracy() {
         return balancedAccuracy;
     }
 
-    /** */
-    public void setBalancedAccuracy(double balancedAccuracy) {
-        this.balancedAccuracy = balancedAccuracy;
-    }
-
-    /** */
+    /** Returns F1-Score is the harmonic mean of Precision and Sensitivity. */
     public double f1Score() {
         return f1Score;
-    }
-
-    /** */
-    public void setF1Score(double f1Score) {
-        this.f1Score = f1Score;
     }
 
     /** Returns the pair of metric name and metric value. */
     public Map<String, Double> toMap() {
         Map<String, Double> metricValues = new HashMap<>();
-        for (Field field : this.getClass().getDeclaredFields())
+        for (Field field : getClass().getDeclaredFields())
             try {
                 metricValues.put(field.getName(), field.getDouble(this));
             } catch (IllegalAccessException e) {

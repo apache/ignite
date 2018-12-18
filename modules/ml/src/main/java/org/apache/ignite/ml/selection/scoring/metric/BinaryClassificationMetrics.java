@@ -27,8 +27,8 @@ public class BinaryClassificationMetrics {
     /** Positive class label. */
     private double positiveClsLb = 1.0;
 
-    /** Negative class label. */
-    private double negativeClsLb = 0.0;
+    /** Negative class label. Default value is 0.0. */
+    private double negativeClsLb;
 
     /**
      * Calculates binary metrics values.
@@ -37,7 +37,6 @@ public class BinaryClassificationMetrics {
      * @return Scores for all binary metrics.
      */
     public BinaryClassificationMetricValues score(Iterator<LabelPair<Double>> iter) {
-        BinaryClassificationMetricValues metricValues = new BinaryClassificationMetricValues();
 
         long tp = 0;
         long tn = 0;
@@ -61,41 +60,7 @@ public class BinaryClassificationMetrics {
             else if (truth == negativeClsLb && prediction == positiveClsLb) fp++;
         }
 
-        long p = tp + fn;
-        long n = tn + fp;
-        long positivePredictions = tp + fp;
-        long negativePredictions = tn + fn;
-
-        // according to https://github.com/dice-group/gerbil/wiki/Precision,-Recall-and-F1-measure
-        double recall = p == 0 ? 1 : (double) tp / p;
-        double precision = positivePredictions == 0 ? 1 : (double) tp / positivePredictions;
-        double specificity = n == 0 ? 1 : (double) tn / n;
-        double npv = negativePredictions == 0 ? 1 : (double) tn / negativePredictions;
-        double fallOut = n == 0 ? 1 : (double) fp / n;
-        double fdr = positivePredictions == 0 ? 1 : (double) fp / positivePredictions;
-        double missRate = p == 0 ? 1 : (double) fn / p;
-
-        double f1Score = 2 * (recall * precision) / (recall + precision);
-
-        double accuracy = (p + n) == 0 ? 1 : (double) (tp + tn) / (p + n); // multiplication on 1.0 to make double
-        double balancedAccuracy = p == 0 && n == 0 ? 1 : ((double) tp / p + (double) tn / n) / 2;
-
-        metricValues.setAccuracy(accuracy);
-        metricValues.setBalancedAccuracy(balancedAccuracy);
-        metricValues.setF1Score(f1Score);
-        metricValues.setFallOut(fallOut);
-        metricValues.setFdr(fdr);
-        metricValues.setFn(fn);
-        metricValues.setFp(fp);
-        metricValues.setMissRate(missRate);
-        metricValues.setNpv(npv);
-        metricValues.setPrecision(precision);
-        metricValues.setRecall(recall);
-        metricValues.setSpecificity(specificity);
-        metricValues.setTn(tn);
-        metricValues.setTp(tp);
-
-        return metricValues;
+        return new BinaryClassificationMetricValues(tp, tn, fp, fn);
     }
 
     /** */
