@@ -383,7 +383,8 @@ public class JdbcThinTcpIo {
                     + ", url=" + connProps.getUrl() + ']', SqlStateCode.CONNECTION_REJECTED);
             }
 
-            if (VER_2_5_0.equals(srvProtoVer0)
+            if (VER_2_7_0.equals(srvProtoVer0)
+                || VER_2_5_0.equals(srvProtoVer0)
                 || VER_2_4_0.equals(srvProtoVer0)
                 || VER_2_3_0.equals(srvProtoVer0)
                 || VER_2_1_5.equals(srvProtoVer0))
@@ -486,8 +487,7 @@ public class JdbcThinTcpIo {
      * @throws IOException In case of IO error.
      * @throws SQLException On concurrent access to JDBC connection.
      */
-    JdbcResponse sendRequest(JdbcRequest req, JdbcThinStatement stmt)
-        throws SQLException, IOException {
+    JdbcResponse sendRequest(JdbcRequest req, JdbcThinStatement stmt) throws SQLException, IOException {
         synchronized (mux) {
             if (ownThread != null) {
                 throw new SQLException("Concurrent access to JDBC connection is not allowed"
@@ -501,8 +501,7 @@ public class JdbcThinTcpIo {
         try {
             sendRequestRaw(req);
 
-            if (stmt != null && req instanceof JdbcQueryExecuteRequest || req instanceof JdbcBatchExecuteRequest ||
-                req instanceof JdbcOrderedBatchExecuteRequest)
+            if (stmt != null && (req instanceof JdbcQueryExecuteRequest || req instanceof JdbcBatchExecuteRequest))
                 stmt.currReqId(req.requestId());
 
             JdbcResponse resp = readResponse();
@@ -684,7 +683,7 @@ public class JdbcThinTcpIo {
     /**
      * @return Returns true if query cancellation supported, false otherwise.
      */
-    boolean isQueryCancellationSupported() {
+    private boolean isQueryCancellationSupported() {
         assert srvProtocolVer != null;
 
         return srvProtocolVer.compareTo(VER_2_8_0) >= 0;
