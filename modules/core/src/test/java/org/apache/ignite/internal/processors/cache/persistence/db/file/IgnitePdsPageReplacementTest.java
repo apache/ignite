@@ -40,11 +40,15 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for page replacement (rotation with disk) process with enabled persistence.
  * A lot of reader threads tries to acquire page and checkpointer threads write data.
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsPageReplacementTest extends GridCommonAbstractTest {
     /** */
     private static final int NUMBER_OF_SEGMENTS = 64;
@@ -113,6 +117,7 @@ public class IgnitePdsPageReplacementTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testPageReplacement() throws Exception {
         final IgniteEx ig = startGrid(0);
 

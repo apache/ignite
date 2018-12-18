@@ -120,7 +120,10 @@ const DFLT_CACHE = {
             clsName: 'java.sql.Types'
         }
     },
-    memoryPolicyName: 'default'
+    memoryPolicyName: 'default',
+    diskPageCompression: {
+        clsName: 'org.apache.ignite.configuration.DiskPageCompression'
+    }
 };
 
 export default class IgniteCacheDefaults {

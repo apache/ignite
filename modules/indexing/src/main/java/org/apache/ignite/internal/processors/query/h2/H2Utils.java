@@ -18,20 +18,36 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.lang.reflect.Constructor;
+import java.math.BigDecimal;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.text.MessageFormat;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+
+import java.util.UUID;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.processors.query.GridQueryProperty;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -40,9 +56,31 @@ import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
+import org.h2.util.LocalDateTimeUtils;
 import org.h2.value.DataType;
 import org.h2.value.Value;
+import org.h2.value.ValueArray;
+import org.h2.value.ValueBoolean;
+import org.h2.value.ValueByte;
+import org.h2.value.ValueBytes;
+import org.h2.value.ValueDate;
+import org.h2.value.ValueDecimal;
+import org.h2.value.ValueDouble;
+import org.h2.value.ValueFloat;
+import org.h2.value.ValueGeometry;
+import org.h2.value.ValueInt;
+import org.h2.value.ValueJavaObject;
+import org.h2.value.ValueLong;
+import org.h2.value.ValueNull;
+import org.h2.value.ValueShort;
+import org.h2.value.ValueString;
+import org.h2.value.ValueTime;
+import org.h2.value.ValueTimestamp;
+import org.h2.value.ValueUuid;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
+import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
+import static org.apache.ignite.internal.processors.query.QueryUtils.VER_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
 
 /**
@@ -93,6 +131,49 @@ public class H2Utils {
         }
 
         return false;
+    }
+
+    /**
+     * Prepare SQL statement for CREATE TABLE command.
+     *
+     * @param tbl Table descriptor.
+     * @return SQL.
+     */
+    public static String tableCreateSql(H2TableDescriptor tbl) {
+        GridQueryProperty keyProp = tbl.type().property(KEY_FIELD_NAME);
+        GridQueryProperty valProp = tbl.type().property(VAL_FIELD_NAME);
+
+        String keyType = dbTypeFromClass(tbl.type().keyClass(),
+            keyProp == null ? -1 : keyProp.precision(),
+            keyProp == null ? -1 : keyProp.scale());
+
+        String valTypeStr = dbTypeFromClass(tbl.type().valueClass(),
+            valProp == null ? -1 : valProp.precision(),
+            valProp == null ? -1 : valProp.scale());
+
+        SB sql = new SB();
+
+        String keyValVisibility = tbl.type().fields().isEmpty() ? " VISIBLE" : " INVISIBLE";
+
+        sql.a("CREATE TABLE ").a(tbl.fullTableName()).a(" (")
+            .a(KEY_FIELD_NAME).a(' ').a(keyType).a(keyValVisibility).a(" NOT NULL");
+
+        sql.a(',').a(VAL_FIELD_NAME).a(' ').a(valTypeStr).a(keyValVisibility);
+        sql.a(',').a(VER_FIELD_NAME).a(" OTHER INVISIBLE");
+
+        for (Map.Entry<String, Class<?>> e : tbl.type().fields().entrySet()) {
+            GridQueryProperty prop = tbl.type().property(e.getKey());
+
+            sql.a(',')
+                .a(withQuotes(e.getKey()))
+                .a(' ')
+                .a(dbTypeFromClass(e.getValue(), prop.precision(), prop.scale()))
+                .a(prop.notNull() ? " NOT NULL" : "");
+        }
+
+        sql.a(')');
+
+        return sql.toString();
     }
 
     /**
@@ -249,12 +330,12 @@ public class H2Utils {
      * Convert value to column's expected type by means of H2.
      *
      * @param val Source value.
-     * @param desc Row descriptor.
+     * @param idx Row descriptor.
      * @param type Expected column type to convert to.
      * @return Converted object.
      * @throws IgniteCheckedException if failed.
      */
-    public static Object convert(Object val, GridH2RowDescriptor desc, int type) throws IgniteCheckedException {
+    public static Object convert(Object val, IgniteH2Indexing idx, int type) throws IgniteCheckedException {
         if (val == null)
             return null;
 
@@ -263,7 +344,7 @@ public class H2Utils {
         if (objType == type)
             return val;
 
-        Value h2Val = desc.wrap(val, objType);
+        Value h2Val = wrap(idx.objectContext(), val, objType);
 
         return h2Val.convertTo(type).getObject();
     }
@@ -324,5 +405,199 @@ public class H2Utils {
         }
 
         return false;
+    }
+
+    /**
+     * Wraps object to respective {@link Value}.
+     *
+     * @param obj Object.
+     * @param type Value type.
+     * @return Value.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("ConstantConditions")
+    public static Value wrap(CacheObjectValueContext coCtx, Object obj, int type) throws IgniteCheckedException {
+        assert obj != null;
+
+        if (obj instanceof CacheObject) { // Handle cache object.
+            CacheObject co = (CacheObject)obj;
+
+            if (type == Value.JAVA_OBJECT)
+                return new GridH2ValueCacheObject(co, coCtx);
+
+            obj = co.value(coCtx, false);
+        }
+
+        switch (type) {
+            case Value.BOOLEAN:
+                return ValueBoolean.get((Boolean)obj);
+            case Value.BYTE:
+                return ValueByte.get((Byte)obj);
+            case Value.SHORT:
+                return ValueShort.get((Short)obj);
+            case Value.INT:
+                return ValueInt.get((Integer)obj);
+            case Value.FLOAT:
+                return ValueFloat.get((Float)obj);
+            case Value.LONG:
+                return ValueLong.get((Long)obj);
+            case Value.DOUBLE:
+                return ValueDouble.get((Double)obj);
+            case Value.UUID:
+                UUID uuid = (UUID)obj;
+                return ValueUuid.get(uuid.getMostSignificantBits(), uuid.getLeastSignificantBits());
+            case Value.DATE:
+                if (LocalDateTimeUtils.LOCAL_DATE == obj.getClass())
+                    return LocalDateTimeUtils.localDateToDateValue(obj);
+
+                return ValueDate.get((Date)obj);
+
+            case Value.TIME:
+                if (LocalDateTimeUtils.LOCAL_TIME == obj.getClass())
+                    return LocalDateTimeUtils.localTimeToTimeValue(obj);
+
+                return ValueTime.get((Time)obj);
+
+            case Value.TIMESTAMP:
+                if (obj instanceof java.util.Date && !(obj instanceof Timestamp))
+                    obj = new Timestamp(((java.util.Date)obj).getTime());
+
+                if (LocalDateTimeUtils.LOCAL_DATE_TIME == obj.getClass())
+                    return LocalDateTimeUtils.localDateTimeToValue(obj);
+
+                return ValueTimestamp.get((Timestamp)obj);
+
+            case Value.DECIMAL:
+                return ValueDecimal.get((BigDecimal)obj);
+            case Value.STRING:
+                return ValueString.get(obj.toString());
+            case Value.BYTES:
+                return ValueBytes.get((byte[])obj);
+            case Value.JAVA_OBJECT:
+                return ValueJavaObject.getNoCopy(obj, null, null);
+            case Value.ARRAY:
+                Object[] arr = (Object[])obj;
+
+                Value[] valArr = new Value[arr.length];
+
+                for (int i = 0; i < arr.length; i++) {
+                    Object o = arr[i];
+
+                    valArr[i] = o == null ? ValueNull.INSTANCE :
+                        wrap(coCtx, o, DataType.getTypeFromClass(o.getClass()));
+                }
+
+                return ValueArray.get(valArr);
+
+            case Value.GEOMETRY:
+                return ValueGeometry.getFromGeometry(obj);
+        }
+
+        throw new IgniteCheckedException("Failed to wrap value[type=" + type + ", value=" + obj + "]");
+    }
+
+    /**
+     * Validates properties described by query types.
+     *
+     * @param type Type descriptor.
+     * @throws IgniteCheckedException If validation failed.
+     */
+    @SuppressWarnings("CollectionAddAllCanBeReplacedWithConstructor")
+    public static void validateTypeDescriptor(GridQueryTypeDescriptor type)
+        throws IgniteCheckedException {
+        assert type != null;
+
+        Collection<String> names = new HashSet<>();
+
+        names.addAll(type.fields().keySet());
+
+        if (names.size() < type.fields().size())
+            throw new IgniteCheckedException("Found duplicated properties with the same name [keyType=" +
+                type.keyClass().getName() + ", valueType=" + type.valueClass().getName() + "]");
+
+        String ptrn = "Name ''{0}'' is reserved and cannot be used as a field name [type=" + type.name() + "]";
+
+        for (String name : names) {
+            if (name.equalsIgnoreCase(KEY_FIELD_NAME) ||
+                name.equalsIgnoreCase(VAL_FIELD_NAME) ||
+                name.equalsIgnoreCase(VER_FIELD_NAME))
+                throw new IgniteCheckedException(MessageFormat.format(ptrn, name));
+        }
+    }
+
+    /**
+     * Gets corresponding DB type from java class.
+     *
+     * @param cls Java class.
+     * @param precision Field precision.
+     * @param scale Field scale.
+     * @return DB type name.
+     */
+    private static String dbTypeFromClass(Class<?> cls, int precision, int scale) {
+        String dbType = H2DatabaseType.fromClass(cls).dBTypeAsString();
+
+        if (precision != -1 && dbType.equalsIgnoreCase(H2DatabaseType.VARCHAR.dBTypeAsString()))
+            return dbType + "(" + precision + ")";
+
+        return dbType;
+    }
+
+    /**
+     * Generate SqlFieldsQuery string from SqlQuery.
+     *
+     * @param qry Query string.
+     * @param tableAlias table alias.
+     * @param tbl Table to use.
+     * @return Prepared statement.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public static String generateFieldsQueryString(String qry, String tableAlias, H2TableDescriptor tbl)
+        throws IgniteCheckedException {
+        assert tbl != null;
+
+        final String qry0 = qry;
+
+        String t = tbl.fullTableName();
+
+        String from = " ";
+
+        qry = qry.trim();
+
+        String upper = qry.toUpperCase();
+
+        if (upper.startsWith("SELECT")) {
+            qry = qry.substring(6).trim();
+
+            final int star = qry.indexOf('*');
+
+            if (star == 0)
+                qry = qry.substring(1).trim();
+            else if (star > 0) {
+                if (F.eq('.', qry.charAt(star - 1))) {
+                    t = qry.substring(0, star - 1);
+
+                    qry = qry.substring(star + 1).trim();
+                }
+                else
+                    throw new IgniteCheckedException("Invalid query (missing alias before asterisk): " + qry0);
+            }
+            else
+                throw new IgniteCheckedException("Only queries starting with 'SELECT *' and 'SELECT alias.*' " +
+                    "are supported (rewrite your query or use SqlFieldsQuery instead): " + qry0);
+
+            upper = qry.toUpperCase();
+        }
+
+        if (!upper.startsWith("FROM"))
+            from = " FROM " + t + (tableAlias != null ? " as " + tableAlias : "") +
+                (upper.startsWith("WHERE") || upper.startsWith("ORDER") || upper.startsWith("LIMIT") ?
+                    " " : " WHERE ");
+
+        if(tableAlias != null)
+            t = tableAlias;
+
+        qry = "SELECT " + t + "." + KEY_FIELD_NAME + ", " + t + "." + VAL_FIELD_NAME + from + qry;
+
+        return qry;
     }
 }

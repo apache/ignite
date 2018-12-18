@@ -38,6 +38,9 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -50,6 +53,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsInherite
 /**
  * {@link IgfsMetaManager} test case.
  */
+@RunWith(JUnit4.class)
 public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
     /** Test IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -131,6 +135,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateProperties() throws Exception {
         assertEmpty(mgr.directoryListing(ROOT_ID));
 
@@ -219,6 +224,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testStructure() throws Exception {
         IgfsEntryInfo rootInfo = IgfsUtils.createDirectory(ROOT_ID);
 

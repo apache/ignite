@@ -57,6 +57,9 @@ import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
@@ -73,6 +76,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
  * Tests for replicated cache preloader.
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /** */
     private CacheRebalanceMode preloadMode = ASYNC;
@@ -214,6 +218,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleNode() throws Exception {
         preloadMode = SYNC;
 
@@ -228,6 +233,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testIntegrity() throws Exception {
         preloadMode = SYNC;
 
@@ -303,6 +309,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testDeployment() throws Exception {
         // TODO GG-11141.
         if (true)
@@ -381,6 +388,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testExternalClassesAtConfiguration() throws Exception {
         try {
             extClassloadingAtCfg = true;
@@ -436,6 +444,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testExternalClassesAtConfigurationDynamicStart() throws Exception {
         try {
             extClassloadingAtCfg = false;
@@ -474,6 +483,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testExternalClassesAtConfigurationDynamicStart2() throws Exception {
         try {
             extClassloadingAtCfg = false;
@@ -512,6 +522,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testExternalClassesAtMessage() throws Exception {
         try {
             useExtClassLoader = true;
@@ -564,6 +575,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testExternalClassesAtEventP2pDisabled() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
 
@@ -573,6 +585,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testExternalClassesAtEvent() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
 
@@ -622,6 +635,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testSync() throws Exception {
         preloadMode = SYNC;
         batchSize = 512;
@@ -646,6 +660,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testAsync() throws Exception {
         preloadMode = ASYNC;
         batchSize = 256;
@@ -680,6 +695,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testBatchSize1() throws Exception {
         preloadMode = SYNC;
         batchSize = 1; // 1 byte but one entry should be in batch anyway.
@@ -704,6 +720,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testBatchSize1000() throws Exception {
         preloadMode = SYNC;
         batchSize = 1000; // 1000 bytes.
@@ -728,6 +745,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testBatchSize10000() throws Exception {
         preloadMode = SYNC;
         batchSize = 10000; // 10000 bytes.
@@ -753,6 +771,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testMultipleNodes() throws Exception {
         preloadMode = ASYNC;
         batchSize = 256;
@@ -822,6 +841,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testConcurrentStartSync() throws Exception {
         preloadMode = SYNC;
         batchSize = 10000;
@@ -837,6 +857,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testConcurrentStartAsync() throws Exception {
         preloadMode = ASYNC;
         batchSize = 10000;

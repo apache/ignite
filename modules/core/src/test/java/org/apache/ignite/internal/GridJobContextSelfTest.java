@@ -34,15 +34,20 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Job context test.
  */
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class GridJobContextSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If anything failed.
      */
+    @Test
     public void testJobContext() throws Exception {
         Ignite ignite = startGrid(1);
 

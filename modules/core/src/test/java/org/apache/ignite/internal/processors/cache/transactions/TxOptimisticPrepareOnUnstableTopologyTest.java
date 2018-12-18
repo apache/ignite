@@ -25,8 +25,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -40,6 +38,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -48,6 +49,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 /**
  * Tests optimistic prepare on unstable topology.
  */
+@RunWith(JUnit4.class)
 public class TxOptimisticPrepareOnUnstableTopologyTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE_NAME = "part_cache";
@@ -89,14 +91,10 @@ public class TxOptimisticPrepareOnUnstableTopologyTest extends GridCommonAbstrac
         return c;
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      *
      */
+    @Test
     public void testPrepareOnUnstableTopology() throws Exception {
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
             doPrepareOnUnstableTopology(4, false, isolation, 0);
