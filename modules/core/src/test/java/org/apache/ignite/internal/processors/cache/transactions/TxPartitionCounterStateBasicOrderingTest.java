@@ -19,8 +19,8 @@ public class TxPartitionCounterStateBasicOrderingTest extends TxPartitionCounter
     /** */
     public void testBasicTxCallback() throws Exception {
         int partId = 0;
-        int backups = 2;
-        int nodes = 3;
+        int backups = 1;
+        int nodes = 2;
         int txSize = 5;
 
         runOnPartition(partId, -1, backups, nodes, new IgniteClosure2X<Ignite, List<Ignite>, TxCallback>() {
@@ -56,9 +56,11 @@ public class TxPartitionCounterStateBasicOrderingTest extends TxPartitionCounter
                         return false;
                     }
 
-                    @Override public boolean afterBackupPrepare(IgniteEx primary, IgniteEx backup, IgniteInternalTx tx,
-                        GridFutureAdapter<?> fut) {
-                        log.info("TX: afterBackupPrepare: backup=" + backup.name() + ", backupTx=" + CU.txString(tx) + ", nearXidVer=" + tx.nearXidVersion().asGridUuid());
+                    @Override public boolean afterBackupPrepare(IgniteEx primary, IgniteEx backup,
+                        @Nullable IgniteInternalTx tx,
+                        IgniteUuid nearXidVer, GridFutureAdapter<?> fut) {
+                        log.info("TX: afterBackupPrepare: backup=" + backup.name() + ", backupTx=" + CU.txString(tx) +
+                            ", nearXidVer=" + nearXidVer);
 
                         return false;
                     }
@@ -74,14 +76,14 @@ public class TxPartitionCounterStateBasicOrderingTest extends TxPartitionCounter
                         @Nullable IgniteInternalTx primaryTx,
                         IgniteInternalTx backupTx,
                         IgniteUuid nearXidVer, GridFutureAdapter<?> fut) {
-                        log.info("TX: beforeBackupFinish: prim=" + primary.name() + ", backup=" + backup.name() + ", primNearXidVer=" +
-                            (primaryTx == null ? "NA" : primaryTx.nearXidVersion().asGridUuid()) + ", backupNearXidVer=" + backupTx.nearXidVersion().asGridUuid());
+                        log.info("TX: beforeBackupFinish: prim=" + primary.name() + ", backup=" + backup.name() + ", nearXidVer=" + nearXidVer);
 
                         return false;
                     }
 
-                    @Override public boolean afterPrimaryPrepare(IgniteEx prim, IgniteInternalTx tx, GridFutureAdapter<?> fut) {
-                        log.info("TX: afterPrimaryPrepare: prim=" + prim.name() + ", nearXidVer=" + tx.nearXidVersion().asGridUuid() + ", tx=" + CU.txString(tx));
+                    @Override public boolean afterPrimaryPrepare(IgniteEx prim, IgniteInternalTx tx,
+                        IgniteUuid nearXidVer, GridFutureAdapter<?> fut) {
+                        log.info("TX: afterPrimaryPrepare: prim=" + prim.name() + ", nearXidVer=" + nearXidVer + ", tx=" + CU.txString(tx));
 
                         return false;
                     }
@@ -92,6 +94,6 @@ public class TxPartitionCounterStateBasicOrderingTest extends TxPartitionCounter
             }
         }, new int[] {txSize});
 
-        assertEquals(txSize, grid("client").cache(DEFAULT_CACHE_NAME).size());
+        assertEquals(txSize + PRELOAD_KEYS_CNT, grid("client").cache(DEFAULT_CACHE_NAME).size());
     }
 }

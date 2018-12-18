@@ -20,6 +20,10 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -29,8 +33,13 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteClosure2X;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -44,10 +53,10 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
     private static final int[] PREPARE_ORDER = new int[] {0, 1, 2};
 
     /** */
-    private static final int[] PRIMARY_COMMIT_ORDER = new int[] {1, 2, 0};
+    private static final int[] PRIMARY_COMMIT_ORDER = new int[] {2, 1, 0};
 
     /** */
-    private static final int[] BACKUP_COMMIT_ORDER = new int[] {2, 1, 0};
+    private static final int[] BACKUP_COMMIT_ORDER = new int[] {1, 2, 0};
 
     /** */
     private static final int [] SIZES = new int[] {5, 7, 3};
@@ -82,86 +91,272 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
      * @param skipCheckpoint Skip checkpoint.
      */
     private void doTestPrepareCommitReorder(boolean skipCheckpoint) throws Exception {
-        runOnPartition(PARTITION_ID, -1, BACKUPS, NODES_CNT, new IgniteClosure2X<Ignite, List<Ignite>, TxCallback>() {
+        T2<Ignite, List<Ignite>> txTop = runOnPartition(PARTITION_ID, -1, BACKUPS, NODES_CNT, new IgniteClosure2X<Ignite, List<Ignite>, TxCallback>() {
             @Override public TxCallback applyx(Ignite primary,
                 List<Ignite> backups) throws IgniteCheckedException {
-                return new TwoPhasePessimisticTxCallbackAdapter(PREPARE_ORDER, primary, PRIMARY_COMMIT_ORDER, backups.get(0), BACKUP_COMMIT_ORDER) {
-                    @Override protected boolean onBackupCommitted(IgniteEx backup, int idx) {
-                        super.onBackupCommitted(backup, idx);
-
-                        if (idx == BACKUP_COMMIT_ORDER[0]) {
-                            Collection<ClusterNode> nodes = backup.affinity(DEFAULT_CACHE_NAME).mapPartitionToPrimaryAndBackups(PARTITION_ID);
-                            List<ClusterNode> nodesList = new ArrayList<>(nodes);
-
-                            Ignite backupNode = Ignition.ignite(nodesList.get(1).id());
-
-                            PartitionUpdateCounter cntr = counter(PARTITION_ID, backupNode.name());
-
-                            assertFalse(cntr.holes().isEmpty());
-
-                            PartitionUpdateCounter.Item gap = cntr.holes().first();
-
-                            assertEquals(PRELOAD_KEYS_CNT + SIZES[BACKUP_COMMIT_ORDER[1]] + SIZES[BACKUP_COMMIT_ORDER[2]], gap.start());
-                            assertEquals(SIZES[BACKUP_COMMIT_ORDER[0]], gap.delta());
-
-                            stopGrid(skipCheckpoint, backupNode.name()); // Will stop backup node before all commits are applied.
-
-                            return true;
-                        }
-
-                        throw new IgniteException("Should not commit other transactions");
-                    }
+                return new OnePhasePessimisticTxCallbackAdapter(PREPARE_ORDER, PRIMARY_COMMIT_ORDER, BACKUP_COMMIT_ORDER) {
+//                    @Override protected boolean onPrimaryCommitted(IgniteEx primary, int idx) {
+//                        if (idx == PRIMARY_COMMIT_ORDER[0]) {
+//                            Collection<ClusterNode> nodes = primary.affinity(DEFAULT_CACHE_NAME).mapPartitionToPrimaryAndBackups(PARTITION_ID);
+//                            List<ClusterNode> nodesList = new ArrayList<>(nodes);
+//
+//                            Ignite backupNode = Ignition.ignite(nodesList.get(1).id());
+//
+//                            PartitionUpdateCounter cntr = counter(PARTITION_ID, backupNode.name());
+//
+//                            assertEquals(TOTAL, cntr.reserved());
+//
+//                            assertFalse(cntr.holes().isEmpty());
+//
+//                            PartitionUpdateCounter.Item gap = cntr.holes().first();
+//
+//                            assertEquals(PRELOAD_KEYS_CNT + SIZES[BACKUP_COMMIT_ORDER[1]] + SIZES[BACKUP_COMMIT_ORDER[2]], gap.start());
+//                            assertEquals(SIZES[PRIMARY_COMMIT_ORDER[0]], gap.delta());
+//
+//                            stopGrid(skipCheckpoint, backupNode.name()); // Will stop backup node before all commits are applied.
+//
+//                            return true;
+//                        }
+//
+//                        throw new IgniteException("Should not commit other transactions");
+//                    }
                 };
             }
         }, SIZES);
 
-        waitForTopology(2);
+        //waitForTopology(1);
 
-        IgniteEx client = grid("client");
+        IgniteEx client = grid(CLIENT_GRID_NAME);
 
         assertEquals("Primary has not all committed transactions", TOTAL, client.cache(DEFAULT_CACHE_NAME).size());
 
         for (Ignite ignite : G.allGrids())
             TestRecordingCommunicationSpi.spi(ignite).stopBlock(false);
 
-        IgniteEx backup = startGrid(1);
-
-        awaitPartitionMapExchange();
-
-        assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
+//        String backupName = txTop.get2().get(0).name();
+//
+//        IgniteEx backup = startGrid(backupName);
+//
+//        awaitPartitionMapExchange();
+//
+//        assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
 
         // Check if holes are closed on rebalance.
-        PartitionUpdateCounter cntr = counter(PARTITION_ID, backup.name());
+//        PartitionUpdateCounter cntr = counter(PARTITION_ID, backup.name());
+//
+//        assertTrue(cntr.holes().isEmpty());
+//
+//        assertEquals(TOTAL, cntr.get());
+//
+//        String primaryName = txTop.get1().name();
+//
+//        stopGrid(primaryName);
+//
+//        awaitPartitionMapExchange();
+//
+//        cntr = counter(PARTITION_ID, backup.name());
+//
+//        assertEquals(TOTAL, cntr.reserved());
+//
+//        // Make update to advance a counter.
+//        int addCnt = 10;
+//
+//        loadDataToPartition(PARTITION_ID, backupName, DEFAULT_CACHE_NAME, addCnt, TOTAL);
+//
+//        // Historical rebalance is not possible from checkpoint containing rebalance entries.
+//        // Next rebalance will be full. TODO FIXME repair this scenario ?
+//        IgniteEx grid0 = startGrid(primaryName);
+//
+//        awaitPartitionMapExchange();
+//
+//        cntr = counter(PARTITION_ID, grid0.name());
+//
+//        assertEquals(TOTAL + addCnt, cntr.get());
+//
+//        assertEquals(TOTAL + addCnt, cntr.reserved());
+//
+//        assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
+    }
 
-        assertTrue(cntr.holes().isEmpty());
+    /**
+     * The callback order prepares and commits on primary node.
+     */
+    protected class OnePhasePessimisticTxCallbackAdapter extends TxCallbackAdapter {
+        /** */
+        private Queue<Integer> prepOrder;
 
-        assertEquals(TOTAL, cntr.get());
+        /** */
+        private Queue<Integer> primCommitOrder;
 
-        stopGrid(0);
+        /** */
+        private Queue<Integer> backupCommitOrder;
 
-        awaitPartitionMapExchange();
+        /** */
+        private Map<IgniteUuid, GridFutureAdapter<?>> prepFuts = new ConcurrentHashMap<>();
 
-        cntr = counter(PARTITION_ID, backup.name());
+        /** */
+        private Map<IgniteUuid, GridFutureAdapter<?>> primFinishFuts = new ConcurrentHashMap<>();
 
-        assertEquals(TOTAL, cntr.reserved());
+        /** */
+        private Map<IgniteUuid, GridFutureAdapter<?>> backupFinishFuts = new ConcurrentHashMap<>();
 
-        // Make update to advance a counter.
-        int addCnt = 10;
+        /** */
+        private final int txCnt;
 
-        loadDataToPartition(PARTITION_ID, grid(1).name(), DEFAULT_CACHE_NAME, addCnt, TOTAL);
+        /**
+         * @param prepOrd Prepare order.
+         * @param primCommitOrder Commit order.
+         */
+        public OnePhasePessimisticTxCallbackAdapter(int[] prepOrd, int[] primCommitOrder, int[] backupCommitOrder) {
+            this.txCnt = prepOrd.length;
 
-        // Historical rebalance is not possible from checkpoint containing rebalance entries.
-        // Next rebalance will be full. TODO FIXME repair this scenario ?
-        IgniteEx grid0 = startGrid(0);
+            prepOrder = new ConcurrentLinkedQueue<>();
 
-        awaitPartitionMapExchange();
+            for (int aPrepOrd : prepOrd)
+                prepOrder.add(aPrepOrd);
 
-        cntr = counter(PARTITION_ID, grid0.name());
+            this.primCommitOrder = new ConcurrentLinkedQueue<>();
 
-        assertEquals(TOTAL + addCnt, cntr.get());
+            for (int aCommitOrd : primCommitOrder)
+                this.primCommitOrder.add(aCommitOrd);
 
-        assertEquals(TOTAL + addCnt, cntr.reserved());
+            this.backupCommitOrder = new ConcurrentLinkedQueue<>();
 
-        assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
+            for (int aCommitOrd : backupCommitOrder)
+                this.backupCommitOrder.add(aCommitOrd);
+        }
+
+        /** */
+        protected boolean onPrimaryPrepared(IgniteEx primary, IgniteInternalTx tx, int idx) {
+            log.info("TX: prepared on primary [name=" + primary.name() + ", txId=" + idx + ", tx=" + CU.txString(tx) + ']');
+
+            return false;
+        }
+
+        /**
+         * @param primary Primary primary.
+         */
+        protected void onAllPrimaryPrepared(IgniteEx primary) {
+            log.info("TX: all primary prepared [name=" + primary.name() + ']');
+        }
+
+        /**
+         * @param primary Primary node.
+         * @param idx Index.
+         */
+        protected boolean onPrimaryCommitted(IgniteEx primary, int idx) {
+            log.info("TX: primary committed [name=" + primary.name() + ", txId=" + idx + ']');
+
+            return false;
+        }
+
+        /**
+         * @param backup Backup node.
+         * @param idx Index.
+         */
+        protected boolean onBackupCommitted(IgniteEx backup, int idx) {
+            log.info("TX: backup committed [name=" + backup.name() + ", txId=" + idx + ']');
+
+            return false;
+        }
+
+        /**
+         * @param primary Primary node.
+         */
+        protected void onAllPrimaryCommitted(IgniteEx primary) {
+            log.info("TX: all primary committed [name=" + primary.name() + ']');
+        }
+
+        /**
+         * @param backup Backup node.
+         */
+        protected void onAllBackupCommitted(IgniteEx backup) {
+            log.info("TX: all backup committed [name=" + backup.name() + ']');
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean beforePrimaryPrepare(IgniteEx primary, IgniteUuid nearXidVer,
+            GridFutureAdapter<?> proceedFut) {
+            runAsync(() -> {
+                prepFuts.put(nearXidVer, proceedFut);
+
+                // Order prepares.
+                if (prepFuts.size() == txCnt) {// Wait until all prep requests queued and force prepare order.
+                    prepFuts.remove(version(prepOrder.poll())).onDone();
+                }
+            });
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean beforeBackupPrepare(IgniteEx primary, IgniteEx backup, IgniteInternalTx primaryTx,
+            GridFutureAdapter<?> proceedFut) {
+            runAsync(() -> {
+                IgniteUuid nearXidVer = primaryTx.nearXidVersion().asGridUuid();
+
+                onPrimaryPrepared(primary, primaryTx, order(nearXidVer));
+
+                backupFinishFuts.put(nearXidVer, proceedFut);
+
+                if (prepOrder.isEmpty() && backupFinishFuts.size() == txCnt) {
+                    onAllPrimaryPrepared(primary);
+
+                    assertEquals(txCnt, backupFinishFuts.size());
+
+                    backupFinishFuts.remove(version(backupCommitOrder.poll())).onDone();
+
+                    return;
+                }
+
+                prepFuts.remove(version(prepOrder.poll())).onDone();
+            });
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean afterBackupPrepare(IgniteEx primary, IgniteEx backup, IgniteInternalTx tx, IgniteUuid nearXidVer,
+            GridFutureAdapter<?> fut) {
+            runAsync(() -> {
+                primFinishFuts.put(nearXidVer, fut);
+
+                if (onBackupCommitted(backup, order(nearXidVer)))
+                    return;
+
+                if (backupCommitOrder.isEmpty() && primFinishFuts.size() == txCnt) {
+                    onAllBackupCommitted(primary);
+
+                    assertEquals(txCnt, primFinishFuts.size());
+
+                    primFinishFuts.remove(version(primCommitOrder.poll())).onDone();
+
+                    return;
+                }
+
+                backupFinishFuts.remove(version(backupCommitOrder.poll())).onDone();
+            });
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean afterPrimaryPrepare(IgniteEx primary, @Nullable IgniteInternalTx tx, IgniteUuid nearXidVer,
+            GridFutureAdapter<?> fut) {
+            runAsync(() -> {
+                if (onPrimaryCommitted(primary, order(nearXidVer)))
+                    return;
+
+                if (primCommitOrder.isEmpty()) {
+                    onAllPrimaryCommitted(primary);
+
+                    return;
+                }
+
+                primFinishFuts.remove(version(primCommitOrder.poll())).onDone();
+            });
+
+            return false;
+        }
     }
 }

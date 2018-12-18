@@ -310,7 +310,8 @@ public class TxPartitionCounterStateAfterRecoveryOnePrimaryTest extends TxPartit
         }
 
         /** {@inheritDoc} */
-        @Override public boolean afterPrimaryPrepare(IgniteEx primary, IgniteInternalTx tx, GridFutureAdapter<?> fut) {
+        @Override public boolean afterPrimaryPrepare(IgniteEx primary, IgniteInternalTx tx, IgniteUuid nearXidVer,
+            GridFutureAdapter<?> fut) {
             runAsync(() -> {
                 if (onPrepared(primary, tx, order(tx.nearXidVersion().asGridUuid())))
                     return;
