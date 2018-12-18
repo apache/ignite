@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity.join;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Single table with affinity info.
  */
@@ -30,6 +32,9 @@ public class PartitionJoinTable {
     /** Affinity column name (if can be resolved). */
     private final String affColName;
 
+    /** Second affinity column name (possible when _KEY is affinity column and an alias for this column exists. */
+    private final String secondAffColName;
+
     /** Whether table is left joined. */
     private boolean leftJoined;
 
@@ -39,11 +44,21 @@ public class PartitionJoinTable {
      * @param alias Unique alias.
      * @param cacheName Cache name.
      * @param affColName Affinity column name.
+     * @param secondAffColName Second affinity column name.
      */
-    public PartitionJoinTable(String alias, String cacheName, String affColName) {
+    public PartitionJoinTable(String alias, String cacheName, @Nullable String affColName,
+        @Nullable String secondAffColName) {
         this.alias = alias;
         this.cacheName = cacheName;
-        this.affColName = affColName;
+
+        if (affColName == null && secondAffColName != null) {
+            this.affColName = secondAffColName;
+            this.secondAffColName = null;
+        }
+        else {
+            this.affColName = affColName;
+            this.secondAffColName = secondAffColName;
+        }
     }
 
     /**
@@ -60,11 +75,22 @@ public class PartitionJoinTable {
         return cacheName;
     }
 
+    public boolean hasAffinityColumn() {
+        return affColName != null;
+    }
+
     /**
      * @return Affinity column name.
      */
     public String affinityColName() {
         return affColName;
+    }
+
+    /**
+     * @return Second affinity column name.
+     */
+    public String secondAffinityColName() {
+        return secondAffColName;
     }
 
     /**

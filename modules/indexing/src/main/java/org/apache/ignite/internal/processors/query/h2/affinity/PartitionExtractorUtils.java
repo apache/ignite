@@ -57,17 +57,22 @@ public class PartitionExtractorUtils {
             String cacheName = tbl0.cacheName();
 
             String affColName = null;
+            String secondAffColName = null;
 
             for (Column col : tbl0.getColumns()) {
-                // TODO: Wrong! We may have multiple affinity key oclumns here!
-                if (tbl0.isColumnForPartitionPruning(col)) {
-                    affColName = col.getName();
+                if (tbl0.isColumnForPartitionPruningStrict(col)) {
+                    if (affColName == null)
+                        affColName = col.getName();
+                    else {
+                        secondAffColName = col.getName();
 
-                    break;
+                        // Break as we cannot have more than two affinity key columns.
+                        break;
+                    }
                 }
             }
 
-            PartitionJoinTable joinTbl = new PartitionJoinTable(alias, cacheName, affColName);
+            PartitionJoinTable joinTbl = new PartitionJoinTable(alias, cacheName, affColName, secondAffColName);
 
             CacheConfiguration ccfg = tbl0.cacheInfo().config();
 
