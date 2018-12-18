@@ -23,8 +23,7 @@
 #include <vector>
 
 #include <ignite/common/concurrent.h>
-
-#include "impl/net/end_point.h"
+#include <ignite/network/end_point.h>
 
 namespace ignite
 {
@@ -41,7 +40,7 @@ namespace ignite
             namespace cache
             {
                 /** End point collection. */
-                typedef std::vector<net::EndPoint> EndPoints;
+                typedef std::vector<network::EndPoint> EndPoints;
 
                 /**
                  * Cache Affinity Info.

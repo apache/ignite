@@ -15,22 +15,26 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_THIN_SSL_SSL_API
-#define _IGNITE_IMPL_THIN_SSL_SSL_API
+#ifndef _IGNITE_NETWORK_UTILS
+#define _IGNITE_NETWORK_UTILS
 
+#include <set>
+#include <string>
 
 namespace ignite
 {
-    namespace impl
+    namespace network
     {
-        namespace thin
+        namespace utils
         {
-            namespace ssl
-            {
-                void EnsureSslLoaded();
-            }
+            /**
+             * Get set of local addresses.
+             *
+             * @param addrs Addresses set.
+             */
+            void GetLocalAddresses(std::set<std::string>& addrs);
         }
     }
 }
 
-#endif //_IGNITE_IMPL_THIN_SSL_SSL_API
+#endif //_IGNITE_NETWORK_UTILS

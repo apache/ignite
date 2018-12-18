@@ -15,32 +15,35 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_THIN_NET_NET_UTILS
-#define _IGNITE_IMPL_THIN_NET_NET_UTILS
+#include <ignite/network/ssl/ssl_api.h>
 
-#include <set>
-#include <string>
+#include "network/ssl/ssl_gateway.h"
+#include "network/ssl/secure_socket_client.h"
+#include "network/tcp_socket_client.h"
 
 namespace ignite
 {
-    namespace impl
+    namespace network
     {
-        namespace thin
+        namespace ssl
         {
-            namespace net
+            void EnsureSslLoaded()
             {
-                namespace net_utils
-                {
-                    /**
-                     * Get set of local addresses.
-                     *
-                     * @param addrs Addresses set.
-                     */
-                    void GetLocalAddresses(std::set<std::string>& addrs);
-                }
+                SslGateway::GetInstance().LoadAll();
+            }
+
+            SocketClient* MakeTcpSocketClient()
+            {
+                return new TcpSocketClient;
+            }
+
+            SocketClient* MakeSecureSocketClient(const std::string& certPath,
+                const std::string& keyPath, const std::string& caPath)
+            {
+                EnsureSslLoaded();
+
+                return new SecureSocketClient(certPath, keyPath, caPath);
             }
         }
     }
 }
-
-#endif //_IGNITE_IMPL_THIN_NET_NET_UTILS

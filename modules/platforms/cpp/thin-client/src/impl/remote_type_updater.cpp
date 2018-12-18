@@ -18,7 +18,7 @@
 #include "impl/data_router.h"
 
 #include "impl/message.h"
-#include "impl/net/remote_type_updater.h"
+#include "impl/remote_type_updater.h"
 
 namespace ignite
 {    

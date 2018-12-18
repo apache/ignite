@@ -23,13 +23,13 @@
 #include <iterator>
 #include <algorithm>
 
+#include <ignite/network/utils.h>
+
 #include "impl/utility.h"
 #include "impl/data_router.h"
 #include "impl/message.h"
 #include "impl/response_status.h"
-#include "impl/ssl/ssl_gateway.h"
-#include "impl/net/remote_type_updater.h"
-#include "impl/net/net_utils.h"
+#include "impl/remote_type_updater.h"
 #include "ignite/impl/thin/writable_key.h"
 
 namespace ignite
@@ -72,9 +72,9 @@ namespace ignite
                 if (config.GetEndPoints().empty())
                     throw IgniteError(IgniteError::IGNITE_ERR_ILLEGAL_ARGUMENT, "No valid address to connect.");
 
-                for (std::vector<net::TcpRange>::iterator it = ranges.begin(); it != ranges.end(); ++it)
+                for (std::vector<network::TcpRange>::iterator it = ranges.begin(); it != ranges.end(); ++it)
                 {
-                    net::TcpRange& range = *it;
+                    network::TcpRange& range = *it;
 
                     for (uint16_t port = range.port; port <= range.port + range.range; ++port)
                     {
@@ -104,7 +104,7 @@ namespace ignite
             {
                 typeMgr.SetUpdater(0);
 
-                std::map<net::EndPoint, SP_DataChannel>::iterator it;
+                std::map<network::EndPoint, SP_DataChannel>::iterator it;
 
                 common::concurrent::CsLockGuard lock(channelsMutex);
 
@@ -159,16 +159,16 @@ namespace ignite
 
                 size_t idx = r % channels.size();
 
-                std::map<net::EndPoint, SP_DataChannel>::iterator it = channels.begin();
+                std::map<network::EndPoint, SP_DataChannel>::iterator it = channels.begin();
 
                 std::advance(it, idx);
 
                 return it->second;
             }
 
-            bool DataRouter::IsLocalHost(const std::vector<net::EndPoint>& hint)
+            bool DataRouter::IsLocalHost(const std::vector<network::EndPoint>& hint)
             {
-                for (std::vector<net::EndPoint>::const_iterator it = hint.begin(); it != hint.end(); ++it)
+                for (std::vector<network::EndPoint>::const_iterator it = hint.begin(); it != hint.end(); ++it)
                 {
                     const std::string& host = it->host;
 
@@ -194,9 +194,9 @@ namespace ignite
                 return host == "::1" || host == "0:0:0:0:0:0:0:1";
             }
 
-            bool DataRouter::IsProvidedByUser(const net::EndPoint& endPoint)
+            bool DataRouter::IsProvidedByUser(const network::EndPoint& endPoint)
             {
-                for (std::vector<net::TcpRange>::iterator it = ranges.begin(); it != ranges.end(); ++it)
+                for (std::vector<network::TcpRange>::iterator it = ranges.begin(); it != ranges.end(); ++it)
                 {
                     if (it->host == endPoint.host &&
                         endPoint.port >= it->port &&
@@ -207,14 +207,14 @@ namespace ignite
                 return false;
             }
 
-            SP_DataChannel DataRouter::GetBestChannel(const std::vector<net::EndPoint>& hint)
+            SP_DataChannel DataRouter::GetBestChannel(const std::vector<network::EndPoint>& hint)
             {
                 if (hint.empty())
                     return GetRandomChannel();
 
                 bool localHost = IsLocalHost(hint);
 
-                for (std::vector<net::EndPoint>::const_iterator it = hint.begin(); it != hint.end(); ++it)
+                for (std::vector<network::EndPoint>::const_iterator it = hint.begin(); it != hint.end(); ++it)
                 {
                     if (IsLocalAddress(it->host) && !localHost)
                         continue;
@@ -248,10 +248,10 @@ namespace ignite
             {
                 localAddresses.clear();
 
-                net::net_utils::GetLocalAddresses(localAddresses);
+                network::utils::GetLocalAddresses(localAddresses);
             }
 
-            void DataRouter::CollectAddresses(const std::string& str, std::vector<net::TcpRange>& ranges)
+            void DataRouter::CollectAddresses(const std::string& str, std::vector<network::TcpRange>& ranges)
             {
                 ranges.clear();
 
