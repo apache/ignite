@@ -484,7 +484,6 @@ public class JdbcThinStatement implements Statement {
 
             if (reqId != 0)
                 cancelled = true;
-
         }
 
         if (reqId != 0)
