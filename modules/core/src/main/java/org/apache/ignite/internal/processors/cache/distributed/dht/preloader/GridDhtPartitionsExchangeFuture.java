@@ -2167,11 +2167,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         ", exchange=" + (log.isDebugEnabled() ? this : shortInfo()) + ", topVer=" + topologyVersion() +
                         ", durationFromInit=" + (U.currentTimeMillis() - initTs) + "] ");
 
+                final String exchangeVersion = "[startVer=" + initialVersion() + ", resVer=" + topologyVersion() + "]";
+
                 if (discoveryLag != 0)
-                    log.info("Discovery lag / Clocks discrepancy: " + discoveryLag + " ms.");
+                    log.info("Discovery lag / Clocks discrepancy: " + discoveryLag + " ms. " + exchangeVersion);
 
                 for (String stageTiming : timeBag.stagesTimings())
-                    log.info(stageTiming);
+                    log.info(stageTiming + " " + exchangeVersion);
             }
 
             initFut.onDone(err == null);

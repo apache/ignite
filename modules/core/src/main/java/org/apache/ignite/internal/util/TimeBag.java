@@ -184,7 +184,8 @@ public class TimeBag {
 
                     assert longestTimeThread != null;
 
-                    result.add(PADDING + "Longest execution thread " + longestTimeThread + ":");
+                    if (locStages.size() > 1)
+                        result.add(PADDING + "Longest execution thread " + longestTimeThread + ":");
 
                     List<Stage> longestStagesSeq = locStages.get(longestTimeThread);
 
