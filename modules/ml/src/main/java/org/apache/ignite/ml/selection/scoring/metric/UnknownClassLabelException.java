@@ -17,29 +17,22 @@
 
 package org.apache.ignite.ml.selection.scoring.metric;
 
-import java.util.Iterator;
-import org.apache.ignite.ml.selection.scoring.LabelPair;
+import org.apache.ignite.IgniteException;
 
 /**
- * Base interface for score calculators.
- *
- * @param <L> Type of a label (truth or prediction).
+ * Indicates an unknown class label for metric calculator.
  */
-public interface Metric<L> {
-    /**
-     * Calculates score.
-     *
-     * @param iter Iterator that supplies pairs of truth values and predicated.
-     * @return Score.
-     */
-    public double score(Iterator<LabelPair<L>> iter);
+public class UnknownClassLabelException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
 
     /**
-     * Returns the metric's name.
-     *
-     * NOTE: Should be unique to calculate multiple metrics correctly.
-     *
-     * @return String name representation.
+     * @param incorrectVal Incorrect value.
+     * @param positiveClsLb Positive class label.
+     * @param negativeClsLb Negative class label.
      */
-    public String name();
+    public UnknownClassLabelException(double incorrectVal, double positiveClsLb, double negativeClsLb) {
+        super("The next class label: " + incorrectVal + " is not positive class label: " + positiveClsLb + " or negative class label: " + negativeClsLb);
+    }
 }
