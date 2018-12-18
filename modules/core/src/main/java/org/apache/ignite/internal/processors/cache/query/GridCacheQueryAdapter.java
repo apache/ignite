@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -537,9 +538,17 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (nodes.isEmpty()) {
-            if (part != null && forceLocal)
-                throw new IgniteCheckedException("No queryable nodes for partition " + part
-                    + " [forced local query=" + this + "]");
+            if (part != null) {
+                if (forceLocal) {
+                    throw new IgniteCheckedException("No queryable nodes for partition " + part
+                        + " [forced local query=" + this + "]");
+                }
+
+                if (isSafeLossPolicy()) {
+                    throw new IgniteCheckedException("Failed to execute scan query because cache partition has been " +
+                        "lost [cacheName=" + cctx.name() + ", part=" + part + "]");
+                }
+            }
 
             return new GridEmptyCloseableIterator();
         }
@@ -585,6 +594,16 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             it = qryMgr.scanQueryDistributed(this, nodes);
 
         return mvccTracker != null ? new MvccTrackingIterator(it, mvccTracker) : it;
+    }
+
+    /**
+     * @return true if current PartitionLossPolicy corresponds to *_SAFE values.
+     */
+    private boolean isSafeLossPolicy() {
+        PartitionLossPolicy lossPlc = cctx.cache().configuration().getPartitionLossPolicy();
+
+        return lossPlc == PartitionLossPolicy.READ_ONLY_SAFE ||
+            lossPlc == PartitionLossPolicy.READ_WRITE_SAFE;
     }
 
     /**
