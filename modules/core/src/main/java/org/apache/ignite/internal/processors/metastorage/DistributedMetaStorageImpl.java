@@ -72,16 +72,16 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
     private static final String KEY_PREFIX = "key-";
 
     /** */
-    private static final String HISTORY_VER_KEY = "ms-hist-ver";
+    private static final String HISTORY_VER_KEY = "hist-ver";
 
     /** */
-    private static final String HISTORY_GUARD_KEY_PREFIX = "ms-hist-grd-";
+    private static final String HISTORY_GUARD_KEY_PREFIX = "hist-grd-";
 
     /** */
-    private static final String HISTORY_ITEM_KEY_PREFIX = "ms-hist-item-";
+    private static final String HISTORY_ITEM_KEY_PREFIX = "hist-item-";
 
     /** */
-    private static final String CLEANUP_KEY = "ms-cleanup";
+    private static final String CLEANUP_KEY = "cleanup";
 
     /** */
     private static final byte[] DUMMY_VALUE = {};

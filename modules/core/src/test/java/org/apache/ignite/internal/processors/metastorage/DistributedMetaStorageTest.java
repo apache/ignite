@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -112,6 +113,9 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
             for (int j = 0; j < cnt; j++)
                 assertEquals(i + " " + j, val, grid(j).context().globalMetastorage().read(key));
         }
+
+        for (int i = 1; i < cnt; i++)
+            assertHistoriesAreEqual(grid(0), grid(i));
     }
 
     /** */
@@ -140,6 +144,9 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         Thread.sleep(150L); // Remove later.
 
         assertEquals(cnt, predCntr.get());
+
+        for (int i = 1; i < cnt; i++)
+            assertHistoriesAreEqual(grid(0), grid(i));
     }
 
     /** */
@@ -172,6 +179,9 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         Thread.sleep(150L); // Remove later.
 
         assertEquals(cnt, predCntr.get());
+
+        for (int i = 1; i < cnt; i++)
+            assertHistoriesAreEqual(grid(0), grid(i));
     }
 
     /** */
@@ -188,6 +198,8 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         IgniteEx newNode = startGrid(1);
 
         assertEquals("value", newNode.context().globalMetastorage().read("key"));
+
+        assertHistoriesAreEqual(ignite, newNode);
     }
 
 
@@ -212,9 +224,22 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
             assertEquals("value1", newNode.context().globalMetastorage().read("key1"));
 
             assertEquals("value2", newNode.context().globalMetastorage().read("key2"));
+
+            assertHistoriesAreEqual(ignite, newNode);
         }
         finally {
             System.clearProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES);
         }
+    }
+
+    /** */
+    protected void assertHistoriesAreEqual(IgniteEx ignite1, IgniteEx ignite2) {
+        DistributedMetaStorage globalMetastorage1 = ignite1.context().globalMetastorage();
+
+        DistributedMetaStorage globalMetastorage2 = ignite2.context().globalMetastorage();
+
+        assertEquals(U.<Object>field(globalMetastorage1, "ver"), U.field(globalMetastorage2, "ver"));
+
+        assertEquals(U.<Object>field(globalMetastorage1, "histCache"), U.field(globalMetastorage2, "histCache"));
     }
 }

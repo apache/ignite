@@ -98,6 +98,8 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         assertEquals("value1", newNode.context().globalMetastorage().read("key1"));
 
         assertEquals("value2", newNode.context().globalMetastorage().read("key2"));
+
+        assertHistoriesAreEqual(ignite, newNode);
     }
 
     /** */
@@ -138,6 +140,8 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
             assertEquals("value2", newNode.context().globalMetastorage().read("key2"));
 
             assertEquals("value3", newNode.context().globalMetastorage().read("key3"));
+
+            assertHistoriesAreEqual(ignite, newNode);
         }
         finally {
             System.clearProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES);
@@ -178,6 +182,8 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         assertEquals("value1", ignite.context().globalMetastorage().read("key1"));
 
         assertEquals("value2", ignite.context().globalMetastorage().read("key2"));
+
+        assertHistoriesAreEqual(ignite, grid(0));
     }
 
     /** */
