@@ -1474,8 +1474,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         try {
             if (crd.isLocal()) {
-                if (remaining.isEmpty())
+                if (remaining.isEmpty()) {
+                    initFut.onDone(true);
+
                     onAllReceived(null);
+                }
             }
             else
                 sendPartitions(crd);
@@ -2792,6 +2795,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
         }
+
         if (allReceived) {
             if (!awaitSingleMapUpdates())
                 return;
@@ -3146,6 +3150,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     private void onAllReceived(@Nullable Collection<ClusterNode> sndResNodes) {
         try {
+            initFut.get();
+
             timeBag.finishGlobalStage("Waiting for all single messages");
 
             assert crd.isLocal();
