@@ -291,7 +291,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     public void testReadWriteAll() throws Exception {
         partLossPlc = PartitionLossPolicy.READ_WRITE_ALL;
 
-        checkLostPartition(true, false, killSingleNode, false);
+        checkLostPartition(true, false, killSingleNode);
     }
 
     /**
