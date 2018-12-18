@@ -320,7 +320,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
                             GridCacheVersion ver = futMap.get(resp.futureId());
 
-                            return cb.afterBackupFinish(to, from, ver.asGridUuid(), createSendFuture(backupWrapperSpi, msg));
+                            // Version is null if message is a response to checkCommittedRequest.
+                            return ver != null && cb.afterBackupFinish(to, from, ver.asGridUuid(), createSendFuture(backupWrapperSpi, msg));
                         }
 
                         return false;

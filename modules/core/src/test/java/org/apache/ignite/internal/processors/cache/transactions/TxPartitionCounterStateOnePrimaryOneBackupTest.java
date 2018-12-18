@@ -95,87 +95,81 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
             @Override public TxCallback applyx(Ignite primary,
                 List<Ignite> backups) throws IgniteCheckedException {
                 return new OnePhasePessimisticTxCallbackAdapter(PREPARE_ORDER, PRIMARY_COMMIT_ORDER, BACKUP_COMMIT_ORDER) {
-//                    @Override protected boolean onPrimaryCommitted(IgniteEx primary, int idx) {
-//                        if (idx == PRIMARY_COMMIT_ORDER[0]) {
-//                            Collection<ClusterNode> nodes = primary.affinity(DEFAULT_CACHE_NAME).mapPartitionToPrimaryAndBackups(PARTITION_ID);
-//                            List<ClusterNode> nodesList = new ArrayList<>(nodes);
-//
-//                            Ignite backupNode = Ignition.ignite(nodesList.get(1).id());
-//
-//                            PartitionUpdateCounter cntr = counter(PARTITION_ID, backupNode.name());
-//
-//                            assertEquals(TOTAL, cntr.reserved());
-//
-//                            assertFalse(cntr.holes().isEmpty());
-//
-//                            PartitionUpdateCounter.Item gap = cntr.holes().first();
-//
-//                            assertEquals(PRELOAD_KEYS_CNT + SIZES[BACKUP_COMMIT_ORDER[1]] + SIZES[BACKUP_COMMIT_ORDER[2]], gap.start());
-//                            assertEquals(SIZES[PRIMARY_COMMIT_ORDER[0]], gap.delta());
-//
-//                            stopGrid(skipCheckpoint, backupNode.name()); // Will stop backup node before all commits are applied.
-//
-//                            return true;
-//                        }
-//
-//                        throw new IgniteException("Should not commit other transactions");
-//                    }
+                    @Override protected boolean onPrimaryCommitted(IgniteEx primary, int idx) {
+                        if (idx == PRIMARY_COMMIT_ORDER[0]) {
+                            PartitionUpdateCounter cntr = counter(PARTITION_ID, primary.name());
+
+                            assertEquals(TOTAL, cntr.reserved());
+
+                            assertFalse(cntr.holes().isEmpty());
+
+                            PartitionUpdateCounter.Item gap = cntr.holes().first();
+
+                            assertEquals(PRELOAD_KEYS_CNT + SIZES[PRIMARY_COMMIT_ORDER[1]] + SIZES[PRIMARY_COMMIT_ORDER[2]], gap.start());
+                            assertEquals(SIZES[PRIMARY_COMMIT_ORDER[0]], gap.delta());
+
+                            stopGrid(skipCheckpoint, primary.name()); // Will stop primary node before all commits are applied.
+
+                            return true;
+                        }
+
+                        throw new IgniteException("Should not commit other transactions");
+                    }
                 };
             }
         }, SIZES);
 
-        //waitForTopology(1);
+        waitForTopology(NODES_CNT);
 
         IgniteEx client = grid(CLIENT_GRID_NAME);
 
         assertEquals("Primary has not all committed transactions", TOTAL, client.cache(DEFAULT_CACHE_NAME).size());
 
-        for (Ignite ignite : G.allGrids())
-            TestRecordingCommunicationSpi.spi(ignite).stopBlock(false);
+        TestRecordingCommunicationSpi.stopBlockAll();
 
-//        String backupName = txTop.get2().get(0).name();
-//
-//        IgniteEx backup = startGrid(backupName);
-//
-//        awaitPartitionMapExchange();
-//
-//        assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
+        String primaryName = txTop.get1().name();
+
+        IgniteEx primary = startGrid(primaryName);
+
+        awaitPartitionMapExchange();
+
+        assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
 
         // Check if holes are closed on rebalance.
-//        PartitionUpdateCounter cntr = counter(PARTITION_ID, backup.name());
-//
-//        assertTrue(cntr.holes().isEmpty());
-//
-//        assertEquals(TOTAL, cntr.get());
-//
-//        String primaryName = txTop.get1().name();
-//
-//        stopGrid(primaryName);
-//
-//        awaitPartitionMapExchange();
-//
-//        cntr = counter(PARTITION_ID, backup.name());
-//
-//        assertEquals(TOTAL, cntr.reserved());
-//
-//        // Make update to advance a counter.
-//        int addCnt = 10;
-//
-//        loadDataToPartition(PARTITION_ID, backupName, DEFAULT_CACHE_NAME, addCnt, TOTAL);
-//
-//        // Historical rebalance is not possible from checkpoint containing rebalance entries.
-//        // Next rebalance will be full. TODO FIXME repair this scenario ?
-//        IgniteEx grid0 = startGrid(primaryName);
-//
-//        awaitPartitionMapExchange();
-//
-//        cntr = counter(PARTITION_ID, grid0.name());
-//
-//        assertEquals(TOTAL + addCnt, cntr.get());
-//
-//        assertEquals(TOTAL + addCnt, cntr.reserved());
-//
-//        assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
+        PartitionUpdateCounter cntr = counter(PARTITION_ID, primary.name());
+
+        assertTrue(cntr.holes().isEmpty());
+
+        assertEquals(TOTAL, cntr.get());
+
+        String backupName = txTop.get2().get(0).name();
+
+        stopGrid(backupName);
+
+        awaitPartitionMapExchange();
+
+        cntr = counter(PARTITION_ID, primary.name());
+
+        assertEquals(TOTAL, cntr.reserved());
+
+        // Make update to advance a counter.
+        int addCnt = 10;
+
+        loadDataToPartition(PARTITION_ID, primaryName, DEFAULT_CACHE_NAME, addCnt, TOTAL);
+
+        // Historical rebalance is not possible from checkpoint containing rebalance entries.
+        // Next rebalance will be full. TODO FIXME repair this scenario ?
+        IgniteEx grid0 = startGrid(backupName);
+
+        awaitPartitionMapExchange();
+
+        cntr = counter(PARTITION_ID, grid0.name());
+
+        assertEquals(TOTAL + addCnt, cntr.get());
+
+        assertEquals(TOTAL + addCnt, cntr.reserved());
+
+        assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
     }
 
     /**

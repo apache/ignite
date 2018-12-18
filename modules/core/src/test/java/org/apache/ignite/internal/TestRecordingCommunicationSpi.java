@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -363,5 +364,13 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
                 iter.remove();
             }
         }
+    }
+
+    /**
+     * Stop blocking all messages.
+     */
+    public static void stopBlockAll() {
+        for (Ignite ignite : G.allGrids())
+            spi(ignite).stopBlock(false);
     }
 }
