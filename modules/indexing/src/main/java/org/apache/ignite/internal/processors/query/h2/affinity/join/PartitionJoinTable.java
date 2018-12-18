@@ -35,8 +35,26 @@ public class PartitionJoinTable {
     /** Second affinity column name (possible when _KEY is affinity column and an alias for this column exists. */
     private final String secondAffColName;
 
+    /** Whether this is not a classical table. */
+    private final boolean nonTable;
+
     /** Whether table is left joined. */
     private boolean leftJoined;
+
+    /**
+     * Create join table for subquery.
+     *
+     * @param alias Alias.
+     */
+    public PartitionJoinTable(String alias) {
+        this.alias = alias;
+
+        cacheName = null;
+        affColName = null;
+        secondAffColName = null;
+
+        nonTable = true;
+    }
 
     /**
      * Constructor.
@@ -46,8 +64,12 @@ public class PartitionJoinTable {
      * @param affColName Affinity column name.
      * @param secondAffColName Second affinity column name.
      */
-    public PartitionJoinTable(String alias, String cacheName, @Nullable String affColName,
-        @Nullable String secondAffColName) {
+    public PartitionJoinTable(
+        String alias,
+        String cacheName,
+        @Nullable String affColName,
+        @Nullable String secondAffColName
+    ) {
         this.alias = alias;
         this.cacheName = cacheName;
 
@@ -59,6 +81,8 @@ public class PartitionJoinTable {
             this.affColName = affColName;
             this.secondAffColName = secondAffColName;
         }
+
+        nonTable = false;
     }
 
     /**
@@ -75,6 +99,9 @@ public class PartitionJoinTable {
         return cacheName;
     }
 
+    /**
+     * @return {@code True} if affinity oclumn exists.
+     */
     public boolean hasAffinityColumn() {
         return affColName != null;
     }
@@ -105,5 +132,12 @@ public class PartitionJoinTable {
      */
     public boolean leftJoined() {
         return leftJoined;
+    }
+
+    /**
+     * @return Whether this is not a classical table (subquery, union, temp tables, etc).
+     */
+    public boolean isNonTable() {
+        return nonTable;
     }
 }

@@ -32,21 +32,16 @@ public class PartitionJoinGroup {
     /** Tables that were left joined to the group (i.e. these are tables that were on the right side of LJ. */
     private final Collection<PartitionJoinTable> outerTbls = Collections.newSetFromMap(new IdentityHashMap<>());
 
-    /** Affinity function identifier. */
-    private final PartitionJoinAffinityDescriptor affIdentifier;
-
-    /** Whether this is replicated group. */
-    private final boolean replicated;
+    /** Affinity function descriptor. */
+    private final PartitionJoinAffinityDescriptor affDesc;
 
     /**
      * Constructor.
      *
-     * @param affIdentifier Affinity identifier.
-     * @param replicated Replicated flag.
+     * @param affDesc Affinity function descriptor.
      */
-    public PartitionJoinGroup(PartitionJoinAffinityDescriptor affIdentifier, boolean replicated) {
-        this.affIdentifier = affIdentifier;
-        this.replicated = replicated;
+    public PartitionJoinGroup(PartitionJoinAffinityDescriptor affDesc) {
+        this.affDesc = affDesc;
     }
 
     /**
@@ -76,16 +71,9 @@ public class PartitionJoinGroup {
     }
 
     /**
-     * @return Affinity identifier.
+     * @return Affinity descriptor.
      */
-    public PartitionJoinAffinityDescriptor affinityIdentifer() {
-        return affIdentifier;
-    }
-
-    /**
-     * @return Replicated flag.
-     */
-    public boolean replicated() {
-        return replicated;
+    public PartitionJoinAffinityDescriptor affinityDescriptor() {
+        return affDesc;
     }
 }

@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity;
 
-import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionAffinityFunctionType;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinAffinityDescriptor;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinGroup;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinTable;
@@ -33,6 +34,12 @@ import org.h2.table.Column;
  */
 public class PartitionExtractorUtils {
 
+    /**
+     * Prepare join group for a single table.
+     *
+     * @param from Table.
+     * @return Join group.
+     */
     public static PartitionJoinGroup joinGroupForTable(GridSqlAst from) {
         String alias = null;
 
@@ -43,12 +50,14 @@ public class PartitionExtractorUtils {
         }
 
         if (from instanceof GridSqlTable) {
+            // Normal table.
             GridSqlTable from0 = (GridSqlTable)from;
 
             GridH2Table tbl0 = from0.dataTable();
 
             if (tbl0 == null)
-                return null;
+                // Unknown table type, e.g. temp table.
+                return new PartitionJoinGroup(null).addTable(new PartitionJoinTable(alias));
 
             // Use identifier string because there might be two table with the same name but form different schemas.
             if (alias == null)
@@ -74,17 +83,16 @@ public class PartitionExtractorUtils {
 
             PartitionJoinTable joinTbl = new PartitionJoinTable(alias, cacheName, affColName, secondAffColName);
 
-            CacheConfiguration ccfg = tbl0.cacheInfo().config();
+            PartitionJoinAffinityDescriptor affDesc = affinityDescriptorForCache(tbl0.cacheInfo().config());
 
-            PartitionJoinAffinityDescriptor affIdentifier = affinityIdentifierForCache(ccfg);
-
-            // TODO: Wrong.
-            boolean replicated = affIdentifier != null && ccfg.getCacheMode() == CacheMode.REPLICATED;
-
-            return new PartitionJoinGroup(affIdentifier, replicated).addTable(joinTbl);
+            return new PartitionJoinGroup(affDesc).addTable(joinTbl);
         }
+        else {
+            // Subquery/union
+            assert alias != null;
 
-        return null;
+            return new PartitionJoinGroup(null).addTable(new PartitionJoinTable(alias));
+        }
     }
 
     /**
@@ -93,9 +101,16 @@ public class PartitionExtractorUtils {
      * @param ccfg Cache configuration.
      * @return Affinity identifier.
      */
-    private static PartitionJoinAffinityDescriptor affinityIdentifierForCache(CacheConfiguration ccfg) {
-        // TODO
-        return null;
+    private static PartitionJoinAffinityDescriptor affinityDescriptorForCache(CacheConfiguration ccfg) {
+        PartitionAffinityFunctionType aff = ccfg.getAffinity().getClass().equals(RendezvousAffinityFunction.class) ?
+            PartitionAffinityFunctionType.RENDEZVOUS : PartitionAffinityFunctionType.CUSTOM;
+
+        return new PartitionJoinAffinityDescriptor(
+            ccfg.getCacheMode(),
+            aff,
+            ccfg.getAffinity().partitions(),
+            ccfg.getNodeFilter() != null
+        );
     }
 
     /**
