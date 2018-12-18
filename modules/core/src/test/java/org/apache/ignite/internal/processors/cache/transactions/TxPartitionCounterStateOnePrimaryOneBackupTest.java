@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.lang.IgniteClosure2X;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -91,9 +92,8 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
      * @param skipCheckpoint Skip checkpoint.
      */
     private void doTestPrepareCommitReorder(boolean skipCheckpoint) throws Exception {
-        T2<Ignite, List<Ignite>> txTop = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT, new IgniteClosure2X<Ignite, List<Ignite>, TxCallback>() {
-            @Override public TxCallback applyx(Ignite primary,
-                List<Ignite> backups) throws IgniteCheckedException {
+        T2<Ignite, List<Ignite>> txTop = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT, new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
+            @Override public TxCallback apply(Map<Integer, T2<Ignite, List<Ignite>>> map) {
                 return new OnePhasePessimisticTxCallbackAdapter(PREPARE_ORDER, PRIMARY_COMMIT_ORDER, BACKUP_COMMIT_ORDER) {
                     @Override protected boolean onPrimaryCommitted(IgniteEx primary, int idx) {
                         if (idx == PRIMARY_COMMIT_ORDER[0]) {

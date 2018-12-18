@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -63,6 +64,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
@@ -167,8 +169,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
      * @param sizes Sizes.
      * @param clo Callback build closure.
      */
-    protected T2<Ignite, List<Ignite>> runOnPartition(int partId, @Nullable Supplier<Integer> part2Sup, int backups, int nodesCnt, IgniteClosure2X<Ignite, List<Ignite>,
-        TxCallback> clo, int[] sizes) throws Exception {
+    protected T2<Ignite, List<Ignite>> runOnPartition(int partId, @Nullable Supplier<Integer> part2Sup, int backups, int nodesCnt,
+        IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback> clo, int[] sizes) throws Exception {
         this.backups = backups;
 
         IgniteEx crd = (IgniteEx)startGridsMultiThreaded(nodesCnt);
@@ -209,7 +211,20 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         Map<IgniteUuid, GridCacheVersion> futMap = new ConcurrentHashMap<>();
         Map<GridCacheVersion, GridCacheVersion> nearToLocVerMap = new ConcurrentHashMap<>();
 
-        TxCallback cb = clo.apply(prim, backupz);
+        Map<Integer, T2<Ignite, List<Ignite>>> txTop = new HashMap<>();
+
+        txTop.put(partId, new T2<>(prim, backupz));
+
+        List<Integer> keysPart2 = part2Sup == null ? null :
+            partitionKeys(crd.cache(DEFAULT_CACHE_NAME), part2Sup.get(), KEYS_IN_SECOND_PARTITION, 0) ;
+
+        if (part2Sup != null) {
+            int partId2 = part2Sup.get();
+
+            txTop.put(partId2, new T2<>(primaryNode(keysPart2.get(0), DEFAULT_CACHE_NAME), backupNodes(keysPart2.get(0), DEFAULT_CACHE_NAME)));
+        }
+
+        TxCallback cb = clo.apply(txTop);
 
         clientWrappedSpi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode node, Message msg) {
@@ -338,9 +353,6 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         AtomicInteger idx = new AtomicInteger();
 
         CyclicBarrier b = new CyclicBarrier(sizes.length);
-
-        List<Integer> keysPart2 = part2Sup == null ? null :
-            partitionKeys(crd.cache(DEFAULT_CACHE_NAME), part2Sup.get(), KEYS_IN_SECOND_PARTITION, 0) ;
 
         IgniteInternalFuture<Long> fut = runMultiThreadedAsync(new Runnable() {
             @Override public void run() {

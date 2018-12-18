@@ -13,7 +13,9 @@ import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteClosure2X;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -99,9 +101,8 @@ public class TxPartitionCounterStateAfterRecoveryOnePrimaryTest extends TxPartit
      * @throws Exception
      */
     private void doTestSkipReservedCountersAfterRecovery(boolean skipCheckpointOnStop) throws Exception {
-        runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT, new IgniteClosure2X<Ignite, List<Ignite>, TxCallback>() {
-            @Override public TxCallback applyx(Ignite ignite,
-                List<Ignite> ignites) throws IgniteCheckedException {
+        runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT, new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
+            @Override public TxCallback apply(Map<Integer, T2<Ignite, List<Ignite>>> map) {
                 return new PrimaryTxCallbackAdapter(PREPARE_ORDER, COMMIT_ORDER) {
                     @Override protected void onAllPrepared() {
                         stopGrid(skipCheckpointOnStop, grid(0).name());
@@ -125,9 +126,8 @@ public class TxPartitionCounterStateAfterRecoveryOnePrimaryTest extends TxPartit
      */
     private void doTestPrepareCommitReorder(boolean skipCheckpointOnStop,
         boolean doCheckpoint) throws Exception {
-        runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT, new IgniteClosure2X<Ignite, List<Ignite>, TxCallback>() {
-            @Override public TxCallback applyx(Ignite primary,
-                List<Ignite> backups) throws IgniteCheckedException {
+        runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT, new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
+            @Override public TxCallback apply(Map<Integer, T2<Ignite, List<Ignite>>> map) {
                 return new PrimaryTxCallbackAdapter(PREPARE_ORDER, COMMIT_ORDER) {
                     @Override protected boolean onCommitted(IgniteEx node, int idx) {
                         if (idx == COMMIT_ORDER[0] && doCheckpoint) {
@@ -179,9 +179,8 @@ public class TxPartitionCounterStateAfterRecoveryOnePrimaryTest extends TxPartit
      * Test correct update counter processing on updates reorder and node restart.
      */
     private void doTestPrepareCommitReorder2(boolean skipCheckpointOnStop) throws Exception {
-        runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT, new IgniteClosure2X<Ignite, List<Ignite>, TxCallback>() {
-            @Override public TxCallback applyx(Ignite ignite,
-                List<Ignite> ignites) throws IgniteCheckedException {
+        runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT, new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
+            @Override public TxCallback apply(Map<Integer, T2<Ignite, List<Ignite>>> map) {
                 return new PrimaryTxCallbackAdapter(PREPARE_ORDER, COMMIT_ORDER) {
                     @Override protected boolean onCommitted(IgniteEx node, int idx) {
                         super.onCommitted(node, idx);

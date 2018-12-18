@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
@@ -29,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.util.lang.IgniteClosure2X;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.lang.IgniteClosure;
 import org.junit.Test;
 
 /**
@@ -72,11 +74,9 @@ public class TxPartitionCounterStateTwoPrimaryTwoBackupsApplyCountersOnRecoveryR
                     return PARTITION_ID + 1;
                 }
             }, BACKUPS, NODES_CNT,
-            new IgniteClosure2X<Ignite, List<Ignite>, TxPartitionCounterStateAbstractTest.TxCallback>() {
-                @Override public TxPartitionCounterStateAbstractTest.TxCallback applyx(Ignite primary,
-                    List<Ignite> backups) throws IgniteCheckedException {
-                    return new TxCallbackAdapter() {
-                    };
+            new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
+                @Override public TxCallback apply(Map<Integer, T2<Ignite, List<Ignite>>> map) {
+                    return new TxCallbackAdapter();
                 }
             },
             SIZES);

@@ -1,12 +1,15 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.List;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteClosure2X;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
@@ -23,9 +26,8 @@ public class TxPartitionCounterStateBasicOrderingTest extends TxPartitionCounter
         int nodes = 2;
         int txSize = 5;
 
-        runOnPartition(partId, null, backups, nodes, new IgniteClosure2X<Ignite, List<Ignite>, TxCallback>() {
-            @Override public TxCallback applyx(Ignite ignite,
-                List<Ignite> ignites) throws IgniteCheckedException {
+        runOnPartition(partId, null, backups, nodes, new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
+            @Override public TxCallback apply(Map<Integer, T2<Ignite, List<Ignite>>> map) {
                 return new TxCallback() {
                     @Override public boolean beforePrimaryPrepare(IgniteEx primary, IgniteUuid nearXidVer,
                         GridFutureAdapter<?> proceedFut) {
