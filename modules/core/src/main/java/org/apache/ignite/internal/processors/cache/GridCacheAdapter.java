@@ -485,7 +485,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked", "RedundantCast"})
     @Override public final <K1, V1> IgniteInternalCache<K1, V1> cache() {
         return (IgniteInternalCache<K1, V1>)this;
     }
@@ -1712,7 +1711,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param map Result map.
      * @return Map with values returned by cache interceptor..
      */
-    @SuppressWarnings("IfMayBeConditional")
     private Map<K, V> interceptGet(@Nullable Collection<? extends K> keys, Map<K, V> map) {
         if (F.isEmpty(keys))
             return map;
@@ -1753,7 +1751,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param map Result map.
      * @return Map with values returned by cache interceptor..
      */
-    @SuppressWarnings("IfMayBeConditional")
     private Collection<CacheEntry<K, V>> interceptGetEntries(
         @Nullable Collection<? extends K> keys, Map<K, EntryGetResult> map) {
         if (F.isEmpty(keys)) {
@@ -3135,7 +3132,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void removeAll() throws IgniteCheckedException {
         assert ctx.isLocal();
 
@@ -4215,7 +4211,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Operation result.
      * @throws IgniteCheckedException If operation failed.
      */
-    @SuppressWarnings({"TypeMayBeWeakened", "ErrorNotRethrown", "AssignmentToCatchBlockParameter"})
+    @SuppressWarnings({"ErrorNotRethrown", "AssignmentToCatchBlockParameter"})
     @Nullable private <T> T syncOp(SyncOp<T> op) throws IgniteCheckedException {
         checkJta();
 
@@ -6221,7 +6217,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             p = (IgniteBiPredicate<K, V>)in.readObject();
 

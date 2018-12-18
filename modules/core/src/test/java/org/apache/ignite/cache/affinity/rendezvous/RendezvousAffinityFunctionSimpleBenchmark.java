@@ -1042,7 +1042,6 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             parts = in.readInt();
             exclNeighbors = in.readBoolean();

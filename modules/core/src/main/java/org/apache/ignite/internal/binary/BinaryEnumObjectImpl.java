@@ -174,7 +174,6 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T deserialize() throws BinaryObjectException {
         Class cls = BinaryUtils.resolveClass(ctx, typeId, clsName, ctx.configuration().getClassLoader(), true);
 

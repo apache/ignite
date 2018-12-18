@@ -46,7 +46,6 @@ public class QueryKeyValueIterator<K, V> implements Iterator<Cache.Entry<K, V>> 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public Cache.Entry<K, V> next() {
         try {
             List<?> row = iter.next();

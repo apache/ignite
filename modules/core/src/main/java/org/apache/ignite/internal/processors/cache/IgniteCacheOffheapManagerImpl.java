@@ -667,7 +667,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override @Nullable public CacheDataRow read(GridCacheMapEntry entry)
         throws IgniteCheckedException {
         KeyCacheObject key = entry.key();
@@ -766,7 +765,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      *
      * @param readers {@code True} to clear readers.
      */
-    @SuppressWarnings("unchecked")
     @Override public void clearCache(GridCacheContext cctx, boolean readers) {
         GridCacheVersion obsoleteVer = null;
 
