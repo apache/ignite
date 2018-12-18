@@ -17,21 +17,22 @@
 
 package org.apache.ignite.ml.selection.scoring.metric;
 
+import org.apache.ignite.IgniteException;
+
 /**
- * Metric calculator for one class label.
- *
- * @param <L> Type of a label (truth or prediction).
+ * Indicates an unknown class label for metric calculator.
  */
-public abstract class ClassMetric<L> implements Metric<L> {
-    /** Class label. */
-    protected L clsLb;
+public class UnknownClassLabelException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
 
     /**
-     * The class of interest or positive class.
-     *
-     * @param clsLb The label.
+     * @param incorrectVal Incorrect value.
+     * @param positiveClsLb Positive class label.
+     * @param negativeClsLb Negative class label.
      */
-    public ClassMetric(L clsLb) {
-        this.clsLb = clsLb;
+    public UnknownClassLabelException(double incorrectVal, double positiveClsLb, double negativeClsLb) {
+        super("The next class label: " + incorrectVal + " is not positive class label: " + positiveClsLb + " or negative class label: " + negativeClsLb);
     }
 }

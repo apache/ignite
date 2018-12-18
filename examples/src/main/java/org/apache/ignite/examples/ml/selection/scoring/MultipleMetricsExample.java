@@ -24,18 +24,18 @@ import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
-import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
 import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
 import org.apache.ignite.ml.selection.scoring.metric.Metric;
 import org.apache.ignite.ml.selection.scoring.metric.Precision;
 import org.apache.ignite.ml.selection.scoring.metric.Recall;
 import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
 import org.apache.ignite.ml.svm.SVMLinearClassificationTrainer;
+import org.apache.ignite.ml.util.MLSandboxDatasets;
+import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
  * Run kNN multi-class classification trainer ({@link KNNClassificationTrainer}) over distributed dataset.
@@ -73,24 +73,16 @@ public class MultipleMetricsExample {
                 lbExtractor
             );
 
-            List<Metric<Double>> metrics = new ArrayList<>();
-            metrics.add(new Accuracy<>());
-            metrics.add(new Precision<>(0.0));
-            metrics.add(new Precision<>(1.0));
-            metrics.add(new Recall<>(0.0));
-            metrics.add(new Recall<>(1.0));
-
-            Map<String, Double> scores = Evaluator.evaluate(
+            Map<String, Double> scores = BinaryClassificationEvaluator.evaluate(
                 dataCache,
                 mdl,
                 featureExtractor,
-                lbExtractor,
-                metrics
-            );
+                lbExtractor
+            ).toMap();
 
-            scores.forEach((metricName, score) -> {
-                System.out.println("\n>>>" + metricName + ": " + score);
-            });
+            scores.forEach(
+                (metricName, score) -> System.out.println("\n>>>" + metricName + ": " + score)
+            );
         }
     }
 }
