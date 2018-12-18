@@ -542,11 +542,6 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
 
     /** {@inheritDoc} */
     @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
-        beforeCheckpointBegin(ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
         Executor executor = ctx.executor();
 
         if (executor == null) {
@@ -573,6 +568,11 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
                 }
             });
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+        freeList.saveMetadataConcurrently();
     }
 
     /**

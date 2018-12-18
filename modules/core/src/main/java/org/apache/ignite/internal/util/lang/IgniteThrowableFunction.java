@@ -21,18 +21,19 @@ import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Represents an operation that accepts a single input argument and returns no result. Unlike most other functional
- * interfaces, {@code IgniteThrowableConsumer} is expected to operate via side-effects.
- * Also it is able to throw {@link IgniteCheckedException} unlike {@link java.util.function.Function}.
+ * Represents a function that accepts one argument and produces a result. Unlike {@link java.util.function.Function}
+ * it is able to throw {@link IgniteCheckedException}.
  *
- * @param <E> Type of closure parameter.
+ * @param <E> The type of the input to the function.
+ * @param <R> The type of the result of the function.
  */
-public interface IgniteThrowableConsumer<E> extends Serializable {
+public interface IgniteThrowableFunction<E, R> extends Serializable {
     /**
-     * Consumer body.
+     * Applies this function to the given argument.
      *
-     * @param e Consumer parameter.
-     * @throws IgniteCheckedException If body execution was failed.
+     * @param e The function argument.
+     * @return The function result.
+     * @throws IgniteCheckedException if body execution was failed.
      */
-    public void accept(E e) throws IgniteCheckedException;
+    public R apply(E e) throws IgniteCheckedException;
 }

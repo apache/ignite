@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.util.IgniteTree;
+import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -189,19 +190,28 @@ public class TxLog implements DbCheckpointListener {
 
     /** {@inheritDoc} */
     @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
-        beforeCheckpointBegin(ctx);
+        execute(ctx.executor(), reuseList::saveMetadata);
     }
 
     /** {@inheritDoc} */
     @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
-        Executor executor = ctx.executor();
+        execute(ctx.executor(), reuseList::saveMetadataConcurrently);
+    }
 
+    /**
+     * Execute runner in parallel if possible.
+     *
+     * @param executor Executor for parallelization.
+     * @param runner Runner for execution.
+     * @throws IgniteCheckedException If failed.
+     */
+    private static void execute(Executor executor, IgniteThrowableRunner runner) throws IgniteCheckedException {
         if (executor == null)
-            reuseList.saveMetadata();
+            runner.run();
         else {
             executor.execute(() -> {
                 try {
-                    reuseList.saveMetadata();
+                    runner.run();
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);

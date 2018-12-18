@@ -92,6 +92,8 @@ import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
+import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -173,11 +175,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /** {@inheritDoc} */
     @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
-        beforeCheckpointBegin(ctx);
-    }
-
-    /** {@inheritDoc} */
-    public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
         assert grp.dataRegion().pageMemory() instanceof PageMemoryEx;
 
         Executor execSvc = ctx.executor();
@@ -199,27 +196,40 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
         }
 
-        syncMetadata(execSvc, ctx, needSnapshot);
+        syncMetadata(ctx.executor(), reuseList::saveMetadata, store -> saveStoreMetadata(store, ctx, false, needSnapshot));
+    }
+
+    /** {@inheritDoc} */
+    public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+        syncMetadata(ctx.executor(), reuseList::saveMetadataConcurrently, store -> {
+            RowStore rowStore0 = store.rowStore();
+
+            if (rowStore0 != null)
+                ((CacheFreeListImpl)rowStore0.freeList()).saveMetadataConcurrently();
+        });
     }
 
     /**
      * Syncs and saves meta-information of all data structures to page memory.
      *
      * @param execSvc Executor service to run save process
-     * @param ctx Checkpoint listener context.
+     * @param saveReuseList Runner to do saving of reuse list.
+     * @param savePartitionMetadata Runner to do saving of partition metadata.
      * @throws IgniteCheckedException If failed.
      */
-    private void syncMetadata(Executor execSvc, Context ctx, boolean needSnapshot) throws IgniteCheckedException {
+    private void syncMetadata(Executor execSvc,
+        IgniteThrowableRunner saveReuseList,
+        IgniteThrowableConsumer<CacheDataStore> savePartitionMetadata) throws IgniteCheckedException {
         if (execSvc == null) {
-            reuseList.saveMetadata();
+            saveReuseList.run();
 
             for (CacheDataStore store : partDataStores.values())
-                saveStoreMetadata(store, ctx, false, needSnapshot);
+                savePartitionMetadata.accept(store);
         }
         else {
             execSvc.execute(() -> {
                 try {
-                    reuseList.saveMetadata();
+                    saveReuseList.run();
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -229,20 +239,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             for (CacheDataStore store : partDataStores.values())
                 execSvc.execute(() -> {
                     try {
-                        saveStoreMetadata(store, ctx, false, needSnapshot);
+                        savePartitionMetadata.accept(store);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
                     }
                 });
         }
-    }
-
-    /**
-     * @return {@code True} is group is not empty.
-     */
-    private boolean notEmpty(CacheDataStore store) {
-        return store.rowStore() != null && (store.fullSize() > 0  || store.updateCounter() > 0);
     }
 
     /**
