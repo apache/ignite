@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectMap;
@@ -139,45 +140,39 @@ public class CacheGroupAffinityMessage implements Message {
      * @param topVer Topology version.
      * @param affReq Cache group IDs.
      * @param cachesAff Optional already prepared affinity.
-     * @return Affinity.
      */
-    static Map<Integer, CacheGroupAffinityMessage> createAffinityMessages(
+    static void createAffinityMessages(
         GridCacheSharedContext cctx,
         AffinityTopologyVersion topVer,
         Collection<Integer> affReq,
-        @Nullable Map<Integer, CacheGroupAffinityMessage> cachesAff
+        Map<Integer, CacheGroupAffinityMessage> cachesAff
     ) {
         assert !F.isEmpty(affReq) : affReq;
 
-        if (cachesAff == null)
-            cachesAff = U.newHashMap(affReq.size());
-
         for (Integer grpId : affReq) {
-            if (!cachesAff.containsKey(grpId)) {
-                GridAffinityAssignmentCache aff = cctx.affinity().groupAffinity(grpId);
+            cachesAff.computeIfAbsent(grpId, new Function<Integer, CacheGroupAffinityMessage>() {
+                @Override public CacheGroupAffinityMessage apply(Integer integer) {
+                    GridAffinityAssignmentCache aff = cctx.affinity().groupAffinity(grpId);
 
-                // If no coordinator group holder on the node, try fetch affinity from existing cache group.
-                if (aff == null) {
-                    CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+                    // If no coordinator group holder on the node, try fetch affinity from existing cache group.
+                    if (aff == null) {
+                        CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-                    assert grp != null : "No cache group holder or cache group to create AffinityMessage"
-                        + ". Requested group id: " + grpId
-                        + ". Topology version: " + topVer;
+                        assert grp != null : "No cache group holder or cache group to create AffinityMessage"
+                            + ". Requested group id: " + grpId
+                            + ". Topology version: " + topVer;
 
-                    aff = grp.affinity();
+                        aff = grp.affinity();
+                    }
+
+                    List<List<ClusterNode>> assign = aff.readyAssignments(topVer);
+
+                    return new CacheGroupAffinityMessage(assign,
+                        aff.centralizedAffinityFunction() ? aff.idealAssignment() : null,
+                        null);
                 }
-
-                List<List<ClusterNode>> assign = aff.readyAssignments(topVer);
-
-                CacheGroupAffinityMessage msg = new CacheGroupAffinityMessage(assign,
-                    aff.centralizedAffinityFunction() ? aff.idealAssignment() : null,
-                    null);
-
-                cachesAff.put(grpId, msg);
-            }
+            });
         }
-
-        return cachesAff;
     }
 
     /**
