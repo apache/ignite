@@ -45,6 +45,9 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -72,6 +75,7 @@ import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.UNA
  * credentials.</p>
  */
 @SuppressWarnings("ConstantConditions")
+@RunWith(JUnit4.class)
 public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String SSH_UNAME = getProperty("test.ssh.username", "ssh.username");
@@ -206,6 +210,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartOneNode() throws Exception {
         joinedLatch = new CountDownLatch(1);
 
@@ -234,6 +239,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartThreeNodes() throws Exception {
         joinedLatch = new CountDownLatch(3);
 
@@ -262,6 +268,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartThreeNodesAndDoEmptyCall() throws Exception {
         joinedLatch = new CountDownLatch(3);
 
@@ -287,6 +294,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartThreeNodesAndTryToStartOneNode() throws Exception {
         joinedLatch = new CountDownLatch(3);
 
@@ -310,6 +318,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartFiveNodesInTwoCalls() throws Exception {
         joinedLatch = new CountDownLatch(3);
 
@@ -344,6 +353,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartFiveWithTwoSpecs() throws Exception {
         joinedLatch = new CountDownLatch(5);
 
@@ -373,6 +383,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartThreeNodesAndRestart() throws Exception {
         joinedLatch = new CountDownLatch(3);
 
@@ -409,6 +420,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCustomScript() throws Exception {
         joinedLatch = new CountDownLatch(1);
 
@@ -443,6 +455,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopNodes() throws Exception {
         joinedLatch = new CountDownLatch(3);
 
@@ -476,6 +489,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopNodesFiltered() throws Exception {
         joinedLatch = new CountDownLatch(2);
 
@@ -531,6 +545,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopNodeById() throws Exception {
         joinedLatch = new CountDownLatch(3);
 
@@ -548,6 +563,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopNodesByIds() throws Exception {
         joinedLatch = new CountDownLatch(3);
 
@@ -572,6 +588,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartNodes() throws Exception {
         joinedLatch = new CountDownLatch(3);
 
@@ -591,6 +608,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartNodesFiltered() throws Exception {
         joinedLatch = new CountDownLatch(2);
 
@@ -649,6 +667,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartNodeById() throws Exception {
         joinedLatch = new CountDownLatch(3);
 
@@ -668,6 +687,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartNodesByIds() throws Exception {
         joinedLatch = new CountDownLatch(3);
 
