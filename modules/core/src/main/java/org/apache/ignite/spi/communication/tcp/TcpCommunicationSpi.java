@@ -361,10 +361,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     public static final int DFLT_CONN_PER_NODE = 1;
 
     /** Default start delay in case of NEED_WAIT received on handshake, millis. */
-    public static final int DFLT_NEED_WAIT_DELAY = 200;
+    public static final long DFLT_NEED_WAIT_DELAY = 200;
 
     /** Default max delay in case of NEED_WAIT received on handshake, millis. */
-    public static final int DFLT_MAX_NEED_WAIT_DELAY = 60_000;
+    public static final long DFLT_MAX_NEED_WAIT_DELAY = 60_000;
 
     /** No-op runnable. */
     private static final IgniteRunnable NOOP = new IgniteRunnable() {
@@ -1181,10 +1181,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     private int selectorsCnt = DFLT_SELECTORS_CNT;
 
     /** Delay on subsequent retry if NEED_WAIT received. */
-    private int needWaitDelay = DFLT_NEED_WAIT_DELAY;
+    private long needWaitDelay = DFLT_NEED_WAIT_DELAY;
 
     /** Max value of needWaitDelay. */
-    private int maxNeedWaitDelay = DFLT_MAX_NEED_WAIT_DELAY;
+    private long maxNeedWaitDelay = DFLT_MAX_NEED_WAIT_DELAY;
 
     /**
      * Defines how many non-blocking {@code selector.selectNow()} should be made before
@@ -1890,7 +1890,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * Get initial needWaitDelay.
      * @return Initial needWaitDelay.
      */
-    public int getNeedWaitDelay() {
+    public long getNeedWaitDelay() {
         return needWaitDelay;
     }
 
@@ -1905,7 +1905,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public TcpCommunicationSpi setNeedWaitDelay(int needWaitDelay) {
+    public TcpCommunicationSpi setNeedWaitDelay(long needWaitDelay) {
         this.needWaitDelay = needWaitDelay;
 
         return this;
@@ -1915,7 +1915,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * Get max needWaitDelay.
      * @return Max needWaitDelay.
      */
-    public int getMaxNeedWaitDelay() {
+    public long getMaxNeedWaitDelay() {
         return maxNeedWaitDelay;
     }
 
@@ -1930,7 +1930,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public TcpCommunicationSpi setMaxNeedWaitDelay(int maxNeedWaitDelay) {
+    public TcpCommunicationSpi setMaxNeedWaitDelay(long maxNeedWaitDelay) {
         this.maxNeedWaitDelay = maxNeedWaitDelay;
 
         return this;
@@ -3334,7 +3334,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(this,
                 !node.isClient());
 
-            int needWaitDelay0 = needWaitDelay;
+            long needWaitDelay0 = needWaitDelay;
 
             while (client == null) { // Reconnection on handshake timeout.
                 if (stopping)

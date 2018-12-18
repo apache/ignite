@@ -1477,17 +1477,16 @@ public class GridNioServer<T> {
 
                     assert buf.hasRemaining();
 
-
                     if (!skipWrite) {
-                        int totalWritten = U.writeFully(sockCh, buf);
+                        int cnt = U.writeFully(sockCh, buf);
 
                         if (log.isTraceEnabled())
-                            log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + totalWritten + ']');
+                            log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
 
                         if (metricsLsnr != null)
-                            metricsLsnr.onBytesSent(totalWritten);
+                            metricsLsnr.onBytesSent(cnt);
 
-                        ses.bytesSent(totalWritten);
+                        ses.bytesSent(cnt);
                     }
                     else {
                         // For test purposes only (skipWrite is set to true in tests only).

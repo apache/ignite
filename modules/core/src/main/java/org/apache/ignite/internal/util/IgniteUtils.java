@@ -11186,9 +11186,6 @@ public abstract class IgniteUtils {
             totalWritten += written;
         }
 
-        assert !buf.hasRemaining()
-            : "Buffer is not completely written [totalWritten = " + totalWritten +", buf = " + buf +"]";
-
         return totalWritten;
     }
 }
