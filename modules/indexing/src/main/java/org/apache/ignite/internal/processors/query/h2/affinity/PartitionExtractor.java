@@ -174,7 +174,7 @@ public class PartitionExtractor {
      * @param conds Conditions.
      * @return {@code True} if extracted tables successfully, {@code false} if failed to extract.
      */
-    private boolean prepareJoinModelTables(
+    private static boolean prepareJoinModelTables(
         GridSqlAst from,
         Collection<PartitionJoinGroup> grps,
         Collection<PartitionJoinCondition> conds
@@ -189,8 +189,15 @@ public class PartitionExtractor {
             if (!prepareJoinModelTables(join.rightTable(), grps, conds))
                 return false;
 
-            // Make sure that ON condition is simple equality. Stop process otherwise.
+            // Extract condition from JOIN. Only equijoins are supported for now.
+            // Note that most conditions are moved to WHERE clause through AND predicate,
+            // so if it is present, then most likely we deal with LEFT JOIN.
             GridSqlElement on = join.on();
+
+            if (PartitionExtractorUtils.isCrossJoinCondition(on)) {
+                PartitionJoinCondition cond = new PartitionJoinCondition(join.leftTable())
+            }
+
 
             boolean onSimple = false;
 
@@ -209,13 +216,9 @@ public class PartitionExtractor {
 
         PartitionJoinGroup grp = PartitionExtractorUtils.joinGroupForTable(from);
 
-        if (grp != null) {
-            grps.add(grp);
+        grps.add(grp);
 
-            return true;
-        }
-
-        return false;
+        return true;
     }
 
     /**
@@ -442,12 +445,22 @@ public class PartitionExtractor {
     }
 
     /**
+     * Unwrap constant if possible.
+     *
+     * @param ast AST.
+     * @return Constant or {@code null} if not a constant.
+     */
+    @Nullable public static GridSqlConst unwrapConst(GridSqlAst ast) {
+        return ast instanceof GridSqlConst ? (GridSqlConst)ast : null;
+    }
+
+    /**
      * Unwrap column if possible.
      *
      * @param ast AST.
      * @return Column or {@code null} if not a column.
      */
-    @Nullable private static GridSqlColumn unwrapColumn(GridSqlAst ast) {
+    @Nullable public static GridSqlColumn unwrapColumn(GridSqlAst ast) {
         if (ast instanceof GridSqlAlias)
             ast = ast.child();
 

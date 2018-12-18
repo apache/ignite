@@ -21,13 +21,20 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionAffinityFunctionType;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinAffinityDescriptor;
+import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinCondition;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinGroup;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinTable;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperation;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.h2.table.Column;
+import org.h2.value.Value;
 
 /**
  * Utility methods for partition extraction.
@@ -93,6 +100,48 @@ public class PartitionExtractorUtils {
 
             return new PartitionJoinGroup(null).addTable(new PartitionJoinTable(alias));
         }
+    }
+
+    /**
+     * Check whether this is a cross-join condition, i.e. 1=1.
+     *
+     * @param on Condition.
+     * @return {@code True} if cross-join.
+     */
+    public static boolean isCrossJoinCondition(GridSqlAst on) {
+        if (on instanceof GridSqlOperation) {
+            GridSqlOperation on0 = (GridSqlOperation)on;
+
+            if (on0.operationType() == GridSqlOperationType.EQUAL) {
+                GridSqlConst left = PartitionExtractor.unwrapConst(on0.child(0));
+                GridSqlConst right = PartitionExtractor.unwrapConst(on0.child(1));
+
+                if (left != null && right != null) {
+                    try {
+                        int leftVal = left.value().getInt();
+                        int rightVal = right.value().getInt();
+
+                        return leftVal == rightVal;
+                    }
+                    catch (Exception ignore) {
+                        // No-op.
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Try parsing condition as simple JOIN codition. Only equijoins are supported for now, so anything more complex
+     * than "A.a = B.b" are not processed.
+     *
+     * @param cond Initial AST.
+     * @return Join condition or {@code null} if not simple equijoin.
+     */
+    public static PartitionJoinCondition tryParseJoinCondition(GridSqlElement cond) {
+
     }
 
     /**
