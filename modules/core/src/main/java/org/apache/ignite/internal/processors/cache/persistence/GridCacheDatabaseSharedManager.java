@@ -95,6 +95,7 @@ import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
@@ -368,6 +369,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Flag allows to log additional information about partitions during recovery phases. */
     private final boolean recoveryVerboseLogging = IgniteSystemProperties.getBoolean(
             IgniteSystemProperties.IGNITE_RECOVERY_VERBOSE_LOGGING, true);
+
+    /** Pointer to a memory recovery record that should be included into the next checkpoint record. */
+    private volatile WALPointer memoryRecoveryRecordPtr;
 
     /**
      * @param ctx Kernal context.
@@ -952,6 +956,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             // Wal logging is now available.
             cctx.wal().resumeLogging(restored);
+
+            // Log MemoryRecoveryRecord to make sure that old physical records are not replayed during
+            // next physical recovery.
+            memoryRecoveryRecordPtr = cctx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
+
+            U.debug(log, "Logged MemoryRecovery record: " + memoryRecoveryRecordPtr);
 
             for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
                 lsnr.afterBinaryMemoryRestore(this, binaryState);
@@ -2073,6 +2083,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             log.info("Checking memory state [lastValidPos=" + status.endPtr + ", lastMarked="
                 + status.startPtr + ", lastCheckpointId=" + status.cpStartId + ']');
 
+        WALPointer recPtr = status.endPtr;
+
         boolean apply = status.needRestoreMemory();
 
         if (apply) {
@@ -2081,6 +2093,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     "finish checkpoint on node start.");
 
             cctx.pageStore().beginRecover();
+
+            WALIterator it = cctx.wal().replay(status.startPtr);
+
+            WALRecord rec = it.next().get2();
+
+            assert rec instanceof CheckpointRecord;
+
+            WALPointer cpMark = ((CheckpointRecord)rec).checkpointMark();
+
+            if (cpMark != null)
+                recPtr = cpMark;
+
+            it.close();
         }
         else
             cctx.wal().notchLastCheckpointPtr(status.startPtr);
@@ -2089,7 +2114,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         long lastArchivedSegment = cctx.wal().lastArchivedSegment();
 
-        WALIterator it = cctx.wal().replay(status.endPtr, recordTypePredicate);
+        WALIterator it = cctx.wal().replay(recPtr, recordTypePredicate);
 
         RestoreBinaryState restoreBinaryState = new RestoreBinaryState(status, it, lastArchivedSegment, cacheGroupsPredicate);
 
@@ -3554,7 +3579,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         @SuppressWarnings("TooBroadScope")
         private Checkpoint markCheckpointBegin(CheckpointMetricsTracker tracker) throws IgniteCheckedException {
-            CheckpointRecord cpRec = new CheckpointRecord(null);
+            CheckpointRecord cpRec = new CheckpointRecord(memoryRecoveryRecordPtr);
+
+            memoryRecoveryRecordPtr = null;
 
             WALPointer cpPtr = null;
 

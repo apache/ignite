@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -56,10 +52,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -369,7 +362,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         stopGrid(2, false);
 
-        ioFactory = new CheckpointFailIoFactory();
+        ioFactory = new CheckpointFailingIoFactory();
 
         IgniteInternalFuture startNodeFut = GridTestUtils.runAsync(() -> startGrid(2));
 
@@ -632,33 +625,6 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return Objects.hash(cacheName);
-        }
-    }
-
-    /**
-     *
-     */
-    static class CheckpointFailIoFactory implements FileIOFactory {
-        /** {@inheritDoc} */
-        @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-            FileIO delegate = new RandomAccessFileIOFactory().create(file, modes);
-
-            if (file.getName().contains("part-"))
-                return new FileIODecorator(delegate) {
-                    @Override public int write(ByteBuffer srcBuf) throws IOException {
-                        throw new IOException("test");
-                    }
-
-                    @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
-                        throw new IOException("test");
-                    }
-
-                    @Override public int write(byte[] buf, int off, int len) throws IOException {
-                        throw new IOException("test");
-                    }
-                };
-
-            return delegate;
         }
     }
 
