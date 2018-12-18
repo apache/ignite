@@ -104,8 +104,6 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(memCfg);
 
-        cfg.setMvccVacuumFrequency(Long.MAX_VALUE);
-
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration();
 
         cfg.setCacheConfiguration(ccfg);
