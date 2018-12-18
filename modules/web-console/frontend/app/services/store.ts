@@ -15,10 +15,8 @@
  * limitations under the License.
  */
 
-import {BehaviorSubject} from 'rxjs/BehaviorSubject';
-import {Subject} from 'rxjs/Subject';
+import {BehaviorSubject, Subject, merge} from 'rxjs';
 import {scan, tap} from 'rxjs/operators';
-import {merge} from 'rxjs/observable/merge';
 
 interface Reducer<State, Actions> {
     (state: State, action: Actions): State
