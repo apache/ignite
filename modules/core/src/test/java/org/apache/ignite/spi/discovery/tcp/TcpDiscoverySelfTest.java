@@ -1967,11 +1967,11 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         try {
             this.segPlc = segPlc;
 
-            IgniteEx coord = startGrid(0);
+            IgniteEx coord = (IgniteEx)startGridsMultiThreaded(3);
 
             UUID coordId = coord.localNode().id();
 
-            IgniteEx ignite1 = startGrid(1);
+            IgniteEx ignite1 = grid(1);
 
             AtomicBoolean coordSegmented = new AtomicBoolean();
 
@@ -1986,9 +1986,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 return true;
             }, EVT_NODE_SEGMENTED);
 
-            CountDownLatch failedLatch = new CountDownLatch(1);
+            CountDownLatch failedLatch = new CountDownLatch(2);
 
-            ignite1.events().localListen(evt -> {
+            IgnitePredicate<Event> failLsnr = evt -> {
                 assertEquals(EVT_NODE_FAILED, evt.type());
 
                 UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
@@ -1997,15 +1997,19 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                     failedLatch.countDown();
 
                 return true;
-            }, EVT_NODE_FAILED);
+            };
 
-            ignite1.configuration().getDiscoverySpi().failNode(coord.localNode().id(), null);
+            ignite1.events().localListen(failLsnr, EVT_NODE_FAILED);
+
+            grid(2).events().localListen(failLsnr, EVT_NODE_FAILED);
+
+            ignite1.configuration().getDiscoverySpi().failNode(coordId, null);
 
             assertTrue(failedLatch.await(2000, MILLISECONDS));
 
             assertTrue(coordSegmented.get());
 
-            if (segPlc.equals(SegmentationPolicy.STOP)) {
+            if (segPlc == SegmentationPolicy.STOP) {
                 assertTrue(coord.context().isStopping());
 
                 waitNodeStop(coord.name());
@@ -2013,7 +2017,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             else
                 assertFalse(coord.context().isStopping());
 
-            assertEquals(1, ignite1.context().discovery().allNodes().size());
+            assertEquals(2, ignite1.context().discovery().allNodes().size());
         }
         finally {
             stopAllGrids();
