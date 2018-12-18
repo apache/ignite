@@ -122,8 +122,8 @@ public class GridNioServer<T> {
     /** Selection key meta key. */
     private static final int WORKER_IDX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
-    /** Meta key for pending messages to be written. */
-    private static final int MESSAGES_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+    /** Meta key for pending requests to be written. */
+    private static final int REQUESTS_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** */
     private static final boolean DISABLE_KEYSET_OPTIMIZATION =
@@ -1377,7 +1377,7 @@ public class GridNioServer<T> {
                         return;
                     }
                     else {
-                        List<SessionWriteRequest> requests = ses.removeMeta(MESSAGES_META_KEY);
+                        List<SessionWriteRequest> requests = ses.removeMeta(REQUESTS_META_KEY);
 
                         if (requests != null)
                             onRequestsWritten(ses, requests);
@@ -1512,7 +1512,7 @@ public class GridNioServer<T> {
                     if (buf.hasRemaining()) {
                         ses.addMeta(BUF_META_KEY, buf);
 
-                        ses.addMeta(MESSAGES_META_KEY, pendingRequests);
+                        ses.addMeta(REQUESTS_META_KEY, pendingRequests);
 
                         break;
                     }
