@@ -1379,7 +1379,12 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     protected int localInstancesCount(IgniteUuid srvcId) {
         Collection<ServiceContextImpl> ctxs = locServices.get(srvcId);
 
-        return ctxs != null ? ctxs.size() : 0;
+        if (ctxs == null)
+            return 0;
+
+        synchronized (ctxs) {
+            return ctxs.size();
+        }
     }
 
     /**
