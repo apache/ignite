@@ -3554,10 +3554,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         @SuppressWarnings("TooBroadScope")
         private Checkpoint markCheckpointBegin(CheckpointMetricsTracker tracker) throws IgniteCheckedException {
-
             long cpTs = updateLastCheckpointTime();
 
             CheckpointProgress curr = updateCurrentCheckpointProgress();
+
             CheckpointRecord cpRec = new CheckpointRecord(null);
 
             CheckpointEntry cp = null;
@@ -3579,6 +3579,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             checkpointLock.writeLock().lock();
             try {
+                assert curCpProgress == curr : "Concurrent checkpoint begin should not be happened";
+
                 tracker.onMarkStart();
 
                 // Listeners must be invoked before we write checkpoint record to WAL.
