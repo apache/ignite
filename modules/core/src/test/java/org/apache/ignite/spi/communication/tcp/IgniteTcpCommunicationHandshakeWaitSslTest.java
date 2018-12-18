@@ -19,10 +19,13 @@ package org.apache.ignite.spi.communication.tcp;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Testing {@link IgniteTcpCommunicationHandshakeWaitTest} with SSL enabled.
  */
+@RunWith(JUnit4.class)
 public class IgniteTcpCommunicationHandshakeWaitSslTest extends IgniteTcpCommunicationHandshakeWaitTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

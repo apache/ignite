@@ -36,11 +36,14 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedM
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Testing {@link TcpCommunicationSpi} that will send the wait handshake message on received connections until SPI
  * context initialized.
  */
+@RunWith(JUnit4.class)
 public class IgniteTcpCommunicationHandshakeWaitTest extends GridCommonAbstractTest {
     /** */
     private static final long COMMUNICATION_TIMEOUT = 1000;
