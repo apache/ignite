@@ -20,13 +20,13 @@ package org.apache.ignite.ml.util.generators.datastream.standard;
 import java.util.stream.Stream;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.util.generators.datastream.DataStreamGenerator;
+import org.apache.ignite.ml.util.generators.DataStreamGenerator;
 import org.apache.ignite.ml.util.generators.primitives.variable.UniformRandomProducer;
+import org.apache.ignite.ml.util.generators.primitives.vector.VectorGenerator;
 
 public class TwoSeparableClassesDataStream implements DataStreamGenerator {
     private final double margin;
-    private final double minCordValue;
-    private final double maxCordValue;
+    private final double variance;
     private long seed;
 
     public TwoSeparableClassesDataStream(double margin, double variance) {
@@ -35,26 +35,28 @@ public class TwoSeparableClassesDataStream implements DataStreamGenerator {
 
     public TwoSeparableClassesDataStream(double margin, double variance, long seed) {
         this.margin = margin;
-        this.minCordValue = -variance - Math.abs(margin);
-        this.maxCordValue = variance + Math.abs(margin);
+        this.variance = variance;
         this.seed = seed;
     }
 
     @Override
     public Stream<LabeledVector<Vector, Double>> labeled() {
         seed >>= 2;
-        return new UniformRandomProducer(minCordValue, maxCordValue, seed).vectorize(2).labeled()
-            .map(v -> new LabeledVector<>(applyMargin(v.features()), isFirstClass(v.features()) ? 1.0 : -1.0))
-            .filter(v -> between(v.features().get(0), minCordValue, maxCordValue))
-            .filter(v -> between(v.features().get(1), minCordValue, maxCordValue));
+        double minCordValue = -variance - Math.abs(margin);
+        double maxCordValue = variance + Math.abs(margin);
+        return new UniformRandomProducer(minCordValue, maxCordValue, seed)
+            .vectorize(2).labeled(this::classify)
+            .map(v -> new LabeledVector<>(applyMargin(v.features()), v.label()))
+            .filter(v -> between(v.features().get(0), -variance, variance))
+            .filter(v -> between(v.features().get(1), -variance, variance));
     }
 
     private boolean between(double x, double min, double max) {
         return x >= min && x <= max;
     }
 
-    private boolean isFirstClass(Vector v) {
-        return v.get(0) - v.get(1) > 0;
+    private double classify(Vector v) {
+        return v.get(0) - v.get(1) > 0 ? -1.0 : 1.0;
     }
 
     private Vector applyMargin(Vector v) {

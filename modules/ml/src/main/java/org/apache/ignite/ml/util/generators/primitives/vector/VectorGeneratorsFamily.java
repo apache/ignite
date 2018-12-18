@@ -19,18 +19,15 @@ package org.apache.ignite.ml.util.generators.primitives.vector;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.util.Utils;
-import org.apache.ignite.ml.util.generators.datastream.DataStreamGenerator;
 import org.apache.ignite.ml.util.generators.primitives.variable.DiscreteRandomProducer;
 
-public class VectorGeneratorsFamily implements VectorGenerator, DataStreamGenerator, Iterator<VectorGeneratorsFamily.VectorWithDistributionId> {
+public class VectorGeneratorsFamily implements VectorGenerator {
     private final List<VectorGenerator> family;
     private final DiscreteRandomProducer selector;
 
@@ -53,20 +50,9 @@ public class VectorGeneratorsFamily implements VectorGenerator, DataStreamGenera
         return new VectorWithDistributionId(family.get(id).get(), id);
     }
 
-    public Stream<VectorWithDistributionId> asStream() {
-        return Utils.asStream(this);
-    }
-
-    @Override public boolean hasNext() {
-        return true;
-    }
-
-    @Override public VectorWithDistributionId next() {
-        return getWithId();
-    }
-
-    @Override public Stream<LabeledVector<Vector, Double>> labeled() {
-        return asStream().map(v -> new LabeledVector<>(v.vector, (double) v.distributionId));
+    @Override
+    public Stream<LabeledVector<Vector, Double>> labeled() {
+        return Stream.generate(this::getWithId).map(v -> new LabeledVector<>(v.vector, (double) v.distributionId));
     }
 
     public static class Builder {
@@ -87,7 +73,7 @@ public class VectorGeneratorsFamily implements VectorGenerator, DataStreamGenera
         }
     }
 
-    public static class VectorWithDistributionId {
+    private static class VectorWithDistributionId {
         private final Vector vector;
         private final int distributionId;
 

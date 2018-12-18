@@ -20,11 +20,11 @@ public class RandomVectorsGeneratorTest {
 //        Stream<LabeledVector<Vector, Double>> targetStream = new GaussianLerpDataStream(2, 5, 1.0, -50, 50.0, System.currentTimeMillis()).labeled();
 //        Stream<LabeledVector<Vector, Double>> targetStream = new ClassificationDataStream(2, 10, 0, 0, 2, 20.0, System.currentTimeMillis()).labeled();
 //                Stream<LabeledVector<Vector, Double>> targetStream = new CirclesDataStream(5, 5, 5).labeled();
-//        Stream<LabeledVector<Vector, Double>> targetStream = new TwoSeparableClassesDataStream(-2.0, 10).labeled();
-        Stream<LabeledVector<Vector, Double>> targetStream = RegressionDataStream.twoDimensional(
-            new FunctionWithNoize<>(Math::sin, new GaussRandomProducer(0, 0.01)),
-            -10, 10
-        ).labeled();
+        Stream<LabeledVector<Vector, Double>> targetStream = new TwoSeparableClassesDataStream(-2.0, 10).labeled();
+//        Stream<LabeledVector<Vector, Double>> targetStream = RegressionDataStream.twoDimensional(
+//            new FunctionWithNoize<>(Math::sin, new GaussRandomProducer(0, 0.01)),
+//            -10, 10
+//        ).labeled();
 //        Stream<LabeledVector<Vector, Double>> targetStream = new GaussianMixtureDataStream.Builder()
 //            .add(VectorUtils.of(3.0, 3.0), 1.0)
 //            .add(VectorUtils.of(-3.0, -3.0), 2.0)

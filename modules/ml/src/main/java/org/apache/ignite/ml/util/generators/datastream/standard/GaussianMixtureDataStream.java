@@ -23,7 +23,7 @@ import java.util.stream.Stream;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.util.generators.datastream.DataStreamGenerator;
+import org.apache.ignite.ml.util.generators.DataStreamGenerator;
 import org.apache.ignite.ml.util.generators.primitives.vector.VectorGenerator;
 import org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorsFamily;
 
@@ -39,7 +39,7 @@ public class GaussianMixtureDataStream implements DataStreamGenerator {
         }
 
         public GaussianMixtureDataStream build() {
-            A.notEmpty(this.means, "this.means.size()");
+            A.notEmpty(means, "this.means.size()");
             Vector[] means = new Vector[this.means.size()];
             double[] variances = new double[this.variances.size()];
             for(int i = 0; i<this.means.size(); i++) {
