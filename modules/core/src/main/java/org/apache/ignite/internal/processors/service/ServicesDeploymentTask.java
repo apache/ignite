@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
@@ -304,7 +305,7 @@ class ServicesDeploymentTask {
                 try {
                     ServiceConfiguration cfg = desc.configuration();
 
-                    Map<UUID, Integer> oldTop = filterDeadNodes(evtTopNodes, desc.topologySnapshot());
+                    TreeMap<UUID, Integer> oldTop = filterDeadNodes(evtTopNodes, desc.topologySnapshot());
 
                     Map<UUID, Integer> top = reassign(srvcId, cfg, evtTopVer, oldTop);
 
@@ -579,7 +580,7 @@ class ServicesDeploymentTask {
      * @throws IgniteCheckedException In case of an error.
      */
     private Map<UUID, Integer> reassign(IgniteUuid srvcId, ServiceConfiguration cfg,
-        AffinityTopologyVersion topVer, Map<UUID, Integer> oldTop) throws IgniteCheckedException {
+        AffinityTopologyVersion topVer, TreeMap<UUID, Integer> oldTop) throws IgniteCheckedException {
         try {
             Map<UUID, Integer> top = srvcProc.reassign(srvcId, cfg, topVer, oldTop);
 
@@ -603,11 +604,11 @@ class ServicesDeploymentTask {
      * @param top Service topology snapshot.
      * @return Filtered service topology snapshot.
      */
-    private Map<UUID, Integer> filterDeadNodes(Collection<UUID> evtTopNodes, Map<UUID, Integer> top) {
-        if (F.isEmpty(top))
-            return top;
+    private TreeMap<UUID, Integer> filterDeadNodes(Collection<UUID> evtTopNodes, Map<UUID, Integer> top) {
+        TreeMap<UUID, Integer> filtered = new TreeMap<>();
 
-        Map<UUID, Integer> filtered = new HashMap<>();
+        if (F.isEmpty(top))
+            return filtered;
 
         top.forEach((nodeId, cnt) -> {
             // We can't just use 'ctx.discovery().alive(UUID)', because during the deployment process discovery

@@ -977,7 +977,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * @throws IgniteCheckedException If failed.
      */
     protected Map<UUID, Integer> reassign(@NotNull IgniteUuid srvcId, @NotNull ServiceConfiguration cfg,
-        @NotNull AffinityTopologyVersion topVer, @Nullable Map<UUID, Integer> oldTop) throws IgniteCheckedException {
+        @NotNull AffinityTopologyVersion topVer,
+        @Nullable TreeMap<UUID, Integer> oldTop) throws IgniteCheckedException {
         Object nodeFilter = cfg.getNodeFilter();
 
         if (nodeFilter != null)

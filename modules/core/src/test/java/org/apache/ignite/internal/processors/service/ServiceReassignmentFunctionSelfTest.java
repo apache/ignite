@@ -20,10 +20,10 @@ package org.apache.ignite.internal.processors.service;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.TreeMap;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -95,8 +95,8 @@ public class ServiceReassignmentFunctionSelfTest {
     }
 
     /**
-     * Mocks GridServiceProcessor to test method {@link GridServiceProcessor#reassign(IgniteUuid, ServiceConfiguration,
-     * AffinityTopologyVersion, Map)} )}.
+     * Mocks GridServiceProcessor to test method {@link IgniteServiceProcessor#reassign(IgniteUuid,
+     * ServiceConfiguration, AffinityTopologyVersion, TreeMap)} AffinityTopologyVersion, Map)} )}.
      */
     private IgniteServiceProcessor mockServiceProcessor() {
         GridTestKernalContext spyCtx = spy(new GridTestKernalContext(new GridTestLog4jLogger()));
@@ -141,7 +141,7 @@ public class ServiceReassignmentFunctionSelfTest {
 
         IgniteUuid srvcId = IgniteUuid.randomUuid();
 
-        Map<UUID, Integer> oldTop = new HashMap<>();
+        TreeMap<UUID, Integer> oldTop = new TreeMap<>();
 
         ClusterNode randomNode = nodes.get(new Random().nextInt(nodes.size()));
 
@@ -175,7 +175,7 @@ public class ServiceReassignmentFunctionSelfTest {
 
         IgniteUuid srvcId = IgniteUuid.randomUuid();
 
-        Map<UUID, Integer> oldTop = new HashMap<>();
+        TreeMap<UUID, Integer> oldTop = new TreeMap<>();
 
         for (ClusterNode node : nodes)
             oldTop.put(node.id(), 1);
@@ -203,7 +203,7 @@ public class ServiceReassignmentFunctionSelfTest {
      */
     @Ignore
     public void runTestReassignFunction(IgniteUuid srvcId, ServiceConfiguration cfg,
-        Map<UUID, Integer> oldTop) throws Exception {
+        TreeMap<UUID, Integer> oldTop) throws Exception {
         final IgniteServiceProcessor proc0 = processors.get(0);
         final AffinityTopologyVersion stubTopVer = AffinityTopologyVersion.NONE;
 
