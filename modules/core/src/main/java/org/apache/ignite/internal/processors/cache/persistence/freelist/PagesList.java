@@ -255,6 +255,8 @@ public abstract class PagesList extends DataStructure {
     }
 
     /**
+     * Save metadata without exclusive lock on it.
+     *
      * @throws IgniteCheckedException If failed.
      */
     public void saveMetadata() throws IgniteCheckedException {
@@ -265,73 +267,18 @@ public abstract class PagesList extends DataStructure {
         if (!changed)
             return;
 
-        long unusedPageId = writeFreeList(nextPageId);
-
-        markUnusedPagesDirty(unusedPageId);
-
-        changed = false;
-    }
-
-    /**
-     * Save metadata without exclusive lock on it.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    public void saveMetadataConcurrently() throws IgniteCheckedException {
-        long nextPageId = metaPageId;
-
-        assert nextPageId != 0;
-
-        if (!changed)
-            return;
-
+        //This guaranteed that any concurrently changes of list will be detected.
         changed = false;
 
         try {
             long unusedPageId = writeFreeList(nextPageId);
 
-            //We can't mark page dirty concurrently.
-            if(unusedPageId != 0L)
-                changed = true;
+            markUnusedPagesDirty(unusedPageId);
         }
         catch (Throwable e) {
             changed = true;//Return changed flag due to exception.
 
             throw e;
-        }
-    }
-
-    /**
-     * Mark unused pages as dirty.
-     *
-     * @param nextPageId First unused page.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void markUnusedPagesDirty(long nextPageId) throws IgniteCheckedException {
-        while (nextPageId != 0L) {
-            long pageId = nextPageId;
-
-            long page = acquirePage(pageId, IoStatisticsHolderNoOp.INSTANCE);
-            try {
-                long pageAddr = writeLock(pageId, page);
-
-                try {
-                    PagesListMetaIO io = PagesListMetaIO.VERSIONS.forPage(pageAddr);
-
-                    io.resetCount(pageAddr);
-
-                    if (needWalDeltaRecord(pageId, page, null))
-                        wal.log(new PageListMetaResetCountRecord(grpId, pageId));
-
-                    nextPageId = io.getNextMetaPageId(pageAddr);
-                }
-                finally {
-                    writeUnlock(pageId, page, pageAddr, true);
-                }
-            }
-            finally {
-                releasePage(pageId, page);
-            }
         }
     }
 
@@ -404,6 +351,40 @@ public abstract class PagesList extends DataStructure {
         }
 
         return nextPageId;
+    }
+
+    /**
+     * Mark unused pages as dirty.
+     *
+     * @param nextPageId First unused page.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void markUnusedPagesDirty(long nextPageId) throws IgniteCheckedException {
+        while (nextPageId != 0L) {
+            long pageId = nextPageId;
+
+            long page = acquirePage(pageId, IoStatisticsHolderNoOp.INSTANCE);
+            try {
+                long pageAddr = writeLock(pageId, page);
+
+                try {
+                    PagesListMetaIO io = PagesListMetaIO.VERSIONS.forPage(pageAddr);
+
+                    io.resetCount(pageAddr);
+
+                    if (needWalDeltaRecord(pageId, page, null))
+                        wal.log(new PageListMetaResetCountRecord(grpId, pageId));
+
+                    nextPageId = io.getNextMetaPageId(pageAddr);
+                }
+                finally {
+                    writeUnlock(pageId, page, pageAddr, true);
+                }
+            }
+            finally {
+                releasePage(pageId, page);
+            }
+        }
     }
 
     /**

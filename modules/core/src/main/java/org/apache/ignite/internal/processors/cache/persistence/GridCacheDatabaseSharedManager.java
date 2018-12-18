@@ -3570,10 +3570,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             DbCheckpointContextImpl ctx0 = new DbCheckpointContextImpl(curr, new PartitionAllocationMap());
 
-            for (DbCheckpointListener lsnr : lsnrs)
-                lsnr.beforeCheckpointBegin(ctx0);
+            internalReadLock();
+            try {
+                for (DbCheckpointListener lsnr : lsnrs)
+                    lsnr.beforeCheckpointBegin(ctx0);
 
-            ctx0.awaitPendingTasksFinished();
+                ctx0.awaitPendingTasksFinished();
+            }
+            finally {
+                internalReadUnlock();
+            }
 
             tracker.onLockWaitStart();
 
@@ -3683,6 +3689,26 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 return new Checkpoint(null, new GridMultiCollectionWrapper<>(new Collection[0]), curr);
             }
+        }
+
+        /**
+         * Take read lock for internal use.
+         */
+        private void internalReadUnlock() {
+            checkpointLock.readLock().unlock();
+
+            if (ASSERTION_ENABLED)
+                CHECKPOINT_LOCK_HOLD_COUNT.set(CHECKPOINT_LOCK_HOLD_COUNT.get() - 1);
+        }
+
+        /**
+         * Release read lock.
+         */
+        private void internalReadLock() {
+            checkpointLock.readLock().lock();
+
+            if (ASSERTION_ENABLED)
+                CHECKPOINT_LOCK_HOLD_COUNT.set(CHECKPOINT_LOCK_HOLD_COUNT.get() + 1);
         }
 
         /**

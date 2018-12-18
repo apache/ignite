@@ -572,7 +572,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
 
     /** {@inheritDoc} */
     @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
-        freeList.saveMetadataConcurrently();
+        freeList.saveMetadata();
     }
 
     /**

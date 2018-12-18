@@ -102,6 +102,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration storageCfg = new DataStorageConfiguration();
 
+        storageCfg.setCheckpointThreads(2);
         storageCfg.getDefaultDataRegionConfiguration()
             .setPersistenceEnabled(true)
             .setMaxSize(300L * 1024 * 1024);
@@ -170,7 +171,9 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
         stopGrid(0);
 
-        startGrid(0);
+        ignite0 = startGrid(0);
+
+        ignite0.cluster().active(true);
 
         GridCacheOffheapManager offheap2 = cacheOffheapManager();
 
