@@ -258,20 +258,34 @@ public abstract class PagesList extends DataStructure {
      * @throws IgniteCheckedException If failed.
      */
     public void saveMetadata() throws IgniteCheckedException {
-        assert metaPageId != 0;
-
-        long curId = 0L;
-        long curPage = 0L;
-        long curAddr = 0L;
-
-        PagesListMetaIO curIo = null;
-
         long nextPageId = metaPageId;
+
+        assert nextPageId != 0;
 
         if (!changed)
             return;
 
         changed = false;
+
+        try {
+            saveMetadata(nextPageId);
+        }
+        catch (Throwable e) {
+            changed = true;//Return changed flag due to exception.
+
+            throw e;
+        }
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void saveMetadata(long nextPageId) throws IgniteCheckedException {
+        long curId = 0L;
+        long curPage = 0L;
+        long curAddr = 0L;
+
+        PagesListMetaIO curIo = null;
 
         try {
             for (int bucket = 0; bucket < buckets; bucket++) {

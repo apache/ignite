@@ -173,6 +173,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /** {@inheritDoc} */
     @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
+        beforeCheckpointBegin(ctx);
+    }
+
+    /** {@inheritDoc} */
+    public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
         assert grp.dataRegion().pageMemory() instanceof PageMemoryEx;
 
         Executor execSvc = ctx.executor();
@@ -195,11 +200,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         syncMetadata(execSvc, ctx, needSnapshot);
-    }
-
-    /** {@inheritDoc} */
-    public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
-        onCheckpointBegin(ctx);
     }
 
     /**
