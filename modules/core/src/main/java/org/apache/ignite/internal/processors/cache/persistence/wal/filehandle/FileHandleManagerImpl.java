@@ -570,6 +570,9 @@ public class FileHandleManagerImpl implements FileHandleManager {
             }
         }
 
+        /**
+         * Restart worker in IgniteThread.
+         */
         public void restart() {
             assert runner() == null : "WALWriter is still running.";
 
@@ -620,6 +623,9 @@ public class FileHandleManagerImpl implements FileHandleManager {
             U.join(this, log);
         }
 
+        /**
+         * Restart worker in IgniteThread.
+         */
         public void restart() {
             assert runner() == null : "WalSegmentSyncer is running.";
 

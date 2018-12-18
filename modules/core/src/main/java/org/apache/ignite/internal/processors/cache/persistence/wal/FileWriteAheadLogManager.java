@@ -1832,6 +1832,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             );
         }
 
+        /**
+         * Restart worker in IgniteThread.
+         */
         public void restart() {
             assert runner() == null : "FileArchiver is still running";
 
