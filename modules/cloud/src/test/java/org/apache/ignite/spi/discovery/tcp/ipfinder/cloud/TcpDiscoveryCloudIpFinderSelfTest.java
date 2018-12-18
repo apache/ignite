@@ -61,17 +61,6 @@ public class TcpDiscoveryCloudIpFinderSelfTest extends
     }
 
     /**
-     * Tests AWS.
-     *
-     * @throws Exception If any error occurs.
-     */
-    @IgniteIgnore("https://issues.apache.org/jira/browse/IGNITE-845")
-    @Test
-    public void testAmazonWebServices() throws Exception {
-        testCloudProvider("aws-ec2");
-    }
-
-    /**
      * Tests GCE.
      *
      * @throws Exception If any error occurs.
