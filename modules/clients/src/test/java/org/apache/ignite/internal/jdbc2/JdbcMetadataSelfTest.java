@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
@@ -29,7 +30,6 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
-import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -56,10 +56,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static java.sql.Types.DATE;
+import static java.sql.Types.DECIMAL;
 import static java.sql.Types.INTEGER;
 import static java.sql.Types.VARCHAR;
-import static java.sql.Types.DECIMAL;
-import static java.sql.Types.DATE;
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -479,6 +479,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             ResultSet rs = conn.getMetaData().getPrimaryKeys(null, null, null);
 
+            // TABLE_SCHEM.TABLE_NAME.PK_NAME.COLUMN_NAME
             Set<String> expectedPks = new HashSet<>(Arrays.asList(
                 "org.ORGANIZATION.PK_org_ORGANIZATION._KEY",
                 "pers.PERSON.PK_pers_PERSON._KEY",
@@ -486,7 +487,8 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                 "PUBLIC.TEST.PK_PUBLIC_TEST.ID",
                 "PUBLIC.TEST.PK_PUBLIC_TEST.NAME",
                 "PUBLIC.Quoted.PK_PUBLIC_Quoted.Id",
-                "PUBLIC.TEST_DECIMAL_COLUMN.ID.ID"));
+                "PUBLIC.TEST_DECIMAL_COLUMN.ID.ID",
+                "metaTest.METATEST.PK_metaTest_METATEST._KEY"));
 
             Set<String> actualPks = new HashSet<>(expectedPks.size());
 
