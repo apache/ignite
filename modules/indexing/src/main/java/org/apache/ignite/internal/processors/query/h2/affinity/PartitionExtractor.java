@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinCondition;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinGroup;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinModel;
+import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinTable;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
@@ -40,10 +41,10 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -157,68 +158,97 @@ public class PartitionExtractor {
      * @return Join model.
      */
     private PartitionJoinModel prepareJoinModel(GridSqlAst from, GridSqlAst where) {
-        Collection<PartitionJoinGroup> grps = Collections.newSetFromMap(new IdentityHashMap<>());
+        Set<String> leftJoined = new HashSet<>();
         Collection<PartitionJoinCondition> conds = new HashSet<>();
 
-        prepareJoinModelTables(from, grps, conds);
+        Collection<PartitionJoinGroup> grps = prepareJoinModelTables(from, leftJoined, conds);
 
         // TODO
         return null;
     }
 
     /**
+     * Prepare expressions from WHERE condition.
+     * <p>
+     * All conditions which qualifies for joined tables must be located at the top level of conjunctive expression.
+     * That is, (joinCond AND ...) is OK for us. But (joinCond OR ...) isn't.
+     * <p>
+     * Also we do not expect any additional join expressions on LEFT JOINed columns, so if they are met, processing is
+     * stopped.
+     *
+     * @param where WHERE condition.
+     * @param leftJoined Left joined tables.
+     * @param conds Condirtions.
+     */
+    private boolean prepareJoinModelConditions(GridSqlAst where, Collection<String> leftJoined,
+        Collection<PartitionJoinCondition> conds) {
+        // TODO
+        return false;
+    }
+
+    /**
      * Prepare tables which will be used in join model.
      *
      * @param from From flag.
-     * @param grps Groups.
      * @param conds Conditions.
      * @return {@code True} if extracted tables successfully, {@code false} if failed to extract.
      */
-    private static boolean prepareJoinModelTables(
+    private List<PartitionJoinGroup> prepareJoinModelTables(
         GridSqlAst from,
-        Collection<PartitionJoinGroup> grps,
+        Collection<String> leftJoined,
         Collection<PartitionJoinCondition> conds
     ) {
         if (from instanceof GridSqlJoin) {
             // Process JOIN recursively.
             GridSqlJoin join = (GridSqlJoin)from;
 
-            if (!prepareJoinModelTables(join.leftTable(), grps, conds))
-                return false;
+            List<PartitionJoinGroup> leftGrp = prepareJoinModelTables(join.leftTable(), leftJoined, conds);
 
-            if (!prepareJoinModelTables(join.rightTable(), grps, conds))
-                return false;
+            if (leftGrp == null)
+                return null;
+
+            List<PartitionJoinGroup> rightGrp = prepareJoinModelTables(join.leftTable(), leftJoined, conds);
+
+            if (rightGrp == null)
+                return null;
+
+            if (join.isLeftOuter()) {
+                // Do not support complex LEFT-RIGHT join variations for now.
+                if (rightGrp.size() != 1)
+                    return null;
+
+                // "a LEFT JOIN b" is transformed into "a", and "b" is put into special stop-list.
+                // If a condition is met on "b" afterwards, we will stop partition pruning process.
+                for (PartitionJoinTable rightTbl : rightGrp.get(0).tables())
+                    leftJoined.add(rightTbl.alias());
+
+                return leftGrp;
+            }
 
             // Extract condition from JOIN. Only equijoins are supported for now.
-            // Note that most conditions are moved to WHERE clause through AND predicate,
-            // so if it is present, then most likely we deal with LEFT JOIN.
             GridSqlElement on = join.on();
 
-            if (PartitionExtractorUtils.isCrossJoinCondition(on)) {
-                PartitionJoinCondition cond = new PartitionJoinCondition(join.leftTable())
+            if (!PartitionExtractorUtils.isCrossJoinCondition(on)) {
+                PartitionJoinCondition cond = PartitionExtractorUtils.tryParseEquiJoinCondition(on);
+
+                if (cond != null)
+                    conds.add(cond);
+                else
+                    // Non equi-join, stop partition pruning.
+                    return null;
             }
 
+            ArrayList<PartitionJoinGroup> res = new ArrayList<>(leftGrp.size() + rightGrp.size());
 
-            boolean onSimple = false;
+            res.addAll(leftGrp);
+            res.addAll(rightGrp);
 
-            if (on instanceof GridSqlOperation) {
-                GridSqlOperation on0 = (GridSqlOperation)on;
-
-                if (on0.operationType() == GridSqlOperationType.EQUAL) {
-                    GridSqlColumn left = unwrapColumn(on0.child(0));
-                    GridSqlColumn right = unwrapColumn(on0.child(1));
-
-                    // TODO
-                    System.out.println(left + " " + right);
-                }
-            }
+            return res;
         }
 
         PartitionJoinGroup grp = PartitionExtractorUtils.joinGroupForTable(from);
 
-        grps.add(grp);
-
-        return true;
+        return Collections.singletonList(grp);
     }
 
     /**

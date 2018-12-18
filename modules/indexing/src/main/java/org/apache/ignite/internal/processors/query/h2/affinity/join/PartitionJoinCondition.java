@@ -35,9 +35,6 @@ public class PartitionJoinCondition {
     /** Right column name. */
     private final String rightCol;
 
-    /** Whether this is LEFT OUTER JOIN. */
-    private final boolean left;
-
     /**
      * Constructor.
      *
@@ -45,14 +42,12 @@ public class PartitionJoinCondition {
      * @param rightAlias Right alias.
      * @param leftCol Left column name.
      * @param rightCol Right column name.
-     * @param left Left join flag.
      */
-    public PartitionJoinCondition(String leftAlias, String rightAlias, String leftCol, String rightCol, boolean left) {
+    public PartitionJoinCondition(String leftAlias, String rightAlias, String leftCol, String rightCol) {
         this.leftAlias = leftAlias;
         this.rightAlias = rightAlias;
         this.leftCol = leftCol;
         this.rightCol = rightCol;
-        this.left = left;
     }
 
     /**
@@ -83,13 +78,6 @@ public class PartitionJoinCondition {
         return rightCol;
     }
 
-    /**
-     * @return Whether this is left join.
-     */
-    public boolean left() {
-        return left;
-    }
-
     /** {@inheritDoc} */
     @Override public int hashCode() {
         int res = leftAlias.hashCode();
@@ -97,7 +85,6 @@ public class PartitionJoinCondition {
         res = 31 * res + rightAlias.hashCode();
         res = 31 * res + leftCol.hashCode();
         res = 31 * res + rightCol.hashCode();
-        res = 31 * res + Boolean.hashCode(left);
 
         return res;
     }
@@ -108,7 +95,7 @@ public class PartitionJoinCondition {
             PartitionJoinCondition other = (PartitionJoinCondition)obj;
 
             return F.eq(leftAlias, other.leftAlias) && F.eq(rightAlias, other.rightAlias) &&
-                F.eq(leftCol, other.leftCol) && F.eq(rightCol, other.rightCol) && F.eq(left, other.left);
+                F.eq(leftCol, other.leftCol) && F.eq(rightCol, other.rightCol);
         }
 
         return false;

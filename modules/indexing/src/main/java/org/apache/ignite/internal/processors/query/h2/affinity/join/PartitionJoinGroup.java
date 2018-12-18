@@ -29,9 +29,6 @@ public class PartitionJoinGroup {
     /** Tables within a group. */
     private final Collection<PartitionJoinTable> tbls = Collections.newSetFromMap(new IdentityHashMap<>());
 
-    /** Tables that were left joined to the group (i.e. these are tables that were on the right side of LJ. */
-    private final Collection<PartitionJoinTable> outerTbls = Collections.newSetFromMap(new IdentityHashMap<>());
-
     /** Affinity function descriptor. */
     private final PartitionJoinAffinityDescriptor affDesc;
 
@@ -61,13 +58,6 @@ public class PartitionJoinGroup {
         tbls.add(tbl);
 
         return this;
-    }
-
-    /**
-     * @return Outer tables.
-     */
-    public Collection<PartitionJoinTable> outerTables() {
-        return outerTbls;
     }
 
     /**

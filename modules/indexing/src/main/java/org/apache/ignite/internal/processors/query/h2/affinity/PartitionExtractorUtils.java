@@ -137,11 +137,30 @@ public class PartitionExtractorUtils {
      * Try parsing condition as simple JOIN codition. Only equijoins are supported for now, so anything more complex
      * than "A.a = B.b" are not processed.
      *
-     * @param cond Initial AST.
+     * @param on Initial AST.
      * @return Join condition or {@code null} if not simple equijoin.
      */
-    public static PartitionJoinCondition tryParseJoinCondition(GridSqlElement cond) {
+    public static PartitionJoinCondition tryParseEquiJoinCondition(GridSqlElement on) {
+        if (on instanceof GridSqlOperation) {
+            GridSqlOperation on0 = (GridSqlOperation)on;
 
+            if (on0.operationType() == GridSqlOperationType.EQUAL) {
+                GridSqlColumn left = PartitionExtractor.unwrapColumn(on0.child(0));
+                GridSqlColumn right = PartitionExtractor.unwrapColumn(on0.child(1));
+
+                if (left != null && right != null) {
+                    String leftAlias = left.tableAlias();
+                    String rightAlias = right.tableAlias();
+
+                    String leftCol = left.columnName();
+                    String rightCol = right.columnName();
+
+                    return new PartitionJoinCondition(leftAlias, rightAlias, leftCol, rightCol);
+                }
+            }
+        }
+
+        return null;
     }
 
     /**

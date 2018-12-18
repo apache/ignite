@@ -38,9 +38,6 @@ public class PartitionJoinTable {
     /** Whether this is not a classical table. */
     private final boolean nonTable;
 
-    /** Whether table is left joined. */
-    private boolean leftJoined;
-
     /**
      * Create join table for subquery.
      *
@@ -118,20 +115,6 @@ public class PartitionJoinTable {
      */
     public String secondAffinityColName() {
         return secondAffColName;
-    }
-
-    /**
-     * @param leftJoined Whether table is left-joined.
-     */
-    public void leftJoined(boolean leftJoined) {
-        this.leftJoined = leftJoined;
-    }
-
-    /**
-     * @return Whether table is left-joined.
-     */
-    public boolean leftJoined() {
-        return leftJoined;
     }
 
     /**
