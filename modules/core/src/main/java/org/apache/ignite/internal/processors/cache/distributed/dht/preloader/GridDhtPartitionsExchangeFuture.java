@@ -732,6 +732,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     ", allowMerge=" + exchCtx.mergeExchanges() + ']');
             }
 
+            timeBag.finishGlobalStage("Exchange parameters initialization");
+
             ExchangeType exchange;
 
             if (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
@@ -2166,14 +2168,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 log.info("Completed partition exchange [localNode=" + cctx.localNodeId() +
                         ", exchange=" + (log.isDebugEnabled() ? this : shortInfo()) + ", topVer=" + topologyVersion() + "]");
 
-                final String exchangeVersion = "[startVer=" + initialVersion().toShortString()
-                    + ", resVer=" + topologyVersion().toShortString() + "]";
+                AffinityTopologyVersion startVer = initialVersion();
+                AffinityTopologyVersion resVer = topologyVersion();
+
+                final String exchangeVersion = "startVer=" + (startVer != null ? startVer.toShortString() : "N/A")
+                    + ", resVer=" + (resVer != null ? resVer.toShortString() : "N/A");
 
                 if (discoveryLag != 0)
-                    log.info("Discovery lag / Clocks discrepancy: " + discoveryLag + " ms. " + exchangeVersion);
+                    log.info("Discovery lag / Clocks discrepancy: " + discoveryLag + " ms. " + "[" + exchangeVersion + "]");
 
-                for (String stageTiming : timeBag.stagesTimings())
-                    log.info(stageTiming + " " + exchangeVersion);
+                for (String stageTiming : timeBag.stagesTimings(exchangeVersion))
+                    log.info(stageTiming);
             }
 
             initFut.onDone(err == null);

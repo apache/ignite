@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -145,7 +146,7 @@ public class TimeBag {
      * @param stage Stage.
      * @param timingsList List with timings in string representation.
      */
-    private void addStageTiming(Stage stage, List<String> timingsList) {
+    private void addStageTiming(Stage stage, List<String> timingsList, @Nullable String postfix) {
         StringBuilder sb = new StringBuilder();
 
         if (!(stage instanceof GlobalStage))
@@ -155,6 +156,8 @@ public class TimeBag {
         sb.append('[');
         sb.append("desc=").append(stage.description()).append(", ");
         sb.append("time=").append(stage.time()).append(' ').append(measurementUnitShort());
+        if (postfix != null)
+            sb.append(", ").append(postfix);
         sb.append(']');
 
         timingsList.add(sb.toString());
@@ -187,7 +190,7 @@ public class TimeBag {
     /**
      * @return List of string representation of all stage timings.
      */
-    public List<String> stagesTimings() {
+    public List<String> stagesTimings(@Nullable String postfix) {
         lock.readLock().lock();
 
         try {
@@ -201,7 +204,7 @@ public class TimeBag {
 
                 totalTime += globStage.time();
 
-                addStageTiming(globStage, timings);
+                addStageTiming(globStage, timings, postfix);
 
                 if (!globStage.localStages.isEmpty()) {
                     // Take a thread with longest local stages sequence.
@@ -225,16 +228,18 @@ public class TimeBag {
                     assert longestTimeThread != null;
 
                     if (locStages.size() > 1)
-                        timings.add(PADDING + "Longest execution thread " + longestTimeThread + ":");
+                        timings.add(PADDING + "Longest execution thread " + longestTimeThread
+                            + " [time=" + longestTime + " " + measurementUnitShort() + "]:");
 
                     List<Stage> longestStagesSeq = locStages.get(longestTimeThread);
 
                     for (Stage stage : longestStagesSeq)
-                        addStageTiming(stage, timings);
+                        addStageTiming(stage, timings, postfix);
                 }
             }
 
-            timings.add("Total time of all stages: " + totalTime + " " + measurementUnitShort());
+            // Add last stage with summary time of all global stages.
+            addStageTiming(new GlobalStage("Total time", totalTime, Collections.emptyMap()), timings, postfix);
 
             return timings;
         }
