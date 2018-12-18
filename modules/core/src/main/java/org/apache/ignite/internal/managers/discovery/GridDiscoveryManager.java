@@ -2465,7 +2465,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param cacheName Cache name.
      * @param rich Node to add
      */
-    private void addToMap(Map<Integer, List<ClusterNode>> cacheMap, String cacheName, ClusterNode rich) {
+    private void addToMap(Map<Integer, List<ClusterNode>> cacheMap, String cacheName, ClusterNode node) {
         List<ClusterNode> cacheNodes = cacheMap.get(CU.cacheId(cacheName));
 
         if (cacheNodes == null) {
@@ -2474,7 +2474,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             cacheMap.put(CU.cacheId(cacheName), cacheNodes);
         }
 
-        cacheNodes.add(rich);
+        cacheNodes.add(node);
     }
 
     /**
@@ -3418,6 +3418,24 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     addToMap(allCacheNodes, cacheName, node);
                 }
+            }
+        }
+
+        if (cacheGrpAffNodes.size() != registeredCacheGrps.size()) {
+            for (Map.Entry<Integer, CacheGroupAffinity> e : registeredCacheGrps.entrySet()) {
+                Integer grpId = e.getKey();
+
+                if (!cacheGrpAffNodes.containsKey(grpId))
+                    cacheGrpAffNodes.put(grpId, Collections.emptyList());
+            }
+        }
+
+        if (allCacheNodes.size() != registeredCaches.size()) {
+            for (Map.Entry<String, CachePredicate> entry : registeredCaches.entrySet()) {
+                Integer cacheId = CU.cacheId(entry.getKey());
+
+                if (!allCacheNodes.containsKey(cacheId))
+                    allCacheNodes.put(cacheId, Collections.emptyList());
             }
         }
     }

@@ -154,8 +154,6 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAffinityCallNoServerNode() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1741");
-
         startGridsMultiThreaded(SRVS + 1);
 
         final Integer key = 1;
@@ -165,7 +163,7 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         assertTrue(client.configuration().isClientMode());
 
         final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
+            @Override public Object call() {
                 for (int i = 0; i < SRVS; ++i)
                     stopGrid(i, false);
 
