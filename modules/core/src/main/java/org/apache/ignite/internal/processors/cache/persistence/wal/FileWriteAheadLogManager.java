@@ -630,6 +630,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
+        if (log.isDebugEnabled())
+            log.debug("File write ahead log manager resuming logging [nodeId=" + cctx.localNodeId() +
+                " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
+
         assert currHnd == null;
         assert lastPtr == null || lastPtr instanceof FileWALPointer;
 
@@ -660,11 +664,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         currHnd.finishResumeLogging();
 
         if (mode == WALMode.BACKGROUND) {
-            backgroundFlushSchedule = cctx.time().schedule(new Runnable() {
-                @Override public void run() {
-                    doFlush();
-                }
-            }, flushFreq, flushFreq);
+            backgroundFlushSchedule = cctx.time().schedule(this::doFlush, flushFreq, flushFreq);
         }
 
         if (walAutoArchiveAfterInactivity > 0)
