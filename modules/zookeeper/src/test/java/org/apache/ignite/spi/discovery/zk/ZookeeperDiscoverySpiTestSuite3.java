@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.zk;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteClientDataStructuresTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedNodeRestartTxSelfTest;
@@ -47,15 +48,15 @@ public class ZookeeperDiscoverySpiTestSuite3 extends ZookeeperDiscoverySpiAbstra
 
         TestSuite suite = new TestSuite("ZookeeperDiscoverySpi Test Suite");
 
-        suite.addTestSuite(GridCacheReplicatedNodeRestartSelfTest.class);
-        suite.addTestSuite(GridEventConsumeSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedNodeRestartTxSelfTest.class);
-        suite.addTestSuite(IgniteClientDataStructuresTest.class);
-        suite.addTestSuite(GridCacheReplicatedSequenceApiSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedSequenceApiSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridP2PContinuousDeploymentSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedNodeRestartSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridEventConsumeSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedNodeRestartTxSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteClientDataStructuresTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedSequenceApiSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedSequenceApiSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheAtomicMultiJvmFullApiSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedMultiJvmFullApiSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridP2PContinuousDeploymentSelfTest.class));
 
         return suite;
     }

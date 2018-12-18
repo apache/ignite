@@ -20,14 +20,19 @@ package org.apache.ignite.jdbc.thin;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashSet;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class JdbcThinDeleteStatementSelfTest extends JdbcThinAbstractUpdateStatementSelfTest {
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testExecute() throws SQLException {
         conn.createStatement().execute("delete from Person where cast(substring(_key, 2, 1) as int) % 2 = 0");
 
@@ -38,6 +43,7 @@ public class JdbcThinDeleteStatementSelfTest extends JdbcThinAbstractUpdateState
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testExecuteUpdate() throws SQLException {
         int res =
             conn.createStatement().executeUpdate("delete from Person where cast(substring(_key, 2, 1) as int) % 2 = 0");
