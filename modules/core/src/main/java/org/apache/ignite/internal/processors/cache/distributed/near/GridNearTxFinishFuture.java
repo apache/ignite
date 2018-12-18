@@ -535,7 +535,10 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
                 assert cacheCtx != null;
 
-                if (cacheCtx.config().getBackups() == 1) {
+                // TODO IGNITE-8823  The check currently commented hides the assertion in IgniteTxManager.removeTxReturn
+                // TODO IGNITE-8823  when number of backups is 0. Should understand what to do with non-backup nodes in
+                // TODO IGNITE-8823  Collection<UUID> backups. Reproducer: CacheRebalancingWithConcurrentProcessingTest.
+                /* if (cacheCtx.config().getBackups() == 1)*/ {
                     UUID backupId = F.first(backups);
 
                     ClusterNode backup = cctx.discovery().node(backupId);
