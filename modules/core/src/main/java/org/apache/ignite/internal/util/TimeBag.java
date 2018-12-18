@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.ignite.IgniteLogger;
 
 public class TimeBag {
     /** Initial global stage. */
@@ -21,6 +22,9 @@ public class TimeBag {
 
     /** Global stopwatch. */
     private final IgniteStopwatch globalStopwatch = IgniteStopwatch.createStarted();
+
+    /** Logger. */
+    private final IgniteLogger log;
 
     /** Measurement unit. */
     private final TimeUnit measurementUnit;
@@ -38,11 +42,12 @@ public class TimeBag {
     private final ThreadLocal<IgniteStopwatch> tlStopwatch = ThreadLocal.withInitial(IgniteStopwatch::createUnstarted);
 
 
-    public TimeBag() {
-        this(TimeUnit.MILLISECONDS);
+    public TimeBag(IgniteLogger log) {
+        this(log, TimeUnit.MILLISECONDS);
     }
 
-    public TimeBag(TimeUnit measurementUnit) {
+    public TimeBag(IgniteLogger log, TimeUnit measurementUnit) {
+        this.log = log;
         this.stages = new ArrayList<>();
         this.localStages = new ConcurrentHashMap<>();
         this.measurementUnit = measurementUnit;

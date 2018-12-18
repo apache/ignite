@@ -337,7 +337,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private final GridFutureAdapter<?> afterLsnrCompleteFut = new GridFutureAdapter<>();
 
     /** Time bag to measure and store exchange stages times. */
-    private final TimeBag timeBag = new TimeBag();
+    private final TimeBag timeBag;
 
     /** Start time of exchange. */
     private long startTime = System.nanoTime();
@@ -375,6 +375,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         log = cctx.logger(getClass());
         exchLog = cctx.logger(EXCHANGE_LOG);
+
+        timeBag = new TimeBag(exchLog);
 
         initFut = new GridFutureAdapter<Boolean>() {
             @Override public IgniteLogger logger() {
@@ -814,7 +816,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             updateTopologies(crdNode);
 
-            timeBag.finishLocalStage("Exchange type determination");
+            timeBag.finishGlobalStage("Exchange type determination");
 
             switch (exchange) {
                 case ALL: {
@@ -855,9 +857,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
 
-            if (!isDone())
-                timeBag.finishGlobalStage("Exchange init");
-
             if (exchLog.isInfoEnabled())
                 exchLog.info("Finished exchange init [topVer=" + topVer + ", crd=" + crdNode + ']');
         }
@@ -896,6 +895,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 for (DatabaseLifecycleListener lsnr : listeners)
                     lsnr.onBaselineChange();
+
+                timeBag.finishLocalStage("Baseline change callback");
             }
             finally {
                 cctx.exchange().exchangerBlockingSectionEnd();
@@ -906,6 +907,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         try {
             cctx.activate();
+
+            timeBag.finishLocalStage("Components activation");
         }
         finally {
             cctx.exchange().exchangerBlockingSectionEnd();
@@ -4234,6 +4237,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             for (IgniteRunnable c : evts)
                 c.run();
         }
+
+        if (!isDone())
+            timeBag.finishGlobalStage("Exchange init");
 
         initFut.onDone(true);
     }
