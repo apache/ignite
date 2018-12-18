@@ -2142,7 +2142,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param keepBinary Keep binary flag.
      * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
      *      more then one SQL statement.
-     * @param keepBinary Keep binary flag.
      * @param cancel Hook for query cancellation.
      * @return Cursor.
      */
