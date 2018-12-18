@@ -1,15 +1,18 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.IntStream;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.IgniteClosure2X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteUuid;
 import org.junit.Test;
@@ -96,9 +99,14 @@ public class TxPartitionCounterStateAfterRecoveryOnePrimaryTest extends TxPartit
      * @throws Exception
      */
     private void doTestSkipReservedCountersAfterRecovery(boolean skipCheckpointOnStop) throws Exception {
-        runOnPartition(PARTITION_ID, BACKUPS, NODES_CNT, new PrimaryTxCallbackAdapter(PREPARE_ORDER, COMMIT_ORDER) {
-            @Override protected void onAllPrepared() {
-                stopGrid(skipCheckpointOnStop, grid(0).name());
+        runOnPartition(PARTITION_ID, -1, BACKUPS, NODES_CNT, new IgniteClosure2X<Ignite, List<Ignite>, TxCallback>() {
+            @Override public TxCallback applyx(Ignite ignite,
+                List<Ignite> ignites) throws IgniteCheckedException {
+                return new PrimaryTxCallbackAdapter(PREPARE_ORDER, COMMIT_ORDER) {
+                    @Override protected void onAllPrepared() {
+                        stopGrid(skipCheckpointOnStop, grid(0).name());
+                    }
+                };
             }
         }, SIZES);
 
@@ -117,18 +125,23 @@ public class TxPartitionCounterStateAfterRecoveryOnePrimaryTest extends TxPartit
      */
     private void doTestPrepareCommitReorder(boolean skipCheckpointOnStop,
         boolean doCheckpoint) throws Exception {
-        runOnPartition(PARTITION_ID, BACKUPS, NODES_CNT, new PrimaryTxCallbackAdapter(PREPARE_ORDER, COMMIT_ORDER) {
-            @Override protected boolean onCommitted(IgniteEx node, int idx) {
-                if (idx == COMMIT_ORDER[0] && doCheckpoint) {
-                    try {
-                        forceCheckpoint(grid(0));
-                    }
-                    catch (IgniteCheckedException e) {
-                        fail();
-                    }
-                }
+        runOnPartition(PARTITION_ID, -1, BACKUPS, NODES_CNT, new IgniteClosure2X<Ignite, List<Ignite>, TxCallback>() {
+            @Override public TxCallback applyx(Ignite primary,
+                List<Ignite> backups) throws IgniteCheckedException {
+                return new PrimaryTxCallbackAdapter(PREPARE_ORDER, COMMIT_ORDER) {
+                    @Override protected boolean onCommitted(IgniteEx node, int idx) {
+                        if (idx == COMMIT_ORDER[0] && doCheckpoint) {
+                            try {
+                                forceCheckpoint(grid(0));
+                            }
+                            catch (IgniteCheckedException e) {
+                                fail();
+                            }
+                        }
 
-                return super.onCommitted(node, idx);
+                        return super.onCommitted(node, idx);
+                    }
+                };
             }
         }, SIZES);
 
@@ -166,27 +179,32 @@ public class TxPartitionCounterStateAfterRecoveryOnePrimaryTest extends TxPartit
      * Test correct update counter processing on updates reorder and node restart.
      */
     private void doTestPrepareCommitReorder2(boolean skipCheckpointOnStop) throws Exception {
-        runOnPartition(PARTITION_ID, BACKUPS, NODES_CNT, new PrimaryTxCallbackAdapter(PREPARE_ORDER, COMMIT_ORDER) {
-            @Override protected boolean onCommitted(IgniteEx node, int idx) {
-                super.onCommitted(node, idx);
+        runOnPartition(PARTITION_ID, -1, BACKUPS, NODES_CNT, new IgniteClosure2X<Ignite, List<Ignite>, TxCallback>() {
+            @Override public TxCallback applyx(Ignite ignite,
+                List<Ignite> ignites) throws IgniteCheckedException {
+                return new PrimaryTxCallbackAdapter(PREPARE_ORDER, COMMIT_ORDER) {
+                    @Override protected boolean onCommitted(IgniteEx node, int idx) {
+                        super.onCommitted(node, idx);
 
-                // After reordered commit partition update counter must contain single hole corresponding to committed tx.
-                PartitionUpdateCounter cntr = counter(PARTITION_ID);
+                        // After reordered commit partition update counter must contain single hole corresponding to committed tx.
+                        PartitionUpdateCounter cntr = counter(PARTITION_ID);
 
-                assertFalse(cntr.holes().isEmpty());
+                        assertFalse(cntr.holes().isEmpty());
 
-                PartitionUpdateCounter.Item gap = cntr.holes().first();
+                        PartitionUpdateCounter.Item gap = cntr.holes().first();
 
-                assertEquals(gap.start(), SIZES[COMMIT_ORDER[1]] + SIZES[COMMIT_ORDER[2]]);
-                assertEquals(gap.delta(), SIZES[COMMIT_ORDER[0]]);
+                        assertEquals(gap.start(), SIZES[COMMIT_ORDER[1]] + SIZES[COMMIT_ORDER[2]]);
+                        assertEquals(gap.delta(), SIZES[COMMIT_ORDER[0]]);
 
-                if (idx == COMMIT_ORDER[0]) {
-                    stopGrid(skipCheckpointOnStop, grid(0).name());
+                        if (idx == COMMIT_ORDER[0]) {
+                            stopGrid(skipCheckpointOnStop, grid(0).name());
 
-                    return true; // Stop further processing.
-                }
+                            return true; // Stop further processing.
+                        }
 
-                return false;
+                        return false;
+                    }
+                };
             }
         }, SIZES);
 
@@ -277,7 +295,7 @@ public class TxPartitionCounterStateAfterRecoveryOnePrimaryTest extends TxPartit
         }
 
         /** {@inheritDoc} */
-        @Override public boolean beforePrimaryPrepare(IgniteEx node, IgniteUuid nearXidVer,
+        @Override public boolean beforePrimaryPrepare(IgniteEx primary, IgniteUuid nearXidVer,
             GridFutureAdapter<?> proceedFut) {
             runAsync(() -> {
                 prepFuts.put(nearXidVer, proceedFut);
@@ -292,9 +310,9 @@ public class TxPartitionCounterStateAfterRecoveryOnePrimaryTest extends TxPartit
         }
 
         /** {@inheritDoc} */
-        @Override public boolean afterPrimaryPrepare(IgniteEx from, IgniteInternalTx tx, GridFutureAdapter<?> fut) {
+        @Override public boolean afterPrimaryPrepare(IgniteEx primary, IgniteInternalTx tx, GridFutureAdapter<?> fut) {
             runAsync(() -> {
-                if (onPrepared(from, tx, order(tx.nearXidVersion().asGridUuid())))
+                if (onPrepared(primary, tx, order(tx.nearXidVersion().asGridUuid())))
                     return;
 
                 if (prepOrder.isEmpty()) {
@@ -310,7 +328,7 @@ public class TxPartitionCounterStateAfterRecoveryOnePrimaryTest extends TxPartit
         }
 
         /** {@inheritDoc} */
-        @Override public boolean beforePrimaryFinish(IgniteEx primaryNode, IgniteInternalTx tx, GridFutureAdapter<?>
+        @Override public boolean beforePrimaryFinish(IgniteEx primary, IgniteInternalTx tx, GridFutureAdapter<?>
             proceedFut) {
             runAsync(() -> {
                 finishFuts.put(tx.nearXidVersion().asGridUuid(), proceedFut);
@@ -325,9 +343,9 @@ public class TxPartitionCounterStateAfterRecoveryOnePrimaryTest extends TxPartit
         }
 
         /** {@inheritDoc} */
-        @Override public boolean afterPrimaryFinish(IgniteEx primaryNode, IgniteUuid nearXidVer, GridFutureAdapter<?> proceedFut) {
+        @Override public boolean afterPrimaryFinish(IgniteEx primary, IgniteUuid nearXidVer, GridFutureAdapter<?> proceedFut) {
             runAsync(() -> {
-                if (onCommitted(primaryNode, order(nearXidVer)))
+                if (onCommitted(primary, order(nearXidVer)))
                     return;
 
                 if (commitOrder.isEmpty()) {

@@ -24,7 +24,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_
 /**
  * TODO check if really historical rebalance.
  */
-public class TxPartitionCounterStateOnePrimaryOneBackupHistoryRebalanceTest extends TxPartitionCounterStateOnePrimaryOneBackupTest {
+public class TxPartitionCounterStateOnePrimaryTwoBackupsHistoryRebalanceTest extends TxPartitionCounterStateOnePrimaryTwoBackupsTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         System.setProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
@@ -44,5 +44,9 @@ public class TxPartitionCounterStateOnePrimaryOneBackupHistoryRebalanceTest exte
 
         // Expecting only one historical rebalance for test scenario.
         assertEquals("WAL rebalance hasn't been invoked 1 times", 1, histRebCnt);
+    }
+
+    @Override public void testPrepareCommitReorder() throws Exception {
+        super.testPrepareCommitReorder();
     }
 }

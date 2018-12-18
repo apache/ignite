@@ -20,6 +20,10 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -29,8 +33,13 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteClosure2X;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -39,7 +48,7 @@ import org.junit.runners.JUnit4;
  * TODO add flag for stoppping primary w/o checkpoint.
  */
 @RunWith(JUnit4.class)
-public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionCounterStateAbstractTest {
+public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartitionCounterStateAbstractTest {
     /** */
     private static final int[] PREPARE_ORDER = new int[] {0, 1, 2};
 
@@ -59,10 +68,10 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
     private static final int PARTITION_ID = 0;
 
     /** */
-    private static final int BACKUPS = 1;
+    private static final int BACKUPS = 2;
 
     /** */
-    private static final int NODES_CNT = 2;
+    private static final int NODES_CNT = 3;
 
     /** */
     @Test
@@ -82,49 +91,47 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
      * @param skipCheckpoint Skip checkpoint.
      */
     private void doTestPrepareCommitReorder(boolean skipCheckpoint) throws Exception {
-        runOnPartition(PARTITION_ID, -1, BACKUPS, NODES_CNT, new IgniteClosure2X<Ignite, List<Ignite>, TxCallback>() {
-            @Override public TxCallback applyx(Ignite primary,
-                List<Ignite> backups) throws IgniteCheckedException {
-                return new TwoPhasePessimisticTxCallbackAdapter(PREPARE_ORDER, primary, PRIMARY_COMMIT_ORDER, backups.get(0), BACKUP_COMMIT_ORDER) {
-                    @Override protected boolean onBackupCommitted(IgniteEx backup, int idx) {
-                        super.onBackupCommitted(backup, idx);
+        T2<Ignite, List<Ignite>> txTop = runOnPartition(PARTITION_ID, -1, BACKUPS, NODES_CNT,
+            new IgniteClosure2X<Ignite, List<Ignite>, TxCallback>() {
+                @Override public TxCallback applyx(Ignite primary, List<Ignite> backups) throws IgniteCheckedException {
+                    return new TwoPhasePessimisticTxCallbackAdapter(PREPARE_ORDER, primary, PRIMARY_COMMIT_ORDER, backups.get(0), BACKUP_COMMIT_ORDER) {
+                        @Override protected boolean onBackupCommitted(IgniteEx backup, int idx) {
+                            super.onBackupCommitted(backup, idx);
 
-                        if (idx == BACKUP_COMMIT_ORDER[0]) {
-                            Collection<ClusterNode> nodes = backup.affinity(DEFAULT_CACHE_NAME).mapPartitionToPrimaryAndBackups(PARTITION_ID);
-                            List<ClusterNode> nodesList = new ArrayList<>(nodes);
+                            if (idx == BACKUP_COMMIT_ORDER[0]) {
+                                PartitionUpdateCounter cntr = counter(PARTITION_ID, backup.name());
 
-                            Ignite backupNode = Ignition.ignite(nodesList.get(1).id());
+                                assertFalse(cntr.holes().isEmpty());
 
-                            PartitionUpdateCounter cntr = counter(PARTITION_ID, backupNode.name());
+                                PartitionUpdateCounter.Item gap = cntr.holes().first();
 
-                            assertFalse(cntr.holes().isEmpty());
+                                assertEquals(PRELOAD_KEYS_CNT + SIZES[BACKUP_COMMIT_ORDER[1]] + SIZES[BACKUP_COMMIT_ORDER[2]], gap.start());
+                                assertEquals(SIZES[BACKUP_COMMIT_ORDER[0]], gap.delta());
 
-                            PartitionUpdateCounter.Item gap = cntr.holes().first();
+                                stopGrid(skipCheckpoint, backup.name()); // Will stop backup node before all commits are applied.
 
-                            assertEquals(PRELOAD_KEYS_CNT + SIZES[BACKUP_COMMIT_ORDER[1]] + SIZES[BACKUP_COMMIT_ORDER[2]], gap.start());
-                            assertEquals(SIZES[BACKUP_COMMIT_ORDER[0]], gap.delta());
+                                return true;
+                            }
 
-                            stopGrid(skipCheckpoint, backupNode.name()); // Will stop backup node before all commits are applied.
-
-                            return true;
+                            throw new IgniteException("Should not commit other transactions");
                         }
+                    };
+                }
+            },
+            SIZES);
 
-                        throw new IgniteException("Should not commit other transactions");
-                    }
-                };
-            }
-        }, SIZES);
+        waitForTopology(NODES_CNT);
 
-        waitForTopology(2);
-
-        IgniteEx client = grid("client");
+        IgniteEx client = grid(CLIENT_GRID_NAME);
 
         assertEquals("Primary has not all committed transactions", TOTAL, client.cache(DEFAULT_CACHE_NAME).size());
 
         for (Ignite ignite : G.allGrids())
             TestRecordingCommunicationSpi.spi(ignite).stopBlock(false);
 
-        IgniteEx backup = startGrid(1);
+        String backupName = txTop.get2().get(0).name();
+
+        IgniteEx backup = startGrid(backupName);
 
         awaitPartitionMapExchange();
 
@@ -137,7 +144,9 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
 
         assertEquals(TOTAL, cntr.get());
 
-        stopGrid(0);
+        String primaryName = txTop.get1().name();
+
+        stopGrid(primaryName);
 
         awaitPartitionMapExchange();
 
@@ -148,11 +157,11 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
         // Make update to advance a counter.
         int addCnt = 10;
 
-        loadDataToPartition(PARTITION_ID, grid(1).name(), DEFAULT_CACHE_NAME, addCnt, TOTAL);
+        loadDataToPartition(PARTITION_ID, backupName, DEFAULT_CACHE_NAME, addCnt, TOTAL);
 
         // Historical rebalance is not possible from checkpoint containing rebalance entries.
         // Next rebalance will be full. TODO FIXME repair this scenario ?
-        IgniteEx grid0 = startGrid(0);
+        IgniteEx grid0 = startGrid(primaryName);
 
         awaitPartitionMapExchange();
 

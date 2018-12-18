@@ -1,7 +1,11 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.List;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.IgniteClosure2X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.Transaction;
@@ -19,65 +23,72 @@ public class TxPartitionCounterStateBasicOrderingTest extends TxPartitionCounter
         int nodes = 3;
         int txSize = 5;
 
-        runOnPartition(partId, backups, nodes, new TxCallback() {
-            @Override public boolean beforePrimaryPrepare(IgniteEx node, IgniteUuid nearXidVer,
-                GridFutureAdapter<?> proceedFut) {
-                log.info("TX: beforePrimaryPrepare: prim=" + node.name() + ", nearXidVer=" + nearXidVer);
+        runOnPartition(partId, -1, backups, nodes, new IgniteClosure2X<Ignite, List<Ignite>, TxCallback>() {
+            @Override public TxCallback applyx(Ignite ignite,
+                List<Ignite> ignites) throws IgniteCheckedException {
+                return new TxCallback() {
+                    @Override public boolean beforePrimaryPrepare(IgniteEx primary, IgniteUuid nearXidVer,
+                        GridFutureAdapter<?> proceedFut) {
+                        log.info("TX: beforePrimaryPrepare: prim=" + primary.name() + ", nearXidVer=" + nearXidVer);
 
-                return false;
-            }
+                        return false;
+                    }
 
-            @Override public boolean beforeBackupPrepare(IgniteEx prim, IgniteEx backup, IgniteInternalTx primaryTx,
-                GridFutureAdapter<?> proceedFut) {
+                    @Override public boolean beforeBackupPrepare(IgniteEx primary, IgniteEx backup, IgniteInternalTx primaryTx,
+                        GridFutureAdapter<?> proceedFut) {
 
-                log.info("TX: beforeBackupPrepare: prim=" + prim.name() + ", backup=" + backup.name() + ", nearXidVer=" + primaryTx.nearXidVersion().asGridUuid() + ", tx=" + CU.txString(primaryTx) );
+                        log.info("TX: beforeBackupPrepare: prim=" + primary.name() + ", backup=" + backup.name() + ", nearXidVer=" + primaryTx.nearXidVersion().asGridUuid() + ", tx=" + CU.txString(primaryTx) );
 
-                return false;
-            }
+                        return false;
+                    }
 
-            @Override public boolean beforePrimaryFinish(IgniteEx primaryNode, IgniteInternalTx primaryTx, GridFutureAdapter<?>
-                proceedFut) {
+                    @Override public boolean beforePrimaryFinish(IgniteEx primary, IgniteInternalTx primaryTx, GridFutureAdapter<?>
+                        proceedFut) {
 
-                log.info("TX: beforePrimaryFinish: prim=" + primaryNode.name() + ", nearXidVer=" + primaryTx.nearXidVersion().asGridUuid() + ", tx=" + CU.txString(primaryTx));
+                        log.info("TX: beforePrimaryFinish: prim=" + primary.name() + ", nearXidVer=" + primaryTx.nearXidVersion().asGridUuid() + ", tx=" + CU.txString(primaryTx));
 
-                return false;
-            }
+                        return false;
+                    }
 
-            @Override public boolean afterPrimaryFinish(IgniteEx primaryNode, IgniteUuid nearXidVer, GridFutureAdapter<?> proceedFut) {
-                log.info("TX: afterPrimaryFinish: prim=" + primaryNode.name() + ", nearXidVer=" + nearXidVer);
+                    @Override public boolean afterPrimaryFinish(IgniteEx primary, IgniteUuid nearXidVer, GridFutureAdapter<?> proceedFut) {
+                        log.info("TX: afterPrimaryFinish: prim=" + primary.name() + ", nearXidVer=" + nearXidVer);
 
-                return false;
-            }
+                        return false;
+                    }
 
-            @Override public boolean afterBackupPrepare(IgniteEx backup, IgniteInternalTx tx, GridFutureAdapter<?> fut) {
-                log.info("TX: afterBackupPrepare: backup=" + backup.name() + ", backupTx=" + CU.txString(tx) + ", nearXidVer=" + tx.nearXidVersion().asGridUuid());
+                    @Override public boolean afterBackupPrepare(IgniteEx primary, IgniteEx backup, IgniteInternalTx tx,
+                        GridFutureAdapter<?> fut) {
+                        log.info("TX: afterBackupPrepare: backup=" + backup.name() + ", backupTx=" + CU.txString(tx) + ", nearXidVer=" + tx.nearXidVersion().asGridUuid());
 
-                return false;
-            }
+                        return false;
+                    }
 
-            @Override public boolean afterBackupFinish(IgniteEx backup, IgniteUuid nearXidVer, GridFutureAdapter<?> fut) {
-                log.info("TX: afterBackupFinish: backup=" + backup.name() + ", nearXidVer=" + nearXidVer);
+                    @Override public boolean afterBackupFinish(IgniteEx primary, IgniteEx backup, IgniteUuid nearXidVer,
+                        GridFutureAdapter<?> fut) {
+                        log.info("TX: afterBackupFinish: backup=" + backup.name() + ", nearXidVer=" + nearXidVer);
 
-                return false;
-            }
+                        return false;
+                    }
 
-            @Override public boolean beforeBackupFinish(IgniteEx prim, IgniteEx backup,
-                @Nullable IgniteInternalTx primTx,
-                IgniteInternalTx backupTx,
-                IgniteUuid nearXidVer, GridFutureAdapter<?> fut) {
-                log.info("TX: beforeBackupFinish: prim=" + prim.name() + ", backup=" + backup.name() + ", primNearXidVer=" +
-                    (primTx == null ? "NA" : primTx.nearXidVersion().asGridUuid()) + ", backupNearXidVer=" + backupTx.nearXidVersion().asGridUuid());
+                    @Override public boolean beforeBackupFinish(IgniteEx primary, IgniteEx backup,
+                        @Nullable IgniteInternalTx primaryTx,
+                        IgniteInternalTx backupTx,
+                        IgniteUuid nearXidVer, GridFutureAdapter<?> fut) {
+                        log.info("TX: beforeBackupFinish: prim=" + primary.name() + ", backup=" + backup.name() + ", primNearXidVer=" +
+                            (primaryTx == null ? "NA" : primaryTx.nearXidVersion().asGridUuid()) + ", backupNearXidVer=" + backupTx.nearXidVersion().asGridUuid());
 
-                return false;
-            }
+                        return false;
+                    }
 
-            @Override public boolean afterPrimaryPrepare(IgniteEx prim, IgniteInternalTx tx, GridFutureAdapter<?> fut) {
-                log.info("TX: afterPrimaryPrepare: prim=" + prim.name() + ", nearXidVer=" + tx.nearXidVersion().asGridUuid() + ", tx=" + CU.txString(tx));
+                    @Override public boolean afterPrimaryPrepare(IgniteEx prim, IgniteInternalTx tx, GridFutureAdapter<?> fut) {
+                        log.info("TX: afterPrimaryPrepare: prim=" + prim.name() + ", nearXidVer=" + tx.nearXidVersion().asGridUuid() + ", tx=" + CU.txString(tx));
 
-                return false;
-            }
+                        return false;
+                    }
 
-            @Override public void onTxStart(Transaction tx, int idx) {
+                    @Override public void onTxStart(Transaction tx, int idx) {
+                    }
+                };
             }
         }, new int[] {txSize});
 
