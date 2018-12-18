@@ -59,9 +59,9 @@ public class FileHandleManagerImpl implements FileHandleManager {
     private static final long DFLT_WAL_SEGMENT_SYNC_TIMEOUT = 500L;
 
     /** WAL writer worker. */
-    private WALWriter walWriter;
+    private final WALWriter walWriter;
     /** Wal segment sync worker. */
-    private WalSegmentSyncer walSegmentSyncWorker;
+    private final WalSegmentSyncer walSegmentSyncWorker;
     /** Context. */
     protected final GridCacheSharedContext cctx;
     /** Logger. */
@@ -109,7 +109,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
         long maxWalSegmentSize,
         long fsyncDelay) {
         this.cctx = cctx;
-        this.log = cctx.logger(FileHandleManagerImpl.class);
+        log = cctx.logger(FileHandleManagerImpl.class);
         this.mode = mode;
         this.metrics = metrics;
         this.mmap = mmap;
@@ -119,6 +119,23 @@ public class FileHandleManagerImpl implements FileHandleManager {
         this.walBufferSize = walBufferSize;
         this.maxWalSegmentSize = maxWalSegmentSize;
         this.fsyncDelay = fsyncDelay;
+        walWriter = new WALWriter(log);
+
+        if (mode != WALMode.NONE && mode != WALMode.FSYNC) {
+            walSegmentSyncWorker = new WalSegmentSyncer(
+                cctx.igniteInstanceName(),
+                cctx.kernalContext().log(WalSegmentSyncer.class)
+            );
+
+            if (log.isInfoEnabled())
+                log.info("Initialized write-ahead log manager [mode=" + mode + ']');
+        }
+        else {
+            U.quietAndWarn(log, "Initialized write-ahead log manager in NONE mode, persisted data may be lost in " +
+                "a case of unexpected node failure. Make sure to deactivate the cluster before shutdown.");
+
+            walSegmentSyncWorker = null;
+        }
     }
 
     /** {@inheritDoc} */
@@ -180,26 +197,12 @@ public class FileHandleManagerImpl implements FileHandleManager {
 
     /** {@inheritDoc} */
     @Override public void init() {
-        walWriter = new WALWriter(log);
-
-        if (mode != WALMode.NONE && mode != WALMode.FSYNC) {
-            walSegmentSyncWorker = new WalSegmentSyncer(
-                cctx.igniteInstanceName(),
-                cctx.kernalContext().log(WalSegmentSyncer.class)
-            );
-
-            if (log.isInfoEnabled())
-                log.info("Started write-ahead log manager [mode=" + mode + ']');
-        }
-        else
-            U.quietAndWarn(log, "Started write-ahead log manager in NONE mode, persisted data may be lost in " +
-                "a case of unexpected node failure. Make sure to deactivate the cluster before shutdown.");
-
+        //NOOP
     }
 
     /** {@inheritDoc} */
     @Override public void onActivate() {
-
+        //NOOP
     }
 
     /** {@inheritDoc} */
