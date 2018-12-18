@@ -28,6 +28,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -35,6 +38,7 @@ import static java.util.Collections.singletonList;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheMvccBulkLoadTest extends CacheMvccAbstractTest {
     /** */
     private IgniteCache<Object, Object> sqlNexus;
@@ -65,6 +69,7 @@ public class CacheMvccBulkLoadTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCopyStoresData() throws Exception {
         String csvFilePath = new File(getClass().getResource("mvcc_person.csv").toURI()).getAbsolutePath();
         stmt.executeUpdate("copy from '" + csvFilePath + "' into person (id, name) format csv");
@@ -81,6 +86,7 @@ public class CacheMvccBulkLoadTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCopyDoesNotOverwrite() throws Exception {
         sqlNexus.query(q("insert into person values(1, 'Old')"));
         String csvFilePath = new File(getClass().getResource("mvcc_person.csv").toURI()).getAbsolutePath();
@@ -98,6 +104,7 @@ public class CacheMvccBulkLoadTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCopyLeavesPartialResultsInCaseOfFailure() throws Exception {
         String csvFilePath = new File(getClass().getResource("mvcc_person_broken.csv").toURI()).getAbsolutePath();
         try {

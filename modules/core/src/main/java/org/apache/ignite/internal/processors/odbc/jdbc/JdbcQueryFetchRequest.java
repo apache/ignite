@@ -42,11 +42,10 @@ public class JdbcQueryFetchRequest extends JdbcRequest {
 
     /**
      * @param cursorId Cursor ID.
-     * @param initialReqId The ID of the initial request.
      * @param pageSize Fetch size.
      */
-    public JdbcQueryFetchRequest(long cursorId, long initialReqId, int pageSize) {
-        super(QRY_FETCH, initialReqId);
+    public JdbcQueryFetchRequest(long cursorId, int pageSize) {
+        super(QRY_FETCH);
 
         this.cursorId = cursorId;
         this.pageSize = pageSize;
@@ -82,7 +81,7 @@ public class JdbcQueryFetchRequest extends JdbcRequest {
 
         cursorId = reader.readLong();
         pageSize = reader.readInt();
-   }
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
