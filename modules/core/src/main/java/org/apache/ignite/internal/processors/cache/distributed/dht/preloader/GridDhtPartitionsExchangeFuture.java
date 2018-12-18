@@ -2166,7 +2166,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 log.info("Completed partition exchange [localNode=" + cctx.localNodeId() +
                         ", exchange=" + (log.isDebugEnabled() ? this : shortInfo()) + ", topVer=" + topologyVersion() + "]");
 
-                final String exchangeVersion = "[startVer=" + initialVersion() + ", resVer=" + topologyVersion() + "]";
+                final String exchangeVersion = "[startVer=" + initialVersion().toShortString()
+                    + ", resVer=" + topologyVersion().toShortString() + "]";
 
                 if (discoveryLag != 0)
                     log.info("Discovery lag / Clocks discrepancy: " + discoveryLag + " ms. " + exchangeVersion);
