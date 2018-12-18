@@ -215,6 +215,9 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
                 if (msg instanceof GridNearTxPrepareRequest) {
                     GridNearTxPrepareRequest req = (GridNearTxPrepareRequest)msg;
 
+                    if (!req.last())
+                        return false;
+
                     futMap.put(req.futureId(), req.version());
 
                     return cb.beforePrimaryPrepare(to, req.version().asGridUuid(), createSendFuture(clientWrappedSpi, msg));
@@ -243,6 +246,9 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
                 if (msg instanceof GridDhtTxPrepareRequest) {
                     GridDhtTxPrepareRequest req = (GridDhtTxPrepareRequest)msg;
+
+                    if (!req.last())
+                        return false;
 
                     futMap.put(req.futureId(), req.nearXidVersion());
                     nearToLocVerMap.put(req.version(), req.nearXidVersion());
