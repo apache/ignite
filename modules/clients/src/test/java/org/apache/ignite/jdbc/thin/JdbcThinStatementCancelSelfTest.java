@@ -379,8 +379,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
      */
     @SuppressWarnings("unchecked")
     @Test
-    public void testCancelAgainstFullServerThreadPool()
-        throws Exception {
+    public void testCancelAgainstFullServerThreadPool() throws Exception {
         List<Statement> statements = Collections.synchronizedList(new ArrayList<>());
         List<Connection> connections = Collections.synchronizedList(new ArrayList<>());
 
@@ -414,18 +413,89 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
             });
 
             IgniteInternalFuture<Object> res = null;
-            for (int i = 0; i < SERVER_THREAD_POOL_SIZE; i++) {
+            for (int i = 0; i < SERVER_THREAD_POOL_SIZE - 1; i++) {
                 final int statementIdx = i;
                 res = GridTestUtils.runAsync(() -> {
                     GridTestUtils.assertThrows(log, new Callable<Object>() {
                         @Override public Object call() throws Exception {
-                            statements.get(statementIdx).executeQuery("select 100 from Integer I1 join Integer I2 join Integer I3 join Integer I4 join Integer I5;");
+                            statements.get(statementIdx).executeQuery("select 100 from Integer I1 join Integer I2" +
+                                " join Integer I3 join Integer I4 join Integer I5;");
 
                             return null;
                         }
                     }, SQLException.class, "The query was cancelled while executing.");
                 });
             }
+
+            res.get(2, TimeUnit.SECONDS);
+        }
+        finally {
+            for (Statement statement : statements)
+                statement.close();
+
+            for (Connection connection : connections)
+                connection.close();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testCancelFetchAgainstFullServerThreadPool() throws Exception {
+        stmt.setFetchSize(1);
+
+        ResultSet rs = stmt.executeQuery("SELECT * from Integer");
+
+        rs.next();
+
+        List<Statement> statements = Collections.synchronizedList(new ArrayList<>());
+        List<Connection> connections = Collections.synchronizedList(new ArrayList<>());
+
+        for (int i = 0; i < SERVER_THREAD_POOL_SIZE; i++) {
+            Connection yaConn = DriverManager.getConnection(URL);
+
+            yaConn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
+
+            connections.add(yaConn);
+
+            Statement yaStmt = yaConn.createStatement();
+
+            statements.add(yaStmt);
+        }
+
+        try {
+            for (int i = 0; i < SERVER_THREAD_POOL_SIZE; i++) {
+                final int statementIdx = i;
+                GridTestUtils.runAsync(() -> {
+                    GridTestUtils.assertThrows(log, new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            statements.get(statementIdx).executeQuery("select 100 from Integer I1 join Integer I2" +
+                                " join Integer I3 join Integer I4 join Integer I5;");
+
+                            return null;
+                        }
+                    }, SQLException.class, "The query was cancelled while executing.");
+                });
+            }
+
+            IgniteInternalFuture<Object> res = GridTestUtils.runAsync(() -> {
+                GridTestUtils.assertThrows(log, new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        rs.next();
+
+                        return null;
+                    }
+                }, SQLException.class, "The query was cancelled while executing.");
+            });
+
+            Thread.sleep(100);
+
+            stmt.cancel();
+
+            for (int i = 0; i < SERVER_THREAD_POOL_SIZE; i++)
+                statements.get(i).cancel();
 
             res.get(2, TimeUnit.SECONDS);
         }

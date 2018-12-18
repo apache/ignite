@@ -382,8 +382,12 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private ClientListenerResponse processBulkLoadFileBatch(JdbcBulkLoadBatchRequest req) {
         JdbcBulkLoadProcessor processor = (JdbcBulkLoadProcessor)jdbcCursors.get(req.cursorId());
 
-        if (prepareQueryCancellationMeta(processor))
-            return null;
+        try {
+            prepareQueryCancellationMeta(processor);
+        }
+        catch (QueryCancelledException e) {
+            return exceptionToResult(e);
+        }
 
         if (ctx == null)
             return new JdbcResponse(IgniteQueryErrorCode.UNEXPECTED_OPERATION, "Unknown query ID: "
@@ -670,8 +674,13 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private JdbcResponse closeQuery(JdbcQueryCloseRequest req) {
         JdbcCursor cur = jdbcCursors.get(req.cursorId());
 
-        if (prepareQueryCancellationMeta(cur))
+        try {
+            prepareQueryCancellationMeta(cur);
+        }
+        catch (QueryCancelledException e) {
+            // Nothing to close, cause query was already cancelled.
             return new JdbcResponse(null);
+        }
 
         try {
             cur = jdbcCursors.remove(req.cursorId());
@@ -732,8 +741,12 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private JdbcResponse fetchQuery(JdbcQueryFetchRequest req) {
         JdbcQueryCursor cur = (JdbcQueryCursor)jdbcCursors.get(req.cursorId());
 
-        if (prepareQueryCancellationMeta(cur))
-            return null;
+        try {
+            prepareQueryCancellationMeta(cur);
+        }
+        catch (QueryCancelledException e) {
+            return exceptionToResult(e);
+        }
 
         boolean unregisterReq = false;
 
@@ -780,8 +793,12 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private JdbcResponse getQueryMeta(JdbcQueryMetadataRequest req) {
         JdbcQueryCursor cur = (JdbcQueryCursor)jdbcCursors.get(req.cursorId());
 
-        if (prepareQueryCancellationMeta(cur))
-            return null;
+        try {
+            prepareQueryCancellationMeta(cur);
+        }
+        catch (QueryCancelledException e) {
+            return exceptionToResult(e);
+        }
 
         try {
             if (cur == null)
@@ -1380,24 +1397,22 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param cur Jdbc Cursor.
      * @return True if query should be skipped, false otherwise.
      */
-    private boolean prepareQueryCancellationMeta(JdbcCursor cur) {
+    private void prepareQueryCancellationMeta(JdbcCursor cur) throws QueryCancelledException {
         if (isCancellationSupported()) {
             // Nothin to do - cursor was already removed.
             if (cur == null)
-                return true;
+                throw new QueryCancelledException();
 
             synchronized (reqMux) {
                 JdbcQueryDescriptor desc = reqRegister.get(cur.requestId());
 
                 // Query was already cancelled and unregisterd.
                 if (desc == null)
-                    return true;
+                    throw new QueryCancelledException();
 
                 desc.incrementUsageCount();
             }
         }
-
-        return false;
     }
 
     /**
