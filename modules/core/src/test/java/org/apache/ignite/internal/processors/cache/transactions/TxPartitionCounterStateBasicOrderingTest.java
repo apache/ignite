@@ -23,7 +23,7 @@ public class TxPartitionCounterStateBasicOrderingTest extends TxPartitionCounter
         int nodes = 2;
         int txSize = 5;
 
-        runOnPartition(partId, -1, backups, nodes, new IgniteClosure2X<Ignite, List<Ignite>, TxCallback>() {
+        runOnPartition(partId, null, backups, nodes, new IgniteClosure2X<Ignite, List<Ignite>, TxCallback>() {
             @Override public TxCallback applyx(Ignite ignite,
                 List<Ignite> ignites) throws IgniteCheckedException {
                 return new TxCallback() {

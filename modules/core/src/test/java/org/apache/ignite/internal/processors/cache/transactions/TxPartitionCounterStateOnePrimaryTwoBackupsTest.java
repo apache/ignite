@@ -91,7 +91,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
      * @param skipCheckpoint Skip checkpoint.
      */
     private void doTestPrepareCommitReorder(boolean skipCheckpoint) throws Exception {
-        T2<Ignite, List<Ignite>> txTop = runOnPartition(PARTITION_ID, -1, BACKUPS, NODES_CNT,
+        T2<Ignite, List<Ignite>> txTop = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT,
             new IgniteClosure2X<Ignite, List<Ignite>, TxCallback>() {
                 @Override public TxCallback applyx(Ignite primary, List<Ignite> backups) throws IgniteCheckedException {
                     return new TwoPhasePessimisticTxCallbackAdapter(PREPARE_ORDER, primary, PRIMARY_COMMIT_ORDER, backups.get(0), BACKUP_COMMIT_ORDER) {

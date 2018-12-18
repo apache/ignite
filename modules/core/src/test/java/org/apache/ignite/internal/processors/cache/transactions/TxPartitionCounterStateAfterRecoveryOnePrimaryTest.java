@@ -99,7 +99,7 @@ public class TxPartitionCounterStateAfterRecoveryOnePrimaryTest extends TxPartit
      * @throws Exception
      */
     private void doTestSkipReservedCountersAfterRecovery(boolean skipCheckpointOnStop) throws Exception {
-        runOnPartition(PARTITION_ID, -1, BACKUPS, NODES_CNT, new IgniteClosure2X<Ignite, List<Ignite>, TxCallback>() {
+        runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT, new IgniteClosure2X<Ignite, List<Ignite>, TxCallback>() {
             @Override public TxCallback applyx(Ignite ignite,
                 List<Ignite> ignites) throws IgniteCheckedException {
                 return new PrimaryTxCallbackAdapter(PREPARE_ORDER, COMMIT_ORDER) {
@@ -125,7 +125,7 @@ public class TxPartitionCounterStateAfterRecoveryOnePrimaryTest extends TxPartit
      */
     private void doTestPrepareCommitReorder(boolean skipCheckpointOnStop,
         boolean doCheckpoint) throws Exception {
-        runOnPartition(PARTITION_ID, -1, BACKUPS, NODES_CNT, new IgniteClosure2X<Ignite, List<Ignite>, TxCallback>() {
+        runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT, new IgniteClosure2X<Ignite, List<Ignite>, TxCallback>() {
             @Override public TxCallback applyx(Ignite primary,
                 List<Ignite> backups) throws IgniteCheckedException {
                 return new PrimaryTxCallbackAdapter(PREPARE_ORDER, COMMIT_ORDER) {
@@ -179,7 +179,7 @@ public class TxPartitionCounterStateAfterRecoveryOnePrimaryTest extends TxPartit
      * Test correct update counter processing on updates reorder and node restart.
      */
     private void doTestPrepareCommitReorder2(boolean skipCheckpointOnStop) throws Exception {
-        runOnPartition(PARTITION_ID, -1, BACKUPS, NODES_CNT, new IgniteClosure2X<Ignite, List<Ignite>, TxCallback>() {
+        runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT, new IgniteClosure2X<Ignite, List<Ignite>, TxCallback>() {
             @Override public TxCallback applyx(Ignite ignite,
                 List<Ignite> ignites) throws IgniteCheckedException {
                 return new PrimaryTxCallbackAdapter(PREPARE_ORDER, COMMIT_ORDER) {

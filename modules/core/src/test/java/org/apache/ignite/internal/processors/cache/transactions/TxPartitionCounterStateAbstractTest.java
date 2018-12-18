@@ -27,6 +27,8 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -100,6 +102,9 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
     protected static final int PRELOAD_KEYS_CNT = 1;
 
     /** */
+    protected static final int KEYS_IN_SECOND_PARTITION = 1;
+
+    /** */
     protected static final String CLIENT_GRID_NAME = "client";
 
     /** {@inheritDoc} */
@@ -157,15 +162,13 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
     /**
      * @param partId Partition id.
-     * @param partId2 Second optional partition.
+     * @param part2Sup Optional second partition supplier.
      * @param nodesCnt Nodes count.
      * @param sizes Sizes.
      * @param clo Callback build closure.
      */
-    protected T2<Ignite, List<Ignite>> runOnPartition(int partId, int partId2, int backups, int nodesCnt, IgniteClosure2X<Ignite, List<Ignite>,
+    protected T2<Ignite, List<Ignite>> runOnPartition(int partId, @Nullable Supplier<Integer> part2Sup, int backups, int nodesCnt, IgniteClosure2X<Ignite, List<Ignite>,
         TxCallback> clo, int[] sizes) throws Exception {
-        assertFalse(partId == partId2);
-
         this.backups = backups;
 
         IgniteEx crd = (IgniteEx)startGridsMultiThreaded(nodesCnt);
@@ -336,7 +339,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
         CyclicBarrier b = new CyclicBarrier(sizes.length);
 
-        List<Integer> keysPart2 = partId2 < 0 ? null : partitionKeys(crd.cache(DEFAULT_CACHE_NAME), partId2, totalKeys, 1);
+        List<Integer> keysPart2 = part2Sup == null ? null :
+            partitionKeys(crd.cache(DEFAULT_CACHE_NAME), part2Sup.get(), KEYS_IN_SECOND_PARTITION, 0) ;
 
         IgniteInternalFuture<Long> fut = runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
@@ -354,8 +358,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
                     for (Integer key : keys.subList(range[0], range[0] + range[1]))
                         client.cache(DEFAULT_CACHE_NAME).put(key, 0);
 
-                    if (partId2 >= 0) // Force 2PC.
-                        client.cache(DEFAULT_CACHE_NAME).put(keysPart2.get(0), 0);
+                    if (keysPart2 != null) // Force 2PC.
+                        client.cache(DEFAULT_CACHE_NAME).putAll(keysPart2.stream().collect(Collectors.toMap(k -> k, v -> v)));
 
                     tx.commit();
                 }
