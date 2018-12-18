@@ -42,6 +42,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -51,6 +54,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -96,6 +100,7 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinQuery() throws Exception {
         testJoinQuery(PARTITIONED, 0, false, true);
 
@@ -107,6 +112,7 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinQueryEscapeAll() throws Exception {
         escape = true;
 
@@ -116,6 +122,7 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinQueryWithAffinityKey() throws Exception {
         testJoinQuery(PARTITIONED, 0, true, true);
 
@@ -127,6 +134,7 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinQueryWithAffinityKeyEscapeAll() throws Exception {
         escape = true;
 
@@ -136,6 +144,7 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinQueryWithAffinityKeyNotQueryField() throws Exception {
         testJoinQuery(PARTITIONED, 0, true, false);
 
@@ -147,6 +156,7 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinQueryWithAffinityKeyNotQueryFieldEscapeAll() throws Exception {
         escape = true;
 

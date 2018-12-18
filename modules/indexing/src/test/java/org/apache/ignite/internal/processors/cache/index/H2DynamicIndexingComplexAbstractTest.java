@@ -31,10 +31,14 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Base class for testing work of combinations of DML and DDL operations.
  */
+@RunWith(JUnit4.class)
 public abstract class H2DynamicIndexingComplexAbstractTest extends DynamicIndexAbstractSelfTest {
     /** Cache mode to test with. */
     private final CacheMode cacheMode;
@@ -88,6 +92,7 @@ public abstract class H2DynamicIndexingComplexAbstractTest extends DynamicIndexA
     }
 
     /** Do test. */
+    @Test
     public void testOperations() {
         executeSql("CREATE TABLE person (id int, name varchar, age int, company varchar, city varchar, " +
             "primary key (id, name, city)) WITH \"template=" + cacheMode.name() + ",atomicity=" + atomicityMode.name() +
