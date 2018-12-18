@@ -61,9 +61,8 @@ import org.junit.runners.AllTests;
 public class IgniteExamplesSelfTestSuite {
     /**
      * @return Suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
 //        System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
 //            GridTestUtils.getNextMulticastGroup(IgniteExamplesSelfTestSuite.class));
 
@@ -104,7 +103,7 @@ public class IgniteExamplesSelfTestSuite {
         suite.addTest(new JUnit4TestAdapter(ComputeClientBinaryExampleTest.class));
 
         // ML Grid.
-        suite.addTest(IgniteExamplesMLTestSuite.suite());
+        suite.addTest(new JUnit4TestAdapter(IgniteExamplesMLTestSuite.class));
 
         // Encryption.
         suite.addTest(new JUnit4TestAdapter(EncryptedCacheExampleSelfTest.class));
