@@ -28,12 +28,13 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
@@ -109,7 +110,7 @@ public class JdbcThinTcpIo {
     private IpcClientTcpEndpoint endpoint;
 
     /** Output stream. */
-    private BufferedOutputStream out;
+    private volatile BufferedOutputStream out;
 
     /** Input stream. */
     private BufferedInputStream in;
@@ -479,11 +480,13 @@ public class JdbcThinTcpIo {
 
     /**
      * @param req Request.
+     * @param stmt Statement.
      * @return Server response.
      * @throws IOException In case of IO error.
      * @throws SQLException On concurrent access to JDBC connection.
      */
-    JdbcResponse sendRequest(JdbcRequest req, Lock lock) throws SQLException, IOException {
+    JdbcResponse sendRequest(JdbcRequest req, JdbcThinStatement stmt)
+        throws SQLException, IOException {
         synchronized (mux) {
             if (ownThread != null) {
                 throw new SQLException("Concurrent access to JDBC connection is not allowed"
@@ -497,10 +500,12 @@ public class JdbcThinTcpIo {
         try {
             sendRequestRaw(req);
 
-            if (lock != null)
-                lock.unlock();
+            JdbcResponse resp = readResponse();
 
-            return readResponse();
+            if (stmt != null && stmt.isCancelled())
+                return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, new QueryCancelledException().getMessage());
+            else
+                return resp;
         }
         finally {
             synchronized (mux) {
@@ -511,12 +516,12 @@ public class JdbcThinTcpIo {
 
     /**
      * Sends cancel request.
-     * @param cancellationRequest contains request id to be cancelled
+     * @param cancellationReq contains request id to be cancelled
      * @throws IOException In case of IO error.
      */
-    void sendCancelRequest(JdbcQueryCancelRequest cancellationRequest) throws IOException {
+    void sendCancelRequest(JdbcQueryCancelRequest cancellationReq) throws IOException {
         if (isQueryCancellationSupported())
-            sendRequestRaw(cancellationRequest);
+            sendRequestRaw(cancellationReq);
     }
 
     /**
@@ -582,16 +587,18 @@ public class JdbcThinTcpIo {
      * @throws IOException On error.
      */
     private void send(byte[] req) throws IOException {
-        int size = req.length;
+        synchronized (mux) {
+            int size = req.length;
 
-        out.write(size & 0xFF);
-        out.write((size >> 8) & 0xFF);
-        out.write((size >> 16) & 0xFF);
-        out.write((size >> 24) & 0xFF);
+            out.write(size & 0xFF);
+            out.write((size >> 8) & 0xFF);
+            out.write((size >> 16) & 0xFF);
+            out.write((size >> 24) & 0xFF);
 
-        out.write(req);
+            out.write(req);
 
-        out.flush();
+            out.flush();
+        }
     }
 
     /**

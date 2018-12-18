@@ -197,7 +197,7 @@ public class JdbcThinResultSet implements ResultSet {
         ensureAlive();
 
         if ((rowsIter == null || !rowsIter.hasNext()) && !finished) {
-            JdbcQueryFetchResult res = stmt.conn.sendRequest(new JdbcQueryFetchRequest(cursorId, fetchSize));
+            JdbcQueryFetchResult res = stmt.conn.sendRequest(new JdbcQueryFetchRequest(cursorId, fetchSize), stmt);
 
             rows = res.items();
             finished = res.last();
@@ -240,8 +240,8 @@ public class JdbcThinResultSet implements ResultSet {
             return;
 
         try {
-            if (!(stmt != null && stmt.cancelled()) && (!finished || (isQuery && !autoClose)))
-                stmt.conn.sendRequest(new JdbcQueryCloseRequest(cursorId));
+            if (!(stmt != null && stmt.isCancelled()) && (!finished || (isQuery && !autoClose)))
+                stmt.conn.sendRequest(new JdbcQueryCloseRequest(cursorId), stmt);
         }
         finally {
             closed = true;
@@ -1861,7 +1861,7 @@ public class JdbcThinResultSet implements ResultSet {
         if (closed)
             throw new SQLException("Result set is closed.", SqlStateCode.INVALID_CURSOR_STATE);
 
-        if (stmt != null && stmt.cancelled())
+        if (stmt != null && stmt.isCancelled())
             throw new SQLException("The query was cancelled while executing.", SqlStateCode.QUERY_CANCELLED);
     }
 
@@ -1884,7 +1884,7 @@ public class JdbcThinResultSet implements ResultSet {
             throw new SQLException("Server cursor is already closed.", SqlStateCode.INVALID_CURSOR_STATE);
 
         if (!metaInit) {
-            JdbcQueryMetadataResult res = stmt.conn.sendRequest(new JdbcQueryMetadataRequest(cursorId));
+            JdbcQueryMetadataResult res = stmt.conn.sendRequest(new JdbcQueryMetadataRequest(cursorId), stmt);
 
             meta = res.meta();
 

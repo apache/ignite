@@ -232,7 +232,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         assert reqId != 0;
 
         synchronized (reqMux) {
-            if (isCancellationSupported() && (cmdType == QRY_EXEC || cmdType == BATCH_EXEC))
+            if (isCancellationSupported() && (cmdType == QRY_EXEC || cmdType == BATCH_EXEC ||
+                cmdType == BATCH_EXEC_ORDERED))
                 reqRegister.put(reqId, new JdbcQueryDescriptor());
         }
     }
@@ -670,7 +671,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         JdbcCursor cur = jdbcCursors.get(req.cursorId());
 
         if (prepareQueryCancellationMeta(cur))
-            return null;
+            return new JdbcResponse(null);
 
         try {
             cur = jdbcCursors.remove(req.cursorId());
@@ -689,7 +690,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             U.error(log, "Failed to close SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
             if (X.cause(e, QueryCancelledException.class) != null)
-                return exceptionToResult(new QueryCancelledException());
+                return new JdbcResponse(null);
             else
                 return exceptionToResult(e);
         }
