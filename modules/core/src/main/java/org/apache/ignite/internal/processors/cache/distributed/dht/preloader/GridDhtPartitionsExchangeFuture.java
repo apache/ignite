@@ -2164,8 +2164,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (log.isInfoEnabled()) {
                 log.info("Completed partition exchange [localNode=" + cctx.localNodeId() +
-                        ", exchange=" + (log.isDebugEnabled() ? this : shortInfo()) + ", topVer=" + topologyVersion() +
-                        ", durationFromInit=" + (U.currentTimeMillis() - initTs) + "] ");
+                        ", exchange=" + (log.isDebugEnabled() ? this : shortInfo()) + ", topVer=" + topologyVersion() + "]");
 
                 final String exchangeVersion = "[startVer=" + initialVersion() + ", resVer=" + topologyVersion() + "]";
 

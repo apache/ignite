@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.util;
 
 import java.util.ArrayList;
@@ -8,8 +25,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import org.apache.ignite.IgniteLogger;
 
+/**
+ *
+ */
 public class TimeBag {
     /** Initial global stage. */
     private static final GlobalStage INITIAL_STAGE = new GlobalStage("", 0, new HashMap<>());
@@ -22,9 +41,6 @@ public class TimeBag {
 
     /** Global stopwatch. */
     private final IgniteStopwatch globalStopwatch = IgniteStopwatch.createStarted();
-
-    /** Logger. */
-    private final IgniteLogger log;
 
     /** Measurement unit. */
     private final TimeUnit measurementUnit;
@@ -42,12 +58,17 @@ public class TimeBag {
     private final ThreadLocal<IgniteStopwatch> tlStopwatch = ThreadLocal.withInitial(IgniteStopwatch::createUnstarted);
 
 
-    public TimeBag(IgniteLogger log) {
-        this(log, TimeUnit.MILLISECONDS);
+    /**
+     * Default constructor.
+     */
+    public TimeBag() {
+        this(TimeUnit.MILLISECONDS);
     }
 
-    public TimeBag(IgniteLogger log, TimeUnit measurementUnit) {
-        this.log = log;
+    /**
+     * @param measurementUnit Measurement unit.
+     */
+    public TimeBag(TimeUnit measurementUnit) {
         this.stages = new ArrayList<>();
         this.localStages = new ConcurrentHashMap<>();
         this.measurementUnit = measurementUnit;
@@ -55,12 +76,18 @@ public class TimeBag {
         this.stages.add(INITIAL_STAGE);
     }
 
+    /**
+     *
+     */
     private GlobalStage lastCompletedGlobalStage() {
         assert !stages.isEmpty() : "No stages :(";
 
         return stages.get(stages.size() - 1);
     }
 
+    /**
+     * @param description Description.
+     */
     public void finishGlobalStage(String description) {
         if (!lock.writeLock().tryLock())
             throw new IllegalStateException("Attempt to finish global stage, while local stage finishing is in progress.");
@@ -79,6 +106,9 @@ public class TimeBag {
         }
     }
 
+    /**
+     * @param description Description.
+     */
     public void finishLocalStage(String description) {
         if (!lock.readLock().tryLock())
             throw new IllegalStateException("Attempt to finish local stage, while global stage finishing is in progress.");
@@ -111,7 +141,11 @@ public class TimeBag {
         }
     }
 
-    private void addStageTiming(Stage stage, List<String> result) {
+    /**
+     * @param stage Stage.
+     * @param timingsList List with timings in string representation.
+     */
+    private void addStageTiming(Stage stage, List<String> timingsList) {
         StringBuilder sb = new StringBuilder();
 
         if (!(stage instanceof GlobalStage))
@@ -123,9 +157,12 @@ public class TimeBag {
         sb.append("time=").append(stage.time()).append(' ').append(measurementUnitShort());
         sb.append(']');
 
-        result.add(sb.toString());
+        timingsList.add(sb.toString());
     }
 
+    /**
+     * @return Short name of desired measurement unit.
+     */
     private String measurementUnitShort() {
         switch (measurementUnit) {
             case MILLISECONDS:
@@ -147,11 +184,14 @@ public class TimeBag {
         }
     }
 
+    /**
+     * @return List of string representation of all stage timings.
+     */
     public List<String> stagesTimings() {
         lock.readLock().lock();
 
         try {
-            List<String> result = new ArrayList<>();
+            List<String> timings = new ArrayList<>();
 
             long totalTime = 0;
 
@@ -161,7 +201,7 @@ public class TimeBag {
 
                 totalTime += globStage.time();
 
-                addStageTiming(globStage, result);
+                addStageTiming(globStage, timings);
 
                 if (!globStage.localStages.isEmpty()) {
                     // Take a thread with longest local stages sequence.
@@ -185,60 +225,91 @@ public class TimeBag {
                     assert longestTimeThread != null;
 
                     if (locStages.size() > 1)
-                        result.add(PADDING + "Longest execution thread " + longestTimeThread + ":");
+                        timings.add(PADDING + "Longest execution thread " + longestTimeThread + ":");
 
                     List<Stage> longestStagesSeq = locStages.get(longestTimeThread);
 
                     for (Stage stage : longestStagesSeq)
-                        addStageTiming(stage, result);
+                        addStageTiming(stage, timings);
                 }
             }
 
-            result.add("Total time of all stages: " + totalTime + " " + measurementUnitShort());
+            timings.add("Total time of all stages: " + totalTime + " " + measurementUnitShort());
 
-            return result;
+            return timings;
         }
         finally {
             lock.readLock().unlock();
         }
     }
 
+    /**
+     *
+     */
     public static class GlobalStage extends Stage {
+        /** Local stages. */
         private final Map<String, List<Stage>> localStages;
 
+        /**
+         * @param description Description.
+         * @param time Time.
+         * @param localStages Local stages.
+         */
         public GlobalStage(String description, long time, Map<String, List<Stage>> localStages) {
             super(description, time);
 
             this.localStages = localStages;
         }
 
+        /**
+         *
+         */
         public Map<String, List<Stage>> localStages() {
             return localStages;
         }
 
+        /** {@inheritDoc} */
         @Override public String name() {
             return "Global stage";
         }
     }
 
+    /**
+     *
+     */
     public static class Stage {
+        /** Description. */
         private final String description;
 
+        /** Time. */
         private final long time;
 
+        /**
+         * @param description Description.
+         * @param time Time.
+         */
         public Stage(String description, long time) {
             this.description = description;
             this.time = time;
         }
 
+        /**
+         *
+         */
         public String description() {
             return description;
         }
 
+        /**
+         *
+         */
         public long time() {
             return time;
         }
 
+        /**
+         *
+         */
         public String name() {
             return "Local stage";
         }
