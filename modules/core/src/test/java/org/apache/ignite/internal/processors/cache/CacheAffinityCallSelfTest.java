@@ -18,13 +18,17 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -158,9 +162,10 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
 
         final Integer key = 1;
 
-        final Ignite client = grid(SRVS);
+        final IgniteEx client = grid(SRVS);
 
         assertTrue(client.configuration().isClientMode());
+        assertNull(client.context().cache().cache(CACHE_NAME));
 
         final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() {
@@ -177,6 +182,44 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         }
         catch (ClusterTopologyException e) {
             log.info("Expected error: " + e);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAffinityFailoverNoCacheOnClient() throws Exception {
+        startGridsMultiThreaded(SRVS + 1);
+
+        final Integer key = 1;
+
+        final IgniteEx client = grid(SRVS);
+
+        assertTrue(client.configuration().isClientMode());
+
+        final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                for (int i = 0; i < SRVS - 1; ++i) {
+                    U.sleep(ThreadLocalRandom.current().nextLong(100) + 50);
+
+                    stopGrid(i, false);
+                }
+
+                return null;
+            }
+        });
+
+        try {
+            Affinity<Integer> aff = client.affinity(CACHE_NAME);
+
+            assertNull(client.context().cache().cache(CACHE_NAME));
+
+            while (!fut.isDone())
+                assertNotNull(aff.mapKeyToNode(key));
         }
         finally {
             stopAllGrids();
