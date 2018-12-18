@@ -9,9 +9,9 @@ import java.nio.channels.spi.AbstractSelectableChannel;
 import org.apache.ignite.IgniteException;
 
 /**
- * A channel configuration for the {@link GridNioSocketChannel}.
+ * A channel configuration for the {@link IgniteNioSocketChannel}.
  */
-public final class GridNioSocketChannelConfig {
+public final class IgniteNioSocketChannelConfig {
     /** */
     private final SocketChannel channel;
 
@@ -21,7 +21,7 @@ public final class GridNioSocketChannelConfig {
     /**
      *
      */
-    public GridNioSocketChannelConfig(SocketChannel channel) {
+    public IgniteNioSocketChannelConfig(SocketChannel channel) {
         this.channel = channel;
         this.socket = channel.socket();
     }
@@ -36,7 +36,7 @@ public final class GridNioSocketChannelConfig {
     /**
      * Sets channel's blocking mode by {@link AbstractSelectableChannel#configureBlocking(boolean)} .
      */
-    public GridNioSocketChannelConfig setBlocking(boolean blocking) {
+    public IgniteNioSocketChannelConfig setBlocking(boolean blocking) {
         try {
             channel.configureBlocking(blocking);
         }
@@ -62,7 +62,7 @@ public final class GridNioSocketChannelConfig {
     /**
      * Sets the {@link SocketOptions#TCP_NODELAY} option.
      */
-    public GridNioSocketChannelConfig setTcpNoDelay(boolean tcpNoDelay) {
+    public IgniteNioSocketChannelConfig setTcpNoDelay(boolean tcpNoDelay) {
         try {
             socket.setTcpNoDelay(tcpNoDelay);
         }
@@ -88,7 +88,7 @@ public final class GridNioSocketChannelConfig {
     /**
      * Sets the {@link SocketOptions#SO_SNDBUF} option.
      */
-    public GridNioSocketChannelConfig setSendBufferSize(int sendBufferSize) {
+    public IgniteNioSocketChannelConfig setSendBufferSize(int sendBufferSize) {
         try {
             socket.setSendBufferSize(sendBufferSize);
         }
@@ -114,7 +114,7 @@ public final class GridNioSocketChannelConfig {
     /**
      * Sets the {@link SocketOptions#SO_RCVBUF} option.
      */
-    public GridNioSocketChannelConfig setReceiveBufferSize(int receiveBufferSize) {
+    public IgniteNioSocketChannelConfig setReceiveBufferSize(int receiveBufferSize) {
         try {
             socket.setReceiveBufferSize(receiveBufferSize);
         }
@@ -140,7 +140,7 @@ public final class GridNioSocketChannelConfig {
     /**
      * Sets the {@link SocketOptions#SO_TIMEOUT} option.
      */
-    public GridNioSocketChannelConfig setConnectTimeoutMillis(int connectTimeoutMillis) {
+    public IgniteNioSocketChannelConfig setConnectTimeoutMillis(int connectTimeoutMillis) {
         try {
             socket.setSoTimeout(connectTimeoutMillis);
         }
@@ -153,7 +153,7 @@ public final class GridNioSocketChannelConfig {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "GridNioSocketChannelConfig{" +
+        return "IgniteNioSocketChannelConfig{" +
             "channel=" + channel +
             ", socket=" + socket +
             '}';

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.util.nio.build;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.util.nio.channel.GridNioSocketChannel;
+import org.apache.ignite.internal.util.nio.channel.IgniteNioSocketChannel;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * 2) write header IGNITE_HEADER and HandshakeMessage
  * 3) receive RecoveryLastReceivedMessage
  */
-public class GridNioSocketChannelBuilder extends AbstractGridNioConnectionBuilder<GridNioSocketChannel> {
+public class GridNioSocketChannelBuilder extends AbstractGridNioConnectionBuilder<IgniteNioSocketChannel> {
     /**
      * @param log
      */
@@ -38,12 +38,12 @@ public class GridNioSocketChannelBuilder extends AbstractGridNioConnectionBuilde
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioSocketChannel build(
+    @Override public IgniteNioSocketChannel build(
         GridNioConnectionBuilderContext ctx,
         InetSocketAddress addr,
         GridNioHandshakeCompletionHandler hndlr
     ) throws Exception {
-        GridNioSocketChannel sockChnl = null;
+        IgniteNioSocketChannel sockChnl = null;
         SocketChannel ch = null;
 
         try {

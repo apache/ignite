@@ -60,8 +60,8 @@ import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
-import org.apache.ignite.internal.util.nio.channel.GridNioSocketChannel;
-import org.apache.ignite.internal.util.nio.channel.GridNioSocketChannelImpl;
+import org.apache.ignite.internal.util.nio.channel.IgniteNioSocketChannel;
+import org.apache.ignite.internal.util.nio.channel.IgniteNioSocketChannelImpl;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -223,7 +223,7 @@ public class GridNioServer<T> {
     private final GridConcurrentHashSet<GridSelectorNioSessionImpl> sessions = new GridConcurrentHashSet<>();
 
     /** Java NIO channels. */
-    private final ConcurrentMap<ConnectionKey, GridNioSocketChannel> channels = new ConcurrentHashMap<>();
+    private final ConcurrentMap<ConnectionKey, IgniteNioSocketChannel> channels = new ConcurrentHashMap<>();
 
     /** */
     private GridNioSslFilter sslFilter;
@@ -921,7 +921,7 @@ public class GridNioServer<T> {
     }
 
     /**
-     * The new {@link GridNioSocketChannel} will be created and {@link GridNioSession} will be destroyed.
+     * The new {@link IgniteNioSocketChannel} will be created and {@link GridNioSession} will be destroyed.
      *
      * @param ses Session.
      * @param msg Message to send on complete.
@@ -953,13 +953,13 @@ public class GridNioServer<T> {
      * @param channel Socket channel.
      * @throws IgniteCheckedException If fails.
      */
-    public GridNioFuture<GridNioSocketChannel> createNioChannel(ConnectionKey key,
+    public GridNioFuture<IgniteNioSocketChannel> createNioChannel(ConnectionKey key,
         SocketChannel channel) throws IgniteCheckedException {
         if (!closed) {
             if (channels.get(key) != null)
                 return new GridNioFinishedFuture<>(new IgniteCheckedException("Channel connection already exists: " + key));
 
-            GridNioSocketChannel nioSocketCh = new GridNioSocketChannelImpl(key, channel);
+            IgniteNioSocketChannel nioSocketCh = new IgniteNioSocketChannelImpl(key, channel);
 
             channels.putIfAbsent(key, nioSocketCh);
 
@@ -1783,11 +1783,11 @@ public class GridNioServer<T> {
     }
 
     /**
-     * Handle {@link GridNioSocketChannel} creation event.
+     * Handle {@link IgniteNioSocketChannel} creation event.
      *
      * @param ch Created channel.
      */
-    private void onChannelCreated(GridNioSocketChannel ch) {
+    private void onChannelCreated(IgniteNioSocketChannel ch) {
         if (lsnr != null)
             lsnr.onChannelCreated(ch);
     }
@@ -2653,9 +2653,9 @@ public class GridNioServer<T> {
 
             close((GridSelectorNioSessionImpl)ses, null, false);
 
-            GridNioSocketChannel nioSocketCh;
+            IgniteNioSocketChannel nioSocketCh;
 
-            channels.putIfAbsent(connKey, nioSocketCh = new GridNioSocketChannelImpl(connKey, ch));
+            channels.putIfAbsent(connKey, nioSocketCh = new IgniteNioSocketChannelImpl(connKey, ch));
 
             onChannelCreated(nioSocketCh);
         }

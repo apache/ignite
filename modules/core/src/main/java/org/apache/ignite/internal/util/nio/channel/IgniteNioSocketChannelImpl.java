@@ -26,7 +26,7 @@ import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
 /**
  *
  */
-public class GridNioSocketChannelImpl implements GridNioSocketChannel {
+public class IgniteNioSocketChannelImpl implements IgniteNioSocketChannel {
     /** */
     private final ConnectionKey key;
 
@@ -34,7 +34,7 @@ public class GridNioSocketChannelImpl implements GridNioSocketChannel {
     private final SocketChannel channel;
 
     /** */
-    private final GridNioSocketChannelConfig config;
+    private final IgniteNioSocketChannelConfig config;
 
     /**
      * Create a new NIO socket channel.
@@ -42,10 +42,10 @@ public class GridNioSocketChannelImpl implements GridNioSocketChannel {
      * @param key Connection key.
      * @param channel The {@link SocketChannel} which will be used.
      */
-    public GridNioSocketChannelImpl(ConnectionKey key, SocketChannel channel) {
+    public IgniteNioSocketChannelImpl(ConnectionKey key, SocketChannel channel) {
         this.key = key;
         this.channel = channel;
-        this.config = new GridNioSocketChannelConfig(channel);
+        this.config = new IgniteNioSocketChannelConfig(channel);
     }
 
     /** {@inheritDoc} */
@@ -59,7 +59,7 @@ public class GridNioSocketChannelImpl implements GridNioSocketChannel {
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioSocketChannelConfig configuration() {
+    @Override public IgniteNioSocketChannelConfig config() {
         return config;
     }
 
@@ -112,7 +112,7 @@ public class GridNioSocketChannelImpl implements GridNioSocketChannel {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        GridNioSocketChannelImpl channel1 = (GridNioSocketChannelImpl)o;
+        IgniteNioSocketChannelImpl channel1 = (IgniteNioSocketChannelImpl)o;
 
         if (!key.equals(channel1.key))
             return false;
@@ -128,7 +128,7 @@ public class GridNioSocketChannelImpl implements GridNioSocketChannel {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "GridNioSocketChannelImpl{" +
+        return "IgniteNioSocketChannelImpl{" +
             "key=" + key +
             ", channel=" + channel +
             ", config=" + config +

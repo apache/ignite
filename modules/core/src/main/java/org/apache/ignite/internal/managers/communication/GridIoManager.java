@@ -77,7 +77,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.lang.IgnitePair;
-import org.apache.ignite.internal.util.nio.channel.GridNioSocketChannel;
+import org.apache.ignite.internal.util.nio.channel.IgniteNioSocketChannel;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -282,12 +282,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     lsnr.onNodeDisconnected(nodeId);
             }
 
-            @Override public void onChannelConfigure(UUID nodeId, Serializable msg) {
-                GridIoMessage msg0 = (GridIoMessage)msg;
-
-            }
-
-            @Override public void onChannelCreated(GridNioSocketChannel ch) {
+            @Override public void onChannelRegistered(IgniteNioSocketChannel ch) {
                 for (GridIoChannelListener lsnr : channelLsnrs)
                     lsnr.onChannelCreated(ch);
             }

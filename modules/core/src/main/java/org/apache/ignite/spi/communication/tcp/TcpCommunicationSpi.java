@@ -104,7 +104,7 @@ import org.apache.ignite.internal.util.nio.build.GridNioConnectionBuilder;
 import org.apache.ignite.internal.util.nio.build.GridNioConnectionBuilderContext;
 import org.apache.ignite.internal.util.nio.build.GridNioSessionBuilder;
 import org.apache.ignite.internal.util.nio.build.GridNioSocketChannelBuilder;
-import org.apache.ignite.internal.util.nio.channel.GridNioSocketChannel;
+import org.apache.ignite.internal.util.nio.channel.IgniteNioSocketChannel;
 import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
@@ -374,7 +374,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** Maximum {@link GridNioSession} connections per node. */
     public static final int MAX_CONN_PER_NODE = 1024;
 
-    /** Maximum {@link GridNioSocketChannel} connections per node. */
+    /** Maximum {@link IgniteNioSocketChannel} connections per node. */
     public static final int MAX_SOCK_CONN_PER_NODE = 1024;
 
     /** No-op runnable. */
@@ -783,7 +783,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 }
                 else if (ses.meta(CHNL_CFG_META)) {
                     if (lsnr != null)
-                        lsnr.onChannelConfigure(connKey.nodeId(), msg);
+                        lsnr.onChannelRequested(connKey.nodeId(), msg);
                 }
                 else {
                     if (msg instanceof RecoveryLastReceivedMessage) {
@@ -870,7 +870,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             }
 
             /** {@inheritDoc} */
-            @Override public void onChannelCreated(GridNioSocketChannel ch) {
+            @Override public void onChannelCreated(IgniteNioSocketChannel ch) {
                 log.info("New channel connection established [key=" + ch.id() + ", channel=" + ch.channel() + ']');
 
                 notifyListener(ch);
@@ -3607,7 +3607,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /** */
-    private GridNioSocketChannel createGridNioSocketChannel(
+    private IgniteNioSocketChannel createGridNioSocketChannel(
         ClusterNode node,
         ConnectionKey connKey
     ) throws IgniteCheckedException {
@@ -3617,7 +3617,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             throw new IgniteCheckedException("Local node has not been started or " +
                 "fully initialized [isStopping=" + getSpiContext().isStopping() + ']');
 
-        GridNioConnectionBuilder<GridNioSocketChannel> chBuilder =
+        GridNioConnectionBuilder<IgniteNioSocketChannel> chBuilder =
             new GridNioSocketChannelBuilder(log)
                 .setSockRcvBufSize(sockRcvBuf)
                 .setSockSndBufSize(sockSndBuf)
@@ -3633,7 +3633,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     connKey.connectionIndex(),
                     true));
 
-        T2<GridNioSocketChannel, IgniteCheckedException> channelResult = createTcpClient2(node, chBuilder, connKey);
+        T2<IgniteNioSocketChannel, IgniteCheckedException> channelResult = createTcpClient2(node, chBuilder, connKey);
 
         if (channelResult.get2() != null)
             throw channelResult.get2();
@@ -4220,11 +4220,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /** */
-    private void notifyListener(GridNioSocketChannel ch) {
+    private void notifyListener(IgniteNioSocketChannel ch) {
         CommunicationListener<Message> lsnr0 = lsnr;
 
         if (lsnr0 != null)
-            lsnr0.onChannelCreated(ch);
+            lsnr0.onChannelRegistered(ch);
     }
 
     /**
@@ -4505,12 +4505,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioSocketChannel channel(ClusterNode remote, Message msg) throws IgniteSpiException {
+    @Override public IgniteNioSocketChannel channel(ClusterNode remote, Message msg) throws IgniteSpiException {
         connectGate.enter();
 
         ConnectionKey connKey = new ConnectionKey(remote.id(), sockConnPlc.connectionIndex(), -1);
 
-        GridNioSocketChannel nioCh = null;
+        IgniteNioSocketChannel nioCh = null;
         GridNioSession ses = null;
 
         try {
@@ -4522,10 +4522,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             // GridNioSession ses = createGridNioSession()
 
-            // Send configuration message.
+            // ses.send(.., ..)
+            // Send configuration message new GridIoMessage(msg, ..)
             ses.sendNoFuture(msg, null);
 
-            // Recive successfull result.
+            // Wait for the reply (channel created on the remote side)
+
+            // Report with successfull result.
 
             return nioCh;
         }

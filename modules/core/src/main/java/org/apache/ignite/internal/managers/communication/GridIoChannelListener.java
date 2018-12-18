@@ -17,16 +17,16 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import org.apache.ignite.internal.util.nio.channel.GridNioSocketChannel;
+import org.apache.ignite.internal.util.nio.channel.IgniteNioSocketChannel;
 
 /**
  * Listener for connections established from remote nodes.
  */
 public interface GridIoChannelListener {
     /**
-     * Handle {@link GridNioSocketChannel} creation event from remote connection.
+     * Handle {@link IgniteNioSocketChannel} creation event from remote connection.
      *
      * @param ch Local created channel endpoint.
      */
-    public void onChannelCreated(GridNioSocketChannel ch);
+    public void onChannelCreated(IgniteNioSocketChannel ch);
 }
