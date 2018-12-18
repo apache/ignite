@@ -107,15 +107,15 @@ public abstract class CacheConsistencyCheckAbstractTest extends GridCommonAbstra
     /** Key. */
     protected static int iterableKey;
 
+    /** Is client flag. */
+    protected boolean client;
+
     /**
      *
      */
     protected Integer backupsCount(){
         return 3;
     }
-
-    /** Is client flag. */
-    protected boolean client;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
