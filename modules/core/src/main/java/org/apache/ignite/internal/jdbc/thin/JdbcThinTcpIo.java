@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteRe
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCancelRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
@@ -110,7 +111,7 @@ public class JdbcThinTcpIo {
     private IpcClientTcpEndpoint endpoint;
 
     /** Output stream. */
-    private volatile BufferedOutputStream out;
+    private BufferedOutputStream out;
 
     /** Input stream. */
     private BufferedInputStream in;
@@ -499,6 +500,10 @@ public class JdbcThinTcpIo {
 
         try {
             sendRequestRaw(req);
+
+            if (stmt != null && req instanceof JdbcQueryExecuteRequest || req instanceof JdbcBatchExecuteRequest ||
+                req instanceof JdbcOrderedBatchExecuteRequest)
+                stmt.currReqId(req.requestId());
 
             JdbcResponse resp = readResponse();
 
