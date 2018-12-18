@@ -170,82 +170,82 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         super.afterTest();
     }
 
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testReadOnlySafe() throws Exception {
-        checkReadOnlySafe(false);
-    }
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testReadOnlySafe() throws Exception {
+//        checkReadOnlySafe(false);
+//    }
+//
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testReadOnlySafeRefreshDelay() throws Exception {
+//        checkReadOnlySafe(true);
+//    }
+//
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testReadOnlySafeWithPersistence() throws Exception {
+//        isPersistenceEnabled = true;
+//
+//        checkReadOnlySafe(false);
+//    }
+//
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testReadOnlySafeWithPersistenceRefreshDelay() throws Exception {
+//        isPersistenceEnabled = true;
+//
+//        checkReadOnlySafe(true);
+//    }
+//
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    private void checkReadOnlySafe(boolean waitRefresh) throws Exception {
+//        partLossPlc = PartitionLossPolicy.READ_ONLY_SAFE;
+//
+//        checkLostPartition(false, true, killSingleNode, waitRefresh);
+//    }
+//
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testReadOnlyAll() throws Exception {
+//        partLossPlc = PartitionLossPolicy.READ_ONLY_ALL;
+//
+//        checkLostPartition(false, false, killSingleNode);
+//    }
+//
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testReadOnlyAllWithPersistence() throws Exception {
+//        fail("https://issues.apache.org/jira/browse/IGNITE-10041");
+//
+//        partLossPlc = PartitionLossPolicy.READ_ONLY_ALL;
+//
+//        isPersistenceEnabled = true;
+//
+//        checkLostPartition(false, false, killSingleNode);
+//    }
 
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testReadOnlySafeRefreshDelay() throws Exception {
-        checkReadOnlySafe(true);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testReadOnlySafeWithPersistence() throws Exception {
-        isPersistenceEnabled = true;
-
-        checkReadOnlySafe(false);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testReadOnlySafeWithPersistenceRefreshDelay() throws Exception {
-        isPersistenceEnabled = true;
-
-        checkReadOnlySafe(true);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    private void checkReadOnlySafe(boolean waitRefresh) throws Exception {
-        partLossPlc = PartitionLossPolicy.READ_ONLY_SAFE;
-
-        checkLostPartition(false, true, killSingleNode, waitRefresh);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testReadOnlyAll() throws Exception {
-        partLossPlc = PartitionLossPolicy.READ_ONLY_ALL;
-
-        checkLostPartition(false, false, killSingleNode);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testReadOnlyAllWithPersistence() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10041");
-
-        partLossPlc = PartitionLossPolicy.READ_ONLY_ALL;
-
-        isPersistenceEnabled = true;
-
-        checkLostPartition(false, false, killSingleNode);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testReadWriteSafe() throws Exception {
-        checkReadWriteSafe(false);
-    }
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testReadWriteSafe() throws Exception {
+//        checkReadWriteSafe(false);
+//    }
 
     /**
      * @throws Exception if failed.
@@ -254,26 +254,26 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     public void testReadWriteSafeRefreshDelay() throws Exception {
         checkReadWriteSafe(true);
     }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testReadWriteSafeWithPersistence() throws Exception {
-        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
-
-        checkReadWriteSafe(false);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testReadWriteSafeWithPersistenceRefreshDelay() throws Exception {
-        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
-
-        checkReadWriteSafe(true);
-    }
+//
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testReadWriteSafeWithPersistence() throws Exception {
+//        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
+//
+//        checkReadWriteSafe(false);
+//    }
+//
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testReadWriteSafeWithPersistenceRefreshDelay() throws Exception {
+//        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
+//
+//        checkReadWriteSafe(true);
+//    }
 
     /**
      * @throws Exception if failed.
@@ -284,235 +284,235 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         checkLostPartition(true, true, killSingleNode, waitRefresh);
     }
 
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testReadWriteAll() throws Exception {
-        partLossPlc = PartitionLossPolicy.READ_WRITE_ALL;
-
-        checkLostPartition(true, false, killSingleNode);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testReadWriteAllWithPersistence() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10041");
-
-        partLossPlc = PartitionLossPolicy.READ_WRITE_ALL;
-
-        isPersistenceEnabled = true;
-
-        checkLostPartition(true, false, killSingleNode);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testReadWriteSafeAfterKillTwoNodes() throws Exception {
-        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
-
-        checkLostPartition(true, true, new TopologyChanger(false, asList(3, 2), asList(0, 1, 4), 0));
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testReadWriteSafeAfterKillTwoNodesWithPersistence() throws Exception {
-        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
-
-        isPersistenceEnabled = true;
-
-        checkLostPartition(true, true, new TopologyChanger(false, asList(3, 2), asList(0, 1, 4), 0));
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testReadWriteSafeAfterKillTwoNodesWithDelay() throws Exception {
-        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
-
-        checkLostPartition(true, true, new TopologyChanger(false, asList(3, 2), asList(0, 1, 4), 20));
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testReadWriteSafeAfterKillTwoNodesWithDelayWithPersistence() throws Exception {
-        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
-
-        isPersistenceEnabled = true;
-
-        checkLostPartition(true, true, new TopologyChanger(false, asList(3, 2), asList(0, 1, 4), 20));
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testReadWriteSafeWithBackupsAfterKillThreeNodes() throws Exception {
-        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
-
-        backups = 1;
-
-        checkLostPartition(true, true, new TopologyChanger(true, asList(3, 2, 1), asList(0, 4), 0));
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testReadWriteSafeWithBackupsAfterKillThreeNodesWithPersistence() throws Exception {
-        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
-
-        backups = 1;
-
-        isPersistenceEnabled = true;
-
-        checkLostPartition(true, true, new TopologyChanger(true, asList(3, 2, 1), asList(0, 4), 0));
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testReadWriteSafeAfterKillCrd() throws Exception {
-        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
-
-        checkLostPartition(true, true, new TopologyChanger(true, asList(3, 0), asList(1, 2, 4), 0));
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testReadWriteSafeAfterKillCrdWithPersistence() throws Exception {
-        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
-
-        isPersistenceEnabled = true;
-
-        checkLostPartition(true, true, new TopologyChanger(true, asList(3, 0), asList(1, 2, 4), 0));
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testReadWriteSafeWithBackups() throws Exception {
-        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
-
-        backups = 1;
-
-        checkLostPartition(true, true, new TopologyChanger(true, asList(3, 2), asList(0, 1, 4), 0));
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testReadWriteSafeWithBackupsWithPersistence() throws Exception {
-        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
-
-        backups = 1;
-
-        isPersistenceEnabled = true;
-
-        checkLostPartition(true, true, new TopologyChanger(true, asList(3, 2), asList(0, 1, 4), 0));
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testReadWriteSafeWithBackupsAfterKillCrd() throws Exception {
-        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
-
-        backups = 1;
-
-        checkLostPartition(true, true, new TopologyChanger(true, asList(3, 0), asList(1, 2, 4), 0));
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testReadWriteSafeWithBackupsAfterKillCrdWithPersistence() throws Exception {
-        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
-
-        backups = 1;
-
-        isPersistenceEnabled = true;
-
-        checkLostPartition(true, true, new TopologyChanger(true, asList(3, 0), asList(1, 2, 4), 0));
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testIgnore() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5078");
-
-        partLossPlc = PartitionLossPolicy.IGNORE;
-
-        checkIgnore(killSingleNode);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testIgnoreWithPersistence() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5078");
-
-        fail("https://issues.apache.org/jira/browse/IGNITE-10041");
-
-        partLossPlc = PartitionLossPolicy.IGNORE;
-
-        isPersistenceEnabled = true;
-
-        checkIgnore(killSingleNode);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testIgnoreKillThreeNodes() throws Exception {
-        partLossPlc = PartitionLossPolicy.IGNORE;
-
-        // TODO aliveNodes should include node 4, but it fails due to https://issues.apache.org/jira/browse/IGNITE-5078.
-        // TODO need to add 4 to the aliveNodes after IGNITE-5078 is fixed.
-        // TopologyChanger onlyCrdIsAlive = new TopologyChanger(false, Arrays.asList(1, 2, 3), Arrays.asList(0, 4), 0);
-        TopologyChanger onlyCrdIsAlive = new TopologyChanger(false, asList(1, 2, 3), singletonList(0), 0);
-
-        checkIgnore(onlyCrdIsAlive);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testIgnoreKillThreeNodesWithPersistence() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10041");
-
-        partLossPlc = PartitionLossPolicy.IGNORE;
-
-        isPersistenceEnabled = true;
-
-        // TODO aliveNodes should include node 4, but it fails due to https://issues.apache.org/jira/browse/IGNITE-5078.
-        // TODO need to add 4 to the aliveNodes after IGNITE-5078 is fixed.
-        // TopologyChanger onlyCrdIsAlive = new TopologyChanger(false, Arrays.asList(1, 2, 3), Arrays.asList(0, 4), 0);
-        TopologyChanger onlyCrdIsAlive = new TopologyChanger(false, asList(1, 2, 3), singletonList(0), 0);
-
-        checkIgnore(onlyCrdIsAlive);
-    }
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testReadWriteAll() throws Exception {
+//        partLossPlc = PartitionLossPolicy.READ_WRITE_ALL;
+//
+//        checkLostPartition(true, false, killSingleNode);
+//    }
+//
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testReadWriteAllWithPersistence() throws Exception {
+//        fail("https://issues.apache.org/jira/browse/IGNITE-10041");
+//
+//        partLossPlc = PartitionLossPolicy.READ_WRITE_ALL;
+//
+//        isPersistenceEnabled = true;
+//
+//        checkLostPartition(true, false, killSingleNode);
+//    }
+//
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testReadWriteSafeAfterKillTwoNodes() throws Exception {
+//        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
+//
+//        checkLostPartition(true, true, new TopologyChanger(false, asList(3, 2), asList(0, 1, 4), 0));
+//    }
+//
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testReadWriteSafeAfterKillTwoNodesWithPersistence() throws Exception {
+//        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
+//
+//        isPersistenceEnabled = true;
+//
+//        checkLostPartition(true, true, new TopologyChanger(false, asList(3, 2), asList(0, 1, 4), 0));
+//    }
+//
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testReadWriteSafeAfterKillTwoNodesWithDelay() throws Exception {
+//        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
+//
+//        checkLostPartition(true, true, new TopologyChanger(false, asList(3, 2), asList(0, 1, 4), 20));
+//    }
+//
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testReadWriteSafeAfterKillTwoNodesWithDelayWithPersistence() throws Exception {
+//        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
+//
+//        isPersistenceEnabled = true;
+//
+//        checkLostPartition(true, true, new TopologyChanger(false, asList(3, 2), asList(0, 1, 4), 20));
+//    }
+//
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testReadWriteSafeWithBackupsAfterKillThreeNodes() throws Exception {
+//        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
+//
+//        backups = 1;
+//
+//        checkLostPartition(true, true, new TopologyChanger(true, asList(3, 2, 1), asList(0, 4), 0));
+//    }
+//
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testReadWriteSafeWithBackupsAfterKillThreeNodesWithPersistence() throws Exception {
+//        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
+//
+//        backups = 1;
+//
+//        isPersistenceEnabled = true;
+//
+//        checkLostPartition(true, true, new TopologyChanger(true, asList(3, 2, 1), asList(0, 4), 0));
+//    }
+//
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testReadWriteSafeAfterKillCrd() throws Exception {
+//        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
+//
+//        checkLostPartition(true, true, new TopologyChanger(true, asList(3, 0), asList(1, 2, 4), 0));
+//    }
+//
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testReadWriteSafeAfterKillCrdWithPersistence() throws Exception {
+//        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
+//
+//        isPersistenceEnabled = true;
+//
+//        checkLostPartition(true, true, new TopologyChanger(true, asList(3, 0), asList(1, 2, 4), 0));
+//    }
+//
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testReadWriteSafeWithBackups() throws Exception {
+//        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
+//
+//        backups = 1;
+//
+//        checkLostPartition(true, true, new TopologyChanger(true, asList(3, 2), asList(0, 1, 4), 0));
+//    }
+//
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testReadWriteSafeWithBackupsWithPersistence() throws Exception {
+//        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
+//
+//        backups = 1;
+//
+//        isPersistenceEnabled = true;
+//
+//        checkLostPartition(true, true, new TopologyChanger(true, asList(3, 2), asList(0, 1, 4), 0));
+//    }
+//
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testReadWriteSafeWithBackupsAfterKillCrd() throws Exception {
+//        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
+//
+//        backups = 1;
+//
+//        checkLostPartition(true, true, new TopologyChanger(true, asList(3, 0), asList(1, 2, 4), 0));
+//    }
+//
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testReadWriteSafeWithBackupsAfterKillCrdWithPersistence() throws Exception {
+//        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
+//
+//        backups = 1;
+//
+//        isPersistenceEnabled = true;
+//
+//        checkLostPartition(true, true, new TopologyChanger(true, asList(3, 0), asList(1, 2, 4), 0));
+//    }
+//
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testIgnore() throws Exception {
+//        fail("https://issues.apache.org/jira/browse/IGNITE-5078");
+//
+//        partLossPlc = PartitionLossPolicy.IGNORE;
+//
+//        checkIgnore(killSingleNode);
+//    }
+//
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testIgnoreWithPersistence() throws Exception {
+//        fail("https://issues.apache.org/jira/browse/IGNITE-5078");
+//
+//        fail("https://issues.apache.org/jira/browse/IGNITE-10041");
+//
+//        partLossPlc = PartitionLossPolicy.IGNORE;
+//
+//        isPersistenceEnabled = true;
+//
+//        checkIgnore(killSingleNode);
+//    }
+//
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testIgnoreKillThreeNodes() throws Exception {
+//        partLossPlc = PartitionLossPolicy.IGNORE;
+//
+//        // TODO aliveNodes should include node 4, but it fails due to https://issues.apache.org/jira/browse/IGNITE-5078.
+//        // TODO need to add 4 to the aliveNodes after IGNITE-5078 is fixed.
+//        // TopologyChanger onlyCrdIsAlive = new TopologyChanger(false, Arrays.asList(1, 2, 3), Arrays.asList(0, 4), 0);
+//        TopologyChanger onlyCrdIsAlive = new TopologyChanger(false, asList(1, 2, 3), singletonList(0), 0);
+//
+//        checkIgnore(onlyCrdIsAlive);
+//    }
+//
+//    /**
+//     * @throws Exception if failed.
+//     */
+//    @Test
+//    public void testIgnoreKillThreeNodesWithPersistence() throws Exception {
+//        fail("https://issues.apache.org/jira/browse/IGNITE-10041");
+//
+//        partLossPlc = PartitionLossPolicy.IGNORE;
+//
+//        isPersistenceEnabled = true;
+//
+//        // TODO aliveNodes should include node 4, but it fails due to https://issues.apache.org/jira/browse/IGNITE-5078.
+//        // TODO need to add 4 to the aliveNodes after IGNITE-5078 is fixed.
+//        // TopologyChanger onlyCrdIsAlive = new TopologyChanger(false, Arrays.asList(1, 2, 3), Arrays.asList(0, 4), 0);
+//        TopologyChanger onlyCrdIsAlive = new TopologyChanger(false, asList(1, 2, 3), singletonList(0), 0);
+//
+//        checkIgnore(onlyCrdIsAlive);
+//    }
 
     /**
      * @param topChanger topology changer.
