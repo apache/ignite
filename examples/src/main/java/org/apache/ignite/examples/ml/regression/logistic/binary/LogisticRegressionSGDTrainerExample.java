@@ -20,6 +20,7 @@ package org.apache.ignite.examples.ml.regression.logistic.binary;
 import java.io.FileNotFoundException;
 import java.util.Arrays;
 import javax.cache.Cache;
+import org.apache.commons.math3.util.Precision;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -62,7 +63,7 @@ public class LogisticRegressionSGDTrainerExample {
                 .fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
             System.out.println(">>> Create new logistic regression trainer object.");
-            LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>()
+            LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
                 .withUpdatesStgy(new UpdatesStrategy<>(
                     new SimpleGDUpdateCalculator(0.2),
                     SimpleGDParameterUpdate::sumLocal,
@@ -98,7 +99,7 @@ public class LogisticRegressionSGDTrainerExample {
                     double prediction = mdl.apply(inputs);
 
                     totalAmount++;
-                    if(groundTruth != prediction)
+                    if (!Precision.equals(groundTruth, prediction, Precision.EPSILON))
                         amountOfErrors++;
 
                     int idx1 = (int)prediction;

@@ -840,6 +840,7 @@
                                         <exclude>**/*.sql</exclude><!--sql files-->
                                         <exclude>**/*README*.txt</exclude><!--readme files-->
                                         <exclude>**/*README*.md</exclude><!--readme files-->
+                                        <exclude>**/*CONTRIBUTING*.md</exclude><!--readme files-->
                                         <exclude>**/*index*.md</exclude><!--readme files-->
                                         <exclude>**/*.timestamp</exclude><!--tmp-files-->
                                         <exclude>**/*.iml</exclude><!--IDEA files-->
@@ -857,6 +858,7 @@
                                         <exclude>**/keystore/ca/*serial</exclude><!--auto generated files-->
                                         <exclude>**/META-INF/services/**</exclude> <!-- Interface mappings: cannot be changed -->
                                         <!--special excludes-->
+                                        <exclude>idea/disabled_plugins.txt</exclude>
                                         <exclude>idea/ignite_codeStyle.xml</exclude>
                                         <exclude>idea/ignite_inspections.xml</exclude>
                                         <exclude>idea/ignite_inspections_teamcity.xml</exclude>

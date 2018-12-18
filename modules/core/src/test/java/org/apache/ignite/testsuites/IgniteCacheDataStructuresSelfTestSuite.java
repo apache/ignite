@@ -99,7 +99,7 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
     /**
      * @return Cache test suite.
      */
-    public static TestSuite suite() {
+    public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Cache Data Structures Test Suite");
 
         // Data structures.
@@ -194,6 +194,8 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(IgniteSequenceInternalCleanupTest.class));
 
         suite.addTest(new JUnit4TestAdapter(AtomicCacheAffinityConfigurationTest.class));
+
+        suite.addTest(IgniteCacheDataStructuresBinarySelfTestSuite.suite());
 
         suite.addTestSuite(CacheConsistencyCheckImplicitAtomicTest.class);
         suite.addTestSuite(CacheConsistencyCheckImplicitTransactionalTest.class);
