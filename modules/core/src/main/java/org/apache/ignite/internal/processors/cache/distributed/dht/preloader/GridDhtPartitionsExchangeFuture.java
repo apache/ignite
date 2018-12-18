@@ -3259,11 +3259,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             resetLostPartitions(caches);
 
                             // Check rebalance state after reset lost partitions.
-                            for (String cache : caches) {
-                                GridCacheContext ctx = cctx.cacheContext(CU.cacheId(cache));
-
-                                cctx.affinity().checkRebalanceState(ctx.topology(), ctx.groupId());
-                            }
+//                            for (String cache : caches) {
+//                                GridCacheContext ctx = cctx.cacheContext(CU.cacheId(cache));
+//
+//                                cctx.affinity().checkRebalanceState(ctx.topology(), ctx.groupId());
+//                            }
+                            cctx.exchange().scheduleResendPartitions();
                         }
                     }
                 }
