@@ -240,10 +240,16 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
         }
     }
 
+    /**
+     *
+     */
     private static class CheckingIoFactory implements FileIOFactory {
         /** */
         private final transient Collection<FullPageId> forbiddenPages;
 
+        /**
+         * @param forbiddenPages Forbidden pages.
+         */
         private CheckingIoFactory(Collection<FullPageId> forbiddenPages) {
             this.forbiddenPages = forbiddenPages;
         }
@@ -259,14 +265,24 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
         }
     }
 
+    /**
+     *
+     */
     private static class CheckingFileIO extends FileIODecorator {
         /** */
         private int grpId;
 
         /** */
         private int partId;
+
+        /** */
         private Collection<FullPageId> forbiddenPages;
 
+        /**
+         * @param file File.
+         * @param delegate Delegate.
+         * @param forbiddenPages Forbidden pages.
+         */
         public CheckingFileIO(File file, FileIO delegate, Collection<FullPageId> forbiddenPages) {
             super(delegate);
             this.forbiddenPages = forbiddenPages;
