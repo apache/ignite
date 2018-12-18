@@ -78,6 +78,8 @@ public class CacheJdbcPojoStoreFactorySelfTest extends GridCommonAbstractTest {
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-10723")
     @Test
     public void testIncorrectBeanConfiguration() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10723");
+
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 try (Ignite ignored = Ignition.start("modules/spring/src/test/config/pojo-incorrect-store-cache.xml")) {

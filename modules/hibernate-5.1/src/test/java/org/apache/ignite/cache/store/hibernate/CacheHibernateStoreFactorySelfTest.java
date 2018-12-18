@@ -92,6 +92,8 @@ public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-1094")
     @Test
     public void testIncorrectBeanConfiguration() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10723");
+
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 try(Ignite ignite =

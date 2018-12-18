@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testsuites.IgniteIgnore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -43,6 +44,7 @@ public class GridPartitionedCacheJtaLookupClassNameSelfTest extends AbstractCach
     /**
      *
      */
+    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-10723", forceFailure = true)
     @Test
     public void testIncompatibleTmLookup() {
         final IgniteEx ignite = grid(0);
