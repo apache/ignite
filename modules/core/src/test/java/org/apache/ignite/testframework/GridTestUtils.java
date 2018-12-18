@@ -564,7 +564,6 @@ public final class GridTestUtils {
      * @param it Input iterable of elements.
      * @param ps Array of predicates (by number of elements in iterable).
      */
-    @SuppressWarnings("ConstantConditions")
     public static <T> void assertOneToOne(Iterable<T> it, IgnitePredicate<T>... ps) {
         Collection<IgnitePredicate<T>> ps0 = new ArrayList<>(Arrays.asList(ps));
         Collection<T2<IgnitePredicate<T>, T>> passed = new ArrayList<>();

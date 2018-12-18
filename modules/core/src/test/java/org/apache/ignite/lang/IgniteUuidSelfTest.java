@@ -226,7 +226,6 @@ public class IgniteUuidSelfTest extends GridCommonAbstractTest {
      * @throws ClassNotFoundException If failed.
      * @throws IOException If failed.
      */
-    @SuppressWarnings({"unchecked"})
     private <T> T read(byte[] bytes) throws ClassNotFoundException, IOException {
         ByteArrayInputStream bin = new ByteArrayInputStream(bytes);
 

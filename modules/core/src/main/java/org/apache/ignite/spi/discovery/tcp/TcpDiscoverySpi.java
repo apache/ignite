@@ -1174,7 +1174,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @return {@link LinkedHashSet} of internal and external addresses of provided node.
      *      Internal addresses placed before external addresses.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     LinkedHashSet<InetSocketAddress> getNodeAddresses(TcpDiscoveryNode node) {
         LinkedHashSet<InetSocketAddress> res = new LinkedHashSet<>(node.socketAddresses());
 
@@ -1193,7 +1192,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      *      Internal addresses placed before external addresses.
      *      Internal addresses will be sorted with {@code inetAddressesComparator(sameHost)}.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     LinkedHashSet<InetSocketAddress> getNodeAddresses(TcpDiscoveryNode node, boolean sameHost) {
         List<InetSocketAddress> addrs = U.arrayList(node.socketAddresses());
 

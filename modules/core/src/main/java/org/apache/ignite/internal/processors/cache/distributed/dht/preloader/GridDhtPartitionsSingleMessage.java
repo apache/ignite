@@ -210,7 +210,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      * @param partsCnt Total cache partitions.
      * @return Partition update counters.
      */
-    @SuppressWarnings("unchecked")
     public CachePartitionPartialCountersMap partitionUpdateCounters(int grpId, int partsCnt) {
         Object res = partCntrs == null ? null : partCntrs.get(grpId);
 

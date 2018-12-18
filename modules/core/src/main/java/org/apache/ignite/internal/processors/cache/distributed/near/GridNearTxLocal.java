@@ -412,7 +412,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param retval Flag indicating whether a value should be returned.
      * @return Future for put operation.
      */
-    @SuppressWarnings("unchecked")
     public <K, V> IgniteInternalFuture<GridCacheReturn> putAllAsync(
         GridCacheContext cacheCtx,
         @Nullable AffinityTopologyVersion entryTopVer,
@@ -481,7 +480,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param invokeArgs Optional arguments for entry processor.
      * @return Operation future.
      */
-    @SuppressWarnings("unchecked")
     public <K, V, T> IgniteInternalFuture<GridCacheReturn> invokeAsync(
         GridCacheContext cacheCtx,
         @Nullable AffinityTopologyVersion entryTopVer,
@@ -3990,7 +3988,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param req Prepare request.
      * @return Future that will be completed when locks are acquired.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     public IgniteInternalFuture<GridNearTxPrepareResponse> prepareAsyncLocal(GridNearTxPrepareRequest req) {
         long timeout = remainingTime();
 
