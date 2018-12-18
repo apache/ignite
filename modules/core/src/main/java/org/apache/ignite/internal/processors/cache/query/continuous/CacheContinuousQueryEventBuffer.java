@@ -421,7 +421,6 @@ public class CacheContinuousQueryEventBuffer {
          * @param backup Backup entry flag.
          * @return New result.
          */
-        @SuppressWarnings("unchecked")
         @Nullable private Object processEntry0(
             @Nullable Object res,
             long cntr,

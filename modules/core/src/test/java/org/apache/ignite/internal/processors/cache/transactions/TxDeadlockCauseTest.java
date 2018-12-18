@@ -53,7 +53,6 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
     private CacheConfiguration ccfg;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
