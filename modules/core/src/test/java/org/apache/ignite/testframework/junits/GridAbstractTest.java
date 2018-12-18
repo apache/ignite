@@ -124,7 +124,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
 import org.junit.rules.TestRule;
 import org.junit.runners.model.Statement;
 import org.springframework.beans.BeansException;
@@ -179,14 +178,13 @@ public abstract class GridAbstractTest extends LegacySupport {
     /** Lock to maintain integrity of {@link TestCounters}. */
     private final Lock runSerializer = new ReentrantLock();
 
-    /** Supports obtaining test name for JUnit4 cases. */
-    @Rule public transient TestName nameRule = new TestName();
-
     /** Manages test execution and reporting. */
     @Rule public transient TestRule runRule = (base, description) -> new Statement() {
         @Override public void evaluate() throws Throwable {
             runSerializer.lock();
             try {
+                assert getName() != null : "getName returned null";
+
                 runTestCase(base);
             } finally {
                 runSerializer.unlock();

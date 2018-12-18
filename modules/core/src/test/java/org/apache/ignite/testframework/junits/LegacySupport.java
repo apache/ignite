@@ -20,14 +20,22 @@ package org.apache.ignite.testframework.junits;
 import junit.framework.Assert; // IMPL NOTE some old tests expect inherited deprecated assertions.
 import junit.framework.Test;
 import junit.framework.TestResult;
+import org.junit.Rule;
+import org.junit.rules.TestName;
 import org.junit.runners.model.Statement;
 
 /**
  * Supports compatibility with old tests that expect specific threading behavior of JUnit 3 TestCase class,
  * inherited deprecated assertions and specific old interface for GridTestUtils.
  */
-@SuppressWarnings({"ExtendsUtilityClass", "deprecation"})
-abstract class LegacySupport extends Assert implements Test {
+@SuppressWarnings({"TransientFieldInNonSerializableClass", "ExtendsUtilityClass", "deprecation"})
+public abstract class LegacySupport extends Assert implements Test {
+    /**
+     * Supports obtaining test name for JUnit4 framework in a way that makes it available for legacy methods invoked
+     * from {@code runTest(Statement)}.
+     */
+    @Rule public transient TestName nameRule = new TestName();
+
     /** This method is called before a test is executed. */
     abstract void setUp() throws Exception;
 
