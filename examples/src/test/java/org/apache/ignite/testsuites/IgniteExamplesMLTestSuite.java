@@ -27,9 +27,14 @@ import javassist.CannotCompileException;
 import javassist.ClassClassPath;
 import javassist.ClassPool;
 import javassist.CtClass;
+import javassist.CtMethod;
 import javassist.CtNewMethod;
 import javassist.NotFoundException;
-import junit.framework.TestResult;
+import javassist.bytecode.AnnotationsAttribute;
+import javassist.bytecode.ClassFile;
+import javassist.bytecode.ConstPool;
+import javassist.bytecode.annotation.Annotation;
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.examples.ml.util.MLExamplesCommonArgs;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -70,11 +75,7 @@ public class IgniteExamplesMLTestSuite {
         TestSuite suite = new TestSuite("Ignite ML Examples Test Suite");
 
         for (Class clazz : getClasses(basePkgForTests))
-            suite.addTest(new TestSuite(makeTestClass(clazz)) {
-                @Override public final void run(TestResult res) {
-                    super.run(res);
-                }
-            });
+            suite.addTest(new JUnit4TestAdapter(makeTestClass(clazz)));
 
         return suite;
     }
@@ -96,11 +97,21 @@ public class IgniteExamplesMLTestSuite {
 
         cl.setSuperclass(cp.get(GridAbstractExamplesTest.class.getName()));
 
-        cl.addMethod(CtNewMethod.make("public void testExample() { "
+        CtMethod mtd = CtNewMethod.make("public void testExample() { "
             + exampleCls.getCanonicalName()
             + ".main("
             + MLExamplesCommonArgs.class.getName()
-            + ".EMPTY_ARGS_ML); }", cl));
+            + ".EMPTY_ARGS_ML); }", cl);
+
+        // Create and add annotation.
+        ClassFile ccFile = cl.getClassFile();
+        ConstPool constpool = ccFile.getConstPool();
+        AnnotationsAttribute attr = new AnnotationsAttribute(constpool, AnnotationsAttribute.visibleTag);
+        Annotation annot = new Annotation("org.junit.Test", constpool);
+        attr.addAnnotation(annot);
+        mtd.getMethodInfo().addAttribute(attr);
+
+        cl.addMethod(mtd);
 
         return cl.toClass();
     }
