@@ -53,9 +53,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public abstract class CacheConsistencyCheckAbstractTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    protected static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Get and check and fail. */
     protected static final Consumer<T3<
         IgniteCache<Integer, Integer> /*initiator's cache*/,
@@ -167,8 +164,6 @@ public abstract class CacheConsistencyCheckAbstractTest extends GridCommonAbstra
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         cfg.setClientMode(client);
 
