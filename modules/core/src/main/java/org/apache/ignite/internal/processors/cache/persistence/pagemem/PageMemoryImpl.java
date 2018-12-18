@@ -1492,7 +1492,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     private static long setCheckpointId(long tmpRelPtr, byte chpIdx) {
-        return (tmpRelPtr & ~CHECKPOINT_INDEX_MASK) & (((int)chpIdx) << 56);
+    return (tmpRelPtr & ~CHECKPOINT_INDEX_MASK) & ((((int)chpIdx) << 56) | ~CHECKPOINT_INDEX_MASK);
     }
 
     /**
