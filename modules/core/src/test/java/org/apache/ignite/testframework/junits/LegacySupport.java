@@ -68,7 +68,7 @@ abstract class LegacySupport extends Assert implements Test {
      * @return Nothing.
      */
     @Override public final int countTestCases() {
-        throw new UnsupportedOperationException("this method is not expected to be invoked");
+        throw new UnsupportedOperationException("This method is not expected to be invoked: countTestCases().");
     }
 
     /**
@@ -78,6 +78,6 @@ abstract class LegacySupport extends Assert implements Test {
      * methods in GridTestUtils.</p>
      */
     @Override public final void run(TestResult res) {
-        throw new UnsupportedOperationException("this method is not expected to be invoked");
+        throw new UnsupportedOperationException("This method is not intended to be invoked: run(TestResult).");
     }
 }
