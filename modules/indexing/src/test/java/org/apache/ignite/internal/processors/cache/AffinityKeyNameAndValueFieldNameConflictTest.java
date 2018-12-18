@@ -37,10 +37,14 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * IGNITE-7793 SQL does not work if value has sql field which name equals to affinity keyProducer name
  */
+@RunWith(JUnit4.class)
 public class AffinityKeyNameAndValueFieldNameConflictTest extends GridCommonAbstractTest {
     /** */
     private static final String PERSON_CACHE = "person";
@@ -89,9 +93,15 @@ public class AffinityKeyNameAndValueFieldNameConflictTest extends GridCommonAbst
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryEntityConfig() throws Exception {
         qryEntityCfg = true;
         keyCls = PersonKey1.class;
@@ -102,6 +112,7 @@ public class AffinityKeyNameAndValueFieldNameConflictTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryEntityConfigKeySpecified() throws Exception {
         qryEntityCfg = true;
         keyFieldSpecified = true;
@@ -113,15 +124,18 @@ public class AffinityKeyNameAndValueFieldNameConflictTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAnnotationConfig() throws Exception {
         keyCls = PersonKey1.class;
         keyProducer = PersonKey1::new;
+
         checkQuery();
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAnnotationConfigCollision() throws Exception {
         keyCls = PersonKey2.class;
         keyProducer = PersonKey2::new;
