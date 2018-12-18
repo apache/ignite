@@ -72,6 +72,11 @@ web-console-sidebar-navigation {
             display: none;
         }
     }
+
+    li:first-of-type > .web-console-sidebar-navigation__link-wide {
+        margin-top: 18px;        
+    }
+
     .web-console-sidebar-navigation__link-wide {
         color: #393939;
         text-decoration: none !important;
@@ -81,10 +86,6 @@ web-console-sidebar-navigation {
         width: var(--width-wide);
         display: inline-flex;
         align-items: center;
-
-        &:first-of-type {
-            margin-top: 18px;
-        }
 
         &:hover, &:focus {
             color: var(--active-link-color);
