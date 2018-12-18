@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import java.util.HashSet;
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.GridCacheAffinityBackupsSelfTest;
 import org.apache.ignite.IgniteCacheAffinitySelfTest;
@@ -84,7 +85,7 @@ public class IgniteCacheTestSuite5 {
         GridTestUtils.addTestIfNeeded(suite,EntryVersionConsistencyReadThroughTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite,IgniteCacheSyncRebalanceModeSelfTest.class, ignoredTests);
 
-        suite.addTest(IgniteCacheReadThroughEvictionsVariationsSuite.suite());
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheReadThroughEvictionsVariationsSuite.class));
 
         GridTestUtils.addTestIfNeeded(suite,IgniteCacheTxIteratorSelfTest.class, ignoredTests);
 
