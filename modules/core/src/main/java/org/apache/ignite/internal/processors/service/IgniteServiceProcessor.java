@@ -154,7 +154,24 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /** Services topologies update mutex. */
     private final Object servicesTopsUpdateMux = new Object();
 
-    /** Operations lock. */
+    /**
+     * Operations lock. The main purpose is to avoid a hang of users operation futures.
+     * <p/>
+     * Read lock is being acquired on users operations (deploy, cancel).
+     * <p/>
+     * Write lock is being acquired on change service processor's state: {@link #onKernalStop}, {@link #onDisconnected),
+     * {@link #onDeActivate(GridKernalContext)}} to guarantee that deployed services will be cancelled only once, also
+     * it protects from registering new operations futures which may be missed during completion collections of users
+     * futures.
+     * <pre>
+     * {@link #enterBusy()} and {@link #leaveBusy()} are being used to protect modification of shared collections during
+     * changing service processor state. If a call can't enter in the busy state a default value will be returned (a
+     * value which will be reached by the time when write lock will be released).
+     * These methods can't be used for users operations (deploy, undeploy) because if the processor will become
+     * disconnected or stopped we should return different types of exceptions (it's not about just a errors message,
+     * the disconnected exception also contains reconnect future).
+     * </pre>
+     */
     private final ReentrantReadWriteLock opsLock = new ReentrantReadWriteLock();
 
     /** Disconnected flag. */
