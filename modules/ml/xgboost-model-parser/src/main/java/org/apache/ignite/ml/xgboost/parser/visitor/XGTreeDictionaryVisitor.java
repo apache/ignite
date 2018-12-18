@@ -15,39 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.xgboost;
+package org.apache.ignite.ml.xgboost.parser.visitor;
 
-import java.util.List;
-import org.apache.ignite.ml.inference.InfModel;
+import java.util.HashSet;
+import java.util.Set;
+import org.apache.ignite.ml.xgboost.parser.XGBoostModelBaseVisitor;
+import org.apache.ignite.ml.xgboost.parser.XGBoostModelParser;
 
 /**
- * XGBoost model.
+ * Tree dictionary visitor that collects all feature names.
  */
-public class XGModel implements InfModel<XGObject, Double> {
-    /** List of decision trees. */
-    private final List<XGNode> trees;
-
-    /**
-     * Constructs a new XGBoost model.
-     *
-     * @param trees List of XGBoost trees.
-     */
-    public XGModel(List<XGNode> trees) {
-        this.trees = trees;
-    }
-
+public class XGTreeDictionaryVisitor extends XGBoostModelBaseVisitor<Set<String>> {
     /** {@inheritDoc} */
-    @Override public Double predict(XGObject obj) {
-        double res = 0;
+    @Override public Set<String> visitXgTree(XGBoostModelParser.XgTreeContext ctx) {
+        Set<String> featureNames = new HashSet<>();
 
-        for (XGNode tree : trees)
-            res += tree.predict(obj);
+        for (XGBoostModelParser.XgNodeContext nodeCtx : ctx.xgNode()) {
+            String featureName = nodeCtx.STRING().getText();
+            featureNames.add(featureName);
+        }
 
-        return (1.0 / (1.0 + Math.exp(-res)));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() {
-        // Do nothing.
+        return featureNames;
     }
 }

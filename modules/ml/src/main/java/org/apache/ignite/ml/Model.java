@@ -17,11 +17,13 @@
 
 package org.apache.ignite.ml;
 
+import java.io.Serializable;
 import java.util.function.BiFunction;
+import org.apache.ignite.ml.inference.InfModel;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /** Basic interface for all models. */
-public interface Model<T, V> extends IgniteFunction<T, V> {
+public interface Model<T, V> extends InfModel<T, V>, Serializable {
     /**
      * Combines this model with other model via specified combiner
      *
@@ -49,5 +51,10 @@ public interface Model<T, V> extends IgniteFunction<T, V> {
      */
     public default String toString(boolean pretty) {
         return getClass().getSimpleName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public default void close() {
+        // Do nothing.
     }
 }

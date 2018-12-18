@@ -17,20 +17,22 @@
 
 package org.apache.ignite.ml.inference;
 
+import java.util.function.Function;
+
 /**
  * Inference model that can be used to make predictions.
  *
  * @param <I> Type of model input.
  * @param <O> Type of model output.
  */
-public interface InfModel<I, O> extends AutoCloseable {
+public interface InfModel<I, O> extends Function<I, O>, AutoCloseable {
     /**
      * Make a prediction for the specified input arguments.
      *
      * @param input Input arguments.
      * @return Prediction result.
      */
-    public O predict(I input);
+    public O apply(I input);
 
     /** {@inheritDoc} */
     @Override public void close();
