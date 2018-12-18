@@ -706,6 +706,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 boolean clearCursors = false;
 
                 synchronized (reqMux) {
+                    assert cur != null;
+
                     JdbcQueryDescriptor desc = reqRegister.get(cur.requestId());
 
                     if (desc != null) {
@@ -737,7 +739,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Response.
      */
     private JdbcResponse fetchQuery(JdbcQueryFetchRequest req) {
-        JdbcQueryCursor cur = (JdbcQueryCursor)jdbcCursors.get(req.cursorId());
+        final JdbcQueryCursor cur = (JdbcQueryCursor)jdbcCursors.get(req.cursorId());
 
         try {
             prepareQueryCancellationMeta(cur);
@@ -780,6 +782,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 return exceptionToResult(e);
         }
         finally {
+            assert cur != null;
+
             cleanupQueryCancellationMeta(unregisterReq, cur.requestId());
         }
     }
@@ -789,7 +793,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Response.
      */
     private JdbcResponse getQueryMeta(JdbcQueryMetadataRequest req) {
-        JdbcQueryCursor cur = (JdbcQueryCursor)jdbcCursors.get(req.cursorId());
+        final JdbcQueryCursor cur = (JdbcQueryCursor)jdbcCursors.get(req.cursorId());
 
         try {
             prepareQueryCancellationMeta(cur);
@@ -814,6 +818,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             return exceptionToResult(e);
         }
         finally {
+            assert cur != null;
+
             cleanupQueryCancellationMeta(false, cur.requestId());
         }
     }
@@ -1393,11 +1399,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * Checks whether query was cancelled - returns null if true, otherwise increments query descriptor usage count.
      *
      * @param cur Jdbc Cursor.
-     * @return True if query should be skipped, false otherwise.
+     * @throws QueryCancelledException If query was already cancelled.
      */
     private void prepareQueryCancellationMeta(JdbcCursor cur) throws QueryCancelledException {
         if (isCancellationSupported()) {
-            // Nothin to do - cursor was already removed.
+            // Nothing to do - cursor was already removed.
             if (cur == null)
                 throw new QueryCancelledException();
 
