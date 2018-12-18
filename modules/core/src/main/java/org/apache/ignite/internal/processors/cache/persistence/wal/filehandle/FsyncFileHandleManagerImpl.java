@@ -108,7 +108,7 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() {
+    @Override public void init() {
         //NOOP.
     }
 

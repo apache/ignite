@@ -50,9 +50,9 @@ public interface FileHandleManager {
     FileWriteHandle nextHandle(SegmentIO fileIO, RecordSerializer serializer) throws IOException;
 
     /**
-     * Start manager.
+     * Initialize manager.
      */
-    void start();
+    void init();
 
     /**
      * On activate.

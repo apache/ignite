@@ -179,10 +179,14 @@ public class FileHandleManagerImpl implements FileHandleManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() {
+    @Override public void init() {
+        walWriter = new WALWriter(log);
+
         if (mode != WALMode.NONE && mode != WALMode.FSYNC) {
-            walSegmentSyncWorker = new WalSegmentSyncer(cctx.igniteInstanceName(),
-                cctx.kernalContext().log(WalSegmentSyncer.class));
+            walSegmentSyncWorker = new WalSegmentSyncer(
+                cctx.igniteInstanceName(),
+                cctx.kernalContext().log(WalSegmentSyncer.class)
+            );
 
             if (log.isInfoEnabled())
                 log.info("Started write-ahead log manager [mode=" + mode + ']');
@@ -195,10 +199,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
 
     /** {@inheritDoc} */
     @Override public void onActivate() {
-        if (!cctx.kernalContext().clientNode()) {
-            if (walSegmentSyncWorker != null)
-                new IgniteThread(walSegmentSyncWorker).start();
-        }
+
     }
 
     /** {@inheritDoc} */
@@ -222,10 +223,14 @@ public class FileHandleManagerImpl implements FileHandleManager {
 
     /** {@inheritDoc} */
     @Override public void resumeLogging() {
-        walWriter = new WALWriter(log);
-
         if (!mmap)
-            new IgniteThread(walWriter).start();
+            walWriter.restart();
+
+        if (cctx.kernalContext().clientNode())
+            return;
+
+        if (walSegmentSyncWorker != null)
+            walSegmentSyncWorker.restart();
     }
 
     /** {@inheritDoc} */
@@ -556,14 +561,22 @@ public class FileHandleManagerImpl implements FileHandleManager {
                 throw se;
             }
         }
+
+        public void restart() {
+            assert runner() == null : "WALWriter is still running.";
+
+            isCancelled = false;
+
+            new IgniteThread(this).start();
+        }
     }
 
     /**
      * Syncs WAL segment file.
      */
-    public class WalSegmentSyncer extends GridWorker {
+    private class WalSegmentSyncer extends GridWorker {
         /** Sync timeout. */
-        long syncTimeout;
+        private final long syncTimeout;
 
         /**
          * @param igniteInstanceName Ignite instance name.
@@ -597,6 +610,14 @@ public class FileHandleManagerImpl implements FileHandleManager {
             }
 
             U.join(this, log);
+        }
+
+        public void restart() {
+            assert runner() == null : "WalSegmentSyncer is running.";
+
+            isCancelled = false;
+
+            new IgniteThread(walSegmentSyncWorker).start();
         }
     }
 

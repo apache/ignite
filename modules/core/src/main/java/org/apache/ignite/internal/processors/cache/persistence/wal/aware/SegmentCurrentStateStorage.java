@@ -168,4 +168,11 @@ class SegmentCurrentStateStorage {
         if (interrupted)
             throw new IgniteInterruptedCheckedException("Interrupt waiting of change current idx");
     }
+
+    /**
+     * Reset interrupted flag.
+     */
+    public void reset() {
+        interrupted = false;
+    }
 }

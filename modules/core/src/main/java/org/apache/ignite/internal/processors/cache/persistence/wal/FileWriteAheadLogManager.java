@@ -467,7 +467,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 cctx, metrics, mmap, lastWALPtr::get, serializer, this::currentHandle
         );
 
-        fileHandleManager.start();
+        fileHandleManager.init();
 
         lockedSegmentFileInputFactory = new LockedSegmentFileInputFactory(
                 segmentAware,
@@ -480,19 +480,25 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      *
      */
     private void startArchiverAndCompressor() {
+        segmentAware.reset();
+
         if (isArchiverEnabled()) {
             assert archiver != null;
 
-            new IgniteThread(archiver).start();
+            archiver.restart();
         }
 
         fileHandleManager.onActivate();
 
-        if (compressor != null)
-            compressor.start();
+        if (dsCfg.isWalCompactionEnabled()) {
+            assert compressor != null : "Compressor should be initialized.";
 
-        if (decompressor != null)
-            decompressor.start();
+            compressor.restart();
+
+            assert decompressor != null : "Compressor should be initialized.";
+
+            decompressor.restart();
+        }
     }
 
     /**
@@ -599,8 +605,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (log.isDebugEnabled())
             log.debug("Activated file write ahead log manager [nodeId=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
-
-        startArchiverAndCompressor();
     }
 
     /** {@inheritDoc} */
@@ -1827,6 +1831,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 }
             );
         }
+
+        public void restart() {
+            assert runner() == null : "FileArchiver is still running";
+
+            isCancelled = false;
+
+            new IgniteThread(archiver).start();
+        }
     }
 
     /**
@@ -1835,7 +1847,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     private class FileCompressor extends FileCompressorWorker {
         /** Workers queue. */
-        List<FileCompressorWorker> workers = new ArrayList<>();
+        private final List<FileCompressorWorker> workers = new ArrayList<>();
 
         /** */
         FileCompressor(IgniteLogger log) {
@@ -1861,9 +1873,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             for (int i = 1; i < calculateThreadCount(); i++) {
                 FileCompressorWorker worker = new FileCompressorWorker(i, log);
 
-                worker.start();
+                worker.restart();
 
-                workers.add(worker);
+                synchronized (this) {
+                    workers.add(worker);
+                }
             }
         }
 
@@ -1915,18 +1929,17 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** */
     private class FileCompressorWorker extends GridWorker {
         /** */
-        private Thread thread;
-
-        /** */
         FileCompressorWorker(int idx,  IgniteLogger log) {
             super(cctx.igniteInstanceName(), "wal-file-compressor-%" + cctx.igniteInstanceName() + "%-" + idx, log);
         }
 
         /** */
-        void start() {
-            thread = new IgniteThread(this);
+        void restart() {
+            assert runner() == null : "FileCompressorWorker is still running.";
 
-            thread.start();
+            isCancelled = false;
+
+            new IgniteThread(this).start();
         }
 
         /**
@@ -2247,7 +2260,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             U.join(this, log);
         }
 
-        void start() {
+        void restart() {
+            assert runner() == null : "FileDecompressor is still running.";
+
+            isCancelled = false;
+
             new IgniteThread(this).start();
         }
     }
