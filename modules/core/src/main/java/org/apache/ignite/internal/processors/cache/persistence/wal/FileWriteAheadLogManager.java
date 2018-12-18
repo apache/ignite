@@ -483,7 +483,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         segmentAware.reset();
 
         if (isArchiverEnabled()) {
-            assert archiver != null;
+            assert archiver != null : "FileArchiver should be initialized.";
 
             archiver.restart();
         }
