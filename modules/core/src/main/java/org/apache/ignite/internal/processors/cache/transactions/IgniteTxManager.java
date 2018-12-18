@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -1114,6 +1115,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public void removeTxReturn(GridCacheVersion xidVer) {
         Object prev = completedVersHashMap.get(xidVer);
+
+        assert !Objects.equals(prev, true);
 
         if (prev instanceof GridCacheReturnCompletableWrapper)
             completedVersHashMap.replace(xidVer, prev, true);
