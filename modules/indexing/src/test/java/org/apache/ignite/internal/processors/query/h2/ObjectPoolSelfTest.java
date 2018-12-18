@@ -19,10 +19,14 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class ObjectPoolSelfTest extends GridCommonAbstractTest {
     /** */
     private ObjectPool<Obj> pool = new ObjectPool<>(Obj::new, 1, null);
@@ -30,6 +34,7 @@ public class ObjectPoolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testObjectIsReusedAfterRecycling() throws Exception {
         ObjectPoolReusable<Obj> r1 = pool.borrow();
 
@@ -49,6 +54,7 @@ public class ObjectPoolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBorrowedObjectIsNotReturnedTwice() throws Exception {
         ObjectPoolReusable<Obj> r1 = pool.borrow();
         ObjectPoolReusable<Obj> r2 = pool.borrow();
@@ -59,6 +65,7 @@ public class ObjectPoolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testObjectShouldBeClosedOnRecycleIfPoolIsFull() throws Exception {
         ObjectPoolReusable<Obj> r1 = pool.borrow();
         ObjectPoolReusable<Obj> r2 = pool.borrow();
@@ -77,6 +84,7 @@ public class ObjectPoolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testObjectShouldNotBeReturnedIfPoolIsFull() throws Exception {
         ObjectPoolReusable<Obj> r1 = pool.borrow();
         ObjectPoolReusable<Obj> r2 = pool.borrow();
@@ -93,6 +101,7 @@ public class ObjectPoolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testObjectShouldReturnedToBag() throws Exception {
         ObjectPoolReusable<Obj> r1 = pool.borrow();
 

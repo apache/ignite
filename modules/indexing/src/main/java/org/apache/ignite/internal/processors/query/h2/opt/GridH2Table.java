@@ -64,7 +64,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor.COL_NOT_EXISTS;
 
 /**
  * H2 Table implementation.
@@ -107,7 +107,10 @@ public class GridH2Table extends TableBase {
     private final ConcurrentMap<Session, Long> sessions = new ConcurrentHashMap<>();
 
     /** */
-    private IndexColumn affKeyCol;
+    private final IndexColumn affKeyCol;
+
+    /** */
+    private final int affKeyColId;
 
     /** */
     private final LongAdder size = new LongAdder();
@@ -149,31 +152,35 @@ public class GridH2Table extends TableBase {
         this.desc = desc;
         this.cacheInfo = cacheInfo;
 
-        if (desc.context() != null && !desc.context().customAffinityMapper()) {
-            boolean affinityColExists = true;
+        if (!desc.type().customAffinityKeyMapper()) {
+            String affKeyFieldName = desc.type().affinityKey();
 
-            String affKey = desc.type().affinityKey();
+            if (affKeyFieldName != null) {
+                if (doesColumnExist(affKeyFieldName)) {
+                    int colId = getColumn(affKeyFieldName).getColumnId();
 
-            int affKeyColId = -1;
-
-            if (affKey != null) {
-                if (doesColumnExist(affKey)) {
-                    affKeyColId = getColumn(affKey).getColumnId();
-
-                    if (desc.isKeyColumn(affKeyColId))
-                        affKeyColId = KEY_COL;
+                    if (desc.isKeyColumn(colId)) {
+                        affKeyCol = indexColumn(GridH2KeyValueRowOnheap.KEY_COL, SortOrder.ASCENDING);
+                        affKeyColId = GridH2KeyValueRowOnheap.KEY_COL;
+                    }
+                    else {
+                        affKeyCol = indexColumn(colId, SortOrder.ASCENDING);
+                        affKeyColId = colId;
+                    }
                 }
-                else
-                    affinityColExists = false;
+                else {
+                    affKeyCol = null;
+                    affKeyColId = COL_NOT_EXISTS;
+                }
             }
-            else
-                affKeyColId = KEY_COL;
-
-            if (affinityColExists) {
-                affKeyCol = indexColumn(affKeyColId, SortOrder.ASCENDING);
-
-                assert affKeyCol != null;
+            else {
+                affKeyCol = indexColumn(GridH2KeyValueRowOnheap.KEY_COL, SortOrder.ASCENDING);
+                affKeyColId = GridH2KeyValueRowOnheap.KEY_COL;
             }
+        }
+        else {
+            affKeyCol = null;
+            affKeyColId = COL_NOT_EXISTS;
         }
 
         this.rowFactory = rowFactory;
@@ -227,6 +234,25 @@ public class GridH2Table extends TableBase {
         return affKeyCol;
     }
 
+    /**
+     * Check whether passed column can be used for partition pruning.
+     *
+     * @param col Column.
+     * @return {@code True} if affinity key column.
+     */
+    public boolean isColumnForPartitionPruning(Column col) {
+        int colId = col.getColumnId();
+
+        return colId == affKeyColId || desc.isKeyColumn(colId);
+    }
+
+    /**
+     * @return Whether custom affintiy mapper is used.
+     */
+    public boolean isCustomAffinityMapper() {
+        return desc.type().customAffinityKeyMapper();
+    }
+
     /** {@inheritDoc} */
     @Override public long getDiskSpaceUsed() {
         return 0;
@@ -264,14 +290,14 @@ public class GridH2Table extends TableBase {
      * @return {@code true} If Cache is lazy (not full inited).
      */
     public boolean isCacheLazy() {
-        return cacheInfo.gridCacheContext() == null;
+        return cacheInfo.cacheContext() == null;
     }
 
     /**
      * @return Cache context.
      */
     @Nullable public GridCacheContext cacheContext() {
-        return cacheInfo.gridCacheContext();
+        return cacheInfo.cacheContext();
     }
 
     /** {@inheritDoc} */

@@ -37,10 +37,14 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for lazy query execution.
  */
+@RunWith(JUnit4.class)
 public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends GridCommonAbstractTest {
     /** Keys count. */
     private static final int KEY_CNT = 500;
@@ -64,6 +68,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleNode() throws Exception {
         checkSingleNode(1);
     }
@@ -73,6 +78,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleNodeWithParallelism() throws Exception {
         checkSingleNode(4);
     }
@@ -82,6 +88,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleNodes() throws Exception {
         checkMultipleNodes(1);
     }
@@ -91,6 +98,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleNodesWithParallelism() throws Exception {
         checkMultipleNodes(4);
     }
@@ -100,6 +108,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleNodeTablesLockQueryAndDDLMultithreaded() throws Exception {
         final Ignite srv = startGrid(0);
 
@@ -115,6 +124,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleNodeWithParallelismTablesLockQueryAndDDLMultithreaded() throws Exception {
         final Ignite srv = startGrid(0);
 
@@ -130,6 +140,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleNodesWithTablesLockQueryAndDDLMultithreaded() throws Exception {
         Ignite srv0 = startGrid(0);
         Ignite srv1 = startGrid(1);
@@ -163,6 +174,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Gr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleNodesWithParallelismTablesLockQueryAndDDLMultithreaded() throws Exception {
         Ignite srv0 = startGrid(0);
         Ignite srv1 = startGrid(1);

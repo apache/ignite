@@ -46,10 +46,14 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Ensures that SQL queries are executed in a dedicated thread pool.
  */
+@RunWith(JUnit4.class)
 public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -101,6 +105,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      * @see GridCacheTwoStepQuery#isLocal()
      */
+    @Test
     public void testSqlQueryUsesDedicatedThreadPool() throws Exception {
         try (Ignite client = startGrid("client")) {
             IgniteCache<Integer, Integer> cache = client.cache(CACHE_NAME);
@@ -129,6 +134,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
      * Tests that Scan queries are executed in dedicated pool
      * @throws Exception If failed.
      */
+    @Test
     public void testScanQueryUsesDedicatedThreadPool() throws Exception {
         try (Ignite client = startGrid("client")) {
             IgniteCache<Integer, Integer> cache = client.cache(CACHE_NAME);
@@ -152,6 +158,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
      * Tests that SPI queries are executed in dedicated pool
      * @throws Exception If failed.
      */
+    @Test
     public void testSpiQueryUsesDedicatedThreadPool() throws Exception {
         try (Ignite client = startGrid("client")) {
             IgniteCache<Byte, Byte> cache = client.cache(CACHE_NAME);
