@@ -575,12 +575,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 jdbcCursors.put(processor.cursorId(), processor);
 
-                // responces for the same query on the client side
+                // responses for the same query on the client side
                 return new JdbcResponse(new JdbcBulkLoadAckResult(processor.cursorId(), clientParams));
             }
 
             if (results.size() == 1) {
-
                 JdbcQueryCursor cur = new JdbcQueryCursor(req.pageSize(), req.maxRows(),
                     (QueryCursorImpl)fieldsCur, req.requestId());
 
@@ -638,8 +637,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                         }
                     }
                     else
-                        jdbcRes = new JdbcResultInfo(false, (Long)((List<?>)qryCur.getAll().get(0)).get(0),
-                            -1);
+                        jdbcRes = new JdbcResultInfo(false, (Long)((List<?>)qryCur.getAll().get(0)).get(0), -1);
 
                     jdbcResults.add(jdbcRes);
                 }
