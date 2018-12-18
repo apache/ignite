@@ -84,7 +84,7 @@ public class JdbcThinStatement implements Statement {
     /** Fetch size. */
     private int pageSize = DFLT_PAGE_SIZE;
 
-    /** Result set  holdability*/
+    /** Result set holdability. */
     private final int resHoldability;
 
     /** Batch size to keep track of number of items to return as fake update counters for executeBatch. */
@@ -108,7 +108,7 @@ public class JdbcThinStatement implements Statement {
     /** Cancelled flag. */
     private volatile boolean cancelled;
 
-    /** Cancelled mutex. */
+    /** Cancellation mutex. */
     private final Object cancellationMux = new Object();
 
     /**

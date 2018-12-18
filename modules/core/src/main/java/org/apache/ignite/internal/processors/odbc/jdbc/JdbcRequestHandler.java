@@ -116,7 +116,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Maximum allowed cursors. */
     private final int maxCursors;
 
-    /** Current Jdbc cursors. */
+    /** Current JDBC cursors. */
     private final ConcurrentHashMap<Long, JdbcCursor> jdbcCursors = new ConcurrentHashMap<>();
 
     /** Ordered batches queue. */
@@ -493,7 +493,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             synchronized (reqMux) {
                 JdbcQueryDescriptor desc = reqRegister.get(req.requestId());
 
-                // Query was already cancelled and unregisterd.
+                // Query was already cancelled and unregistered.
                 if (desc == null)
                     return null;
 
@@ -720,7 +720,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                             desc.decrementUsageCount();
                         }
-
                     }
                 }
 
@@ -1307,7 +1306,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             // Query was already executed.
             if (desc == null)
                 return null;
-                // Query was registered, however execution didn't start yet.
+            // Query was registered, however execution didn't start yet.
             else if (!desc.isExecutionStarted()) {
                 unregisterRequest(req.requestId());
 
@@ -1324,7 +1323,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     unregisterRequest(req.requestIdToBeCancelled());
                 }
             }
-
         }
 
         cancelHook.cancel();
@@ -1397,7 +1395,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private void prepareQueryCancellationMeta(JdbcCursor cur) throws QueryCancelledException {
         if (isCancellationSupported()) {
-            // Nothin to do - cursor was already removed.
+            // Nothing to do - cursor was already removed.
             if (cur == null)
                 throw new QueryCancelledException();
 

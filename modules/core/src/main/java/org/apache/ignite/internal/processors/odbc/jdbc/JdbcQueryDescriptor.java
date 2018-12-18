@@ -20,11 +20,11 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 
 /**
- * Jdbc query descriptor used for appropriate query cancelation.
+ * JDBC query descriptor used for appropriate query cancellation.
  */
 public class JdbcQueryDescriptor {
     /** Hook for cancellation. */
-    private GridQueryCancel cancelHook;
+    private final GridQueryCancel cancelHook;
 
     /** Canceled flag. */
     private boolean canceled;
