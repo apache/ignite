@@ -61,7 +61,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     private static CacheDataRow[] EMPTY_ROWS = {};
 
     /** */
-    private static final Boolean DFLT_DATA_PAGE_SCAN_ENABLED = true; // TODO switch to false
+    private static final Boolean DFLT_DATA_PAGE_SCAN_ENABLED = false;
 
     /** */
     private static final ThreadLocal<Boolean> dataPageScanEnabled = ThreadLocal.withInitial(
