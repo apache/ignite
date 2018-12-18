@@ -36,6 +36,15 @@ public abstract class LegacySupport extends Assert implements Test {
      */
     @Rule public transient TestName nameRule = new TestName();
 
+    /**
+     * Gets the name of the currently executed test case.
+     *
+     * @return Name of the currently executed test case.
+     */
+    public String getName() {
+        return nameRule.getMethodName();
+    }
+
     /** This method is called before a test is executed. */
     abstract void setUp() throws Exception;
 
@@ -76,7 +85,8 @@ public abstract class LegacySupport extends Assert implements Test {
      * @return Nothing.
      */
     @Override public final int countTestCases() {
-        throw new UnsupportedOperationException("This method is not expected to be invoked: countTestCases().");
+        throw new UnsupportedOperationException("This method is not expected to be invoked: countTestCases() at test: "
+            + getName());
     }
 
     /**
@@ -86,6 +96,7 @@ public abstract class LegacySupport extends Assert implements Test {
      * methods in GridTestUtils.</p>
      */
     @Override public final void run(TestResult res) {
-        throw new UnsupportedOperationException("This method is not intended to be invoked: run(TestResult).");
+        throw new UnsupportedOperationException("This method is not intended to be invoked: run(TestResult) at test: "
+            + getName());
     }
 }

@@ -273,15 +273,6 @@ public abstract class GridAbstractTest extends LegacySupport {
     }
 
     /**
-     * Gets the name of the currently executed test case.
-     *
-     * @return Name of the currently executed test case.
-     */
-    public String getName() {
-        return nameRule.getMethodName();
-    }
-
-    /**
      * @param cls Class to create.
      * @return Instance of class.
      * @throws Exception If failed.
