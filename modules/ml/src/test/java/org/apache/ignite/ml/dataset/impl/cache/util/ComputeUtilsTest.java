@@ -37,13 +37,10 @@ import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.UpstreamTransformerBuilder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.internal.runners.JUnit38ClassRunner;
-import org.junit.runner.RunWith;
 
 /**
  * Tests for {@link ComputeUtils}.
  */
-@RunWith(JUnit38ClassRunner.class)
 public class ComputeUtilsTest extends GridCommonAbstractTest {
     /** Number of nodes in grid. */
     private static final int NODE_COUNT = 10;

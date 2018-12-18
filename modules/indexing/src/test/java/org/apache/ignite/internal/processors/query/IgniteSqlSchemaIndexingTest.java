@@ -119,6 +119,7 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCustomSchemaMultipleCachesTablesCollision() throws Exception {
         //TODO: Rewrite with dynamic cache creation, and GRID start in #beforeTest after resolve of
         //TODO: IGNITE-1094
