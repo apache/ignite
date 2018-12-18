@@ -27,7 +27,6 @@ import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.generators.datastream.DataStreamGenerator;
 import org.apache.ignite.ml.util.generators.primitives.variable.GaussRandomProducer;
 import org.apache.ignite.ml.util.generators.primitives.variable.RandomProducer;
-import org.apache.ignite.ml.util.generators.primitives.variable.UniformRandomProducer;
 
 public interface VectorGenerator extends Supplier<Vector>, DataStreamGenerator {
     public static VectorGenerator gauss(double[] pivots, double variance) {
@@ -54,30 +53,11 @@ public interface VectorGenerator extends Supplier<Vector>, DataStreamGenerator {
         return vectorize(producers);
     }
 
-    public static VectorGenerator uniform(double min, double max, int numberOfFeatures) {
-        return uniform(min, max, numberOfFeatures, System.currentTimeMillis());
-    }
-
-    public static VectorGenerator uniform(double min, double max, int numberOfFeatures, long seed) {
-        UniformRandomProducer producer = new UniformRandomProducer(min, max, seed);
-        return vectorize(numberOfFeatures, producer);
-    }
-
-    static VectorGenerator vectorize(RandomProducer[] producers) {
+    static VectorGenerator vectorize(RandomProducer... producers) {
         return () -> {
             double[] values = new double[producers.length];
             for (int i = 0; i < producers.length; i++)
                 values[i] = producers[i].get();
-
-            return VectorUtils.of(values);
-        };
-    }
-
-    static VectorGenerator vectorize(int vecSize, RandomProducer producer) {
-        return () -> {
-            double[] values = new double[vecSize];
-            for (int i = 0; i < vecSize; i++)
-                values[i] = producer.get();
 
             return VectorUtils.of(values);
         };

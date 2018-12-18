@@ -22,7 +22,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.generators.datastream.DataStreamGenerator;
-import org.apache.ignite.ml.util.generators.primitives.vector.VectorGenerator;
+import org.apache.ignite.ml.util.generators.primitives.variable.UniformRandomProducer;
 
 public class RegressionDataStream implements DataStreamGenerator {
     private final IgniteFunction<Vector, Double> function;
@@ -47,10 +47,8 @@ public class RegressionDataStream implements DataStreamGenerator {
 
     @Override public Stream<LabeledVector<Vector, Double>> labeled() {
         seed >>= 2;
-        return VectorGenerator.uniform(minXValue, maxXValue, vectorSize, seed).labeled()
-            .map(v -> {
-                return new LabeledVector<>(v.features(), function.apply(v.features()));
-            });
+        return new UniformRandomProducer(minXValue, maxXValue, seed).vectorize(vectorSize).labeled()
+            .map(v -> new LabeledVector<>(v.features(), function.apply(v.features())));
     }
 
     public static RegressionDataStream twoDimensional(IgniteFunction<Double, Double> function,

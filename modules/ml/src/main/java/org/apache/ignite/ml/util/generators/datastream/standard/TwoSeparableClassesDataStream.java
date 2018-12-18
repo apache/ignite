@@ -22,15 +22,12 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.generators.datastream.DataStreamGenerator;
 import org.apache.ignite.ml.util.generators.primitives.variable.UniformRandomProducer;
-import org.apache.ignite.ml.util.generators.primitives.vector.ParametricVectorGenerator;
-import org.apache.ignite.ml.util.generators.primitives.vector.VectorGenerator;
-import org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorsFamily;
 
 public class TwoSeparableClassesDataStream implements DataStreamGenerator {
     private final double margin;
     private final double minCordValue;
     private final double maxCordValue;
-    private final long seed;
+    private long seed;
 
     public TwoSeparableClassesDataStream(double margin, double variance) {
         this(margin, variance, System.currentTimeMillis());
@@ -38,14 +35,15 @@ public class TwoSeparableClassesDataStream implements DataStreamGenerator {
 
     public TwoSeparableClassesDataStream(double margin, double variance, long seed) {
         this.margin = margin;
-        this.minCordValue = -variance;
-        this.maxCordValue = variance;
+        this.minCordValue = -variance - Math.abs(margin);
+        this.maxCordValue = variance + Math.abs(margin);
         this.seed = seed;
     }
 
     @Override
     public Stream<LabeledVector<Vector, Double>> labeled() {
-        return VectorGenerator.uniform(minCordValue - Math.abs(margin), maxCordValue + Math.abs(margin), 2, seed).labeled()
+        seed >>= 2;
+        return new UniformRandomProducer(minCordValue, maxCordValue, seed).vectorize(2).labeled()
             .map(v -> new LabeledVector<>(applyMargin(v.features()), isFirstClass(v.features()) ? 1.0 : -1.0))
             .filter(v -> between(v.features().get(0), minCordValue, maxCordValue))
             .filter(v -> between(v.features().get(1), minCordValue, maxCordValue));
