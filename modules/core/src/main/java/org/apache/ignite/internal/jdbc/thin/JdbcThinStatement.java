@@ -103,7 +103,7 @@ public class JdbcThinStatement implements Statement {
     protected int curRes;
 
     /** Current request Id. */
-    private volatile long currReqId;
+    private long currReqId;
 
     /** Cancelled flag. */
     private volatile boolean cancelled;
@@ -219,9 +219,6 @@ public class JdbcThinStatement implements Statement {
 
         JdbcQueryExecuteRequest req = new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
             maxRows, conn.getAutoCommit(), sql, args == null ? null : args.toArray(new Object[args.size()]));
-
-        currReqId = req.requestId();
-
 
         JdbcResult res0 = conn.sendRequest(req, this);
 
@@ -693,8 +690,6 @@ public class JdbcThinStatement implements Statement {
         JdbcBatchExecuteRequest req = new JdbcBatchExecuteRequest(conn.getSchema(), batch,
             conn.getAutoCommit(), false);
 
-        currReqId = req.requestId();
-
         try {
             JdbcBatchExecuteResult res = conn.sendRequest(req, this);
 
@@ -936,5 +931,14 @@ public class JdbcThinStatement implements Statement {
 
         if (allRsClosed)
             close();
+    }
+
+    /**
+     * @param currReqId Sets curresnt request Id.
+     */
+    void currReqId(long currReqId) {
+        synchronized (cancellationMux) {
+            this.currReqId = currReqId;
+        }
     }
 }
