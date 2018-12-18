@@ -41,8 +41,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
@@ -50,7 +48,6 @@ import static org.apache.ignite.cache.CachePeekMode.ALL;
 /**
  * Tests for partitioned cache queries.
  */
-@RunWith(JUnit4.class)
 public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuerySelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
