@@ -217,8 +217,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
         if (walSegmentSyncWorker != null)
             walSegmentSyncWorker.shutdown();
 
-        if (walWriter != null)
-            walWriter.shutdown();
+        walWriter.shutdown();
     }
 
     /** {@inheritDoc} */
@@ -412,9 +411,15 @@ public class FileHandleManagerImpl implements FileHandleManager {
         private void shutdown() throws IgniteInterruptedCheckedException {
             U.cancel(this);
 
-            LockSupport.unpark(runner());
+            Thread runner = runner();
 
-            U.join(runner());
+            if (runner != null) {
+                LockSupport.unpark(runner);
+
+                U.join(runner);
+            }
+
+            assert walWriter.runner() == null : "WALWriter should be stopped.";
         }
 
         /**
