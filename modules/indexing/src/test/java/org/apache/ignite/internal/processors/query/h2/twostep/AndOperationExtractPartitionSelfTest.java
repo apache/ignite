@@ -81,7 +81,7 @@ public class AndOperationExtractPartitionSelfTest extends GridCommonAbstractTest
 
         orgCache = ignite(0).getOrCreateCache(new CacheConfiguration<String, JoinSqlTestHelper.Organization>(ORG)
             .setCacheMode(CacheMode.PARTITIONED)
-            .setIndexedTypes(String.class, JoinSqlTestHelper.Organization.class)
+            .setQueryEntities(JoinSqlTestHelper.organizationQueryEntity())
         );
 
         awaitPartitionMapExchange();
