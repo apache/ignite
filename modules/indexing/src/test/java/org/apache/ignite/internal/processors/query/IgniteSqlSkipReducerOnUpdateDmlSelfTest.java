@@ -54,6 +54,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
@@ -62,6 +65,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
  * Tests for distributed DML.
  */
 @SuppressWarnings({"unchecked"})
+@RunWith(JUnit4.class)
 public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -201,6 +205,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends GridCommonAbstractT
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testSimpleUpdateDistributedReplicated() throws Exception {
         fillCaches();
 
@@ -220,6 +225,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends GridCommonAbstractT
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testSimpleUpdateDistributedPartitioned() throws Exception {
         fillCaches();
 
@@ -236,6 +242,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends GridCommonAbstractT
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testDistributedUpdateFailedKeys() throws Exception {
         // UPDATE can produce failed keys due to concurrent modification
         fillCaches();
@@ -254,6 +261,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends GridCommonAbstractT
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testDistributedUpdateFail() throws Exception {
         fillCaches();
 
@@ -272,6 +280,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends GridCommonAbstractT
      * @throws Exception if failed.
      */
     @SuppressWarnings("ConstantConditions")
+    @Test
     public void testQueryParallelism() throws Exception {
         String cacheName = CACHE_ORG + "x4";
 
@@ -294,6 +303,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends GridCommonAbstractT
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testEvents() throws Exception {
         final CountDownLatch latch = new CountDownLatch(NODE_COUNT);
 
@@ -332,6 +342,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends GridCommonAbstractT
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testSpecificPartitionsUpdate() throws Exception {
         fillCaches();
 
@@ -365,6 +376,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends GridCommonAbstractT
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testCancel() throws Exception {
         latch = new CountDownLatch(NODE_COUNT + 1);
 
@@ -407,6 +419,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends GridCommonAbstractT
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testNodeStopDuringUpdate() throws Exception {
         startGrid(NODE_COUNT + 1);
 

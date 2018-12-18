@@ -124,7 +124,7 @@ public class Step_9_Go_to_LogReg {
                                             minMaxScalerPreprocessor
                                         );
 
-                                    LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>()
+                                    LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
                                         .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(learningRate),
                                             SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
                                         .withMaxIterations(maxIterations)
@@ -188,7 +188,7 @@ public class Step_9_Go_to_LogReg {
                         minMaxScalerPreprocessor
                     );
 
-                LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>()
+                LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
                     .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(bestLearningRate),
                         SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
                     .withMaxIterations(bestMaxIterations)

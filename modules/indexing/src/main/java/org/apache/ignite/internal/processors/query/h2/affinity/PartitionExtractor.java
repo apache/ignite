@@ -107,6 +107,7 @@ public class PartitionExtractor {
      * @param qrys Queries.
      * @return Partition result or {@code null} if nothing is resolved.
      */
+    @SuppressWarnings("IfMayBeConditional")
     public PartitionResult merge(List<GridCacheSqlQuery> qrys) {
         // Check if merge is possible.
         PartitionTableDescriptor desc = null;
@@ -239,6 +240,7 @@ public class PartitionExtractor {
      * @param expr Expression.
      * @return Partition tree.
      */
+    @SuppressWarnings("EnumSwitchStatementWhichMissesCases")
     private PartitionNode extractFromExpression(GridSqlAst expr) throws IgniteCheckedException {
         PartitionNode res = PartitionAllNode.INSTANCE;
 
@@ -413,7 +415,7 @@ public class PartitionExtractor {
 
         GridH2Table tbl = (GridH2Table)leftCol.getTable();
 
-        if (!PartitionExtractorUtils.isAffinityKeyColumn(leftCol, tbl))
+        if (!tbl.isColumnForPartitionPruning(leftCol))
             return null;
 
         PartitionTableDescriptor tblDesc = descriptor(tbl);
