@@ -22,15 +22,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinAffinityIdentifier;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinGroup;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinTable;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.h2.table.Column;
-import org.h2.table.IndexColumn;
-
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 
 /**
  * Utility methods for partition extraction.
@@ -64,7 +60,7 @@ public class PartitionExtractorUtils {
 
             for (Column col : tbl0.getColumns()) {
                 // TODO: Wrong! We may have multiple affinity key oclumns here!
-                if (isAffinityKeyColumn(col, tbl0)) {
+                if (tbl0.isColumnForPartitionPruning(col)) {
                     affColName = col.getName();
 
                     break;
@@ -93,36 +89,8 @@ public class PartitionExtractorUtils {
      * @return Affinity identifier.
      */
     private static PartitionJoinAffinityIdentifier affinityIdentifierForCache(CacheConfiguration ccfg) {
+        // TODO
         return null;
-    }
-
-    /**
-     * Check if the given column is affinity column.
-     *
-     * @param col Column.
-     * @param tbl H2 Table.
-     * @return is affinity key or not
-     */
-    public static boolean isAffinityKeyColumn(Column col, GridH2Table tbl) {
-        int colId = col.getColumnId();
-
-        GridH2RowDescriptor desc = tbl.rowDescriptor();
-
-        if (desc.isKeyColumn(colId))
-            return true;
-
-        IndexColumn affKeyCol = tbl.getAffinityKeyColumn();
-
-        try {
-            return
-                affKeyCol != null &&
-                colId >= DEFAULT_COLUMNS_COUNT &&
-                desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT) &&
-                colId == affKeyCol.column.getColumnId();
-        }
-        catch (IllegalStateException e) {
-            return false;
-        }
     }
 
     /**
