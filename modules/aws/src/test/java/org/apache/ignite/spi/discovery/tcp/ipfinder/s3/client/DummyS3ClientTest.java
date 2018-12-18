@@ -26,10 +26,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Class to test {@link DummyS3Client}.
  */
+@RunWith(JUnit4.class)
 public class DummyS3ClientTest extends GridCommonAbstractTest {
     /** Instance of {@link DummyS3Client} to be used for tests. */
     private DummyS3Client s3;
@@ -54,6 +58,7 @@ public class DummyS3ClientTest extends GridCommonAbstractTest {
     /**
      * Test cases to check the 'doesBucketExist' method.
      */
+    @Test
     public void testDoesBucketExist() {
         assertTrue("The bucket 'testBucket' should exist", s3.doesBucketExist("testBucket"));
         assertFalse("The bucket 'nonExistentBucket' should not exist", s3.doesBucketExist("nonExistentBucket"));
@@ -62,6 +67,7 @@ public class DummyS3ClientTest extends GridCommonAbstractTest {
     /**
      * Test cases for various object listing functions for S3 bucket.
      */
+    @Test
     public void testListObjects() {
         ObjectListing listing = s3.listObjects("testBucket");
 
@@ -98,6 +104,7 @@ public class DummyS3ClientTest extends GridCommonAbstractTest {
     /**
      * Test cases for various object listing functions for S3 bucket and key prefix.
      */
+    @Test
     public void testListObjectsWithAPrefix() {
         ObjectListing listing = s3.listObjects("testBucket", "/test");
 
@@ -149,6 +156,7 @@ public class DummyS3ClientTest extends GridCommonAbstractTest {
     /**
      * Test case to check if a bucket is created properly.
      */
+    @Test
     public void testCreateBucket() {
         s3.createBucket("testBucket1");
 

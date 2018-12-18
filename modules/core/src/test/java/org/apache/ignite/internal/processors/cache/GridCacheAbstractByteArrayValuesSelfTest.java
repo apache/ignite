@@ -27,17 +27,11 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Base class for various tests for byte array values.
  */
 public abstract class GridCacheAbstractByteArrayValuesSelfTest extends GridCommonAbstractTest {
-    /** Regular cache name. */
-    protected static final String CACHE_REGULAR = "cache";
-
     /** Key 1. */
     protected static final Integer KEY_1 = 1;
 
     /** Key 2. */
     protected static final Integer KEY_2 = 2;
-
-    /** Use special key for swap test, otherwise entry with readers is not evicted. */
-    protected static final Integer SWAP_TEST_KEY = 3;
 
     /** Shared IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);

@@ -46,10 +46,10 @@ export default {
     'base.configuration.edit.advanced.models.model': 'Advanced cluster model edit',
     'base.configuration.edit.advanced.igfs': 'Advanced cluster IGFSs',
     'base.configuration.edit.advanced.igfs.igfs': 'Advanced cluster IGFS edit',
-    'base.sql.tabs.notebooks-list': 'Query notebooks',
-    'base.sql.notebook': 'Query notebook',
-    'base.settings.profile': 'User profile',
     'base.settings.admin': 'Admin panel',
+    'base.settings.profile': 'User profile',
+    'base.sql.notebook': 'Query notebook',
+    'base.sql.tabs.notebooks-list': 'Query notebooks',
 
     // app/components/page-signin/template.pug
     'app.components.page-signin.m1': 'Sign In',

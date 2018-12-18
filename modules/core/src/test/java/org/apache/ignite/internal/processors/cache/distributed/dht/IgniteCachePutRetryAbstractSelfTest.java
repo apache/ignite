@@ -44,8 +44,6 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -58,6 +56,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -66,6 +66,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -163,11 +164,6 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * @return Cache atomicity mode.
      */
@@ -176,6 +172,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testPut() throws Exception {
         checkRetry(Test.PUT, false, false);
     }
@@ -183,6 +180,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testGetAndPut() throws Exception {
         checkRetry(Test.GET_AND_PUT, false, false);
     }
@@ -190,6 +188,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testPutStoreEnabled() throws Exception {
         checkRetry(Test.PUT, false, true);
     }
@@ -197,6 +196,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testPutAll() throws Exception {
         checkRetry(Test.PUT_ALL, false, false);
     }
@@ -204,6 +204,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testPutAsync() throws Exception {
         checkRetry(Test.PUT_ASYNC, false, false);
     }
@@ -211,6 +212,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testPutAsyncStoreEnabled() throws Exception {
         checkRetry(Test.PUT_ASYNC, false, true);
     }
@@ -218,6 +220,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testInvoke() throws Exception {
         checkRetry(Test.INVOKE, false, false);
     }
@@ -225,6 +228,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testInvokeAll() throws Exception {
         checkRetry(Test.INVOKE_ALL, false, false);
     }
@@ -232,6 +236,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testInvokeAllEvict() throws Exception {
         checkRetry(Test.INVOKE_ALL, true, false);
     }
@@ -475,6 +480,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testFailsWithNoRetries() throws Exception {
         checkFailsWithNoRetries(false);
     }
@@ -482,6 +488,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testFailsWithNoRetriesAsync() throws Exception {
         checkFailsWithNoRetries(true);
     }

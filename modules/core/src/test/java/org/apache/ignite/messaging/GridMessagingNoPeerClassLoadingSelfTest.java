@@ -27,11 +27,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.testframework.config.GridTestProperties;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for Messaging public API with disabled
  * peer class loading.
  */
+@RunWith(JUnit4.class)
 public class GridMessagingNoPeerClassLoadingSelfTest extends GridMessagingSelfTest {
     /** */
     private static CountDownLatch rcvLatch;
@@ -52,6 +56,7 @@ public class GridMessagingNoPeerClassLoadingSelfTest extends GridMessagingSelfTe
      *
      * @throws Exception If error occurs.
      */
+    @Test
     @Override public void testSendMessageWithExternalClassLoader() throws Exception {
         URL[] urls = new URL[] { new URL(GridTestProperties.getProperty("p2p.uri.cls")) };
 

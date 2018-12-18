@@ -53,10 +53,14 @@ import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.apache.ignite.testframework.GridTestUtils.DiscoverySpiListenerWrapper;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridCommonAbstractTest {
     /** */
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -123,6 +127,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
      * Verifies that if thread tries to read metadata with ongoing update it gets blocked
      * until acknowledge message arrives.
      */
+    @Test
     public void testReadRequestBlockedOnUpdatingMetadata() throws Exception {
         final CyclicBarrier barrier = new CyclicBarrier(2);
 
@@ -222,6 +227,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
     /**
      * Verifies that all sequential updates that don't introduce any conflicts are accepted and observed by all nodes.
      */
+    @Test
     public void testSequentialUpdatesNoConflicts() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
@@ -255,6 +261,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
     /**
      * Verifies that client is able to detect obsolete metadata situation and request up-to-date from the cluster.
      */
+    @Test
     public void testClientRequestsUpToDateMetadata() throws Exception {
         final IgniteEx ignite0 = startGrid(0);
 
@@ -290,6 +297,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
     /**
      * Verifies that client resends request for up-to-date metadata in case of failure on server received first request.
      */
+    @Test
     public void testClientRequestsUpToDateMetadataOneNodeDies() throws Exception {
         final Ignite srv0 = startGrid(0);
         replaceWithStoppingMappingRequestListener(((GridKernalContext)U.field(srv0, "ctx")).io(), 0);

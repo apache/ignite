@@ -36,6 +36,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID;
@@ -44,6 +47,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
 /**
  * Test for new and old style persistent storage folders generation
  */
+@RunWith(JUnit4.class)
 public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest {
     /** Cache name for test. */
     public static final String CACHE_NAME = "dummy";
@@ -160,6 +164,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testNewStyleIdIsGenerated() throws Exception {
         final Ignite ignite = startActivateFillDataGrid(0);
 
@@ -174,6 +179,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testNewStyleIdIsGeneratedInCustomStorePath() throws Exception {
         placeStorageInTemp = true;
         final Ignite ignite = startActivateFillDataGrid(0);
@@ -196,6 +202,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testPreconfiguredConsitentIdIsApplied() throws Exception {
         this.configuredConsistentId = "someConfiguredConsistentId";
         Ignite ignite = startActivateFillDataGrid(0);
@@ -210,6 +217,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      *
      * @throws Exception if failed
      */
+    @Test
     public void testRestartOnExistingOldStyleId() throws Exception {
         final String expDfltConsistentId = "127.0.0.1:47500";
 
@@ -244,6 +252,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      *
      * @throws Exception if failed
      */
+    @Test
     public void testStartWithoutActivate() throws Exception {
         //start stop grid without activate
         startGrid(0);
@@ -259,6 +268,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      *
      * @throws Exception if failed
      */
+    @Test
     public void testRestartOnSameFolderWillCauseSameUuidGeneration() throws Exception {
         final UUID uuid;
         {
@@ -290,6 +300,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      *
      * @throws Exception if failed
      */
+    @Test
     public void testStartNodeAfterDeactivate() throws Exception {
         final UUID uuid;
         {
@@ -365,6 +376,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      *
      * @throws Exception if failed
      */
+    @Test
     public void testNodeIndexIncremented() throws Exception {
         final Ignite ignite0 = startGrid(0);
         final Ignite ignite1 = startGrid(1);
@@ -387,6 +399,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      *
      * @throws Exception if failed
      */
+    @Test
     public void testNewStyleAlwaysSmallestNodeIndexIsCreated() throws Exception {
         final Ignite ignite0 = startGrid(0);
         final Ignite ignite1 = startGrid(1);
@@ -419,6 +432,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      *
      * @throws Exception if failed
      */
+    @Test
     public void testNewStyleAlwaysSmallestNodeIndexIsCreatedMultithreaded() throws Exception {
         final Ignite ignite0 = startGridsMultiThreaded(11);
 
@@ -446,6 +460,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testStartTwoOldStyleNodes() throws Exception {
         final String expDfltConsistentId1 = "127.0.0.1:47500";
 
@@ -495,6 +510,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testStartOldStyleNodesByCompatibleProperty() throws Exception {
         clearPropsAfterTest = true;
         System.setProperty(IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID, "true");
@@ -537,6 +553,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testStartOldStyleNoPortsNodesByCompatibleProperty() throws Exception {
         clearPropsAfterTest = true;
         System.setProperty(IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID, "true");
@@ -577,6 +594,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testOldStyleNodeWithUnexpectedPort() throws Exception {
         this.configuredConsistentId = "127.0.0.1:49999"; //emulated old-style node with not appropriate consistent ID
         final Ignite ignite = startActivateFillDataGrid(0);

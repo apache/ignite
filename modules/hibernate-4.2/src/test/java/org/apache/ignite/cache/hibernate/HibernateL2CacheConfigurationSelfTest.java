@@ -40,6 +40,9 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.service.ServiceRegistryBuilder;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -57,6 +60,7 @@ import static org.hibernate.cfg.AvailableSettings.USE_SECOND_LEVEL_CACHE;
 /**
  * Tests Hibernate L2 cache configuration.
  */
+@RunWith(JUnit4.class)
 public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTest {
     /** */
     public static final String ENTITY1_NAME = Entity1.class.getName();
@@ -168,6 +172,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
     /**
      * Tests property {@link HibernateAccessStrategyFactory#REGION_CACHE_PROPERTY}.
      */
+    @Test
     public void testPerRegionCacheProperty() {
         testCacheUsage(1, 1, 0, 1, 1);
     }
@@ -175,6 +180,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
     /**
      * Tests property {@link HibernateAccessStrategyFactory#DFLT_CACHE_NAME_PROPERTY}.
      */
+    @Test
     public void testDefaultCache() {
         dfltCache = true;
 

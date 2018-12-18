@@ -51,6 +51,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.file.StandardOpenOption.WRITE;
@@ -59,6 +62,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -150,6 +154,7 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
      * Test that iteration fails if one of archive segments contains record with invalid CRC.
      * @throws Exception If failed.
      */
+    @Test
     public void testArchiveCorruptedPtr() throws Exception {
         doTest((archiveDescs, descs) -> archiveDescs.get(random.nextInt(archiveDescs.size())), false, true);
     }
@@ -159,6 +164,7 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
      * and it is not the tail segment.
      * @throws Exception If failed.
      */
+    @Test
     public void testNotTailCorruptedPtr() throws Exception {
         doTest((archiveDescs, descs) -> descs.get(random.nextInt(descs.size() - 1)), true, true);
     }
@@ -168,6 +174,7 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
      * Test that iteration does not fail if tail segment in working directory contains record with invalid CRC.
      * @throws Exception If failed.
      */
+    @Test
     public void testTailCorruptedPtr() throws Exception {
         doTest((archiveDescs, descs) -> descs.get(descs.size() - 1), false, false);
     }

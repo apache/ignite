@@ -34,8 +34,6 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -53,11 +51,15 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests specific scenario when binary metadata should be updated from a system thread
  * and topology has been already changed since the original transaction start.
  */
+@RunWith(JUnit4.class)
 public class IgniteBinaryMetadataUpdateChangingTopologySelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -91,14 +93,10 @@ public class IgniteBinaryMetadataUpdateChangingTopologySelfTest extends GridComm
         startGrids(4);
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoDeadlockOptimistic() throws Exception {
         int key1 = primaryKey(ignite(1).cache("cache"));
         int key2 = primaryKey(ignite(2).cache("cache"));
@@ -138,6 +136,7 @@ public class IgniteBinaryMetadataUpdateChangingTopologySelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoDeadlockInvoke() throws Exception {
         int key1 = primaryKey(ignite(1).cache("cache"));
         int key2 = primaryKey(ignite(2).cache("cache"));

@@ -63,12 +63,16 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 
 /**
  * Historical WAL rebalance base test.
  */
+@RunWith(JUnit4.class)
 public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
@@ -148,6 +152,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testSimple() throws Exception {
         IgniteEx ig0 = startGrid(0);
         IgniteEx ig1 = startGrid(1);
@@ -187,6 +192,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalanceRemoves() throws Exception {
         IgniteEx ig0 = startGrid(0);
         IgniteEx ig1 = startGrid(1);
@@ -234,6 +240,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testWithLocalWalChange() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING, "true");
 
@@ -323,6 +330,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testWithGlobalWalChange() throws Exception {
         // Prepare some data.
         IgniteEx crd = (IgniteEx) startGrids(3);
@@ -402,6 +410,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalanceCancelOnSupplyError() throws Exception {
         // Prepare some data.
         IgniteEx crd = (IgniteEx) startGrids(3);

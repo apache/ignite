@@ -44,6 +44,9 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.testframework.MvccFeatureChecker.assertMvccWriteConflict;
@@ -52,6 +55,7 @@ import static org.apache.ignite.testframework.MvccFeatureChecker.assertMvccWrite
  *
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class CacheStartOnJoinTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -129,6 +133,7 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentClientsStart1() throws Exception {
         concurrentClientsStart(false);
     }
@@ -136,6 +141,7 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentClientsStart2() throws Exception {
         concurrentClientsStart(true);
     }
