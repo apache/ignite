@@ -347,9 +347,11 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             }
 
             if (oldDesc.configuration().equalsIgnoreNodeFilter(desc.configuration())) {
-                U.warn(log, "Ignore service configuration received from joining node : " +
-                    "[nodeId=" + data.joiningNodeId() + ", cfgName=" + desc.name() + "]. " +
-                    "The same service configuration already registered.");
+                if (log.isDebugEnabled()) {
+                    log.debug("Ignore service configuration received from joining node : " +
+                        "[nodeId=" + data.joiningNodeId() + ", cfgName=" + desc.name() + "]. " +
+                        "The same service configuration already registered.");
+                }
             }
             else {
                 U.warn(log, "Failed to register service configuration received from joining node : " +
