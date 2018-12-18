@@ -62,7 +62,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor.COL_NOT_EXISTS;
 
 /**
  * H2 Table implementation.
@@ -101,8 +100,8 @@ public class GridH2Table extends TableBase {
     /** */
     private final IndexColumn affKeyCol;
 
-    /** */
-    private final int affKeyColId;
+    /** Whether affinity key column is the whole cache key. */
+    private final boolean affKeyColIsKey;
 
     /** */
     private final LongAdder size = new LongAdder();
@@ -141,36 +140,8 @@ public class GridH2Table extends TableBase {
         this.desc = desc;
         this.cacheInfo = cacheInfo;
 
-        if (!desc.type().customAffinityKeyMapper()) {
-            String affKeyFieldName = desc.type().affinityKey();
-
-            if (affKeyFieldName != null) {
-                if (doesColumnExist(affKeyFieldName)) {
-                    int colId = getColumn(affKeyFieldName).getColumnId();
-
-                    if (desc.isKeyColumn(colId)) {
-                        affKeyCol = indexColumn(GridH2KeyValueRowOnheap.KEY_COL, SortOrder.ASCENDING);
-                        affKeyColId = GridH2KeyValueRowOnheap.KEY_COL;
-                    }
-                    else {
-                        affKeyCol = indexColumn(colId, SortOrder.ASCENDING);
-                        affKeyColId = colId;
-                    }
-                }
-                else {
-                    affKeyCol = null;
-                    affKeyColId = COL_NOT_EXISTS;
-                }
-            }
-            else {
-                affKeyCol = indexColumn(GridH2KeyValueRowOnheap.KEY_COL, SortOrder.ASCENDING);
-                affKeyColId = GridH2KeyValueRowOnheap.KEY_COL;
-            }
-        }
-        else {
-            affKeyCol = null;
-            affKeyColId = COL_NOT_EXISTS;
-        }
+        affKeyCol = calculateAffinityKeyColumn();
+        affKeyColIsKey = affKeyCol != null && desc.isKeyColumn(affKeyCol.column.getColumnId());
 
         this.rowFactory = rowFactory;
 
@@ -210,6 +181,36 @@ public class GridH2Table extends TableBase {
     }
 
     /**
+     * Calculate affinity key column which will be used for partition pruning and distributed joins.
+     *
+     * @return Affinity column or {@code null} if none can be used.
+     */
+    private IndexColumn calculateAffinityKeyColumn() {
+        // If custome affinity key mapper is set, we do not know how to convert _KEY to partition, return null.
+        if (desc.type().customAffinityKeyMapper())
+            return null;
+
+        String affKeyFieldName = desc.type().affinityKey();
+
+        // If explicit affinity key field is not set, then use _KEY.
+        if (affKeyFieldName == null)
+            return indexColumn(GridH2KeyValueRowOnheap.KEY_COL, SortOrder.ASCENDING);
+
+        // If explicit affinity key field is set, but is not found in the table, do not use anything.
+        if (!doesColumnExist(affKeyFieldName))
+            return null;
+
+        int colId = getColumn(affKeyFieldName).getColumnId();
+
+        // If affinity key column is either _KEY or it's alias (QueryEntity.keyFieldName), normalize it to _KEY.
+        if (desc.isKeyColumn(colId))
+            return indexColumn(GridH2KeyValueRowOnheap.KEY_COL, SortOrder.ASCENDING);
+
+        // Otherwise use column as is.
+        return indexColumn(colId, SortOrder.ASCENDING);
+    }
+
+    /**
      * @return {@code true} If this is a partitioned table.
      */
     public boolean isPartitioned() {
@@ -230,9 +231,65 @@ public class GridH2Table extends TableBase {
      * @return {@code True} if affinity key column.
      */
     public boolean isColumnForPartitionPruning(Column col) {
+        return isColumnForPartitionPruning0(col, false);
+    }
+
+    /**
+     * Check whether passed column could be used for partition transfer during partition pruning on joined tables and
+     * for external affinity calculation (e.g. on thin clients).
+     * <p>
+     * Note that it is different from {@link #isColumnForPartitionPruning(Column)} method in that not every column
+     * which qualifies for partition pruning can be used by thin clients or join partinion prunining logic.
+     * <p>
+     * Consider the following schema:
+     * <pre>
+     * CREATE TABLE dept (id PRIMARY KEY);
+     * CREATE TABLE emp (id, dept_id AFFINITY KEY, PRIMARY KEY(id, dept_id));
+     * </pre>
+     * For expression-based partition pruning on "emp" table on the <b>server side</b> we may use both "_KEY" and
+     * "dept_id" columns, as passing them through standard affinity workflow will yield the same result:
+     * dept_id -> part
+     * _KEY -> dept_id -> part
+     * <p>
+     * But we cannot use "_KEY" on thin client side, as it doesn't know how to extract affinity key field properly.
+     * Neither we can perform partition transfer in JOINs when "_KEY" is used.
+     * <p>
+     * This is OK as data is collocated, so we can merge partitions extracted from both tables:
+     * <pre>
+     * SELECT * FROM dept d INNER JOIN emp e ON d.id = e.dept_id WHERE e.dept_id=? AND d.id=?
+     * </pre>
+     * But this is not OK as joined data is not collocated, and tables form distinct collocation groups:
+     * <pre>
+     * SELECT * FROM dept d INNER JOIN emp e ON d.id = e._KEY WHERE e.dept_id=? AND d.id=?
+     * </pre>
+     * NB: The last query is not logically correct and will produce empty result. However, it is correct from SQL
+     * perspective, so we should make incorrect assumptions about partitions as ti may make situation even worse.
+     *
+     * @param col Column.
+     * @return {@code True} if column could be used for partition extraction on both server and client sides and for
+     *     partition transfer in joins.
+     */
+    public boolean isColumnForPartitionPruningStrict(Column col) {
+        return isColumnForPartitionPruning0(col, true);
+    }
+
+    /**
+     * Internal logic to check whether column qualifies for partition extraction or not.
+     *
+     * @param col Column.
+     * @param strict Strict flag.
+     * @return {@code True} if column could be used for partition.
+     */
+    private boolean isColumnForPartitionPruning0(Column col, boolean strict) {
+        if (affKeyCol == null)
+            return false;
+
         int colId = col.getColumnId();
 
-        return colId == affKeyColId || desc.isKeyColumn(colId);
+        if (colId == affKeyCol.column.getColumnId())
+            return true;
+
+        return (affKeyColIsKey || !strict) && desc.isKeyColumn(colId);
     }
 
     /**
@@ -333,6 +390,7 @@ public class GridH2Table extends TableBase {
      *
      * @param exclusive Exclusive flag.
      */
+    @SuppressWarnings({"LockAcquiredButNotSafelyReleased", "CallToThreadYield"})
     private void lock(boolean exclusive) {
         Lock l = exclusive ? lock.writeLock() : lock.readLock();
 
