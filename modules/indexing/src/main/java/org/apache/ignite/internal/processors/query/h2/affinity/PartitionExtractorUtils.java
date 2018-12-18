@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.affinity;
 
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinAffinityIdentifier;
+import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinAffinityDescriptor;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinGroup;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinTable;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -76,7 +76,7 @@ public class PartitionExtractorUtils {
 
             CacheConfiguration ccfg = tbl0.cacheInfo().config();
 
-            PartitionJoinAffinityIdentifier affIdentifier = affinityIdentifierForCache(ccfg);
+            PartitionJoinAffinityDescriptor affIdentifier = affinityIdentifierForCache(ccfg);
 
             // TODO: Wrong.
             boolean replicated = affIdentifier != null && ccfg.getCacheMode() == CacheMode.REPLICATED;
@@ -93,7 +93,7 @@ public class PartitionExtractorUtils {
      * @param ccfg Cache configuration.
      * @return Affinity identifier.
      */
-    private static PartitionJoinAffinityIdentifier affinityIdentifierForCache(CacheConfiguration ccfg) {
+    private static PartitionJoinAffinityDescriptor affinityIdentifierForCache(CacheConfiguration ccfg) {
         // TODO
         return null;
     }

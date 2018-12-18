@@ -33,7 +33,7 @@ public class PartitionJoinGroup {
     private final Collection<PartitionJoinTable> outerTbls = Collections.newSetFromMap(new IdentityHashMap<>());
 
     /** Affinity function identifier. */
-    private final PartitionJoinAffinityIdentifier affIdentifier;
+    private final PartitionJoinAffinityDescriptor affIdentifier;
 
     /** Whether this is replicated group. */
     private final boolean replicated;
@@ -44,7 +44,7 @@ public class PartitionJoinGroup {
      * @param affIdentifier Affinity identifier.
      * @param replicated Replicated flag.
      */
-    public PartitionJoinGroup(PartitionJoinAffinityIdentifier affIdentifier, boolean replicated) {
+    public PartitionJoinGroup(PartitionJoinAffinityDescriptor affIdentifier, boolean replicated) {
         this.affIdentifier = affIdentifier;
         this.replicated = replicated;
     }
@@ -78,7 +78,7 @@ public class PartitionJoinGroup {
     /**
      * @return Affinity identifier.
      */
-    public PartitionJoinAffinityIdentifier affinityIdentifer() {
+    public PartitionJoinAffinityDescriptor affinityIdentifer() {
         return affIdentifier;
     }
 

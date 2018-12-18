@@ -17,12 +17,49 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity.join;
 
-import java.io.Serializable;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Affinity function identifier. Used to compare affinity functions of two tables.
+ * Affinity function type.
  */
-public interface PartitionJoinAffinityIdentifier extends Serializable {
+public enum PartitionAffinityFunctionType {
+    /** Custom affintiy function. */
+    CUSTOM(0),
 
+    /** Rendezvous affinity function. */
+    RENDEZVOUS(1);
 
+    /** Value. */
+    private final int val;
+
+    /**
+     * Constructor.
+     *
+     * @param val Value.
+     */
+    PartitionAffinityFunctionType(int val) {
+        this.val = val;
+    }
+
+    /**
+     * @return Value.
+     */
+    public int value() {
+        return val;
+    }
+
+    /**
+     * Get type from value.
+     *
+     * @param val Value.
+     * @return Type or [@code null} if cannot be resolved..
+     */
+    @Nullable public static PartitionAffinityFunctionType fromValue(int val) {
+        for (PartitionAffinityFunctionType typ : values()) {
+            if (typ.val == val)
+                return typ;
+        }
+
+        return null;
+    }
 }
