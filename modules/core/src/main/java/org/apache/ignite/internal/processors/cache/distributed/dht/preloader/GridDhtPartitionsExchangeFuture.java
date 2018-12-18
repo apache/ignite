@@ -1449,13 +1449,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         try {
             if (crd.isLocal()) {
-                if (exchActions != null) {
-                    Collection<String> caches = exchActions.cachesToResetLostPartitions();
-
-                    // Reset lost partitions on coordinator before update cache topology from single messages.
-                    if (!F.isEmpty(caches))
-                        resetLostPartitions(caches);
-                }
+//                if (exchActions != null) {
+//                    Collection<String> caches = exchActions.cachesToResetLostPartitions();
+//
+//                    // Reset lost partitions on coordinator before update cache topology from single messages.
+//                    if (!F.isEmpty(caches))
+//                        resetLostPartitions(caches);
+//                }
 
                 if (remaining.isEmpty())
                     onAllReceived(null);
@@ -3253,11 +3253,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     if (exchActions != null) {
                         assignPartitionsStates();
 
-                        // Check rebalance state after reset lost partitions.
-                        for (String cache : exchActions.cachesToResetLostPartitions()) {
-                            GridCacheContext ctx = cctx.cacheContext(CU.cacheId(cache));
+                        Collection<String> caches = exchActions.cachesToResetLostPartitions();
 
-                            cctx.affinity().checkRebalanceState(ctx.topology(), ctx.groupId());
+                        if (!F.isEmpty(caches)) {
+                            resetLostPartitions(caches);
+
+                            // Check rebalance state after reset lost partitions.
+                            for (String cache : caches) {
+                                GridCacheContext ctx = cctx.cacheContext(CU.cacheId(cache));
+
+                                cctx.affinity().checkRebalanceState(ctx.topology(), ctx.groupId());
+                            }
                         }
                     }
                 }

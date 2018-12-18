@@ -2127,24 +2127,24 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             lock.writeLock().lock();
 
             try {
-                // LOST partitions that has at least one owner.
-                Set<Integer> hasOwner = new HashSet<>();
-
-                for (GridDhtLocalPartition part : localPartitions()) {
-                    if (part.state() != LOST)
-                        continue;
-
-                    for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
-                        if (e.getValue().get(part.id()) != OWNING)
-                            continue;
-
-                        assert !ctx.localNodeId().equals(e.getKey());
-
-                        hasOwner.add(part.id());
-
-                        break;
-                    }
-                }
+//                // LOST partitions that has at least one owner.
+//                Set<Integer> hasOwner = new HashSet<>();
+//
+//                for (GridDhtLocalPartition part : localPartitions()) {
+//                    if (part.state() != LOST)
+//                        continue;
+//
+//                    for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
+//                        if (e.getValue().get(part.id()) != OWNING)
+//                            continue;
+//
+//                        assert !ctx.localNodeId().equals(e.getKey());
+//
+//                        hasOwner.add(part.id());
+//
+//                        break;
+//                    }
+//                }
 
                 long updSeq = updateSeq.incrementAndGet();
 
@@ -2165,11 +2165,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                                 long updateCntr = locPart.updateCounter();
 
-                                if (hasOwner.contains(locPart.id())) {
+//                                if (hasOwner.contains(locPart.id())) {
                                     //Set update counters to 0, for full rebalance.
                                     locPart.updateCounter(updateCntr, -updateCntr);
                                     locPart.initialUpdateCounter(0);
-                                }
+//                                }
                             }
                         }
                     }
