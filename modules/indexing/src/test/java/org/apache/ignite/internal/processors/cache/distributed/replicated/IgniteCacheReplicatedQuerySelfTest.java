@@ -333,14 +333,13 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     /**
      * @throws Exception If failed.
      */
-    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-613", forceFailure = true)
     public void testNodeLeft() throws Exception {
         Ignite g = startGrid("client");
 
         try {
             assertTrue(g.configuration().isClientMode());
 
-            IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
+            IgniteCache<Integer, Integer> cache = jcache(g, Integer.class, Integer.class);
 
             for (int i = 0; i < 1000; i++)
                 cache.put(i, i);
