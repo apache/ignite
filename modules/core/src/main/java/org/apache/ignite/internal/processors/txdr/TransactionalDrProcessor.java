@@ -20,6 +20,7 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
@@ -60,4 +61,12 @@ public interface TransactionalDrProcessor extends GridProcessor, IgniteChangeGlo
      * @param fut Current exchange future.
      */
     public boolean shouldScheduleRebalance(GridDhtPartitionsExchangeFuture fut);
+
+    /**
+     * Returns {@code true} if update counters that are placed into {@link GridDhtPartitionSupplyMessage#last()}
+     * should be applied when the rebalance is finished.
+     *
+     * @return {@code true} if update counters should be applied when the rebalance is finished.
+     */
+    public boolean shouldApplyUpdateCounterOnRebalance();
 }
