@@ -74,8 +74,9 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TestTcpDiscoverySpi disco = (TestTcpDiscoverySpi)cfg.getDiscoverySpi();
+        TestTcpDiscoverySpi disco = new TestTcpDiscoverySpi();
 
+        disco.setIpFinder(sharedStaticIpFinder);
         disco.setJoinTimeout(2 * 60_000);
         disco.setSocketTimeout(1000);
         disco.setNetworkTimeout(2000);
