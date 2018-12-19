@@ -104,9 +104,6 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
     protected static final int PRELOAD_KEYS_CNT = 1;
 
     /** */
-    protected static final int KEYS_IN_SECOND_PARTITION = 1;
-
-    /** */
     protected static final String CLIENT_GRID_NAME = "client";
 
     /** {@inheritDoc} */
@@ -216,7 +213,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         txTop.put(partId, new T2<>(prim, backupz));
 
         List<Integer> keysPart2 = part2Sup == null ? null :
-            partitionKeys(crd.cache(DEFAULT_CACHE_NAME), part2Sup.get(), KEYS_IN_SECOND_PARTITION, 0) ;
+            partitionKeys(crd.cache(DEFAULT_CACHE_NAME), part2Sup.get(), sizes.length, 0) ;
 
         if (part2Sup != null) {
             int partId2 = part2Sup.get();
@@ -360,7 +357,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
                 int[] range = ranges[txIdx];
 
-                String lb = "t" + idx;
+                String lb = "t" + txIdx;
 
                 try (Transaction tx = client.transactions().withLabel(lb).txStart()) {
                     cb.onTxStart(tx, txIdx);
@@ -370,8 +367,9 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
                     for (Integer key : keys.subList(range[0], range[0] + range[1]))
                         client.cache(DEFAULT_CACHE_NAME).put(key, 0);
 
-                    if (keysPart2 != null) // Force 2PC.
-                        client.cache(DEFAULT_CACHE_NAME).putAll(keysPart2.stream().collect(Collectors.toMap(k -> k, v -> v)));
+                    if (keysPart2 != null) {// Force 2PC.
+                        client.cache(DEFAULT_CACHE_NAME).put(keysPart2.get(txIdx), 0);
+                    }
 
                     tx.commit();
                 }
