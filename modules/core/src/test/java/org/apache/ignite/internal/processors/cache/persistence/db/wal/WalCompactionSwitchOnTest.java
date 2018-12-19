@@ -1,5 +1,23 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
+import java.io.File;
+import java.io.FileFilter;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -12,9 +30,6 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.io.File;
-import java.io.FileFilter;
 
 public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
     private boolean compactionEnabled;
@@ -39,7 +54,12 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
     }
 
-    public void testWalCompactionSwitchWithGap() throws Exception {
+    /**
+     * Load without compaction -> Stop -> Enable WAL Compaction -> Start
+     *
+     * @throws Exception On exception.
+     */
+    public void testWalCompactionSwitch() throws Exception {
         IgniteEx ex = startGrid(0);
 
         ex.cluster().active(true);
@@ -66,8 +86,7 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
             @Override
             public boolean apply() {
                 File[] archivedFiles = walDir.listFiles(new FileFilter() {
-                    @Override
-                    public boolean accept(File pathname) {
+                    @Override public boolean accept(File pathname) {
                         return pathname.getName().endsWith(".wal");
                     }
                 });
@@ -84,8 +103,7 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
         ex = startGrid(0);
 
         ex.cluster().active(true);
-
-
+        
         File archiveDir = U.resolveWorkDirectory(
                 ex.configuration().getWorkDirectory(),
                 "db/wal/archive/node00-" + ex.localNode().consistentId(),
@@ -93,11 +111,9 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
         );
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override
-            public boolean apply() {
+            @Override public boolean apply() {
                 File[] archivedFiles = archiveDir.listFiles(new FileFilter() {
-                    @Override
-                    public boolean accept(File pathname) {
+                    @Override public boolean accept(File pathname) {
                         return pathname.getName().endsWith(FilePageStoreManager.ZIP_SUFFIX);
                     }
                 });
@@ -108,8 +124,7 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
         }, 5000);
 
         File[] tmpFiles = archiveDir.listFiles(new FileFilter() {
-            @Override
-            public boolean accept(File pathname) {
+            @Override public boolean accept(File pathname) {
                 return pathname.getName().endsWith(FilePageStoreManager.TMP_SUFFIX);
             }
         });
@@ -117,8 +132,7 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
         assertEquals(0, tmpFiles.length);
     }
 
-    @Override
-    protected void afterTest() throws Exception {
+    @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
 }
