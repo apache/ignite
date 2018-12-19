@@ -23,7 +23,7 @@ import junit.framework.TestResult;
 /**
  * Supports compatibility with old tests based on configurations variations.
  */
-public abstract class LegacyConfigVariationsSupport extends TestCase {
+abstract class LegacyConfigVariationsSupport extends TestCase {
     /**
      * Fallback to superclass.
      */
