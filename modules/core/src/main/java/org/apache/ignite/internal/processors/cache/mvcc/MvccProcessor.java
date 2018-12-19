@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.util.Optional;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -243,13 +244,12 @@ public interface MvccProcessor extends GridProcessor {
     void ensureStarted() throws IgniteCheckedException;
 
     /**
-     * Checks whether one tx is waiting for another tx on a particular node.
+     * Checks whether one tx is waiting for another tx.
      * It is assumed that locks on data nodes are requested one by one, so tx can wait only for one another tx here.
      *
-     * @param nodeId Node id.
      * @param mvccVer Version of transaction which is checked for being waiting.
-     * @return Future containing locator for tx which blocks checked tx.
+     * @return Locator for tx which blocks checked tx.
      * Locator is {@code null} is checked tx is not waiting.
      */
-    IgniteInternalFuture<NearTxLocator> checkWaiting(UUID nodeId, MvccVersion mvccVer);
+    Optional<NearTxLocator> checkWaiting(MvccVersion mvccVer);
 }

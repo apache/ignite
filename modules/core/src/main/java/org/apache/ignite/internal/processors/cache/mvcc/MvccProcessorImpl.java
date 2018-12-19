@@ -60,7 +60,6 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
-import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -104,7 +103,6 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.thread.IgniteThread;
@@ -1825,86 +1823,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<NearTxLocator> checkWaiting(UUID nodeId, MvccVersion mvccVer) {
-        if (ctx.localNodeId().equals(nodeId)) {
-            return findBlockerTx(mvccVer)
-                .map(tx -> new NearTxLocator(tx.eventNodeId(), tx.nearXidVersion()))
-                .map(GridFinishedFuture::new)
-                .orElseGet(GridFinishedFuture::new);
-        }
-
-        LockWaitCheckFuture fut = new LockWaitCheckFuture(nodeId, mvccVer);
-
-        fut.init();
-
-        return fut;
-    }
-
-    /** */
-    private class LockWaitCheckFuture extends GridCacheFutureAdapter<NearTxLocator> {
-        /** */
-        private final UUID nodeId;
-        /** */
-        private final MvccVersionImpl txVer;
-        /** */
-        private final IgniteUuid futId = IgniteUuid.randomUuid();
-
-        /** */
-        private LockWaitCheckFuture(UUID nodeId, MvccVersion txVer) {
-            this.nodeId = nodeId;
-            this.txVer = new MvccVersionImpl(txVer.coordinatorVersion(), txVer.counter(), txVer.operationCounter());
-        }
-
-        /** */
-        private void init() {
-            try {
-                ctx.cache().context().mvcc().addFuture(this, futId);
-
-                sendMessage(nodeId, new LockWaitCheckRequest(futId, txVer));
-            }
-            catch (IgniteCheckedException e) {
-                onDone(e);
-
-                log.warning("Failed to send a lock wait check request [nodeId=" + nodeId + ']', e);
-            }
-        }
-
-        /** */
-        private void onResponse(LockWaitCheckResponse res) {
-            onDone(res.isWaiting() ? new NearTxLocator(res.blockerNodeId(), res.blockerTxVersion()) : null);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable NearTxLocator res, @Nullable Throwable err) {
-            if (super.onDone(res, err)) {
-                ctx.cache().context().mvcc().removeFuture(futId);
-
-                return true;
-            }
-
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteUuid futureId() {
-            return futId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean onNodeLeft(UUID nodeId) {
-            onDone(new ClusterTopologyCheckedException("Node left grid (will ignore)."));
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean trackable() {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void markNotTrackable() {
-        }
+    @Override public Optional<NearTxLocator> checkWaiting(MvccVersion mvccVer) {
+        return findBlockerTx(mvccVer)
+            .map(tx -> new NearTxLocator(tx.eventNodeId(), tx.nearXidVersion()));
     }
 
     /**
@@ -1955,10 +1876,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 processCoordinatorActiveQueriesMessage(nodeId, (MvccActiveQueriesMessage)msg);
             else if (msg instanceof MvccRecoveryFinishedMessage)
                 processRecoveryFinishedMessage(nodeId, ((MvccRecoveryFinishedMessage)msg));
-            else if (msg instanceof LockWaitCheckRequest)
-                processLockCheckRequest(nodeId, (LockWaitCheckRequest)msg);
-            else if (msg instanceof LockWaitCheckResponse)
-                processLockCheckResponse((LockWaitCheckResponse)msg);
             else
                 U.warn(log, "Unexpected message received [node=" + nodeId + ", msg=" + msg + ']');
         }
@@ -1966,20 +1883,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         /** {@inheritDoc} */
         @Override public String toString() {
             return "MvccMessageListener[]";
-        }
-    }
-
-    /** */
-    private void processLockCheckRequest(UUID nodeId, LockWaitCheckRequest req) {
-        LockWaitCheckResponse res = findBlockerTx(req.txVersion())
-            .map(tx -> LockWaitCheckResponse.waiting(req.futId(), tx.eventNodeId(), tx.nearXidVersion()))
-            .orElseGet(() -> LockWaitCheckResponse.notWaiting(req.futId()));
-
-        try {
-            sendMessage(nodeId, res);
-        }
-        catch (IgniteCheckedException e) {
-            log.warning("Failed to send a lock wait check response [nodeId=" + nodeId + ']', e);
         }
     }
 
@@ -1997,16 +1900,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                     return s.coordinatorVersion() == txKey.major() && s.counter() == txKey.minor();
                 })
                 .findAny());
-    }
-
-    /** */
-    private void processLockCheckResponse(LockWaitCheckResponse res) {
-        LockWaitCheckFuture fut = (LockWaitCheckFuture)ctx.cache().context().mvcc().future(res.futId());
-
-        if (fut != null)
-            fut.onResponse(res);
-        else
-            log.error("Future for lock wait check response was not found [futId=" + res.futId() + ']');
     }
 
     /**

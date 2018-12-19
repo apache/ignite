@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
@@ -79,8 +77,8 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
                 waitingTx.get().nearXidVersion(),
                 waitingTx.get().nearXidVersion(),
                 blockerTx.get().nearXidVersion(),
-                blockerTx.get().eventNodeId()
-            );
+                blockerTx.get().eventNodeId(),
+                true);
         }
     }
 
@@ -95,45 +93,57 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
      * @param probe Received probe message.
      */
     private void handleDeadlockProbe(DeadlockProbe probe) {
+        if (probe.nearCheck())
+            handleDeadlockProbeForNear(probe);
+        else
+            handleDeadlockProbeForDht(probe);
+    }
+
+    /** */
+    private void handleDeadlockProbeForNear(DeadlockProbe probe) {
         // a probe is simply discarded if next wait-for edge is not found
         GridNearTxLocal nearTx = cctx.tm().tx(probe.blockerVersion());
 
-        if (nearTx != null) {
-            if (nearTx.nearXidVersion().equals(probe.initiatorVersion())) {
-                // a deadlock found
-                // t0d0 indicate that deadlock caused transaction abort
-                nearTx.rollbackAsync();
-            }
-            else {
-                // probe each blocker
-                // t0d0 check if holds some lock already
-                collectBlockers(nearTx).forEach(fut -> {
-                    fut.listen(fut0 -> {
-                        try {
-                            NearTxLocator blockerTx = fut0.get();
+        if (nearTx == null)
+            return;
 
-                            if (blockerTx != null) {
-                                sendProbe(
-                                    probe.initiatorVersion(),
-                                    nearTx.nearXidVersion(),
-                                    blockerTx.xidVersion(),
-                                    blockerTx.nodeId());
-                            }
-                        }
-                        catch (IgniteCheckedException e) {
-                            e.printStackTrace();
-                        }
-                    });
-                });
+        if (nearTx.nearXidVersion().equals(probe.initiatorVersion())) {
+            // a deadlock found
+            // t0d0 indicate that deadlock caused transaction abort
+            nearTx.rollbackAsync();
+        }
+        else {
+            // probe each blocker
+            // t0d0 check if holds some lock already
+            for (UUID pendingNodeId : getPendingResponseNodes(nearTx)) {
+                sendProbe(
+                    probe.initiatorVersion(),
+                    nearTx.nearXidVersion(),
+                    nearTx.nearXidVersion(),
+                    pendingNodeId,
+                    false);
             }
         }
     }
 
     /** */
-    private Collection<IgniteInternalFuture<NearTxLocator>> collectBlockers(GridNearTxLocal tx) {
-        return getPendingResponseNodes(tx).stream()
-            .map(nodeId -> cctx.coordinators().checkWaiting(nodeId, tx.mvccSnapshot()))
-            .collect(Collectors.toList());
+    private void handleDeadlockProbeForDht(DeadlockProbe probe) {
+        assert probe.waitingVersion().equals(probe.blockerVersion());
+
+        // a probe is simply discarded if next wait-for edge is not found
+
+        cctx.tm().activeTransactions().stream()
+            .filter(tx -> tx.dht() && tx.local())
+            .filter(tx -> tx.nearXidVersion().equals(probe.blockerVersion()))
+            .findAny()
+            .flatMap(tx -> cctx.coordinators().checkWaiting(tx.mvccSnapshot()))
+            .ifPresent(locator -> sendProbe(
+                probe.initiatorVersion(),
+                probe.blockerVersion(),
+                locator.xidVersion(),
+                locator.nodeId(),
+                true
+            ));
     }
 
     /** */
@@ -148,8 +158,8 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
 
     /** */
     private void sendProbe(GridCacheVersion initiatorVer, GridCacheVersion waiterVer, GridCacheVersion blockerVer,
-        UUID blockerNearNodeId) {
-        DeadlockProbe probe = new DeadlockProbe(initiatorVer, waiterVer, blockerVer);
+        UUID blockerNearNodeId, boolean near) {
+        DeadlockProbe probe = new DeadlockProbe(initiatorVer, waiterVer, blockerVer, near);
         try {
             cctx.gridIO().sendToGridTopic(blockerNearNodeId, TOPIC_DEADLOCK_DETECTION, probe, SYSTEM_POOL);
         }

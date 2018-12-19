@@ -34,6 +34,8 @@ import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
+import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyRequest;
+import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyResponse;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.authentication.UserAuthenticateRequestMessage;
@@ -46,8 +48,6 @@ import org.apache.ignite.internal.processors.cache.CacheEvictionEntry;
 import org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult;
 import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
-import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyRequest;
-import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyResponse;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -125,8 +125,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQu
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryResultsEnlistResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.DeadlockProbe;
-import org.apache.ignite.internal.processors.cache.mvcc.LockWaitCheckRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.LockWaitCheckResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryCntr;
@@ -1125,16 +1123,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 167:
                 msg = new DeadlockProbe();
-
-                break;
-
-            case 168:
-                msg = new LockWaitCheckRequest();
-
-                break;
-
-            case 169:
-                msg = new LockWaitCheckResponse();
 
                 break;
 

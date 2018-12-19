@@ -37,16 +37,20 @@ public class DeadlockProbe implements Message {
     private GridCacheVersion waitingVer;
     /** */
     private GridCacheVersion blockerVer;
+    /** */
+    private boolean nearCheck;
 
     /** */
     public DeadlockProbe() {
     }
 
     /** */
-    public DeadlockProbe(GridCacheVersion initiatorVer, GridCacheVersion waitingVer, GridCacheVersion blockerVer) {
+    public DeadlockProbe(
+        GridCacheVersion initiatorVer, GridCacheVersion waitingVer, GridCacheVersion blockerVer, boolean nearCheck) {
         this.initiatorVer = initiatorVer;
         this.waitingVer = waitingVer;
         this.blockerVer = blockerVer;
+        this.nearCheck = nearCheck;
     }
 
     /**
@@ -66,10 +70,17 @@ public class DeadlockProbe implements Message {
 
     /**
      * @return Identifier of a transaction identified as blocking another (waiting)
-     * transction during deadlock deteciton.
+     * transaction during deadlock deteciton.
      */
     public GridCacheVersion blockerVersion() {
         return blockerVer;
+    }
+
+    /**
+     * @return {@code True} if checks if near transaction is waiting. {@code False} if checks dht transaction.
+     */
+    public boolean nearCheck() {
+        return nearCheck;
     }
 
     /** {@inheritDoc} */
@@ -97,6 +108,12 @@ public class DeadlockProbe implements Message {
                 writer.incrementState();
 
             case 2:
+                if (!writer.writeBoolean("nearCheck", nearCheck))
+                    return false;
+
+                writer.incrementState();
+
+            case 3:
                 if (!writer.writeMessage("waitingVer", waitingVer))
                     return false;
 
@@ -132,6 +149,14 @@ public class DeadlockProbe implements Message {
                 reader.incrementState();
 
             case 2:
+                nearCheck = reader.readBoolean("nearCheck");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 3:
                 waitingVer = reader.readMessage("waitingVer");
 
                 if (!reader.isLastRead())
@@ -151,7 +176,7 @@ public class DeadlockProbe implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 3;
+        return 4;
     }
 
     /** {@inheritDoc} */
