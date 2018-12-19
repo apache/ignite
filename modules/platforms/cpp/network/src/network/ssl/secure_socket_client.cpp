@@ -22,9 +22,9 @@
 #include <ignite/common/concurrent.h>
 #include <ignite/ignite_error.h>
 
-#include <ignite/network/tcp_socket_client.h>
-#include <ignite/network/ssl/secure_socket_client.h>
-#include <ignite/network/ssl/ssl_gateway.h>
+#include "network/tcp_socket_client.h"
+#include "network/ssl/secure_socket_client.h"
+#include "network/ssl/ssl_gateway.h"
 
 #ifndef SOCKET_ERROR
 #   define SOCKET_ERROR (-1)
@@ -108,7 +108,7 @@ namespace ignite
                 {
                     sslGateway.SSL_free_(ssl0);
 
-//                  std::string err = "Remote host did not provide certificate: " + GetSslError(ssl0, res);
+                    std::string err = "Remote host did not provide certificate: " + GetSslError(ssl0, res);
 
                     return false;
                 }
