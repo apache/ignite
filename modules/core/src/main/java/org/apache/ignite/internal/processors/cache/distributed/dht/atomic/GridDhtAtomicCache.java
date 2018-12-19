@@ -224,7 +224,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"IfMayBeConditional"})
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
@@ -2730,7 +2729,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param expiry Expiry policy.
      * @param sndPrevVal If {@code true} sends previous value to backups.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     @Nullable private void updatePartialBatch(
         final boolean hasNear,
         final int firstEntryIdx,
@@ -2984,7 +2982,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @throws GridDhtInvalidPartitionException If entry does not belong to local node. If exception is thrown, locks
      * are released.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private List<GridDhtCacheEntry> lockEntries(GridNearAtomicAbstractUpdateRequest req, AffinityTopologyVersion topVer)
         throws GridDhtInvalidPartitionException {
         if (req.size() == 1) {
