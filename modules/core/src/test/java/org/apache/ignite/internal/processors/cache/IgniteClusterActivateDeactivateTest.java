@@ -105,6 +105,8 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             spi.setJoinTimeout(2 * 60_000);
         }
 
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(sharedStaticIpFinder);
+
         cfg.setConsistentId(igniteInstanceName);
 
         cfg.setClientMode(client);
