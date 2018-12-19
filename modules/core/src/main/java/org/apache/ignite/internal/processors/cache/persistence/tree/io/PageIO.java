@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -36,17 +35,20 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHan
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwareDataInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwareDataLeafIO;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataInnerIO;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwarePendingEntryInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwarePendingEntryLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.DataInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.DataLeafIO;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataInnerIO;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntryInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntryLeafIO;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataInnerIO;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataLeafIO;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataInnerIO;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataLeafIO;
+import org.apache.ignite.internal.stat.IndexPageType;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 
 /**
  * Base format for all the page types.
@@ -78,7 +80,7 @@ import org.apache.ignite.internal.util.GridStringBuilder;
  *
  * 7. It is almost always preferable to read or write (especially write) page contents using
  *    static methods on {@link PageHandler}. To just initialize new page use
- *    {@link PageHandler#initPage(PageMemory, int, long, PageIO, IgniteWriteAheadLogManager, PageLockListener)}
+ *    {@link PageHandler#initPage(PageMemory, int, long, PageIO, IgniteWriteAheadLogManager, PageLockListener, IoStatisticsHolder)}
  *    method with needed IO instance.
  */
 public abstract class PageIO {
@@ -614,7 +616,6 @@ public abstract class PageIO {
      * @return Page IO.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public static <Q extends PageIO> Q getPageIO(int type, int ver) throws IgniteCheckedException {
         switch (type) {
             case T_DATA:
@@ -672,7 +673,6 @@ public abstract class PageIO {
      * @return IO for either inner or leaf B+Tree page.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public static <Q extends BPlusIO<?>> Q getBPlusIO(int type, int ver) throws IgniteCheckedException {
         if (type >= T_H2_EX_REF_LEAF_START && type <= T_H2_EX_REF_LEAF_END)
             return (Q)h2ExtraLeafIOs.get(type - T_H2_EX_REF_LEAF_START).forVersion(ver);
@@ -775,6 +775,44 @@ public abstract class PageIO {
         }
 
         throw new IgniteCheckedException("Unknown page IO type: " + type);
+    }
+
+    /**
+     * @param pageAddr Address of page.
+     * @return Index page type.
+     */
+    public static IndexPageType deriveIndexPageType(long pageAddr) {
+        int pageIoType = PageIO.getType(pageAddr);
+        switch (pageIoType) {
+            case PageIO.T_DATA_REF_INNER:
+            case PageIO.T_DATA_REF_MVCC_INNER:
+            case PageIO.T_H2_REF_INNER:
+            case PageIO.T_H2_MVCC_REF_INNER:
+            case PageIO.T_CACHE_ID_AWARE_DATA_REF_INNER:
+            case PageIO.T_CACHE_ID_DATA_REF_MVCC_INNER:
+                return IndexPageType.INNER;
+
+            case PageIO.T_DATA_REF_LEAF:
+            case PageIO.T_DATA_REF_MVCC_LEAF:
+            case PageIO.T_H2_REF_LEAF:
+            case PageIO.T_H2_MVCC_REF_LEAF:
+            case PageIO.T_CACHE_ID_AWARE_DATA_REF_LEAF:
+            case PageIO.T_CACHE_ID_DATA_REF_MVCC_LEAF:
+                return IndexPageType.LEAF;
+
+            default:
+                if ((PageIO.T_H2_EX_REF_LEAF_START <= pageIoType && pageIoType <= PageIO.T_H2_EX_REF_LEAF_END) ||
+                    (PageIO.T_H2_EX_REF_MVCC_LEAF_START <= pageIoType && pageIoType <= PageIO.T_H2_EX_REF_MVCC_LEAF_END)
+                )
+                    return IndexPageType.LEAF;
+
+                if ((PageIO.T_H2_EX_REF_INNER_START <= pageIoType && pageIoType <= PageIO.T_H2_EX_REF_INNER_END) ||
+                    (PageIO.T_H2_EX_REF_MVCC_INNER_START <= pageIoType && pageIoType <= PageIO.T_H2_EX_REF_MVCC_INNER_END)
+                )
+                    return IndexPageType.INNER;
+        }
+
+        return IndexPageType.NOT_INDEX;
     }
 
     /**

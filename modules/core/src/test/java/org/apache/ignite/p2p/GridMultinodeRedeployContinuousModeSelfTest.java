@@ -18,6 +18,9 @@
 package org.apache.ignite.p2p;
 
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 
@@ -25,12 +28,14 @@ import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
  * Continuous deployment mode test.
  */
 @GridCommonTest(group = "P2P")
+@RunWith(JUnit4.class)
 public class GridMultinodeRedeployContinuousModeSelfTest extends GridAbstractMultinodeRedeployTest {
     /**
      * Test GridDeploymentMode.CONTINUOUS mode.
      *
      * @throws Throwable if error occur.
      */
+    @Test
     public void testContinuousMode() throws Throwable {
         processTest(CONTINUOUS);
     }

@@ -95,7 +95,7 @@ class ClusterCachesInfo {
     private final ConcurrentMap<String, DynamicCacheDescriptor> registeredTemplates = new ConcurrentHashMap<>();
 
     /** Caches currently being restarted. */
-    private final Collection<String> restartingCaches = new GridConcurrentHashSet<>();
+    private final Set<String> restartingCaches = new GridConcurrentHashSet<>();
 
     /** */
     private final IgniteLogger log;
@@ -1928,6 +1928,14 @@ class ClusterCachesInfo {
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "encryptionEnabled", "Encrypted",
             cfg.isEncryptionEnabled(), startCfg.isEncryptionEnabled(), true);
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg,
+            "diskPageCompression", "Disk page compression",
+            cfg.getDiskPageCompression(), startCfg.getDiskPageCompression(), true);
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg,
+            "diskPageCompressionLevel", "Disk page compression level",
+            cfg.getDiskPageCompressionLevel(), startCfg.getDiskPageCompressionLevel(), true);
     }
 
     /**

@@ -17,8 +17,6 @@
 
 package org.apache.ignite.testframework.junits;
 
-import javax.cache.configuration.Factory;
-import javax.cache.configuration.FactoryBuilder;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
@@ -43,6 +41,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.configuration.Factory;
+import javax.cache.configuration.FactoryBuilder;
 import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -62,6 +62,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -101,10 +102,10 @@ import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
@@ -133,6 +134,7 @@ import org.springframework.context.support.FileSystemXmlApplicationContext;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
@@ -162,6 +164,9 @@ public abstract class GridAbstractTest extends TestCase {
         setAddresses(Collections.singleton("127.0.0.1:47500..47509"));
     }};
 
+    /** Shared static IP finder which is used in configuration at nodes startup <b>for all test methods in class</b>. */
+    protected static TcpDiscoveryIpFinder sharedStaticIpFinder;
+
     /** */
     private static final int DFLT_TOP_WAIT_TIMEOUT = 2000;
 
@@ -170,9 +175,6 @@ public abstract class GridAbstractTest extends TestCase {
 
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
-
-    /** Show that test is currently running. */
-    public static volatile boolean testIsRunning = false;
 
     /** Supports obtaining test name for JUnit4 cases. */
     @Rule public transient TestName nameRule = new TestName();
@@ -620,6 +622,8 @@ public abstract class GridAbstractTest extends TestCase {
         }
 
         if (isFirstTest()) {
+            sharedStaticIpFinder = new TcpDiscoveryVmIpFinder(true);
+
             info(">>> Starting test class: " + testClassDescription() + " <<<");
 
             if (isSafeTopology())
@@ -783,9 +787,6 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected final Ignite startGridsMultiThreaded(int init, int cnt) throws Exception {
-        if (isMultiJvm())
-            fail("https://issues.apache.org/jira/browse/IGNITE-648");
-
         assert init >= 0;
         assert cnt > 0;
 
@@ -1141,7 +1142,6 @@ public abstract class GridAbstractTest extends TestCase {
      * @param igniteInstanceName Ignite instance name.
      * @param cancel Cancel flag.
      */
-    @SuppressWarnings({"deprecation"})
     protected void stopGrid(@Nullable String igniteInstanceName, boolean cancel) {
         stopGrid(igniteInstanceName, cancel, true);
     }
@@ -1151,7 +1151,6 @@ public abstract class GridAbstractTest extends TestCase {
      * @param cancel Cancel flag.
      * @param awaitTop Await topology change flag.
      */
-    @SuppressWarnings({"deprecation"})
     protected void stopGrid(@Nullable String igniteInstanceName, boolean cancel, boolean awaitTop) {
         try {
             IgniteEx ignite = grid(igniteInstanceName);
@@ -1544,9 +1543,6 @@ public abstract class GridAbstractTest extends TestCase {
         if (cfg.getDiscoverySpi() instanceof TcpDiscoverySpi)
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(getTestTimeout());
 
-        if (isMultiJvm())
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(LOCAL_IP_FINDER);
-
         return cfg;
     }
 
@@ -1626,7 +1622,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param marshaller Marshaller to get checkpoint path for.
      * @return Path for specific marshaller.
      */
-    @SuppressWarnings({"IfMayBeConditional", "deprecation"})
+    @SuppressWarnings({"IfMayBeConditional"})
     protected String getDefaultCheckpointPath(Marshaller marshaller) {
         if (marshaller instanceof JdkMarshaller)
             return SharedFsCheckpointSpi.DFLT_DIR_PATH + "/jdk/";
@@ -1697,18 +1693,13 @@ public abstract class GridAbstractTest extends TestCase {
         // Set metrics update interval to 1 second to speed up tests.
         cfg.setMetricsUpdateFrequency(1000);
 
-        String mcastAddr = GridTestUtils.getNextMulticastGroup(getClass());
+        if (!isMultiJvm()) {
+            assert sharedStaticIpFinder != null : "Shared static IP finder should be initialized at this point.";
 
-        TcpDiscoveryMulticastIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
-
-        ipFinder.setAddresses(Collections.singleton("127.0.0.1:" + TcpDiscoverySpi.DFLT_PORT));
-
-        if (!F.isEmpty(mcastAddr)) {
-            ipFinder.setMulticastGroup(mcastAddr);
-            ipFinder.setMulticastPort(GridTestUtils.getNextMulticastPort(getClass()));
+            discoSpi.setIpFinder(sharedStaticIpFinder);
         }
-
-        discoSpi.setIpFinder(ipFinder);
+        else
+            discoSpi.setIpFinder(LOCAL_IP_FINDER);
 
         cfg.setDiscoverySpi(discoSpi);
 
@@ -1738,17 +1729,20 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Failure handler implementation.
      */
     protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new TestFailingFailureHandler();
+        return new NoOpFailureHandler();
     }
 
     /**
      * @return New cache configuration with modified defaults.
      */
+    @SuppressWarnings("unchecked")
     public static CacheConfiguration defaultCacheConfiguration() {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        cfg.setAtomicityMode(TRANSACTIONAL);
-        cfg.setNearConfiguration(new NearCacheConfiguration());
+        if (MvccFeatureChecker.forcedMvcc())
+            cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
+        else
+            cfg.setAtomicityMode(TRANSACTIONAL).setNearConfiguration(new NearCacheConfiguration<>());
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setEvictionPolicy(null);
 
@@ -2114,8 +2108,6 @@ public abstract class GridAbstractTest extends TestCase {
 
         Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
             @Override public void run() {
-                testIsRunning = true;
-
                 try {
                     if (forceFailure)
                         fail("Forced failure: " + forceFailureMsg);
@@ -2126,8 +2118,6 @@ public abstract class GridAbstractTest extends TestCase {
                     IgniteClosure<Throwable, Throwable> hnd = errorHandler();
 
                     ex.set(hnd != null ? hnd.apply(e) : e);
-                } finally {
-                    testIsRunning = false;
                 }
             }
         });

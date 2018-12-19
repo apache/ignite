@@ -36,8 +36,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -58,6 +56,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
@@ -69,6 +70,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -114,14 +116,10 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearTx1Implicit() throws Exception {
         nearTx1(null);
     }
@@ -129,6 +127,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearTx1Optimistic() throws Exception {
         nearTx1(OPTIMISTIC);
     }
@@ -136,6 +135,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearTx1Pessimistic() throws Exception {
         nearTx1(PESSIMISTIC);
     }
@@ -220,6 +220,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearTx2Implicit() throws Exception {
         nearTx2(null);
     }
@@ -227,6 +228,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearTx2Optimistic() throws Exception {
         nearTx2(OPTIMISTIC);
     }
@@ -234,6 +236,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearTx2Pessimistic() throws Exception {
         nearTx2(PESSIMISTIC);
     }
@@ -326,6 +329,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxWithStoreImplicit() throws Exception {
         txWithStore(null, true);
     }
@@ -333,6 +337,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxWithStoreOptimistic() throws Exception {
         txWithStore(OPTIMISTIC, true);
     }
@@ -340,6 +345,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxWithStorePessimistic() throws Exception {
         txWithStore(PESSIMISTIC, true);
     }
@@ -347,6 +353,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxWithStoreNoWriteThroughImplicit() throws Exception {
         txWithStore(null, false);
     }
@@ -354,6 +361,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxWithStoreNoWriteThroughOptimistic() throws Exception {
         txWithStore(OPTIMISTIC, false);
     }
@@ -361,6 +369,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxWithStoreNoWriteThroughPessimistic() throws Exception {
         txWithStore(PESSIMISTIC, false);
     }

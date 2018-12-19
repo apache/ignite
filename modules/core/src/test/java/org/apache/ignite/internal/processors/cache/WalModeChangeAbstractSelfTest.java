@@ -27,6 +27,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -39,6 +42,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  * Test dynamic WAL mode change.
  */
 
+@RunWith(JUnit4.class)
 public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonAbstractSelfTest {
     /** Whether coordinator node should be filtered out. */
     private final boolean filterOnCrd;
@@ -73,6 +77,7 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNullCacheName() throws Exception {
         forAllNodes(new IgniteInClosureX<Ignite>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
@@ -92,6 +97,7 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNoCache() throws Exception {
         forAllNodes(new IgniteInClosureX<Ignite>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
@@ -112,6 +118,7 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSharedCacheGroup() throws Exception {
         forAllNodes(new IgniteInClosureX<Ignite>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
@@ -147,6 +154,7 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPersistenceDisabled() throws Exception {
         forAllNodes(new IgniteInClosureX<Ignite>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
@@ -183,6 +191,7 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalCache() throws Exception {
         if (jdbc)
             // Doesn't make sense for JDBC.
@@ -220,6 +229,7 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEnableDisablePartitionedAtomic() throws Exception {
         checkEnableDisable(PARTITIONED, ATOMIC);
     }
@@ -229,6 +239,7 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEnableDisablePartitionedTransactional() throws Exception {
         checkEnableDisable(PARTITIONED, TRANSACTIONAL);
     }
@@ -238,6 +249,7 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEnableDisableReplicatedAtomic() throws Exception {
         checkEnableDisable(REPLICATED, ATOMIC);
     }
@@ -247,6 +259,7 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEnableDisableReplicatedTransactional() throws Exception {
         checkEnableDisable(REPLICATED, TRANSACTIONAL);
     }
@@ -281,6 +294,7 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDisablingProhibition() throws Exception {
         forAllNodes(new IgniteInClosureX<Ignite>() {
             @Override public void applyx(Ignite ig) throws IgniteCheckedException {

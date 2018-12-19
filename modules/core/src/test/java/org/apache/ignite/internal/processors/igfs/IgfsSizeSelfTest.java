@@ -52,6 +52,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -61,6 +64,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 /**
  * {@link IgfsAttributes} test case.
  */
+@RunWith(JUnit4.class)
 public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     /** How many grids to start. */
     private static final int GRID_CNT = 3;
@@ -173,6 +177,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitioned() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = true;
@@ -185,6 +190,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testColocated() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = false;
@@ -197,6 +203,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicated() throws Exception {
         cacheMode = REPLICATED;
 
@@ -208,6 +215,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedOversize() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = true;
@@ -220,6 +228,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testColocatedOversize() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = false;
@@ -232,6 +241,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedOversize() throws Exception {
         cacheMode = REPLICATED;
 
@@ -243,6 +253,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedPreload() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = true;
@@ -255,6 +266,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testColocatedPreload() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = false;

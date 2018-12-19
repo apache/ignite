@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.dataset;
 
+import junit.framework.JUnit4TestAdapter;
+import junit.framework.TestSuite;
 import org.apache.ignite.ml.dataset.feature.ObjectHistogramTest;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilderTest;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetTest;
@@ -28,24 +30,32 @@ import org.apache.ignite.ml.dataset.primitive.DatasetWrapperTest;
 import org.apache.ignite.ml.dataset.primitive.SimpleDatasetTest;
 import org.apache.ignite.ml.dataset.primitive.SimpleLabeledDatasetTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for all tests located in org.apache.ignite.ml.dataset.* package.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    DatasetWrapperTest.class,
-    ComputeUtilsTest.class,
-    DatasetAffinityFunctionWrapperTest.class,
-    PartitionDataStorageTest.class,
-    CacheBasedDatasetBuilderTest.class,
-    CacheBasedDatasetTest.class,
-    LocalDatasetBuilderTest.class,
-    SimpleDatasetTest.class,
-    SimpleLabeledDatasetTest.class,
-    ObjectHistogramTest.class
-})
+@RunWith(AllTests.class)
 public class DatasetTestSuite {
-    // No-op.
+    /** */
+    public static TestSuite suite() {
+        TestSuite suite = new TestSuite();
+
+        /** JUnit 4 tests. */
+        suite.addTest(new JUnit4TestAdapter(DatasetWrapperTest.class));
+        suite.addTest(new JUnit4TestAdapter(DatasetAffinityFunctionWrapperTest.class));
+        suite.addTest(new JUnit4TestAdapter(PartitionDataStorageTest.class));
+        suite.addTest(new JUnit4TestAdapter(LocalDatasetBuilderTest.class));
+        suite.addTest(new JUnit4TestAdapter(SimpleDatasetTest.class));
+        suite.addTest(new JUnit4TestAdapter(SimpleLabeledDatasetTest.class));
+        suite.addTest(new JUnit4TestAdapter(DatasetWrapperTest.class));
+        suite.addTest(new JUnit4TestAdapter(ObjectHistogramTest.class));
+
+        /** JUnit 3 tests. */
+        suite.addTestSuite(ComputeUtilsTest.class);
+        suite.addTestSuite(CacheBasedDatasetBuilderTest.class);
+        suite.addTestSuite(CacheBasedDatasetTest.class);
+
+        return suite;
+    }
 }

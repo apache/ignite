@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.spi.collision.fifoqueue.GridFifoQueueCollisionSpiConfigSelfTest;
 import org.apache.ignite.spi.collision.fifoqueue.GridFifoQueueCollisionSpiSelfTest;
@@ -36,27 +37,26 @@ import org.apache.ignite.spi.collision.priorityqueue.GridPriorityQueueCollisionS
 public class IgniteSpiCollisionSelfTestSuite extends TestSuite {
     /**
      * @return Failover SPI tests suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Collision SPI Test Suite");
 
         // Priority.
-        suite.addTestSuite(GridPriorityQueueCollisionSpiSelfTest.class);
-        suite.addTestSuite(GridPriorityQueueCollisionSpiStartStopSelfTest.class);
-        suite.addTestSuite(GridPriorityQueueCollisionSpiConfigSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridPriorityQueueCollisionSpiSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridPriorityQueueCollisionSpiStartStopSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridPriorityQueueCollisionSpiConfigSelfTest.class));
 
         // FIFO.
-        suite.addTestSuite(GridFifoQueueCollisionSpiSelfTest.class);
-        suite.addTestSuite(GridFifoQueueCollisionSpiStartStopSelfTest.class);
-        suite.addTestSuite(GridFifoQueueCollisionSpiConfigSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridFifoQueueCollisionSpiSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridFifoQueueCollisionSpiStartStopSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridFifoQueueCollisionSpiConfigSelfTest.class));
 
         // Job Stealing.
-        suite.addTestSuite(GridJobStealingCollisionSpiSelfTest.class);
-        suite.addTestSuite(GridJobStealingCollisionSpiAttributesSelfTest.class);
-        suite.addTestSuite(GridJobStealingCollisionSpiCustomTopologySelfTest.class);
-        suite.addTestSuite(GridJobStealingCollisionSpiStartStopSelfTest.class);
-        suite.addTestSuite(GridJobStealingCollisionSpiConfigSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridJobStealingCollisionSpiSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridJobStealingCollisionSpiAttributesSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridJobStealingCollisionSpiCustomTopologySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridJobStealingCollisionSpiStartStopSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridJobStealingCollisionSpiConfigSelfTest.class));
 
         return suite;
     }

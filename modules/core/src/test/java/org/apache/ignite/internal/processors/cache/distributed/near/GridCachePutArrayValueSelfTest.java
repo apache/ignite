@@ -28,12 +28,16 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Specific test case for GG-3946
  */
+@RunWith(JUnit4.class)
 public class GridCachePutArrayValueSelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -60,6 +64,7 @@ public class GridCachePutArrayValueSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInternalKeys() throws Exception {
         assert gridCount() >= 2;
 

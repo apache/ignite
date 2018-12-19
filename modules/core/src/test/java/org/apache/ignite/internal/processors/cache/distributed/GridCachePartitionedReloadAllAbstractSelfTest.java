@@ -40,6 +40,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -47,6 +50,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Check reloadAll() on partitioned cache.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends GridCommonAbstractTest {
     /** Amount of nodes in the grid. */
     private static final int GRID_CNT = 4;
@@ -175,6 +179,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testReloadAll() throws Exception {
         // Fill caches with values.
         for (IgniteCache<Integer, String> cache : caches) {
