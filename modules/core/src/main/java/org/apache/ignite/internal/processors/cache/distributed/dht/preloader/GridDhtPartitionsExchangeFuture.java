@@ -2197,7 +2197,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     // Collect all stages timings.
                     List<String> timings = timeBag.stagesTimings();
 
-                    if (discoveryLag.get1() != 0)
+                    if (discoveryLag != null && discoveryLag.get1() != 0)
                         timings.add("Discovery lag=" + discoveryLag.get1() +
                             " ms, Latest started node id=" + discoveryLag.get2());
 
