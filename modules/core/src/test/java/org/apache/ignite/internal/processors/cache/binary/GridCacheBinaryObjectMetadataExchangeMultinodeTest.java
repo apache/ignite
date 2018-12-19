@@ -95,6 +95,8 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
             });
         }
 
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(sharedStaticIpFinder);
+
         cfg.setMarshaller(new BinaryMarshaller());
 
         cfg.setClientMode(clientMode);
