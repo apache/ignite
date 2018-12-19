@@ -38,6 +38,9 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -49,6 +52,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 /**
  * IPC cache test.
  */
+@RunWith(JUnit4.class)
 public class IgniteHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -155,6 +159,7 @@ public class IgniteHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTe
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testIpcCache() throws Exception {
         Field cacheField = HadoopIgfsIpcIo.class.getDeclaredField("ipcCache");
 

@@ -41,6 +41,9 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.configuration.DiskPageCompression.LZ4;
 import static org.apache.ignite.configuration.DiskPageCompression.SKIP_GARBAGE;
@@ -57,6 +60,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 
 /**
  */
+@RunWith(JUnit4.class)
 public class CompressionProcessorTest extends GridCommonAbstractTest {
     /** */
     private static final int ITEM_SIZE = 6; // To fill the whole page.
@@ -91,6 +95,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testDataPageCompact16() throws IgniteCheckedException {
         blockSize = 16;
         compression = SKIP_GARBAGE;
@@ -101,6 +106,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testDataPageCompact128() throws IgniteCheckedException {
         blockSize = 128;
         compression = SKIP_GARBAGE;
@@ -111,6 +117,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testDataPageCompact1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = SKIP_GARBAGE;
@@ -121,6 +128,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testDataPageCompact2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = SKIP_GARBAGE;
@@ -131,6 +139,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testDataPageZstd16() throws IgniteCheckedException {
         blockSize = 16;
         compression = ZSTD;
@@ -142,6 +151,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testDataPageZstd128() throws IgniteCheckedException {
         blockSize = 128;
         compression = ZSTD;
@@ -153,6 +163,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testDataPageZstd1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = ZSTD;
@@ -164,6 +175,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testDataPageZstd2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = ZSTD;
@@ -175,6 +187,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testDataPageSnappy16() throws IgniteCheckedException {
         blockSize = 16;
         compression = SNAPPY;
@@ -185,6 +198,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testDataPageSnappy128() throws IgniteCheckedException {
         blockSize = 128;
         compression = SNAPPY;
@@ -195,6 +209,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testDataPageSnappy1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = SNAPPY;
@@ -205,6 +220,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testDataPageSnappy2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = SNAPPY;
@@ -216,6 +232,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testDataPageLz4Fast16() throws IgniteCheckedException {
         blockSize = 16;
         compression = LZ4;
@@ -227,6 +244,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testDataPageLz4Fast128() throws IgniteCheckedException {
         blockSize = 128;
         compression = LZ4;
@@ -238,6 +256,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testDataPageLz4Fast1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = LZ4;
@@ -249,6 +268,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testDataPageLz4Fast2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = LZ4;
@@ -260,6 +280,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testDataPageLz4Slow16() throws IgniteCheckedException {
         blockSize = 16;
         compression = LZ4;
@@ -271,6 +292,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testDataPageLz4Slow128() throws IgniteCheckedException {
         blockSize = 128;
         compression = LZ4;
@@ -282,6 +304,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testDataPageLz4Slow1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = LZ4;
@@ -293,6 +316,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testDataPageLz4Slow2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = LZ4;
@@ -304,6 +328,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInnerPageCompact16() throws IgniteCheckedException {
         blockSize = 16;
         compression = SKIP_GARBAGE;
@@ -314,6 +339,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testLeafPageCompact16() throws IgniteCheckedException {
         blockSize = 16;
         compression = SKIP_GARBAGE;
@@ -324,6 +350,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInnerPageZstd16() throws IgniteCheckedException {
         blockSize = 16;
         compression = ZSTD;
@@ -335,6 +362,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testLeafPageZstd16() throws IgniteCheckedException {
         blockSize = 16;
         compression = ZSTD;
@@ -347,6 +375,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInnerPageLz4Fast16() throws IgniteCheckedException {
         blockSize = 16;
         compression = LZ4;
@@ -358,6 +387,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testLeafPageLz4Fast16() throws IgniteCheckedException {
         blockSize = 16;
         compression = LZ4;
@@ -369,6 +399,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInnerPageLz4Slow16() throws IgniteCheckedException {
         blockSize = 16;
         compression = LZ4;
@@ -380,6 +411,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testLeafPageLz4Slow16() throws IgniteCheckedException {
         blockSize = 16;
         compression = LZ4;
@@ -391,6 +423,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInnerPageSnappy16() throws IgniteCheckedException {
         blockSize = 16;
         compression = SNAPPY;
@@ -401,6 +434,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testLeafPageSnappy16() throws IgniteCheckedException {
         blockSize = 16;
         compression = SNAPPY;
@@ -411,6 +445,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInnerPageCompact128() throws IgniteCheckedException {
         blockSize = 128;
         compression = SKIP_GARBAGE;
@@ -421,6 +456,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testLeafPageCompact128() throws IgniteCheckedException {
         blockSize = 128;
         compression = SKIP_GARBAGE;
@@ -431,6 +467,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInnerPageZstd128() throws IgniteCheckedException {
         blockSize = 128;
         compression = ZSTD;
@@ -442,6 +479,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testLeafPageZstd128() throws IgniteCheckedException {
         blockSize = 128;
         compression = ZSTD;
@@ -453,6 +491,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInnerPageLz4Fast128() throws IgniteCheckedException {
         blockSize = 128;
         compression = LZ4;
@@ -464,6 +503,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testLeafPageLz4Fast128() throws IgniteCheckedException {
         blockSize = 128;
         compression = LZ4;
@@ -475,6 +515,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInnerPageLz4Slow128() throws IgniteCheckedException {
         blockSize = 128;
         compression = LZ4;
@@ -486,6 +527,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testLeafPageLz4Slow128() throws IgniteCheckedException {
         blockSize = 128;
         compression = LZ4;
@@ -497,6 +539,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInnerPageSnappy128() throws IgniteCheckedException {
         blockSize = 128;
         compression = SNAPPY;
@@ -507,6 +550,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testLeafPageSnappy128() throws IgniteCheckedException {
         blockSize = 128;
         compression = SNAPPY;
@@ -517,6 +561,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInnerPageCompact1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = SKIP_GARBAGE;
@@ -527,6 +572,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testLeafPageCompact1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = SKIP_GARBAGE;
@@ -537,6 +583,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInnerPageZstd1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = ZSTD;
@@ -548,6 +595,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testLeafPageZstd1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = ZSTD;
@@ -559,6 +607,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInnerPageLz4Fast1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = LZ4;
@@ -570,6 +619,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testLeafPageLz4Fast1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = LZ4;
@@ -581,6 +631,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInnerPageLz4Slow1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = LZ4;
@@ -592,6 +643,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testLeafPageLz4Slow1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = LZ4;
@@ -603,6 +655,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInnerPageSnappy1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = SNAPPY;
@@ -613,6 +666,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testLeafPageSnappy1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = SNAPPY;
@@ -623,6 +677,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInnerPageCompact2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = SKIP_GARBAGE;
@@ -633,6 +688,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testLeafPageCompact2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = SKIP_GARBAGE;
@@ -643,6 +699,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInnerPageZstd2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = ZSTD;
@@ -654,6 +711,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testLeafPageZstd2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = ZSTD;
@@ -665,6 +723,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInnerPageLz4Fast2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = LZ4;
@@ -676,6 +735,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testLeafPageLz4Fast2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = LZ4;
@@ -687,6 +747,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInnerPageLz4Slow2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = LZ4;
@@ -698,6 +759,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testLeafPageLz4Slow2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = LZ4;
@@ -709,6 +771,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInnerPageSnappy2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = SNAPPY;
@@ -719,6 +782,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testLeafPageSnappy2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = SNAPPY;

@@ -34,6 +34,17 @@ public interface Model<T, V> extends IgniteFunction<T, V> {
     }
 
     /**
+     * Get a composition model of the form {@code x -> after(mdl(x))}.
+     *
+     * @param after Function to apply after this model.
+     * @param <V1> Type of input of function applied before this model.
+     * @return Composition model of the form {@code x -> after(mdl(x))}.
+     */
+    public default <V1> Model<T, V1> andThen(IgniteFunction<V, V1> after) {
+        return t -> after.apply(apply(t));
+    }
+
+    /**
      * @param pretty Use pretty mode.
      */
     public default String toString(boolean pretty) {

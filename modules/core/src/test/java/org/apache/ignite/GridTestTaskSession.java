@@ -153,7 +153,6 @@ public class GridTestTaskSession implements ComputeTaskSession {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <K, V> V getAttribute(K key) {
         return (V)attrs.get(key);
     }

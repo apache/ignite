@@ -33,10 +33,14 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfT
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test to check that starting node with PK index of the old format present doesn't break anything.
  */
+@RunWith(JUnit4.class)
 public class IgnitePKIndexesMigrationToUnwrapPkTest extends IgnitePersistenceCompatibilityAbstractTest {
     /** */
     private static String TABLE_NAME = "TEST_IDX_TABLE";
@@ -73,6 +77,7 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IgnitePersistenceCom
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSecondaryIndexesMigration_2_5() throws Exception {
         doTestStartupWithOldVersion("2.5.0");
     }
@@ -82,6 +87,7 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IgnitePersistenceCom
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSecondaryIndexesMigration_2_4() throws Exception {
         doTestStartupWithOldVersion("2.4.0");
     }

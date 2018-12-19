@@ -38,6 +38,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
@@ -48,6 +51,7 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_N
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** */
+@RunWith(JUnit4.class)
 public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommonAbstractTest {
     /** */
     private static final long FUT_TIMEOUT = 10_000L;
@@ -213,6 +217,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTooLongStringValueFail() throws Exception {
         IgniteCache<String, String> cache = jcache(0, STR_CACHE_NAME);
 
@@ -228,6 +233,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTooLongStringKeyFail() throws Exception {
         IgniteCache<String, String> cache = jcache(0, STR_CACHE_NAME);
 
@@ -241,6 +247,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTooLongStringValueFieldFail() throws Exception {
         IgniteCache<Organization, Address> cache = jcache(0, OBJ_CACHE_NAME);
 
@@ -256,6 +263,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTooLongStringKeyFieldFail() throws Exception {
         IgniteCache<Organization, Address> cache = jcache(0, OBJ_CACHE_NAME);
 
@@ -269,6 +277,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTooLongStringKeyFail2() throws Exception {
         doCheckPutTooLongStringKeyFail2(STR_ORG_CACHE_NAME);
     }
@@ -276,6 +285,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTooLongStringKeyFail3() throws Exception {
         doCheckPutTooLongStringKeyFail2(STR_ORG_WITH_FIELDS_CACHE_NAME);
     }
@@ -296,6 +306,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutLongStringValue() throws Exception {
         IgniteCache<String, String> cache = jcache(0, STR_CACHE_NAME);
 
@@ -311,6 +322,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutLongStringKey() throws Exception {
         IgniteCache<String, String> cache = jcache(0, STR_CACHE_NAME);
 
@@ -324,6 +336,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutLongStringValueField() throws Exception {
         IgniteCache<Organization, Address> cache = jcache(0, OBJ_CACHE_NAME);
 
@@ -339,6 +352,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutLongStringKeyField() throws Exception {
         IgniteCache<Organization, Address> cache = jcache(0, OBJ_CACHE_NAME);
 
@@ -352,6 +366,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutLongStringKey2() throws Exception {
         doCheckPutLongStringKey2(STR_ORG_CACHE_NAME);
     }
@@ -359,6 +374,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutLongStringKey3() throws Exception {
         doCheckPutLongStringKey2(STR_ORG_WITH_FIELDS_CACHE_NAME);
     }
@@ -379,6 +395,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTooLongDecimalValueFail() throws Exception {
         IgniteCache<BigDecimal, BigDecimal> cache = jcache(0, DEC_CACHE_NAME_FOR_PREC);
 
@@ -394,6 +411,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTooLongDecimalKeyFail() throws Exception {
         IgniteCache<BigDecimal, BigDecimal> cache = jcache(0, DEC_CACHE_NAME_FOR_PREC);
 
@@ -407,6 +425,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTooLongDecimalKeyFail2() throws Exception {
         IgniteCache<BigDecimal, Employee> cache = jcache(0, DEC_EMPL_CACHE_NAME_FOR_PREC);
 
@@ -420,6 +439,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTooLongDecimalValueFieldFail() throws Exception {
         IgniteCache<DecOrganization, Employee> cache = jcache(0, OBJ_CACHE_NAME_FOR_PREC);
 
@@ -435,6 +455,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTooLongDecimalValueFieldFail2() throws Exception {
         IgniteCache<BigDecimal, Employee> cache = jcache(0, DEC_EMPL_CACHE_NAME_FOR_PREC);
 
@@ -450,6 +471,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTooLongDecimalKeyFieldFail() throws Exception {
         IgniteCache<DecOrganization, Employee> cache = jcache(0, OBJ_CACHE_NAME_FOR_PREC);
 
@@ -463,6 +485,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTooLongDecimalValueScaleFail() throws Exception {
         IgniteCache<BigDecimal, BigDecimal> cache = jcache(0, DEC_CACHE_NAME_FOR_SCALE);
 
@@ -478,6 +501,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTooLongDecimalKeyScaleFail() throws Exception {
         IgniteCache<BigDecimal, BigDecimal> cache = jcache(0, DEC_CACHE_NAME_FOR_SCALE);
 
@@ -491,6 +515,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTooLongDecimalKeyScaleFail2() throws Exception {
         IgniteCache<BigDecimal, Employee> cache = jcache(0, DEC_EMPL_CACHE_NAME_FOR_SCALE);
 
@@ -504,6 +529,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTooLongDecimalValueFieldScaleFail() throws Exception {
         IgniteCache<DecOrganization, Employee> cache = jcache(0, OBJ_CACHE_NAME_FOR_SCALE);
 
@@ -519,6 +545,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTooLongDecimalValueFieldScaleFail2() throws Exception {
         IgniteCache<BigDecimal, Employee> cache = jcache(0, DEC_EMPL_CACHE_NAME_FOR_SCALE);
 
@@ -534,6 +561,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTooLongDecimalKeyFieldScaleFail() throws Exception {
         IgniteCache<DecOrganization, Employee> cache = jcache(0, OBJ_CACHE_NAME_FOR_SCALE);
 
@@ -547,6 +575,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutValidDecimalKeyAndValue() throws Exception {
         IgniteCache<BigDecimal, BigDecimal> cache = jcache(0, DEC_CACHE_NAME_FOR_SCALE);
 
@@ -562,6 +591,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutValidDecimalKeyAndValueField() throws Exception {
         IgniteCache<DecOrganization, Employee> cache = jcache(0, OBJ_CACHE_NAME_FOR_SCALE);
 
@@ -577,6 +607,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutValidDecimalKeyAndValueField2() throws Exception {
         IgniteCache<BigDecimal, Employee> cache = jcache(0, DEC_EMPL_CACHE_NAME_FOR_SCALE);
 

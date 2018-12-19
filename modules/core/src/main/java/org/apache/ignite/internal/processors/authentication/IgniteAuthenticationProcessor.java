@@ -383,7 +383,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
         if (!ctx.clientNode()) {
             users = new ConcurrentHashMap<>();
@@ -1309,7 +1308,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             if (ctx.clientNode())
                 return;

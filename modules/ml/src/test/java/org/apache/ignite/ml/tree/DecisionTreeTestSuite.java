@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.tree;
 
+import junit.framework.JUnit4TestAdapter;
+import junit.framework.TestSuite;
 import org.apache.ignite.ml.tree.data.DecisionTreeDataTest;
 import org.apache.ignite.ml.tree.impurity.gini.GiniImpurityMeasureCalculatorTest;
 import org.apache.ignite.ml.tree.impurity.gini.GiniImpurityMeasureTest;
@@ -25,24 +27,32 @@ import org.apache.ignite.ml.tree.impurity.mse.MSEImpurityMeasureTest;
 import org.apache.ignite.ml.tree.impurity.util.SimpleStepFunctionCompressorTest;
 import org.apache.ignite.ml.tree.impurity.util.StepFunctionTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for all tests located in {@link org.apache.ignite.ml.tree} package.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    DecisionTreeClassificationTrainerTest.class,
-    DecisionTreeRegressionTrainerTest.class,
-    DecisionTreeClassificationTrainerIntegrationTest.class,
-    DecisionTreeRegressionTrainerIntegrationTest.class,
-    DecisionTreeDataTest.class,
-    GiniImpurityMeasureCalculatorTest.class,
-    GiniImpurityMeasureTest.class,
-    MSEImpurityMeasureCalculatorTest.class,
-    MSEImpurityMeasureTest.class,
-    StepFunctionTest.class,
-    SimpleStepFunctionCompressorTest.class
-})
+@RunWith(AllTests.class)
 public class DecisionTreeTestSuite {
+    /** */
+    public static TestSuite suite() {
+        TestSuite suite = new TestSuite();
+
+        /** JUnit 4 tests. */
+        suite.addTest(new JUnit4TestAdapter(DecisionTreeClassificationTrainerTest.class));
+        suite.addTest(new JUnit4TestAdapter(DecisionTreeRegressionTrainerTest.class));
+        suite.addTest(new JUnit4TestAdapter(DecisionTreeDataTest.class));
+        suite.addTest(new JUnit4TestAdapter(GiniImpurityMeasureCalculatorTest.class));
+        suite.addTest(new JUnit4TestAdapter(GiniImpurityMeasureTest.class));
+        suite.addTest(new JUnit4TestAdapter(MSEImpurityMeasureCalculatorTest.class));
+        suite.addTest(new JUnit4TestAdapter(MSEImpurityMeasureTest.class));
+        suite.addTest(new JUnit4TestAdapter(StepFunctionTest.class));
+        suite.addTest(new JUnit4TestAdapter(SimpleStepFunctionCompressorTest.class));
+
+        /** JUnit 3 tests. */
+        suite.addTestSuite(DecisionTreeRegressionTrainerIntegrationTest.class);
+        suite.addTestSuite(DecisionTreeClassificationTrainerIntegrationTest.class);
+
+        return suite;
+    }
 }
