@@ -106,7 +106,7 @@
       * @see #runTest(Class, IgniteInClosure)
       */
      @Test
-     public void preventNullifyingCacheAffinityChangeMessage() throws Exception {
+     public void preventNullifyingCacheAffinityChangeMessageTest() throws Exception {
          runTest(CacheAffinityChangeMessage.class, new IgniteInClosure<Ignite>() {
              @Override public void apply(Ignite ignite) {
                  try {
@@ -124,7 +124,7 @@
      }
 
      /**
-      * <b>Strongly depends on internal logic of {@link GridEventStorageManager}.</b>
+      * <b>Strongly depends on internal implementation of {@link GridEventStorageManager}.</b>
       * <p/>
       * Tests that custom message's (of given type) field of instance {@link DiscoveryCustomEvent} won't be nullified
       * before last discovery listener will be able to handel it.
