@@ -119,6 +119,12 @@ public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest
     private IgniteConfiguration configuration(int nodeIdx, boolean client) throws Exception {
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(nodeIdx));
 
+        TcpDiscoverySpi testSpi = new TestDiscoverySpi();
+
+        testSpi.setIpFinder(sharedStaticIpFinder);
+
+        cfg.setDiscoverySpi(testSpi);
+
         cfg.setClientMode(client);
 
         return cfg;
