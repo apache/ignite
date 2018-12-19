@@ -68,9 +68,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  */
 @RunWith(JUnit4.class)
 public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstractTest {
-    static {
-        System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
-    }
     /** */
     private static boolean disableWalDuringRebalancing = true;
 
