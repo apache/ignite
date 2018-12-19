@@ -1,7 +1,7 @@
-Ignite Processors
------------------
+Apache Ignite Processors
+------------------------
 
-A processor is Ignite component with the lifecycle. This lifecycle is associated with Ignite Node lifecycle.
+A processor is Apache Ignite component with the lifecycle. This lifecycle is associated with Ignite Node lifecycle.
 
 Despite Managers, Ignite processors are not associated with an SPI.
 

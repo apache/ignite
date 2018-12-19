@@ -17,7 +17,9 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.compress.CompressionConfigurationTest;
 import org.apache.ignite.internal.processors.compress.CompressionProcessorTest;
 import org.apache.ignite.internal.processors.compress.DiskPageCompressionIntegrationAsyncTest;
 import org.apache.ignite.internal.processors.compress.DiskPageCompressionIntegrationTest;
@@ -36,13 +38,14 @@ public class IgnitePdsCompressionTestSuite {
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite (with page compression).");
 
-        suite.addTestSuite(CompressionProcessorTest.class);
-        suite.addTestSuite(FileSystemUtilsTest.class);
-        suite.addTestSuite(DiskPageCompressionIntegrationTest.class);
-        suite.addTestSuite(DiskPageCompressionIntegrationAsyncTest.class);
+        suite.addTest(new JUnit4TestAdapter(CompressionConfigurationTest.class));
+        suite.addTest(new JUnit4TestAdapter(CompressionProcessorTest.class));
+        suite.addTest(new JUnit4TestAdapter(FileSystemUtilsTest.class));
+        suite.addTest(new JUnit4TestAdapter(DiskPageCompressionIntegrationTest.class));
+        suite.addTest(new JUnit4TestAdapter(DiskPageCompressionIntegrationAsyncTest.class));
 
         enableCompressionByDefault();
-        IgnitePdsTestSuite.addRealPageStoreTests(suite);
+        IgnitePdsTestSuite.addRealPageStoreTests(suite, null);
 
         return suite;
     }

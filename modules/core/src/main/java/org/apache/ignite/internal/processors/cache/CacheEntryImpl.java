@@ -79,7 +79,6 @@ public class CacheEntryImpl<K, V> implements Cache.Entry<K, V>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> cls) {
         if (cls.isAssignableFrom(getClass()))
             return cls.cast(this);

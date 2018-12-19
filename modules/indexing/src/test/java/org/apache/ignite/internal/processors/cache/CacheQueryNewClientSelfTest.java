@@ -28,10 +28,14 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for the case when client is started after the cache is already created.
  */
+@RunWith(JUnit4.class)
 public class CacheQueryNewClientSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -53,6 +57,7 @@ public class CacheQueryNewClientSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryFromNewClient() throws Exception {
         Ignite srv = startGrid("server");
 
@@ -88,6 +93,7 @@ public class CacheQueryNewClientSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryFromNewClientCustomSchemaName() throws Exception {
         Ignite srv = startGrid("server");
 

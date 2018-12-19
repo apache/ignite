@@ -26,6 +26,9 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 
@@ -44,6 +47,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  * </li>
  * </ul>
  */
+@RunWith(JUnit4.class)
 public class OptimizedMarshallerAopTest extends GridCommonAbstractTest {
     /** */
     private static final AtomicInteger cntr = new AtomicInteger();
@@ -71,6 +75,7 @@ public class OptimizedMarshallerAopTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUp() throws Exception {
         G.ignite().events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {

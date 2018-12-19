@@ -1,10 +1,9 @@
-Apache Ignite Internal Package.
--------------------------------
+Apache Ignite Internals
+-----------------------
 
 Contains implementation classes for Apache Ignite.
 
 *Ignite Components*
-
 
 All internal Ignite components implements [GridComponent.java](GridComponent.java) - interface for
 - [processors](processors) and for
