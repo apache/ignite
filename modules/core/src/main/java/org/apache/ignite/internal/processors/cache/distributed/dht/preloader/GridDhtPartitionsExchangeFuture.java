@@ -2246,7 +2246,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * Calculates discovery lag (Maximal difference between exchange start times across all nodes).
      *
-     * @param declared Single messages that were expected to be recived during exchange.
+     * @param declared Single messages that were expected to be received during exchange.
      * @param merged Single messages from nodes that were merged during exchange.
      *
      * @return Pair with discovery lag and node id which started exchange later than others.

@@ -29,7 +29,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.jetbrains.annotations.NotNull;
 
 /**
- *
+ * Utility class to measure and collect timings of some execution workflow.
  */
 public class TimeBag {
     /** Initial global stage. */
