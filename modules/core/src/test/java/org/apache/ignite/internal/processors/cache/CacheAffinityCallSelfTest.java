@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.ignite.Ignite;
@@ -167,8 +168,14 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         assertTrue(client.configuration().isClientMode());
         assertNull(client.context().cache().cache(CACHE_NAME));
 
+        final int THREADS = 5;
+
+        CyclicBarrier b = new CyclicBarrier(THREADS + 1);
+
         final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
-            @Override public Object call() {
+            @Override public Object call() throws Exception {
+                b.await();
+
                 for (int i = 0; i < SRVS; ++i)
                     stopGrid(i, false);
 
@@ -177,8 +184,16 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         });
 
         try {
-            while (!fut.isDone())
-                client.compute().affinityCall(CACHE_NAME, key, new CheckCallable(key, null));
+            GridTestUtils.runMultiThreaded(new Callable<Object>() {
+                @Override public Void call() throws Exception {
+                    b.await();
+
+                    while (!fut.isDone())
+                        client.compute().affinityCall(CACHE_NAME, key, new CheckCallable(key, null));
+
+                    return null;
+                }
+            }, THREADS, "test-thread");
         }
         catch (ClusterTopologyException e) {
             log.info("Expected error: " + e);
@@ -214,12 +229,16 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         });
 
         try {
-            Affinity<Integer> aff = client.affinity(CACHE_NAME);
+            final Affinity<Integer> aff = client.affinity(CACHE_NAME);
 
             assertNull(client.context().cache().cache(CACHE_NAME));
 
-            while (!fut.isDone())
-                assertNotNull(aff.mapKeyToNode(key));
+            GridTestUtils.runMultiThreaded(new Runnable() {
+                @Override public void run() {
+                    while (!fut.isDone())
+                        assertNotNull(aff.mapKeyToNode(key));
+                }
+            }, 5, "test-thread");
         }
         finally {
             stopAllGrids();
