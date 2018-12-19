@@ -1764,7 +1764,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @throws IgniteCheckedException In case of eny exception.
      * @throws GridCacheEntryRemovedException If entry got removed.
      */
-    @SuppressWarnings({"unchecked", "ConstantConditions"})
+    @SuppressWarnings({"unchecked"})
     protected IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext> conflictResolve(
         GridCacheOperation op,
         IgniteTxEntry txEntry,

@@ -1179,7 +1179,6 @@ public abstract class IgniteUtils {
      *
      * @deprecated Calls to this method should never be committed to master.
      */
-    @SuppressWarnings("deprecation")
     @Deprecated
     public static void dumpStack() {
         dumpStack("Dumping stack.");
@@ -1637,7 +1636,6 @@ public abstract class IgniteUtils {
      * @return New instance of the class or {@code null} if empty constructor could not be assigned.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public static <T> T forceNewInstance(Class<?> cls) throws IgniteCheckedException {
         Constructor ctor = forceEmptyConstructor(cls);
 
@@ -5246,7 +5244,6 @@ public abstract class IgniteUtils {
      * @throws IOException If de-serialization failed.
      * @throws ClassNotFoundException If deserialized class could not be found.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public static <K, V> Map<K, V> readMap(ObjectInput in) throws IOException, ClassNotFoundException {
         int size = in.readInt();
 
@@ -5267,7 +5264,6 @@ public abstract class IgniteUtils {
      * @throws IOException If de-serialization failed.
      * @throws ClassNotFoundException If deserialized class could not be found.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public static <K, V> TreeMap<K, V> readTreeMap(
         ObjectInput in) throws IOException, ClassNotFoundException {
         int size = in.readInt();
@@ -5291,7 +5287,6 @@ public abstract class IgniteUtils {
      * @throws IOException If de-serialization failed.
      * @throws ClassNotFoundException If deserialized class could not be found.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public static <K, V> HashMap<K, V> readHashMap(ObjectInput in)
         throws IOException, ClassNotFoundException {
         int size = in.readInt();
@@ -5315,7 +5310,6 @@ public abstract class IgniteUtils {
      * @throws IOException If de-serialization failed.
      * @throws ClassNotFoundException If deserialized class could not be found.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public static <K, V> LinkedHashMap<K, V> readLinkedMap(ObjectInput in)
         throws IOException, ClassNotFoundException {
         int size = in.readInt();
@@ -5356,7 +5350,6 @@ public abstract class IgniteUtils {
      * @throws IOException If de-serialization failed.
      * @throws ClassNotFoundException If deserialized class could not be found.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public static <V> Map<Integer, V> readIntKeyMap(ObjectInput in) throws IOException,
         ClassNotFoundException {
         int size = in.readInt();
@@ -5398,7 +5391,6 @@ public abstract class IgniteUtils {
      * @return Read map.
      * @throws IOException If de-serialization failed.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public static Map<Integer, Integer> readIntKeyIntValueMap(DataInput in) throws IOException {
         Map<Integer, Integer> map = null;
 
@@ -5421,7 +5413,6 @@ public abstract class IgniteUtils {
      * @throws IOException If deserialization failed.
      * @throws ClassNotFoundException If deserialized class could not be found.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public static <E> List<E> readList(ObjectInput in) throws IOException, ClassNotFoundException {
         int size = in.readInt();
 
@@ -7049,7 +7040,6 @@ public abstract class IgniteUtils {
      * @param bLen Length of prefix {@code b}.
      * @return Increasing array which is union of {@code a} and {@code b}.
      */
-    @SuppressWarnings("IfMayBeConditional")
     public static int[] unique(int[] a, int aLen, int[] b, int bLen) {
         assert a != null;
         assert b != null;
@@ -7092,7 +7082,6 @@ public abstract class IgniteUtils {
      * @param bLen Length of prefix {@code b}.
      * @return Increasing array which is difference between {@code a} and {@code b}.
      */
-    @SuppressWarnings("IfMayBeConditional")
     public static int[] difference(int[] a, int aLen, int[] b, int bLen) {
         assert a != null;
         assert b != null;
@@ -7358,7 +7347,6 @@ public abstract class IgniteUtils {
      *
      * @deprecated Calls to this method should never be committed to master.
      */
-    @SuppressWarnings("deprecation")
     @Deprecated
     public static void dumpStack(Thread t) {
         dumpStack(t, System.err);

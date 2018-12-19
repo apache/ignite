@@ -504,7 +504,6 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
      * @param <T> Array type.
      * @return {@code ArrayCreator} for a required type.
      */
-    @SuppressWarnings("unchecked")
     private <T> DirectByteBufferStreamImplV2.ArrayCreator<T> arrayCreator(final T arr) {
         return new DirectByteBufferStreamImplV2.ArrayCreator<T>() {
             @Override public T create(int len) {

@@ -18,15 +18,8 @@
 import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 import id8 from 'app/utils/id8';
-import 'rxjs/add/operator/mergeMap';
-import 'rxjs/add/operator/merge';
-import 'rxjs/add/operator/switchMap';
-import 'rxjs/add/operator/exhaustMap';
-import 'rxjs/add/operator/distinctUntilChanged';
-
-import { fromPromise } from 'rxjs/observable/fromPromise';
-import { timer } from 'rxjs/observable/timer';
-import { defer } from 'rxjs/observable/defer';
+import {timer, merge, defer, from} from 'rxjs';
+import {mergeMap, tap, switchMap, exhaustMap, take} from 'rxjs/operators';
 
 import {CSV} from 'app/services/CSV';
 
@@ -930,27 +923,28 @@ export class NotebookCtrl {
         };
 
         const _startWatch = () => {
-            const awaitClusters$ = fromPromise(
+            const awaitClusters$ = from(
                 agentMgr.startClusterWatch('Leave Queries', 'default-state'));
 
             const finishLoading$ = defer(() => {
                 if (!$root.IgniteDemoMode)
                     Loading.finish('sqlLoading');
-            }).take(1);
+            }).pipe(take(1));
 
             const refreshCaches = (period) => {
-                return timer(0, period).exhaustMap(() => _refreshCaches()).merge(finishLoading$);
+                return merge(timer(0, period).pipe(exhaustMap(() => _refreshCaches())), finishLoading$);
             };
 
-            this.refresh$ = awaitClusters$
-                .mergeMap(() => agentMgr.currentCluster$)
-                .do(() => Loading.start('sqlLoading'))
-                .do(() => {
+            this.refresh$ = awaitClusters$.pipe(
+                mergeMap(() => agentMgr.currentCluster$),
+                tap(() => Loading.start('sqlLoading')),
+                tap(() => {
                     _.forEach($scope.notebook.paragraphs, (paragraph) => {
                         paragraph.reset($interval);
                     });
-                })
-                .switchMap(() => refreshCaches(5000))
+                }),
+                switchMap(() => refreshCaches(5000))
+            )
                 .subscribe();
         };
 

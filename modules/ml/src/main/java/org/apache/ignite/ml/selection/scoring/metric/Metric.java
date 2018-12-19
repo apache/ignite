@@ -33,4 +33,13 @@ public interface Metric<L> {
      * @return Score.
      */
     public double score(Iterator<LabelPair<L>> iter);
+
+    /**
+     * Returns the metric's name.
+     *
+     * NOTE: Should be unique to calculate multiple metrics correctly.
+     *
+     * @return String name representation.
+     */
+    public String name();
 }
