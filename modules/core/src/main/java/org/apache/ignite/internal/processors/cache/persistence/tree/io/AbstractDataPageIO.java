@@ -811,7 +811,6 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
      * @param row Data row.
      * @param rowSize Row size.
      * @param pageSize Page size.
-     * @param mvcc {@code True} if this is a MVCC record.
      * @throws IgniteCheckedException If failed.
      */
     public void addRow(
@@ -819,8 +818,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
         final long pageAddr,
         T row,
         final int rowSize,
-        final int pageSize,
-        boolean mvcc
+        final int pageSize
     ) throws IgniteCheckedException {
         assert rowSize <= getFreeSpace(pageAddr) : "can't call addRow if not enough space for the whole row";
 
@@ -840,6 +838,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
 
     /**
      * Adds row to this data page and sets respective link to the given row object.
+     * This method is used for the recovery from WAL delta records.
      *
      * @param pageAddr Page address.
      * @param payload Payload.
