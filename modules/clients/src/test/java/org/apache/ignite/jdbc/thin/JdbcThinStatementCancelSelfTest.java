@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -82,7 +83,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
-        cache.setSqlFunctionClasses(JdbcThinStatementCancelSelfTest.class);
+        cache.setSqlFunctionClasses(TestSQLFunctions.class);
         cache.setIndexedTypes(Integer.class, Integer.class, Long.class, Long.class, String.class,
             JdbcThinAbstractDmlStatementSelfTest.Person.class);
 
@@ -247,16 +248,18 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
     @SuppressWarnings("unchecked")
     @Test
-    public void testCancelLongRunningQueryBasedOnJoins() throws Exception {
+    public void testCancelLongRunningQueryBasedOnJoins() {
         GridTestUtils.runAsync(() -> {
             try {
-                Thread.sleep(100);
+                TestSQLFunctions.cancelLatch.await();
 
                 stmt.cancel();
+
+                TestSQLFunctions.reqLatch.countDown();
             }
             catch (Exception e) {
                 log.error("Unexpected exception.", e);
@@ -265,17 +268,21 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
             }
         });
 
-        IgniteInternalFuture<Object> res = GridTestUtils.runAsync(() -> {
-            GridTestUtils.assertThrows(log, () -> {
-                // Execute long running query
-                stmt.executeQuery("select * from Integer I1 join Integer I2 join Integer I3 join Integer I4");
+//        long startTime = System.currentTimeMillis();
+//        try {
+//            stmt.executeQuery("SELECT * FROM Integer I1 join Integer I2 join Integer I3 join Integer I4 join Integer I5 join Integer I6 join Integer I7 join Integer I8 WHERE awaitLatch() = 0");
+//        }
+//        catch (SQLException e) {
+//            System.out.println(">>>>>>>>");
+//        }
+//        System.out.println("!!!!!!!!!!!!!" + (System.currentTimeMillis() - startTime));
 
-                return null;
-            }, SQLException.class, "The query was cancelled while executing.");
-        });
+        GridTestUtils.assertThrows(log, () -> {
+            stmt.executeQuery("SELECT * FROM Integer WHERE awaitLatch() = 0");
+//            stmt.executeQuery("SELECT * FROM Integer I1 join Integer I2 join Integer I3 join Integer I4 WHERE awaitLatch() = 0");
 
-        // Ensure that the client receives the control before the initial request is executed.
-        res.get(2, TimeUnit.SECONDS);
+            return null;
+        }, SQLException.class, "The query was cancelled while executing.");
     }
 
     /**
@@ -518,19 +525,46 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     *
-     * @param v amount of milliseconds to sleep
-     * @return amount of milliseconds to sleep
+     * Utility class with custom SQL functions.
      */
-    @SuppressWarnings("unused")
-    @QuerySqlFunction
-    public static int sleep_func(int v) {
-        try {
-            Thread.sleep(v);
+    public static class TestSQLFunctions {
+        /** Request latch. */
+        static CountDownLatch reqLatch = new CountDownLatch(1);
+
+        /** Cancel latch. */
+        static CountDownLatch cancelLatch = new CountDownLatch(1);
+
+        /**
+         * Await cyclic barrier twice, first time to wait for enter method, second time to wait for collecting running
+         * queries.
+         */
+        @QuerySqlFunction
+        public static long awaitLatch() {
+            try {
+                cancelLatch.countDown();
+                reqLatch.await();
+            }
+            catch (Exception ignored) {
+                // No-op.
+            }
+
+            return 0;
         }
-        catch (InterruptedException ignored) {
-            // No-op
+
+        /**
+         *
+         * @param v amount of milliseconds to sleep
+         * @return amount of milliseconds to sleep
+         */
+        @QuerySqlFunction
+        public static int sleep_func(int v) {
+            try {
+                Thread.sleep(v);
+            }
+            catch (InterruptedException ignored) {
+                // No-op
+            }
+            return v;
         }
-        return v;
     }
 }
