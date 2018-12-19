@@ -27,10 +27,6 @@ package org.apache.ignite.internal.util;
  * interacting with this class directly.
  *
  * <p><b>Warning:</b> this interface can only be used to measure elapsed time, not wall time.
- *
- * @author Kevin Bourrillion
- * @since 10.0 (<a href="https://github.com/google/guava/wiki/Compatibility">mostly
- *     source-compatible</a> since 9.0)
  */
 public abstract class IgniteTicker {
     /** Constructor for use by subclasses. */
@@ -41,8 +37,6 @@ public abstract class IgniteTicker {
 
     /**
      * A ticker that reads the current time using {@link System#nanoTime}.
-     *
-     * @since 10.0
      */
     public static IgniteTicker systemTicker() {
         return SYSTEM_TICKER;

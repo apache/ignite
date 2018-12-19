@@ -821,7 +821,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             updateTopologies(crdNode);
 
-            timeBag.finishGlobalStage("Exchange type determination");
+            timeBag.finishGlobalStage("Determine exchange type");
 
             switch (exchange) {
                 case ALL: {
