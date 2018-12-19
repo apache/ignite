@@ -42,7 +42,11 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Common abstract test for Ignite tests based on configurations variations.
+ * TODO IGNITE-10739 redesign this and related classes to get rid of JUnit 3 features.
+ *
+ * @deprecated This class uses obsolete methods of JUnit 3 framework and is expected to be reworked per IGNITE-10739.
  */
+@Deprecated
 public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstractTest {
     /** */
     protected static final int SERVER_NODE_IDX = 0;
