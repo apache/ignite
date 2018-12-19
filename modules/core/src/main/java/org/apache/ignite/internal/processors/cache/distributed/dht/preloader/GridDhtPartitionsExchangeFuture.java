@@ -671,6 +671,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
     }
 
+    /**
+     * @return Object to collect exchange timings.
+     */
     public TimeBag timeBag() {
         return timeBag;
     }
