@@ -237,16 +237,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
      */
     private final ConcurrentHashMap<UUID, RecoveryBallotBox> recoveryBallotBoxes = new ConcurrentHashMap<>();
 
-    /** */
-    private final DdCollaborator ddCollaborator;
-
     /**
      * @param ctx Context.
      */
     public MvccProcessorImpl(GridKernalContext ctx) {
         super(ctx);
-
-        ddCollaborator = new DdCollaborator(ctx);
 
         ctx.internalSubscriptionProcessor().registerDatabaseListener(this);
     }
@@ -652,8 +647,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             && !waiter.hasLocalTransaction() && (waiter = waitMap.remove(key)) != null)
             waiter.run(ctx);
         else {
-            DdCollaborator.DelayedDeadlockComputation delayedComputation
-                = ddCollaborator.initDelayedComputation(waiterVer, blockerVer);
+            DeadlockDetectionManager.DelayedDeadlockComputation delayedComputation
+                = ctx.cache().context().deadlockDetectionMgr().initDelayedComputation(waiterVer, blockerVer);
 
             fut.listen(fut0 -> delayedComputation.cancel());
         }
@@ -1963,8 +1958,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 processLockCheckRequest(nodeId, (LockWaitCheckRequest)msg);
             else if (msg instanceof LockWaitCheckResponse)
                 processLockCheckResponse((LockWaitCheckResponse)msg);
-            else if (msg instanceof DeadlockProbe)
-                ddCollaborator.handleDeadlockProbe((DeadlockProbe)msg);
             else
                 U.warn(log, "Unexpected message received [node=" + nodeId + ", msg=" + msg + ']');
         }
@@ -2166,7 +2159,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         /** {@inheritDoc} */
         @Override public boolean hasWaiting(MvccVersion checkedVer) {
-            return DdCollaborator.belongToSameTx(waitingTxVer, checkedVer);
+            return DeadlockDetectionManager.belongToSameTx(waitingTxVer, checkedVer);
         }
     }
 

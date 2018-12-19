@@ -24,32 +24,25 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxAbstractEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 
-import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_COORDINATOR;
+import static org.apache.ignite.internal.GridTopic.TOPIC_DEADLOCK_DETECTION;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 
-// t0d0 meaningful name
 // t0d0 javadoc
-public class DdCollaborator {
-    /** */
-    private final GridKernalContext ctx;
-    /** */
-    private final IgniteLogger logger;
-
-    /** */
-    public DdCollaborator(GridKernalContext ctx) {
-        this.ctx = ctx;
-        this.logger = ctx.log(DdCollaborator.class);
+public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
+    /** {@inheritDoc} */
+    @Override protected void start0() throws IgniteCheckedException {
+        cctx.gridIO().addMessageListener(TOPIC_DEADLOCK_DETECTION, (nodeId, msg, plc) -> {
+            handleDeadlockProbe(((DeadlockProbe)msg));
+        });
     }
 
     /**
@@ -70,12 +63,12 @@ public class DdCollaborator {
      * @param blockerVer Version of the waited for transaction.
      */
     public void startComputation(MvccVersion waiterVer, MvccVersion blockerVer) {
-        Optional<IgniteInternalTx> waitingTx = ctx.cache().context().tm().activeTransactions().stream()
+        Optional<IgniteInternalTx> waitingTx = cctx.tm().activeTransactions().stream()
             .filter(tx -> tx.mvccSnapshot() != null)
             .filter(tx -> belongToSameTx(waiterVer, tx.mvccSnapshot()))
             .findAny();
 
-        Optional<IgniteInternalTx> blockerTx = tm().activeTransactions().stream()
+        Optional<IgniteInternalTx> blockerTx = cctx.tm().activeTransactions().stream()
             .filter(tx -> tx.mvccSnapshot() != null)
             .filter(tx -> belongToSameTx(blockerVer, tx.mvccSnapshot()))
             .findAny();
@@ -100,9 +93,9 @@ public class DdCollaborator {
      *
      * @param probe Received probe message.
      */
-    public void handleDeadlockProbe(DeadlockProbe probe) {
+    private void handleDeadlockProbe(DeadlockProbe probe) {
         // a probe is simply discarded if next wait-for edge is not found
-        GridNearTxLocal nearTx = tm().tx(probe.blockerVersion());
+        GridNearTxLocal nearTx = cctx.tm().tx(probe.blockerVersion());
 
         if (nearTx != null) {
             if (nearTx.nearXidVersion().equals(probe.initiatorVersion())) {
@@ -138,7 +131,7 @@ public class DdCollaborator {
     /** */
     private Collection<IgniteInternalFuture<NearTxLocator>> collectBlockers(GridNearTxLocal tx) {
         return getPendingResponseNodes(tx).stream()
-            .map(nodeId -> ctx.cache().context().coordinators().checkWaiting(nodeId, tx.mvccSnapshot()))
+            .map(nodeId -> cctx.coordinators().checkWaiting(nodeId, tx.mvccSnapshot()))
             .collect(Collectors.toList());
     }
 
@@ -157,19 +150,15 @@ public class DdCollaborator {
         UUID blockerNearNodeId) {
         DeadlockProbe probe = new DeadlockProbe(initiatorVer, waiterVer, blockerVer);
         try {
-            ctx.io().sendToGridTopic(blockerNearNodeId, TOPIC_CACHE_COORDINATOR, probe, SYSTEM_POOL);
+            cctx.gridIO().sendToGridTopic(blockerNearNodeId, TOPIC_DEADLOCK_DETECTION, probe, SYSTEM_POOL);
         }
         catch (IgniteCheckedException e) {
-            logger.warning("Failed to send a deadlock probe [nodeId=" + blockerNearNodeId + ']', e);
+            log.warning("Failed to send a deadlock probe [nodeId=" + blockerNearNodeId + ']', e);
         }
     }
 
     /** */
-    private IgniteTxManager tm() {
-        return ctx.cache().context().tm();
-    }
-
-    /** */
+    // t0d0 move to MVCC utils
     public static boolean belongToSameTx(MvccVersion v1, MvccVersion v2) {
         return v1.coordinatorVersion() == v2.coordinatorVersion() && v1.counter() == v2.counter();
     }
@@ -189,12 +178,12 @@ public class DdCollaborator {
                 }
             };
 
-            ctx.timeout().addTimeoutObject(computationTimeoutObj);
+            cctx.kernalContext().timeout().addTimeoutObject(computationTimeoutObj);
         }
 
         /** */
         public void cancel() {
-            ctx.timeout().removeTimeoutObject(computationTimeoutObj);
+            cctx.kernalContext().timeout().removeTimeoutObject(computationTimeoutObj);
         }
     }
 }

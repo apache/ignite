@@ -18,16 +18,16 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Probe message travelling between transactions (from waiting to blocking) during deadlock detection.
- * @see DdCollaborator
+ * @see DeadlockDetectionManager
  */
-public class DeadlockProbe implements MvccMessage {
+public class DeadlockProbe implements Message {
     /** */
     private static final long serialVersionUID = 0;
 
@@ -156,15 +156,5 @@ public class DeadlockProbe implements MvccMessage {
 
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean waitForCoordinatorInit() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean processedFromNioThread() {
-        return false;
     }
 }
