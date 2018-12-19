@@ -16,7 +16,9 @@
  */
 
 export default class {
-    static $inject = ['$modal', '$http', '$state', 'IgniteMessages'];
+    static $inject = ['$modal', '$http', '$state', 'IgniteMessages', '$element'];
+    /** @type {JQLite} */
+    el;
 
     /**
      * @param {mgcrea.ngStrap.modal.IModalService} $modal
@@ -24,10 +26,15 @@ export default class {
      * @param {import('@uirouter/angularjs').StateService} $state
      * @param {ReturnType<typeof import('app/services/Messages.service').default>} Messages
      */
-    constructor($modal, $http, $state, Messages) {
+    constructor($modal, $http, $state, Messages, el) {
         this.$http = $http;
         this.$state = $state;
         this.Messages = Messages;
+        this.el = el;
+    }
+
+    $postLink() {
+        this.el.addClass('public-page');
     }
 
     $onInit() {

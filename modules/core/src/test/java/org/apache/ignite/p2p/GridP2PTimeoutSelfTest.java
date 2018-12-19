@@ -99,7 +99,6 @@ public class GridP2PTimeoutSelfTest extends GridCommonAbstractTest {
      * @param depMode deployment mode.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void processFilterTest(DeploymentMode depMode) throws Exception {
         this.depMode = depMode;
 

@@ -101,7 +101,6 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     /**
      * @return Test data.
      */
-    @SuppressWarnings({"unchecked"})
     protected TestData<T> getTestData() throws IgniteCheckedException {
         TestData<T> data = (TestData<T>)tests.get(getClass());
 
@@ -174,7 +173,6 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"unchecked"})
     protected final void spiStart() throws Exception {
         GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
 
@@ -453,7 +451,6 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
      *
      * @return Class of the SPI implementation.
      */
-    @SuppressWarnings({"unchecked"})
     protected final Class<? extends T> getSpiClass() {
         GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
 

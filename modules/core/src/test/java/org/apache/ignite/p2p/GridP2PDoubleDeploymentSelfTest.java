@@ -71,7 +71,6 @@ public class GridP2PDoubleDeploymentSelfTest extends GridCommonAbstractTest {
      * @param depMode deployment mode.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void processTestBothNodesDeploy(DeploymentMode depMode) throws Exception {
         try {
             this.depMode = depMode;

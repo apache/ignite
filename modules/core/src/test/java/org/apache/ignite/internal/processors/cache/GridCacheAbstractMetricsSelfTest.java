@@ -1029,7 +1029,6 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         storeStgy.removeFromStore(key);
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
-            @SuppressWarnings("unchecked")
             @Override public boolean applyx() {
                 try {
                     if (c.get(key) != null)
