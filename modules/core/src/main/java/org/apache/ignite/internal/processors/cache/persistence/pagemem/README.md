@@ -2,10 +2,27 @@ Apache Ignite Native Peristence Page Memory
 -------------------------------------------
 This package contains page memory implementation for case persitence is enabled.
 
-Speed Based Throttling
-----------------------
+
+Throttling
+----------
+Throttling is an intentional slowdown of operation in the grid to equate throughput of the storage and speed of user operations.
+
+Throttling is implemented at physical level of operations, so it operated not with user entries, but with page memory pages.
+
 For an introduction, please see
 [wiki PagesWriteThrottling](https://cwiki.apache.org/confluence/display/IGNITE/Ignite+Persistent+Store+-+under+the+hood#IgnitePersistentStore-underthehood-PagesWriteThrottling)
+
+There are two types of throttling implemented in Apache Ignite:
+* Checkpoint buffer overflow protection.
+
+This CP Buffer throttling is enabled by default. It is activated if CP buffer is close to being filled.
+In this case, there is an exponential backoff at 2/3 when filling reached.
+Since the CP buffer is being cleaned as the checkpoint progresses, this more or less behaves like trotting.
+
+* the whole region marked dirty protection.
+This type of throttling protects region segments from being completely filled by dirty pages when checkpoint progress is far from completion.
+
+## Speed Based Throttling
 
 If throttling is enabled in User configuration, then Speed based throttling is applied.
 
