@@ -30,9 +30,8 @@ const devServerPort = process.env.PORT || 9000;
 
 const url = `${backendProtocol}://localhost:${backendPort}`;
 
-console.log(`Connecting to: ${url}`);
-console.log(`DEV server HOST: ${devServerHost}`);
-console.log(`DEV server PORT: ${devServerPort}`);
+console.log(`Frontend: ${url}`);
+console.log(` Backend: ${devServerHost}:${devServerPort}`);
 
 module.exports = merge(commonCfg, {
     mode: 'development',
@@ -78,17 +77,14 @@ module.exports = merge(commonCfg, {
         proxy: {
             '/socket.io': {
                 target: url,
-                ws: true,
-                secure: false
+                ws: true
             },
             '/agents': {
                 target: url,
-                ws: true,
-                secure: false
+                ws: true
             },
             '/api/*': {
-                target: url,
-                secure: false
+                target: url
             }
         },
         watchOptions: {

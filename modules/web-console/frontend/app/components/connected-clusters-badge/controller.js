@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import {tap} from 'rxjs/operators';
+
 export default class {
     static $inject = ['$scope', 'AgentManager', 'ConnectedClustersDialog'];
 
@@ -38,13 +40,14 @@ export default class {
     }
 
     $onInit() {
-        this.connectedClusters$ = this.agentMgr.connectionSbj
-            .do(({ clusters }) => this.connectedClusters = clusters.length)
-            .do(({ clusters }) => {
+        this.connectedClusters$ = this.agentMgr.connectionSbj.pipe(
+            tap(({ clusters }) => this.connectedClusters = clusters.length),
+            tap(({ clusters }) => {
                 this.clusters = clusters;
                 this.$scope.$applyAsync();
             })
-            .subscribe();
+        )
+        .subscribe();
     }
 
     $onDestroy() {

@@ -645,7 +645,6 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
      * @param i Grid index.
      * @return Policy.
      */
-    @SuppressWarnings({"unchecked"})
     protected T policy(int i) {
         CacheEvictionManager evictMgr = grid(i).cachex(DEFAULT_CACHE_NAME).context().evicts();
 
@@ -658,7 +657,6 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
      * @param i Grid index.
      * @return Policy.
      */
-    @SuppressWarnings({"unchecked"})
     protected T nearPolicy(int i) {
         CacheEvictionManager evictMgr = grid(i).cachex(DEFAULT_CACHE_NAME).context().near().context().evicts();
 
@@ -686,7 +684,6 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
      * @param c Collection.
      * @return String.
      */
-    @SuppressWarnings("unchecked")
     protected static String string(Iterable<? extends Cache.Entry> c) {
         return "[" +
             F.fold(
@@ -996,7 +993,6 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public <T> T unwrap(Class<T> clazz) {
             if (clazz.isAssignableFrom(IgniteCache.class))
                 return (T)parent;
