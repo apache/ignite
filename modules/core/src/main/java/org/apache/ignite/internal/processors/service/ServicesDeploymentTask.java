@@ -646,6 +646,9 @@ class ServicesDeploymentTask {
                 }
             }
 
+            if (cnt == 0 && res.errors().isEmpty())
+                return;
+
             ServiceSingleDeploymentsResults singleDepRes = new ServiceSingleDeploymentsResults(cnt);
 
             if (!res.errors().isEmpty())
