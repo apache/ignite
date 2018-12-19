@@ -1310,6 +1310,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         if (cacheGroup.localStartVersion().equals(fut.initialVersion()))
                             cacheGroup.topology().afterStateRestored(fut.initialVersion());
+
+                        fut.timeBag().finishLocalStage("Restore partition states " +
+                            "[grp=" + cacheGroup.cacheOrGroupName() + "]");
                     }
                     finally {
                         cctx.database().checkpointReadUnlock();
@@ -1319,7 +1322,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
             );
 
-            fut.timeBag().finishLocalStage("Restore partition states");
+            fut.timeBag().finishGlobalStage("Restore partition states");
         }
 
         if (cctx.kernalContext().query().moduleEnabled()) {
