@@ -275,6 +275,16 @@ public interface GridDhtPartitionTopology {
     public boolean hasMovingPartitions();
 
     /**
+     *
+     */
+    public Collection<Integer> reserveAllPartitions();
+
+    /**
+     * @param reserved Reserved.
+     */
+    public void releasePartitions(Collection<Integer> reserved);
+
+    /**
      * @param e Entry removed from cache.
      */
     public void onRemoved(GridDhtCacheEntry e);

@@ -1031,6 +1031,31 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<Integer> reserveAllPartitions() {
+        Collection<Integer> reserved = new HashSet<>();
+
+        for (int p = 0; p < locParts.length(); p++) {
+            GridDhtLocalPartition locPart = locParts.get(p);
+
+            if (locPart != null && locPart.state().active() && locPart.reserve())
+                reserved.add(p);
+        }
+
+        return reserved;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void releasePartitions(Collection<Integer> reserved) {
+        for (int p : reserved) {
+            GridDhtLocalPartition locPart = locParts.get(p);
+
+            assert locPart.reservations() > 0;
+
+            locPart.release();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void onRemoved(GridDhtCacheEntry e) {
         /*
          * Make sure not to acquire any locks here as this method

@@ -472,6 +472,18 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<Integer> reserveAllPartitions() {
+        return Collections.emptySet();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void releasePartitions(Collection<Integer> reserved) {
+        assert reserved.isEmpty();
+
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void onRemoved(GridDhtCacheEntry e) {
         assert false : "Entry should not be removed from client topology: " + e;
     }
