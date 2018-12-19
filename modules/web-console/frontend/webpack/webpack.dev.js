@@ -23,15 +23,11 @@ const commonCfg = require('./webpack.common');
 
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
-const backendProtocol = process.env.BACKEND_PROTOCOL || 'http';
-const backendPort = process.env.BACKEND_PORT || 3000;
-const devServerHost = process.env.HOST || '0.0.0.0';
-const devServerPort = process.env.PORT || 9000;
+const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
+const webpackDevServerHost = process.env.HOST || '0.0.0.0';
+const webpackDevServerPort = process.env.PORT || 9000;
 
-const url = `${backendProtocol}://localhost:${backendPort}`;
-
-console.log(`Frontend: ${url}`);
-console.log(` Backend: ${devServerHost}:${devServerPort}`);
+console.log(`Backend url: ${backendUrl}`);
 
 module.exports = merge(commonCfg, {
     mode: 'development',
@@ -76,15 +72,18 @@ module.exports = merge(commonCfg, {
         inline: true,
         proxy: {
             '/socket.io': {
-                target: url,
-                ws: true
+                target: backendUrl,
+                ws: true,
+                secure: false
             },
             '/agents': {
-                target: url,
-                ws: true
+                target: backendUrl,
+                ws: true,
+                secure: false
             },
             '/api/*': {
-                target: url
+                target: backendUrl,
+                secure: false
             }
         },
         watchOptions: {
@@ -92,7 +91,7 @@ module.exports = merge(commonCfg, {
             poll: 2000
         },
         stats: 'errors-only',
-        host: devServerHost,
-        port: devServerPort
+        host: webpackDevServerHost,
+        port: webpackDevServerPort
     }
 });
