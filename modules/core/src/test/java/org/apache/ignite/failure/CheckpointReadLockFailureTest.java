@@ -17,9 +17,10 @@
 
 package org.apache.ignite.failure;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -60,6 +61,14 @@ public class CheckpointReadLockFailureTest extends GridCommonAbstractTest {
                     .setPersistenceEnabled(true))
                 .setCheckpointFrequency(CHECKPOINT_FREQ)
                 .setCheckpointReadLockTimeout(1));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        Set<FailureType> ignoredFailureTypes = new HashSet<>(FAILURE_HND.getIgnoredFailureTypes());
+        ignoredFailureTypes.remove(FailureType.SYSTEM_WORKER_BLOCKED);
+
+        FAILURE_HND.setIgnoredFailureTypes(ignoredFailureTypes);
     }
 
     /** {@inheritDoc} */
@@ -107,7 +116,7 @@ public class CheckpointReadLockFailureTest extends GridCommonAbstractTest {
 
         stopLoad.set(true);
 
-        loadFut.get(1, TimeUnit.SECONDS);
+        loadFut.get();
 
         stopAllGrids();
     }
