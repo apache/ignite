@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.util.generators.primitives.vector;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -32,12 +31,10 @@ public class VectorGeneratorsFamily implements VectorGenerator {
     private final List<VectorGenerator> family;
     private final DiscreteRandomProducer selector;
 
-    public VectorGeneratorsFamily(VectorGenerator family) {
-        this.family = Collections.singletonList(family);
-        this.selector = new DiscreteRandomProducer(1.0);
-    }
-
     private VectorGeneratorsFamily(List<VectorGenerator> family, DiscreteRandomProducer selector) {
+        A.notEmpty(family, "family");
+        A.ensure(family.size() == selector.size(), "family.size() == selector.size()");
+
         this.family = family;
         this.selector = selector;
     }
@@ -66,6 +63,8 @@ public class VectorGeneratorsFamily implements VectorGenerator {
         private final List<Double> weights = new ArrayList<>();
 
         public Builder with(VectorGenerator generator, double weight) {
+            A.ensure(weight > 0, "weight > 0");
+
             family.add(generator);
             weights.add(weight);
             return this;

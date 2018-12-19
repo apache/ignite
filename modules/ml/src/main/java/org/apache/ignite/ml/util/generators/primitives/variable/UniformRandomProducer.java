@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.util.generators.primitives.variable;
 
+import org.apache.ignite.internal.util.typedef.internal.A;
+
 public class UniformRandomProducer extends RandomProducerWithGenerator {
     private final double from;
     private final double to;
@@ -26,8 +28,7 @@ public class UniformRandomProducer extends RandomProducerWithGenerator {
     }
 
     public UniformRandomProducer(double from, double to, long seed) {
-        if(from > to)
-            throw new IllegalArgumentException("from-value should be less than to-value");
+        A.ensure(from > to, "from > to");
 
         this.from = from;
         this.to = to;

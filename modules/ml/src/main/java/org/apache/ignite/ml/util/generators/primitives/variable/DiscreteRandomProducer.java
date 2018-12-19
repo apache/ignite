@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.util.generators.primitives.vector.VectorGenerator;
 
 public class DiscreteRandomProducer extends RandomProducerWithGenerator {
@@ -35,13 +36,10 @@ public class DiscreteRandomProducer extends RandomProducerWithGenerator {
     public DiscreteRandomProducer(long seed, double... probs) {
         super(seed);
 
-        if (!checkDistribution(probs))
-            throw new IllegalArgumentException(String.format(
-                "Illegal distribution prob values [%s]",
-                Arrays.stream(probs)
-                    .mapToObj(p -> String.format("%.2f", p))
-                    .collect(Collectors.joining(",")))
-            );
+        boolean allElementsAreGEZero = Arrays.stream(probs).allMatch(p -> p >= 0.0);
+        boolean sumOfProbsEqOne = Math.abs(Arrays.stream(probs).sum() - 1.0) < EPS;
+        A.ensure(allElementsAreGEZero, "all elements should be great or equals 0.0");
+        A.ensure(sumOfProbsEqOne, "sum of probs should equal 1.0");
 
         this.probs = probs;
 
@@ -83,6 +81,8 @@ public class DiscreteRandomProducer extends RandomProducerWithGenerator {
     }
 
     public static double[] randomDistribution(int numberOfValues, long seed) {
+        A.ensure(numberOfValues > 0, "numberOfValues > 0");
+
         Random random = new Random(seed);
         long[] rnd = IntStream.range(0, numberOfValues).mapToLong(i -> random.nextInt(Integer.MAX_VALUE))
             .limit(numberOfValues)
@@ -116,10 +116,4 @@ public class DiscreteRandomProducer extends RandomProducerWithGenerator {
     }
 
 
-    private boolean checkDistribution(double[] probs) {
-        boolean allElementsAreGEZero = Arrays.stream(probs).allMatch(p -> p >= 0.0);
-        boolean sumOfProbsEqOne = Math.abs(Arrays.stream(probs).sum() - 1.0) < EPS;
-
-        return allElementsAreGEZero && sumOfProbsEqOne;
-    }
 }

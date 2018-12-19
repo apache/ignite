@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.util.generators.datastream.standard;
 
 import java.util.stream.Stream;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
@@ -33,6 +34,9 @@ public class RegressionDataStream implements DataStreamGenerator {
 
     private RegressionDataStream(int vectorSize, IgniteFunction<Vector, Double> function,
         double minXValue, double maxXValue, long seed) {
+
+        A.ensure(vectorSize > 0, "vectorSize > 0");
+        A.ensure(minXValue <= maxXValue, "minXValue <= maxXValue");
 
         this.function = function;
         this.minXValue = minXValue;

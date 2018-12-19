@@ -34,6 +34,8 @@ public class GaussianMixtureDataStream implements DataStreamGenerator {
         private final List<Double> variances = new ArrayList<>();
 
         public Builder add(Vector mean, double variance) {
+            A.ensure(variance >= 0, "variance >= 0");
+
             means.add(mean);
             variances.add(variance);
             return this;
@@ -41,6 +43,7 @@ public class GaussianMixtureDataStream implements DataStreamGenerator {
 
         public GaussianMixtureDataStream build() {
             A.notEmpty(means, "this.means.size()");
+
             Vector[] means = new Vector[this.means.size()];
             double[] variances = new double[this.variances.size()];
             for(int i = 0; i<this.means.size(); i++) {

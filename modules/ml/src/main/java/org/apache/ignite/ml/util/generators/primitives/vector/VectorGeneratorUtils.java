@@ -20,6 +20,7 @@ package org.apache.ignite.ml.util.generators.primitives.vector;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.util.generators.primitives.variable.GaussRandomProducer;
 import org.apache.ignite.ml.util.generators.primitives.variable.RandomProducer;
@@ -40,6 +41,10 @@ public class VectorGeneratorUtils {
     }
 
     public static VectorGenerator gauss(double[] pivots, double[] variances, long seed) {
+        A.notEmpty(pivots, "pivots");
+        A.notEmpty(variances, "variances");
+        A.ensure(pivots.length == variances.length, "pivots.length == variances.length");
+
         GaussRandomProducer[] producers = new GaussRandomProducer[pivots.length];
         for (int i = 0; i < pivots.length; i++) {
             producers[i] = new GaussRandomProducer(pivots[i], variances[i], seed);
@@ -50,6 +55,8 @@ public class VectorGeneratorUtils {
     }
 
     public static VectorGenerator vectorize(RandomProducer... producers) {
+        A.notEmpty(producers, "producers");
+
         return () -> {
             double[] values = new double[producers.length];
             for (int i = 0; i < producers.length; i++)
@@ -60,6 +67,8 @@ public class VectorGeneratorUtils {
     }
 
     public static VectorGenerator concat(List<VectorGenerator> generators) {
+        A.notEmpty(generators, "generators");
+
         return () -> generators.stream().map(Supplier::get).reduce(VectorUtils::concat).get();
     }
 }

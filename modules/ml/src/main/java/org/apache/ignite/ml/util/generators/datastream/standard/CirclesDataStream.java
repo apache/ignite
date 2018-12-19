@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.util.generators.datastream.standard;
 
 import java.util.stream.Stream;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.generators.DataStreamGenerator;
@@ -33,6 +34,10 @@ public class CirclesDataStream implements DataStreamGenerator {
     private final double distanceBetweenCircles;
 
     public CirclesDataStream(int countOfCircles, double minRadius, double distanceBetweenCircles) {
+        A.ensure(countOfCircles > 0, "countOfCircles > 0");
+        A.ensure(minRadius > 0, "minRadius > 0");
+        A.ensure(distanceBetweenCircles > 0, "distanceBetweenCircles > 0");
+
         this.countOfCircles = countOfCircles;
         this.minRadius = minRadius;
         this.distanceBetweenCircles = distanceBetweenCircles;

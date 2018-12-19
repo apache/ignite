@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.util.generators.primitives.variable;
 
+import org.apache.ignite.internal.util.typedef.internal.A;
+
 public class GaussRandomProducer extends RandomProducerWithGenerator {
     private final double mean;
     private final double variance;
@@ -35,6 +37,9 @@ public class GaussRandomProducer extends RandomProducerWithGenerator {
 
     public GaussRandomProducer(double mean, double variance, long seed) {
         super(seed);
+
+        A.ensure(variance >= 0, "variance >= 0");
+
         this.mean = mean;
         this.variance = variance;
     }
