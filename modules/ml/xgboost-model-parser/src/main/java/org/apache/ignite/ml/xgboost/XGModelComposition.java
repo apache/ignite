@@ -77,12 +77,15 @@ public class XGModelComposition implements Model<HashMap<String, Double>, Double
      */
     private Vector toVector(Map<String, Double> input) {
         Vector inputVector = new SparseVector(dict.size(), RANDOM_ACCESS_MODE);
+        for (int i = 0; i < dict.size(); i++)
+            inputVector.set(i, Double.NaN);
 
         for (Map.Entry<String, Double> feature : input.entrySet()) {
             Integer idx = dict.get(feature.getKey());
 
             if (idx != null)
                 inputVector.set(idx, feature.getValue());
+
         }
 
         return inputVector;

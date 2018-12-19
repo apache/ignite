@@ -105,7 +105,7 @@ public class SparseVectorStorage implements VectorStorage, StorageConstants {
 
     /** {@inheritDoc} */
     @Override public double get(int i) {
-        return sto.getOrDefault(i, Double.NaN);
+        return sto.getOrDefault(i, 0.0);
     }
 
     /** {@inheritDoc} */
