@@ -35,13 +35,18 @@ public class DistributedMetaStorageNodeData implements Serializable {
     public final DistributedMetaStorageHistoryItem[] hist;
 
     /** */
+    public DistributedMetaStorageHistoryItem[] updates;
+
+    /** */
     public DistributedMetaStorageNodeData(
         long ver,
         DistributedMetaStorageHistoryItem[] fullData,
-        DistributedMetaStorageHistoryItem[] hist
+        DistributedMetaStorageHistoryItem[] hist,
+        DistributedMetaStorageHistoryItem[] updates
     ) {
         this.fullData = fullData;
         this.ver = ver;
         this.hist = hist;
+        this.updates = updates;
     }
 }

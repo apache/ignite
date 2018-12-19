@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.metastorage;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /** */
 @SuppressWarnings("PublicField")
@@ -42,8 +43,8 @@ public class DistributedMetaStorageHistoryItem implements Serializable {
     }
 
     /** */
-    public long approximateSize() {
-        // String encoding is ignored to make approximation faster. 2 "size" values added as well.
+    public long estimateSize() {
+        // String encoding is ignored to make estimation faster. 2 "size" values added as well.
         return 8 + key.length() * 2 + (valBytes == null ? 0 : valBytes.length);
     }
 
@@ -63,5 +64,10 @@ public class DistributedMetaStorageHistoryItem implements Serializable {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return 31 * key.hashCode() + Arrays.hashCode(valBytes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DistributedMetaStorageHistoryItem.class, this);
     }
 }

@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.processors.metastorage;
 
+import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -63,6 +67,11 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new StopNodeFailureHandler();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
     }
@@ -97,7 +106,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     public void testMultipleNodes() throws Exception {
         int cnt = 4;
 
-        startGrids(cnt);
+        startGridsMultiThreaded(cnt);
 
         grid(0).cluster().active(true);
 
@@ -106,16 +115,16 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
             String val = UUID.randomUUID().toString();
 
-            grid(i).context().globalMetastorage().write(key, val);
+            metastorage(i).write(key, val);
 
             Thread.sleep(150L); // Remove later.
 
             for (int j = 0; j < cnt; j++)
-                assertEquals(i + " " + j, val, grid(j).context().globalMetastorage().read(key));
+                assertEquals(i + " " + j, val, metastorage(j).read(key));
         }
 
         for (int i = 1; i < cnt; i++)
-            assertHistoriesAreEqual(grid(0), grid(i));
+            assertGlobalMetastoragesAreEqual(grid(0), grid(i));
     }
 
     /** */
@@ -123,7 +132,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     public void testListenersOnWrite() throws Exception {
         int cnt = 4;
 
-        startGrids(cnt);
+        startGridsMultiThreaded(cnt);
 
         grid(0).cluster().active(true);
 
@@ -146,7 +155,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         assertEquals(cnt, predCntr.get());
 
         for (int i = 1; i < cnt; i++)
-            assertHistoriesAreEqual(grid(0), grid(i));
+            assertGlobalMetastoragesAreEqual(grid(0), grid(i));
     }
 
     /** */
@@ -154,7 +163,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     public void testListenersOnRemove() throws Exception {
         int cnt = 4;
 
-        startGrids(cnt);
+        startGridsMultiThreaded(cnt);
 
         grid(0).cluster().active(true);
 
@@ -181,7 +190,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         assertEquals(cnt, predCntr.get());
 
         for (int i = 1; i < cnt; i++)
-            assertHistoriesAreEqual(grid(0), grid(i));
+            assertGlobalMetastoragesAreEqual(grid(0), grid(i));
     }
 
     /** */
@@ -199,7 +208,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         assertEquals("value", newNode.context().globalMetastorage().read("key"));
 
-        assertHistoriesAreEqual(ignite, newNode);
+        assertGlobalMetastoragesAreEqual(ignite, newNode);
     }
 
 
@@ -225,7 +234,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
             assertEquals("value2", newNode.context().globalMetastorage().read("key2"));
 
-            assertHistoriesAreEqual(ignite, newNode);
+            assertGlobalMetastoragesAreEqual(ignite, newNode);
         }
         finally {
             System.clearProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES);
@@ -233,13 +242,30 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected void assertHistoriesAreEqual(IgniteEx ignite1, IgniteEx ignite2) {
+    protected DistributedMetaStorage metastorage(int i) {
+        return grid(i).context().globalMetastorage();
+    }
+
+    /** */
+    protected void assertGlobalMetastoragesAreEqual(IgniteEx ignite1, IgniteEx ignite2) throws Exception {
         DistributedMetaStorage globalMetastorage1 = ignite1.context().globalMetastorage();
 
         DistributedMetaStorage globalMetastorage2 = ignite2.context().globalMetastorage();
 
         assertEquals(U.<Object>field(globalMetastorage1, "ver"), U.field(globalMetastorage2, "ver"));
 
-        assertEquals(U.<Object>field(globalMetastorage1, "histCache"), U.field(globalMetastorage2, "histCache"));
+        Object histCache1 = U.field(globalMetastorage1, "histCache");
+
+        Object histCache2 = U.field(globalMetastorage2, "histCache");
+
+        assertEquals(histCache1, histCache2);
+
+        Method fullDataMtd = U.findNonPublicMethod(DistributedMetaStorageImpl.class, "fullData");
+
+        Object[] fullData1 = (Object[])fullDataMtd.invoke(globalMetastorage1);
+
+        Object[] fullData2 = (Object[])fullDataMtd.invoke(globalMetastorage2);
+
+        assertEqualsCollections(Arrays.asList(fullData1), Arrays.asList(fullData2));
     }
 }

@@ -28,6 +28,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
@@ -56,6 +57,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.META_STORAGE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
+import static org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageHistoryItem.EMPTY_ARRAY;
 
 /** */
 public class DistributedMetaStorageImpl extends GridProcessorAdapter implements DistributedMetaStorage {
@@ -88,6 +90,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
 
     /** */
     private DistributedMetaStorageBridge bridge = new NotAvailableDistributedMetaStorageBridge();
+
+    /** */
+    private final CountDownLatch writeAvailable = new CountDownLatch(1);
 
     /** */
     private long ver;
@@ -172,6 +177,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
 
             bridge = memCachedBridge;
 
+            writeAvailable.countDown();
+
             startupExtras = null;
 
             GridInternalSubscriptionProcessor isp = ctx.internalSubscriptionProcessor();
@@ -212,28 +219,30 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
     ) throws IgniteCheckedException {
         assert isPersistenceEnabled(ctx.config());
 
-        WritableDistributedMetaStorageBridge writableBridge = new WritableDistributedMetaStorageBridge(metastorage);
+        synchronized (this) {
+            long metaStorageMaxSize = ctx.config().getDataStorageConfiguration().getSystemRegionMaxSize();
 
-        lock();
+            histMaxBytes = Math.min(histMaxBytes, metaStorageMaxSize / 2);
 
-        try {
-            writableBridge.restore();
+            WritableDistributedMetaStorageBridge writableBridge = new WritableDistributedMetaStorageBridge(metastorage);
+
+            lock();
+
+            try {
+                writableBridge.restore();
+            }
+            finally {
+                unlock();
+            }
+
+            executeDeferredUpdates(writableBridge);
+
+            bridge = writableBridge;
+
+            startupExtras = null;
         }
-        finally {
-            unlock();
-        }
 
-        executeDeferredUpdates(writableBridge);
-
-        bridge = writableBridge;
-
-        long metaStorageMaxSize = ctx.config().getDataStorageConfiguration().getSystemRegionMaxSize();
-
-        histMaxBytes = Math.min(histMaxBytes, metaStorageMaxSize / 2);
-
-        shrinkHistory();
-
-        startupExtras = null;
+        writeAvailable.countDown();
 
         for (GlobalMetastorageLifecycleListener subscriber : isp.getGlobalMetastorageSubscribers())
             subscriber.onReadyForWrite(this);
@@ -296,7 +305,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
 
         DistributedMetaStorageHistoryItem[] hist = new TreeMap<>(histCache)
             .values()
-            .toArray(DistributedMetaStorageHistoryItem.EMPTY_ARRAY);
+            .toArray(EMPTY_ARRAY);
 
         Serializable data = new DistributedMetaStorageJoiningData(startupExtras.verToSnd, hist);
 
@@ -321,61 +330,131 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
 
         long remoteVer = joiningData.ver;
 
-        if (remoteVer > ver) {
-            DistributedMetaStorageHistoryItem[] hist = joiningData.hist;
+        synchronized (this) {
+            long actualVer;
 
-            if (remoteVer - ver <= hist.length) {
-                assert bridge instanceof ReadOnlyDistributedMetaStorageBridge
-                    || bridge instanceof EmptyDistributedMetaStorageBridge;
+            if (startupExtras == null)
+                actualVer = ver;
+            else if (startupExtras.fullNodeData == null)
+                actualVer = ver + startupExtras.deferredUpdates.size();
+            else
+                actualVer = startupExtras.fullNodeData.ver + startupExtras.deferredUpdates.size();
 
-                for (int i = (int)(ver - remoteVer + hist.length); i < hist.length; i++)
-                    updateLater(hist[i]);
+            if (remoteVer > actualVer) {
+                assert startupExtras != null;
 
-                Serializable nodeData = new DistributedMetaStorageNodeData(remoteVer, null, null);
+                DistributedMetaStorageHistoryItem[] hist = joiningData.hist;
 
-                dataBag.addGridCommonData(COMPONENT_ID, nodeData);
+                if (remoteVer - actualVer <= hist.length) {
+                    assert bridge instanceof ReadOnlyDistributedMetaStorageBridge
+                        || bridge instanceof EmptyDistributedMetaStorageBridge;
+
+                    for (long v = actualVer + 1; v <= remoteVer; v++)
+                        updateLater(hist[(int)(v - remoteVer + hist.length - 1)]);
+
+                    Serializable nodeData = new DistributedMetaStorageNodeData(remoteVer, null, null, null);
+
+                    dataBag.addGridCommonData(COMPONENT_ID, nodeData);
+                }
+                else {
+                    //TODO ???
+                }
             }
             else {
-                //TODO ???
-            }
-        }
-        else {
-            if (dataBag.commonDataCollectedFor(COMPONENT_ID))
-                return;
+                if (dataBag.commonDataCollectedFor(COMPONENT_ID))
+                    return;
 
-            if (remoteVer == ver) {
-                Serializable nodeData = new DistributedMetaStorageNodeData(ver, null, null);
+                if (remoteVer == actualVer) {
+                    Serializable nodeData = new DistributedMetaStorageNodeData(ver, null, null, null);
 
-                dataBag.addGridCommonData(COMPONENT_ID, nodeData);
-            }
-            else if (ver - remoteVer <= histCache.size()) {
-                Serializable nodeData = new DistributedMetaStorageNodeData(ver, null, history(remoteVer + 1));
+                    dataBag.addGridCommonData(COMPONENT_ID, nodeData);
+                }
+                else {
+                    int availableHistSize;
 
-                dataBag.addGridCommonData(COMPONENT_ID, nodeData);
-            }
-            else {
-                DistributedMetaStorageHistoryItem[] fullData = fullData();
+                    if (startupExtras == null)
+                        availableHistSize = histCache.size();
+                    else if (startupExtras.fullNodeData == null)
+                        availableHistSize = histCache.size() + startupExtras.deferredUpdates.size();
+                    else
+                        availableHistSize = startupExtras.fullNodeData.hist.length + startupExtras.deferredUpdates.size();
 
-                DistributedMetaStorageHistoryItem[] hist = history(ver - histCache.size() + 1);
+                    if (actualVer - remoteVer <= availableHistSize) {
+                        Serializable nodeData = new DistributedMetaStorageNodeData(ver, null, null, history(remoteVer + 1, actualVer));
 
-                Serializable nodeData = new DistributedMetaStorageNodeData(ver, fullData, hist);
+                        dataBag.addGridCommonData(COMPONENT_ID, nodeData);
+                    }
+                    else {
+                        long ver0;
 
-                dataBag.addGridCommonData(COMPONENT_ID, nodeData);
+                        DistributedMetaStorageHistoryItem[] fullData;
+
+                        DistributedMetaStorageHistoryItem[] hist;
+
+                        if (startupExtras == null || startupExtras.fullNodeData == null) {
+                            ver0 = ver;
+
+                            fullData = fullData();
+
+                            hist = history(ver - histCache.size() + 1, actualVer);
+                        }
+                        else {
+                            ver0 = startupExtras.fullNodeData.ver;
+
+                            fullData = startupExtras.fullNodeData.fullData;
+
+                            hist = startupExtras.fullNodeData.hist;
+                        }
+
+                        DistributedMetaStorageHistoryItem[] updates;
+
+                        if (startupExtras != null)
+                            updates = startupExtras.deferredUpdates.toArray(EMPTY_ARRAY);
+                        else
+                            updates = null;
+
+                        Serializable nodeData = new DistributedMetaStorageNodeData(ver0, fullData, hist, updates);
+
+                        dataBag.addGridCommonData(COMPONENT_ID, nodeData);
+                    }
+                }
             }
         }
     }
 
     /** */
-    private DistributedMetaStorageHistoryItem[] history(long startVer) {
-        if (startVer > ver)
-            return DistributedMetaStorageHistoryItem.EMPTY_ARRAY;
+    private DistributedMetaStorageHistoryItem[] history(long startVer, long actualVer) {
+        if (startVer > actualVer)
+            return EMPTY_ARRAY;
 
-        List<DistributedMetaStorageHistoryItem> hist = new ArrayList<>((int)(ver - startVer + 1));
+        List<DistributedMetaStorageHistoryItem> hist = new ArrayList<>((int)(actualVer - startVer + 1));
 
-        for (long v = startVer; v <= ver; v++)
-            hist.add(histCache.get(v));
+        if (startupExtras == null) {
+            for (long v = startVer; v <= actualVer; v++)
+                hist.add(histCache.get(v));
+        }
+        else {
+            DistributedMetaStorageNodeData fullNodeData = startupExtras.fullNodeData;
 
-        return hist.toArray(DistributedMetaStorageHistoryItem.EMPTY_ARRAY);
+            if (fullNodeData == null) {
+                for (long v = startVer; v <= ver; v++)
+                    hist.add(histCache.get(v));
+            }
+            else {
+                long fullNodeDataVer = fullNodeData.ver;
+
+                for (long v = startVer; v <= fullNodeDataVer; v++)
+                    hist.add(fullNodeData.hist[(int)(v - fullNodeDataVer + fullNodeData.hist.length - 1)]);
+            }
+
+            List<DistributedMetaStorageHistoryItem> deferredUpdates = startupExtras.deferredUpdates;
+
+            int deferredStartVer = (int)(startVer - actualVer + deferredUpdates.size() - 1);
+
+            hist.addAll(deferredUpdates.subList(Math.max(deferredStartVer, 0), deferredUpdates.size()));
+        }
+
+        return hist.toArray(EMPTY_ARRAY);
     }
 
     /** */
@@ -390,11 +469,11 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
             );
         }
         catch (IgniteCheckedException e) {
-            //TODO Shit?
+            //TODO ???
             throw U.convertException(e);
         }
 
-        return fullData.toArray(DistributedMetaStorageHistoryItem.EMPTY_ARRAY);
+        return fullData.toArray(EMPTY_ARRAY);
     }
 
     /** {@inheritDoc} */
@@ -402,16 +481,13 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
         DistributedMetaStorageNodeData nodeData = (DistributedMetaStorageNodeData)data.commonData();
 
         if (nodeData.fullData == null) {
-            if (nodeData.hist != null) {
-                for (DistributedMetaStorageHistoryItem histItem : nodeData.hist)
-                    updateLater(histItem);
+            if (nodeData.updates != null) {
+                for (DistributedMetaStorageHistoryItem update : nodeData.updates)
+                    updateLater(update);
             }
         }
-        else {
-            clearLocalDataLater();
-
+        else
             writeFullDataLater(nodeData);
-        }
     }
 
     /** */
@@ -434,6 +510,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
         DistributedMetaStorageUpdateMessage msg
     ) {
         try {
+            U.await(writeAvailable);
+
             completeWrite(bridge, new DistributedMetaStorageHistoryItem(msg.key(), msg.value()));
         }
         catch (IgniteCheckedException | Error e) {
@@ -483,7 +561,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
 
         addToHistoryCache(ver, histItem);
 
-        shrinkHistory();
+        shrinkHistory(bridge);
     }
 
     /** */
@@ -495,11 +573,14 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
     private void addToHistoryCache(long ver, DistributedMetaStorageHistoryItem histItem) {
         histCache.put(ver, histItem);
 
-        histSizeApproximation += histItem.approximateSize();
+        histSizeApproximation += histItem.estimateSize();
     }
 
-    /** */
-    private void shrinkHistory() throws IgniteCheckedException {
+    /**
+     * @param bridge */
+    private void shrinkHistory(
+        DistributedMetaStorageBridge bridge
+    ) throws IgniteCheckedException {
         long maxBytes = histMaxBytes;
 
         if (histSizeApproximation > maxBytes && histCache.size() > 1) {
@@ -509,7 +590,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
                 while (histSizeApproximation > maxBytes && histCache.size() > 1) {
                     DistributedMetaStorageHistoryItem histItem = bridge.removeHistoryItem(ver + 1 - histCache.size());
 
-                    histSizeApproximation -= histItem.approximateSize();
+                    histSizeApproximation -= histItem.estimateSize();
                 }
             }
             finally {
@@ -519,8 +600,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
     }
 
     /** */
-    private void updateLater(DistributedMetaStorageHistoryItem histItem) {
-        startupExtras.deferredUpdates.add(histItem);
+    private void updateLater(DistributedMetaStorageHistoryItem update) {
+        startupExtras.deferredUpdates.add(update);
     }
 
     /** */
@@ -553,7 +634,20 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
     private void writeFullDataLater(DistributedMetaStorageNodeData nodeData) {
         assert nodeData.fullData != null;
 
+        clearLocalDataLater();
+
         startupExtras.fullNodeData = nodeData;
+
+        startupExtras.firstToWrite = null;
+
+        startupExtras.deferredUpdates.clear();
+
+        if (nodeData.updates != null) {
+            for (DistributedMetaStorageHistoryItem update : nodeData.updates)
+                updateLater(update);
+
+            nodeData.updates = null;
+        }
     }
 
     /** */
@@ -949,13 +1043,11 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
                 if (startupExtras.fullNodeData != null) {
                     DistributedMetaStorageNodeData fullNodeData = startupExtras.fullNodeData;
 
-                    startupExtras.firstToWrite = null;
-
-                    startupExtras.deferredUpdates.clear();
-
                     ver = fullNodeData.ver;
 
                     histCache.clear();
+
+                    histSizeApproximation = 0L;
 
                     for (DistributedMetaStorageHistoryItem item : fullNodeData.fullData)
                         metastorage.putData(item.key, item.valBytes);
@@ -963,8 +1055,14 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
                     for (int i = 0, len = fullNodeData.hist.length; i < len; i++) {
                         DistributedMetaStorageHistoryItem histItem = fullNodeData.hist[i];
 
-                        addToHistoryCache(ver + i + 1 - len, histItem);
+                        long histItemVer = ver + i + 1 - len;
+
+                        metastorage.write(historyItemKey(histItemVer), histItem);
+
+                        addToHistoryCache(histItemVer, histItem);
                     }
+
+                    metastorage.write(historyVersionKey(), ver);
 
                     for (DistributedMetaStorageHistoryItem item : fullNodeData.fullData) {
                         Serializable val = unmarshal(item.valBytes);
