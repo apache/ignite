@@ -19,6 +19,7 @@ import angular from 'angular';
 
 import template from './template.pug';
 import controller from './controller';
+import publicTemplate from '../../../views/public.pug';
 
 import './style.scss';
 
@@ -32,7 +33,14 @@ export default angular
     .config(['$stateProvider', ($stateProvider) => {
         $stateProvider.state('password.send', {
             url: '/changed',
-            component: 'pagePasswordChanged',
+            views: {
+                '@': {
+                    template: publicTemplate
+                },
+                'page@password.send': {
+                    component: 'pagePasswordChanged'
+                }
+            },
             tfMetaTags: {
                 title: 'Password send'
             },

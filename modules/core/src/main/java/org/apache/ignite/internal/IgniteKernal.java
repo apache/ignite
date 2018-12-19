@@ -130,7 +130,6 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMXBeanImpl;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -169,6 +168,7 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.stat.IoStatisticsMetricsLocalMXBeanImpl;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestions;
 import org.apache.ignite.internal.suggestions.OsConfigurationSuggestions;
@@ -207,6 +207,7 @@ import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 import org.apache.ignite.mxbean.DataStorageMXBean;
 import org.apache.ignite.mxbean.FailureHandlingMxBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
+import org.apache.ignite.mxbean.IoStatisticsMetricsMXBean;
 import org.apache.ignite.mxbean.StripedExecutorMXBean;
 import org.apache.ignite.mxbean.ThreadPoolMXBean;
 import org.apache.ignite.mxbean.TransactionMetricsMxBean;
@@ -251,6 +252,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STORAGE_
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JIT_NAME;
@@ -659,7 +661,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public List<String> getUserAttributesFormatted() {
         assert cfg != null;
 
@@ -773,7 +774,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param hnd Default uncaught exception handler used by thread pools.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    @SuppressWarnings({"unchecked"})
     public void start(
         final IgniteConfiguration cfg,
         ExecutorService utilityCachePool,
@@ -1459,7 +1459,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param notifyEnabled Update notifier flag.
      * @throws IgniteCheckedException thrown if was unable to set up attribute.
      */
-    @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
     private void fillNodeAttributes(boolean notifyEnabled) throws IgniteCheckedException {
         ctx.addNodeAttribute(ATTR_REBALANCE_POOL_SIZE, configuration().getRebalanceThreadPoolSize());
         ctx.addNodeAttribute(ATTR_DATA_STREAMER_POOL_SIZE, configuration().getDataStreamerThreadPoolSize());
@@ -1621,6 +1620,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         // Save transactions configuration.
         add(ATTR_TX_CONFIG, cfg.getTransactionConfiguration());
+
+        // Supported features.
+        add(ATTR_IGNITE_FEATURES, IgniteFeatures.allFeatures());
 
         // Stick in SPI versions and classes attributes.
         addSpiAttributes(cfg.getCollisionSpi());
@@ -2110,12 +2112,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                         pdsUsedSummary += pdsUsed;
 
-                        // TODO https://issues.apache.org/jira/browse/IGNITE-9455
-                        // TODO Print actual value for meta store region when issue will be fixed.
-                        boolean metastore =
-                            GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME.equals(region.config().getName());
-
-                        String pdsUsedSize = metastore ? "unknown" : dblFmt.format(pdsUsedMBytes) + "MB";
+                        String pdsUsedSize = dblFmt.format(pdsUsedMBytes) + "MB";
 
                         pdsRegionsInfo.append("    ^--   ")
                             .append(region.config().getName()).append(" region")
@@ -2452,6 +2449,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 // Preserve interrupt status.
                 Thread.currentThread().interrupt();
             }
+
+            ctx.ioStats().stop();
         }
         else {
             // Proper notification.
@@ -2816,7 +2815,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public String executeTask(String taskName, String arg) throws JMException {
         try {
             return compute().execute(taskName, arg);
@@ -3007,7 +3005,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <K, V> IgniteBiTuple<IgniteCache<K, V>, Boolean> getOrCreateCache0(
         CacheConfiguration<K, V> cacheCfg, boolean sql) {
         A.notNull(cacheCfg, "cacheCfg");
@@ -4335,6 +4332,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             registerMBean("Kernal", locMetricsBean.getClass().getSimpleName(), locMetricsBean, ClusterMetricsMXBean.class);
             ClusterMetricsMXBean metricsBean = new ClusterMetricsMXBeanImpl(cluster());
             registerMBean("Kernal", metricsBean.getClass().getSimpleName(), metricsBean, ClusterMetricsMXBean.class);
+
+            //IO metrics
+            IoStatisticsMetricsMXBean ioStatMetricsBean = new IoStatisticsMetricsLocalMXBeanImpl(ctx.ioStats());
+            registerMBean("IOMetrics", ioStatMetricsBean.getClass().getSimpleName(), ioStatMetricsBean, IoStatisticsMetricsMXBean.class);
 
             // Transaction metrics
             TransactionMetricsMxBean txMetricsMXBean = new TransactionMetricsMxBeanImpl(ctx.cache().transactions().metrics());

@@ -48,6 +48,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
@@ -55,6 +58,7 @@ import static org.apache.ignite.transactions.TransactionState.PREPARED;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
     /** Ip finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -76,6 +80,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckDifferentSerializerVersions() throws Exception {
         System.setProperty(IGNITE_WAL_SERIALIZER_VERSION, "1");
 
@@ -127,6 +132,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckDifferentSerializerVersionsAndLogTimestamp() throws Exception {
         IgniteCallable<List<WALRecord>> recordsFactory = new IgniteCallable<List<WALRecord>>() {
             @Override public List<WALRecord> call() throws Exception {

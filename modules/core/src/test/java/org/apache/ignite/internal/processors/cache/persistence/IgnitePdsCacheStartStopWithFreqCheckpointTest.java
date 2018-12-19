@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -38,10 +39,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsCacheStartStopWithFreqCheckpointTest extends GridCommonAbstractTest {
     /** Caches. */
     private static final int CACHES = 10;
@@ -79,6 +84,7 @@ public class IgnitePdsCacheStartStopWithFreqCheckpointTest extends GridCommonAbs
     /** {@inheritDoc} */
     private CacheConfiguration cacheConfiguration(int cacheIdx) {
         return new CacheConfiguration(CACHE_NAME + cacheIdx)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setCacheMode(CacheMode.REPLICATED)
             .setBackups(0)
             .setRebalanceMode(CacheRebalanceMode.NONE);
@@ -103,6 +109,7 @@ public class IgnitePdsCacheStartStopWithFreqCheckpointTest extends GridCommonAbs
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckpointDeadlock() throws Exception {
         IgniteEx crd = startGrid(0);
 

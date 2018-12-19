@@ -1340,7 +1340,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param qry Query.
      * @param updateStatistics Update statistics flag.
      */
-    @SuppressWarnings({"unchecked", "serial"})
+    @SuppressWarnings({"unchecked"})
     protected GridCloseableIterator scanQueryLocal(final GridCacheQueryAdapter qry,
         boolean updateStatistics) throws IgniteCheckedException {
         if (!enterBusy())

@@ -19,6 +19,7 @@ package org.apache.ignite.ml.tree.boosting;
 
 import org.apache.ignite.ml.composition.boosting.GDBBinaryClassifierTrainer;
 import org.apache.ignite.ml.composition.boosting.GDBLearningStrategy;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
 import org.jetbrains.annotations.NotNull;
 
@@ -59,6 +60,11 @@ public class GDBBinaryClassifierOnTreesTrainer extends GDBBinaryClassifierTraine
     /** {@inheritDoc} */
     @Override protected GDBLearningStrategy getLearningStrategy() {
         return new GDBOnTreesLearningStrategy(usingIdx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GDBBinaryClassifierOnTreesTrainer withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        return (GDBBinaryClassifierOnTreesTrainer)super.withEnvironmentBuilder(envBuilder);
     }
 
     /**

@@ -81,10 +81,10 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.events.EventType.EVT_MANAGEMENT_TASK_STARTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_TASK_SESSION_ATTR_SET;
-import static org.apache.ignite.events.EventType.EVT_MANAGEMENT_TASK_STARTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_JOB_SIBLINGS;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TASK;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TASK_CANCEL;
@@ -495,7 +495,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
         try {
             return taskMetaCache().localPeek(
-                new GridTaskNameHashKey(taskNameHash), null, null);
+                new GridTaskNameHashKey(taskNameHash), null);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -548,7 +548,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * @param execName Name of the custom executor.
      * @return Task future.
      */
-    @SuppressWarnings("unchecked")
     private <T, R> ComputeTaskInternalFuture<R> startTask(
         @Nullable String taskName,
         @Nullable Class<?> taskCls,
@@ -1134,7 +1133,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * @param nodeId Node ID.
      * @param msg Task session request.
      */
-    @SuppressWarnings({"unchecked"})
     private void processTaskSessionRequest(UUID nodeId, GridTaskSessionRequest msg) {
         assert nodeId != null;
         assert msg != null;
@@ -1244,7 +1242,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     /**
      * Listener for individual task events.
      */
-    @SuppressWarnings({"deprecation"})
     private class TaskEventListener implements GridTaskEventListener {
         /** */
         private final GridMessageListener msgLsnr = new JobMessageListener(false);

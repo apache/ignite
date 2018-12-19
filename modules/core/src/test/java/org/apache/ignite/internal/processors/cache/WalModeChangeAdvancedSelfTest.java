@@ -30,6 +30,10 @@ import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -38,6 +42,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Concurrent and advanced tests for WAL state change.
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSelfTest {
     /**
      * Constructor.
@@ -65,6 +70,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheCleanup() throws Exception {
         Ignite srv = startGrid(config(SRV_1, false, false));
 
@@ -133,7 +139,11 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testJoin() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
+
         checkJoin(false);
     }
 
@@ -142,6 +152,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinCoordinator() throws Exception {
         checkJoin(true);
     }
@@ -210,6 +221,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testServerRestartNonCoordinator() throws Exception {
         checkNodeRestart(false);
     }
@@ -219,6 +231,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testServerRestartCoordinator() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-7472");
 
@@ -301,6 +314,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnect() throws Exception {
         final Ignite srv = startGrid(config(SRV_1, false, false));
         Ignite cli = startGrid(config(CLI, true, false));
@@ -359,6 +373,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheDestroy() throws Exception {
         final Ignite srv = startGrid(config(SRV_1, false, false));
         Ignite cli = startGrid(config(CLI, true, false));
@@ -419,6 +434,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentOperations() throws Exception {
         final Ignite srv1 = startGrid(config(SRV_1, false, false));
         final Ignite srv2 = startGrid(config(SRV_2, false, false));

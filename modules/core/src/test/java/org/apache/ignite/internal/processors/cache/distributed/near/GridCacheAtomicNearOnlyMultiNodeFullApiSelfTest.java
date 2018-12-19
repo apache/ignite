@@ -25,12 +25,16 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /**
  * Tests NEAR_ONLY cache.
  */
+@RunWith(JUnit4.class)
 public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNearOnlyMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
@@ -75,6 +79,7 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testClear() throws Exception {
         IgniteCache<String, Integer> nearCache = jcache();
         IgniteCache<String, Integer> primary = fullCache();

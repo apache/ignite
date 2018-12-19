@@ -73,6 +73,7 @@ import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -104,6 +105,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -277,6 +279,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** Cache recovery lifecycle state and actions. */
     private final CacheRecoveryLifecycle recovery = new CacheRecoveryLifecycle();
+
+    /** Tmp storage for meta migration. */
+    private MetaStorage.TmpStorage tmpStorage;
 
     /**
      * @param ctx Kernal context.
@@ -1295,7 +1300,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public void initQueryStructuresForNotStartedCache(DynamicCacheDescriptor cacheDesc) throws IgniteCheckedException {
         QuerySchema schema = cacheDesc.schema() != null ? cacheDesc.schema() : new QuerySchema();
 
-        GridCacheContextInfo cacheInfo = new GridCacheContextInfo(cacheDesc, ctx);
+        CacheObjectContext coCtx = cacheDesc.cacheObjectContext(ctx.cacheObjects());
+
+        GridCacheContextInfo cacheInfo = new GridCacheContextInfo(cacheDesc);
 
         ctx.query().onCacheStart(cacheInfo, schema, cacheDesc.sql());
     }
@@ -1570,8 +1577,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             grp,
             desc.cacheType(),
             locStartTopVer,
+            desc.deploymentId(),
             affNode,
             updatesAllowed,
+            desc.cacheConfiguration().isStatisticsEnabled(),
             recoveryMode,
             /*
              * Managers in starting order!
@@ -1590,8 +1599,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             pluginMgr,
             affMgr
         );
-
-        cacheCtx.statisticsEnabled(desc.cacheConfiguration().isStatisticsEnabled());
 
         cacheCtx.cacheObjectContext(cacheObjCtx);
 
@@ -1707,8 +1714,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 grp,
                 desc.cacheType(),
                 locStartTopVer,
+                desc.deploymentId(),
                 affNode,
                 true,
+                desc.cacheConfiguration().isStatisticsEnabled(),
                 recoveryMode,
                 /*
                  * Managers in starting order!
@@ -1727,8 +1736,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 pluginMgr,
                 affMgr
             );
-
-            cacheCtx.statisticsEnabled(desc.cacheConfiguration().isStatisticsEnabled());
 
             cacheCtx.cacheObjectContext(cacheObjCtx);
 
@@ -2115,10 +2122,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else {
             Map<StartCacheInfo, GridCacheContext> cacheContexts = new ConcurrentHashMap<>();
 
-            int parallelismLvl = sharedCtx.kernalContext().config().getSystemThreadPoolSize();
-
             // Reserve at least 2 threads for system operations.
-            parallelismLvl = Math.max(1, parallelismLvl - 2);
+            int parallelismLvl = U.availableThreadCount(ctx, GridIoPolicy.SYSTEM_POOL, 2);
 
             doInParallel(
                 parallelismLvl,
@@ -2232,7 +2237,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cacheCtx.isRecoveryMode())
             finishRecovery(exchTopVer, cacheCtx);
         else {
-            ctx.query().onCacheStart(new GridCacheContextInfo(cacheCtx, clientCache), desc.schema() != null ? desc.schema() : new QuerySchema(), desc.sql());
+            ctx.query().onCacheStart(
+                    new GridCacheContextInfo(cacheCtx, clientCache),
+                    desc.schema() != null ? desc.schema() : new QuerySchema(),
+                    desc.sql()
+            );
 
             onCacheStarted(cacheCtx);
         }
@@ -2297,7 +2306,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             false
         );
 
-        initCacheContext(cacheCtx, ccfg, desc.deploymentId());
+        initCacheContext(cacheCtx, ccfg);
 
         return cacheCtx;
     }
@@ -2329,9 +2338,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cacheContext Cache context.
      * @throws IgniteCheckedException If failed.
      */
-    private void finishRecovery(AffinityTopologyVersion cacheStartVer,
-        GridCacheContext<?, ?> cacheContext) throws IgniteCheckedException {
-
+    private void finishRecovery(
+        AffinityTopologyVersion cacheStartVer,
+        GridCacheContext<?, ?> cacheContext
+    ) throws IgniteCheckedException {
         CacheGroupContext groupContext = cacheContext.group();
 
         // Take cluster-wide cache descriptor and try to update local cache and cache group parameters.
@@ -2343,7 +2353,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             isLocalAffinity(updatedDescriptor.cacheConfiguration())
         );
 
-        cacheContext.finishRecovery(cacheStartVer, updatedDescriptor.cacheConfiguration().isStatisticsEnabled());
+        cacheContext.finishRecovery(cacheStartVer, updatedDescriptor);
 
         if (cacheContext.config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
             sharedCtx.coordinators().ensureStarted();
@@ -2466,16 +2476,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param cacheCtx Cache context to initializtion.
      * @param cfg Cache configuration.
-     * @param deploymentId Dynamic deployment ID.
      * @throws IgniteCheckedException if failed.
      */
     private void initCacheContext(
         GridCacheContext<?, ?> cacheCtx,
-        CacheConfiguration cfg,
-        IgniteUuid deploymentId
+        CacheConfiguration cfg
     ) throws IgniteCheckedException {
-        cacheCtx.dynamicDeploymentId(deploymentId);
-
         GridCacheAdapter cache = cacheCtx.cache();
 
         sharedCtx.addCacheContext(cacheCtx);
@@ -2583,7 +2589,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             true
         );
 
-        initCacheContext(cacheCtx, cfg, desc.deploymentId());
+        initCacheContext(cacheCtx, cfg);
 
         cacheCtx.onStarted();
 
@@ -2910,7 +2916,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param exchActions Change requests.
      */
     private void processCacheStopRequestOnExchangeDone(ExchangeActions exchActions) {
-        // Force checkpoint if there is any cache stop request
+        // Reserve at least 2 threads for system operations.
+        int parallelismLvl = U.availableThreadCount(ctx, GridIoPolicy.SYSTEM_POOL, 2);
+
         if (!exchActions.cacheStopRequests().isEmpty()) {
             try {
                 sharedCtx.database().waitForCheckpoint("caches stop");
@@ -2920,63 +2928,88 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        for (ExchangeActions.CacheActionData action : exchActions.cacheStopRequests()) {
-            CacheGroupContext gctx = cacheGrps.get(action.descriptor().groupId());
+        List<IgniteBiTuple<CacheGroupContext, Boolean>> grpToStop = exchActions.cacheGroupsToStop().stream()
+                .filter(a -> cacheGrps.containsKey(a.descriptor().groupId()))
+                .map(a -> F.t(cacheGrps.get(a.descriptor().groupId()), a.destroy()))
+                .collect(Collectors.toList());
 
-            // Cancel all operations blocking gateway
-            if (gctx != null) {
-                final String msg = "Failed to wait for topology update, cache group is stopping.";
+        Map<Integer, List<ExchangeActions.CacheActionData>> cachesToStop = exchActions.cacheStopRequests().stream()
+                .collect(Collectors.groupingBy(action -> action.descriptor().groupId()));
 
-                // If snapshot operation in progress we must throw CacheStoppedException
-                // for correct cache proxy restart. For more details see
-                // IgniteCacheProxy.cacheException()
-                gctx.affinity().cancelFutures(new CacheStoppedException(msg));
-            }
+        try {
+            doInParallel(
+                    parallelismLvl,
+                    sharedCtx.kernalContext().getSystemExecutorService(),
+                    cachesToStop.entrySet(),
+                    cachesToStopByGrp -> {
+                        CacheGroupContext gctx = cacheGrps.get(cachesToStopByGrp.getKey());
 
-            stopGateway(action.request());
+                        if (gctx != null)
+                            gctx.preloader().pause();
 
-            sharedCtx.database().checkpointReadLock();
+                        try {
 
-            try {
-                prepareCacheStop(action.request().cacheName(), action.request().destroy());
-            }
-            finally {
-                sharedCtx.database().checkpointReadUnlock();
-            }
+                            if (gctx != null) {
+                                final String msg = "Failed to wait for topology update, cache group is stopping.";
+
+                                // If snapshot operation in progress we must throw CacheStoppedException
+                                // for correct cache proxy restart. For more details see
+                                // IgniteCacheProxy.cacheException()
+                                gctx.affinity().cancelFutures(new CacheStoppedException(msg));
+                            }
+
+                            for (ExchangeActions.CacheActionData action: cachesToStopByGrp.getValue()) {
+                                stopGateway(action.request());
+
+                                sharedCtx.database().checkpointReadLock();
+
+                                try {
+                                    prepareCacheStop(action.request().cacheName(), action.request().destroy());
+                                }
+                                finally {
+                                    sharedCtx.database().checkpointReadUnlock();
+                                }
+                            }
+                        }
+                        finally {
+                            if (gctx != null)
+                                gctx.preloader().resume();
+                        }
+
+                        return null;
+                    }
+            );
+        }
+        catch (IgniteCheckedException e) {
+            String msg = "Failed to stop caches";
+
+            log.error(msg, e);
+
+            throw new IgniteException(msg, e);
         }
 
         sharedCtx.database().checkpointReadLock();
 
         try {
             // Do not invoke checkpoint listeners for groups are going to be destroyed to prevent metadata corruption.
-            for (ExchangeActions.CacheGroupActionData action : exchActions.cacheGroupsToStop()) {
-                Integer groupId = action.descriptor().groupId();
-                CacheGroupContext grp = cacheGrps.get(groupId);
+            grpToStop.forEach(grp -> {
+                CacheGroupContext gctx = grp.getKey();
 
-                if (grp != null && grp.persistenceEnabled() && sharedCtx.database() instanceof GridCacheDatabaseSharedManager) {
+                if (gctx != null && gctx.persistenceEnabled() && sharedCtx.database() instanceof GridCacheDatabaseSharedManager) {
                     GridCacheDatabaseSharedManager mngr = (GridCacheDatabaseSharedManager)sharedCtx.database();
-                    mngr.removeCheckpointListener((DbCheckpointListener)grp.offheap());
+                    mngr.removeCheckpointListener((DbCheckpointListener)gctx.offheap());
                 }
-            }
+            });
         }
         finally {
             sharedCtx.database().checkpointReadUnlock();
         }
 
-        List<IgniteBiTuple<CacheGroupContext, Boolean>> stoppedGroups = new ArrayList<>();
-
-        for (ExchangeActions.CacheGroupActionData action : exchActions.cacheGroupsToStop()) {
-            Integer groupId = action.descriptor().groupId();
-
-            if (cacheGrps.containsKey(groupId)) {
-                stoppedGroups.add(F.t(cacheGrps.get(groupId), action.destroy()));
-
-                stopCacheGroup(groupId);
-            }
-        }
+        for (IgniteBiTuple<CacheGroupContext, Boolean> grp : grpToStop)
+            stopCacheGroup(grp.get1().groupId());
 
         if (!sharedCtx.kernalContext().clientNode())
-            sharedCtx.database().onCacheGroupsStopped(stoppedGroups);
+            sharedCtx.database().onCacheGroupsStopped(grpToStop);
 
         if (exchActions.deactivate())
             sharedCtx.deactivate();
@@ -4506,7 +4539,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param <V> type of values.
      * @return Cache instance for given name.
      */
-    @SuppressWarnings("unchecked")
     public <K, V> IgniteInternalCache<K, V> cache(String name) {
         assert name != null;
 
@@ -4581,7 +4613,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache instance for given name.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public <K, V> IgniteInternalCache<K, V> getOrStartCache(
         String name,
         CacheConfiguration ccfg
@@ -4671,7 +4702,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param <V> type of values.
      * @return Cache instance for given name.
      */
-    @SuppressWarnings("unchecked")
     public <K, V> IgniteInternalCache<K, V> publicCache(String name) {
         assert name != null;
 
@@ -4713,7 +4743,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache instance for given name.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings({"unchecked", "ConstantConditions"})
     @Nullable public <K, V> IgniteCacheProxy<K, V> publicJCache(String cacheName,
         boolean failIfNotStarted,
         boolean checkThreadTx) throws IgniteCheckedException {
@@ -4939,7 +4968,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param <V> type of values.
      * @return Cache instance for given name.
      */
-    @SuppressWarnings("unchecked")
     public <K, V> GridCacheAdapter<K, V> internalCache(String name) {
         assert name != null;
 
@@ -5038,7 +5066,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param near Near flag.
      * @throws IgniteCheckedException If registration failed.
      */
-    @SuppressWarnings("unchecked")
     private void registerMbean(Object obj, @Nullable String cacheName, boolean near)
         throws IgniteCheckedException {
         if (U.IGNITE_MBEANS_DISABLED)
@@ -5291,17 +5318,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             }
             else {
+                CacheConfiguration cfg = new CacheConfiguration(ccfg);
+
                 req.deploymentId(IgniteUuid.randomUuid());
 
-                CacheConfiguration cfg = new CacheConfiguration(ccfg);
+                req.startCacheConfiguration(cfg);
 
                 CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(cfg);
 
                 initialize(cfg, cacheObjCtx);
 
-                req.startCacheConfiguration(cfg);
-                req.schema(new QuerySchema(qryEntities != null ? QueryUtils.normalizeQueryEntities(qryEntities, cfg)
-                    : cfg.getQueryEntities()));
+                if (cachesInfo.restartingCaches().contains(req.cacheName()))
+                    req.schema(new QuerySchema(qryEntities));
+                else
+                    req.schema(new QuerySchema(qryEntities != null ? QueryUtils.normalizeQueryEntities(qryEntities, cfg)
+                            : cfg.getQueryEntities()));
             }
         }
         else {
@@ -5451,6 +5482,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Get Temporary storage
+     */
+    public MetaStorage.TmpStorage getTmpStorage() {
+        return tmpStorage;
+    }
+
+    /**
+     * Set Temporary storage
+     */
+    public void setTmpStorage(MetaStorage.TmpStorage tmpStorage) {
+        this.tmpStorage = tmpStorage;
+    }
+
+    /**
      * Recovery lifecycle for caches.
      */
     private class CacheRecoveryLifecycle implements MetastorageLifecycleListener, DatabaseLifecycleListener {
@@ -5482,7 +5527,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void afterBinaryMemoryRestore(GridCacheDatabaseSharedManager.RestoreBinaryState binaryState) throws IgniteCheckedException {
+        @Override public void afterBinaryMemoryRestore(
+            IgniteCacheDatabaseSharedManager mgr,
+            GridCacheDatabaseSharedManager.RestoreBinaryState restoreState) throws IgniteCheckedException {
             for (DynamicCacheDescriptor cacheDescriptor : persistentCaches()) {
                 startCacheInRecoveryMode(cacheDescriptor);
 
@@ -5491,8 +5538,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void afterLogicalUpdatesApplied(GridCacheDatabaseSharedManager.RestoreLogicalState logicalState) throws IgniteCheckedException {
-            restorePartitionStates(cacheGroups(), logicalState.partitionRecoveryStates());
+        @Override public void afterLogicalUpdatesApplied(
+            IgniteCacheDatabaseSharedManager mgr,
+            GridCacheDatabaseSharedManager.RestoreLogicalState restoreState) throws IgniteCheckedException {
+            restorePartitionStates(cacheGroups(), restoreState.partitionRecoveryStates());
         }
 
         /**

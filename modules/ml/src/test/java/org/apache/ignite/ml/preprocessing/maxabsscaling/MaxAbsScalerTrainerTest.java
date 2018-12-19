@@ -19,6 +19,7 @@ package org.apache.ignite.ml.preprocessing.maxabsscaling;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
@@ -46,6 +47,7 @@ public class MaxAbsScalerTrainerTest extends TrainerTest {
         MaxAbsScalerTrainer<Integer, Vector> standardizationTrainer = new MaxAbsScalerTrainer<>();
 
         MaxAbsScalerPreprocessor<Integer, Vector> preprocessor = standardizationTrainer.fit(
+            TestUtils.testEnvBuilder(),
             datasetBuilder,
             (k, v) -> v
         );

@@ -44,17 +44,22 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Test checks that grid transaction configuration doesn't influence system caches.
  */
+@RunWith(JUnit4.class)
 public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
     /** Ip finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -108,7 +113,11 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUserTxTimeout() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-7952");
+
         final Ignite ignite = grid(0);
 
         final IgniteCache<Object, Object> cache = ignite.getOrCreateCache(CACHE_NAME);
@@ -122,6 +131,7 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSystemCacheTx() throws Exception {
         final Ignite ignite = grid(0);
 
@@ -214,7 +224,7 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected void checkStartTxSuccess(final IgniteInternalCache<Object, Object> cache) throws Exception {
-        try (final GridNearTxLocal tx = CU.txStartInternal(cache.context(), cache, PESSIMISTIC, READ_COMMITTED)) {
+        try (final GridNearTxLocal tx = CU.txStartInternal(cache.context(), cache, PESSIMISTIC, REPEATABLE_READ)) {
             assert tx != null;
 
             sleepForTxFailure();

@@ -258,7 +258,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
     @Override public void start() throws IgniteCheckedException {
         startSpi();
 
@@ -723,10 +722,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"deprecation", "SynchronizationOnLocalVariableOrMethodParameter"})
+    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
     @Override public void onKernalStart0() throws IgniteCheckedException {
         discoLsnr = new GridLocalEventListener() {
-            @SuppressWarnings({"TooBroadScope"})
             @Override public void onEvent(Event evt) {
                 assert evt instanceof DiscoveryEvent : "Invalid event: " + evt;
 
@@ -1183,7 +1181,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param msg Message.
      * @param nodeId Node ID.
      */
-    @SuppressWarnings("deprecation")
     private void processRegularMessage0(GridIoMessage msg, UUID nodeId) {
         GridMessageListener lsnr = listenerGet0(msg.topic());
 
@@ -1696,7 +1693,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param plc Type of processing.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     public void sendToGridTopic(UUID nodeId, GridTopic topic, Message msg, byte plc)
         throws IgniteCheckedException {
         ClusterNode node = ctx.discovery().node(nodeId);
@@ -1987,7 +1983,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param topic Topic to subscribe to.
      * @param p Message predicate.
      */
-    @SuppressWarnings("unchecked")
     public void addUserMessageListener(final @Nullable Object topic,
         final @Nullable IgniteBiPredicate<UUID, ?> p, final @Nullable UUID nodeId) {
         if (p != null) {
@@ -2019,7 +2014,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param topic Listener's topic.
      * @param lsnr Listener to add.
      */
-    @SuppressWarnings({"TypeMayBeWeakened", "deprecation"})
     public void addMessageListener(GridTopic topic, GridMessageListener lsnr) {
         addMessageListener((Object)topic, lsnr);
     }
@@ -2042,7 +2036,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param topic Listener's topic.
      * @param lsnr Listener to add.
      */
-    @SuppressWarnings({"deprecation"})
     public void addMessageListener(Object topic, final GridMessageListener lsnr) {
         assert lsnr != null;
         assert topic != null;
@@ -2133,7 +2126,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param lsnr Listener to remove.
      * @return Whether or not the lsnr was removed.
      */
-    @SuppressWarnings("deprecation")
     public boolean removeMessageListener(GridTopic topic, @Nullable GridMessageListener lsnr) {
         return removeMessageListener((Object)topic, lsnr);
     }
@@ -2143,7 +2135,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param lsnr Listener to remove.
      * @return Whether or not the lsnr was removed.
      */
-    @SuppressWarnings({"deprecation"})
     public boolean removeMessageListener(Object topic, @Nullable GridMessageListener lsnr) {
         assert topic != null;
 
@@ -2455,8 +2446,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings({"ConstantConditions",
-            "OverlyStrongTypeCast"})
+        @SuppressWarnings({"ConstantConditions"
+        })
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             if (!(msg instanceof GridIoUserMessage)) {
                 U.error(log, "Received unknown message (potentially fatal problem): " + msg);

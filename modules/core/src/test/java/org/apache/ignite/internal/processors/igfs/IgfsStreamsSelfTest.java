@@ -52,6 +52,9 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -61,6 +64,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runMultiThreaded;
 /**
  * Tests for IGFS streams content.
  */
+@RunWith(JUnit4.class)
 public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
     /** Test IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -158,6 +162,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception In case of exception.
      */
+    @Test
     public void testCreateFile() throws Exception {
         IgfsPath path = new IgfsPath("/asdf");
 
@@ -171,6 +176,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateFileColocated() throws Exception {
         IgfsPath path = new IgfsPath("/colocated");
 
@@ -209,6 +215,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateFileFragmented() throws Exception {
         IgfsEx impl = (IgfsEx)grid(0).fileSystem("igfs");
         String metaCacheName = grid(0).igfsx("igfs").configuration().getMetaCacheConfiguration().getName();

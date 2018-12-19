@@ -40,13 +40,18 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 
 /**
  * Tests for cache client with and without store.
  */
+@RunWith(JUnit4.class)
 public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -65,6 +70,13 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static volatile boolean loadedFromClient;
+
+    /** {@inheritDoc} */
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        super.setUp();
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -114,6 +126,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCorrectStore() throws Exception {
         nearEnabled = false;
         cacheMode = CacheMode.PARTITIONED;
@@ -145,6 +158,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvalidStore() throws Exception {
         nearEnabled = false;
         cacheMode = CacheMode.PARTITIONED;
@@ -160,6 +174,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDisabledConsistencyCheck() throws Exception {
         nearEnabled = false;
         cacheMode = CacheMode.PARTITIONED;
@@ -183,6 +198,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoStoreNearDisabled() throws Exception {
         nearEnabled = false;
         cacheMode = CacheMode.PARTITIONED;
@@ -196,6 +212,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoStoreNearEnabled() throws Exception {
         nearEnabled = true;
         cacheMode = CacheMode.PARTITIONED;
@@ -238,6 +255,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalLoadClient() throws Exception {
         cacheMode = CacheMode.LOCAL;
         factory = new Factory3();
@@ -263,6 +281,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalLoadServer() throws Exception {
         cacheMode = CacheMode.LOCAL;
         factory = new Factory3();
@@ -285,6 +304,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
     /**
      * Load cache created on client as REPLICATED and see if it only loaded on servers
      */
+    @Test
     public void testReplicatedLoadFromClient() throws Exception {
         cacheMode = CacheMode.REPLICATED;
         factory = new Factory3();
@@ -308,6 +328,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
     /**
      * Load cache created on client as REPLICATED and see if it only loaded on servers
      */
+    @Test
     public void testPartitionedLoadFromClient() throws Exception {
         cacheMode = CacheMode.PARTITIONED;
         factory = new Factory3();

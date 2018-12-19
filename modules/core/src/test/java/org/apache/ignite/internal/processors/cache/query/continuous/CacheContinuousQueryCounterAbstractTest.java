@@ -53,6 +53,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -63,6 +66,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Continuous queries counter tests.
  */
+@RunWith(JUnit4.class)
 public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommonAbstractTest
     implements Serializable {
     /** */
@@ -78,7 +82,6 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     private static final String NO_CACHE_IGNITE_INSTANCE_NAME = "noCacheGrid";
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -177,6 +180,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAllEntries() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(CACHE_NAME);
 
@@ -248,6 +252,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTwoQueryListener() throws Exception {
         if (cacheMode() == LOCAL)
             return;
@@ -384,6 +389,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartQuery() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(CACHE_NAME);
 
@@ -442,6 +448,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntriesByFilter() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(CACHE_NAME);
 
@@ -537,6 +544,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCache() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(CACHE_NAME);
 
