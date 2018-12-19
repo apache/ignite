@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteEx;
-import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -35,7 +34,6 @@ public class CpTriggeredWalDeltaConsistencyTest extends AbstractWalDeltaConsiste
     }
 
     /** {@inheritDoc} */
-    @After
     @Override public void afterTest() throws Exception {
         stopAllGrids();
 
