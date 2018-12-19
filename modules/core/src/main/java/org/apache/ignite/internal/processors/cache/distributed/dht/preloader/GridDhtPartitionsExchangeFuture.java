@@ -3430,7 +3430,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             else {
                 Set<ClusterNode> nodes;
 
-                Map<UUID, GridDhtPartitionsSingleMessage> mergedJoinExchMsgs0 = Collections.emptyMap();
+                Map<UUID, GridDhtPartitionsSingleMessage> mergedJoinExchMsgs0;
 
                 synchronized (mux) {
                     srvNodes.remove(cctx.localNode());
@@ -3449,6 +3449,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             }
                         }
                     }
+                    else
+                        mergedJoinExchMsgs0 = Collections.emptyMap();
 
                     if (!F.isEmpty(sndResNodes))
                         nodes.addAll(sndResNodes);
