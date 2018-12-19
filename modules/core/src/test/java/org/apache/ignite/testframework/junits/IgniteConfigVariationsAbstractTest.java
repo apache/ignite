@@ -25,6 +25,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import junit.framework.TestResult;
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -71,9 +72,35 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         this.testsCfg = testsCfg;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Fallback to TestCase functionality.</p>
+     */
+    @Override public int countTestCases() {
+        return countTestCasesFallback();
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Fallback to TestCase functionality.</p>
+     */
+    @Override public void run(TestResult res) {
+        runFallback(res);
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Fallback to TestCase functionality.</p>
+     */
+    @Override public String getName() {
+        return getNameFallback();
+    }
+
     /** {@inheritDoc} */
-    @Override
-    protected boolean isSafeTopology() {
+    @Override protected boolean isSafeTopology() {
         return false;
     }
 

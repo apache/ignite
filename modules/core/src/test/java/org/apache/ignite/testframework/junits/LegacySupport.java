@@ -17,7 +17,7 @@
 
 package org.apache.ignite.testframework.junits;
 
-import junit.framework.Assert; // IMPL NOTE some old tests expect inherited deprecated assertions.
+import junit.framework.TestResult;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 import org.junit.runners.model.Statement;
@@ -26,8 +26,8 @@ import org.junit.runners.model.Statement;
  * Supports compatibility with old tests that expect specific threading behavior of JUnit 3 TestCase class,
  * inherited deprecated assertions and specific old interface for GridTestUtils.
  */
-@SuppressWarnings({"TransientFieldInNonSerializableClass", "ExtendsUtilityClass", "deprecation"})
-public abstract class LegacySupport extends Assert {
+@SuppressWarnings({"TransientFieldInNonSerializableClass"})
+public abstract class LegacySupport extends LegacyConfigVariationsSupport {
     /**
      * Supports obtaining test name for JUnit4 framework in a way that makes it available for legacy methods invoked
      * from {@code runTest(Statement)}.
@@ -39,18 +39,12 @@ public abstract class LegacySupport extends Assert {
      *
      * @return Name of the currently executed test case.
      */
-    public String getName() {
+    @Override public String getName() {
         return nameRule.getMethodName();
     }
 
-    /** This method is called before a test is executed. */
-    abstract void setUp() throws Exception;
-
     /** Runs test code in between {@code setUp} and {@code tearDown}. */
     abstract void runTest(Statement testRoutine) throws Throwable;
-
-    /** This method is called after a test is executed. */
-    abstract void tearDown() throws Exception;
 
     /**
      * Runs the bare test sequence like in JUnit 3 class TestCase.
@@ -72,5 +66,29 @@ public abstract class LegacySupport extends Assert {
             }
         }
         if (e != null) throw e;
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * This method is here only for subclass to pretend implementing particular interface expected by some utility
+     * methods in GridTestUtils.</p>
+     *
+     * @return Nothing.
+     */
+    @Override public int countTestCases() {
+        throw new UnsupportedOperationException("This method is not expected to be invoked: countTestCases() at test: "
+            + getName());
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * This method is here only for subclass to pretend implementing particular interface expected by some utility
+     * methods in GridTestUtils.</p>
+     */
+    @Override public void run(TestResult res) {
+        throw new UnsupportedOperationException("This method is not intended to be invoked: run(TestResult) at test: "
+            + getName());
     }
 }
