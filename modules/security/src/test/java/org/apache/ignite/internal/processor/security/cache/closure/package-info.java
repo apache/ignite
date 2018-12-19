@@ -15,15 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processor.security.compute;
-
 /**
- * Test task execute permission for Executor Service on Server node.
+ * Contains security tests for cache closures.
  */
-public class ServerNodeTaskExecutePermissionForExecutorServiceTest
-    extends ClientNodeTaskExecutePermissionForExecutorServiceTest {
-    /** {@inheritDoc} */
-    @Override protected boolean isClient() {
-        return false;
-    }
-}
+package org.apache.ignite.internal.processor.security.cache.closure;

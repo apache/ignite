@@ -21,8 +21,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
@@ -88,5 +94,39 @@ public class SecurityUtils {
             SecurityPermission.SERVICE_INVOKE));
 
         return srvcPerms;
+    }
+
+    /**
+     * Getting node's security context.
+     *
+     * @param marsh Marshaller.
+     * @param ldr Class loader.
+     * @param node Node.
+     * @return Node's security context.
+     */
+    public static SecurityContext nodeSecurityContext(Marshaller marsh, ClassLoader ldr, ClusterNode node) {
+        byte[] subjBytes = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT);
+
+        byte[] subjBytesV2 = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
+
+        if (subjBytes == null && subjBytesV2 == null)
+            throw new SecurityException("Security context isn't certain.");
+
+        try {
+            if (subjBytesV2 != null)
+                return U.unmarshal(marsh, subjBytesV2, ldr);
+
+            try {
+                serializeVersion(1);
+
+                return U.unmarshal(marsh, subjBytes, ldr);
+            }
+            finally {
+                restoreDefaultSerializeVersion();
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw new SecurityException("Failed to get security context.", e);
+        }
     }
 }

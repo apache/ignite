@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processor.security.cache;
+package org.apache.ignite.internal.processor.security.cache.closure;
 
 import java.util.Collections;
 import java.util.UUID;

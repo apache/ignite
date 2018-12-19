@@ -32,23 +32,38 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
 /**
- * Test cache permissions for Data Streamer on Client node.
+ * Test cache permissions for Data Streamer.
  */
-public class ClientNodeDataStreamerCachePermissionTest extends AbstractCachePermissionTest {
+public class DataStreamerCachePermissionTest extends AbstractCachePermissionTest {
     /**
      * @throws Exception If fail.
      */
-    public void test() throws Exception {
-        Ignite node = startGrid("test_node",
+    public void testServerNode() throws Exception {
+        testDataStreamer(false);
+    }
+
+    /**
+     * @throws Exception If fail.
+     */
+    public void testClientNode() throws Exception {
+        testDataStreamer(true);
+    }
+
+    /**
+     * @param isClient True if is client mode.
+     * @throws Exception If fail.
+     */
+    private void testDataStreamer(boolean isClient) throws Exception {
+        Ignite node = startGrid(loginPrefix(isClient) + "_test_node",
             builder().defaultAllowAll(true)
                 .appendCachePermissions(CACHE_NAME, SecurityPermission.CACHE_PUT)
                 .appendCachePermissions(FORBIDDEN_CACHE, SecurityPermission.CACHE_READ)
-                .build(), isClient());
+                .build(), isClient);
 
         allowed(node, s -> s.addData("k", 1));
         forbidden(node, s -> s.addData("k", 1));
 
-        allowed(node, s -> s .addData(singletonMap("key", 2)));
+        allowed(node, s -> s.addData(singletonMap("key", 2)));
         forbidden(node, s -> s.addData(singletonMap("key", 2)));
 
         Map.Entry<String, Integer> entry = entry();

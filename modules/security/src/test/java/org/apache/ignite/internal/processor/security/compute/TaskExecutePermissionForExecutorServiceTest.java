@@ -26,18 +26,16 @@ import static org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 
 /**
- * Test task execute permission for Executor Service on Client node.
+ * Test task execute permission for Executor Service.
  */
-public class ClientNodeTaskExecutePermissionForExecutorServiceTest extends AbstractTaskExecutePermissionTest {
-    /**
-     * @throws Exception If failed.
-     */
-    public void testExecute() throws Exception {
-        Ignite ignite = startGrid("client",
+public class TaskExecutePermissionForExecutorServiceTest extends AbstractTaskExecutePermissionTest {
+    /** {@inheritDoc} */
+    @Override protected void testExecute(boolean isClient) throws Exception {
+        Ignite ignite = startGrid(loginPrefix(isClient) + "_node",
             builder().defaultAllowAll(true)
                 .appendTaskPermissions(ALLOWED_CALLABLE.getClass().getName(), TASK_EXECUTE)
                 .appendTaskPermissions(FORBIDDEN_CALLABLE.getClass().getName(), EMPTY_PERMS)
-                .build(), isClient()
+                .build(), isClient
         );
 
         allowRun(() -> ignite.executorService().submit(ALLOWED_CALLABLE).get());
@@ -50,14 +48,12 @@ public class ClientNodeTaskExecutePermissionForExecutorServiceTest extends Abstr
         forbiddenRun(() -> ignite.executorService().invokeAny(singletonList(FORBIDDEN_CALLABLE)));
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAllowedCancel() throws Exception {
-        Ignite ignite = startGrid("client_allowed_cancel",
+    /** {@inheritDoc} */
+    @Override protected void testAllowedCancel(boolean isClient) throws Exception {
+        Ignite ignite = startGrid(loginPrefix(isClient) + "_allowed_cancel",
             builder().defaultAllowAll(true)
                 .appendTaskPermissions(ALLOWED_CALLABLE.getClass().getName(), TASK_EXECUTE, TASK_CANCEL)
-                .build(), isClient()
+                .build(), isClient
         );
 
         Future<Object> f = ignite.executorService().submit(ALLOWED_CALLABLE);
@@ -67,14 +63,12 @@ public class ClientNodeTaskExecutePermissionForExecutorServiceTest extends Abstr
         forbiddenRun(f::get, CancellationException.class);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testForbiddenCancel() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void testForbiddenCancel(boolean isClient) throws Exception {
         Ignite ignite = startGrid("client_forbidden_cancel",
             builder().defaultAllowAll(true)
                 .appendTaskPermissions(ALLOWED_CALLABLE.getClass().getName(), TASK_EXECUTE)
-                .build(), isClient()
+                .build(), isClient
         );
 
         Future<Object> f = ignite.executorService().submit(ALLOWED_CALLABLE);

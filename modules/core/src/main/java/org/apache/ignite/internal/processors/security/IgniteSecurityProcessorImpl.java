@@ -5,12 +5,12 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.AuthenticationContext;
@@ -18,14 +18,18 @@ import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecuritySubject;
+import org.apache.ignite.spi.IgniteNodeValidationResult;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 
 /**
  * Default Grid security Manager implementation.
  */
-public class GridSecurityManagerImpl implements GridSecurityManager {
+public class IgniteSecurityProcessorImpl implements IgniteSecurityProcessor, GridProcessor {
     /** Current security context. */
     private final ThreadLocal<SecurityContext> curSecCtx = ThreadLocal.withInitial(this::localSecurityContext);
 
@@ -41,14 +45,11 @@ public class GridSecurityManagerImpl implements GridSecurityManager {
     /** Map of security contexts. Key is node's id. */
     private final Map<UUID, SecurityContext> secCtxs = new ConcurrentHashMap<>();
 
-    /** Listener, thet removes absolet data from {@link #secCtxs}. */
-    private DiscoveryEventListener lsnr;
-
     /**
      * @param ctx Grid kernal context.
      * @param secPrc Security processor.
      */
-    public GridSecurityManagerImpl(GridKernalContext ctx, GridSecurityProcessor secPrc) {
+    public IgniteSecurityProcessorImpl(GridKernalContext ctx, GridSecurityProcessor secPrc) {
         this.ctx = ctx;
         this.secPrc = secPrc;
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
@@ -67,15 +68,11 @@ public class GridSecurityManagerImpl implements GridSecurityManager {
 
     /** {@inheritDoc} */
     @Override public GridSecuritySession startSession(UUID nodeId) {
-        if (lsnr == null) {
-            lsnr = (evt, discoCache) -> secCtxs.remove(evt.eventNode().id());
-
-            ctx.event().addDiscoveryEventListener(lsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
-        }
-
         return startSession(
             secCtxs.computeIfAbsent(nodeId,
-                uuid -> nodeSecurityContext(ctx.discovery().node(uuid))
+                uuid -> nodeSecurityContext(
+                    marsh, U.resolveClassLoader(ctx.config()), ctx.discovery().node(uuid)
+                )
             )
         );
     }
@@ -120,44 +117,89 @@ public class GridSecurityManagerImpl implements GridSecurityManager {
         return secPrc.enabled();
     }
 
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteCheckedException {
+        secPrc.start();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
+        secPrc.stop(cancel);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        ctx.event().addDiscoveryEventListener(
+            (evt, discoCache) -> secCtxs.remove(evt.eventNode().id()), EVT_NODE_FAILED, EVT_NODE_LEFT
+        );
+
+        secPrc.onKernalStart(active);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStop(boolean cancel) {
+        secPrc.onKernalStop(cancel);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
+        secPrc.collectJoiningNodeData(dataBag);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+        secPrc.collectGridNodeData(dataBag);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
+        secPrc.onGridDataReceived(data);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onJoiningNodeDataReceived(DiscoveryDataBag.JoiningNodeDiscoveryData data) {
+        secPrc.onJoiningNodeDataReceived(data);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printMemoryStats() {
+        secPrc.printMemoryStats();
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable IgniteNodeValidationResult validateNode(
+        ClusterNode node) {
+        return secPrc.validateNode(node);
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable IgniteNodeValidationResult validateNode(
+        ClusterNode node, DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
+        return secPrc.validateNode(node, discoData);
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable DiscoveryDataExchangeType discoveryDataType() {
+        return secPrc.discoveryDataType();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+        secPrc.onDisconnected(reconnectFut);
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable IgniteInternalFuture<?> onReconnected(
+        boolean clusterRestarted) throws IgniteCheckedException {
+        return secPrc.onReconnected(clusterRestarted);
+    }
+
     /**
      * Getting local node's security context.
      *
      * @return Security context of local node.
      */
     private SecurityContext localSecurityContext() {
-        return nodeSecurityContext(ctx.discovery().localNode());
-    }
-
-    /**
-     * Getting node's security context.
-     *
-     * @param node Node.
-     * @return Node's security context.
-     */
-    private SecurityContext nodeSecurityContext(ClusterNode node) {
-        byte[] subjBytes = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT);
-
-        byte[] subjBytesV2 = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
-
-        if (subjBytes == null && subjBytesV2 == null)
-            throw new SecurityException("Security context isn't certain.");
-
-        try {
-            if (subjBytesV2 != null)
-                return U.unmarshal(marsh, subjBytesV2, U.resolveClassLoader(ctx.config()));
-
-            try {
-                SecurityUtils.serializeVersion(1);
-
-                return U.unmarshal(marsh, subjBytes, U.resolveClassLoader(ctx.config()));
-            }
-            finally {
-                SecurityUtils.restoreDefaultSerializeVersion();
-            }
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to get security context.", e);
-        }
+        return nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), ctx.discovery().localNode());
     }
 }

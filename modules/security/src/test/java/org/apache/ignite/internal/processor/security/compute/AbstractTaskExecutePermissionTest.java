@@ -22,7 +22,7 @@ import org.apache.ignite.internal.processor.security.AbstractPermissionTest;
 import org.apache.ignite.lang.IgniteCallable;
 
 /**
- *
+ * Abstract class for task execute permission tests.
  */
 public abstract class AbstractTaskExecutePermissionTest extends AbstractPermissionTest {
     /** Jingle bell. */
@@ -41,6 +41,42 @@ public abstract class AbstractTaskExecutePermissionTest extends AbstractPermissi
 
         return null;
     };
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testServerNode() throws Exception {
+        testExecute(false);
+        testAllowedCancel(false);
+        testForbiddenCancel(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientNode() throws Exception {
+        testExecute(true);
+        testAllowedCancel(true);
+        testForbiddenCancel(true);
+    }
+
+    /**
+     * @param isClient True if is client mode.
+     * @throws Exception If failed.
+     */
+    protected abstract void testExecute(boolean isClient) throws Exception;
+
+    /**
+     * @param isClient True if is client mode.
+     * @throws Exception If failed.
+     */
+    protected abstract void testAllowedCancel(boolean isClient) throws Exception;
+
+    /**
+     * @param isClient True if is client mode.
+     * @throws Exception If failed.
+     */
+    protected abstract void testForbiddenCancel(boolean isClient) throws Exception;
 
     /**
      * @param r TestRunnable.

@@ -15,15 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processor.security.compute;
-
 /**
- * Test task execute permission for compute task on Server node.
+ * Contains security tests for compute closure.
  */
-public class ServerNodeTaskExecutePermissionForComputeTaskTest
-    extends ClientNodeTaskExecutePermissionForComputeTaskTest {
-    /** {@inheritDoc} */
-    @Override protected boolean isClient() {
-        return false;
-    }
-}
+package org.apache.ignite.internal.processor.security.compute.closure;

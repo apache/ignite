@@ -35,24 +35,22 @@ import static org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 
 /**
- * Test task execute permission for compute task on Client node.
+ * Test task execute permission for compute task.
  */
-public class ClientNodeTaskExecutePermissionForComputeTaskTest extends AbstractTaskExecutePermissionTest {
+public class TaskExecutePermissionForComputeTaskTest extends AbstractTaskExecutePermissionTest {
     /** Allowed task. */
     private static final AllowedTask ALLOWED_TASK = new AllowedTask();
 
     /** Forbidden task. */
     private static final ForbiddenTask FORBIDDEN_TASK = new ForbiddenTask();
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testExecute() throws Exception {
-        Ignite node = startGrid("client_execute",
+    /** {@inheritDoc} */
+    @Override protected void testExecute(boolean isClient) throws Exception {
+        Ignite node = startGrid(loginPrefix(isClient) + "_execute",
             builder().defaultAllowAll(true)
                 .appendTaskPermissions(ALLOWED_TASK.getClass().getName(), TASK_EXECUTE, TASK_CANCEL)
                 .appendTaskPermissions(FORBIDDEN_TASK.getClass().getName(), EMPTY_PERMS)
-                .build(), isClient()
+                .build(), isClient
         );
 
         allowRun(() -> node.compute().execute(ALLOWED_TASK, 0));
@@ -62,14 +60,13 @@ public class ClientNodeTaskExecutePermissionForComputeTaskTest extends AbstractT
         forbiddenRun(() -> node.compute().executeAsync(FORBIDDEN_TASK, 0).get());
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAllowedCancel() throws Exception {
-        Ignite node = startGrid("client_allowed_cancel",
+
+    /** {@inheritDoc} */
+    @Override protected void testAllowedCancel(boolean isClient) throws Exception {
+        Ignite node = startGrid(loginPrefix(isClient) + "_allowed_cancel",
             builder().defaultAllowAll(true)
                 .appendTaskPermissions(ALLOWED_TASK.getClass().getName(), TASK_EXECUTE, TASK_CANCEL)
-                .build(), isClient()
+                .build(), isClient
         );
 
         ComputeTaskFuture f = node.compute().executeAsync(ALLOWED_TASK, 0);
@@ -79,14 +76,12 @@ public class ClientNodeTaskExecutePermissionForComputeTaskTest extends AbstractT
         forbiddenRun(f::get, IgniteFutureCancelledException.class);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testForbiddenCancel() throws Exception {
-        Ignite node = startGrid("client_forbidden_cancel",
+    /** {@inheritDoc} */
+    @Override protected void testForbiddenCancel(boolean isClient) throws Exception {
+        Ignite node = startGrid(loginPrefix(isClient) + "_forbidden_cancel",
             builder().defaultAllowAll(true)
                 .appendTaskPermissions(ALLOWED_TASK.getClass().getName(), TASK_EXECUTE)
-                .build(), isClient()
+                .build(), isClient
         );
 
         ComputeTaskFuture f = node.compute().executeAsync(ALLOWED_TASK, 0);

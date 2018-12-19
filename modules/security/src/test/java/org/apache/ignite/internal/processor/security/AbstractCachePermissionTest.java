@@ -30,9 +30,16 @@ public abstract class AbstractCachePermissionTest extends AbstractPermissionTest
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setCacheConfiguration(
-                new CacheConfiguration().setName(CACHE_NAME),
-                new CacheConfiguration().setName(FORBIDDEN_CACHE)
-            );
+            .setCacheConfiguration(getCacheConfigurations());
+    }
+
+    /**
+     * @return Array of cache configurations.
+     */
+    protected CacheConfiguration[] getCacheConfigurations() {
+        return new CacheConfiguration[] {
+            new CacheConfiguration().setName(CACHE_NAME),
+            new CacheConfiguration().setName(FORBIDDEN_CACHE)
+        };
     }
 }

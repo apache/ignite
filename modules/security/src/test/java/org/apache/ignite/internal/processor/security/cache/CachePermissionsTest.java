@@ -27,17 +27,32 @@ import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
 
 /**
- * Test CRUD cache permissions for client node.
+ * Test CRUD cache permissions.
  */
-public class ClientNodeCachePermissionsTest extends AbstractCachePermissionTest {
+public class CachePermissionsTest extends AbstractCachePermissionTest {
     /**
-     *
+     * @throws Exception If fail.
      */
-    public void testCrudCachePermissions() throws Exception {
-        Ignite node = startGrid("test_node",
+    public void testServerNode() throws Exception {
+        testCrudCachePermissions(false);
+    }
+
+    /**
+     * @throws Exception If fail.
+     */
+    public void testClientNode() throws Exception {
+        testCrudCachePermissions(true);
+    }
+
+    /**
+     * @param isClient True if is client mode.
+     * @throws Exception If failed.
+     */
+    private void testCrudCachePermissions(boolean isClient) throws Exception {
+        Ignite node = startGrid(loginPrefix(isClient) + "_test_node",
             builder().defaultAllowAll(true)
                 .appendCachePermissions(CACHE_NAME, CACHE_READ, CACHE_PUT, CACHE_REMOVE)
-                .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build(), isClient());
+                .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build(), isClient);
 
         node.cache(CACHE_NAME).put("key", "value");
         forbiddenRun(() -> node.cache(FORBIDDEN_CACHE).put("key", "value"));

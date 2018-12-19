@@ -28,9 +28,9 @@ import static org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 
 /**
- * Test task execute permission for compute broadcast on Client node.
+ * Test task execute permission for compute broadcast.
  */
-public class ClientNodeTaskExecutePermissionForDistributedClosureTest extends AbstractTaskExecutePermissionTest {
+public class TaskExecutePermissionForDistributedClosureTest extends AbstractTaskExecutePermissionTest {
     /** Allowed runnable. */
     private static final IgniteRunnable ALLOWED_RUNNABLE = () -> JINGLE_BELL.set(true);
 
@@ -51,11 +51,10 @@ public class ClientNodeTaskExecutePermissionForDistributedClosureTest extends Ab
         return null;
     };
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testExecute() throws Exception {
-        Ignite node = startGrid("client",
+
+    /** {@inheritDoc} */
+    @Override protected void testExecute(boolean isClient) throws Exception {
+        Ignite node = startGrid(loginPrefix(isClient) + "_node",
             builder().defaultAllowAll(true)
                 .appendTaskPermissions(ALLOWED_CALLABLE.getClass().getName(), TASK_EXECUTE)
                 .appendTaskPermissions(FORBIDDEN_CALLABLE.getClass().getName(), EMPTY_PERMS)
@@ -63,7 +62,7 @@ public class ClientNodeTaskExecutePermissionForDistributedClosureTest extends Ab
                 .appendTaskPermissions(FORBIDDEN_RUNNABLE.getClass().getName(), EMPTY_PERMS)
                 .appendTaskPermissions(ALLOW_CLOSURE.getClass().getName(), TASK_EXECUTE)
                 .appendTaskPermissions(FORBIDDEN_CLOSURE.getClass().getName(), EMPTY_PERMS)
-                .build(), isClient()
+                .build(), isClient
         );
 
         allowRun(() -> node.compute().broadcast(ALLOWED_CALLABLE));
@@ -93,14 +92,12 @@ public class ClientNodeTaskExecutePermissionForDistributedClosureTest extends Ab
         forbiddenRun(() -> node.compute().applyAsync(FORBIDDEN_CLOSURE, arg).get());
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAllowedCancel() throws Exception {
-        Ignite node = startGrid("client_allowed_cancel",
+    /** {@inheritDoc} */
+    @Override protected void testAllowedCancel(boolean isClient) throws Exception {
+        Ignite node = startGrid(loginPrefix(isClient) + "_allowed_cancel",
             builder().defaultAllowAll(true)
                 .appendTaskPermissions(ALLOWED_CALLABLE.getClass().getName(), TASK_EXECUTE, TASK_CANCEL)
-                .build(), isClient()
+                .build(), isClient
         );
 
         IgniteFuture<Collection<Object>> f = node.compute().broadcastAsync(ALLOWED_CALLABLE);
@@ -110,14 +107,13 @@ public class ClientNodeTaskExecutePermissionForDistributedClosureTest extends Ab
         forbiddenRun(f::get, IgniteFutureCancelledException.class);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testForbiddenCancel() throws Exception {
+
+    /** {@inheritDoc} */
+    @Override protected void testForbiddenCancel(boolean isClient) throws Exception {
         Ignite node = startGrid("client_forbidden_cancel",
             builder().defaultAllowAll(true)
                 .appendTaskPermissions(ALLOWED_CALLABLE.getClass().getName(), TASK_EXECUTE)
-                .build(), isClient()
+                .build(), isClient
         );
 
         IgniteFuture<Collection<Object>> f = node.compute().broadcastAsync(ALLOWED_CALLABLE);

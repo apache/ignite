@@ -19,24 +19,22 @@ package org.apache.ignite.testsuites;
 
 import java.util.Set;
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processor.security.cache.ClientNodeCachePermissionsTest;
-import org.apache.ignite.internal.processor.security.cache.EntryProcessorSecurityTest;
-import org.apache.ignite.internal.processor.security.cache.ServerNodeCachePermissionsTest;
-import org.apache.ignite.internal.processor.security.compute.ClientNodeTaskExecutePermissionForComputeTaskTest;
-import org.apache.ignite.internal.processor.security.compute.ClientNodeTaskExecutePermissionForDistributedClosureTest;
-import org.apache.ignite.internal.processor.security.compute.ClientNodeTaskExecutePermissionForExecutorServiceTest;
-import org.apache.ignite.internal.processor.security.compute.ServerNodeTaskExecutePermissionForComputeTaskTest;
-import org.apache.ignite.internal.processor.security.compute.ServerNodeTaskExecutePermissionForDistributedClosureTest;
-import org.apache.ignite.internal.processor.security.compute.ServerNodeTaskExecutePermissionForExecutorServiceTest;
-import org.apache.ignite.internal.processor.security.datastreamer.ClientNodeDataStreamerCachePermissionTest;
-import org.apache.ignite.internal.processor.security.datastreamer.IgniteDataStreamerSecurityTest;
-import org.apache.ignite.internal.processor.security.cache.LoadCacheSecurityTest;
-import org.apache.ignite.internal.processor.security.cache.ScanQuerySecurityTest;
+import org.apache.ignite.internal.processor.security.cache.CachePermissionsTest;
+import org.apache.ignite.internal.processor.security.cache.EntryProcessorCachePermissionTest;
+import org.apache.ignite.internal.processor.security.cache.LoadCachePermissionTest;
+import org.apache.ignite.internal.processor.security.cache.ScanQueryCachePermissionTest;
+import org.apache.ignite.internal.processor.security.cache.closure.EntryProcessorSecurityTest;
+import org.apache.ignite.internal.processor.security.cache.closure.LoadCacheSecurityTest;
+import org.apache.ignite.internal.processor.security.cache.closure.ScanQuerySecurityTest;
 import org.apache.ignite.internal.processor.security.client.ThinClientSecurityTest;
-import org.apache.ignite.internal.processor.security.compute.ComputeTaskSecurityTest;
-import org.apache.ignite.internal.processor.security.compute.DistributedClosureSecurityTest;
-import org.apache.ignite.internal.processor.security.compute.ExecuteServiceTaskSecurityTest;
-import org.apache.ignite.internal.processor.security.datastreamer.ServerNodeDataStreamerCachePermissionTest;
+import org.apache.ignite.internal.processor.security.compute.TaskExecutePermissionForComputeTaskTest;
+import org.apache.ignite.internal.processor.security.compute.TaskExecutePermissionForDistributedClosureTest;
+import org.apache.ignite.internal.processor.security.compute.TaskExecutePermissionForExecutorServiceTest;
+import org.apache.ignite.internal.processor.security.compute.closure.ComputeTaskSecurityTest;
+import org.apache.ignite.internal.processor.security.compute.closure.DistributedClosureSecurityTest;
+import org.apache.ignite.internal.processor.security.compute.closure.ExecuteServiceTaskSecurityTest;
+import org.apache.ignite.internal.processor.security.datastreamer.DataStreamerCachePermissionTest;
+import org.apache.ignite.internal.processor.security.datastreamer.closure.IgniteDataStreamerSecurityTest;
 import org.apache.ignite.internal.processor.security.messaging.IgniteMessagingTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,16 +57,14 @@ public class AuthorizeOperationsTestSuite extends TestSuite {
     public static TestSuite suite(final @Nullable Set<Class> ignoredTests) {
         TestSuite suite = new TestSuite("Initiator Node's Security Context Test Suite");
 
-        suite.addTest(new TestSuite(ClientNodeCachePermissionsTest.class));
-        suite.addTest(new TestSuite(ServerNodeCachePermissionsTest.class));
-        suite.addTest(new TestSuite(ClientNodeDataStreamerCachePermissionTest.class));
-        suite.addTest(new TestSuite(ServerNodeDataStreamerCachePermissionTest.class));
-        suite.addTest(new TestSuite(ClientNodeTaskExecutePermissionForExecutorServiceTest.class));
-        suite.addTest(new TestSuite(ServerNodeTaskExecutePermissionForExecutorServiceTest.class));
-        suite.addTest(new TestSuite(ClientNodeTaskExecutePermissionForDistributedClosureTest.class));
-        suite.addTest(new TestSuite(ServerNodeTaskExecutePermissionForDistributedClosureTest.class));
-        suite.addTest(new TestSuite(ClientNodeTaskExecutePermissionForComputeTaskTest.class));
-        suite.addTest(new TestSuite(ServerNodeTaskExecutePermissionForComputeTaskTest.class));
+        suite.addTest(new TestSuite(CachePermissionsTest.class));
+        suite.addTest(new TestSuite(DataStreamerCachePermissionTest.class));
+        suite.addTest(new TestSuite(ScanQueryCachePermissionTest.class));
+        suite.addTest(new TestSuite(LoadCachePermissionTest.class));
+        suite.addTest(new TestSuite(EntryProcessorCachePermissionTest.class));
+        suite.addTest(new TestSuite(TaskExecutePermissionForExecutorServiceTest.class));
+        suite.addTest(new TestSuite(TaskExecutePermissionForDistributedClosureTest.class));
+        suite.addTest(new TestSuite(TaskExecutePermissionForComputeTaskTest.class));
 
         suite.addTest(new TestSuite(DistributedClosureSecurityTest.class));
         suite.addTest(new TestSuite(ComputeTaskSecurityTest.class));

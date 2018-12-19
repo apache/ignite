@@ -11,11 +11,11 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecuritySubject;
 
 /**
- * Grid Security Manager.
+ * Ignite Security Processor.
  */
-public interface GridSecurityManager {
+public interface IgniteSecurityProcessor {
     /**
-     * Create {@link GridSecuritySession}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
+     * Creates {@link GridSecuritySession}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
      * #authorize(SecurityPermission)} will be processed into the context of passed {@link SecurityContext} until
      * session {@link GridSecuritySession} will be closed.
      *
@@ -25,7 +25,7 @@ public interface GridSecurityManager {
     public GridSecuritySession startSession(SecurityContext secCtx);
 
     /**
-     * Create {@link GridSecuritySession}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
+     * Creates {@link GridSecuritySession}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
      * #authorize(SecurityPermission)} will be processed into the context of {@link SecurityContext} that is owned by
      * node with given noddeId until session {@link GridSecuritySession} will be closed.
      *
@@ -35,28 +35,28 @@ public interface GridSecurityManager {
     public GridSecuritySession startSession(UUID nodeId);
 
     /**
-     * Delegate call to {@link GridSecurityProcessor#authenticateNode(org.apache.ignite.cluster.ClusterNode,
+     * Delegates call to {@link GridSecurityProcessor#authenticateNode(org.apache.ignite.cluster.ClusterNode,
      * org.apache.ignite.plugin.security.SecurityCredentials)}
      */
     public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) throws IgniteCheckedException;
 
     /**
-     * Delegate call to {@link GridSecurityProcessor#isGlobalNodeAuthentication()}
+     * Delegates call to {@link GridSecurityProcessor#isGlobalNodeAuthentication()}
      */
     public boolean isGlobalNodeAuthentication();
 
     /**
-     * Delegate call to {@link GridSecurityProcessor#authenticate(AuthenticationContext)}
+     * Delegates call to {@link GridSecurityProcessor#authenticate(AuthenticationContext)}
      */
     public SecurityContext authenticate(AuthenticationContext ctx) throws IgniteCheckedException;
 
     /**
-     * Delegate call to {@link GridSecurityProcessor#authenticatedSubjects()}
+     * Delegates call to {@link GridSecurityProcessor#authenticatedSubjects()}
      */
     public Collection<SecuritySubject> authenticatedSubjects() throws IgniteCheckedException;
 
     /**
-     * Delegate call to {@link GridSecurityProcessor#authenticatedSubject(UUID)}
+     * Delegates call to {@link GridSecurityProcessor#authenticatedSubject(UUID)}
      */
     public SecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException;
 
@@ -80,7 +80,7 @@ public interface GridSecurityManager {
     }
 
     /**
-     * Delegate call to {@link GridSecurityProcessor#enabled()}
+     * Delegates call to {@link GridSecurityProcessor#enabled()}
      */
     public boolean enabled();
 }

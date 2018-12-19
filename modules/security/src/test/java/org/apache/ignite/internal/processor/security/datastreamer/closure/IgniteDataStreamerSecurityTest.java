@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processor.security.datastreamer;
+package org.apache.ignite.internal.processor.security.datastreamer.closure;
 
 import java.util.Map;
 import java.util.UUID;

@@ -15,14 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processor.security.datastreamer;
-
 /**
- * Test cache permissions for Data Streamer on Server node.
+ * Contains security tests for Data Streamer closure.
  */
-public class ServerNodeDataStreamerCachePermissionTest extends ClientNodeDataStreamerCachePermissionTest {
-    /** {@inheritDoc} */
-    @Override protected boolean isClient() {
-        return false;
-    }
-}
+package org.apache.ignite.internal.processor.security.datastreamer.closure;

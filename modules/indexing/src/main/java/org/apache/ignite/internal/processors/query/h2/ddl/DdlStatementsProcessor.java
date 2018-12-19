@@ -326,9 +326,9 @@ public class DdlStatementsProcessor {
                 }
             }
             else if (stmt0 instanceof GridSqlCreateTable) {
-                ctx.security().authorize(SecurityPermission.CACHE_CREATE);
-
                 GridSqlCreateTable cmd = (GridSqlCreateTable)stmt0;
+
+                ctx.security().authorize(cmd.tableName(), SecurityPermission.CACHE_CREATE);
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
@@ -359,9 +359,9 @@ public class DdlStatementsProcessor {
                 }
             }
             else if (stmt0 instanceof GridSqlDropTable) {
-                ctx.security().authorize(SecurityPermission.CACHE_DESTROY);
-
                 GridSqlDropTable cmd = (GridSqlDropTable)stmt0;
+
+                ctx.security().authorize(cmd.tableName(), SecurityPermission.CACHE_DESTROY);
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 

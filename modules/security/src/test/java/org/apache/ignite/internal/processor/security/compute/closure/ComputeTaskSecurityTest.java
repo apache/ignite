@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processor.security.compute;
+package org.apache.ignite.internal.processor.security.compute.closure;
 
 import java.util.HashMap;
 import java.util.List;

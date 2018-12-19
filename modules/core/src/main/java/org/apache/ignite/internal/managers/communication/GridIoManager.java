@@ -2010,15 +2010,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param topic Topic to unsubscribe from.
      * @param p Message predicate.
      */
-    @SuppressWarnings("unchecked")
     public void removeUserMessageListener(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p) {
-        try {
-            removeMessageListener(TOPIC_COMM_USER,
-                new GridUserMessageListener(topic, (IgniteBiPredicate<UUID, Object>)p));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        removeMessageListener(TOPIC_COMM_USER,
+            new GridUserMessageListener(topic, (IgniteBiPredicate<UUID, Object>)p));
     }
 
     /**
@@ -2437,16 +2431,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         /** User message topic. */
         private final Object topic;
 
+        /** Initial node id. */
         private final UUID initNodeId;
 
         /**
          * @param topic User topic.
          * @param predLsnr Predicate listener.
          * @param initNodeId Node id that registered given listener.
-         * @throws IgniteCheckedException If failed to inject resources to predicates.
          */
-        GridUserMessageListener(@Nullable Object topic, @Nullable IgniteBiPredicate<UUID, Object> predLsnr, @Nullable UUID initNodeId)
-            throws IgniteCheckedException {
+        GridUserMessageListener(@Nullable Object topic, @Nullable IgniteBiPredicate<UUID, Object> predLsnr,
+            @Nullable UUID initNodeId) {
             this.topic = topic;
             this.predLsnr = predLsnr;
             this.initNodeId = initNodeId;
@@ -2455,10 +2449,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         /**
          * @param topic User topic.
          * @param predLsnr Predicate listener.
-         * @throws IgniteCheckedException If failed to inject resources to predicates.
          */
-        GridUserMessageListener(@Nullable Object topic, @Nullable IgniteBiPredicate<UUID, Object> predLsnr)
-            throws IgniteCheckedException {
+        GridUserMessageListener(@Nullable Object topic, @Nullable IgniteBiPredicate<UUID, Object> predLsnr) {
             this(topic, predLsnr, null);
         }
 

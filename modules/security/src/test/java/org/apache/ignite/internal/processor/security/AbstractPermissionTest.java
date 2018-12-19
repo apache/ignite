@@ -29,9 +29,12 @@ public abstract class AbstractPermissionTest extends AbstractSecurityTest {
     }
 
     /**
-     * @return Node client mode.
+     * Getting login prefix.
+     *
+     * @param isClient True if is client mode.
+     * @return Prefix.
      */
-    protected boolean isClient() {
-        return true;
+    protected String loginPrefix(boolean isClient) {
+        return isClient ? "client" : "server";
     }
 }
