@@ -112,7 +112,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     private static final String NO_CACHE_IGNITE_INSTANCE_NAME = "noCacheGrid";
 
     /**
-     * Remote filter latch. Executed on remote nodes, so must be transient to not get serialization exception.
+     * Remote filter latch is executed on remote nodes, so must be transient
+     * to do not get serialization exception.
      * Must not be used in parallel test scenarios.
      */
     private transient CountDownLatch remoteFilterLatch;
