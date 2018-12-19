@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMultiNodeLockAbstractTest;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
@@ -43,40 +41,5 @@ public class GridCachePartitionedMultiNodeLockSelfTest extends GridCacheMultiNod
         cc.setNearConfiguration(new NearCacheConfiguration());
 
         return cc;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean partitioned() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Test
-    @Override public void testBasicLock() throws Exception {
-        super.testBasicLock();
-    }
-
-    /** {@inheritDoc} */
-    @Test
-    @Override public void testLockMultithreaded() throws Exception {
-        super.testLockMultithreaded();
-    }
-
-    /** {@inheritDoc} */
-    @Test
-    @Override public void testLockReentry() throws IgniteCheckedException {
-        super.testLockReentry();
-    }
-
-    /** {@inheritDoc} */
-    @Test
-    @Override public void testMultiNodeLock() throws Exception {
-        super.testMultiNodeLock();
-    }
-
-    /** {@inheritDoc} */
-    @Test
-    @Override public void testMultiNodeLockWithKeyLists() throws Exception {
-        super.testMultiNodeLockWithKeyLists();
     }
 }

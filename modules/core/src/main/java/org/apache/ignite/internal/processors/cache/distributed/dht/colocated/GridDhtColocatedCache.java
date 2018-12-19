@@ -162,20 +162,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isLocked(K key) {
-        KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
-
-        return ctx.mvcc().isLockedByThread(ctx.txKey(cacheKey), -1);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isLockedByThread(K key) {
-        KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
-
-        return ctx.mvcc().isLockedByThread(ctx.txKey(cacheKey), Thread.currentThread().getId());
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteInternalFuture<V> getAsync(final K key,
         boolean forcePrimary,
         boolean skipTx,

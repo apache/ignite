@@ -28,11 +28,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  */
 public class GridCacheReplicatedMultiNodeSelfTest extends GridCacheMultiNodeAbstractTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-601");
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 

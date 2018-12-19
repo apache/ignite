@@ -3526,7 +3526,15 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             try {
                 GridCacheEntryEx entry = peekEx(cacheKey);
 
-                return entry != null && entry.lockedByAny();
+                if (entry != null) {
+                    boolean res = entry.lockedByAny();
+
+                    entry.touch(null);
+
+                    return res;
+                }
+
+                return false;
             }
             catch (GridCacheEntryRemovedException ignore) {
                 // No-op.
@@ -3541,29 +3549,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKey(key);
 
-        try {
-            KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
+        KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
-            GridCacheEntryEx e = entry0(cacheKey,
-                ctx.shared().exchange().readyAffinityVersion(),
-                false,
-                false);
-
-            if (e == null)
-                return false;
-
-            // Delegate to near if dht.
-            if (e.isDht() && CU.isNearEnabled(ctx)) {
-                IgniteInternalCache<K, V> near = ctx.isDht() ? ctx.dht().near() : ctx.near();
-
-                return near.isLockedByThread(key) || e.lockedByThread();
-            }
-
-            return e.lockedByThread();
-        }
-        catch (GridCacheEntryRemovedException ignore) {
-            return false;
-        }
+        return ctx.mvcc().isLockedByThread(ctx.txKey(cacheKey), Thread.currentThread().getId());
     }
 
     /** {@inheritDoc} */

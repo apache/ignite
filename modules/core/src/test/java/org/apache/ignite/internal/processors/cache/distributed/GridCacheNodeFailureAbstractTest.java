@@ -151,9 +151,6 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
     /**
      * @throws IgniteCheckedException If test failed.
-     *
-     * Note: test was disabled for REPPLICATED cache case because IGNITE-601.
-     * This comment should be removed if test passed stably.
      */
     @Test
     public void testPessimisticReadCommitted() throws Throwable {
@@ -249,9 +246,6 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
     /**
      * @throws Exception If check failed.
-     *
-     * Note: test was disabled for REPPLICATED cache case because IGNITE-601.
-     * This comment should be removed if test passed stably.
      */
     @Test
     public void testLock() throws Exception {

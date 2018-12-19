@@ -27,11 +27,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  */
 public class GridCacheReplicatedMultiNodeLockSelfTest extends GridCacheMultiNodeLockAbstractTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-601");
-    }
-
-    /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
