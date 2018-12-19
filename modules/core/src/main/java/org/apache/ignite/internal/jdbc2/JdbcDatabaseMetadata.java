@@ -974,6 +974,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getPrimaryKeys(String catalog, String schemaPtrn, String tblNamePtrn)
         throws SQLException {
+        conn.ensureNotClosed();
 
         List<List<?>> rows;
 
