@@ -252,7 +252,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      */
     @Test
     public void testReadWriteSafeRefreshDelay() throws Exception {
-        checkReadWriteSafe(true);
+        checkReadWriteSafe(false);
     }
 //
 //    /**

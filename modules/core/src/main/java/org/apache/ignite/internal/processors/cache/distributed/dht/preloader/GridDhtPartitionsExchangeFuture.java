@@ -3264,7 +3264,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 //
 //                                cctx.affinity().checkRebalanceState(ctx.topology(), ctx.groupId());
 //                            }
-                            cctx.exchange().scheduleResendPartitions();
+//                            cctx.exchange().scheduleResendPartitions();
                         }
                     }
                 }
