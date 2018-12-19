@@ -23,7 +23,7 @@ import org.apache.ignite.ml.inference.InfModel;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /** Basic interface for all models. */
-public interface Model<T, V> extends InfModel<T, V>, Serializable {
+public interface Model<T, V> extends InfModel<T, V>, IgniteFunction<T, V>, Serializable {
     /**
      * Combines this model with other model via specified combiner
      *
