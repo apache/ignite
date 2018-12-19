@@ -72,7 +72,6 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
      * @param depMode deployment mode.
      * @throws Exception If failed..
      */
-    @SuppressWarnings("unchecked")
     private void processTestSameRemoteClassLoader(DeploymentMode depMode) throws Exception {
         try {
             this.depMode = depMode;

@@ -436,7 +436,6 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
     /**
      * @return Default cache instance.
      */
-    @SuppressWarnings({"unchecked"})
     @Override protected <K, V> IgniteCache<K, V> jcache() {
         return jcache(testedNodeIdx);
     }
@@ -466,7 +465,6 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
      * @param idx Index of grid.
      * @return Default cache.
      */
-    @SuppressWarnings({"unchecked"})
     @Override protected <K, V> IgniteCache<K, V> jcache(int idx) {
         return ignite(idx).cache(cacheName());
     }

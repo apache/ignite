@@ -67,7 +67,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Multiple put test.
  */
-@SuppressWarnings({"UnusedAssignment", "TooBroadScope"})
+@SuppressWarnings({"TooBroadScope"})
 @RunWith(JUnit4.class)
 public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbstractTest {
     /** Debug flag. */

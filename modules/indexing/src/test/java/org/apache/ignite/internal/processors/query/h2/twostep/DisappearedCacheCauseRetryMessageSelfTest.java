@@ -97,7 +97,7 @@ public class DisappearedCacheCauseRetryMessageSelfTest extends GridCommonAbstrac
                         if (reqId == req.queryRequestId())
                             orgCache = DisappearedCacheCauseRetryMessageSelfTest.this.ignite(0).getOrCreateCache(new CacheConfiguration<String, Organization>(ORG)
                                 .setCacheMode(CacheMode.REPLICATED)
-                                .setIndexedTypes(String.class, JoinSqlTestHelper.Organization.class)
+                                .setQueryEntities(JoinSqlTestHelper.organizationQueryEntity())
                             );
 
                     }
@@ -117,12 +117,12 @@ public class DisappearedCacheCauseRetryMessageSelfTest extends GridCommonAbstrac
         startGridsMultiThreaded(NODES_COUNT, false);
 
         personCache = ignite(0).getOrCreateCache(new CacheConfiguration<String, Person>("pers")
-            .setIndexedTypes(String.class, JoinSqlTestHelper.Person.class)
+            .setQueryEntities(JoinSqlTestHelper.personQueryEntity())
         );
 
         orgCache = ignite(0).getOrCreateCache(new CacheConfiguration<String, Organization>(ORG)
             .setCacheMode(CacheMode.REPLICATED)
-            .setIndexedTypes(String.class, JoinSqlTestHelper.Organization.class)
+            .setQueryEntities(JoinSqlTestHelper.organizationQueryEntity())
         );
 
         awaitPartitionMapExchange();

@@ -543,7 +543,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("BusyWait")
     @Override protected void onKernalStop0(boolean cancel) {
         cctx.gridIO().removeMessageListener(TOPIC_CACHE);
 
@@ -569,7 +568,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param c Handler closure.
      * @param plc Message policy.
      */
-    @SuppressWarnings({"ConstantConditions"})
     private void onMessage0(final UUID nodeId, final GridCacheMessage cacheMsg,
         final IgniteBiInClosure<UUID, GridCacheMessage> c, byte plc) {
         try {
@@ -1405,7 +1403,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param c Handler.
      * @param msgHandlers Message handlers.
      */
-    @SuppressWarnings({"unchecked"})
     private void addHandler(
         int hndId,
         Class<? extends GridCacheMessage> type,
@@ -1537,7 +1534,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param topic Topic.
      * @param c Handler.
      */
-    @SuppressWarnings({"unchecked"})
     private void addOrderedHandler(GridCacheSharedContext cctx, boolean cacheGrp, Object topic, IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
         MessageHandlers msgHandlers = cacheGrp ? grpHandlers : cacheHandlers;
 

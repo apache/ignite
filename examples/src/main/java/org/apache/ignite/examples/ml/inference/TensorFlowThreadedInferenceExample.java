@@ -42,7 +42,7 @@ import org.tensorflow.Tensor;
  */
 public class TensorFlowThreadedInferenceExample {
     /** Path to the directory with saved TensorFlow model. */
-    private static final String MODEL_PATH = "examples/src/main/resources/ml/mnist_tf_model";
+    private static final String MODEL_PATH = "examples/src/main/resources/models/mnist_tf_model";
 
     /** Path to the MNIST images data. */
     private static final String MNIST_IMG_PATH = "examples/src/main/resources/datasets/t10k-images-idx3-ubyte";
