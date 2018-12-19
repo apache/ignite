@@ -127,7 +127,6 @@ import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
 import org.apache.ignite.ssl.SslContextFactory;
-import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
@@ -674,12 +673,15 @@ public class CommandHandler {
         GridClient client
     ) throws GridClientException {
         return client.compute().nodes(GridClientNode::connectable).stream()
-            .map(node -> new IgniteBiTuple<>(node,
-                Stream.concat(
-                    node.tcpAddresses() == null ? Stream.empty() : node.tcpAddresses().stream(),
-                    node.tcpHostNames() == null ? Stream.empty() : node.tcpHostNames().stream()
+            .map(
+                node -> new IgniteBiTuple<>(
+                    node,
+                    Stream.concat(
+                        node.tcpAddresses() == null ? Stream.empty() : node.tcpAddresses().stream(),
+                        node.tcpHostNames() == null ? Stream.empty() : node.tcpHostNames().stream()
+                    )
+                    .map(addr -> addr + ":" + node.tcpPort()).collect(Collectors.toList())
                 )
-                    .map(addr -> addr + ":" + node.tcpPort()).collect(Collectors.toList()))
             );
     }
 
@@ -837,7 +839,7 @@ public class CommandHandler {
         usageCache(CONTENTION, "minQueueSize", OP_NODE_ID, op("maxPrint"));
         usageCache(IDLE_VERIFY, op(CMD_DUMP), op(CMD_SKIP_ZEROS), "[cache1,...,cacheN]", op(CACHE_FILTER, or(CacheFilterEnum.values())));
         usageCache(VALIDATE_INDEXES, "[cache1,...,cacheN]", OP_NODE_ID, op(or(VI_CHECK_FIRST + " N", VI_CHECK_THROUGH + " K")));
-        usageCache(DISTRIBUTION, or(NODE_ID, NULL), "[cacheName1,...,cacheNameN]", op(CMD_USER_ATTRIBUTES, "attName1,...,attrNameN"));
+        usageCache(DISTRIBUTION, or(NODE_ID, NULL), "[cacheName1,...,cacheNameN]", op(CMD_USER_ATTRIBUTES, "attrName1,...,attrNameN"));
         usageCache(RESET_LOST_PARTITIONS, "cacheName1,...,cacheNameN");
         nl();
     }
@@ -1767,7 +1769,7 @@ public class CommandHandler {
      * @param params Other input parameter.
      * @return SB with appended to the end joined paramaters with specified {@code delimeter}.
      */
-    private static SB j(@NotNull SB sb, @NotNull String sbDelimeter, String delimeter, Object... params) {
+    private static SB j(SB sb, String sbDelimeter, String delimeter, Object... params) {
         if (!F.isEmpty(params)) {
             sb.a(sbDelimeter);
 
@@ -2592,7 +2594,7 @@ public class CommandHandler {
     private void printHelp() {
         final String constistIds = "consistentId1[,consistentId2,....,consistentIdN]";
 
-        log("Contol.sh is used to execute admin commands on cluster or get common cluster info. The command has the following syntax:");
+        log("Control.sh is used to execute admin commands on cluster or get common cluster info. The command has the following syntax:");
         nl();
 
         log(i(j(" ", UTILITY_NAME_WITH_COMMON_OPTIONS, op("command"), "<command_parameters>")));
