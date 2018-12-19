@@ -67,7 +67,7 @@ public class RestListener extends AbstractListener {
         boolean demo = (boolean)args.get("demo");
 
         if (F.isEmpty((String)args.get("token")))
-            return RestResult.fail(404, "Request does not contain user token.");
+            return RestResult.fail(401, "Request does not contain user token.");
 
         Map<String, Object> headers = null;
 
