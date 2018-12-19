@@ -788,6 +788,8 @@ public class JdbcThinConnection implements Connection {
             cliIo.sendCancelRequest(req);
         }
         catch (Exception e) {
+            // TODO: This is not safe. onDisconnect() changes a lot of values outside of any sync. I do not think
+            // TODO: we should do anything here, just throw exception.
             onDisconnect();
 
             throw new SQLException("Failed to communicate with Ignite cluster.", SqlStateCode.CONNECTION_FAILURE, e);

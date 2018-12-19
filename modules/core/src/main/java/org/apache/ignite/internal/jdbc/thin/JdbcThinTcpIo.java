@@ -499,6 +499,10 @@ public class JdbcThinTcpIo {
         }
 
         try {
+            // TODO: Appears to be a race with cancel. Probably send should be performed  *inside* statement's
+            // TODO: cancellation mutex.
+
+            // TODO: Another question: how "fetch" requests are handled here?
             sendRequestRaw(req);
 
             if (stmt != null && (req instanceof JdbcQueryExecuteRequest || req instanceof JdbcBatchExecuteRequest))
@@ -583,6 +587,9 @@ public class JdbcThinTcpIo {
 
         req.writeBinary(writer, srvProtocolVer);
 
+        // TODO: Something is wrong with synchronization here. Note that "mux" is used for completely different
+        // TODO: purpose: to make sure that no two threads work concurrently with connection. Hence, we cannot use
+        // TODO: here.
         synchronized (mux) {
             send(writer.array());
         }

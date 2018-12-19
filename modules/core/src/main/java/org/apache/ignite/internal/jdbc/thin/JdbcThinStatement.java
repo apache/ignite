@@ -67,6 +67,7 @@ public class JdbcThinStatement implements Statement {
     private static final int DFLT_PAGE_SIZE = SqlQuery.DFLT_PAGE_SIZE;
 
     /** JDBC Connection implementation. */
+    // TODO: Why not final?
     protected volatile JdbcThinConnection conn;
 
     /** Schema name. */
@@ -377,6 +378,8 @@ public class JdbcThinStatement implements Statement {
      */
     private void closeResults() throws SQLException {
         synchronized (cancellationMux) {
+            // TODO: What if cancellation is already in progress here? Seems that in this case we should not
+            // TODO: re-send result set close requests in rs.close0() below.
             currReqId = 0;
             cancelled = false;
         }
@@ -472,6 +475,7 @@ public class JdbcThinStatement implements Statement {
         ensureAlive();
 
         if (conn.isStream()) {
+            // TODO: SQLFeatureNotSupportedException, proper SQL state (UNSUPPORTED_OPERATION)
             throw new SQLException("Cancel method is not allowed in streaming mode.",
                 SqlStateCode.INTERNAL_ERROR,
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -724,7 +728,6 @@ public class JdbcThinStatement implements Statement {
             switch (curr) {
                 case CLOSE_CURRENT_RESULT:
                     if (curRes > 0)
-
                         resultSets.get(curRes - 1).close0();
 
                     break;
@@ -876,6 +879,7 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public boolean isCloseOnCompletion() throws SQLException {
+        // TODO: Cancel check should be moved out of close check
         ensureAlive();
 
         return closeOnCompletion;
@@ -934,6 +938,7 @@ public class JdbcThinStatement implements Statement {
     /**
      * @param currReqId Sets curresnt request Id.
      */
+    // TODO: Abbreviations are not allowed in method names: currentRequestId
     void currReqId(long currReqId) {
         synchronized (cancellationMux) {
             this.currReqId = currReqId;
