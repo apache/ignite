@@ -126,6 +126,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_IN
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_READ_OP_CNTR;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_START_CNTR;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_START_OP_CNTR;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.belongToSameTx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compare;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.hasNewVersion;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.isVisible;
@@ -2159,7 +2160,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         /** {@inheritDoc} */
         @Override public boolean hasWaiting(MvccVersion checkedVer) {
-            return DeadlockDetectionManager.belongToSameTx(waitingTxVer, checkedVer);
+            return belongToSameTx(waitingTxVer, checkedVer);
         }
     }
 

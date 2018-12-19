@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_DEADLOCK_DETECTION;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.belongToSameTx;
 
 // t0d0 javadoc
 public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
@@ -155,12 +156,6 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
         catch (IgniteCheckedException e) {
             log.warning("Failed to send a deadlock probe [nodeId=" + blockerNearNodeId + ']', e);
         }
-    }
-
-    /** */
-    // t0d0 move to MVCC utils
-    public static boolean belongToSameTx(MvccVersion v1, MvccVersion v2) {
-        return v1.coordinatorVersion() == v2.coordinatorVersion() && v1.counter() == v2.counter();
     }
 
     /**

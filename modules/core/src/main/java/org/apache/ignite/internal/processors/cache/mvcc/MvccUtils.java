@@ -865,6 +865,15 @@ public class MvccUtils {
     }
 
     /**
+     * @param v1 First MVCC version.
+     * @param v2 Second MVCC version.
+     * @return {@code True} if compared versions belongs to the same transaction.
+     */
+    public static boolean belongToSameTx(MvccVersion v1, MvccVersion v2) {
+        return v1.coordinatorVersion() == v2.coordinatorVersion() && v1.counter() == v2.counter();
+    }
+
+    /**
      * Mvcc closure interface.
      * @param <R> Return type.
      */
