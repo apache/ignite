@@ -90,11 +90,9 @@ public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testIncorrectBeanConfiguration() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10723");
-
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                try(Ignite ignite =
+                try (Ignite ignite =
                     Ignition.start(MODULE_PATH + "/src/test/config/factory-incorrect-store-cache.xml")) {
                     ignite.cache(CACHE_NAME).getConfiguration(CacheConfiguration.class).
                             getCacheStoreFactory().create();
