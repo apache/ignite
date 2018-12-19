@@ -25,9 +25,15 @@ import org.apache.ignite.ml.selection.scoring.LabelPair;
  *
  * @param <L> Type of a label (truth or prediction).
  */
-public class Precision<L> implements Metric<L> {
-    /** Class label. */
-    private L clsLb;
+public class Precision<L> extends ClassMetric<L> {
+    /**
+     * The class of interest or positive class.
+     *
+     * @param clsLb The label.
+     */
+    public Precision(L clsLb) {
+        super(clsLb);
+    }
 
     /** {@inheritDoc} */
     @Override public double score(Iterator<LabelPair<L>> it) {
@@ -59,12 +65,9 @@ public class Precision<L> implements Metric<L> {
             return Double.NaN;
     }
 
-    /**
-     * The class of interest or positive class.
-     *
-     * @param clsLb The label.
-     */
-    public Precision(L clsLb) {
-        this.clsLb = clsLb;
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return "precision for class with label " + clsLb;
     }
+
 }

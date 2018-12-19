@@ -299,7 +299,6 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<P
             if (((GridTestCollisionTaskSession)ctx.getTaskSession()).getPriority() >= 8) {
                 ((GridTestCollisionJobContext)ctx).setTaskSession(new GridTestCollisionTaskSession(100,
                     DFLT_PRIORITY_ATTRIBUTE_KEY) {
-                    @SuppressWarnings("unchecked")
                     @Override public <K, V> V getAttribute(K key) {
                         if (getPriorityAttributeKey() != null && getPriorityAttributeKey().equals(key))
                             return (V)"wrong-attr";
@@ -309,7 +308,7 @@ public class GridPriorityQueueCollisionSpiSelfTest extends GridSpiAbstractTest<P
                 });
 
                 ((GridTestCollisionJobContext)ctx).setJobContext(new GridTestJobContext() {
-                    @SuppressWarnings({"unchecked", "RedundantTypeArguments"})
+                    @SuppressWarnings({"RedundantTypeArguments"})
                     @Override public <K, V> V getAttribute(K key) {
                         if (DFLT_JOB_PRIORITY_ATTRIBUTE_KEY.equals(key))
                             return (V)"wrong-attr";
