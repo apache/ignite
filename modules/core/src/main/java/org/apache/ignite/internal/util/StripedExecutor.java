@@ -143,7 +143,7 @@ public class StripedExecutor implements ExecutorService {
      *
      * @return Flag representing presence of possible starvation in striped pool.
      */
-    public boolean isStarvationDetected() {
+    public boolean detectStarvation() {
         boolean starvationDetected = false;
 
         for (Stripe stripe : stripes) {

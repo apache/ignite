@@ -34,7 +34,7 @@ public interface StripedExecutorMXBean {
      * @return {@code True} if possible starvation in striped pool is detected.
      */
     @MXBeanDescription("True if possible starvation in striped pool is detected.")
-    public boolean isStarvationDetected();
+    public boolean detectStarvation();
 
     /**
      * @return Stripes count.

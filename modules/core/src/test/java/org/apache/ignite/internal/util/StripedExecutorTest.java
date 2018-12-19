@@ -161,7 +161,7 @@ public class StripedExecutorTest extends GridCommonAbstractTest {
         stripedExecSvc.execute(stripeIdx, new TestRunnable());
         assertTrue(GridTestUtils.waitForCondition(() -> stripedExecSvc.activeStripesCount() == 1, 10000));
 
-        assertTrue(stripedExecSvc.isStarvationDetected());
+        assertTrue(stripedExecSvc.detectStarvation());
     }
 
     /**
