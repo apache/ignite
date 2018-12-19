@@ -133,9 +133,7 @@ public class GridReduceQueryExecutor {
     /** */
     private IgniteLogger log;
 
-    /**
-     *
-     */
+    /** */
     private final AtomicLong qryIdGen = new AtomicLong();
 
     /** */

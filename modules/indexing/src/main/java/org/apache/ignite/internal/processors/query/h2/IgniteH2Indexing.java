@@ -248,9 +248,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** */
     private DdlStatementsProcessor ddlProc;
 
-    /**
-     *
-     */
+    /** */
     private final RunningQueryManager runningQueryMgr = new RunningQueryManager();
 
     /** */
@@ -975,6 +973,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean enforceJoinOrder = qry.isEnforceJoinOrder(), startTx = autoStartTx(qry);
         int timeout = qry.getTimeout();
 
+        // TODO: Not safe wrt to previously registered query ID
         final GridQueryFieldsResult res = queryLocalSqlFields(schemaName, sql, params, filter,
             enforceJoinOrder, startTx, timeout, cancel);
 
@@ -1535,7 +1534,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 res.addAll(doRunPrepared(schemaName, prepared, newQry, twoStepQry, meta, keepBinary, startTx, tracker,
                     cancel, registerAsNewQry));
 
-
                 // We cannot cache two-step query for multiple statements query except the last statement
                 if (parseRes.twoStepQuery() != null && parseRes.twoStepQueryKey() != null &&
                     !parseRes.twoStepQuery().explain() && remainingSql == null)
@@ -2033,7 +2031,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             return cursor;
         }
-        catch (RuntimeException e) {
+        catch (Exception e) {
             runningQueryMgr.unregisterRunningQuery(qryId);
 
             throw e;

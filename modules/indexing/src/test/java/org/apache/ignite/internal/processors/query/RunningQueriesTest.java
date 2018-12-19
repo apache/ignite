@@ -76,7 +76,6 @@ import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
  */
 @RunWith(JUnit4.class)
 public class RunningQueriesTest extends GridCommonAbstractTest {
-
     /** Timeout in sec. */
     private static final long TIMEOUT_IN_SEC = 5;
 
@@ -228,6 +227,7 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
 
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
+        // TODO: Add INSERT/UPDATE
         SqlFieldsQuery qry = new SqlFieldsQuery("DELETE FROM /* comment */ Integer");
 
         IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> cache.query(qry).getAll());
@@ -260,6 +260,7 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
 
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
+        // TODO: CREATE/DROP + TABLE/INDEX
         SqlFieldsQuery qry = new SqlFieldsQuery("CREATE TABLE tst(id long PRIMARY KEY, cnt integer)");
 
         IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> cache.query(qry).getAll());

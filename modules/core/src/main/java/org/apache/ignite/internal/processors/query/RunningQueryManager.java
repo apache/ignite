@@ -49,29 +49,17 @@ public class RunningQueryManager {
      */
     public GridRunningQueryInfo registerUserRunningQuery(String qry, GridCacheQueryType qryType, String schemaName,
         boolean loc, @Nullable GridQueryCancel cancel) {
-
-        long qryId = createUniqueQueryId();
+        long qryId = qryIdGen.incrementAndGet();
 
         long startTime = U.currentTimeMillis();
 
-        GridRunningQueryInfo runningQryInfo = new GridRunningQueryInfo(qryId, qry, qryType,
-            schemaName, startTime, cancel, loc);
+        GridRunningQueryInfo info = new GridRunningQueryInfo(qryId, qry, qryType, schemaName, startTime, cancel, loc);
 
-        GridRunningQueryInfo prevRunningQryInfo = userQueriesRuns.putIfAbsent(qryId, runningQryInfo);
+        GridRunningQueryInfo prevInfo = userQueriesRuns.putIfAbsent(qryId, info);
 
-        assert prevRunningQryInfo == null : "Running query already registered [prev_qry=" + prevRunningQryInfo +
-            ", newQry=" + runningQryInfo;
+        assert prevInfo == null : "Running query already registered [prev_qry=" + prevInfo + ", newQry=" + info + ']';
 
-        return runningQryInfo;
-    }
-
-    /**
-     * Generate unique query id.
-     *
-     * @return Generated unique query id.
-     */
-    public long createUniqueQueryId() {
-        return qryIdGen.incrementAndGet();
+        return info;
     }
 
     /**
@@ -127,4 +115,6 @@ public class RunningQueryManager {
         if (run != null)
             run.cancel();
     }
+
+    // TODO: toString (see assert above)
 }

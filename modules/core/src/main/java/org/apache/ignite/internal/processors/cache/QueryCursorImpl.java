@@ -134,7 +134,7 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
 
     /** {@inheritDoc} */
     @Override public void close() {
-        while (state != CLOSED) {
+        while(state != CLOSED) {
             if (STATE_UPDATER.compareAndSet(this, RESULT_READY, CLOSED)) {
                 closeIter();
 

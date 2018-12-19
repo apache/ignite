@@ -29,20 +29,13 @@ import org.apache.ignite.internal.processors.query.RunningQueryManager;
  * Running query will be unregistered during close of cursor.
  */
 public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
-
-    /**
-     *
-     */
+    /** */
     private final AtomicBoolean unregistered = new AtomicBoolean(false);
 
-    /**
-     *
-     */
+    /** */
     private RunningQueryManager runningQryMgr;
 
-    /**
-     *
-     */
+    /** */
     private Long qryId;
 
     /**
@@ -59,6 +52,7 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
         this.qryId = qryId;
     }
 
+    // TODO: Unused
     /**
      * @param iterExec Query executor.
      * @param runningQryMgr Running query manager.
@@ -71,6 +65,7 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
         this.qryId = qryId;
     }
 
+    // TODO: Unused
     /**
      * @param iterExec Query executor.
      * @param cancel Cancellation closure.
@@ -88,6 +83,7 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
 
     /** {@inheritDoc} */
     @Override public void close() {
+        // TODO: qryId - why nullable? Probably should never be null here.
         if (unregistered.compareAndSet(false, true) && qryId != null)
             runningQryMgr.unregisterRunningQuery(qryId);
 

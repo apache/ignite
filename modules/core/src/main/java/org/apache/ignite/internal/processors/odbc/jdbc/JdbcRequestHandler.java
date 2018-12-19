@@ -738,6 +738,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private void executeBatchedQuery(SqlFieldsQueryEx qry, List<Integer> updCntsAcc,
         IgniteBiTuple<Integer, String> firstErr) {
         List<FieldsQueryCursor<List<?>>> qryRes = null;
+
         try {
             if (cliCtx.isStream()) {
                 List<Long> cnt = ctx.query().streamBatchedUpdateQuery(qry.getSchema(), cliCtx, qry.getSql(),
@@ -807,6 +808,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             else
                 U.error(log, "Failed to execute batch query [qry=" + qry +']', e);
         }
+        // TODO: Double-check what kind of query is here. If it is INSERT then remove finally.
         finally {
             if (!F.isEmpty(qryRes)) {
                 for (FieldsQueryCursor<List<?>> cur : qryRes) {
