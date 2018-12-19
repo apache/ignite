@@ -1095,6 +1095,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      */
     @Test
     public void testCleanupWaitsForGet1() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10753");
+
         boolean vals[] = {true, false};
 
         for (boolean otherPuts : vals) {
@@ -1326,6 +1328,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      */
     @Test
     public void testCleanupWaitsForGet3() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10753");
+
         for (int i = 0; i < 4; i++) {
             cleanupWaitsForGet3(i + 1);
 
@@ -2537,6 +2541,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      */
     @Test
     public void testMvccCoordinatorChangeSimple() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10752");
+
         Ignite srv0 = startGrid(0);
 
         final List<String> cacheNames = new ArrayList<>();
@@ -2867,6 +2873,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      */
     @Test
     public void testUpdate_N_Objects_ClientServer_Backups2_Get() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10750");
+
         int[] nValues = {3, 5, 10};
 
         for (int n : nValues) {

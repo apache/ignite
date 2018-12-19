@@ -53,6 +53,8 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
      */
     @Test
     public void testAccountsTxSql_Server_Backups0_CoordinatorFails() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10750");
+
         accountsTxReadAll(2, 1, 0, 64,
             new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL, DML, DFLT_TEST_TIME, RestartMode.RESTART_CRD);
     }
@@ -62,6 +64,8 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
      */
     @Test
     public void testAccountsTxSql_SingleNode_CoordinatorFails_Persistence() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10753");
+
         persistence = true;
 
         accountsTxReadAll(1, 0, 0, 1,
@@ -82,6 +86,8 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
      */
     @Test
     public void testPutAllGetAll_SingleNode_RestartCoordinator_ScanDml_Persistence() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10767");
+
         persistence = true;
 
         putAllGetAll(RestartMode.RESTART_CRD  , 1, 0, 0, 1,
@@ -93,6 +99,8 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
      */
     @Test
     public void testPutAllGetAll_ClientServer_Backups0_RestartCoordinator_SqlDml() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10753");
+
         putAllGetAll(RestartMode.RESTART_CRD, 2, 1, 0, DFLT_PARTITION_COUNT,
             new InitIndexing(Integer.class, Integer.class), SQL, DML);
     }
@@ -113,6 +121,8 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
      */
     @Test
     public void testUpdate_N_Objects_ClientServer_Backups0_Sql_Persistence() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10752");
+
         persistence = true;
 
         updateNObjectsTest(5, 2, 0, 0, 64, DFLT_TEST_TIME,
@@ -124,6 +134,8 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
      */
     @Test
     public void testUpdate_N_Objects_SingleNode_Sql_Persistence() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10752");
+
         updateNObjectsTest(3, 1, 0, 0, 1, DFLT_TEST_TIME,
             new InitIndexing(Integer.class, Integer.class), SQL, DML, RestartMode.RESTART_CRD);
     }

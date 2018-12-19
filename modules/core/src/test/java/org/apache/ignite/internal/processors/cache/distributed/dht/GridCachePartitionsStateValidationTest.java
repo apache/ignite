@@ -51,6 +51,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -141,6 +142,9 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
      */
     @Test
     public void testPartitionCountersConsistencyOnExchange() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10766");
+
         IgniteEx ignite = (IgniteEx) startGrids(4);
         ignite.cluster().active(true);
 

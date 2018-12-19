@@ -37,6 +37,8 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
      */
     @Test
     public void testAccountsTxGet_Server_Backups0_CoordinatorFails_Persistence() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10752");
+
         persistence = true;
 
         accountsTxReadAll(2, 0, 0, 64,
@@ -48,6 +50,8 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
      */
     @Test
     public void testAccountsTxGet_SingleNode_CoordinatorFails() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10752");
+
         accountsTxReadAll(1, 0, 0, 1,
             null, true, GET, PUT, DFLT_TEST_TIME, RestartMode.RESTART_CRD);
     }
@@ -57,6 +61,8 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
      */
     @Test
     public void testAccountsTxScan_Server_Backups0_CoordinatorFails() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10750");
+
         accountsTxReadAll(2, 0, 0, 64,
             null, true, SCAN, PUT, DFLT_TEST_TIME, RestartMode.RESTART_CRD);
     }
@@ -98,6 +104,9 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
      */
     @Test
     public void testUpdate_N_Objects_Servers_Backups0__PutGet_CoordinatorFails_Persistence() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10750");
+        fail("https://issues.apache.org/jira/browse/IGNITE-10752");
+
         persistence = true;
 
         updateNObjectsTest(5, 2, 0, 0, 64, DFLT_TEST_TIME,
@@ -109,6 +118,7 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
      */
     @Test
     public void testUpdate_N_Objects_SingleNode__PutGet_CoordinatorFails() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10752");
 
         updateNObjectsTest(7, 1, 0, 0, 1, DFLT_TEST_TIME,
             null, GET, PUT, RestartMode.RESTART_CRD);

@@ -47,6 +47,8 @@ public class CacheMvccPartitionedCoordinatorFailoverTest extends CacheMvccAbstra
      */
     @Test
     public void testAccountsTxGet_ClientServer_Backups2_CoordinatorFails_Persistence() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10752");
+
         persistence = true;
 
         accountsTxReadAll(4, 2, 2, DFLT_PARTITION_COUNT,
@@ -58,6 +60,8 @@ public class CacheMvccPartitionedCoordinatorFailoverTest extends CacheMvccAbstra
      */
     @Test
     public void testAccountsTxGet_Server_Backups1_CoordinatorFails() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10752");
+
         accountsTxReadAll(2, 0, 1, DFLT_PARTITION_COUNT,
             null, true, GET, PUT, DFLT_TEST_TIME, RestartMode.RESTART_CRD);
     }
@@ -67,6 +71,8 @@ public class CacheMvccPartitionedCoordinatorFailoverTest extends CacheMvccAbstra
      */
     @Test
     public void testAccountsTxScan_ClientServer_Backups2_CoordinatorFails() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10750");
+
         accountsTxReadAll(4, 2, 2, DFLT_PARTITION_COUNT,
             null, true, SCAN, PUT, DFLT_TEST_TIME, RestartMode.RESTART_CRD);
     }
@@ -76,6 +82,8 @@ public class CacheMvccPartitionedCoordinatorFailoverTest extends CacheMvccAbstra
      */
     @Test
     public void testAccountsTxScan_Server_Backups1_CoordinatorFails_Persistence() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10752");
+
         persistence = true;
 
         accountsTxReadAll(2, 0, 1, DFLT_PARTITION_COUNT,
@@ -107,6 +115,8 @@ public class CacheMvccPartitionedCoordinatorFailoverTest extends CacheMvccAbstra
      */
     @Test
     public void testUpdate_N_Objects_ClientServer_Backups1_PutGet_CoordinatorFails_Persistence() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10752");
+
         persistence = true;
 
         updateNObjectsTest(3, 5, 3, 1, DFLT_PARTITION_COUNT, DFLT_TEST_TIME,
@@ -118,6 +128,8 @@ public class CacheMvccPartitionedCoordinatorFailoverTest extends CacheMvccAbstra
      */
     @Test
     public void testUpdate_N_Objects_ClientServer_Backups1__PutGet_CoordinatorFails() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10750");
+
         updateNObjectsTest(10, 3, 2, 1, DFLT_PARTITION_COUNT, DFLT_TEST_TIME,
             null, GET, PUT, RestartMode.RESTART_CRD);
     }
@@ -128,6 +140,8 @@ public class CacheMvccPartitionedCoordinatorFailoverTest extends CacheMvccAbstra
      */
     @Test
     public void testGetReadInProgressCoordinatorFails() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10752");
+
         readInProgressCoordinatorFails(false, false, PESSIMISTIC, REPEATABLE_READ, GET, PUT, null);
     }
 
@@ -152,6 +166,8 @@ public class CacheMvccPartitionedCoordinatorFailoverTest extends CacheMvccAbstra
      */
     @Test
     public void testGetReadInsideTxInProgressCoordinatorFails_ReadDelay() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10752");
+
         readInProgressCoordinatorFails(true, true, PESSIMISTIC, REPEATABLE_READ, GET, PUT, null);
     }
 

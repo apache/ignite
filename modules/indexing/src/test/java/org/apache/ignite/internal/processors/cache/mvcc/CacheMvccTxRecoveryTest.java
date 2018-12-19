@@ -402,6 +402,8 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
      */
     @Test
     public void testCountersNeighborcastServerFailed() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10766");
+
         int srvCnt = 4;
 
         startGridsMultiThreaded(srvCnt);

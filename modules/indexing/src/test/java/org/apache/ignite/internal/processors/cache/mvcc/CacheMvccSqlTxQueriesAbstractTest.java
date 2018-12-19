@@ -1143,6 +1143,8 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
      */
     @Test
     public void testQueryInsertMultithread() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10764");
+
         final int THREAD_CNT = 8;
         final int BATCH_SIZE = 1000;
         final int ROUNDS = 10;

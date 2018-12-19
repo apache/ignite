@@ -326,6 +326,8 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
      */
     @Test
     public void testConcurrentUpdatesAndQueryStartMvccTxCacheGroup() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10755");
+
         concurrentUpdatesAndQueryStart(TRANSACTIONAL_SNAPSHOT, true);
     }
 

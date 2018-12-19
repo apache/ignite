@@ -521,6 +521,8 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
      */
     @Test
     public void testQueryReducerDeadlockInsertWithTxTimeout() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10763");
+
         checkQueryReducerDeadlockInsert(TimeoutMode.TX);
     }
 

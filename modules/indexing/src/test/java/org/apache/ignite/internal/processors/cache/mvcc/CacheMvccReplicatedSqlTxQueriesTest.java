@@ -152,6 +152,8 @@ public class CacheMvccReplicatedSqlTxQueriesTest extends CacheMvccSqlTxQueriesAb
      */
     @Test
     public void testReplicatedAndPartitionedUpdateSingleTransaction() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10763");
+
         ccfgs = new CacheConfiguration[] {
             cacheConfiguration(REPLICATED, FULL_SYNC, 0, DFLT_PARTITION_COUNT)
                 .setName("rep")

@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.MvccCacheGroupMetricsMBeanTes
 import org.apache.ignite.internal.processors.cache.distributed.Cache64kPartitionsTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionCountersMvccTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionCountersTest;
+import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingWithAsyncClearingMvccTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionMultinodeMixedRegionsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.CheckpointBufferDeadlockTest;
 
@@ -73,6 +74,7 @@ public class IgniteCacheMvccTestSuite7  extends TestSuite {
         // Add Mvcc clones.
         suite.addTest(new JUnit4TestAdapter(MvccCacheGroupMetricsMBeanTest.class));
         suite.addTest(new JUnit4TestAdapter(GridCacheRebalancingPartitionCountersMvccTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheRebalancingWithAsyncClearingMvccTest.class));
 
 
         return suite;

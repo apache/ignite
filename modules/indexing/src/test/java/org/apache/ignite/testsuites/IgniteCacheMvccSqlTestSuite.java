@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTxRecoveryTest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccRepeatableReadBulkOpsTest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccRepeatableReadOperationsTest;
 import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildWithMvccEnabledSelfTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
@@ -199,6 +200,12 @@ public class IgniteCacheMvccSqlTestSuite extends TestSuite {
         /** {@inheritDoc} */
         @Override protected CacheAtomicityMode atomicityMode() {
             return TRANSACTIONAL_SNAPSHOT;
+        }
+
+        /** {@inheritDoc} */
+        @Test
+        @Override public void testManyKeysRollback() throws Exception {
+            fail("https://issues.apache.org/jira/browse/IGNITE-10765");
         }
     }
 }

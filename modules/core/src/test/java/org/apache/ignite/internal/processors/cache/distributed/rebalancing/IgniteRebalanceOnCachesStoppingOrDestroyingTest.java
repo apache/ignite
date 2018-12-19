@@ -139,6 +139,9 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
      */
     @Test
     public void testStopCachesOnDeactivation() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10582");
+
         performTest(ig -> {
             ig.cluster().active(false);
 
@@ -166,6 +169,9 @@ public class IgniteRebalanceOnCachesStoppingOrDestroyingTest extends GridCommonA
      */
     @Test
     public void testDestroySpecificCacheAndCacheGroup() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10582");
+
         performTest(ig -> {
             ig.destroyCaches(Arrays.asList(CACHE_1, CACHE_3, CACHE_4));
 
