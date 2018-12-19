@@ -18,8 +18,6 @@
 package org.apache.ignite.testframework.junits;
 
 import junit.framework.Assert; // IMPL NOTE some old tests expect inherited deprecated assertions.
-import junit.framework.Test;
-import junit.framework.TestResult;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 import org.junit.runners.model.Statement;
@@ -29,7 +27,7 @@ import org.junit.runners.model.Statement;
  * inherited deprecated assertions and specific old interface for GridTestUtils.
  */
 @SuppressWarnings({"TransientFieldInNonSerializableClass", "ExtendsUtilityClass", "deprecation"})
-public abstract class LegacySupport extends Assert implements Test {
+public abstract class LegacySupport extends Assert {
     /**
      * Supports obtaining test name for JUnit4 framework in a way that makes it available for legacy methods invoked
      * from {@code runTest(Statement)}.
@@ -74,29 +72,5 @@ public abstract class LegacySupport extends Assert implements Test {
             }
         }
         if (e != null) throw e;
-    }
-
-    /**
-     * {@inheritDoc}
-     * <p>
-     * This method is here only for subclass to pretend implementing particular interface expected by some utility
-     * methods in GridTestUtils.</p>
-     *
-     * @return Nothing.
-     */
-    @Override public final int countTestCases() {
-        throw new UnsupportedOperationException("This method is not expected to be invoked: countTestCases() at test: "
-            + getName());
-    }
-
-    /**
-     * {@inheritDoc}
-     * <p>
-     * This method is here only for subclass to pretend implementing particular interface expected by some utility
-     * methods in GridTestUtils.</p>
-     */
-    @Override public final void run(TestResult res) {
-        throw new UnsupportedOperationException("This method is not intended to be invoked: run(TestResult) at test: "
-            + getName());
     }
 }

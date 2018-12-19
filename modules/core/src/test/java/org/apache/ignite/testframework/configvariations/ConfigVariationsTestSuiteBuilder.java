@@ -18,7 +18,6 @@
 package org.apache.ignite.testframework.configvariations;
 
 import java.util.Arrays;
-import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -86,7 +85,7 @@ public class ConfigVariationsTestSuiteBuilder {
     /**
      * @return Test suite.
      */
-    public JUnit4TestAdapter build() {
+    public TestSuite build() {
         assert testedNodeCnt > 0;
         assert gridsCnt > 0;
 
@@ -132,7 +131,7 @@ public class ConfigVariationsTestSuiteBuilder {
             }
         }
 
-        return new JUnit4TestAdapter(suite.getClass());
+        return suite;
     }
 
     /**
