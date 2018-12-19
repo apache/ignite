@@ -216,7 +216,6 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
         if (ctx.isDaemon() || !active)
             return;
@@ -1516,7 +1515,6 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
     /**
      * Service deployment listener.
      */
-    @SuppressWarnings("unchecked")
     private class ServiceEntriesListener implements CacheEntryUpdatedListener<Object, Object> {
         /** {@inheritDoc} */
         @Override public void onUpdated(final Iterable<CacheEntryEvent<?, ?>> deps) {

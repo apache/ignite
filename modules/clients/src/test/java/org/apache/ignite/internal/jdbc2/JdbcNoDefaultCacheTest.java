@@ -32,12 +32,16 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class JdbcNoDefaultCacheTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -102,6 +106,7 @@ public class JdbcNoDefaultCacheTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaults() throws Exception {
         String url = CFG_URL_PREFIX + CFG_URL;
 
@@ -119,6 +124,7 @@ public class JdbcNoDefaultCacheTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoCacheNameQuery() throws Exception {
         try (
             Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + CFG_URL);

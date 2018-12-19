@@ -341,7 +341,6 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
      * @param key Key.
      * @return Object.
      */
-    @SuppressWarnings("ConstantConditions")
     private <T> Object get(Object key) {
         return ignite.cache(cacheName).get(key);
     }

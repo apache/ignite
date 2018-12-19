@@ -92,7 +92,6 @@ public class ServiceDescriptorImpl implements ServiceDescriptor {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Nullable @Override public <K> K affinityKey() {
         return (K)dep.configuration().getAffinityKey();
     }

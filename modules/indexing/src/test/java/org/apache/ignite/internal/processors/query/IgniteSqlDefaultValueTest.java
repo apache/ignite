@@ -32,9 +32,13 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /** */
 @SuppressWarnings("ThrowableNotThrown")
+@RunWith(JUnit4.class)
 public class IgniteSqlDefaultValueTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -88,6 +92,7 @@ public class IgniteSqlDefaultValueTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testDefaultValueColumn() {
         sql("CREATE TABLE TEST (id int, val0 varchar DEFAULT 'default-val', primary key (id))");
         sql("INSERT INTO TEST (id) VALUES (?)", 1);
@@ -107,6 +112,7 @@ public class IgniteSqlDefaultValueTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testDefaultValueColumnAfterUpdate() {
         sql("CREATE TABLE TEST (id int, val0 varchar DEFAULT 'default-val', val1 varchar, primary key (id))");
         sql("INSERT INTO TEST (id, val1) VALUES (?, ?)", 1, "val-10");
@@ -138,6 +144,7 @@ public class IgniteSqlDefaultValueTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testEmptyValueNullDefaults() {
         sql("CREATE TABLE TEST (id int, val0 varchar, primary key (id))");
         sql("INSERT INTO TEST (id) VALUES (?)", 1);
@@ -155,6 +162,7 @@ public class IgniteSqlDefaultValueTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testAddColumnWithDefaults() {
         sql("CREATE TABLE TEST (id int, val0 varchar, primary key (id))");
 
@@ -169,6 +177,7 @@ public class IgniteSqlDefaultValueTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testDefaultTypes() {
         assertEquals("Check tinyint", (byte)28, getDefaultObject("TINYINT", "28"));
         assertEquals("Check smallint", (short)28, getDefaultObject("SMALLINT", "28"));
