@@ -168,9 +168,37 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** {@inheritDoc} */
     @Override public void onTopologyChanged(GridDhtPartitionsExchangeFuture lastFut) {
-        supplier.onTopologyChanged(lastFut.initialVersion());
+        supplier.onTopologyChanged();
 
         demander.onTopologyChanged(lastFut);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean rebalanceRequired(AffinityTopologyVersion rebTopVer,
+        GridDhtPartitionsExchangeFuture exchFut) {
+        if (ctx.kernalContext().clientNode() || rebTopVer.equals(AffinityTopologyVersion.NONE))
+            return false; // No-op.
+
+        if (exchFut.localJoinExchange())
+            return true; // Required, can have outdated updSeq partition counter if node reconnects.
+
+        if (!grp.affinity().cachedVersions().contains(rebTopVer)) {
+            assert rebTopVer.compareTo(grp.localStartVersion()) <= 0 :
+                "Empty hisroty allowed only for newly started cache group [rebTopVer=" + rebTopVer +
+                    ", localStartTopVer=" + grp.localStartVersion() + ']';
+
+            return true; // Required, since no history info available.
+        }
+
+        final IgniteInternalFuture<Boolean> rebFut = rebalanceFuture();
+
+        if (rebFut.isDone() && !rebFut.result())
+            return true; // Required, previous rebalance cancelled.
+
+        AffinityTopologyVersion lastAffChangeTopVer =
+            ctx.exchange().lastAffinityChangedTopologyVersion(exchFut.topologyVersion());
+
+        return lastAffChangeTopVer.compareTo(rebTopVer) > 0;
     }
 
     /** {@inheritDoc} */
