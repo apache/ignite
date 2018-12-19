@@ -583,7 +583,9 @@ public class JdbcThinTcpIo {
 
         req.writeBinary(writer, srvProtocolVer);
 
-        send(writer.array());
+        synchronized (mux) {
+            send(writer.array());
+        }
     }
 
     /**
@@ -591,18 +593,16 @@ public class JdbcThinTcpIo {
      * @throws IOException On error.
      */
     private void send(byte[] req) throws IOException {
-        synchronized (mux) {
-            int size = req.length;
+        int size = req.length;
 
-            out.write(size & 0xFF);
-            out.write((size >> 8) & 0xFF);
-            out.write((size >> 16) & 0xFF);
-            out.write((size >> 24) & 0xFF);
+        out.write(size & 0xFF);
+        out.write((size >> 8) & 0xFF);
+        out.write((size >> 16) & 0xFF);
+        out.write((size >> 24) & 0xFF);
 
-            out.write(req);
+        out.write(req);
 
-            out.flush();
-        }
+        out.flush();
     }
 
     /**

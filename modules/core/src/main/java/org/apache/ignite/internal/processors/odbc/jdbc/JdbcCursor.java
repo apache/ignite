@@ -38,7 +38,7 @@ public abstract class JdbcCursor implements Closeable {
      *
      * @param reqId Id of the request that created given cursor.
      */
-    public JdbcCursor(long reqId) {
+    protected JdbcCursor(long reqId) {
         this.cursorId = CURSOR_ID_GENERATOR.getAndIncrement();
         this.reqId = reqId;
     }
