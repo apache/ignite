@@ -79,7 +79,6 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
 
     /**
      * @param iterExec Query executor.
-     * @param cancel Cancellation closure.
      * @param isQry Result type flag - {@code true} for query, {@code false} for update operation.
      */
     public QueryCursorImpl(Iterable<T> iterExec, GridQueryCancel cancel, boolean isQry) {
@@ -135,23 +134,23 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
 
     /** {@inheritDoc} */
     @Override public void close() {
-            while (state != CLOSED) {
-                if (STATE_UPDATER.compareAndSet(this, RESULT_READY, CLOSED)) {
-                    closeIter();
+        while (state != CLOSED) {
+            if (STATE_UPDATER.compareAndSet(this, RESULT_READY, CLOSED)) {
+                closeIter();
 
-                    return;
-                }
-
-                if (STATE_UPDATER.compareAndSet(this, EXECUTION, CLOSED)) {
-                    if (cancel != null)
-                        cancel.cancel();
-
-                    return;
-                }
-
-                if (STATE_UPDATER.compareAndSet(this, IDLE, CLOSED))
-                    return;
+                return;
             }
+
+            if (STATE_UPDATER.compareAndSet(this, EXECUTION, CLOSED)) {
+                if (cancel != null)
+                    cancel.cancel();
+
+                return;
+            }
+
+            if (STATE_UPDATER.compareAndSet(this, IDLE, CLOSED))
+                return;
+        }
     }
 
     /**

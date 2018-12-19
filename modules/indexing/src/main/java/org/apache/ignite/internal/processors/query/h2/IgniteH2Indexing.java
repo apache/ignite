@@ -978,7 +978,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final GridQueryFieldsResult res = queryLocalSqlFields(schemaName, sql, params, filter,
             enforceJoinOrder, startTx, timeout, cancel);
 
-        QueryCursorImpl<List<?>> cursor = new RegisteredQueryCursor<>(new Iterable<List<?>>() {
+        RegisteredQueryCursor<List<?>> cursor = new RegisteredQueryCursor<>(new Iterable<List<?>>() {
             @SuppressWarnings("NullableProblems")
             @Override public Iterator<List<?>> iterator() {
                 try {
@@ -2017,7 +2017,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Long qryId = registerRunningQuery(schemaName, cancel, qry.getSql(), qry.isLocal(), registerAsNewQry);
 
         try {
-            QueryCursorImpl<List<?>> cursor = new RegisteredQueryCursor<>(
+            RegisteredQueryCursor<List<?>> cursor = new RegisteredQueryCursor<>(
                 runQueryTwoStep(schemaName, twoStepQry, keepBinary, qry.isEnforceJoinOrder(), startTx, qry.getTimeout(),
                     cancel, qry.getArgs(), partitions, qry.isLazy(), mvccTracker), cancel, runningQueryManager(), qryId);
 

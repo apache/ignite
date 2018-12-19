@@ -380,5 +380,5 @@ public interface GridQueryIndexing {
      *
      * @return Running query manager.
      */
-    RunningQueryManager runningQueryManager();
+    public RunningQueryManager runningQueryManager();
 }

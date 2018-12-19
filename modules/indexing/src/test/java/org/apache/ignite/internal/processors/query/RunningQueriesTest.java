@@ -79,7 +79,7 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
     private static final long TIMEOUT_IN_MS = TIMEOUT_IN_SEC * 1000;
 
     /** Barrier. */
-    static CyclicBarrier barrier;
+    private static CyclicBarrier barrier;
 
     /** Ignite. */
     private static IgniteEx ignite;
