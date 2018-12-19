@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import {pluck, map} from 'rxjs/operators';
+
 import templateUrl from './template.tpl.pug';
 
 export default {
@@ -25,19 +27,25 @@ export default {
         queriesTitle: '?queriesTitle'
     },
     controller: class Ctrl {
-        static $inject = ['$element', '$rootScope', '$state', 'IgniteNotebook'];
+        static $inject = ['$element', '$rootScope', '$state', 'IgniteNotebook', 'Store'];
 
         /**
-         * @param {JQLite} $element       
-         * @param {ng.IRootScopeService} $rootScope     
-         * @param {import('@uirouter/angularjs').StateService} $state         
+         * @param {JQLite} $element
+         * @param {ng.IRootScopeService} $rootScope
+         * @param {import('@uirouter/angularjs').StateService} $state
          * @param {import('./notebook.service').default} IgniteNotebook
+         * @param {import('../../store').AppStore} Store
          */
-        constructor($element, $rootScope, $state, IgniteNotebook) {
+        constructor($element, $rootScope, $state, IgniteNotebook, Store) {
             this.$element = $element;
             this.$rootScope = $rootScope;
             this.$state = $state;
             this.IgniteNotebook = IgniteNotebook;
+
+            this.pageQueriesTabs$ = Store.state$.pipe(
+                pluck('ui', 'navigationMenuSubItems'),
+                map((subMenuItems) => subMenuItems.filter((item) => item.parentLabel === 'Queries'))
+            );
         }
 
         $onInit() {
