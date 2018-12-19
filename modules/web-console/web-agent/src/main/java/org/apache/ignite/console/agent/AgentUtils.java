@@ -17,9 +17,6 @@
 
 package org.apache.ignite.console.agent;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
-import io.socket.client.Ack;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -30,7 +27,11 @@ import java.security.KeyStore;
 import java.security.ProtectionDomain;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
+import io.socket.client.Ack;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -304,13 +305,10 @@ public class AgentUtils {
      *
      * @param cipherSuites SSL cipher suites.
      */
-    public static ConnectionSpec sslConnectionSpec(List<String> cipherSuites) {
-        if (F.isEmpty(cipherSuites))
-            return null;
-
-        return new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+    public static List<ConnectionSpec> sslConnectionSpec(List<String> cipherSuites) {
+        return Collections.singletonList(new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
             .cipherSuites(cipherSuites.toArray(new String[0]))
-            .build();
+            .build());
     }
 
     /**

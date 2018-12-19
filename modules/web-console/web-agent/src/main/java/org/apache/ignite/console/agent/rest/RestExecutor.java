@@ -21,13 +21,9 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.net.ConnectException;
 import java.security.GeneralSecurityException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.X509TrustManager;
-
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -36,18 +32,17 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-
-import okhttp3.ConnectionSpec;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.X509TrustManager;
 import okhttp3.Dispatcher;
 import okhttp3.FormBody;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.console.agent.AgentUtils;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
@@ -56,6 +51,9 @@ import org.slf4j.LoggerFactory;
 import static com.fasterxml.jackson.core.JsonToken.END_ARRAY;
 import static com.fasterxml.jackson.core.JsonToken.END_OBJECT;
 import static com.fasterxml.jackson.core.JsonToken.START_ARRAY;
+import static org.apache.ignite.console.agent.AgentUtils.sslConnectionSpec;
+import static org.apache.ignite.console.agent.AgentUtils.sslSocketFactory;
+import static org.apache.ignite.console.agent.AgentUtils.trustManager;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
@@ -103,31 +101,20 @@ public class RestExecutor implements AutoCloseable {
             .readTimeout(0, TimeUnit.MILLISECONDS)
             .dispatcher(dispatcher);
 
-        boolean trustAll = Boolean.getBoolean("trust.all");
-        boolean hasTrustStore = trustStorePath != null;
+        X509TrustManager trustMgr = trustManager(Boolean.getBoolean("trust.all"), trustStorePath, trustStorePwd);
 
-        if (trustAll && hasTrustStore) {
-            log.warning("Options contains both '--node-trust-store' and '-Dtrust.all=true'. " +
-                "Option '-Dtrust.all=true' will be ignored.");
-
-            trustAll = false;
-        }
-
-        X509TrustManager trustMgr = AgentUtils.trustManager(trustAll, trustStorePath, trustStorePwd);
-
-        SSLSocketFactory sslSocketFactory = AgentUtils.sslSocketFactory(
+        SSLSocketFactory sslSocketFactory = sslSocketFactory(
             keyStorePath, keyStorePwd,
             trustMgr,
             cipherSuites
         );
 
-        if (sslSocketFactory != null)
+        if (sslSocketFactory != null) {
             builder.sslSocketFactory(sslSocketFactory, trustMgr);
 
-        ConnectionSpec sslConnSpec = AgentUtils.sslConnectionSpec(cipherSuites);
-
-        if (sslConnSpec != null)
-            builder.connectionSpecs(Collections.singletonList(sslConnSpec));
+            if (F.isEmpty(cipherSuites))
+                builder.connectionSpecs(sslConnectionSpec(cipherSuites));
+        }
 
         httpClient = builder.build();
     }
