@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
@@ -153,9 +154,12 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
                                 Lock lock = cache.lock(i);
                                 lock.lock();
 
-                                cache.put(i, i);
-
-                                lock.unlock();
+                                try {
+                                    cache.put(i, i);
+                                }
+                                finally {
+                                    lock.unlock();
+                                }
                             }
                         }
                     }
@@ -170,8 +174,101 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture<Long> f;
 
-            while ((f = q.poll()) != null)
-                f.get(2_000);
+            Exception err = null;
+
+            while ((f = q.poll()) != null) {
+                try {
+                    f.get(60_000);
+                }
+                catch (Exception e) {
+                    error("Test operation failed: " + e, e);
+
+                    if (err == null)
+                        err = e;
+                }
+            }
+
+            if (err != null)
+                fail("Test operation failed, see log for details");
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLockNodeStop() throws Exception {
+        final int nodeCnt = 3;
+        int threadCnt = 2;
+        final int keys = 100;
+
+        try {
+            final AtomicBoolean stop = new AtomicBoolean(false);
+
+            Queue<IgniteInternalFuture<Long>> q = new ArrayDeque<>(nodeCnt);
+
+            for (int i = 0; i < nodeCnt; i++) {
+                final Ignite ignite = startGrid(i);
+
+                IgniteInternalFuture<Long> f = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+                    @Override public void run() {
+                        while (!Thread.currentThread().isInterrupted() && !stop.get()) {
+                            try {
+                                IgniteCache<Integer, Integer> cache = ignite.cache(REPLICATED_TEST_CACHE);
+
+                                for (int i = 0; i < keys; i++) {
+                                    Lock lock = cache.lock(i);
+                                    lock.lock();
+
+                                    try {
+                                        cache.put(i, i);
+                                    }
+                                    finally {
+                                        lock.unlock();
+                                    }
+                                }
+                            }
+                            catch (Exception e) {
+                                log.info("Ignore error: " + e);
+
+                                break;
+                            }
+                        }
+                    }
+                }, threadCnt, "test-lock-thread");
+
+                q.add(f);
+
+                U.sleep(1_000);
+            }
+
+            U.sleep(ThreadLocalRandom.current().nextLong(500) + 500);
+
+            // Stop all nodes, check that threads executing cache operations do not hang.
+            stopAllGrids();
+
+            stop.set(true);
+
+            IgniteInternalFuture<Long> f;
+
+            Exception err = null;
+
+            while ((f = q.poll()) != null) {
+                try {
+                    f.get(60_000);
+                }
+                catch (Exception e) {
+                    error("Test operation failed: " + e, e);
+
+                    if (err == null)
+                        err = e;
+                }
+            }
+
+            if (err != null)
+                fail("Test operation failed, see log for details");
         }
         finally {
             stopAllGrids();
