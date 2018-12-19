@@ -181,7 +181,6 @@ public final class GridCacheAtomicSequenceImpl extends AtomicDataStructureProxy<
      * @return Sequence value.
      * @throws IgniteCheckedException If update failed.
      */
-    @SuppressWarnings("SignalWithoutCorrespondingAwait")
     private long internalUpdate(long l, @Nullable Callable<Long> updateCall, boolean updated) throws IgniteCheckedException {
         checkRemoved();
 

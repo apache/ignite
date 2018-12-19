@@ -38,7 +38,7 @@ public class GaussianNaiveBayesModel implements Model<Vector, Double>, Exportabl
     private final double[] classProbabilities;
     /** Labels. */
     private final double[] labels;
-    /** Feature sum, squared sum and cound per label. */
+    /** Feature sum, squared sum and count per label. */
     private final GaussianNaiveBayesSumsHolder sumsHolder;
 
     /**
@@ -66,7 +66,7 @@ public class GaussianNaiveBayesModel implements Model<Vector, Double>, Exportabl
     @Override public Double apply(Vector vector) {
         int k = classProbabilities.length;
 
-        double maxProbapility = .0;
+        double maxProbability = .0;
         int max = 0;
 
         for (int i = 0; i < k; i++) {
@@ -76,9 +76,9 @@ public class GaussianNaiveBayesModel implements Model<Vector, Double>, Exportabl
                 double g = gauss(x, means[i][j], variances[i][j]);
                 p *= g;
             }
-            if (p > maxProbapility) {
+            if (p > maxProbability) {
                 max = i;
-                maxProbapility = p;
+                maxProbability = p;
             }
         }
         return labels[max];

@@ -31,5 +31,5 @@ public interface CheckpointFuture  {
     /**
      * @return Finish future.
      */
-    public GridFutureAdapter finishFuture();
+    public GridFutureAdapter<Object> finishFuture();
 }

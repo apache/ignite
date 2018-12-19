@@ -20,16 +20,11 @@ package org.apache.ignite.internal.pagemem.wal.record;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Marker that we start memory recovering.
- *
- * @deprecated Previously, used to track node started\stopped states. But in fact only
- * mark files created by method GridCacheDatabaseSharedManager#nodeStart(WALPointer)
- * used. Should be removed in 3.0 release.
+ * Marker indicates that binary memory recovery has finished.
  */
-@Deprecated
 public class MemoryRecoveryRecord extends WALRecord {
     /** Create timestamp, millis */
-    private long time;
+    private final long time;
 
     /**
      * Default constructor.

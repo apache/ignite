@@ -27,7 +27,7 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
 
 /**
- * Tests for {@link SVMLinearBinaryClassificationTrainer}.
+ * Tests for {@link SVMLinearClassificationTrainer}.
  */
 public class SVMBinaryTrainerTest extends TrainerTest {
     /**
@@ -40,10 +40,10 @@ public class SVMBinaryTrainerTest extends TrainerTest {
         for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
             cacheMock.put(i, twoLinearlySeparableClasses[i]);
 
-        SVMLinearBinaryClassificationTrainer trainer = new SVMLinearBinaryClassificationTrainer()
+        SVMLinearClassificationTrainer trainer = new SVMLinearClassificationTrainer()
             .withSeed(1234L);
 
-        SVMLinearBinaryClassificationModel mdl = trainer.fit(
+        SVMLinearClassificationModel mdl = trainer.fit(
             cacheMock,
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
@@ -62,18 +62,18 @@ public class SVMBinaryTrainerTest extends TrainerTest {
         for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
             cacheMock.put(i, twoLinearlySeparableClasses[i]);
 
-        SVMLinearBinaryClassificationTrainer trainer = new SVMLinearBinaryClassificationTrainer()
+        SVMLinearClassificationTrainer trainer = new SVMLinearClassificationTrainer()
             .withAmountOfIterations(1000)
             .withSeed(1234L);
 
-        SVMLinearBinaryClassificationModel originalMdl = trainer.fit(
+        SVMLinearClassificationModel originalMdl = trainer.fit(
             cacheMock,
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
             (k, v) -> v[0]
         );
 
-        SVMLinearBinaryClassificationModel updatedOnSameDS = trainer.update(
+        SVMLinearClassificationModel updatedOnSameDS = trainer.update(
             originalMdl,
             cacheMock,
             parts,
@@ -81,7 +81,7 @@ public class SVMBinaryTrainerTest extends TrainerTest {
             (k, v) -> v[0]
         );
 
-        SVMLinearBinaryClassificationModel updatedOnEmptyDS = trainer.update(
+        SVMLinearClassificationModel updatedOnEmptyDS = trainer.update(
             originalMdl,
             new HashMap<Integer, double[]>(),
             parts,

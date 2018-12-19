@@ -50,6 +50,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
@@ -60,6 +63,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -123,6 +127,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllPrimaryFailure1() throws Exception {
         putAllPrimaryFailure(true, false);
     }
@@ -130,6 +135,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllPrimaryFailure1_UnstableTopology() throws Exception {
         blockRebalance = true;
 
@@ -139,6 +145,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllPrimaryFailure2() throws Exception {
         putAllPrimaryFailure(true, true);
     }
@@ -146,6 +153,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllPrimaryFailure2_UnstableTopology() throws Exception {
         blockRebalance = true;
 
@@ -215,6 +223,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllBackupFailure1() throws Exception {
         putAllBackupFailure1();
     }
@@ -222,6 +231,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllBackupFailure1_UnstableTopology() throws Exception {
         blockRebalance = true;
 
@@ -276,6 +286,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutBackupFailure1() throws Exception {
         putBackupFailure1();
     }
@@ -283,6 +294,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutBackupFailure1_UnstableTopology() throws Exception {
         blockRebalance = true;
 
@@ -332,6 +344,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFullAsyncPutRemap() throws Exception {
         fullAsyncRemap(false);
     }
@@ -339,6 +352,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFullAsyncPutAllRemap() throws Exception {
         fullAsyncRemap(true);
     }
@@ -407,6 +421,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutPrimarySync() throws Exception {
         startGrids(2);
 
@@ -449,6 +464,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutNearNodeFailure() throws Exception {
         startGrids(2);
 
@@ -486,6 +502,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllNearNodeFailure() throws Exception {
         final int SRVS = 4;
 
@@ -546,6 +563,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheOperations0() throws Exception {
         cacheOperations(0);
     }
@@ -553,6 +571,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheOperations_UnstableTopology0() throws Exception {
         blockRebalance = true;
 
@@ -562,6 +581,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheOperations1() throws Exception {
         cacheOperations(1);
     }
@@ -569,6 +589,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheOperations_UnstableTopology1() throws Exception {
         blockRebalance = true;
 
@@ -578,6 +599,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheOperations2() throws Exception {
         cacheOperations(2);
     }
@@ -585,6 +607,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheOperations_UnstableTopology2() throws Exception {
         blockRebalance = true;
 
@@ -640,6 +663,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutMissedDhtRequest_UnstableTopology() throws Exception {
         blockRebalance = true;
 
@@ -679,6 +703,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllMissedDhtRequest_UnstableTopology1() throws Exception {
         putAllMissedDhtRequest_UnstableTopology(true, false);
     }
@@ -686,6 +711,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllMissedDhtRequest_UnstableTopology2() throws Exception {
         putAllMissedDhtRequest_UnstableTopology(true, true);
     }
@@ -751,6 +777,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutReaderUpdate1() throws Exception {
         readerUpdateDhtFails(false, false, false);
 
@@ -762,6 +789,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutReaderUpdate2() throws Exception {
         readerUpdateDhtFails(true, false, false);
 
@@ -773,6 +801,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllReaderUpdate1() throws Exception {
         readerUpdateDhtFails(false, false, true);
 
@@ -784,6 +813,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllReaderUpdate2() throws Exception {
         readerUpdateDhtFails(true, false, true);
 
@@ -807,13 +837,15 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
 
         startServers(2);
 
-        // Waiting for minor topology changing because of late affinity assignment.
-        awaitPartitionMapExchange();
-
         Ignite srv0 = ignite(0);
         Ignite srv1 = ignite(1);
 
-        List<Integer> keys = primaryKeys(srv0.cache(TEST_CACHE), putAll ? 3 : 1);
+        IgniteCache<Object, Object> cache = srv0.cache(TEST_CACHE);
+
+        // Waiting for minor topology changing because of late affinity assignment.
+        awaitPartitionMapExchange();
+
+        List<Integer> keys = primaryKeys(cache, putAll ? 3 : 1);
 
         ccfg = null;
 

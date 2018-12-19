@@ -25,10 +25,14 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests cache deploy on topology from static configuration.
  */
+@RunWith(JUnit4.class)
 public class IgniteStaticCacheStartSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "TestCache";
@@ -58,6 +62,7 @@ public class IgniteStaticCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployCacheOnNodeStart() throws Exception {
         startGrids(3);
 

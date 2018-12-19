@@ -39,7 +39,6 @@ import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
  */
 public class GridRouterCommandLineStartup {
     /** Logger. */
-    @SuppressWarnings("FieldCanBeLocal")
     private IgniteLogger log;
 
     /** TCP router. */

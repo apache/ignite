@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.distributed.CacheNearDisabledAtomicInvokeRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheNearDisabledTransactionalInvokeRestartSelfTest;
@@ -28,14 +29,13 @@ import org.apache.ignite.internal.processors.cache.distributed.CacheNearDisabled
 public class IgniteCacheLoadConsistencyTestSuite extends TestSuite {
     /**
      * @return Ignite Cache Failover test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Cache Load Consistency Test Suite");
 
-        suite.addTestSuite(CacheNearDisabledAtomicInvokeRestartSelfTest.class);
-        suite.addTestSuite(CacheNearDisabledTransactionalInvokeRestartSelfTest.class);
-        suite.addTestSuite(CacheNearDisabledTransactionalWriteReadRestartSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheNearDisabledAtomicInvokeRestartSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheNearDisabledTransactionalInvokeRestartSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheNearDisabledTransactionalWriteReadRestartSelfTest.class));
 
         return suite;
     }

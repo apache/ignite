@@ -85,7 +85,6 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     private final ConcurrentMap<String, Class> cacheMap = new ConcurrentHashMap<>();
 
     /** Diagnostic name of this class loader. */
-    @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
     private final String name;
 
     /** Igfs Helper. */
@@ -384,7 +383,6 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
      * @param clsName Class name.
      * @return Whether class must be loaded by current classloader without delegation.
      */
-    @SuppressWarnings("RedundantIfStatement")
     public static boolean loadByCurrentClassloader(String clsName) {
         // All impl classes.
         if (clsName.startsWith("org.apache.ignite.internal.processors.hadoop.impl"))

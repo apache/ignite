@@ -16,46 +16,87 @@
  */
 
 web-console-footer {
-    display: block;
+    font-size: 12px;
+
+    .#{&}__legal {
+        color: rgba(0, 0, 0, 0.54);
+    }
+
+    &.web-console-footer__sidebar-closed {
+        width: var(--width-narrow);
+        border-top: 1px solid #dddddd;
+    
+        a {
+            color: var(--inactive-link-color);
+            margin-left: auto;
+            margin-right: auto;
+            width: 40px;
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+
+            &:hover, &:focus {
+                color: var(--active-link-color);
+            }
+            [ignite-icon] {
+                transform: scale(1.25);
+            }
+        }
+    
+        .web-console-footer__sidebar-stuff {
+            position: sticky;
+            display: grid;
+            grid-row-gap: 15px;
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+    
+        .web-console-footer__regular-stuff {
+            display: none;
+        }
+    }
+
+    &.web-console-footer__sidebar-opened {
+        width: var(--width-wide);
+        display: flex;
+        flex-direction: column;
+        padding: 27px 18px 27px 27px;
+
+        .web-console-footer__sidebar-stuff {
+            display: none;
+        }        
+    
+        .web-console-footer__regular-stuff {
+            display: block;
+        }
+    }
+}
+
+.web-console-footer__page-bottom {
+    grid-area: footer;
     color: #fafafa;
-    background: linear-gradient(to bottom, #5f5e5e, #393939);
-    font-family: Roboto;
+    background: #393939;
     font-size: 12px;
     font-weight: 300;
-    padding-top: 12px;
-    padding-bottom: 12px;
+    padding: 12px var(--page-side-padding);
+
+    .web-console-footer__sidebar-stuff {
+        display: none;
+    }
 
     p {
-        margin-bottom: 0;
-
-        &:first-of-type {
-            margin-bottom: 5px;
-        }
-    }
-
-    .wcf-content {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-
-        & > :nth-child(2) {
-            margin-left: auto;
-        }
-    }
-
-    ignite-powered-by-apache {
-        & > a {
-            margin-left: 40px;
-        }
+        margin: 0;
     }
 
     a {
-        color: #ee8e89;
-
-        &:hover, &.hover,
-        &:focus, &.focus {
-            color: #ee2b27;
-            text-decoration: none;
+        color: #ee8e89 !important;
+        &:hover, &:focus {
+            color: #ee2b27 !important;
         }
     }
+
+    .web-console-footer__legal {
+        color: inherit;
+    }    
 }

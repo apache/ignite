@@ -144,7 +144,8 @@ public class RecordV1Serializer implements RecordSerializer {
 
             rec.position(ptr);
 
-            if (recordFilter != null && !recordFilter.apply(rec.type(), ptr))
+            if (recType.purpose() != WALRecord.RecordPurpose.INTERNAL
+                && recordFilter != null && !recordFilter.apply(rec.type(), ptr))
                 return FilteredRecord.INSTANCE;
             else if (marshalledMode) {
                 ByteBuffer buf = heapTlb.get();
@@ -218,7 +219,6 @@ public class RecordV1Serializer implements RecordSerializer {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("CastConflictsWithInstanceof")
     @Override public void writeRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
         writeWithCrc(rec, buf, recordIO);
     }
@@ -229,7 +229,6 @@ public class RecordV1Serializer implements RecordSerializer {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("CastConflictsWithInstanceof")
     @Override public int size(WALRecord record) throws IgniteCheckedException {
         return recordIO.sizeWithHeaders(record);
     }

@@ -30,6 +30,7 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -99,7 +100,11 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
         if (!learnLabels(datasetBuilder, featureExtractor, lbExtractor))
             return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
 
-        IgniteBiTuple<Double, Long> initAndSampleSize = computeInitialValue(datasetBuilder, featureExtractor, lbExtractor);
+        IgniteBiTuple<Double, Long> initAndSampleSize = computeInitialValue(
+            envBuilder,
+            datasetBuilder,
+            featureExtractor,
+            lbExtractor);
         if(initAndSampleSize == null)
             return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
 
@@ -112,7 +117,7 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
             .withBaseModelTrainerBuilder(this::buildBaseModelTrainer)
             .withExternalLabelToInternal(this::externalLabelToInternal)
             .withCntOfIterations(cntOfIterations)
-            .withEnvironment(environment)
+            .withEnvironmentBuilder(envBuilder)
             .withLossGradient(loss)
             .withSampleSize(sampleSize)
             .withMeanLabelValue(mean)
@@ -138,6 +143,11 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
     /** {@inheritDoc} */
     @Override protected boolean checkState(ModelsComposition mdl) {
         return mdl instanceof GDBModel;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GDBTrainer withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        return (GDBTrainer)super.withEnvironmentBuilder(envBuilder);
     }
 
     /**
@@ -175,14 +185,18 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
      * Compute mean value of label as first approximation.
      *
      * @param builder Dataset builder.
+     * @param envBuilder Learning environment builder.
      * @param featureExtractor Feature extractor.
      * @param lbExtractor Label extractor.
      */
-    protected <V, K> IgniteBiTuple<Double, Long> computeInitialValue(DatasetBuilder<K, V> builder,
+    protected <V, K> IgniteBiTuple<Double, Long> computeInitialValue(
+        LearningEnvironmentBuilder envBuilder,
+        DatasetBuilder<K, V> builder,
         IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
         try (Dataset<EmptyContext, DecisionTreeData> dataset = builder.build(
+            envBuilder,
             new EmptyContextBuilder<>(),
             new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor, false)
         )) {

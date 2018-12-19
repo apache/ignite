@@ -1441,7 +1441,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @param nodeId Node ID.
      * @param req Request.
      */
-    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "RedundantCast"})
+    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
     private void processTaskSessionRequest(UUID nodeId, GridTaskSessionRequest req) {
         if (!rwLock.tryReadLock()) {
             if (log.isDebugEnabled())
@@ -1935,7 +1935,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
         private int metricsUpdateCntr;
 
         /** {@inheritDoc} */
-        @SuppressWarnings("fallthrough")
         @Override public void onEvent(Event evt) {
             assert evt instanceof DiscoveryEvent;
 

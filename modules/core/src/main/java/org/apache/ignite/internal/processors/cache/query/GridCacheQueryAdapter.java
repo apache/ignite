@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -423,7 +424,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /**
      * @return Key-value filter.
      */
-    @SuppressWarnings("unchecked")
     @Nullable public <K, V> IgniteBiPredicate<K, V> scanFilter() {
         return (IgniteBiPredicate<K, V>)filter;
     }
@@ -431,7 +431,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /**
      * @return Transformer.
      */
-    @SuppressWarnings("unchecked")
     @Nullable public <K, V> IgniteClosure<Map.Entry<K, V>, Object> transform() {
         return (IgniteClosure<Map.Entry<K, V>, Object>)transform;
     }
@@ -476,7 +475,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param args Arguments.
      * @return Future.
      */
-    @SuppressWarnings({"IfMayBeConditional", "unchecked"})
+    @SuppressWarnings({"IfMayBeConditional"})
     private <R> CacheQueryFuture<R> execute0(@Nullable IgniteReducer<T, R> rmtReducer, @Nullable Object... args) {
         assert type != SCAN : this;
 
@@ -527,7 +526,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"IfMayBeConditional", "unchecked"})
     @Override public GridCloseableIterator executeScanQuery() throws IgniteCheckedException {
         assert type == SCAN : "Wrong processing of query: " + type;
 
@@ -537,9 +535,17 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (nodes.isEmpty()) {
-            if (part != null && forceLocal)
-                throw new IgniteCheckedException("No queryable nodes for partition " + part
-                    + " [forced local query=" + this + "]");
+            if (part != null) {
+                if (forceLocal) {
+                    throw new IgniteCheckedException("No queryable nodes for partition " + part
+                        + " [forced local query=" + this + "]");
+                }
+
+                if (isSafeLossPolicy()) {
+                    throw new IgniteCheckedException("Failed to execute scan query because cache partition has been " +
+                        "lost [cacheName=" + cctx.name() + ", part=" + part + "]");
+                }
+            }
 
             return new GridEmptyCloseableIterator();
         }
@@ -585,6 +591,16 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             it = qryMgr.scanQueryDistributed(this, nodes);
 
         return mvccTracker != null ? new MvccTrackingIterator(it, mvccTracker) : it;
+    }
+
+    /**
+     * @return true if current PartitionLossPolicy corresponds to *_SAFE values.
+     */
+    private boolean isSafeLossPolicy() {
+        PartitionLossPolicy lossPlc = cctx.cache().configuration().getPartitionLossPolicy();
+
+        return lossPlc == PartitionLossPolicy.READ_ONLY_SAFE ||
+            lossPlc == PartitionLossPolicy.READ_WRITE_SAFE;
     }
 
     /**

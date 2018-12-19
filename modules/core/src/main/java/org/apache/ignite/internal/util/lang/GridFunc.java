@@ -352,7 +352,6 @@ public class GridFunc {
      * @param <T> Type of the collection.
      * @return Random value from the input collection.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public static <T> T rand(Collection<? extends T> c) {
         A.notNull(c, "c");
 
@@ -526,7 +525,6 @@ public class GridFunc {
      * @param iters Iterator over iterators.
      * @return Single iterator.
      */
-    @SuppressWarnings("unchecked")
     public static <T> Iterator<T> concat(final Iterator<Iterator<T>> iters) {
         if (!iters.hasNext())
             return Collections.<T>emptySet().iterator();
@@ -1009,7 +1007,6 @@ public class GridFunc {
      * @param <T1> Type of the collection.
      * @return Light-weight view on given collection with provided predicate.
      */
-    @SuppressWarnings("RedundantTypeArguments")
     @SafeVarargs
     public static <T1, T2> Collection<T2> viewReadOnly(@Nullable final Collection<? extends T1> c,
         final IgniteClosure<? super T1, T2> trans, @Nullable final IgnitePredicate<? super T1>... p) {
@@ -1131,7 +1128,6 @@ public class GridFunc {
      * @param <V> Value type.
      * @return Light-weight view on given map with provided predicates and mapping.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     public static <K0, K extends K0, V0, V extends V0> Map<K, V> viewAsMap(@Nullable final Set<K> c,
         final IgniteClosure<? super K, V> mapClo, @Nullable final IgnitePredicate<? super K>... p) {
         A.notNull(mapClo, "trans");
@@ -1294,7 +1290,6 @@ public class GridFunc {
      * @return Factory closure that creates new {@link Set} instance every time
      *      its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
-    @SuppressWarnings("unchecked")
     public static <T> IgniteCallable<Set<T>> newSet() {
         return (IgniteCallable<Set<T>>)SET_FACTORY;
     }
@@ -1308,7 +1303,6 @@ public class GridFunc {
      * @return Factory closure that creates new {@link Map} instance every
      *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
-    @SuppressWarnings("unchecked")
     @Deprecated
     public static <K, V> IgniteCallable<Map<K, V>> newMap() {
         return (IgniteCallable<Map<K, V>>)MAP_FACTORY;
@@ -1323,7 +1317,6 @@ public class GridFunc {
      * @return Factory closure that creates new {@link Map} instance every
      *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
-    @SuppressWarnings("unchecked")
     public static <K, V> IgniteCallable<ConcurrentMap<K, V>> newCMap() {
         return (IgniteCallable<ConcurrentMap<K, V>>)CONCURRENT_MAP_FACTORY;
     }
@@ -1335,7 +1328,6 @@ public class GridFunc {
      * @return Factory closure that creates new {@link GridConcurrentHashSet} instance every
      *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
-    @SuppressWarnings("unchecked")
     public static <E> IgniteCallable<Set<E>> newCSet() {
         return (IgniteCallable<Set<E>>)CONCURRENT_SET_FACTORY;
     }
@@ -1416,7 +1408,6 @@ public class GridFunc {
      * @param <T> Type of the free variable, i.e. the element the predicate is called on.
      * @return Predicate that always returns {@code true}.
      */
-    @SuppressWarnings( {"unchecked", "RedundantCast"})
     public static <T> IgnitePredicate<T> alwaysTrue() {
         return (IgnitePredicate<T>)ALWAYS_TRUE;
     }
@@ -1428,7 +1419,6 @@ public class GridFunc {
      * @param <T> Type of the free variable, i.e. the element the predicate is called on.
      * @return Predicate that always returns {@code false}.
      */
-    @SuppressWarnings( {"unchecked", "RedundantCast"})
     public static <T> IgnitePredicate<T> alwaysFalse() {
         return (IgnitePredicate<T>)ALWAYS_FALSE;
     }
@@ -1650,7 +1640,7 @@ public class GridFunc {
      * @return Predicate that evaluates to {@code true} if each of its component predicates
      *      evaluates to {@code true}.
      */
-    @SuppressWarnings({"unchecked", "ConfusingArgumentToVarargsMethod"})
+    @SuppressWarnings({"unchecked"})
     public static <T> IgnitePredicate<T> and(@Nullable final IgnitePredicate<? super T>... ps) {
         if (isEmpty(ps))
             return F.alwaysTrue();
@@ -1723,7 +1713,6 @@ public class GridFunc {
      * @param it Iterable to fetch.
      * @return Modified target collection.
      */
-    @SuppressWarnings("unchecked")
     @Deprecated
     public static <T, C extends Collection<T>> C addAll(C c, Iterable<? extends T> it) {
         if (it == null)
@@ -1912,7 +1901,6 @@ public class GridFunc {
      * @param <X> Type of the free variable for the closure and type of the array
      *      elements.
      */
-    @SuppressWarnings("RedundantTypeArguments")
     @Deprecated
     public static <X> void forEach(X[] c, IgniteInClosure<? super X> f, @Nullable IgnitePredicate<? super X>... p) {
         A.notNull(c, "c", f, "f");
@@ -3033,7 +3021,6 @@ public class GridFunc {
      * @param <V> Value type.
      * @return Closure that returns value for an entry.
      */
-    @SuppressWarnings({"unchecked"})
     public static <K, V> IgniteClosure<Cache.Entry<K, V>, V> cacheEntry2Get() {
         return (IgniteClosure<Cache.Entry<K, V>, V>)CACHE_ENTRY_VAL_GET;
     }
@@ -3045,7 +3032,6 @@ public class GridFunc {
      * @param <V> Cache value type.
      * @return Predicate which returns {@code true} if entry has peek value.
      */
-    @SuppressWarnings({"unchecked"})
     public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheHasPeekValue() {
         return (IgnitePredicate<Cache.Entry<K, V>>)CACHE_ENTRY_HAS_PEEK_VAL;
     }

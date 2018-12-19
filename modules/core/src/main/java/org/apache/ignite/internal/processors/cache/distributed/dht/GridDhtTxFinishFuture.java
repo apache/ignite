@@ -91,7 +91,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     private boolean commit;
 
     /** Error. */
-    @SuppressWarnings("UnusedDeclaration")
     @GridToStringExclude
     private volatile Throwable err;
 
@@ -137,7 +136,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public boolean onNodeLeft(UUID nodeId) {
         for (IgniteInternalFuture<?> fut : futures())
             if (isMini(fut)) {
@@ -286,7 +284,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
      *
      * @param commit Commit flag.
      */
-    @SuppressWarnings({"SimplifiableIfStatement", "IfMayBeConditional"})
+    @SuppressWarnings({"SimplifiableIfStatement"})
     public void finish(boolean commit) {
         boolean sync;
 
@@ -615,7 +613,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void addDiagnosticRequest(IgniteDiagnosticPrepareContext ctx) {
         if (!isDone()) {
             for (IgniteInternalFuture fut : futures()) {
@@ -658,7 +655,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     /** {@inheritDoc} */
     @Override public String toString() {
         Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
-            @SuppressWarnings("unchecked")
             @Override public String apply(IgniteInternalFuture<?> f) {
                 if (f.getClass() == MiniFuture.class) {
                     return "[node=" + ((MiniFuture)f).node().id() +

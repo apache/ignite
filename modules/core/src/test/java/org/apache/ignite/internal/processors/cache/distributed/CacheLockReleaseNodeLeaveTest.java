@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
@@ -36,8 +37,12 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -48,12 +53,18 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final String REPLICATED_TEST_CACHE = "REPLICATED_TEST_CACHE";
+
+    /** {@inheritDoc} */
+    @Override public void beforeTest() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -85,6 +96,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockRelease() throws Exception {
         startGrids(2);
 
@@ -131,9 +143,8 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockTopologyChange() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9213");
-
         final int nodeCnt = 5;
         int threadCnt = 8;
         final int keys = 100;
@@ -155,9 +166,12 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
                                 Lock lock = cache.lock(i);
                                 lock.lock();
 
-                                cache.put(i, i);
-
-                                lock.unlock();
+                                try {
+                                    cache.put(i, i);
+                                }
+                                finally {
+                                    lock.unlock();
+                                }
                             }
                         }
                     }
@@ -172,8 +186,22 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture<Long> f;
 
-            while ((f = q.poll()) != null)
-                f.get(2_000);
+            Exception err = null;
+
+            while ((f = q.poll()) != null) {
+                try {
+                    f.get(60_000);
+                }
+                catch (Exception e) {
+                    error("Test operation failed: " + e, e);
+
+                    if (err == null)
+                        err = e;
+                }
+            }
+
+            if (err != null)
+                fail("Test operation failed, see log for details");
         }
         finally {
             stopAllGrids();
@@ -183,6 +211,87 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testLockNodeStop() throws Exception {
+        final int nodeCnt = 3;
+        int threadCnt = 2;
+        final int keys = 100;
+
+        try {
+            final AtomicBoolean stop = new AtomicBoolean(false);
+
+            Queue<IgniteInternalFuture<Long>> q = new ArrayDeque<>(nodeCnt);
+
+            for (int i = 0; i < nodeCnt; i++) {
+                final Ignite ignite = startGrid(i);
+
+                IgniteInternalFuture<Long> f = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+                    @Override public void run() {
+                        while (!Thread.currentThread().isInterrupted() && !stop.get()) {
+                            try {
+                                IgniteCache<Integer, Integer> cache = ignite.cache(REPLICATED_TEST_CACHE);
+
+                                for (int i = 0; i < keys; i++) {
+                                    Lock lock = cache.lock(i);
+                                    lock.lock();
+
+                                    try {
+                                        cache.put(i, i);
+                                    }
+                                    finally {
+                                        lock.unlock();
+                                    }
+                                }
+                            }
+                            catch (Exception e) {
+                                log.info("Ignore error: " + e);
+
+                                break;
+                            }
+                        }
+                    }
+                }, threadCnt, "test-lock-thread");
+
+                q.add(f);
+
+                U.sleep(1_000);
+            }
+
+            U.sleep(ThreadLocalRandom.current().nextLong(500) + 500);
+
+            // Stop all nodes, check that threads executing cache operations do not hang.
+            stopAllGrids();
+
+            stop.set(true);
+
+            IgniteInternalFuture<Long> f;
+
+            Exception err = null;
+
+            while ((f = q.poll()) != null) {
+                try {
+                    f.get(60_000);
+                }
+                catch (Exception e) {
+                    error("Test operation failed: " + e, e);
+
+                    if (err == null)
+                        err = e;
+                }
+            }
+
+            if (err != null)
+                fail("Test operation failed, see log for details");
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testTxLockRelease() throws Exception {
         startGrids(2);
 
@@ -231,6 +340,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockRelease2() throws Exception {
         final Ignite ignite0 = startGrid(0);
 
@@ -277,6 +387,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockRelease3() throws Exception {
         startGrid(0);
 
@@ -311,6 +422,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxLockRelease2() throws Exception {
         final Ignite ignite0 = startGrid(0);
 

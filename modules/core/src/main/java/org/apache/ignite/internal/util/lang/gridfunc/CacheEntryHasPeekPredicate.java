@@ -29,7 +29,6 @@ public class CacheEntryHasPeekPredicate implements IgnitePredicate {
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override public boolean apply(Object o) {
         return ((Cache.Entry)o).getValue() != null;
     }

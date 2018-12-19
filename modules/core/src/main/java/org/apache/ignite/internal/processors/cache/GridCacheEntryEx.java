@@ -713,6 +713,16 @@ public interface GridCacheEntryEx {
     public boolean checkSerializableReadVersion(GridCacheVersion serReadVer) throws GridCacheEntryRemovedException;
 
     /**
+     * Retrieves the last committed MVCC entry version.
+     * @param onheapOnly {@code True} if a specified peek mode instructs to look only in the on-heap storage.
+     * @return Last committed entry if either or {@code null} otherwise.
+     * @throws GridCacheEntryRemovedException If entry has been removed.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public CacheObject mvccPeek(boolean onheapOnly)
+        throws GridCacheEntryRemovedException, IgniteCheckedException;
+
+    /**
      * Peeks into entry without loading value or updating statistics.
      *
      * @param heap Read from heap flag.
@@ -732,12 +742,11 @@ public interface GridCacheEntryEx {
     /**
      * Peeks into entry without loading value or updating statistics.
      *
-     * @param plc Expiry policy if TTL should be updated.
      * @return Value.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public CacheObject peek(@Nullable IgniteCacheExpiryPolicy plc)
+    @Nullable public CacheObject peek()
         throws GridCacheEntryRemovedException, IgniteCheckedException;
 
     /**

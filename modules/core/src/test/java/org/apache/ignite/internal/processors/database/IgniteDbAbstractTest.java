@@ -73,8 +73,6 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
 
         if (isLargePage())
             dbCfg.setPageSize(16 * 1024);
-        else
-            dbCfg.setPageSize(4 * 1024);
 
         dbCfg.setWalMode(WALMode.LOG_ONLY);
 

@@ -18,12 +18,17 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Stopped node when client operations are executing.
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheTransactionalStopBusySelfTest extends IgniteCacheAbstractStopBusySelfTest {
     /** {@inheritDoc} */
+    @Test
     @Override public void testPut() throws Exception {
         bannedMsg.set(GridNearTxPrepareRequest.class);
 
@@ -31,6 +36,7 @@ public class IgniteCacheTransactionalStopBusySelfTest extends IgniteCacheAbstrac
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testPutBatch() throws Exception {
         bannedMsg.set(GridNearTxPrepareRequest.class);
 
@@ -38,6 +44,7 @@ public class IgniteCacheTransactionalStopBusySelfTest extends IgniteCacheAbstrac
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testPutAsync() throws Exception {
         bannedMsg.set(GridNearTxPrepareRequest.class);
 
@@ -45,6 +52,7 @@ public class IgniteCacheTransactionalStopBusySelfTest extends IgniteCacheAbstrac
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testRemove() throws Exception {
         bannedMsg.set(GridNearTxPrepareRequest.class);
 

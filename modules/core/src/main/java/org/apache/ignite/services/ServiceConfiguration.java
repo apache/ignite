@@ -255,7 +255,6 @@ public class ServiceConfiguration implements Serializable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"RedundantIfStatement", "EqualsWhichDoesntCheckParameterClass"})
     @Override public boolean equals(Object o) {
         if (!equalsIgnoreNodeFilter(o))
             return false;

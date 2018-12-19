@@ -68,7 +68,7 @@ import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 /**
  * Test fo regular igfs operations.
  */
-@SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "ConstantConditions"})
+@SuppressWarnings({"ConstantConditions"})
 public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     /** IGFS block size. */
     protected static final int IGFS_BLOCK_SIZE = 512 * 1024;
@@ -930,7 +930,6 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
      * @param igfs IGFS.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     public static void clear(IgniteFileSystem igfs) throws Exception {
         Field workerMapFld = IgfsImpl.class.getDeclaredField("workerMap");
 
@@ -1036,7 +1035,6 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
      * @param uni IGFS.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     public static void clear(IgfsSecondaryFileSystemTestAdapter uni) throws Exception {
         IgfsEx igfsEx = uni.igfs();
 

@@ -45,7 +45,6 @@ public class ClientBinaryTypePutRequest extends ClientRequest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         BinaryContext binCtx = ((CacheObjectBinaryProcessorImpl) ctx.kernalContext().cacheObjects()).binaryContext();
 

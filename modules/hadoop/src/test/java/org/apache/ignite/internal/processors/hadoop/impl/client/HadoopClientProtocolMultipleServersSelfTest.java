@@ -50,11 +50,14 @@ import org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Hadoop client protocol configured with multiple ignite servers tests.
  */
-@SuppressWarnings("ResultOfMethodCallIgnored")
+@RunWith(JUnit4.class)
 public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractSelfTest {
     /** Input path. */
     private static final String PATH_INPUT = "/input";
@@ -147,7 +150,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ConstantConditions")
+    @Test
     public void testMultipleAddresses() throws Exception {
         restPort = REST_PORT;
 
@@ -163,7 +166,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
+    @Test
     public void testSingleAddress() throws Exception {
         try {
             // Don't use REST_PORT to test connection fails if the only this port is configured
@@ -189,7 +192,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ConstantConditions")
+    @Test
     public void testMixedAddrs() throws Exception {
         restPort = REST_PORT;
 

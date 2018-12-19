@@ -30,10 +30,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link IgniteAuthenticationProcessor} on unstable topology.
  */
+@RunWith(JUnit4.class)
 public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -77,6 +81,20 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        GridTestUtils.setFieldValue(User.class, "bCryptGensaltLog2Rounds", 4);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        GridTestUtils.setFieldValue(User.class, "bCryptGensaltLog2Rounds", 10);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -101,6 +119,7 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentAddUpdateRemoveNodeRestartCoordinator() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-7472");
 
@@ -163,6 +182,7 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentAuthorize() throws Exception {
         final int testUsersCnt = 10;
 
@@ -262,6 +282,7 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void test1kUsersNodeRestartServer() throws Exception {
         final AtomicInteger usrCnt = new AtomicInteger();
 
@@ -316,6 +337,7 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentAddUpdateRemoveNodeRestartServer() throws Exception {
         IgniteInternalFuture restartFut = loopServerRestarts();
 
@@ -349,6 +371,7 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentFailedOperationNodeRestartServer() throws Exception {
         IgniteInternalFuture restartFut = loopServerRestarts();
 

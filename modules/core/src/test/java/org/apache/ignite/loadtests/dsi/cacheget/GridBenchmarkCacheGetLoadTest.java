@@ -77,7 +77,7 @@ public class GridBenchmarkCacheGetLoadTest {
      */
     public static void stats() {
         t = new Thread(new Runnable() {
-            @SuppressWarnings({"InfiniteLoopStatement", "BusyWait"})
+            @SuppressWarnings({"BusyWait"})
             @Override public void run() {
                 int interval = 5;
 

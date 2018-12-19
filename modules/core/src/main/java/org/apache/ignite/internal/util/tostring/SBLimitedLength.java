@@ -62,7 +62,6 @@ public class SBLimitedLength extends GridStringBuilder {
             tail.reset();
     }
 
-
     /**
      * @return tail string builder.
      */
