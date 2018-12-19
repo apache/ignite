@@ -85,8 +85,6 @@ public class CacheMvccClusterRestartTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9394");
-
         cleanPersistenceDir();
 
         super.beforeTest();
