@@ -942,14 +942,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         try {
             String schemaPtrn = req.schemaName();
 
-            Set<String> schemas = new HashSet<>();
-
-            for (String cacheName : ctx.cache().publicCacheNames()) {
-                for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
-                    if (matches(table.schemaName(), schemaPtrn))
-                        schemas.add(table.schemaName());
-                }
-            }
+            Set<String> schemas = meta.getSchemasMeta(schemaPtrn);
 
             return new JdbcResponse(new JdbcMetaSchemasResult(schemas));
         }

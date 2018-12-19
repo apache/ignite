@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -1296,12 +1297,16 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getSchemas(String catalog, String schemaPtrn) throws SQLException {
-        updateMetaData();
+        conn.ensureNotClosed();
 
-        List<List<?>> rows = new ArrayList<>(meta.size());
+        List<List<?>> rows = Collections.emptyList();
 
         if (isValidCatalog(catalog)) {
-            for (String schema : meta.keySet()) {
+            Set<String> schemas = newMeta.getSchemasMeta(schemaPtrn);
+
+            rows = new ArrayList<>(schemas.size());
+
+            for (String schema : schemas) {
                 if (matches(schema, schemaPtrn))
                     rows.add(Arrays.<Object>asList(schema, CATALOG_NAME));
             }

@@ -25,9 +25,11 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
-import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryGetColumnsMetaRequest;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -197,5 +199,26 @@ public class JdbcMetadataInfo {
         }
 
         return metas;
+    }
+
+    /**
+     * See {@link DatabaseMetaData#getSchemas(String, String)} for details.
+     *
+     * Ignite has only one possible CATALOG_NAME, it is handled on the client (driver) side.
+     *
+     * @param schemaNamePtrn sql pattern for schema name filter.
+     * @return schema names that matches provided pattern.
+     */
+    public Set<String> getSchemasMeta(String schemaNamePtrn) {
+        SortedSet<String> schemas = new TreeSet<>(); // to have values sorted.
+
+        for (String cacheName : ctx.cache().publicCacheNames()) {
+            for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
+                if (matches(table.schemaName(), schemaNamePtrn))
+                    schemas.add(table.schemaName());
+            }
+        }
+
+        return schemas;
     }
 }
