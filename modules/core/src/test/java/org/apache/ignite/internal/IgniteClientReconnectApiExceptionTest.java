@@ -225,7 +225,6 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void cacheOperationsTest() throws Exception {
         clientMode = true;
 
@@ -543,7 +542,6 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void igniteOperationsTest() throws Exception {
         clientMode = true;
 

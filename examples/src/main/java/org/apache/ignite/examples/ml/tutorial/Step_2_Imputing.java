@@ -25,7 +25,7 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
-import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
 import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
@@ -40,7 +40,7 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  * <p>
  * Then, it trains the model based on the processed data using decision tree classification.</p>
  * <p>
- * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
+ * Finally, this example uses {@link BinaryClassificationEvaluator} functionality to compute metrics from predictions.</p>
  */
 public class Step_2_Imputing {
     /** Run example. */
@@ -75,7 +75,7 @@ public class Step_2_Imputing {
 
                 System.out.println("\n>>> Trained model: " + mdl);
 
-                double accuracy = Evaluator.evaluate(
+                double accuracy = BinaryClassificationEvaluator.evaluate(
                     dataCache,
                     mdl,
                     imputingPreprocessor,

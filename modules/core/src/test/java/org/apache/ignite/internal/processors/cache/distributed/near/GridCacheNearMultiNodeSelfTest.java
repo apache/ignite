@@ -205,7 +205,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param g Grid.
      * @return Dht cache.
      */
-    @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
+    @SuppressWarnings({"unchecked"})
     private GridDhtCacheAdapter<Integer, String> dht(Ignite g) {
         return ((GridNearCacheAdapter)((IgniteKernal)g).internalCache(DEFAULT_CACHE_NAME)).dht();
     }

@@ -1163,7 +1163,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @param expOld Expected expOld value.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void update(int grid, Operation op, String key, final Integer val, @Nullable final Integer expOld)
         throws Exception {
         cacheUpdate(grid, false, op, key, val, expOld, null);
@@ -1177,7 +1176,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @param expRmvRet Expected remove result.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void remove(int grid, Operation op, String key, @Nullable final Integer expOld,
         @Nullable final Integer expRmvRet) throws Exception {
         cacheUpdate(grid, true, op, key, null, expOld, expRmvRet);
@@ -1193,7 +1191,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @param expRmvRet Expected remove result.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void cacheUpdate(int grid, boolean rmv, Operation op, String key, final Integer val,
         @Nullable final Integer expOld, @Nullable final Integer expRmvRet)
         throws Exception {
@@ -1277,7 +1274,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @param map Key/values map.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void batchUpdate(int grid, Operation op, final Map<String, Integer> map) throws Exception {
         cacheBatchUpdate(grid, false, op, map);
     }
@@ -1288,7 +1284,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @param map Key/values map.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void batchRemove(int grid, Operation op, final Map<String, Integer> map) throws Exception {
         cacheBatchUpdate(grid, true, op, map);
     }
@@ -1300,7 +1295,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @param map Key/values map.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void cacheBatchUpdate(int grid, boolean rmv, Operation op, final Map<String, Integer> map)
         throws Exception {
         IgniteCache<String, Integer> cache = jcache(grid);

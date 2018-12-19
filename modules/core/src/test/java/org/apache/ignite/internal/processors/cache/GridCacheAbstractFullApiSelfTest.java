@@ -4479,7 +4479,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         storeStgy.removeFromStore(key);
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
-            @SuppressWarnings("unchecked")
             @Override public boolean applyx() {
                 try {
                     Integer val = c.get(key);

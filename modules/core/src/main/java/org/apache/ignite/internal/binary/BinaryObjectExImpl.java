@@ -247,7 +247,6 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
      * @param ctx Reader context.
      * @param handles Handles for already traversed objects.
      */
-    @SuppressWarnings("unchecked")
     private void appendValue(Object val, SB buf, BinaryReaderHandles ctx,
         IdentityHashMap<BinaryObject, Integer> handles) {
         if (val instanceof byte[])

@@ -55,7 +55,7 @@ import static org.apache.ignite.ml.TestUtils.testEnvBuilder;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
- * Tests for {@link Evaluator} that require to start the whole Ignite infrastructure. IMPL NOTE based on
+ * Tests for {@link BinaryClassificationEvaluator} that require to start the whole Ignite infrastructure. IMPL NOTE based on
  * Step_8_CV_with_Param_Grid example.
  */
 @RunWith(JUnit4.class)
@@ -267,7 +267,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
                 lbExtractor
             );
 
-            actualAccuracy.set(Evaluator.evaluate(
+            actualAccuracy.set(BinaryClassificationEvaluator.evaluate(
                 cache,
                 split.getTestFilter(),
                 bestMdl,
@@ -276,7 +276,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
                 new Accuracy<>()
             ));
 
-            actualAccuracy2.set(Evaluator.evaluate(
+            actualAccuracy2.set(BinaryClassificationEvaluator.evaluate(
                 cache,
                 bestMdl,
                 preprocessor,
