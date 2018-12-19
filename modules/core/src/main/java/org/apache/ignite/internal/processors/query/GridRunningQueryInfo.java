@@ -117,13 +117,6 @@ public class GridRunningQueryInfo {
     }
 
     /**
-     * @return Query cancel.
-     */
-    // TODO: grid* -> *
-    public GridQueryCancel gridQueryCancel() {
-        return cancel;
-    }
-    /**
      * @return {@code true} if query can be cancelled.
      */
     public boolean cancelable() {

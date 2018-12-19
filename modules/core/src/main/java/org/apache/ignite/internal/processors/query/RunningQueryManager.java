@@ -44,15 +44,13 @@ public class RunningQueryManager {
      * @param qryType Query type.
      * @param schemaName Schema name.
      * @param loc Local query flag.
+     * @param cancel Query cancel. Should be passed in case query is cancelable, or {@code null} otherwise.
      * @return Registered RunningQueryInfo.
      */
     public GridRunningQueryInfo registerUserRunningQuery(String qry, GridCacheQueryType qryType, String schemaName,
-        boolean loc) {
+        boolean loc, @Nullable GridQueryCancel cancel) {
 
         long qryId = createUniqueQueryId();
-
-        // TODO: Be careful with cancel. Looks wrong wrt to IgniteH2Indexing.querySqlFields API
-        GridQueryCancel cancel = new GridQueryCancel();
 
         long startTime = U.currentTimeMillis();
 
@@ -92,7 +90,10 @@ public class RunningQueryManager {
      * @param qryId Query id.
      * @return Unregistered running query info. {@code null} in case running query with give id wasn't found.
      */
-    @Nullable public GridRunningQueryInfo unregisterRunningQuery(long qryId) {
+    @Nullable public GridRunningQueryInfo unregisterRunningQuery(Long qryId) {
+        if (qryId == null)
+            return null;
+
         return userQueriesRuns.remove(qryId);
     }
 

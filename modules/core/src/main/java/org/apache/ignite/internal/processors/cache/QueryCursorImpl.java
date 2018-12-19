@@ -27,7 +27,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
-import org.apache.ignite.internal.processors.cache.query.CloseListener;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -40,7 +39,7 @@ import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.
 /**
  * Query cursor implementation.
  */
-public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T>, CloseListener {
+public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T> {
     /** */
     private static final AtomicReferenceFieldUpdater<QueryCursorImpl, State> STATE_UPDATER =
         AtomicReferenceFieldUpdater.newUpdater(QueryCursorImpl.class, State.class, "state");
@@ -63,9 +62,6 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
     /** */
     private final GridQueryCancel cancel;
 
-    /** Close listener. */
-    private Runnable closeLsnr;
-
     /**
      * @param iterExec Query executor.
      * @param cancel Cancellation closure.
@@ -83,6 +79,7 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
 
     /**
      * @param iterExec Query executor.
+     * @param cancel Cancellation closure.
      * @param isQry Result type flag - {@code true} for query, {@code false} for update operation.
      */
     public QueryCursorImpl(Iterable<T> iterExec, GridQueryCancel cancel, boolean isQry) {
@@ -138,7 +135,6 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
 
     /** {@inheritDoc} */
     @Override public void close() {
-        try {
             while (state != CLOSED) {
                 if (STATE_UPDATER.compareAndSet(this, RESULT_READY, CLOSED)) {
                     closeIter();
@@ -156,23 +152,6 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
                 if (STATE_UPDATER.compareAndSet(this, IDLE, CLOSED))
                     return;
             }
-        }
-        // TODO: Should be called only once per cursor lifecycle.
-        finally {
-            if (closeLsnr != null) {
-                try {
-                    closeLsnr.run();
-                }
-                catch (Exception e) {
-                    throw new IgniteException(e);
-                }
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    public void closeListener(Runnable closeLsnr) {
-        this.closeLsnr = closeLsnr;
     }
 
     /**

@@ -34,6 +34,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.CacheException;
@@ -131,6 +132,11 @@ public class GridReduceQueryExecutor {
 
     /** */
     private IgniteLogger log;
+
+    /**
+     *
+     */
+    private final AtomicLong qryIdGen = new AtomicLong();
 
     /** */
     private final ConcurrentMap<Long, ReduceQueryRun> runs = new ConcurrentHashMap<>();
@@ -470,8 +476,7 @@ public class GridReduceQueryExecutor {
                 }
             }
 
-            // TODO: This should be separate generator
-            long qryReqId = h2.runningQueryManager().createUniqueQueryId();
+            long qryReqId = qryIdGen.incrementAndGet();
 
             final ReduceQueryRun r = new ReduceQueryRun(h2.connections().connectionForThread(schemaName),
                 qry.mapQueries().size(), qry.pageSize(), sfuFut);
@@ -864,7 +869,7 @@ public class GridReduceQueryExecutor {
     ) {
         AffinityTopologyVersion topVer = h2.readyTopologyVersion();
 
-        final long reqId = h2.runningQueryManager().createUniqueQueryId();
+        final long reqId = qryIdGen.incrementAndGet();
 
         ReducePartitionMapResult nodesParts =
             mapper.nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly, reqId);

@@ -25,8 +25,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.cache.Cache;
@@ -37,12 +39,25 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicFullUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateFilterRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -111,6 +126,61 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
         assertNoRunningQueries();
     }
 
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setDiscoverySpi(new TcpDiscoverySpi() {
+
+            @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
+
+                if (CustomMessageWrapper.class.isAssignableFrom(msg.getClass())) {
+                    DiscoveryCustomMessage delegate = ((CustomMessageWrapper)msg).delegate();
+
+                    if (DynamicCacheChangeBatch.class.isAssignableFrom(delegate.getClass())) {
+                        ((DynamicCacheChangeBatch)delegate).requests().stream()
+                            .filter((c) -> !c.cacheName().equalsIgnoreCase("default"))
+                            .findAny()
+                            .ifPresent((c) -> {
+                                try {
+                                    awaitTimeouted();
+                                }
+                                catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            });
+                    }
+                }
+
+                super.sendCustomEvent(msg);
+            }
+        });
+
+        cfg.setCommunicationSpi(new TcpCommunicationSpi() {
+            /** {@inheritDoc} */
+            @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
+
+                if (GridIoMessage.class.isAssignableFrom(msg.getClass())) {
+                    Message gridMsg = ((GridIoMessage)msg).message();
+
+                    if (GridNearAtomicSingleUpdateFilterRequest.class.isAssignableFrom(gridMsg.getClass())
+                        || GridNearAtomicFullUpdateRequest.class.isAssignableFrom(gridMsg.getClass())
+                    ) {
+                        try {
+                            awaitTimeouted();
+                        }
+                        catch (Exception ignore) {
+                        }
+                    }
+                }
+
+                super.sendMessage(node, msg, ackC);
+            }
+        });
+
+        return cfg;
+    }
+
     /**
      * Check tracking running queries for Select.
      */
@@ -139,7 +209,7 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
 
         assertNoRunningQueries(ignite);
 
-        barrier.await(TIMEOUT_IN_SEC, TimeUnit.SECONDS);
+        awaitTimeouted();
 
         fut1.get(TIMEOUT_IN_MS);
 
@@ -172,7 +242,7 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<Integer> fut1 = GridTestUtils.runAsync(() -> barrier.await());
 
-        barrier.await(TIMEOUT_IN_SEC, TimeUnit.SECONDS);
+        awaitTimeouted();
 
         fut1.get(TIMEOUT_IN_MS);
 
@@ -203,10 +273,11 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
 
         runningQueries.forEach((info) -> Assert.assertEquals(qry.getSql(), info.query()));
 
-        barrier.await(TIMEOUT_IN_SEC, TimeUnit.SECONDS);
+        awaitTimeouted();
+
+        awaitTimeouted();
 
         fut.get(TIMEOUT_IN_MS);
-
     }
 
     /**
@@ -223,8 +294,16 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
 
             final int BATCH_SIZE = 10;
 
-            for (int i = 0; i < BATCH_SIZE; i++)
-                stmt.addBatch("insert into Integer (_key, _val) values (" + i + "," + i + ")");
+            int key = 0;
+
+            for (int i = 0; i < BATCH_SIZE; i++) {
+                while (ignite.affinity(DEFAULT_CACHE_NAME).isPrimary(ignite.localNode(), key))
+                    key++;
+
+                stmt.addBatch("insert into Integer (_key, _val) values (" + key + "," + key + ")");
+
+                key++;
+            }
 
             IgniteInternalFuture<int[]> fut = GridTestUtils.runAsync(() -> stmt.executeBatch());
 
@@ -236,7 +315,12 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
 
                 assertEquals(1, runningQueries.size());
 
-                barrier.await(TIMEOUT_IN_SEC, TimeUnit.SECONDS);
+                awaitTimeouted();
+
+                Assert.assertTrue("Still waiting " + barrier.getNumberWaiting() + " parties",
+                    GridTestUtils.waitForCondition(() -> barrier.getNumberWaiting() == 1, TIMEOUT_IN_MS));
+
+                awaitTimeouted();
             }
 
             fut.get(TIMEOUT_IN_MS);
@@ -252,23 +336,45 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
     public void testMultiStatement() throws Exception {
         newBarrier(2);
 
-        String sql =
-            "create table test(ID int primary key, NAME varchar(20)); " +
-                "insert into test (ID, NAME) values (1, 'name_1');" +
-                "insert into test (ID, NAME) values (2, 'name_2'), (3, 'name_3');" +
-                "SELECT * FROM test";
+        int key = 0;
+
+        int[] notAffinityKey = new int[2];
+
+        for (int i = 0; i < notAffinityKey.length; i++) {
+            while (ignite.affinity(DEFAULT_CACHE_NAME).isPrimary(ignite.localNode(), key))
+                key++;
+
+            notAffinityKey[i] = key;
+
+            key++;
+        }
+
+        String[] queries = {
+            "create table test(ID int primary key, NAME varchar(20))",
+            "insert into test (ID, NAME) values (" + notAffinityKey[0] + ", 'name')",
+            "insert into test (ID, NAME) values (" + notAffinityKey[1] + ", 'name')",
+            "SELECT * FROM test"
+        };
+
+        String sql = String.join(";", queries);
 
         try (Connection conn = GridTestUtils.connect(ignite, null); Statement stmt = conn.createStatement()) {
             IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(() -> stmt.execute(sql));
 
-            Assert.assertTrue("Still waiting " + barrier.getNumberWaiting() + " parties",
-                GridTestUtils.waitForCondition(() -> barrier.getNumberWaiting() == 1, TIMEOUT_IN_MS));
+            for (int i = 0; i < queries.length; i++) {
 
-            Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningQueries(-1);
+                Assert.assertTrue("Still waiting " + barrier.getNumberWaiting() + " parties",
+                    GridTestUtils.waitForCondition(() -> barrier.getNumberWaiting() == 1, TIMEOUT_IN_MS));
 
-            assertEquals(4, runningQueries.size());
+                List<GridRunningQueryInfo> runningQueries = (List<GridRunningQueryInfo>)ignite.context().query()
+                    .runningQueries(-1);
 
-            barrier.await(TIMEOUT_IN_SEC, TimeUnit.SECONDS);
+                assertEquals(1, runningQueries.size());
+
+                assertEquals(queries[i], runningQueries.get(0).query());
+
+                awaitTimeouted();
+            }
 
             fut.get(TIMEOUT_IN_MS);
         }
@@ -343,6 +449,15 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws InterruptedException In case of failure.
+     * @throws TimeoutException In case of failure.
+     * @throws BrokenBarrierException In case of failure.
+     */
+    static void awaitTimeouted() throws InterruptedException, TimeoutException, BrokenBarrierException {
+        barrier.await(TIMEOUT_IN_MS, TimeUnit.SECONDS);
+    }
+
+    /**
      * Blocking indexing processor.
      */
     private static class BlockingIndexing extends IgniteH2Indexing {
@@ -360,13 +475,11 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
             @Nullable SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts,
-            MvccQueryTracker tracker,
-            GridQueryCancel cancel, boolean clientReq) {
-
-            List<FieldsQueryCursor<List<?>>> res = super.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, tracker, cancel,
-                clientReq);
+            MvccQueryTracker tracker, GridQueryCancel cancel, boolean registerAsNewQry) {
+            List<FieldsQueryCursor<List<?>>> res = super.querySqlFields(schemaName, qry, cliCtx, keepBinary,
+                failOnMultipleStmts, tracker, cancel, registerAsNewQry);
             try {
-                barrier.await();
+                awaitTimeouted();
             }
             catch (Exception e) {
                 throw new IgniteException(e);

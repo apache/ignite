@@ -86,14 +86,13 @@ public interface GridQueryIndexing {
      * @param keepBinary Keep binary flag.
      * @param failOnMultipleStmts Whether an exception should be thrown for multiple statements query.
      * @param tracker Query tracker.
-     * @param clientReq {@code true} in case it's client request, {@code false} otherwise.
+     * @param registerAsNewQry {@code true} In case it's new query which should be registered as running query,
+     * {@code false} otherwise.
      * @return Cursor.
      */
-    // TODO: clientReq -> ???
-
     public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
         SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker,
-        GridQueryCancel cancel, boolean clientReq);
+        GridQueryCancel cancel, boolean registerAsNewQry);
 
     /**
      * Execute an INSERT statement using data streamer as receiver.
@@ -129,10 +128,12 @@ public interface GridQueryIndexing {
      * @param keepBinary Keep binary flag.
      * @param filter Cache name and key filter.
      * @param cancel Query cancel.
+     * @param qryId Running query id. {@code null) in case query is not registered.
      * @return Cursor.
      */
     public FieldsQueryCursor<List<?>> queryLocalSqlFields(String schemaName, SqlFieldsQuery qry,
-        boolean keepBinary, IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException;
+        boolean keepBinary, IndexingQueryFilter filter, GridQueryCancel cancel,
+        @Nullable Long qryId) throws IgniteCheckedException;
 
     /**
      * Executes text query.
