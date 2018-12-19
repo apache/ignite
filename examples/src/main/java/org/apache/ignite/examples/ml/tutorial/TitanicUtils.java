@@ -58,7 +58,7 @@ public class TitanicUtils {
 
             for (int i = 0; i < cells.length; i++)
                 try{
-                    data[i] = "".equals(cells[i]) ? 0 : Double.valueOf(cells[i]);
+                    data[i] = "".equals(cells[i]) ? Double.NaN : Double.valueOf(cells[i]);
                 } catch (java.lang.NumberFormatException e) {
 
                     try {
