@@ -24,7 +24,6 @@ import java.nio.file.OpenOption;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import org.apache.ignite.DebugUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -161,8 +160,6 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
         System.out.println(dirtyAfterLoad);
 
         fileIoFactory = new CheckingIoFactory(dirtyAfterLoad);
-
-        DebugUtils.setFlag("test", true);
 
         startGrid(0);
     }
