@@ -27,7 +27,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -37,6 +36,7 @@ import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcColumnMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetadataInfo;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcPrimaryKeyMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTableMeta;
@@ -799,25 +799,22 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getColumns(String catalog, String schemaPtrn, String tblNamePtrn,
         String colNamePtrn) throws SQLException {
-        updateMetaData();
+        conn.ensureNotClosed();
 
-        List<List<?>> rows = new LinkedList<>();
+        List<List<?>> rows = Collections.emptyList();
 
+        // FIXME: IGNITE-10745
         int cnt = 0;
 
         if (isValidCatalog(catalog)) {
-            for (Map.Entry<String, Map<String, Map<String, ColumnInfo>>> schema : meta.entrySet()) {
-                if (matches(schema.getKey(), schemaPtrn)) {
-                    for (Map.Entry<String, Map<String, ColumnInfo>> tbl : schema.getValue().entrySet()) {
-                        if (matches(tbl.getKey(), tblNamePtrn)) {
-                            for (Map.Entry<String, ColumnInfo> col : tbl.getValue().entrySet()) {
-                                rows.add(columnRow(schema.getKey(), tbl.getKey(), col.getKey(),
-                                    JdbcUtils.type(col.getValue().typeName()), JdbcUtils.typeName(col.getValue().typeName()),
-                                    !col.getValue().isNotNull(), ++cnt));
-                            }
-                        }
-                    }
-                }
+            Collection<JdbcColumnMeta> colMetas =
+                newMeta.getColumnsMeta(null /* latest */, schemaPtrn, tblNamePtrn, colNamePtrn);
+
+            rows = new ArrayList<>(colMetas.size());
+
+            for (JdbcColumnMeta col : colMetas) {
+                rows.add(columnRow(col.schemaName(), col.tableName(), col.columnName(), col.dataType(),
+                    col.dataTypeName(), col.isNullable(), ++cnt));
             }
         }
 

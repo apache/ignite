@@ -22,11 +22,20 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryGetColumnsMetaRequest;
+import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_3_0;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_4_0;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_7_0;
 import static org.apache.ignite.internal.processors.query.QueryUtils.matches;
 
 /**
@@ -122,5 +131,71 @@ public class JdbcMetadataInfo {
         }
 
         return tabMetas;
+    }
+
+    /**
+     * See {@link DatabaseMetaData#getColumns(String, String, String, String)} for details.
+     *
+     * Ignite has only one possible CATALOG_NAME, it is handled on the client (driver) side.
+     *
+     * @param protocolVer for what version of protocol to generate metadata. Early versions of protocol don't support
+     *        some features like default values or precision/scale. If {@code null}, current version will be used.
+     * @return List of metadatas about columns that match specified schema/tablename/columnname criterias.
+     */
+    public Collection<JdbcColumnMeta> getColumnsMeta(@Nullable ClientListenerProtocolVersion protocolVer,
+        String schemaNamePtrn, String tableNamePtrn, String columnNamePtrn) {
+
+        boolean useNewest = protocolVer == null;
+
+        Collection<JdbcColumnMeta> metas = new LinkedHashSet<>();
+
+        for (String cacheName : ctx.cache().publicCacheNames()) {
+            for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
+                if (!matches(table.schemaName(), schemaNamePtrn))
+                    continue;
+
+                if (!matches(table.tableName(), tableNamePtrn))
+                    continue;
+
+                for (Map.Entry<String, Class<?>> field : table.fields().entrySet()) {
+                    String colName = field.getKey();
+
+                    Class<?> fieldCls = field.getValue();
+
+                    if (!matches(colName, columnNamePtrn))
+                        continue;
+
+                    JdbcColumnMeta columnMeta;
+
+                    if (useNewest || protocolVer.compareTo(VER_2_7_0) >= 0) {
+                        GridQueryProperty prop = table.property(colName);
+
+                        columnMeta = new JdbcColumnMetaV4(table.schemaName(), table.tableName(),
+                            colName, fieldCls, !prop.notNull(), prop.defaultValue(),
+                            prop.precision(), prop.scale());
+                    }
+                    else if (protocolVer.compareTo(VER_2_4_0) >= 0) {
+                        GridQueryProperty prop = table.property(colName);
+
+                        columnMeta = new JdbcColumnMetaV3(table.schemaName(), table.tableName(),
+                            colName, fieldCls, !prop.notNull(), prop.defaultValue());
+                    }
+                    else if (protocolVer.compareTo(VER_2_3_0) >= 0) {
+                        GridQueryProperty prop = table.property(colName);
+
+                        columnMeta = new JdbcColumnMetaV2(table.schemaName(), table.tableName(),
+                            colName, fieldCls, !prop.notNull());
+                    }
+                    else
+                        columnMeta = new JdbcColumnMeta(table.schemaName(), table.tableName(),
+                            colName, fieldCls);
+
+                    if (!metas.contains(columnMeta))
+                        metas.add(columnMeta);
+                }
+            }
+        }
+
+        return metas;
     }
 }

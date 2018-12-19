@@ -832,70 +832,24 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /**
-     * {@link OdbcQueryGetColumnsMetaRequest} command handler.
-     *
      * @param req Get columns metadata request.
      * @return Response.
      */
     private JdbcResponse getColumnsMeta(JdbcMetaColumnsRequest req) {
         try {
-            Collection<JdbcColumnMeta> meta = new LinkedHashSet<>();
-
-            for (String cacheName : ctx.cache().publicCacheNames()) {
-                for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
-                    if (!matches(table.schemaName(), req.schemaName()))
-                        continue;
-
-                    if (!matches(table.tableName(), req.tableName()))
-                        continue;
-
-                    for (Map.Entry<String, Class<?>> field : table.fields().entrySet()) {
-                        String colName = field.getKey();
-
-                        if (!matches(colName, req.columnName()))
-                            continue;
-
-                        JdbcColumnMeta columnMeta;
-
-                        if (protocolVer.compareTo(VER_2_7_0) >= 0) {
-                            GridQueryProperty prop = table.property(colName);
-
-                            columnMeta = new JdbcColumnMetaV4(table.schemaName(), table.tableName(),
-                                field.getKey(), field.getValue(), !prop.notNull(), prop.defaultValue(),
-                                prop.precision(), prop.scale());
-                        }
-                        else if (protocolVer.compareTo(VER_2_4_0) >= 0) {
-                            GridQueryProperty prop = table.property(colName);
-
-                            columnMeta = new JdbcColumnMetaV3(table.schemaName(), table.tableName(),
-                                field.getKey(), field.getValue(), !prop.notNull(), prop.defaultValue());
-                        }
-                        else if (protocolVer.compareTo(VER_2_3_0) >= 0) {
-                            GridQueryProperty prop = table.property(colName);
-
-                            columnMeta = new JdbcColumnMetaV2(table.schemaName(), table.tableName(),
-                                field.getKey(), field.getValue(), !prop.notNull());
-                        }
-                        else
-                            columnMeta = new JdbcColumnMeta(table.schemaName(), table.tableName(),
-                                field.getKey(), field.getValue());
-
-                        if (!meta.contains(columnMeta))
-                            meta.add(columnMeta);
-                    }
-                }
-            }
+            Collection<JdbcColumnMeta> colsMeta =
+                meta.getColumnsMeta(protocolVer, req.schemaName(), req.tableName(), req.columnName());
 
             JdbcMetaColumnsResult res;
 
             if (protocolVer.compareTo(VER_2_7_0) >= 0)
-                res = new JdbcMetaColumnsResultV4(meta);
+                res = new JdbcMetaColumnsResultV4(colsMeta);
             else if (protocolVer.compareTo(VER_2_4_0) >= 0)
-                res = new JdbcMetaColumnsResultV3(meta);
+                res = new JdbcMetaColumnsResultV3(colsMeta);
             else if (protocolVer.compareTo(VER_2_3_0) >= 0)
-                res = new JdbcMetaColumnsResultV2(meta);
+                res = new JdbcMetaColumnsResultV2(colsMeta);
             else
-                res = new JdbcMetaColumnsResult(meta);
+                res = new JdbcMetaColumnsResult(colsMeta);
 
             return new JdbcResponse(res);
         }
