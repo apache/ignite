@@ -117,7 +117,6 @@ public class GridAlwaysFailoverSpiSelfTest extends GridSpiAbstractTest<AlwaysFai
      * @param res Job result.
      * @param cnt Failure count.
      */
-    @SuppressWarnings("unchecked")
     private void checkFailedNodes(ComputeJobResult res, int cnt) {
         Collection<UUID> failedNodes =
             (Collection<UUID>)res.getJobContext().getAttribute(FAILED_NODE_LIST_ATTR);

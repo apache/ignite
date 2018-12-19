@@ -209,7 +209,6 @@ public class StripedCompositeReadWriteLock implements ReadWriteLock {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("NullableProblems")
         @Override public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
             int i = 0;
 

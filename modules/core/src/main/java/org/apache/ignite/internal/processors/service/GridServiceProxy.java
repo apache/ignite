@@ -104,7 +104,6 @@ public class GridServiceProxy<T> implements Serializable {
      * @param timeout Service availability wait timeout. Cannot be negative.
      * @param ctx Context.
      */
-    @SuppressWarnings("unchecked")
     public GridServiceProxy(ClusterGroup prj,
         String name,
         Class<? super T> svc,
