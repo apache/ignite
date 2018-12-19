@@ -138,7 +138,6 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(new TcpDiscoverySpi() {
 
             @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
-
                 if (CustomMessageWrapper.class.isAssignableFrom(msg.getClass())) {
                     DiscoveryCustomMessage delegate = ((CustomMessageWrapper)msg).delegate();
 
@@ -164,7 +163,6 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
         cfg.setCommunicationSpi(new TcpCommunicationSpi() {
             /** {@inheritDoc} */
             @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
-
                 if (GridIoMessage.class.isAssignableFrom(msg.getClass())) {
                     Message gridMsg = ((GridIoMessage)msg).message();
 
@@ -363,7 +361,6 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
             IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(() -> stmt.execute(sql));
 
             for (String query : queries) {
-
                 assertWaitingOnBarrier();
 
                 List<GridRunningQueryInfo> runningQueries = (List<GridRunningQueryInfo>)ignite.context().query()
