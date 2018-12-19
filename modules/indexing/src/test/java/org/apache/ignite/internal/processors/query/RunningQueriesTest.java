@@ -308,7 +308,7 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
                 key++;
             }
 
-            IgniteInternalFuture<int[]> fut = GridTestUtils.runAsync(() -> stmt.executeBatch());
+            IgniteInternalFuture<int[]> fut = GridTestUtils.runAsync(stmt::executeBatch);
 
             for (int i = 0; i < BATCH_SIZE; i++) {
                 assertWaitingOnBarrier();
@@ -362,7 +362,7 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
         try (Connection conn = GridTestUtils.connect(ignite, null); Statement stmt = conn.createStatement()) {
             IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(() -> stmt.execute(sql));
 
-            for (int i = 0; i < queries.length; i++) {
+            for (String query : queries) {
 
                 assertWaitingOnBarrier();
 
@@ -371,7 +371,7 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
 
                 assertEquals(1, runningQueries.size());
 
-                assertEquals(queries[i], runningQueries.get(0).query());
+                assertEquals(query, runningQueries.get(0).query());
 
                 awaitTimeouted();
             }
@@ -491,7 +491,7 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
      *
      * @param parties the number of threads that must invoke await method before the barrier is tripped
      */
-    static void newBarrier(int parties) {
+    private static void newBarrier(int parties) {
         barrier = new CyclicBarrier(parties);
     }
 
@@ -500,7 +500,7 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
      * @throws TimeoutException In case of failure.
      * @throws BrokenBarrierException In case of failure.
      */
-    static void awaitTimeouted() throws InterruptedException, TimeoutException, BrokenBarrierException {
+    private static void awaitTimeouted() throws InterruptedException, TimeoutException, BrokenBarrierException {
         barrier.await(TIMEOUT_IN_MS, TimeUnit.SECONDS);
     }
 
@@ -508,6 +508,7 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
      * Blocking indexing processor.
      */
     private static class BlockingIndexing extends IgniteH2Indexing {
+        /** {@inheritDoc} */
         @Override public void checkStatementStreamable(PreparedStatement nativeStmt) {
             super.checkStatementStreamable(nativeStmt);
 
