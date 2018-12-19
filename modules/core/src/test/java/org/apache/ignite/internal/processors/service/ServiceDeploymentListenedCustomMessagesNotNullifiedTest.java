@@ -94,9 +94,9 @@
      public void preventNullifyingChangeGlobalStateMessageTest() throws Exception {
          runTest(ChangeGlobalStateMessage.class, new IgniteInClosure<Ignite>() {
              @Override public void apply(Ignite ignite) {
-                 assertTrue(ignite.active());
+                 assertTrue(ignite.cluster().active());
 
-                 ignite.active(false);
+                 ignite.cluster().active(false);
              }
          });
      }
@@ -160,10 +160,7 @@
                              testResultFut.onDone(e);
                          }
 
-                         // sync - to be sure that happens before occurred.
-                         synchronized (evt) {
-                             assertNotNull("Custom message has been nullified.", ((DiscoveryCustomEvent)evt).customMessage());
-                         }
+                         assertNotNull("Custom message has been nullified.", ((DiscoveryCustomEvent)evt).customMessage());
 
                          testResultFut.onDone();
                      }
