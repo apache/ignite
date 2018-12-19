@@ -15,12 +15,23 @@
  * limitations under the License.
  */
 
-import {OperatorFunction} from 'rxjs';
-import {filter} from 'rxjs/operators';
+package org.apache.ignite.ml.selection.scoring.metric;
 
-type Action = {type: string};
-export function ofType<T extends string, U extends Action, V extends Extract<U, {type: T}>>(type: T): OperatorFunction<U, V>
-export function ofType<U extends Action>(type): OperatorFunction<U, U> {
-    return filter((action: U): boolean => type === action.type);
+/**
+ * Metric calculator for one class label.
+ *
+ * @param <L> Type of a label (truth or prediction).
+ */
+public abstract class ClassMetric<L> implements Metric<L> {
+    /** Class label. */
+    protected L clsLb;
+
+    /**
+     * The class of interest or positive class.
+     *
+     * @param clsLb The label.
+     */
+    public ClassMetric(L clsLb) {
+        this.clsLb = clsLb;
+    }
 }
-

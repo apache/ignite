@@ -15,12 +15,24 @@
  * limitations under the License.
  */
 
-import {OperatorFunction} from 'rxjs';
-import {filter} from 'rxjs/operators';
+package org.apache.ignite.ml.selection.scoring.metric;
 
-type Action = {type: string};
-export function ofType<T extends string, U extends Action, V extends Extract<U, {type: T}>>(type: T): OperatorFunction<U, V>
-export function ofType<U extends Action>(type): OperatorFunction<U, U> {
-    return filter((action: U): boolean => type === action.type);
+import org.apache.ignite.IgniteException;
+
+/**
+ * Indicates an unknown class label for metric calculator.
+ */
+public class UnknownClassLabelException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+
+    /**
+     * @param incorrectVal Incorrect value.
+     * @param positiveClsLb Positive class label.
+     * @param negativeClsLb Negative class label.
+     */
+    public UnknownClassLabelException(double incorrectVal, double positiveClsLb, double negativeClsLb) {
+        super("The next class label: " + incorrectVal + " is not positive class label: " + positiveClsLb + " or negative class label: " + negativeClsLb);
+    }
 }
-
