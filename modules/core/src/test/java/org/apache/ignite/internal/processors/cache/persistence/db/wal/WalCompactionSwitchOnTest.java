@@ -89,6 +89,7 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
         forceCheckpoint();
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            /** @{inheritDoc} */
             @Override public boolean apply() {
                 File[] archivedFiles = walDir.listFiles(new FileFilter() {
                     /** @{inheritDoc} */
