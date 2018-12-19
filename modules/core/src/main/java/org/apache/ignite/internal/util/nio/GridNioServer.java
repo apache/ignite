@@ -757,7 +757,6 @@ public class GridNioServer<T> {
     /**
      * @return Future.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public IgniteInternalFuture<String> dumpStats() {
         String msg = "NIO server statistics [readerSesBalanceCnt=" + readerMoveCnt.get() +
             ", writerSesBalanceCnt=" + writerMoveCnt.get() + ']';
@@ -1422,7 +1421,6 @@ public class GridNioServer<T> {
          * @param key Key that is ready to be written.
          * @throws IOException If write failed.
          */
-        @SuppressWarnings("ForLoopReplaceableByForEach")
         private void processWriteSsl(SelectionKey key) throws IOException {
             WritableByteChannel sockCh = (WritableByteChannel)key.channel();
 
@@ -1659,7 +1657,6 @@ public class GridNioServer<T> {
          * @param key Key that is ready to be written.
          * @throws IOException If write failed.
          */
-        @SuppressWarnings("ForLoopReplaceableByForEach")
         private void processWrite0(SelectionKey key) throws IOException {
             WritableByteChannel sockCh = (WritableByteChannel)key.channel();
 
@@ -1798,7 +1795,6 @@ public class GridNioServer<T> {
      * @param ses Session.
      * @param msg Message.
      */
-    @SuppressWarnings("unchecked")
     private void onMessageWritten(GridSelectorNioSessionImpl ses, Message msg) {
         if (lsnr != null)
             lsnr.onMessageSent(ses, (T)msg);
@@ -2918,7 +2914,6 @@ public class GridNioServer<T> {
          * @param key Key.
          * @throws IOException If failed.
          */
-        @SuppressWarnings("unchecked")
         private void processConnect(SelectionKey key) throws IOException {
             SocketChannel ch = (SocketChannel)key.channel();
 

@@ -1233,7 +1233,7 @@ public class DmlStatementsProcessor {
                 IgniteQueryErrorCode.TABLE_NOT_FOUND);
         }
 
-        H2Utils.checkAndStartNotStartedCache(tbl);
+        H2Utils.checkAndStartNotStartedCache(ctx, tbl);
 
         UpdatePlan plan = UpdatePlanBuilder.planForBulkLoad(cmd, tbl);
 

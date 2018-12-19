@@ -1174,7 +1174,6 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      */
     private static class TestStoreFactory implements Factory<CacheStore<Object, Object>> {
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public CacheStore<Object, Object> create() {
             return new TestCacheStore();
         }

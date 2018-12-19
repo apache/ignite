@@ -2371,7 +2371,6 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @param ignite Grid.
      * @param expCnt Expected nodes count.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     private void checkRemoteNodes(Ignite ignite, int expCnt) {
         Collection<ClusterNode> nodes = ignite.cluster().forRemotes().nodes();
 
