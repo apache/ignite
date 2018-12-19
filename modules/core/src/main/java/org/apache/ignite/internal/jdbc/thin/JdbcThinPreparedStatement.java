@@ -199,28 +199,28 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public void setAsciiStream(int paramIdx, InputStream x, int length) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("Streams are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void setUnicodeStream(int paramIdx, InputStream x, int length) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("Streams are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void setBinaryStream(int paramIdx, InputStream x, int length) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("Streams are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void clearParameters() throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         args = null;
     }
@@ -260,7 +260,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public void addBatch() throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         checkStatementEligibleForBatching(sql);
 
@@ -291,42 +291,42 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public void setCharacterStream(int paramIdx, Reader x, int length) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("Streams are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void setRef(int paramIdx, Ref x) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void setBlob(int paramIdx, Blob x) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void setClob(int paramIdx, Clob x) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void setArray(int paramIdx, Array x) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public ResultSetMetaData getMetaData() throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("Meta data for prepared statement is not supported.");
     }
@@ -363,7 +363,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public ParameterMetaData getParameterMetaData() throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         if (metaData != null)
             return metaData;
@@ -377,56 +377,56 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public void setRowId(int paramIdx, RowId x) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void setNString(int paramIdx, String val) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         setString(paramIdx, val);
     }
 
     /** {@inheritDoc} */
     @Override public void setNCharacterStream(int paramIdx, Reader val, long length) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void setNClob(int paramIdx, NClob val) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void setClob(int paramIdx, Reader reader, long length) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void setBlob(int paramIdx, InputStream inputStream, long length) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void setNClob(int paramIdx, Reader reader, long length) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void setSQLXML(int paramIdx, SQLXML xmlObj) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
@@ -438,70 +438,70 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public void setAsciiStream(int paramIdx, InputStream x, long length) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("Streams are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void setBinaryStream(int paramIdx, InputStream x, long length) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("Streams are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void setCharacterStream(int paramIdx, Reader x, long length) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("Streams are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void setAsciiStream(int paramIdx, InputStream x) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("Streams are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void setBinaryStream(int paramIdx, InputStream x) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("Streams are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void setCharacterStream(int paramIdx, Reader x) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("Streams are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void setNCharacterStream(int paramIdx, Reader val) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void setClob(int paramIdx, Reader reader) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void setBlob(int paramIdx, InputStream inputStream) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void setNClob(int paramIdx, Reader reader) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
@@ -527,7 +527,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
      * @throws SQLException If index is invalid.
      */
     private void setArgument(int paramIdx, Object val) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         if (val != null && !SqlListenerUtils.isPlainType(val.getClass()))
             throw new SQLException("Parameter type is unsupported. [cls=" + val.getClass() + ']',

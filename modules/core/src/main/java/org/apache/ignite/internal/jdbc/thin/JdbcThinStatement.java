@@ -67,8 +67,7 @@ public class JdbcThinStatement implements Statement {
     private static final int DFLT_PAGE_SIZE = SqlQuery.DFLT_PAGE_SIZE;
 
     /** JDBC Connection implementation. */
-    // TODO: Why not final?
-    protected volatile JdbcThinConnection conn;
+    protected final JdbcThinConnection conn;
 
     /** Schema name. */
     private final String schema;
@@ -110,7 +109,7 @@ public class JdbcThinStatement implements Statement {
     private volatile boolean cancelled;
 
     /** Cancellation mutex. */
-    private final Object cancellationMux = new Object();
+    final Object cancellationMux = new Object();
 
     /**
      * Creates new statement.
@@ -181,16 +180,16 @@ public class JdbcThinStatement implements Statement {
      * @throws SQLException Onj error.
      */
     protected void execute0(JdbcStatementType stmtType, String sql, List<Object> args) throws SQLException {
+        ensureNotClosed();
+
         closeResults();
-
-        SqlCommand nativeCmd = null;
-
-        ensureAlive();
 
         if (sql == null || sql.isEmpty())
             throw new SQLException("SQL query is empty.");
 
         checkStatementBatchEmpty();
+
+        SqlCommand nativeCmd = null;
 
         if (stmtType != JdbcStatementType.SELECT_STATEMENT_TYPE && isEligibleForNativeParsing(sql))
             nativeCmd = tryParseNative(sql);
@@ -377,19 +376,17 @@ public class JdbcThinStatement implements Statement {
      * @throws SQLException On error.
      */
     private void closeResults() throws SQLException {
-        synchronized (cancellationMux) {
-            // TODO: What if cancellation is already in progress here? Seems that in this case we should not
-            // TODO: re-send result set close requests in rs.close0() below.
-            currReqId = 0;
-            cancelled = false;
-        }
-
         if (resultSets != null) {
             for (JdbcThinResultSet rs : resultSets)
                 rs.close0();
 
             resultSets = null;
             curRes = 0;
+        }
+
+        synchronized (cancellationMux) {
+            currReqId = 0;
+            cancelled = false;
         }
     }
 
@@ -416,14 +413,14 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public int getMaxFieldSize() throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         return 0;
     }
 
     /** {@inheritDoc} */
     @Override public void setMaxFieldSize(int max) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         if (max < 0)
             throw new SQLException("Invalid field limit.");
@@ -433,14 +430,14 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public int getMaxRows() throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         return maxRows;
     }
 
     /** {@inheritDoc} */
     @Override public void setMaxRows(int maxRows) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         if (maxRows < 0)
             throw new SQLException("Invalid max rows value.");
@@ -450,19 +447,19 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public void setEscapeProcessing(boolean enable) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
     }
 
     /** {@inheritDoc} */
     @Override public int getQueryTimeout() throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         return timeout / 1000;
     }
 
     /** {@inheritDoc} */
     @Override public void setQueryTimeout(int timeout) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         if (timeout < 0)
             throw new SQLException("Invalid timeout value.");
@@ -472,14 +469,14 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public void cancel() throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
-        if (conn.isStream()) {
-            // TODO: SQLFeatureNotSupportedException, proper SQL state (UNSUPPORTED_OPERATION)
-            throw new SQLException("Cancel method is not allowed in streaming mode.",
-                SqlStateCode.INTERNAL_ERROR,
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-        }
+        // No-op.
+        if (isCancelled())
+            return;
+
+        if (conn.isStream())
+            throw new SQLFeatureNotSupportedException("Cancel method is not allowed in streaming mode.");
 
         long reqId;
 
@@ -496,25 +493,27 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public SQLWarning getWarnings() throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public void clearWarnings() throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
     }
 
     /** {@inheritDoc} */
     @Override public void setCursorName(String name) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean execute(String sql) throws SQLException {
+        ensureNotClosed();
+
         execute0(JdbcStatementType.ANY_STATEMENT_TYPE, sql, null);
 
         return resultSets.get(0).isQuery();
@@ -576,7 +575,7 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public void setFetchDirection(int direction) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         if (direction != FETCH_FORWARD)
             throw new SQLFeatureNotSupportedException("Only forward direction is supported.");
@@ -584,14 +583,14 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public int getFetchDirection() throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         return FETCH_FORWARD;
     }
 
     /** {@inheritDoc} */
     @Override public void setFetchSize(int fetchSize) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         if (fetchSize <= 0)
             throw new SQLException("Fetch size must be greater than zero.");
@@ -601,28 +600,28 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public int getFetchSize() throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         return pageSize;
     }
 
     /** {@inheritDoc} */
     @Override public int getResultSetConcurrency() throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         return CONCUR_READ_ONLY;
     }
 
     /** {@inheritDoc} */
     @Override public int getResultSetType() throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         return TYPE_FORWARD_ONLY;
     }
 
     /** {@inheritDoc} */
     @Override public void addBatch(String sql) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         checkStatementEligibleForBatching(sql);
 
@@ -664,7 +663,7 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public void clearBatch() throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         batchSize = 0;
 
@@ -673,9 +672,9 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public int[] executeBatch() throws SQLException {
-        closeResults();
+        ensureNotClosed();
 
-        ensureAlive();
+        closeResults();
 
         checkStatementBatchEmpty();
 
@@ -712,7 +711,7 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public Connection getConnection() throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         return conn;
     }
@@ -758,67 +757,64 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public int executeUpdate(String sql, int autoGeneratedKeys) throws SQLException {
+        ensureNotClosed();
+
         switch (autoGeneratedKeys) {
             case Statement.RETURN_GENERATED_KEYS:
-                ensureAlive();
-
                 throw new SQLFeatureNotSupportedException("Auto-generated columns are not supported.");
 
             case Statement.NO_GENERATED_KEYS:
                 return executeUpdate(sql);
 
             default:
-                ensureAlive();
-
                 throw new SQLException("Invalid autoGeneratedKeys value");
         }
     }
 
     /** {@inheritDoc} */
     @Override public int executeUpdate(String sql, int[] colIndexes) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("Auto-generated columns are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public int executeUpdate(String sql, String[] colNames) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("Auto-generated columns are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean execute(String sql, int autoGeneratedKeys) throws SQLException {
+        ensureNotClosed();
+
         switch (autoGeneratedKeys) {
             case Statement.RETURN_GENERATED_KEYS:
-                ensureAlive();
-
                 throw new SQLFeatureNotSupportedException("Auto-generated columns are not supported.");
 
             case Statement.NO_GENERATED_KEYS:
                 return execute(sql);
 
             default:
-                ensureAlive();
-
                 throw new SQLException("Invalid autoGeneratedKeys value.");
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean execute(String sql, int[] colIndexes) throws SQLException {
-        if (colIndexes != null && colIndexes.length > 0) {
-            ensureAlive();
+        ensureNotClosed();
 
+        if (colIndexes != null && colIndexes.length > 0)
             throw new SQLFeatureNotSupportedException("Auto-generated columns are not supported.");
-        }
 
         return execute(sql);
     }
 
     /** {@inheritDoc} */
     @Override public boolean execute(String sql, String[] colNames) throws SQLException {
+        ensureNotClosed();
+
         if (colNames != null && colNames.length > 0)
             throw new SQLFeatureNotSupportedException("Auto-generated columns are not supported.");
 
@@ -827,7 +823,7 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public int getResultSetHoldability() throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         return resHoldability;
     }
@@ -839,7 +835,7 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public void setPoolable(boolean poolable) throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         if (poolable)
             throw new SQLFeatureNotSupportedException("Pooling is not supported.");
@@ -847,7 +843,7 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public boolean isPoolable() throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         return false;
     }
@@ -867,7 +863,7 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public void closeOnCompletion() throws SQLException {
-        ensureAlive();
+        ensureNotClosed();
 
         closeOnCompletion = true;
 
@@ -879,8 +875,7 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public boolean isCloseOnCompletion() throws SQLException {
-        // TODO: Cancel check should be moved out of close check
-        ensureAlive();
+        ensureNotClosed();
 
         return closeOnCompletion;
     }
@@ -902,13 +897,22 @@ public class JdbcThinStatement implements Statement {
     }
 
     /**
+     * Ensures that statement not closed.
+     *
+     * @throws SQLException If statement is closed.
+     */
+    void ensureNotClosed() throws SQLException {
+        if (isClosed())
+            throw new SQLException("Statement is closed.");
+    }
+
+    /**
      * Ensures that statement neither closed nor canceled.
      *
      * @throws SQLException If statement is closed or canceled.
      */
     void ensureAlive() throws SQLException {
-        if (isClosed())
-            throw new SQLException("Statement is closed.");
+        ensureNotClosed();
 
         if (cancelled)
             throw new SQLException("The query was cancelled while executing.", SqlStateCode.QUERY_CANCELLED);
@@ -938,8 +942,7 @@ public class JdbcThinStatement implements Statement {
     /**
      * @param currReqId Sets curresnt request Id.
      */
-    // TODO: Abbreviations are not allowed in method names: currentRequestId
-    void currReqId(long currReqId) {
+    void currentRequestId(long currReqId) {
         synchronized (cancellationMux) {
             this.currReqId = currReqId;
         }

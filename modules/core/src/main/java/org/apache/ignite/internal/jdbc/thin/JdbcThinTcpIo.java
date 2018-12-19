@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCancelRequest;
@@ -127,6 +128,9 @@ public class JdbcThinTcpIo {
 
     /** Mutex. */
     private final Object mux = new Object();
+
+    /** Connection mutex. */
+    private final Object connMux = new Object();
 
     /** Current protocol version used to connection to Ignite. */
     private ClientListenerProtocolVersion srvProtocolVer;
@@ -499,14 +503,28 @@ public class JdbcThinTcpIo {
         }
 
         try {
-            // TODO: Appears to be a race with cancel. Probably send should be performed  *inside* statement's
-            // TODO: cancellation mutex.
+            if (stmt != null) {
+                synchronized (stmt.cancellationMux) {
+                    if (stmt.isCancelled() && req instanceof JdbcQueryCloseRequest)
+                        return new JdbcResponse(null);
 
-            // TODO: Another question: how "fetch" requests are handled here?
-            sendRequestRaw(req);
+                    if (stmt.isCancelled() && (
+                        req instanceof JdbcQueryFetchRequest ||
+                            req instanceof JdbcQueryMetadataRequest ||
+                            req instanceof JdbcBulkLoadBatchRequest))
+                        return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED,
+                            new QueryCancelledException().getMessage());
 
-            if (stmt != null && (req instanceof JdbcQueryExecuteRequest || req instanceof JdbcBatchExecuteRequest))
-                stmt.currReqId(req.requestId());
+                    assert !stmt.isCancelled();
+
+                    sendRequestRaw(req);
+
+                    if (req instanceof JdbcQueryExecuteRequest || req instanceof JdbcBatchExecuteRequest)
+                        stmt.currentRequestId(req.requestId());
+                }
+            }
+            else
+                sendRequestRaw(req);
 
             JdbcResponse resp = readResponse();
 
@@ -587,10 +605,7 @@ public class JdbcThinTcpIo {
 
         req.writeBinary(writer, srvProtocolVer);
 
-        // TODO: Something is wrong with synchronization here. Note that "mux" is used for completely different
-        // TODO: purpose: to make sure that no two threads work concurrently with connection. Hence, we cannot use
-        // TODO: here.
-        synchronized (mux) {
+        synchronized (connMux) {
             send(writer.array());
         }
     }
