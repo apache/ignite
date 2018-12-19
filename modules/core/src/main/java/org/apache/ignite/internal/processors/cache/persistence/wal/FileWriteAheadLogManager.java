@@ -461,8 +461,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         segmentRouter = new SegmentRouter(walWorkDir, walArchiveDir, segmentAware, dsCfg);
 
-        walDisableContext = cctx.walState().walDisableContext();
-
         fileHandleManager = fileHandleManagerFactory.build(
                 cctx, metrics, mmap, lastWALPtr::get, serializer, this::currentHandle
         );
@@ -633,6 +631,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (log.isDebugEnabled())
             log.debug("File write ahead log manager resuming logging [nodeId=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
+
+        /*
+            walDisableContext is started of FileWriteAheadLogManager, so we obtain actual walDisableContext here.
+         */
+        walDisableContext = cctx.walState().walDisableContext();
 
         assert currHnd == null;
         assert lastPtr == null || lastPtr instanceof FileWALPointer;
