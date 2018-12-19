@@ -39,6 +39,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
@@ -59,6 +61,7 @@ import org.junit.runners.JUnit4;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
@@ -84,6 +87,9 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /** Restarts. */
     protected volatile boolean restarts;
 
+    /** Cache store should crash. */
+    private volatile boolean cacheStoreShouldCrash;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
@@ -104,7 +110,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
         ccfg.setBackups(1);
 
-        ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestCacheStoreAdapter()));
+        ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestCacheStoreAdapter(cacheStoreShouldCrash)));
 
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 64));
 
@@ -176,13 +182,64 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
      */
     @Test
     public void testLoadCacheFromStore() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-4210");
+        configured = true;
 
-        loadCache(new IgniteInClosure<Ignite>() {
-            @Override public void apply(Ignite grid) {
-                grid.cache(DEFAULT_CACHE_NAME).loadCache(null);
-            }
-        });
+        try {
+            doLoadCacheFromStore();
+        }
+        finally {
+            configured = false;
+        }
+    }
+
+    /**
+     * @throws Exception if failed
+     */
+    public void testLoadCacheFromStoreClient() throws Exception {
+        client = true;
+        configured = true;
+
+        try {
+            doLoadCacheFromStore();
+        }
+        finally {
+            client = false;
+            configured = false;
+        }
+    }
+
+    /**
+     * @throws Exception if failed
+     */
+    public void testLoadCacheFromCorruptedStoreClient() throws Exception {
+        client = true;
+        configured = true;
+        cacheStoreShouldCrash = true;
+
+        try {
+            doLoadCacheFromStore();
+        }
+        finally {
+            client = false;
+            configured = false;
+            cacheStoreShouldCrash = false;
+        }
+    }
+
+    /**
+     * @throws Exception if failed
+     */
+    public void testLoadCacheFromCorruptedStore() throws Exception {
+        configured = true;
+        cacheStoreShouldCrash = true;
+
+        try {
+            doLoadCacheFromStore();
+        }
+        finally {
+            configured = false;
+            cacheStoreShouldCrash = false;
+        }
     }
 
     /**
@@ -425,11 +482,69 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    private void doLoadCacheFromStore() throws Exception {
+        startGrid(1);
+
+        Ignite g0 = startGrid(0);
+
+        IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Ignite>() {
+            @Override public Ignite call() throws Exception {
+                return startGridsMultiThreaded(2, GRIDS_CNT - 2);
+            }
+        });
+
+        if (cacheStoreShouldCrash) {
+            assertThrowsWithCause(() -> {
+                g0.cache(DEFAULT_CACHE_NAME).loadCache(null);
+
+                return null;
+            }, CacheLoaderException.class);
+
+            fut.get(getTestTimeout());
+        }
+        else {
+            while (true) {
+                try {
+                    g0.cache(DEFAULT_CACHE_NAME).loadCache(null);
+
+                    break;
+                }
+                catch (CacheLoaderException e) {
+                    ClusterTopologyCheckedException cause = (ClusterTopologyCheckedException)e.getCause();
+
+                    assertTrue(cause.getCause() instanceof GridDhtInvalidPartitionException);
+
+                    U.sleep(300);
+                }
+            }
+
+            fut.get(getTestTimeout());
+
+            assertCacheSize();
+        }
+    }
+
+    /**
      * Cache store adapter.
      */
     private static class TestCacheStoreAdapter extends CacheStoreAdapter<Integer, String> implements Serializable {
+        /** Whether exception should be thrown while cache loading. */
+        private boolean shouldCrash;
+
+        /**
+         * @param shouldCrash Should crash flag.
+         */
+        public TestCacheStoreAdapter(boolean shouldCrash) {
+            this.shouldCrash = shouldCrash;
+        }
+
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Integer, String> f, Object... args) {
+            if (shouldCrash)
+                throw new CacheLoaderException("Arbitrary cache store exception");
+
             for (int i = 0; i < KEYS_CNT; i++)
                 f.apply(i, Integer.toString(i));
         }

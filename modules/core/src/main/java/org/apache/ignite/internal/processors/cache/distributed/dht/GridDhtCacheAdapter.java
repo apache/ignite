@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.integration.CacheLoaderException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -715,6 +716,19 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     "key", key, true,
                     "val", val, true,
                     "err", e, false));
+
+            GridDhtTopologyFuture topFut = ctx.topologyVersionFuture();
+
+            AffinityTopologyVersion curTopVer = topFut.isDone() ? topFut.topologyVersion() :
+                topFut.initialVersion();
+
+            if (curTopVer.compareTo(topVer) > 0) {
+                ClusterTopologyCheckedException topChangedE = new ClusterTopologyCheckedException(
+                    "Cache store loading should be retried at stable topology [topVer=" + topVer +
+                        ", curTopVer=" + curTopVer + ']', e);
+
+                throw new CacheLoaderException(topChangedE.getMessage(), topChangedE);
+            }
         }
     }
 
