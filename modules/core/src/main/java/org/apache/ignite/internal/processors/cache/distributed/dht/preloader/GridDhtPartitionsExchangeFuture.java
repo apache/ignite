@@ -897,24 +897,24 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 for (DatabaseLifecycleListener lsnr : listeners)
                     lsnr.onBaselineChange();
-
-                timeBag.finishLocalStage("Baseline change callback");
             }
             finally {
                 cctx.exchange().exchangerBlockingSectionEnd();
             }
+
+            timeBag.finishGlobalStage("Baseline change callback");
         }
 
         cctx.exchange().exchangerBlockingSectionBegin();
 
         try {
             cctx.activate();
-
-            timeBag.finishLocalStage("Components activation");
         }
         finally {
             cctx.exchange().exchangerBlockingSectionEnd();
         }
+
+        timeBag.finishGlobalStage("Components activation");
 
         IgniteInternalFuture<?> cachesRegistrationFut = cctx.cache().startCachesOnLocalJoin(initialVersion(),
             exchActions == null ? null : exchActions.localJoinContext());
@@ -1362,7 +1362,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
-        timeBag.finishLocalStage("Preloading notification");
+        timeBag.finishGlobalStage("Preloading notification");
 
         cctx.exchange().exchangerBlockingSectionBegin();
 
@@ -1376,7 +1376,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             cctx.exchange().exchangerBlockingSectionEnd();
         }
 
-        timeBag.finishLocalStage("WAL history reservation");
+        timeBag.finishGlobalStage("WAL history reservation");
 
         // Skipping wait on local join is available when all cluster nodes have the same protocol.
         boolean skipWaitOnLocalJoin = cctx.exchange().latch().canSkipJoiningNodes(initialVersion())
@@ -1462,13 +1462,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             try {
                 cctx.database().onStateRestored(initialVersion());
-
-                timeBag.finishLocalStage("After states restored callback");
             }
             finally {
                 cctx.exchange().exchangerBlockingSectionEnd();
             }
         }
+
+        timeBag.finishGlobalStage("After states restored callback");
 
         changeWalModeIfNeeded();
 
@@ -1705,7 +1705,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
-        timeBag.finishLocalStage("Wait partitions release");
+        timeBag.finishGlobalStage("Wait partitions release");
 
         if (releaseLatch == null) {
             assert !distributed : "Partitions release latch must be initialized in distributed mode.";
@@ -1748,7 +1748,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             U.warn(log, "Stop waiting for partitions release latch: " + e.getMessage());
         }
 
-        timeBag.finishLocalStage("Wait partitions release latch");
+        timeBag.finishGlobalStage("Wait partitions release latch");
     }
 
     /**
@@ -2024,6 +2024,28 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         super.onDone(null, null);
     }
 
+    /**
+     * Make a log message that contains given exchange timings.
+     *
+     * @param header Header of log message.
+     * @param timings Exchange stages timings.
+     * @return Log message with exchange timings and exchange version.
+     */
+    private String exchangeTimingsLogMessage(String header, List<String> timings) {
+        StringBuilder timingsToLog = new StringBuilder();
+
+        timingsToLog.append(header).append(" [");
+        timingsToLog.append("startVer=").append(initialVersion());
+        timingsToLog.append(", resVer=").append(topologyVersion());
+
+        for (String stageTiming : timings)
+            timingsToLog.append(", ").append(stageTiming);
+
+        timingsToLog.append(']');
+
+        return timingsToLog.toString();
+    }
+
     /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable AffinityTopologyVersion res, @Nullable Throwable err) {
         assert res != null || err != null : "TopVer=" + res + ", err=" + err;
@@ -2162,23 +2184,25 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (super.onDone(res, err)) {
             afterLsnrCompleteFut.onDone();
 
-            timeBag.finishGlobalStage("Exchange done");
-
             if (log.isInfoEnabled()) {
                 log.info("Completed partition exchange [localNode=" + cctx.localNodeId() +
                         ", exchange=" + (log.isDebugEnabled() ? this : shortInfo()) + ", topVer=" + topologyVersion() + "]");
 
-                AffinityTopologyVersion startVer = initialVersion();
-                AffinityTopologyVersion resVer = topologyVersion();
+                if (err == null) {
+                    timeBag.finishGlobalStage("Exchange done");
 
-                final String exchangeVersion = "startVer=" + (startVer != null ? startVer.toShortString() : "N/A")
-                    + ", resVer=" + (resVer != null ? resVer.toShortString() : "N/A");
+                    // Collect all stages timings.
+                    List<String> timings = timeBag.stagesTimings();
 
-                if (discoveryLag != 0)
-                    log.info("Discovery lag / Clocks discrepancy: " + discoveryLag + " ms. " + "[" + exchangeVersion + "]");
+                    if (discoveryLag != 0)
+                        timings.add("Discovery lag / Clocks discrepancy = " + discoveryLag + " ms.");
 
-                for (String stageTiming : timeBag.stagesTimings(exchangeVersion))
-                    log.info(stageTiming);
+                    log.info(exchangeTimingsLogMessage("Exchange timings", timings));
+
+                    List<String> localTimings = timeBag.longestLocalStagesTimings(3);
+
+                    log.info(exchangeTimingsLogMessage("Exchange longest local stages", localTimings));
+                }
             }
 
             initFut.onDone(err == null);
@@ -3616,7 +3640,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             throw new IgniteException("Failed to finalize partition counters", e);
         }
 
-        timeBag.finishLocalStage("Finalize update counters");
+        timeBag.finishGlobalStage("Finalize update counters");
     }
 
     /**
@@ -4244,9 +4268,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             for (IgniteRunnable c : evts)
                 c.run();
         }
-
-        if (!isDone())
-            timeBag.finishGlobalStage("Exchange init");
 
         initFut.onDone(true);
     }

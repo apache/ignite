@@ -2030,8 +2030,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @throws IgniteCheckedException If first checkpoint has failed.
      */
     @Override public void onStateRestored(AffinityTopologyVersion topVer) throws IgniteCheckedException {
-        long time = System.currentTimeMillis();
-
         IgniteThread cpThread = new IgniteThread(cctx.igniteInstanceName(), "db-checkpoint-thread", checkpointer);
 
         cpThread.start();
@@ -2042,9 +2040,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         if (chp != null)
             chp.cpBeginFut.get();
-
-        if (log.isInfoEnabled())
-            log.info("Checkpointer initilialzation performed in " + (System.currentTimeMillis() - time) + " ms.");
     }
 
     /**

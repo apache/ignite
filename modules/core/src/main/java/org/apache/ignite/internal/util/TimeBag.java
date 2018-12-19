@@ -22,20 +22,18 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 /**
  *
  */
 public class TimeBag {
     /** Initial global stage. */
-    private static final GlobalStage INITIAL_STAGE = new GlobalStage("", 0, new HashMap<>());
-
-    /** Padding element for pretty print. */
-    private static final String PADDING = "  ^-- ";
+    private final CompositeStage INITIAL_STAGE = new CompositeStage("", 0, new HashMap<>());
 
     /** Lock. */
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -47,13 +45,13 @@ public class TimeBag {
     private final TimeUnit measurementUnit;
 
     /** List of global stages (guarded by {@code lock}). */
-    private final List<GlobalStage> stages;
+    private final List<CompositeStage> stages;
 
     /** List of current local stages separated by threads (guarded by {@code lock}). */
     private Map<String, List<Stage>> localStages;
 
     /** Last seen global stage by thread. */
-    private final ThreadLocal<GlobalStage> tlLastSeenStage = ThreadLocal.withInitial(() -> INITIAL_STAGE);
+    private final ThreadLocal<CompositeStage> tlLastSeenStage = ThreadLocal.withInitial(() -> INITIAL_STAGE);
 
     /** Thread-local stopwatch. */
     private final ThreadLocal<IgniteStopwatch> tlStopwatch = ThreadLocal.withInitial(IgniteStopwatch::createUnstarted);
@@ -80,7 +78,7 @@ public class TimeBag {
     /**
      *
      */
-    private GlobalStage lastCompletedGlobalStage() {
+    private CompositeStage lastCompletedGlobalStage() {
         assert !stages.isEmpty() : "No stages :(";
 
         return stages.get(stages.size() - 1);
@@ -90,12 +88,11 @@ public class TimeBag {
      * @param description Description.
      */
     public void finishGlobalStage(String description) {
-        if (!lock.writeLock().tryLock())
-            throw new IllegalStateException("Attempt to finish global stage, while local stage finishing is in progress.");
+        lock.writeLock().lock();
 
         try {
             stages.add(
-                new GlobalStage(description, globalStopwatch.elapsed(measurementUnit), Collections.unmodifiableMap(localStages))
+                new CompositeStage(description, globalStopwatch.elapsed(measurementUnit), Collections.unmodifiableMap(localStages))
             );
 
             localStages = new ConcurrentHashMap<>();
@@ -111,17 +108,16 @@ public class TimeBag {
      * @param description Description.
      */
     public void finishLocalStage(String description) {
-        if (!lock.readLock().tryLock())
-            throw new IllegalStateException("Attempt to finish local stage, while global stage finishing is in progress.");
+        lock.readLock().lock();
 
         try {
-            GlobalStage lastSeen = tlLastSeenStage.get();
-            GlobalStage lastCompleted = lastCompletedGlobalStage();
+            CompositeStage lastSeen = tlLastSeenStage.get();
+            CompositeStage lastCompleted = lastCompletedGlobalStage();
             IgniteStopwatch localStopWatch = tlStopwatch.get();
 
             Stage stage;
 
-            // We see this stage first time, get elapsed time from global stopwatch and start local stopwatch.
+            // We see this stage first time, get elapsed time from last completed global stage and start tracking local.
             if (lastSeen != lastCompleted) {
                 stage = new Stage(description, globalStopwatch.elapsed(measurementUnit));
 
@@ -140,27 +136,6 @@ public class TimeBag {
         finally {
             lock.readLock().unlock();
         }
-    }
-
-    /**
-     * @param stage Stage.
-     * @param timingsList List with timings in string representation.
-     */
-    private void addStageTiming(Stage stage, List<String> timingsList, @Nullable String postfix) {
-        StringBuilder sb = new StringBuilder();
-
-        if (!(stage instanceof GlobalStage))
-            sb.append(PADDING);
-
-        sb.append(stage.name()).append(' ');
-        sb.append('[');
-        sb.append("desc=").append(stage.description()).append(", ");
-        sb.append("time=").append(stage.time()).append(' ').append(measurementUnitShort());
-        if (postfix != null)
-            sb.append(", ").append(postfix);
-        sb.append(']');
-
-        timingsList.add(sb.toString());
     }
 
     /**
@@ -190,7 +165,7 @@ public class TimeBag {
     /**
      * @return List of string representation of all stage timings.
      */
-    public List<String> stagesTimings(@Nullable String postfix) {
+    public List<String> stagesTimings() {
         lock.readLock().lock();
 
         try {
@@ -200,46 +175,54 @@ public class TimeBag {
 
             // Skip initial stage.
             for (int i = 1; i < stages.size(); i++) {
-                GlobalStage globStage = stages.get(i);
+                CompositeStage stage = stages.get(i);
 
-                totalTime += globStage.time();
+                totalTime += stage.time();
 
-                addStageTiming(globStage, timings, postfix);
-
-                if (!globStage.localStages.isEmpty()) {
-                    // Take a thread with longest local stages sequence.
-                    Map<String, List<Stage>> locStages = globStage.localStages;
-
-                    String longestTimeThread = null;
-                    long longestTime = -1;
-
-                    for (Map.Entry<String, List<Stage>> locStage : locStages.entrySet()) {
-                        long locStagesSummaryTime = locStage.getValue().stream()
-                            .map(stage -> stage.time)
-                            .reduce((a, b) -> a + b)
-                            .orElse(-1L);
-
-                        if (locStagesSummaryTime > longestTime) {
-                            longestTime = locStagesSummaryTime;
-                            longestTimeThread = locStage.getKey();
-                        }
-                    }
-
-                    assert longestTimeThread != null;
-
-                    if (locStages.size() > 1)
-                        timings.add(PADDING + "Longest execution thread " + longestTimeThread
-                            + " [time=" + longestTime + " " + measurementUnitShort() + "]:");
-
-                    List<Stage> longestStagesSeq = locStages.get(longestTimeThread);
-
-                    for (Stage stage : longestStagesSeq)
-                        addStageTiming(stage, timings, postfix);
-                }
+                timings.add(stage.toString());
             }
 
             // Add last stage with summary time of all global stages.
-            addStageTiming(new GlobalStage("Total time", totalTime, Collections.emptyMap()), timings, postfix);
+            timings.add(new Stage("Total time", totalTime).toString());
+
+            return timings;
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /**
+     * @param maxPerCompositeStage Max count of local stages to collect per composite stage.
+     * @return List of string represenation of longest local stages per each composite stage.
+     */
+    public List<String> longestLocalStagesTimings(int maxPerCompositeStage) {
+        lock.readLock().lock();
+
+        try {
+            List<String> timings = new ArrayList<>();
+
+            for (int i = 1; i < stages.size(); i++) {
+                CompositeStage stage = stages.get(i);
+
+                if (!stage.localStages.isEmpty()) {
+                    PriorityQueue<Stage> stagesByTime = new PriorityQueue<>();
+
+                    for (Map.Entry<String, List<Stage>> threadAndStages : stage.localStages.entrySet()) {
+                        for (Stage locStage : threadAndStages.getValue())
+                            stagesByTime.add(locStage);
+                    }
+
+                    int stageCount = 0;
+                    while (!stagesByTime.isEmpty() && stageCount < maxPerCompositeStage) {
+                        stageCount++;
+
+                        Stage locStage = stagesByTime.poll();
+
+                        timings.add(locStage.toString() + " (parent=" + stage.description() + ")");
+                    }
+                }
+            }
 
             return timings;
         }
@@ -251,7 +234,7 @@ public class TimeBag {
     /**
      *
      */
-    public static class GlobalStage extends Stage {
+    private class CompositeStage extends Stage {
         /** Local stages. */
         private final Map<String, List<Stage>> localStages;
 
@@ -260,7 +243,7 @@ public class TimeBag {
          * @param time Time.
          * @param localStages Local stages.
          */
-        public GlobalStage(String description, long time, Map<String, List<Stage>> localStages) {
+        public CompositeStage(String description, long time, Map<String, List<Stage>> localStages) {
             super(description, time);
 
             this.localStages = localStages;
@@ -272,17 +255,12 @@ public class TimeBag {
         public Map<String, List<Stage>> localStages() {
             return localStages;
         }
-
-        /** {@inheritDoc} */
-        @Override public String name() {
-            return "Global stage";
-        }
     }
 
     /**
      *
      */
-    public static class Stage {
+    private class Stage implements Comparable<Stage> {
         /** Description. */
         private final String description;
 
@@ -312,11 +290,23 @@ public class TimeBag {
             return time;
         }
 
-        /**
-         *
-         */
-        public String name() {
-            return "Local stage";
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            StringBuilder sb = new StringBuilder();
+
+            sb.append("stage=").append('"').append(description()).append('"');
+            sb.append(' ').append('(').append(time()).append(' ').append(measurementUnitShort()).append(')');
+
+            return sb.toString();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int compareTo(@NotNull TimeBag.Stage o) {
+            if (o.time > time)
+                return -1;
+            if (o.time < time)
+                return 1;
+            return o.description.compareTo(description);
         }
     }
 }
