@@ -434,8 +434,8 @@ public class GridNioServer<T> {
     }
 
     /** */
-    public Set<ConnectionKey> channelKeys() {
-        return channels.keySet();
+    public IgniteNioSocketChannel getNioSocketChannel(ConnectionKey key) {
+        return channels.get(key);
     }
 
     /**
@@ -945,6 +945,28 @@ public class GridNioServer<T> {
         }
 
         return req;
+    }
+
+    /**
+     * Create a {@link IgniteNioSocketChannel} using provided session.
+     */
+    public IgniteNioSocketChannel createNioChannel(
+        GridSelectorNioSession ses,
+        ConnectionKey connKey
+    ) throws IgniteCheckedException {
+        if (closed)
+            throw new IgniteCheckedException("Server is stopped");
+
+        if (channels.get(connKey) != null)
+            throw new IgniteCheckedException("Channel connection already exists: " + connKey);
+
+        SelectionKey key = ses.key();
+
+        IgniteNioSocketChannel nioSocketCh = new IgniteNioSocketChannelImpl(connKey, (SocketChannel)key.channel());
+
+        channels.putIfAbsent(connKey, nioSocketCh);
+
+        return nioSocketCh;
     }
 
     /**
@@ -2798,7 +2820,7 @@ public class GridNioServer<T> {
 
         /** */
         protected boolean close(final GridSelectorNioSessionImpl ses, @Nullable final IgniteCheckedException e) {
-            return close(ses, e, true);
+            return close(ses, e, ses.closeSocket());
         }
 
         /**
@@ -2806,13 +2828,13 @@ public class GridNioServer<T> {
          *
          * @param ses Session to be closed.
          * @param e Exception to be passed to the listener, if any.
-         * @param closeKey If {@code True} the channel will be closed.
+         * @param closeSock If {@code True} the channel will be closed.
          * @return {@code True} if this call closed the ses.
          */
         protected boolean close(
             final GridSelectorNioSessionImpl ses,
             @Nullable final IgniteCheckedException e,
-            boolean closeKey
+            boolean closeSock
         ) {
             if (e != null) {
                 // Print stack trace only if has runtime exception in it's cause.
@@ -2837,8 +2859,10 @@ public class GridNioServer<T> {
                         GridUnsafe.cleanDirectBuffer(ses.readBuffer());
                 }
 
-                if (closeKey)
+                if (closeSock)
                     closeKey(ses.key());
+                else
+                    U.close(ses.key(), log);
 
                 if (e != null)
                     filterChain.onExceptionCaught(ses, e);

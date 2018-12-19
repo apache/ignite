@@ -18,51 +18,32 @@
 package org.apache.ignite.spi.communication.tcp.messages;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.util.nio.channel.IgniteNioSocketChannel;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+
+import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.HANDSHAKE_WAIT_MSG_TYPE;
 
 /**
- * Message requesting to creation of {@link IgniteNioSocketChannel}.
+ *
  */
-public class ChannelCreateRequestMessage implements Message {
+public class ChannelCreateResponseMessage implements Message {
     /** Request message type */
-    public static final int CHANNEL_REQUEST_MSG_TYPE = -29;
+    public static final int CHANNEL_RESPONSE_MSG_TYPE = -30;
+
+    /** Full message size (with message type) in bytes. */
+    public static final int MESSAGE_FULL_SIZE = DIRECT_TYPE_SIZE;
 
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Message. */
-    private Message message;
-
     /**
      * Default constructor required by {@link Message}.
      */
-    public ChannelCreateRequestMessage() {
+    public ChannelCreateResponseMessage() {
         // Default constructor used only for GridIoMessageFactory.
-    }
-
-    /**
-     * @param message {@link Message} to wrap.
-     */
-    public ChannelCreateRequestMessage(Message message) {
-        this.message = message;
-    }
-
-    /**
-     * @return Message.
-     */
-    public Message getMessage() {
-        return message;
-    }
-
-    /**
-     * @param message Message.
-     */
-    public void setMessage(Message message) {
-        this.message = message;
     }
 
     /** {@inheritDoc} */
@@ -72,57 +53,32 @@ public class ChannelCreateRequestMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
+        if (buf.remaining() < MESSAGE_FULL_SIZE)
+            return false;
 
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        if (writer.state() == 0) {
-            if (!writer.writeMessage("message", message))
-                return false;
-
-            writer.incrementState();
-        }
+        TcpCommunicationSpi.writeMessageType(buf, directType());
 
         return true;
     }
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        if (reader.state() == 0) {
-            message = reader.readMessage("message");
-
-            if (!reader.isLastRead())
-                return false;
-
-            reader.incrementState();
-        }
-
-        return reader.afterMessageRead(ChannelCreateRequestMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -29;
+        return HANDSHAKE_WAIT_MSG_TYPE;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 1;
+        return 0;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ChannelCreateRequestMessage.class, this);
+        return S.toString(ChannelCreateResponseMessage.class, this);
     }
 
 }

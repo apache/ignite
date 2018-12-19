@@ -282,7 +282,18 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     lsnr.onNodeDisconnected(nodeId);
             }
 
-            @Override public void onChannelRegistered(IgniteNioSocketChannel ch) {
+            @Override public void onChannelRequest(IgniteNioSocketChannel ch, Serializable msg) {
+                try {
+                    onChannelRequest0(ch, (GridIoMessage)msg);
+                }
+                catch (ClassCastException ignored) {
+                    U.error(log, "Communication manager received message of unknown type (will ignore): " +
+                        msg.getClass().getName() + ". Most likely GridCommunicationSpi is being used directly, " +
+                        "which is illegal - make sure to send messages only via GridProjection API.");
+                }
+            }
+
+            @Override public void onChannelReady(IgniteNioSocketChannel ch) {
                 for (GridIoChannelListener lsnr : channelLsnrs)
                     lsnr.onChannelCreated(ch);
             }
@@ -922,6 +933,37 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         if (log.isDebugEnabled())
             log.debug(stopInfo());
+    }
+
+    /** */
+    private void onChannelRequest0(IgniteNioSocketChannel ch, GridIoMessage msg) {
+        assert msg != null;
+
+        Lock busyLock0 = busyLock.readLock();
+
+        busyLock0.lock();
+
+        try {
+            if (stopping || !started)
+                throw new IgniteCheckedException("Node is stopping or not started yet.");
+
+            Object topic = msg.topic();
+
+            if (topic == null) {
+                int topicOrd = msg.topicOrdinal();
+
+                topic = topicOrd >= 0 ? GridTopic.fromOrdinal(topicOrd) :
+                    U.unmarshal(marsh, msg.topicBytes(), U.resolveClassLoader(ctx.config()));
+            }
+
+            ch.config().setTopic(topic);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to process message (will ignore): " + msg, e);
+        }
+        finally {
+            busyLock0.unlock();
+        }
     }
 
     /**

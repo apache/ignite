@@ -18,6 +18,9 @@ public final class IgniteNioSocketChannelConfig {
     /** */
     private final Socket socket;
 
+    /** */
+    private Object topic;
+
     /**
      *
      */
@@ -147,6 +150,18 @@ public final class IgniteNioSocketChannelConfig {
         catch (SocketException e) {
             throw new IgniteException(e);
         }
+
+        return this;
+    }
+
+    /** */
+    public Object getTopic() {
+        return topic;
+    }
+
+    /** */
+    public IgniteNioSocketChannelConfig setTopic(Object topic) {
+        this.topic = topic;
 
         return this;
     }

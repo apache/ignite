@@ -37,10 +37,10 @@ public interface IgniteNioSocketChannel extends Closeable {
     public IgniteNioSocketChannelConfig config();
 
     /** */
-    public boolean isOpen();
+    public boolean isReady();
 
     /** */
-    public boolean isActive();
+    public void setReady();
 
     /**
      * @see Socket#isInputShutdown().

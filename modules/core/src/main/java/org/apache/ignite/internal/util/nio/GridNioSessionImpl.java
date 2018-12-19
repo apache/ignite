@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util.nio;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -79,6 +80,9 @@ public class GridNioSessionImpl implements GridNioSession {
 
     /** For debug purposes. */
     private volatile boolean markedForClose;
+
+    /** Close channel on session #close() called. */
+    private volatile boolean closeSocket = true;
 
     /**
      * @param filterChain Chain.
@@ -322,6 +326,16 @@ public class GridNioSessionImpl implements GridNioSession {
      */
     public boolean setClosed() {
         return closeTime.compareAndSet(0, U.currentTimeMillis());
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean closeSocket() {
+        return closeSocket;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void closeSocket(boolean closeSocket) {
+        this.closeSocket = closeSocket;
     }
 
     /** {@inheritDoc} */

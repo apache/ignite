@@ -19,6 +19,7 @@ package org.apache.ignite.internal.util.nio.channel;
 
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
@@ -35,6 +36,9 @@ public class IgniteNioSocketChannelImpl implements IgniteNioSocketChannel {
 
     /** */
     private final IgniteNioSocketChannelConfig config;
+
+    /** */
+    private final AtomicBoolean readyStatus = new AtomicBoolean();
 
     /**
      * Create a new NIO socket channel.
@@ -64,15 +68,15 @@ public class IgniteNioSocketChannelImpl implements IgniteNioSocketChannel {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isOpen() {
-        return channel.isOpen();
+    @Override public boolean isReady() {
+        return readyStatus.get();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isActive() {
-        SocketChannel ch0 = channel();
+    @Override public void setReady() {
+        boolean res = readyStatus.compareAndSet(false, true);
 
-        return ch0.isOpen() && ch0.isConnected();
+        assert res;
     }
 
     /** {@inheritDoc} */

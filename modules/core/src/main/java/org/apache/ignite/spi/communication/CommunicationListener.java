@@ -48,11 +48,21 @@ public interface CommunicationListener<T extends Serializable> extends EventList
     public void onDisconnected(UUID nodeId);
 
     /**
+     * Process channel configuration requests.
+     *
+     * @param ch Channel to configure.
+     * @param msg Configuration message.
+     */
+    public default void onChannelRequest(IgniteNioSocketChannel ch, T msg) {
+        // No-op.
+    }
+
+    /**
      * Listen to {@link IgniteNioSocketChannel} creation event from remote connection.
      *
      * @param ch Local created channel endpoint.
      */
-    public default void onChannelRegistered(IgniteNioSocketChannel ch) {
+    public default void onChannelReady(IgniteNioSocketChannel ch) {
         // No-op.
     }
 }
