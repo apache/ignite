@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -64,7 +65,6 @@ public class DeadlockProbe implements Message {
      * @return Identifier of a transaction identified as waiting during deadlock detection.
      */
     public GridCacheVersion waitingVersion() {
-        // t0d0 why do we need that version?
         return waitingVer;
     }
 
@@ -181,5 +181,10 @@ public class DeadlockProbe implements Message {
 
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DeadlockProbe.class, this);
     }
 }

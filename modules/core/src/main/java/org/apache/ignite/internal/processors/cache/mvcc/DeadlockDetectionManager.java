@@ -40,7 +40,12 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         cctx.gridIO().addMessageListener(TOPIC_DEADLOCK_DETECTION, (nodeId, msg, plc) -> {
-            handleDeadlockProbe(((DeadlockProbe)msg));
+            DeadlockProbe msg0 = (DeadlockProbe)msg;
+
+            if (log.isDebugEnabled())
+                log.debug("Received a probe message msg=[" + msg0 + ']');
+
+            handleDeadlockProbe(msg0);
         });
     }
 
