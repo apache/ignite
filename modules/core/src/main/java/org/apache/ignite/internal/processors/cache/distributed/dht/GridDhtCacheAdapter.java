@@ -1101,7 +1101,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     public void sendTtlUpdateRequest(@Nullable final IgniteCacheExpiryPolicy expiryPlc) {
         if (expiryPlc != null && expiryPlc.entries() != null) {
             ctx.closures().runLocalSafe(new Runnable() {
-                @SuppressWarnings({"unchecked", "ForLoopReplaceableByForEach"})
+                @SuppressWarnings({"ForLoopReplaceableByForEach"})
                 @Override public void run() {
                     Map<KeyCacheObject, GridCacheVersion> entries = expiryPlc.entries();
 

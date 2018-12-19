@@ -43,7 +43,6 @@ public class GridSelfTest extends ClusterGroupAbstractTest {
     private static final int NODES_CNT = 4;
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"ConstantConditions"})
     @Override protected void beforeTestsStarted() throws Exception {
         assert NODES_CNT > 2;
 
