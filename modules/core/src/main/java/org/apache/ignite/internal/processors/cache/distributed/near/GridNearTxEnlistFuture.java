@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
@@ -217,7 +218,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
                 ClusterNode node = cctx.affinity().primaryByKey(key, topVer);
 
                 if (node == null)
-                    throw new ClusterTopologyCheckedException("Failed to get primary node " +
+                    throw new ClusterTopologyServerNotFoundException("Failed to get primary node " +
                         "[topVer=" + topVer + ", key=" + key + ']');
 
                 tx.markQueryEnlisted(null);
