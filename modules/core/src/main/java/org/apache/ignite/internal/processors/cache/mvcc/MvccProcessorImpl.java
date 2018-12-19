@@ -2199,7 +2199,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** */
-    @SuppressWarnings("unchecked")
     private static class CompoundWaiter implements Waiter {
         /** */
         private final Object inner;
@@ -2577,7 +2576,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
          * @param metrics Vacuum metrics.
          * @throws IgniteCheckedException If failed.
          */
-        @SuppressWarnings("unchecked")
         private void cleanup(GridDhtLocalPartition part, KeyCacheObject key, List<MvccLinkAwareSearchRow> cleanupRows,
             Object rest, GridCacheContext cctx, VacuumMetrics metrics) throws IgniteCheckedException {
             assert key != null && cctx != null && (!F.isEmpty(cleanupRows) || rest != null);

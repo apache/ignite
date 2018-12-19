@@ -59,7 +59,7 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTest() {
         /* Grid instance. */
         ignite = grid(NODE_COUNT);
         ignite.configuration().setPeerClassLoadingEnabled(true);
@@ -264,7 +264,7 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws Exception {
+        @Override public void close() {
             // Do nothing, GC will clean up.
         }
     }

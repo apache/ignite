@@ -17,6 +17,7 @@
 
 package org.apache.ignite.stream.flume;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 
 /**
@@ -25,12 +26,11 @@ import junit.framework.TestSuite;
 public class IgniteSinkTestSuite extends TestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Apache Flume NG Sink Test Suite");
 
-        suite.addTest(new TestSuite(IgniteSinkTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteSinkTest.class));
 
         return suite;
     }

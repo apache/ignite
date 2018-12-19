@@ -71,7 +71,6 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
      * @param depMode deployment mode.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void processTestUndeployLocalTasks(DeploymentMode depMode) throws Exception {
         try {
             this.depMode = depMode;
@@ -123,7 +122,6 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
      * @param depMode deployment mode.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void processTestUndeployP2PTasks(DeploymentMode depMode) throws Exception {
         try {
             this.depMode = depMode;

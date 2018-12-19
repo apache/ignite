@@ -40,11 +40,15 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Client connector configuration validation tests.
  */
 @SuppressWarnings("deprecation")
+@RunWith(JUnit4.class)
 public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAbstractTest {
     /** Node index generator. */
     private static final AtomicInteger NODE_IDX_GEN = new AtomicInteger();
@@ -62,6 +66,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDefault() throws Exception {
         check(new ClientConnectorConfiguration(), true);
         checkJdbc(null, ClientConnectorConfiguration.DFLT_PORT);
@@ -72,6 +77,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testHost() throws Exception {
         check(new ClientConnectorConfiguration().setHost("126.0.0.1"), false);
 
@@ -88,6 +94,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPort() throws Exception {
         check(new ClientConnectorConfiguration().setPort(-1), false);
         check(new ClientConnectorConfiguration().setPort(0), false);
@@ -107,6 +114,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPortRange() throws Exception {
         check(new ClientConnectorConfiguration().setPortRange(-1), false);
 
@@ -122,6 +130,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSocketBuffers() throws Exception {
         check(new ClientConnectorConfiguration().setSocketSendBufferSize(-4 * 1024), false);
         check(new ClientConnectorConfiguration().setSocketReceiveBufferSize(-4 * 1024), false);
@@ -138,6 +147,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxOpenCusrorsPerConnection() throws Exception {
         check(new ClientConnectorConfiguration().setMaxOpenCursorsPerConnection(-1), false);
 
@@ -153,6 +163,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testThreadPoolSize() throws Exception {
         check(new ClientConnectorConfiguration().setThreadPoolSize(0), false);
         check(new ClientConnectorConfiguration().setThreadPoolSize(-1), false);
@@ -166,6 +177,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOdbcConnectorConversion() throws Exception {
         int port = ClientConnectorConfiguration.DFLT_PORT - 1;
 
@@ -183,6 +195,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSqlConnectorConversion() throws Exception {
         int port = ClientConnectorConfiguration.DFLT_PORT - 1;
 
@@ -200,6 +213,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIgnoreOdbcWhenSqlSet() throws Exception {
         int port = ClientConnectorConfiguration.DFLT_PORT - 1;
 
@@ -218,6 +232,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIgnoreOdbcAndSqlWhenClientSet() throws Exception {
         int cliPort = ClientConnectorConfiguration.DFLT_PORT - 1;
         int sqlPort = ClientConnectorConfiguration.DFLT_PORT - 2;
@@ -239,6 +254,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIgnoreOdbcWhenClientSet() throws Exception {
         int cliPort = ClientConnectorConfiguration.DFLT_PORT - 1;
         int odbcPort = ClientConnectorConfiguration.DFLT_PORT - 2;
@@ -258,6 +274,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIgnoreSqlWhenClientSet() throws Exception {
         int cliPort = ClientConnectorConfiguration.DFLT_PORT - 1;
         int sqlPort = ClientConnectorConfiguration.DFLT_PORT - 2;
@@ -277,6 +294,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDisabled() throws Exception {
         IgniteConfiguration cfg = baseConfiguration();
 
@@ -298,6 +316,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testJdbcConnectionEnabled() throws Exception {
         IgniteConfiguration cfg = baseConfiguration();
 
@@ -316,6 +335,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testJdbcConnectionDisabled() throws Exception {
         IgniteConfiguration cfg = baseConfiguration();
 
@@ -340,6 +360,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testJdbcConnectionDisabledForDaemon() throws Exception {
         final IgniteConfiguration cfg = baseConfiguration().setDaemon(true);
 
