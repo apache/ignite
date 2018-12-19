@@ -1211,8 +1211,8 @@ public class DmlStatementsProcessor {
      * @throws IgniteSQLException If failed.
      */
     public FieldsQueryCursor<List<?>> runNativeDmlStatement(String schemaName, String sql, SqlCommand cmd) {
-        GridRunningQueryInfo runningQryInfo = idx.runningQueryManager().registerUserRunningQuery(schemaName,
-            GridCacheQueryType.SQL, sql, true, null);
+        GridRunningQueryInfo runningQryInfo = idx.runningQueryManager().registerUserRunningQuery(sql,
+            GridCacheQueryType.SQL_FIELDS, schemaName, true, null);
 
         try {
             if (cmd instanceof SqlBulkLoadCommand)

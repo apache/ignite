@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.query;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
@@ -44,6 +46,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -65,6 +68,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+
+import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
 
 /**
  * Tests for running queries.
@@ -229,8 +234,7 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> cache.query(qry).getAll());
 
-        Assert.assertTrue("Still waiting " + barrier.getNumberWaiting() + " parties",
-            GridTestUtils.waitForCondition(() -> barrier.getNumberWaiting() == 1, TIMEOUT_IN_MS));
+        assertWaitingOnBarrier();
 
         Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningQueries(-1);
 
@@ -262,8 +266,7 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> cache.query(qry).getAll());
 
-        Assert.assertTrue("Still waiting " + barrier.getNumberWaiting() + " parties",
-            GridTestUtils.waitForCondition(() -> barrier.getNumberWaiting() == 1, TIMEOUT_IN_MS));
+        assertWaitingOnBarrier();
 
         Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningQueries(-1);
 
@@ -308,8 +311,7 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
             IgniteInternalFuture<int[]> fut = GridTestUtils.runAsync(() -> stmt.executeBatch());
 
             for (int i = 0; i < BATCH_SIZE; i++) {
-                Assert.assertTrue("Still waiting " + barrier.getNumberWaiting() + " parties",
-                    GridTestUtils.waitForCondition(() -> barrier.getNumberWaiting() == 1, TIMEOUT_IN_MS));
+                assertWaitingOnBarrier();
 
                 Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningQueries(-1);
 
@@ -317,8 +319,7 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
 
                 awaitTimeouted();
 
-                Assert.assertTrue("Still waiting " + barrier.getNumberWaiting() + " parties",
-                    GridTestUtils.waitForCondition(() -> barrier.getNumberWaiting() == 1, TIMEOUT_IN_MS));
+                assertWaitingOnBarrier();
 
                 awaitTimeouted();
             }
@@ -363,8 +364,7 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < queries.length; i++) {
 
-                Assert.assertTrue("Still waiting " + barrier.getNumberWaiting() + " parties",
-                    GridTestUtils.waitForCondition(() -> barrier.getNumberWaiting() == 1, TIMEOUT_IN_MS));
+                assertWaitingOnBarrier();
 
                 List<GridRunningQueryInfo> runningQueries = (List<GridRunningQueryInfo>)ignite.context().query()
                     .runningQueries(-1);
@@ -402,22 +402,69 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
                 stmt.addBatch("insert into Integer (_key, _val) values (" + i + "," + i + ")");
 
             for (int i = 0; i < BATCH_SIZE; i++) {
-                Assert.assertTrue("Still waiting " + barrier.getNumberWaiting() + " parties",
-                    GridTestUtils.waitForCondition(() -> barrier.getNumberWaiting() == 1, TIMEOUT_IN_MS));
+                assertWaitingOnBarrier();
 
-                barrier.await(TIMEOUT_IN_MS, TimeUnit.SECONDS);
+                awaitTimeouted();
 
-                Assert.assertTrue("Still waiting " + barrier.getNumberWaiting() + " parties",
-                    GridTestUtils.waitForCondition(() -> barrier.getNumberWaiting() == 1, TIMEOUT_IN_MS));
+                assertWaitingOnBarrier();
 
                 Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningQueries(-1);
 
                 assertEquals(1, runningQueries.size());
 
-                barrier.await(TIMEOUT_IN_MS, TimeUnit.SECONDS);
+                awaitTimeouted();
             }
         }
+    }
 
+    /**
+     * Check tracking running queries for stream COPY command.
+     *
+     * @throws SQLException If failed.
+     */
+    @Test
+    public void testCopyCommand() throws Exception {
+        try (Connection conn = GridTestUtils.connect(ignite, null); Statement stmt = conn.createStatement()) {
+            conn.setSchema("\"default\"");
+
+            newBarrier(1);
+
+            stmt.execute("CREATE TABLE Person(id integer primary key, age integer, firstName varchar, lastname varchar)");
+
+            String path = Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload1.csv"))
+                .getAbsolutePath();
+
+            newBarrier(2);
+
+            String sql = "copy from '" + path + "'" +
+                " into Person" +
+                " (_key, age, firstName, lastName)" +
+                " format csv charset 'ascii'";
+
+            IgniteInternalFuture<Integer> fut = GridTestUtils.runAsync(() -> stmt.executeUpdate(sql));
+
+            assertWaitingOnBarrier();
+
+            List<GridRunningQueryInfo> runningQueries = (List<GridRunningQueryInfo>)ignite.context().query().runningQueries(-1);
+
+            assertEquals(1, runningQueries.size());
+
+            assertEquals(sql, runningQueries.get(0).query());
+
+            awaitTimeouted();
+
+            fut.get(TIMEOUT_IN_MS);
+        }
+    }
+
+    /**
+     * Assert that on barrier waiting one thread.
+     *
+     * @throws IgniteInterruptedCheckedException In case of failure.
+     */
+    private void assertWaitingOnBarrier() throws IgniteInterruptedCheckedException {
+        Assert.assertTrue("Still waiting " + barrier.getNumberWaiting() + " parties",
+            GridTestUtils.waitForCondition(() -> barrier.getNumberWaiting() == 1, TIMEOUT_IN_MS));
     }
 
     /**
