@@ -154,6 +154,7 @@ import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.V
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.GROUPS;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 
 /**
  * Class that execute several commands passed via command line.
@@ -403,14 +404,15 @@ public class CommandHandler {
         list.add(op(CMD_PASSWORD, "PASSWORD"));
         list.add(op(CMD_PING_INTERVAL, "PING_INTERVAL"));
         list.add(op(CMD_PING_TIMEOUT, "PING_TIMEOUT"));
+
         list.add(op(CMD_SSL_PROTOCOL, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ...]"));
-        list.add(op(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM"));
         list.add(op(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1[, SSL_CIPHER_2, ...]"));
-        list.add(op(CMD_KEYSTORE, "KEYSTORE"));
+        list.add(op(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM"));
         list.add(op(CMD_KEYSTORE_TYPE, "KEYSTORE_TYPE"));
+        list.add(op(CMD_KEYSTORE, "KEYSTORE"));
         list.add(op(CMD_KEYSTORE_PASSWORD, "KEYSTORE_PASSWORD"));
-        list.add(op(CMD_TRUSTSTORE, "TRUSTSTORE"));
         list.add(op(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE"));
+        list.add(op(CMD_TRUSTSTORE, "TRUSTSTORE"));
         list.add(op(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD"));
 
         return list;
@@ -688,7 +690,8 @@ public class CommandHandler {
                     node.tcpAddresses() == null ? Stream.empty() : node.tcpAddresses().stream(),
                     node.tcpHostNames() == null ? Stream.empty() : node.tcpHostNames().stream()
                 )
-                .map(addr -> addr + ":" + node.tcpPort()).collect(Collectors.toList())));
+                .map(addr -> addr + ":" + node.tcpPort()).collect(Collectors.toList()))
+            );
     }
 
     /**
@@ -1851,7 +1854,7 @@ public class CommandHandler {
 
         VisorTxTaskArg txArgs = null;
 
-        String sslProtocol = SslContextFactory.DFLT_SSL_PROTOCOL;
+        String sslProtocol = DFLT_SSL_PROTOCOL;
 
         String sslCipherSuites = "";
 
@@ -2619,11 +2622,10 @@ public class CommandHandler {
         log(i("PORT=" + DFLT_PORT, 2));
         log(i("PING_INTERVAL=" + DFLT_PING_INTERVAL, 2));
         log(i("PING_TIMEOUT=" + DFLT_PING_TIMEOUT, 2));
-        log(i("SSL_PROTOCOL=" + SslContextFactory.DFLT_SSL_PROTOCOL, 2));
+        log(i("SSL_PROTOCOL=" + DFLT_SSL_PROTOCOL, 2));
         log(i("SSL_KEY_ALGORITHM=" + SslContextFactory.DFLT_KEY_ALGORITHM, 2));
-        log(i("KEYSTORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
-        log(i("TRUSTSTORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
-
+        log(i("KEY_STORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
+        log(i("TRUST_STORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
         nl();
 
         log("Exit codes:");
@@ -2702,7 +2704,7 @@ public class CommandHandler {
 
                     List<String> sslProtocols = split(args.sslProtocol(), ",");
 
-                    String sslProtocol = F.isEmpty(sslProtocols) ? SslContextFactory.DFLT_SSL_PROTOCOL : sslProtocols.get(0);
+                    String sslProtocol = F.isEmpty(sslProtocols) ? DFLT_SSL_PROTOCOL : sslProtocols.get(0);
 
                     factory.setProtocol(sslProtocol);
                     factory.setKeyAlgorithm(args.sslKeyAlgorithm());
@@ -2828,7 +2830,6 @@ public class CommandHandler {
      *
      * @return Last operation result;
      */
-    @SuppressWarnings("unchecked")
     public <T> T getLastOperationResult() {
         return (T)lastOperationRes;
     }
