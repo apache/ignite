@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
+import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -39,19 +40,30 @@ public class NoOpTransactionalDrProcessor extends GridProcessorAdapter implement
 
     /** {@inheritDoc} */
     @Override public void onMarkCheckPointBegin(long snapshotId, WALPointer ptr, SnapshotOperation snapshotOperation) {
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
+        // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void onPartitionsFullMessagePrepared(@Nullable GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionsFullMessage fullMsg) {
+    @Override public void onPartitionsFullMessagePrepared(
+            @Nullable GridDhtPartitionExchangeId exchId,
+            GridDhtPartitionsFullMessage fullMsg
+    ) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onChangeGlobalStateMessagePrepared(ChangeGlobalStateMessage msg) {
+        // No-op.
     }
 
     /** {@inheritDoc} */
