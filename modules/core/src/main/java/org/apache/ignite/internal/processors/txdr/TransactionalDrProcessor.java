@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
+import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,6 +46,11 @@ public interface TransactionalDrProcessor extends GridProcessor, IgniteChangeGlo
      */
     public void onPartitionsFullMessagePrepared(@Nullable GridDhtPartitionExchangeId exchId,
         GridDhtPartitionsFullMessage fullMsg);
+
+    /**
+     * @param msg Change global state message.
+     */
+    public void onChangeGlobalStateMessagePrepared(ChangeGlobalStateMessage msg);
 
     /**
      * Returns true if we should skip assigning MOVING state to partitions due to outdated counters.

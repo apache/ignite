@@ -29,8 +29,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
@@ -47,7 +47,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -60,12 +59,10 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
@@ -89,9 +86,6 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** Client reconnect future. */
     private IgniteFuture<?> reconnecFut;
-
-    /** Minimal IgniteProductVersion supporting BaselineTopology */
-    private static final IgniteProductVersion MIN_BLT_SUPPORTING_VER = IgniteProductVersion.fromString("2.4.0");
 
     /**
      * Required by {@link Externalizable}.
@@ -323,10 +317,9 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     private Collection<BaselineNode> baselineNodes() {
         Collection<ClusterNode> srvNodes = ctx.cluster().get().forServers().nodes();
 
-        ArrayList baselineNodes = new ArrayList(srvNodes.size());
+        List<BaselineNode> baselineNodes = new ArrayList<>(srvNodes.size());
 
-        for (ClusterNode clN : srvNodes)
-            baselineNodes.add(clN);
+        baselineNodes.addAll(srvNodes);
 
         return baselineNodes;
     }
@@ -353,7 +346,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
             if (isInMemoryMode())
                 return;
 
-            validateBeforeBaselineChange(baselineTop);
+            ctx.state().validateBeforeBaselineChange(baselineTop);
 
             ctx.state().changeGlobalState(true, baselineTop, true).get();
         }
@@ -368,90 +361,6 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     /** */
     private boolean isInMemoryMode() {
         return !CU.isPersistenceEnabled(cfg);
-    }
-
-    /**
-     * Verifies all nodes in current cluster topology support BaselineTopology feature
-     * so compatibilityMode flag is enabled to reset.
-     *
-     * @param discoCache
-     */
-    private void verifyBaselineTopologySupport(DiscoCache discoCache) {
-        if (discoCache.minimumServerNodeVersion().compareTo(MIN_BLT_SUPPORTING_VER) < 0) {
-            SB sb = new SB("Cluster contains nodes that don't support BaselineTopology: [");
-
-            for (ClusterNode cn : discoCache.serverNodes()) {
-                if (cn.version().compareTo(MIN_BLT_SUPPORTING_VER) < 0)
-                    sb
-                        .a("[")
-                        .a(cn.consistentId())
-                        .a(":")
-                        .a(cn.version())
-                        .a("], ");
-            }
-
-            sb.d(sb.length() - 2, sb.length());
-
-            throw new IgniteException(sb.a("]").toString());
-        }
-    }
-
-    /**
-     * Executes validation checks of cluster state and BaselineTopology before changing BaselineTopology to new one.
-     */
-    private void validateBeforeBaselineChange(Collection<? extends BaselineNode> baselineTop) {
-        verifyBaselineTopologySupport(ctx.discovery().discoCache());
-
-        if (!ctx.state().clusterState().active())
-            throw new IgniteException("Changing BaselineTopology on inactive cluster is not allowed.");
-
-        if (baselineTop != null) {
-            if (baselineTop.isEmpty())
-                throw new IgniteException("BaselineTopology must contain at least one node.");
-
-            Collection<Object> onlineNodes = onlineBaselineNodesRequestedForRemoval(baselineTop);
-
-            if (onlineNodes != null) {
-                if (!onlineNodes.isEmpty())
-                    throw new IgniteException("Removing online nodes from BaselineTopology is not supported: " + onlineNodes);
-            }
-        }
-    }
-
-    /** */
-    @Nullable private Collection<Object> onlineBaselineNodesRequestedForRemoval(Collection<? extends BaselineNode> newBlt) {
-        BaselineTopology blt = ctx.state().clusterState().baselineTopology();
-        Set<Object> bltConsIds;
-
-        if (blt == null)
-            return null;
-        else
-            bltConsIds = blt.consistentIds();
-
-        ArrayList<Object> onlineNodesRequestedForRemoval = new ArrayList<>();
-
-        Collection<Object> aliveNodesConsIds = getConsistentIds(ctx.discovery().aliveServerNodes());
-
-        Collection<Object> newBltConsIds = getConsistentIds(newBlt);
-
-        for (Object oldBltConsId : bltConsIds) {
-            if (aliveNodesConsIds.contains(oldBltConsId)) {
-                if (!newBltConsIds.contains(oldBltConsId))
-                    onlineNodesRequestedForRemoval.add(oldBltConsId);
-            }
-        }
-
-        return onlineNodesRequestedForRemoval;
-    }
-
-    /** */
-    private Collection<Object> getConsistentIds(Collection<? extends BaselineNode> nodes) {
-        ArrayList<Object> res = new ArrayList<>(nodes.size());
-
-        for (BaselineNode n : nodes)
-            res.add(n.consistentId());
-
-        return res;
     }
 
     /** {@inheritDoc} */
@@ -474,7 +383,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
                     target.add(node);
             }
 
-            validateBeforeBaselineChange(target);
+            ctx.state().validateBeforeBaselineChange(target);
 
             ctx.state().changeGlobalState(true, target, true).get();
         }
@@ -705,12 +614,11 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
             // If there is nothing to start, return finished future with empty result.
             if (nodeCallCnt == 0)
-                return new GridFinishedFuture<Collection<ClusterStartNodeResult>>(
-                    Collections.<ClusterStartNodeResult>emptyList());
+                return new GridFinishedFuture<>(Collections.emptyList());
 
             // Exceeding max line width for readability.
             GridCompoundFuture<ClusterStartNodeResult, Collection<ClusterStartNodeResult>> fut = 
-                new GridCompoundFuture<>(CU.<ClusterStartNodeResult>objectsReducer());
+                new GridCompoundFuture<>(CU.objectsReducer());
 
             AtomicInteger cnt = new AtomicInteger(nodeCallCnt);
 
