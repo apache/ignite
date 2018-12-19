@@ -658,7 +658,6 @@ public class JdbcThinConnection implements Connection {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Connection is not a wrapper for " + iface.getName());
@@ -743,7 +742,6 @@ public class JdbcThinConnection implements Connection {
      * @return Server response.
      * @throws SQLException On any error.
      */
-    @SuppressWarnings("unchecked")
     <R extends JdbcResult> R sendRequest(JdbcRequest req) throws SQLException {
         return sendRequest(req, null);
     }

@@ -570,7 +570,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
      * @param v Value.
      * @param ver Version.
      */
-    @SuppressWarnings("unchecked")
     private void addResult(KeyCacheObject key, CacheObject v, GridCacheVersion ver) {
         if (keepCacheObjects) {
             K key0 = (K)key;

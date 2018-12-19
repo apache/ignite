@@ -151,7 +151,6 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
     private volatile int done;
 
     /** Keys locked so far. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     @GridToStringExclude
     private List<GridDistributedCacheEntry> entries;
 
