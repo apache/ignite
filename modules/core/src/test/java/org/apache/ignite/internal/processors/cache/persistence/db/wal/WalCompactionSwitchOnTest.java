@@ -101,11 +101,14 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
              */
             @Override public boolean apply() {
                 File[] archivedFiles = walDir.listFiles(new FileFilter() {
+
+                    /**
+                     * @{inheritDoc}
+                     */
                     @Override public boolean accept(File pathname) {
                         return pathname.getName().endsWith(".wal");
                     }
                 });
-
 
                 return archivedFiles.length == 39;
             }
@@ -132,11 +135,14 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
              */
             @Override public boolean apply() {
                 File[] archivedFiles = archiveDir.listFiles(new FileFilter() {
+
+                    /**
+                     * @{inheritDoc}
+                     */
                     @Override public boolean accept(File pathname) {
                         return pathname.getName().endsWith(FilePageStoreManager.ZIP_SUFFIX);
                     }
                 });
-
 
                 return archivedFiles.length == 20;
             }
