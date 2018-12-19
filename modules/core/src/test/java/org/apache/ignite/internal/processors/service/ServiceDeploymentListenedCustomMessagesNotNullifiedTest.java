@@ -142,7 +142,7 @@
          // stored using GridConcurrentLinkedHashSet in GridEventStorageManager. This guarantees that PME and Services
          // listeners have received the notification before the receiving event by the registered tests listener.
          ignite.context().event().addDiscoveryEventListener(new DiscoveryEventListener() {
-             @SuppressWarnings({"ErrorNotRethrown", "SynchronizationOnLocalVariableOrMethodParameter"})
+             @SuppressWarnings("ErrorNotRethrown")
              @Override public void onEvent(DiscoveryEvent evt, DiscoCache discoCache) {
                  assertEquals(EVT_DISCOVERY_CUSTOM_EVT, evt.type());
 
