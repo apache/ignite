@@ -38,8 +38,6 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -64,9 +62,6 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     private static final AtomicInteger mappingReqsCounter = new AtomicInteger(0);
 
     /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private boolean clientMode;
 
     /** {@inheritDoc} */
@@ -77,11 +72,6 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         if (clientMode)
             cfg.setWorkDirectory(TMP_DIR);
-
-        TcpDiscoverySpi disco = new TestTcpDiscoverySpi();
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 

@@ -37,9 +37,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -55,9 +52,6 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
  */
 @RunWith(JUnit4.class)
 public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Test entry count. */
     public static final int ENTRY_CNT = 500;
 
@@ -119,8 +113,6 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(memCfg);
 
         cfg.setCacheConfiguration(cfgFactory.get());
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         return cfg;
     }

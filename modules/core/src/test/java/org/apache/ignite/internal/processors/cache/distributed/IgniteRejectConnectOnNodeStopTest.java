@@ -31,8 +31,6 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -47,9 +45,6 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 @RunWith(JUnit4.class)
 public class IgniteRejectConnectOnNodeStopTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private boolean client;
 
     /** */
@@ -59,14 +54,11 @@ public class IgniteRejectConnectOnNodeStopTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setDiscoverySpi(new TestDiscoverySpi());
-
         TcpDiscoverySpi discoSpi = ((TcpDiscoverySpi)cfg.getDiscoverySpi());
 
         discoSpi.setReconnectCount(2);
         discoSpi.setAckTimeout(30_000);
         discoSpi.setSocketTimeout(30_000);
-        discoSpi.setIpFinder(IP_FINDER);
 
         TcpCommunicationSpi commSpi = (TcpCommunicationSpi)cfg.getCommunicationSpi();
 
