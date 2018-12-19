@@ -140,6 +140,8 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
             cfg.setMetricsUpdateFrequency(1000);
         }
 
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(sharedStaticIpFinder);
+
         cfg.setMarshaller(new BinaryMarshaller());
 
         cfg.setClientMode("client".equals(gridName) || getTestIgniteInstanceIndex(gridName) >= GRID_CNT);
