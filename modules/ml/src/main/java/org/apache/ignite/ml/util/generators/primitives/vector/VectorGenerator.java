@@ -17,64 +17,75 @@
 
 package org.apache.ignite.ml.util.generators.primitives.vector;
 
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.generators.DataStreamGenerator;
-import org.apache.ignite.ml.util.generators.primitives.variable.GaussRandomProducer;
-import org.apache.ignite.ml.util.generators.primitives.variable.RandomProducer;
 
 public interface VectorGenerator extends Supplier<Vector>, DataStreamGenerator {
-    public static VectorGenerator gauss(double[] pivots, double variance) {
-        return gauss(pivots, variance, System.currentTimeMillis());
+    public default VectorGenerator concat(VectorGenerator other) {
+        return () -> VectorUtils.concat(this.get(), other.get());
     }
 
-    public static VectorGenerator gauss(double[] pivots, double variance, long seed) {
-        double[] variances = new double[pivots.length];
-        Arrays.fill(variances, variance);
-        return gauss(pivots, variances, seed);
+    public default VectorGenerator shuffle() {
+        return shuffle(System.currentTimeMillis());
     }
 
-    public static VectorGenerator gauss(double[] pivots, double[] variances) {
-        return gauss(pivots, variances, System.currentTimeMillis());
-    }
+    public default VectorGenerator shuffle(Long seed) {
+        Random rnd = new Random(seed);
+        List<Integer> shuffledIds = IntStream.range(0, get().size()).boxed().collect(Collectors.toList());
+        Collections.shuffle(shuffledIds, rnd);
 
-    public static VectorGenerator gauss(double[] pivots, double[] variances, long seed) {
-        GaussRandomProducer[] producers = new GaussRandomProducer[pivots.length];
-        for (int i = 0; i < pivots.length; i++) {
-            producers[i] = new GaussRandomProducer(pivots[i], variances[i], seed);
-            seed >>= 2;
-        }
+        final Map<Integer, Integer> shuffleMap = new HashMap<>();
+        for(int i = 0; i < shuffledIds.size(); i++)
+            shuffleMap.put(i, shuffledIds.get(i));
 
-        return vectorize(producers);
-    }
-
-    static VectorGenerator vectorize(RandomProducer... producers) {
         return () -> {
-            double[] values = new double[producers.length];
-            for (int i = 0; i < producers.length; i++)
-                values[i] = producers[i].get();
+            Vector original = get();
+            Vector copy = original.copy();
+            for(int to = 0; to < copy.size(); to++) {
+                int from = shuffleMap.get(to);
+                copy.set(to, original.get(from));
+            }
+            return copy;
+        };
+    }
 
+    public default VectorGenerator duplicateRandomFeatures(int increaseSize) {
+        return duplicateRandomFeatures(increaseSize, System.currentTimeMillis());
+    }
+
+    public default VectorGenerator duplicateRandomFeatures(int increaseSize, Long seed) {
+        Random rnd = new Random(seed);
+        Vector v = get();
+        int[] featuresDuplicateIds = rnd.ints().limit(increaseSize).map(i -> i % v.size()).toArray();
+        return () -> {
+            Vector original = get();
+            double[] values = new double[original.size() + increaseSize];
+            for(int i = 0; i < original.size(); i++)
+                values[i] = original.get(i);
+            for(int i = 0; i < featuresDuplicateIds.length; i++)
+                values[original.size() + i] = original.get(featuresDuplicateIds[i]);
             return VectorUtils.of(values);
         };
     }
 
-    static VectorGenerator concat(List<VectorGenerator> generators) {
-        return () -> generators.stream().map(Supplier::get).reduce(VectorUtils::concat).get();
-    }
-
     @Override
-    default Stream<Vector> unlabeled() {
+    public default Stream<Vector> unlabeled() {
         return Stream.generate(this);
     }
 
     @Override
-    default Stream<LabeledVector<Vector, Double>> labeled() {
+    public default Stream<LabeledVector<Vector, Double>> labeled() {
         return labeled(x -> 0.0);
     }
 }

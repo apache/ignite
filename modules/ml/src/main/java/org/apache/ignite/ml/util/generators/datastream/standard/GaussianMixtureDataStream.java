@@ -25,6 +25,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.generators.DataStreamGenerator;
 import org.apache.ignite.ml.util.generators.primitives.vector.VectorGenerator;
+import org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorUtils;
 import org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorsFamily;
 
 public class GaussianMixtureDataStream implements DataStreamGenerator {
@@ -63,7 +64,7 @@ public class GaussianMixtureDataStream implements DataStreamGenerator {
         VectorGeneratorsFamily.Builder builder = new VectorGeneratorsFamily.Builder();
         long seed = System.currentTimeMillis();
         for (int i = 0; i < points.length; i++) {
-            VectorGenerator gauss = VectorGenerator.gauss(points[i].asArray(), variances[i], seed);
+            VectorGenerator gauss = VectorGeneratorUtils.gauss(points[i].asArray(), variances[i], seed);
             builder = builder.with(gauss, 1.0);
             seed >>= 2;
         }
