@@ -68,6 +68,12 @@ public class RestProcessorStartSelfTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(clientCfg);
 
+        TestDiscoverySpi disc = new TestDiscoverySpi();
+
+        disc.setIpFinder(sharedStaticIpFinder);
+
+        cfg.setDiscoverySpi(disc);
+
         return cfg;
     }
 
