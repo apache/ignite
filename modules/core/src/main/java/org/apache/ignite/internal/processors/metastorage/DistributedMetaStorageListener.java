@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 
 /** */
 @FunctionalInterface
-interface DistributedMetaStorageListener<T extends Serializable> {
+public interface DistributedMetaStorageListener<T extends Serializable> {
     /** */
     default void onInit(@NotNull String key, @Nullable T val) {}
 

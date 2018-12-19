@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metastorage;
+package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
 import java.util.Arrays;

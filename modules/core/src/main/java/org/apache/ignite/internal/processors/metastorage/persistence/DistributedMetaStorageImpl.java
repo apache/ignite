@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metastorage;
+package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -43,6 +43,9 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageListener;
+import org.apache.ignite.internal.processors.metastorage.GlobalMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.GridConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -57,7 +60,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.META_STORAGE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
-import static org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageHistoryItem.EMPTY_ARRAY;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItem.EMPTY_ARRAY;
 
 /** */
 public class DistributedMetaStorageImpl extends GridProcessorAdapter implements DistributedMetaStorage {
@@ -576,8 +579,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
         histSizeApproximation += histItem.estimateSize();
     }
 
-    /**
-     * @param bridge */
+    /** */
     private void shrinkHistory(
         DistributedMetaStorageBridge bridge
     ) throws IgniteCheckedException {
@@ -588,7 +590,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
 
             try {
                 while (histSizeApproximation > maxBytes && histCache.size() > 1) {
-                    DistributedMetaStorageHistoryItem histItem = bridge.removeHistoryItem(ver + 1 - histCache.size());
+                    bridge.removeHistoryItem(ver + 1 - histCache.size());
+
+                    DistributedMetaStorageHistoryItem histItem = histCache.remove(ver + 1 - histCache.size());
 
                     histSizeApproximation -= histItem.estimateSize();
                 }
@@ -792,7 +796,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
         void onUpdateMessage(DistributedMetaStorageHistoryItem histItem, Serializable val) throws IgniteCheckedException;
 
         /** */
-        DistributedMetaStorageHistoryItem removeHistoryItem(long ver) throws IgniteCheckedException;
+        void removeHistoryItem(long ver) throws IgniteCheckedException;
     }
 
     /** */
@@ -822,7 +826,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
         }
 
         /** {@inheritDoc} */
-        @Override public DistributedMetaStorageHistoryItem removeHistoryItem(long ver) {
+        @Override public void removeHistoryItem(long ver) {
             throw new UnsupportedOperationException("removeHistoryItem");
         }
     }
@@ -854,7 +858,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
         }
 
         /** {@inheritDoc} */
-        @Override public DistributedMetaStorageHistoryItem removeHistoryItem(long ver) {
+        @Override public void removeHistoryItem(long ver) {
             throw new UnsupportedOperationException("removeHistoryItem");
         }
     }
@@ -898,7 +902,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
         }
 
         /** {@inheritDoc} */
-        @Override public DistributedMetaStorageHistoryItem removeHistoryItem(long ver) {
+        @Override public void removeHistoryItem(long ver) {
             throw new UnsupportedOperationException("removeHistoryItem");
         }
 
@@ -1016,10 +1020,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
         }
 
         /** {@inheritDoc} */
-        @Override public DistributedMetaStorageHistoryItem removeHistoryItem(long ver) throws IgniteCheckedException {
+        @Override public void removeHistoryItem(long ver) throws IgniteCheckedException {
             metastorage.remove(historyItemKey(ver));
-
-            return histCache.remove(ver);
         }
 
         /** */
@@ -1134,8 +1136,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
         }
 
         /** {@inheritDoc} */
-        @Override public DistributedMetaStorageHistoryItem removeHistoryItem(long ver) {
-            return histCache.remove(ver);
+        @Override public void removeHistoryItem(long ver) {
         }
 
         /** */

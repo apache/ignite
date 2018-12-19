@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metastorage;
+package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
@@ -97,7 +97,7 @@ public class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessa
         AffinityTopologyVersion topVer,
         DiscoCache discoCache
     ) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("createDiscoCache");
     }
 
     /** {@inheritDoc} */
