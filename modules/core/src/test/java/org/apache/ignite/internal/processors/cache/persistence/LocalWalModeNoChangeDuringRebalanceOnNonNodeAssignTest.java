@@ -134,7 +134,6 @@ public class LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest extends Grid
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10421")
     @Test
     public void testMvcc() throws Exception {
         atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;

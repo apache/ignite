@@ -92,9 +92,6 @@ public class IgnitePdsPageEvictionDuringPartitionClearTest extends GridCommonAbs
      */
     @Test
     public void testPageEvictionOnNodeStart() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
-
         for (int r = 0; r < 3; r++) {
             cleanPersistenceDir();
 

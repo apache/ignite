@@ -59,9 +59,6 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
      */
     @Test
     public void test() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
-
         Ignite ex = startGrid(0);
 
         ex.active(true);

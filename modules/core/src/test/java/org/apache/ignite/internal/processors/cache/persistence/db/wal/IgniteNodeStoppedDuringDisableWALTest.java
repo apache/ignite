@@ -100,9 +100,6 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
      */
     @Test
     public void test() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
-
         for (NodeStopPoint nodeStopPoint : NodeStopPoint.values()) {
             testStopNodeWithDisableWAL(nodeStopPoint);
 

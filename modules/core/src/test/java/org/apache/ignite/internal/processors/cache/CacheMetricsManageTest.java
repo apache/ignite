@@ -97,9 +97,6 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
      */
     @Test
     public void testJmxPdsStatisticsEnable() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
-
         testJmxStatisticsEnable(true);
     }
 
