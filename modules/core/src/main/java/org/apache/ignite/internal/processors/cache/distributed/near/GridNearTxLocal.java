@@ -2093,7 +2093,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                     Object val = futRes.value();
 
-                    if (futRes.invokeResult()) {
+                    if (futRes.invokeResult() && val != null) {
                         assert val instanceof Map;
 
                         val = cacheCtx.unwrapInvokeResult((Map)val, keepBinary);
