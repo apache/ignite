@@ -41,12 +41,16 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -185,6 +189,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testObjectArgument() throws Exception {
         testKeyQuery(OBJECT_CACHE, new TestKey(1), new TestKey(2));
     }
@@ -192,6 +197,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimitiveObjectArgument() throws Exception {
         testKeyValQuery(PRIM_CACHE, 1, 2);
     }
@@ -199,6 +205,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStringObjectArgument() throws Exception {
         testKeyValQuery(STR_CACHE, "str1", "str2");
     }
@@ -206,6 +213,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEnumObjectArgument() throws Exception {
        testKeyValQuery(ENUM_CACHE, EnumKey.KEY1, EnumKey.KEY2);
     }
@@ -213,6 +221,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUuidObjectArgument() throws Exception {
         final UUID uuid1 = UUID.randomUUID();
         UUID uuid2 = UUID.randomUUID();
@@ -226,6 +235,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDateObjectArgument() throws Exception {
         testKeyValQuery(DATE_CACHE, new Date(0), new Date(1));
     }
@@ -233,6 +243,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTimestampArgument() throws Exception {
         testKeyValQuery(TIMESTAMP_CACHE, new Timestamp(0), new Timestamp(1));
     }
@@ -241,6 +252,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBigDecimalArgument() throws Exception {
         final ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -353,6 +365,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFieldSearch() throws Exception {
         final IgniteCache<Integer, SearchValue> cache = ignite(0).cache(FIELD_CACHE);
 

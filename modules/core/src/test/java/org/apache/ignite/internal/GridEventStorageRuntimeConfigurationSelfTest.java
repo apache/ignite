@@ -53,7 +53,6 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
     private int[] inclEvtTypes;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
