@@ -1120,8 +1120,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
 
         if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
-            if (!txState.mvccEnabled())
-                cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters(false).updateCounters(), true);
+            if (!txState.mvccEnabled()) {
+                TxCounters txCounters = txCounters(false);
+
+                if (txCounters != null)
+                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters(), true);
+            }
 
             cctx.tm().rollbackTx(this, clearThreadMap, forceSkipCompletedVers);
 

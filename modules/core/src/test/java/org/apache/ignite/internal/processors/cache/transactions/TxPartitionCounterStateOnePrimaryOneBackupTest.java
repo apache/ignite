@@ -92,7 +92,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
      * @param skipCheckpoint Skip checkpoint.
      */
     private void doTestPrepareCommitReorder(boolean skipCheckpoint) throws Exception {
-        T2<Ignite, List<Ignite>> txTop = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT, new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
+        Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT, new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
             @Override public TxCallback apply(Map<Integer, T2<Ignite, List<Ignite>>> map) {
                 return new OnePhasePessimisticTxCallbackAdapter(PREPARE_ORDER, PRIMARY_COMMIT_ORDER, BACKUP_COMMIT_ORDER) {
                     @Override protected boolean onPrimaryCommitted(IgniteEx primary, int idx) {
@@ -118,6 +118,8 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
                 };
             }
         }, SIZES);
+
+        T2<Ignite, List<Ignite>> txTop = txTops.get(PARTITION_ID);
 
         waitForTopology(NODES_CNT);
 

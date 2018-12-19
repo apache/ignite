@@ -43,13 +43,18 @@ import org.junit.Test;
  */
 public class TxPartitionCounterStateTwoPrimaryTwoBackupsApplyCountersOnRecoveryRollbackTest extends TxPartitionCounterStateAbstractTest {
     /** */
-    private static final int [] SIZES = new int[] {5, 7};
+    private static final int [] SIZES = new int[] {5, 7, 3};
 
     /** */
     private static final int TOTAL = IntStream.of(SIZES).sum() + PRELOAD_KEYS_CNT;
 
     /** */
     private static final int PARTITION_ID = 0;
+
+    /**
+     * Choose second partition to enforce condition: primary nodes are different, backup is same.
+     */
+    private static final int PARTITION_ID_2 = PARTITION_ID + 5;
 
     /** */
     private static final int BACKUPS = 1;
@@ -81,13 +86,15 @@ public class TxPartitionCounterStateTwoPrimaryTwoBackupsApplyCountersOnRecoveryR
      * @param skipCheckpoint Skip checkpoint.
      */
     private void doTestPrepareCommitReorder(boolean skipCheckpoint) throws Exception {
-        T2<Ignite, List<Ignite>> txTop = runOnPartition(PARTITION_ID, new Supplier<Integer>() {
+        final int finishedTxIdx = 2;
+
+        Map<Integer, T2<Ignite, List<Ignite>>> txTop = runOnPartition(PARTITION_ID, new Supplier<Integer>() {
                 @Override public Integer get() {
-                    return PARTITION_ID + 1;
+                    return PARTITION_ID_2;
                 }
             }, BACKUPS, NODES_CNT,
             new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
-                @Override public TxCallback apply(Map<Integer, T2<Ignite, List<Ignite>>> map) {
+                @Override public TxCallback apply(Map<Integer, T2<Ignite, List<Ignite>>> txTop) {
                     return new TxCallbackAdapter() {
                         /** */
                         private Queue<Integer> prepOrder = new ConcurrentLinkedQueue<Integer>();
@@ -104,48 +111,73 @@ public class TxPartitionCounterStateTwoPrimaryTwoBackupsApplyCountersOnRecoveryR
                         /** {@inheritDoc} */
                         @Override public boolean beforePrimaryPrepare(IgniteEx primary, IgniteUuid nearXidVer,
                             GridFutureAdapter<?> proceedFut) {
-//                            if (map.get(PARTITION_ID).get1() == primary) { // Order prepare for part1
-//                                runAsync(() -> {
-//                                    prepFuts.put(nearXidVer, proceedFut);
-//
-//                                    // Order prepares.
-//                                    if (prepFuts.size() == SIZES.length) {// Wait until all prep requests queued and force prepare order.
-//                                        prepFuts.remove(version(prepOrder.poll())).onDone();
-//                                    }
-//                                });
-//
-//                                return true;
-//                            }
-//
-//                            return false;
-////                            else
-                                return order(nearXidVer) != 1; // Delay txs 0 and 1 for part2, allow tx 2 to finish.
+                            if (txTop.get(PARTITION_ID).get1() == primary) { // Order prepare for part1
+                                runAsync(() -> {
+                                    prepFuts.put(nearXidVer, proceedFut);
+
+                                    // Order prepares.
+                                    if (prepFuts.size() == SIZES.length) {// Wait until all prep requests queued and force prepare order.
+                                        prepFuts.remove(version(prepOrder.poll())).onDone();
+                                    }
+                                });
+
+                                return true;
+                            }
+
+                            return order(nearXidVer) != finishedTxIdx; // Delay txs 0 and 1 for part2, allow tx 2 to finish.
                         }
 
                         /** {@inheritDoc} */
-//                        @Override public boolean afterPrimaryPrepare(IgniteEx primary, IgniteInternalTx tx, IgniteUuid nearXidVer,
-//                            GridFutureAdapter<?> fut) {
-//                            if (map.get(PARTITION_ID).get1() == primary) {
-//                                runAsync(() -> {
-//                                    log.info("TX: Prepared part1: " + order(nearXidVer));
-//
-//                                    if (prepOrder.isEmpty()) {
-//                                        log.info("TX: All prepared part1");
-//
-//                                        return;
-//                                    }
-//
-//                                    prepFuts.remove(version(prepOrder.poll())).onDone();
-//                                });
-//                            }
-//
-//                            return order(nearXidVer) != 2;
-//                        }
+                        @Override public boolean afterPrimaryPrepare(IgniteEx primary, IgniteInternalTx tx, IgniteUuid nearXidVer,
+                            GridFutureAdapter<?> fut) {
+                            if (txTop.get(PARTITION_ID).get1() == primary) {
+                                runAsync(() -> {
+                                    log.info("TX: Prepared part1: " + order(nearXidVer));
+
+                                    if (prepOrder.isEmpty()) {
+                                        log.info("TX: All prepared part1");
+
+                                        // fail primary for second partition and trigger rollback for prepared transactions on.
+                                        stopGrid(skipCheckpoint, txTop.get(PARTITION_ID_2).get1().name());
+
+                                        TestRecordingCommunicationSpi.stopBlockAll();
+
+                                        return;
+                                    }
+
+                                    prepFuts.remove(version(prepOrder.poll())).onDone();
+                                });
+                            }
+
+                            return order(nearXidVer) != finishedTxIdx; // Delay final preparation for tx[0] and tx[1]
+                        }
                     };
                 }
             },
             SIZES);
 
-        //assertEquals(TOTAL + KEYS_IN_SECOND_PARTITION, grid(CLIENT_GRID_NAME).cache(DEFAULT_CACHE_NAME).size());
+        // Expect only one committed tx.
+        assertEquals(PRELOAD_KEYS_CNT + SIZES[finishedTxIdx], grid(CLIENT_GRID_NAME).cache(DEFAULT_CACHE_NAME).size());
+
+        // Expect consistent partitions.
+        assertPartitionsSame(idleVerify(grid(CLIENT_GRID_NAME), DEFAULT_CACHE_NAME));
+
+        PartitionUpdateCounter pc0 = null;
+
+        // Expect same counters on primary and backup.
+        for (Ignite ignite : G.allGrids()) {
+            if (ignite.configuration().isClientMode())
+                continue;
+
+            PartitionUpdateCounter pc = counter(PARTITION_ID, ignite.name());
+
+            if (pc0 == null)
+                pc0 = pc;
+            else {
+                assertEquals(pc0, pc);
+
+                pc0 = pc;
+            }
+        }
     }
 }

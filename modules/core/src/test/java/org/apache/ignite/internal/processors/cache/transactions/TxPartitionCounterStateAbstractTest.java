@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteClosure2X;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -83,6 +84,42 @@ import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsyn
 
 /**
  * Mini test framework for ordering transaction's prepares and commits by intercepting messages and releasing then in user defined order.
+ *
+ * crd.affinity(DEFAULT_CACHE_NAME).primaryPartitions(crd.localNode()) = {int[8]@5854}
+ 0 = 16
+ 1 = 1
+ 2 = 10
+ 3 = 11
+ 4 = 12
+ 5 = 13
+ 6 = 29
+ 7 = 15
+ crd.affinity(DEFAULT_CACHE_NAME).primaryPartitions(grid(1).localNode()) = {int[11]@5862}
+ 0 = 18
+ 1 = 19
+ 2 = 5
+ 3 = 21
+ 4 = 6
+ 5 = 7
+ 6 = 8
+ 7 = 9
+ 8 = 25
+ 9 = 26
+ 10 = 31
+ crd.affinity(DEFAULT_CACHE_NAME).primaryPartitions(grid(2).localNode()) = {int[13]@5888}
+ 0 = 0
+ 1 = 2
+ 2 = 3
+ 3 = 4
+ 4 = 14
+ 5 = 17
+ 6 = 20
+ 7 = 22
+ 8 = 23
+ 9 = 24
+ 10 = 27
+ 11 = 28
+ 12 = 30
  */
 public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbstractTest {
     /** IP finder. */
@@ -105,6 +142,9 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
     /** */
     protected static final String CLIENT_GRID_NAME = "client";
+
+    /** */
+    protected static final int PARTS_CNT = 32;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -135,7 +175,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
             ccfg.setBackups(backups);
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
             ccfg.setOnheapCacheEnabled(false);
-            ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
+            ccfg.setAffinity(new RendezvousAffinityFunction(false, PARTS_CNT));
 
             cfg.setCacheConfiguration(ccfg);
         }
@@ -163,14 +203,16 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
      * @param partId Partition id.
      * @param part2Sup Optional second partition supplier.
      * @param nodesCnt Nodes count.
-     * @param sizes Sizes.
      * @param clo Callback build closure.
+     * @param sizes Sizes.
      */
-    protected T2<Ignite, List<Ignite>> runOnPartition(int partId, @Nullable Supplier<Integer> part2Sup, int backups, int nodesCnt,
+    protected Map<Integer, T2<Ignite, List<Ignite>>> runOnPartition(int partId, @Nullable Supplier<Integer> part2Sup, int backups, int nodesCnt,
         IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback> clo, int[] sizes) throws Exception {
         this.backups = backups;
 
-        IgniteEx crd = (IgniteEx)startGridsMultiThreaded(nodesCnt);
+        IgniteEx crd = (IgniteEx)startGrids(nodesCnt);
+
+        crd.cluster().active(true);
 
         assertEquals(0, crd.cache(DEFAULT_CACHE_NAME).size());
 
@@ -215,10 +257,28 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         List<Integer> keysPart2 = part2Sup == null ? null :
             partitionKeys(crd.cache(DEFAULT_CACHE_NAME), part2Sup.get(), sizes.length, 0) ;
 
+        log.info("TX: topology [part1=" + partId + ", primary=" + prim.name() + ", backups=" + F.transform(backupz, new IgniteClosure<Ignite, String>() {
+            @Override public String apply(Ignite ignite) {
+                return ignite.name();
+            }
+        }));
+
         if (part2Sup != null) {
             int partId2 = part2Sup.get();
 
-            txTop.put(partId2, new T2<>(primaryNode(keysPart2.get(0), DEFAULT_CACHE_NAME), backupNodes(keysPart2.get(0), DEFAULT_CACHE_NAME)));
+            Ignite prim2 = primaryNode(keysPart2.get(0), DEFAULT_CACHE_NAME);
+
+            assertNotSame(prim, prim2);
+
+            List<Ignite> backupz2 = backupNodes(keysPart2.get(0), DEFAULT_CACHE_NAME);
+
+            txTop.put(partId2, new T2<>(prim2, backupz2));
+
+            log.info("TX: topology [part2=" + partId2 + ", primary=" + prim2.name() + ", backups=" + F.transform(backupz2, new IgniteClosure<Ignite, String>() {
+                @Override public String apply(Ignite ignite) {
+                    return ignite.name();
+                }
+            }));
         }
 
         TxCallback cb = clo.apply(txTop);
@@ -326,6 +386,9 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
                             GridCacheVersion ver = futMap.get(resp.futureId());
 
+                            if (ver == null)
+                                return false; // Message from parallel partition.
+
                             IgniteInternalTx tx = findTx(from, ver, false);
 
                             return cb.afterBackupPrepare(to, from, tx, ver.asGridUuid(), createSendFuture(backupWrapperSpi, msg));
@@ -335,8 +398,11 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
                             GridCacheVersion ver = futMap.get(resp.futureId());
 
+                            if (ver == null)
+                                return false; // Message from parallel partition.
+
                             // Version is null if message is a response to checkCommittedRequest.
-                            return ver != null && cb.afterBackupFinish(to, from, ver.asGridUuid(), createSendFuture(backupWrapperSpi, msg));
+                            return cb.afterBackupFinish(to, from, ver.asGridUuid(), createSendFuture(backupWrapperSpi, msg));
                         }
 
                         return false;
@@ -393,7 +459,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
             fail("Test is timed out");
         }
 
-        return new T2<>(prim, backupz);
+        return txTop;
     }
 
     /**

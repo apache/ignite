@@ -371,6 +371,6 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
      */
     public static void stopBlockAll() {
         for (Ignite ignite : G.allGrids())
-            spi(ignite).stopBlock(false);
+            spi(ignite).stopBlock(true);
     }
 }
