@@ -1749,7 +1749,6 @@ public class IgnitionEx {
          * @param startCtx Starting context.
          * @throws IgniteCheckedException If start failed.
          */
-        @SuppressWarnings({"TooBroadScope"})
         private void start0(GridStartContext startCtx) throws IgniteCheckedException {
             assert grid == null : "Grid is already started: " + name;
 

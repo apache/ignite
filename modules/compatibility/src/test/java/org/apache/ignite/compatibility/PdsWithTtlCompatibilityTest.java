@@ -43,6 +43,9 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test PendingTree upgrading to per-partition basis. Test fill cache with persistence enabled and with ExpirePolicy
@@ -51,6 +54,7 @@ import org.apache.ignite.testframework.GridTestUtils;
  * Note: Test for ignite-2.3 version will always fails due to entry ttl update fails with assertion on checkpoint lock
  * check.
  */
+@RunWith(JUnit4.class)
 public class PdsWithTtlCompatibilityTest extends IgnitePersistenceCompatibilityAbstractTest {
     /** */
     static final String TEST_CACHE_NAME = PdsWithTtlCompatibilityTest.class.getSimpleName();
@@ -84,6 +88,7 @@ public class PdsWithTtlCompatibilityTest extends IgnitePersistenceCompatibilityA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeStartByOldVersionPersistenceData_2_1() throws Exception {
         doTestStartupWithOldVersion("2.1.0");
     }

@@ -28,10 +28,14 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Versioned entry abstract test.
  */
+@RunWith(JUnit4.class)
 public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractSelfTest {
     /** Entries number to store in a cache. */
     private static final int ENTRIES_NUM = 500;
@@ -54,6 +58,7 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvoke() throws Exception {
         Cache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -71,6 +76,7 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAll() throws Exception {
         Cache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -95,6 +101,7 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalPeek() throws Exception {
         IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -107,6 +114,7 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionComparision() throws Exception {
         IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 

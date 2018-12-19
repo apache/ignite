@@ -23,8 +23,10 @@ import java.util.Map;
 import java.util.Optional;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -43,11 +45,13 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V, Vector, 
     private ImputingStrategy imputingStgy = ImputingStrategy.MEAN;
 
     /** {@inheritDoc} */
-    @Override public ImputerPreprocessor<K, V> fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public ImputerPreprocessor<K, V> fit(LearningEnvironmentBuilder envBuilder, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> basePreprocessor) {
+        PartitionContextBuilder<K, V, EmptyContext> builder = (env, upstream, upstreamSize) -> new EmptyContext();
         try (Dataset<EmptyContext, ImputerPartitionData> dataset = datasetBuilder.build(
-            (upstream, upstreamSize) -> new EmptyContext(),
-            (upstream, upstreamSize, ctx) -> {
+            envBuilder,
+            builder,
+            (env, upstream, upstreamSize, ctx) -> {
                 double[] sums = null;
                 int[] counts = null;
                 Map<Double, Integer>[] valuesByFreq = null;

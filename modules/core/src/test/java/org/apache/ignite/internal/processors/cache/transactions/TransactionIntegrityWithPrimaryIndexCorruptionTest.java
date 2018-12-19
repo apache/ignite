@@ -33,16 +33,30 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.tree.SearchRow;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 
 /**
  * Test cases that check transaction data integrity after transaction commit failed.
  */
+@RunWith(JUnit4.class)
 public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends AbstractTransactionIntergrityTest {
     /** Corruption enabled flag. */
     private static volatile boolean corruptionEnabled;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10470");
+
+        super.beforeTest();
+    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -52,61 +66,73 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
     }
 
     /** */
+    @Test
     public void testPrimaryIndexCorruptionDuringCommitPrimaryColocatedThrowsError() throws Exception {
         doTestTransferAmount0(true, true, () -> new AssertionError("Test"));
     }
 
     /** */
+    @Test
     public void testPrimaryIndexCorruptionDuringCommitPrimaryColocatedThrowsUnchecked() throws Exception {
         doTestTransferAmount0(true, true, () -> new RuntimeException("Test"));
     }
 
     /** */
+    @Test
     public void testPrimaryIndexCorruptionDuringCommitPrimaryColocatedThrowsChecked() throws Exception {
         doTestTransferAmount0(true, true, () -> new IgniteCheckedException("Test"));
     }
 
     /** */
+    @Test
     public void testPrimaryIndexCorruptionDuringCommitPrimaryNonColocatedThrowsError() throws Exception {
         doTestTransferAmount0(false, true, () -> new AssertionError("Test"));
     }
 
     /** */
+    @Test
     public void testPrimaryIndexCorruptionDuringCommitPrimaryNonColocatedThrowsUnchecked() throws Exception {
         doTestTransferAmount0(false, true, () -> new RuntimeException("Test"));
     }
 
     /** */
+    @Test
     public void testPrimaryIndexCorruptionDuringCommitPrimaryNonColocatedThrowsChecked() throws Exception {
         doTestTransferAmount0(false, true, () -> new IgniteCheckedException("Test"));
     }
 
     /** */
+    @Test
     public void testPrimaryIndexCorruptionDuringCommitBackupColocatedThrowsError() throws Exception {
         doTestTransferAmount0(true, false, () -> new AssertionError("Test"));
     }
 
     /** */
+    @Test
     public void testPrimaryIndexCorruptionDuringCommitBackupColocatedThrowsUnchecked() throws Exception {
         doTestTransferAmount0(true, false, () -> new RuntimeException("Test"));
     }
 
     /** */
+    @Test
     public void testPrimaryIndexCorruptionDuringCommitBackupColocatedThrowsChecked() throws Exception {
         doTestTransferAmount0(true, false, () -> new IgniteCheckedException("Test"));
     }
 
     /** */
+    @Test
     public void testPrimaryIndexCorruptionDuringCommitBackupNonColocatedThrowsError() throws Exception {
         doTestTransferAmount0(false, false, () -> new AssertionError("Test"));
     }
 
     /** */
+    @Test
     public void testPrimaryIndexCorruptionDuringCommitBackupNonColocatedThrowsUnchecked() throws Exception {
         doTestTransferAmount0(false, false, () -> new RuntimeException("Test"));
     }
 
     /** */
+    @Test
     public void testPrimaryIndexCorruptionDuringCommitBackupNonColocatedThrowsChecked() throws Exception {
         doTestTransferAmount0(false, false, () -> new IgniteCheckedException("Test"));
     }
@@ -185,7 +211,7 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
 
                     return new PageHandler<BPlusTree.Get, BPlusTree.Result>() {
                         @Override public BPlusTree.Result run(int cacheId, long pageId, long page, long pageAddr, PageIO io,
-                            Boolean walPlc, BPlusTree.Get arg, int lvl) throws IgniteCheckedException {
+                            Boolean walPlc, BPlusTree.Get arg, int lvl, IoStatisticsHolder statHolder) throws IgniteCheckedException {
                             log.info("Invoked [cachedId=" + cacheId + ", hnd=" + arg.toString() +
                                 ", corruption=" + corruptionEnabled + ", row=" + arg.row() + ", rowCls=" + arg.row().getClass() + ']');
 
@@ -205,7 +231,7 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
                                 }
                             }
 
-                            return delegate.run(cacheId, pageId, page, pageAddr, io, walPlc, arg, lvl);
+                            return delegate.run(cacheId, pageId, page, pageAddr, io, walPlc, arg, lvl, statHolder);
                         }
 
                         @Override public boolean releaseAfterWrite(int cacheId, long pageId, long page, long pageAddr,

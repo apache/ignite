@@ -25,16 +25,21 @@ import org.apache.ignite.internal.util.ipc.loopback.IpcServerTcpEndpoint;
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link IgfsServerManager} that checks shmem IPC endpoint registration
  * forbidden for Windows.
  */
+@RunWith(JUnit4.class)
 public class IgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest
     extends IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testShmemEndpointsRegistration() throws Exception {
         Throwable e = GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {

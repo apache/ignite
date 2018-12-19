@@ -45,10 +45,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Marshallers benchmark.
  */
+@RunWith(JUnit4.class)
 public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
     /** Number of iterations per test. */
     private static final int ITER_CNT = 1 * 1000 * 1000;
@@ -64,6 +68,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSerialization() throws Exception {
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
 
@@ -112,6 +117,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGridMarshaller() throws Exception {
         final GridTuple<byte[]> tuple = new GridTuple<>();
 
@@ -135,6 +141,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testByteBuffer() throws Exception {
         final ByteBuffer buf = ByteBuffer.allocate(1024);
 
@@ -160,6 +167,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testKryo() throws Exception {
         final Kryo kryo = new Kryo();
 

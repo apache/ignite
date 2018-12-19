@@ -37,6 +37,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
@@ -49,6 +52,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class WalRolloverTypesTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -101,41 +105,49 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testCurrentSegmentTypeLogOnlyModeArchiveOn() throws Exception {
         checkCurrentSegmentType(LOG_ONLY, false);
     }
 
     /** */
+    @Test
     public void testCurrentSegmentTypeLogOnlyModeArchiveOff() throws Exception {
         checkCurrentSegmentType(LOG_ONLY, true);
     }
 
     /** */
+    @Test
     public void testCurrentSegmentTypeLogFsyncModeArchiveOn() throws Exception {
         checkCurrentSegmentType(FSYNC, false);
     }
 
     /** */
+    @Test
     public void testCurrentSegmentTypeLogFsyncModeArchiveOff() throws Exception {
         checkCurrentSegmentType(FSYNC, true);
     }
 
     /** */
+    @Test
     public void testNextSegmentTypeLogOnlyModeArchiveOn() throws Exception {
         checkNextSegmentType(LOG_ONLY, false);
     }
 
     /** */
+    @Test
     public void testNextSegmentTypeLogOnlyModeArchiveOff() throws Exception {
         checkNextSegmentType(LOG_ONLY, true);
     }
 
     /** */
+    @Test
     public void testNextSegmentTypeFsyncModeArchiveOn() throws Exception {
         checkNextSegmentType(FSYNC, false);
     }
 
     /** */
+    @Test
     public void testNextSegmentTypeFsyncModeArchiveOff() throws Exception {
         checkNextSegmentType(FSYNC, true);
     }
@@ -187,21 +199,25 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testNextSegmentTypeWithCacheActivityLogOnlyModeArchiveOn() throws Exception {
         checkNextSegmentTypeWithCacheActivity(LOG_ONLY, false);
     }
 
     /** */
+    @Test
     public void testNextSegmentTypeWithCacheActivityLogOnlyModeArchiveOff() throws Exception {
         checkNextSegmentTypeWithCacheActivity(LOG_ONLY, true);
     }
 
     /** */
+    @Test
     public void testNextSegmentTypeWithCacheActivityFsyncModeArchiveOn() throws Exception {
         checkNextSegmentTypeWithCacheActivity(FSYNC, false);
     }
 
     /** */
+    @Test
     public void testNextSegmentTypeWithCacheActivityFsyncModeArchiveOff() throws Exception {
         checkNextSegmentTypeWithCacheActivity(FSYNC, true);
     }
@@ -273,21 +289,25 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testCurrentSegmentTypeWithCacheActivityLogOnlyModeArchiveOn() throws Exception {
         checkCurrentSegmentTypeWithCacheActivity(LOG_ONLY, false);
     }
 
     /** */
+    @Test
     public void testCurrentSegmentTypeWithCacheActivityLogOnlyModeArchiveOff() throws Exception {
         checkCurrentSegmentTypeWithCacheActivity(LOG_ONLY, true);
     }
 
     /** */
+    @Test
     public void testCurrentSegmentTypeWithCacheActivityFsyncModeArchiveOn() throws Exception {
         checkCurrentSegmentTypeWithCacheActivity(FSYNC, false);
     }
 
     /** */
+    @Test
     public void testCurrentSegmentTypeWithCacheActivityFsyncModeArchiveOff() throws Exception {
         checkCurrentSegmentTypeWithCacheActivity(FSYNC, true);
     }

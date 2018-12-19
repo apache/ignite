@@ -36,6 +36,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -45,6 +48,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Abstract class for cache tests.
  */
+@RunWith(JUnit4.class)
 public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static final int GRID_CNT = 1;
@@ -93,6 +97,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxFinishPartitions() throws Exception {
         String key = "key";
         String val = "value";
@@ -175,6 +180,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccFinishPartitions() throws Exception {
         String key = "key";
 
@@ -201,6 +207,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccFinishKeys() throws Exception {
         IgniteCache<String, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -234,6 +241,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccFinishPartitionsContinuousLockAcquireRelease() throws Exception {
         int key = 1;
 

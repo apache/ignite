@@ -56,10 +56,14 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for ignite SQL system views.
  */
+@RunWith(JUnit4.class)
 public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
     /** Metrics check attempts. */
     private static final int METRICS_CHECK_ATTEMPTS = 10;
@@ -121,10 +125,11 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(IgniteQueryErrorCode.UNSUPPORTED_OPERATION, sqlE.statusCode());
     }
-    
+
     /**
      * Test system views modifications.
      */
+    @Test
     public void testModifications() throws Exception {
         startGrid(getConfiguration());
 
@@ -152,6 +157,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
     /**
      * Test different query modes.
      */
+    @Test
     public void testQueryModes() throws Exception {
         Ignite ignite = startGrid(0);
         startGrid(1);
@@ -180,6 +186,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
     /**
      * Test that we can't use cache tables and system views in the same query.
      */
+    @Test
     public void testCacheToViewJoin() throws Exception {
         Ignite ignite = startGrid();
 
@@ -205,6 +212,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNodesViews() throws Exception {
         Ignite igniteSrv = startGrid(getTestIgniteInstanceName(), getConfiguration().setMetricsUpdateFrequency(500L));
 
@@ -471,6 +479,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
     /**
      * Test baseline topology system view.
      */
+    @Test
     public void testBaselineViews() throws Exception {
         cleanPersistenceDir();
 
@@ -520,6 +529,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
      * Test caches system views.
      */
     @SuppressWarnings("ConstantConditions")
+    @Test
     public void testCachesViews() throws Exception {
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setName("def").setPersistenceEnabled(true))

@@ -31,6 +31,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
@@ -42,6 +45,7 @@ import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 /**
  * Test large cache counts.
  */
+@RunWith(JUnit4.class)
 public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
     /** Size of values in KB. */
     private static final int KBSIZE = 10 * 1024;
@@ -125,6 +129,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLargeObjects() throws Exception {
         preloadMode = SYNC;
 
@@ -159,6 +164,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLargeObjectsWithLifeCycleBean() throws Exception {
         preloadMode = SYNC;
         partitions = 23;
