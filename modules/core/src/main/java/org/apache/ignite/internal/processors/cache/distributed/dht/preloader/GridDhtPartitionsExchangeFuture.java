@@ -343,7 +343,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private long startTime = System.nanoTime();
 
     /** Discovery lag / Clocks discrepancy, calculated on coordinator when all single messages are received. */
-    private long discoveryLag;
+    private T2<Long, UUID> discoveryLag;
 
     /**
      * @param cctx Cache context.
@@ -2194,8 +2194,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     // Collect all stages timings.
                     List<String> timings = timeBag.stagesTimings();
 
-                    if (discoveryLag != 0)
-                        timings.add("Discovery lag / Clocks discrepancy = " + discoveryLag + " ms.");
+                    if (discoveryLag.get1() != 0)
+                        timings.add("Discovery lag=" + discoveryLag.get1() +
+                            " ms, Latest started node id=" + discoveryLag.get2());
 
                     log.info(exchangeTimingsLogMessage("Exchange timings", timings));
 
@@ -2239,25 +2240,40 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         return false;
     }
 
-    private long calculateDiscoveryLag(
-        Collection<GridDhtPartitionsSingleMessage> declared,
-        Collection<GridDhtPartitionsSingleMessage> merged
+    /**
+     * Calculates discovery lag (Maximal difference between exchange start times across all nodes).
+     *
+     * @param declared Single messages that were expected to be recived during exchange.
+     * @param merged Single messages from nodes that were merged during exchange.
+     *
+     * @return Pair with discovery lag and node id which started exchange later than others.
+     */
+    private T2<Long, UUID> calculateDiscoveryLag(
+        Map<UUID, GridDhtPartitionsSingleMessage> declared,
+        Map<UUID, GridDhtPartitionsSingleMessage> merged
     ) {
-        List<GridDhtPartitionsSingleMessage> msgs = new ArrayList<>();
-        msgs.addAll(declared);
-        msgs.addAll(merged);
+        Map<UUID, GridDhtPartitionsSingleMessage> msgs = new HashMap<>(declared);
+
+        msgs.putAll(merged);
 
         long minStartTime = startTime;
         long maxStartTime = startTime;
+        UUID latestStartedNode = cctx.localNodeId();
 
-        for (GridDhtPartitionsSingleMessage msg : msgs) {
-            if (msg.exchangeStartTime() != 0) {
-                minStartTime = Math.min(minStartTime, msg.exchangeStartTime());
-                maxStartTime = Math.max(maxStartTime, msg.exchangeStartTime());
+        for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> msg : msgs.entrySet()) {
+            UUID nodeId = msg.getKey();
+            long exchangeTime = msg.getValue().exchangeStartTime();
+
+            if (exchangeTime != 0) {
+                minStartTime = Math.min(minStartTime, exchangeTime);
+                maxStartTime = Math.max(maxStartTime, exchangeTime);
             }
+
+            if (maxStartTime == exchangeTime)
+                latestStartedNode = nodeId;
         }
 
-        return TimeUnit.NANOSECONDS.toMillis(maxStartTime - minStartTime);
+        return new T2<>(TimeUnit.NANOSECONDS.toMillis(maxStartTime - minStartTime), latestStartedNode);
     }
 
     /**
@@ -3411,7 +3427,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             else {
                 Set<ClusterNode> nodes;
 
-                Map<UUID, GridDhtPartitionsSingleMessage> mergedJoinExchMsgs0;
+                Map<UUID, GridDhtPartitionsSingleMessage> mergedJoinExchMsgs0 = Collections.emptyMap();
 
                 synchronized (mux) {
                     srvNodes.remove(cctx.localNode());
@@ -3441,8 +3457,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 timeBag.finishGlobalStage("Full message sending");
 
                 discoveryLag = calculateDiscoveryLag(
-                    msgs.values(),
-                    mergedJoinExchMsgs0 == null ? Collections.emptyList() : mergedJoinExchMsgs0.values()
+                    msgs,
+                    mergedJoinExchMsgs0
                 );
 
                 partitionsSent = true;
