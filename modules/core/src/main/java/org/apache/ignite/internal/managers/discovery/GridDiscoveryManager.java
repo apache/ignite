@@ -1921,7 +1921,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param topVer Topology version.
      * @return Collection of cache nodes.
      */
-    public Collection<ClusterNode> cacheNodes(@Nullable String cacheName, AffinityTopologyVersion topVer) {
+    public List<ClusterNode> cacheNodes(@Nullable String cacheName, AffinityTopologyVersion topVer) {
         return resolveDiscoCache(CU.cacheId(cacheName), topVer).cacheNodes(cacheName);
     }
 
@@ -3418,24 +3418,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     addToMap(allCacheNodes, cacheName, node);
                 }
-            }
-        }
-
-        if (cacheGrpAffNodes.size() != registeredCacheGrps.size()) {
-            for (Map.Entry<Integer, CacheGroupAffinity> e : registeredCacheGrps.entrySet()) {
-                Integer grpId = e.getKey();
-
-                if (!cacheGrpAffNodes.containsKey(grpId))
-                    cacheGrpAffNodes.put(grpId, Collections.emptyList());
-            }
-        }
-
-        if (allCacheNodes.size() != registeredCaches.size()) {
-            for (Map.Entry<String, CachePredicate> entry : registeredCaches.entrySet()) {
-                Integer cacheId = CU.cacheId(entry.getKey());
-
-                if (!allCacheNodes.containsKey(cacheId))
-                    allCacheNodes.put(cacheId, Collections.emptyList());
             }
         }
     }

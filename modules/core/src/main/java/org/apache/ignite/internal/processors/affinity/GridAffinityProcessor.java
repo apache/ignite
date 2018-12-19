@@ -44,7 +44,6 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -383,6 +382,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
         return affInfo != null ? affinityMap(affInfo, keys) : Collections.<ClusterNode, Collection<K>>emptyMap();
     }
+
     /**
      * @param cacheName Cache name.
      * @param topVer Topology version.
@@ -424,7 +424,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
                 cctx.gate().enter();
             }
             catch (IllegalStateException ignored) {
-                return new GridFinishedFuture<>(null);
+                return new GridFinishedFuture<>((AffinityInfo)null);
             }
 
             try {
@@ -452,15 +452,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             }
         }
 
-        DiscoCache discoCache = ctx.discovery().discoCache(topVer);
-
-        if (discoCache == null)
-            return new GridFinishedFuture<>(new IgniteCheckedException("Failed to resolve cluster topology: " + topVer));
-
-        if (!discoCache.cacheStarted(cacheName))
-            return new GridFinishedFuture<>(null);
-
-        List<ClusterNode> cacheNodes = discoCache.cacheNodes(cacheName);
+        List<ClusterNode> cacheNodes = ctx.discovery().cacheNodes(cacheName, topVer);
 
         DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cacheName);
 
@@ -469,7 +461,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
                 return new GridFinishedFuture<>(new IgniteClientDisconnectedCheckedException(ctx.cluster().clientReconnectFuture(),
                         "Failed to get affinity mapping, client disconnected."));
 
-            return new GridFinishedFuture<>(null);
+            return new GridFinishedFuture<>((AffinityInfo)null);
         }
 
         if (desc.cacheConfiguration().getCacheMode() == LOCAL)

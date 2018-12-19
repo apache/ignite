@@ -328,14 +328,6 @@ public class DiscoCache {
     }
 
     /**
-     * @param cacheName Cache name.
-     * @return {@code True} if cache with given name exists.
-     */
-    public boolean cacheStarted(String cacheName) {
-        return allCacheNodes.containsKey(CU.cacheId(cacheName));
-    }
-
-    /**
      * Gets all nodes that have cache with given name.
      *
      * @param cacheName Cache name.
