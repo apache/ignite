@@ -37,9 +37,9 @@ import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
-import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetadataInfo;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcPrimaryKeyMeta;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTableMeta;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
@@ -719,19 +719,19 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getTables(String catalog, String schemaPtrn, String tblNamePtrn,
         String[] tblTypes) throws SQLException {
-        updateMetaData();
+        conn.ensureNotClosed();
 
-        List<List<?>> rows = new LinkedList<>();
+        List<List<?>> rows = Collections.emptyList();
 
-        if (isValidCatalog(catalog) && (tblTypes == null || Arrays.asList(tblTypes).contains("TABLE"))) {
-            for (Map.Entry<String, Map<String, Map<String, ColumnInfo>>> schema : meta.entrySet()) {
-                if (matches(schema.getKey(), schemaPtrn)) {
-                    for (String tbl : schema.getValue().keySet()) {
-                        if (matches(tbl, tblNamePtrn))
-                            rows.add(tableRow(schema.getKey(), tbl));
-                    }
-                }
-            }
+        boolean areTypesValid = tblTypes == null || Arrays.asList(tblTypes).contains("TABLE");
+
+        if (isValidCatalog(catalog) && areTypesValid) {
+            List<JdbcTableMeta> tabMetas = newMeta.getTablesMeta(schemaPtrn, tblNamePtrn);
+
+            rows = new ArrayList<>(tabMetas.size());
+
+            for (JdbcTableMeta m : tabMetas)
+                rows.add(tableRow(m.schemaName(), m.tableName()));
         }
 
         return new JdbcResultSet(true, null,
@@ -1411,8 +1411,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
      * @throws SQLException In case of error.
      */
     private void updateMetaData() throws SQLException {
-        if (conn.isClosed())
-            throw new SQLException("Connection is closed.", SqlStateCode.CONNECTION_CLOSED);
+        conn.ensureNotClosed();
 
         try {
             Ignite ignite = conn.ignite();

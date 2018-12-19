@@ -818,24 +818,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private JdbcResponse getTablesMeta(JdbcMetaTablesRequest req) {
         try {
-            List<JdbcTableMeta> meta = new ArrayList<>();
+            List<JdbcTableMeta> tabMetas = meta.getTablesMeta(req.schemaName(), req.tableName());
 
-            for (String cacheName : ctx.cache().publicCacheNames()) {
-                for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
-                    if (!matches(table.schemaName(), req.schemaName()))
-                        continue;
-
-                    if (!matches(table.tableName(), req.tableName()))
-                        continue;
-
-                    JdbcTableMeta tableMeta = new JdbcTableMeta(table.schemaName(), table.tableName(), "TABLE");
-
-                    if (!meta.contains(tableMeta))
-                        meta.add(tableMeta);
-                }
-            }
-
-            JdbcMetaTablesResult res = new JdbcMetaTablesResult(meta);
+            JdbcMetaTablesResult res = new JdbcMetaTablesResult(tabMetas);
 
             return new JdbcResponse(res);
         }

@@ -88,4 +88,39 @@ public class JdbcMetadataInfo {
 
         return meta;
     }
+
+    /**
+     * See {@link DatabaseMetaData#getTables(String, String, String, String[])} for details.
+     *
+     * Ignite has only one possible value for CATALOG_NAME and has only one table type so these parameters are handled
+     * on the client (driver) side.
+     *
+     * Result is ordered by (schema name, table name).
+     *
+     * @param schemaPtrn sql pattern for schema name.
+     * @param tabPtrn sql pattern for table name.
+     * @return List of metadatas of tables that matches .
+     */
+    public List<JdbcTableMeta> getTablesMeta(String schemaPtrn, String tabPtrn) {
+        List<JdbcTableMeta> tabMetas = new ArrayList<>();
+
+        for (String cacheName : ctx.cache().publicCacheNames()) {
+            for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
+                if (!matches(table.schemaName(), schemaPtrn))
+                    continue;
+
+                if (!matches(table.tableName(), tabPtrn))
+                    continue;
+
+                JdbcTableMeta tableMeta = new JdbcTableMeta(table.schemaName(), table.tableName(), "TABLE");
+
+                // TODO: use linked hash set for this? or just remove this?
+                if (!tabMetas.contains(tableMeta))
+                    tabMetas.add(tableMeta);
+                // TODO: sort etither here or on client side.
+            }
+        }
+
+        return tabMetas;
+    }
 }
