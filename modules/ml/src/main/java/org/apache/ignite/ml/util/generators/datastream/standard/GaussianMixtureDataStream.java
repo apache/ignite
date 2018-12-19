@@ -69,6 +69,6 @@ public class GaussianMixtureDataStream implements DataStreamGenerator {
             seed >>= 2;
         }
 
-        return builder.build().labeled();
+        return builder.build().asDataStream().labeled();
     }
 }

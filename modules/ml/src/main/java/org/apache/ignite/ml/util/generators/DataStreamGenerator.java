@@ -37,7 +37,7 @@ public interface DataStreamGenerator {
     }
 
     default Stream<LabeledVector<Vector, Double>> labeled(IgniteFunction<Vector, Double> classifier) {
-        return unlabeled().map(v -> new LabeledVector<>(v, classifier.apply(v)));
+        return labeled().map(DatasetRow::features).map(v -> new LabeledVector<>(v, classifier.apply(v)));
     }
 
     default Map<Vector, Double> asMap(int datasetSize) {

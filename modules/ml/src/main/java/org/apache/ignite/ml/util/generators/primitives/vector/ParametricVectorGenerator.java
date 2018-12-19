@@ -29,7 +29,7 @@ public class ParametricVectorGenerator implements VectorGenerator {
     private final RandomProducer randomProducer;
 
     public ParametricVectorGenerator(RandomProducer parameterGenerator,
-        IgniteFunction<Double, Double> ... perDimensionGenerators) {
+        IgniteFunction<Double, Double>... perDimensionGenerators) {
 
         this.perDimensionGenerators = Arrays.asList(perDimensionGenerators);
         this.randomProducer = parameterGenerator;
@@ -37,10 +37,7 @@ public class ParametricVectorGenerator implements VectorGenerator {
 
     @Override public Vector get() {
         Double t = randomProducer.get();
-        return VectorUtils.of(
-            perDimensionGenerators.stream()
-                .mapToDouble(f -> f.apply(t))
-                .toArray()
-        );
+        return VectorUtils.of(perDimensionGenerators.stream()
+            .mapToDouble(f -> f.apply(t)).toArray());
     }
 }

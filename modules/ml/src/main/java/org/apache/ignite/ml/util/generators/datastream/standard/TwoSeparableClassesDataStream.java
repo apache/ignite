@@ -22,7 +22,6 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.generators.DataStreamGenerator;
 import org.apache.ignite.ml.util.generators.primitives.variable.UniformRandomProducer;
-import org.apache.ignite.ml.util.generators.primitives.vector.VectorGenerator;
 
 public class TwoSeparableClassesDataStream implements DataStreamGenerator {
     private final double margin;
@@ -45,7 +44,7 @@ public class TwoSeparableClassesDataStream implements DataStreamGenerator {
         double minCordValue = -variance - Math.abs(margin);
         double maxCordValue = variance + Math.abs(margin);
         return new UniformRandomProducer(minCordValue, maxCordValue, seed)
-            .vectorize(2).labeled(this::classify)
+            .vectorize(2).asDataStream().labeled(this::classify)
             .map(v -> new LabeledVector<>(applyMargin(v.features()), v.label()))
             .filter(v -> between(v.features().get(0), -variance, variance))
             .filter(v -> between(v.features().get(1), -variance, variance));

@@ -52,6 +52,6 @@ public class CirclesDataStream implements DataStreamGenerator {
             ), 1.0);
         }
 
-        return builder.build().labeled();
+        return builder.build().asDataStream().labeled();
     }
 }

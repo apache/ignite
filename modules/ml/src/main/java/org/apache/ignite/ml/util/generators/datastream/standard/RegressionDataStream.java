@@ -48,7 +48,8 @@ public class RegressionDataStream implements DataStreamGenerator {
     @Override public Stream<LabeledVector<Vector, Double>> labeled() {
         seed >>= 2;
         return new UniformRandomProducer(minXValue, maxXValue, seed)
-            .vectorize(vectorSize).labeled(function);
+            .vectorize(vectorSize).asDataStream()
+            .labeled(function);
     }
 
     public static RegressionDataStream twoDimensional(IgniteFunction<Double, Double> function,

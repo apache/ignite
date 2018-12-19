@@ -31,9 +31,10 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.generators.DataStreamGenerator;
 
-public interface VectorGenerator extends Supplier<Vector>, DataStreamGenerator {
+public interface VectorGenerator extends Supplier<Vector> {
     public default VectorGenerator concat(VectorGenerator other) {
-        return () -> VectorUtils.concat(this.get(), other.get());
+        VectorGenerator out = this;
+        return () -> VectorUtils.concat(out.get(), other.get());
     }
 
     public default VectorGenerator shuffle() {
@@ -49,8 +50,9 @@ public interface VectorGenerator extends Supplier<Vector>, DataStreamGenerator {
         for(int i = 0; i < shuffledIds.size(); i++)
             shuffleMap.put(i, shuffledIds.get(i));
 
+        VectorGenerator out = this;
         return () -> {
-            Vector original = get();
+            Vector original = out.get();
             Vector copy = original.copy();
             for(int to = 0; to < copy.size(); to++) {
                 int from = shuffleMap.get(to);
@@ -67,9 +69,10 @@ public interface VectorGenerator extends Supplier<Vector>, DataStreamGenerator {
     public default VectorGenerator duplicateRandomFeatures(int increaseSize, Long seed) {
         Random rnd = new Random(seed);
         Vector v = get();
-        int[] featuresDuplicateIds = rnd.ints().limit(increaseSize).map(i -> i % v.size()).toArray();
+        int[] featuresDuplicateIds = rnd.ints().limit(increaseSize).map(i -> Math.abs(i) % v.size()).toArray();
+        VectorGenerator out = this;
         return () -> {
-            Vector original = get();
+            Vector original = out.get();
             double[] values = new double[original.size() + increaseSize];
             for(int i = 0; i < original.size(); i++)
                 values[i] = original.get(i);
@@ -79,13 +82,17 @@ public interface VectorGenerator extends Supplier<Vector>, DataStreamGenerator {
         };
     }
 
-    @Override
-    public default Stream<Vector> unlabeled() {
-        return Stream.generate(this);
+    public default VectorGenerator move(Vector v) {
+        VectorGenerator out = this;
+        return () -> out.get().plus(v);
     }
 
-    @Override
-    public default Stream<LabeledVector<Vector, Double>> labeled() {
-        return labeled(x -> 0.0);
+    public default DataStreamGenerator asDataStream() {
+        final VectorGenerator gen = this;
+        return new DataStreamGenerator() {
+            @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+                return Stream.generate(gen).map(v -> new LabeledVector<>(v, 0.0));
+            }
+        };
     }
 }
