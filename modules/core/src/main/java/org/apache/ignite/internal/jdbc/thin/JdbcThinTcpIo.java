@@ -28,12 +28,13 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
@@ -43,6 +44,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteRe
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCancelRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
@@ -381,7 +383,8 @@ public class JdbcThinTcpIo {
                     + ", url=" + connProps.getUrl() + ']', SqlStateCode.CONNECTION_REJECTED);
             }
 
-            if (VER_2_5_0.equals(srvProtoVer0)
+            if (VER_2_7_0.equals(srvProtoVer0)
+                || VER_2_5_0.equals(srvProtoVer0)
                 || VER_2_4_0.equals(srvProtoVer0)
                 || VER_2_3_0.equals(srvProtoVer0)
                 || VER_2_1_5.equals(srvProtoVer0))
@@ -479,11 +482,12 @@ public class JdbcThinTcpIo {
 
     /**
      * @param req Request.
+     * @param stmt Statement.
      * @return Server response.
      * @throws IOException In case of IO error.
      * @throws SQLException On concurrent access to JDBC connection.
      */
-    JdbcResponse sendRequest(JdbcRequest req, Lock lock) throws SQLException, IOException {
+    JdbcResponse sendRequest(JdbcRequest req, JdbcThinStatement stmt) throws SQLException, IOException {
         synchronized (mux) {
             if (ownThread != null) {
                 throw new SQLException("Concurrent access to JDBC connection is not allowed"
@@ -497,17 +501,15 @@ public class JdbcThinTcpIo {
         try {
             sendRequestRaw(req);
 
-            if (lock != null)
-                lock.unlock();
+            if (stmt != null && (req instanceof JdbcQueryExecuteRequest || req instanceof JdbcBatchExecuteRequest))
+                stmt.currReqId(req.requestId());
 
-            JdbcResponse response = readResponse();
+            JdbcResponse resp = readResponse();
 
-            if (srvProtocolVer.compareTo(VER_2_8_0) >= 0) {
-                while (req.requestId() != response.requestId())
-                    response = readResponse();
-            }
-
-            return response;
+            if (stmt != null && stmt.isCancelled())
+                return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, new QueryCancelledException().getMessage());
+            else
+                return resp;
         }
         finally {
             synchronized (mux) {
@@ -518,12 +520,12 @@ public class JdbcThinTcpIo {
 
     /**
      * Sends cancel request.
-     * @param cancellationRequest contains request id to be cancelled
+     * @param cancellationReq contains request id to be cancelled
      * @throws IOException In case of IO error.
      */
-    void sendCancelRequest(JdbcQueryCancelRequest cancellationRequest) throws IOException {
+    void sendCancelRequest(JdbcQueryCancelRequest cancellationReq) throws IOException {
         if (isQueryCancellationSupported())
-            sendRequestRaw(cancellationRequest);
+            sendRequestRaw(cancellationReq);
     }
 
     /**
@@ -581,7 +583,9 @@ public class JdbcThinTcpIo {
 
         req.writeBinary(writer, srvProtocolVer);
 
-        send(writer.array());
+        synchronized (mux) {
+            send(writer.array());
+        }
     }
 
     /**
@@ -679,7 +683,7 @@ public class JdbcThinTcpIo {
     /**
      * @return Returns true if query cancellation supported, false otherwise.
      */
-    boolean isQueryCancellationSupported() {
+    private boolean isQueryCancellationSupported() {
         assert srvProtocolVer != null;
 
         return srvProtocolVer.compareTo(VER_2_8_0) >= 0;

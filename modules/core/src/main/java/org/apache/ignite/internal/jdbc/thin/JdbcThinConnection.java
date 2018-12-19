@@ -40,7 +40,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.locks.Lock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.ignite.IgniteCheckedException;
@@ -176,9 +175,10 @@ public class JdbcThinConnection implements Connection {
     /**
      * @param sql Statement.
      * @param cmd Parsed form of {@code sql}.
+     * @param stmt Jdbc thin statement.
      * @throws SQLException if failed.
      */
-    void executeNative(String sql, SqlCommand cmd) throws SQLException {
+    void executeNative(String sql, SqlCommand cmd, JdbcThinStatement stmt) throws SQLException {
         if (cmd instanceof SqlSetStreamingCommand) {
             SqlSetStreamingCommand cmd0 = (SqlSetStreamingCommand)cmd;
 
@@ -201,7 +201,7 @@ public class JdbcThinConnection implements Connection {
                 streamState = new StreamState((SqlSetStreamingCommand)cmd);
 
                 sendRequest(new JdbcQueryExecuteRequest(JdbcStatementType.ANY_STATEMENT_TYPE,
-                    schema, 1, 1, autoCommit, sql, null));
+                    schema, 1, 1, autoCommit, sql, null), stmt);
 
                 streamState.start();
             }
@@ -751,15 +751,16 @@ public class JdbcThinConnection implements Connection {
     /**
      * Send request for execution via {@link #cliIo}.
      * @param req Request.
+     * @param stmt Jdbc thin statement.
      * @return Server response.
      * @throws SQLException On any error.
      */
     @SuppressWarnings("unchecked")
-    <R extends JdbcResult> R sendRequest(JdbcRequest req, Lock lock) throws SQLException {
+    <R extends JdbcResult> R sendRequest(JdbcRequest req, JdbcThinStatement stmt) throws SQLException {
         ensureConnected();
 
         try {
-            JdbcResponse res = cliIo.sendRequest(req, lock);
+            JdbcResponse res = cliIo.sendRequest(req, stmt);
 
             if (res.status() != ClientListenerResponse.STATUS_SUCCESS)
                 throw new SQLException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()), res.status());

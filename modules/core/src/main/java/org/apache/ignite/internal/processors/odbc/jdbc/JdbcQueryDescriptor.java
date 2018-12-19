@@ -17,28 +17,29 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import java.util.concurrent.locks.Lock;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 
 /**
- * Jdbc query descriptor used for appropriate query cancelation.
+ * JDBC query descriptor used for appropriate query cancellation.
  */
 public class JdbcQueryDescriptor {
     /** Hook for cancellation. */
-    private GridQueryCancel cancelHook;
+    private final GridQueryCancel cancelHook;
 
-    /** Lock. */
-    private Lock lockHook;
+    /** Canceled flag. */
+    private boolean canceled;
+
+    /** Usage count of given descriptor. */
+    private int usageCnt;
+
+    /** Execution started flag.  */
+    private boolean executionStarted;
 
     /**
      * Constructor.
-     *
-     * @param cancelHook Hook for cancellation.
-     * @param lockHook Lock.
      */
-    public JdbcQueryDescriptor(GridQueryCancel cancelHook, Lock lockHook) {
-        this.cancelHook = cancelHook;
-        this.lockHook = lockHook;
+    public JdbcQueryDescriptor() {
+        this.cancelHook = new GridQueryCancel();
     }
 
     /**
@@ -49,9 +50,46 @@ public class JdbcQueryDescriptor {
     }
 
     /**
-     * @return Lock.
+     * @return True if descriptor was marked as canceled.
      */
-    public Lock lockHook() {
-        return lockHook;
+    public boolean isCanceled() {
+        return canceled;
+    }
+
+    /**
+     * Marks descriptor as canceled.
+     */
+    public void markCancelled() {
+        canceled = true;
+    }
+
+    /**
+     * Increments usage count.
+     */
+    public void incrementUsageCount() {
+        usageCnt++;
+
+        executionStarted = true;
+    }
+
+    /**
+     * Descrements usage count.
+     */
+    public void decrementUsageCount() {
+        usageCnt--;
+    }
+
+    /**
+     * @return Usage count.
+     */
+    public int usageCount() {
+        return usageCnt;
+    }
+
+    /**
+     * @return True if execution was started, false otherwise.
+     */
+    public boolean isExecutionStarted() {
+        return executionStarted;
     }
 }

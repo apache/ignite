@@ -646,7 +646,6 @@ public class CommandHandler {
 
     /**
      * @param client Client.
-     *
      * @return List of hosts.
      */
     private Stream<IgniteBiTuple<GridClientNode, String>> listHosts(GridClient client) throws GridClientException {
@@ -660,7 +659,6 @@ public class CommandHandler {
 
     /**
      * @param client Client.
-     *
      * @return List of hosts.
      */
     private Stream<IgniteBiTuple<GridClientNode, List<String>>> listHostsByClientNode(GridClient client) throws GridClientException {
@@ -855,7 +853,7 @@ public class CommandHandler {
             log("Contention check failed on nodes:");
 
             for (Map.Entry<UUID, Exception> e : res.exceptions().entrySet()) {
-                log("Node ID = " + e.getKey());
+                log("Node ID: " + e.getKey());
 
                 log("Exception message:");
                 log(e.getValue().getMessage());
@@ -890,7 +888,7 @@ public class CommandHandler {
             log("Index validation failed on nodes:");
 
             for (Map.Entry<UUID, Exception> e : taskRes.exceptions().entrySet()) {
-                log(i("Node ID = " + e.getKey()));
+                log(i("Node ID: " + e.getKey()));
 
                 log(i("Exception message:"));
                 log(i(e.getValue().getMessage(), 2));

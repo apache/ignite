@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import publicTemplate from '../../../views/public.pug';
 import {UIRouter} from '@uirouter/angularjs';
 import {IIgniteNg1StateDeclaration} from 'app/types';
 
@@ -22,7 +23,14 @@ export function registerState($uiRouter: UIRouter) {
     const state: IIgniteNg1StateDeclaration = {
         url: '/signin',
         name: 'signin',
-        component: 'pageSignin',
+        views: {
+            '': {
+                template: publicTemplate
+            },
+            'page@signin': {
+                component: 'pageSignin'
+            }
+        },
         unsaved: true,
         redirectTo: (trans) => {
             const skipStates = new Set(['signup', 'forgotPassword', 'landing']);

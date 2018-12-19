@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.gridify.BasicAopSelfTest;
 import org.apache.ignite.gridify.GridifySetToXXXNonSpringAopSelfTest;
@@ -34,19 +35,18 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 public class IgniteAopSelfTestSuite extends TestSuite {
     /**
      * @return AOP test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite AOP Test Suite");
 
         // Test configuration.
-        suite.addTestSuite(BasicAopSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(BasicAopSelfTest.class));
 
-        suite.addTestSuite(SpringAopSelfTest.class);
-        suite.addTestSuite(NonSpringAopSelfTest.class);
-        suite.addTestSuite(GridifySetToXXXSpringAopSelfTest.class);
-        suite.addTestSuite(GridifySetToXXXNonSpringAopSelfTest.class);
-        suite.addTestSuite(ExternalNonSpringAopSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(SpringAopSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(NonSpringAopSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridifySetToXXXSpringAopSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridifySetToXXXNonSpringAopSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(ExternalNonSpringAopSelfTest.class));
 
         // Examples
         System.setProperty(IGNITE_OVERRIDE_MCAST_GRP, GridTestUtils.getNextMulticastGroup(IgniteAopSelfTestSuite.class));

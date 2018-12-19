@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakIndexedTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakSqlQueryTest;
@@ -27,13 +28,12 @@ import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakSqlQuery
 public class IgniteDbMemoryLeakWithIndexingTestSuite extends TestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Db Memory Leaks With Indexing Test Suite");
 
-        suite.addTestSuite(IgniteDbMemoryLeakSqlQueryTest.class);
-        suite.addTestSuite(IgniteDbMemoryLeakIndexedTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteDbMemoryLeakSqlQueryTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteDbMemoryLeakIndexedTest.class));
 
         return suite;
     }

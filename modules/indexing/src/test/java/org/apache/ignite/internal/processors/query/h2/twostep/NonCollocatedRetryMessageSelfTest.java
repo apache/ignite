@@ -35,12 +35,16 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT;
 
 /**
  * Failed to execute non-collocated query root cause message test
  */
+@RunWith(JUnit4.class)
 public class NonCollocatedRetryMessageSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES_COUNT = 2;
@@ -58,6 +62,7 @@ public class NonCollocatedRetryMessageSelfTest extends GridCommonAbstractTest {
     private IgniteCache<String, JoinSqlTestHelper.Person> personCache;
 
     /** */
+    @Test
     public void testNonCollocatedRetryMessage() {
         SqlQuery<String, JoinSqlTestHelper.Person> qry = new SqlQuery<String, JoinSqlTestHelper.Person>(
             JoinSqlTestHelper.Person.class, JoinSqlTestHelper.JOIN_SQL).setArgs("Organization #0");
@@ -94,14 +99,14 @@ public class NonCollocatedRetryMessageSelfTest extends GridCommonAbstractTest {
         CacheConfiguration<String, JoinSqlTestHelper.Person> ccfg1 = new CacheConfiguration<>("pers");
 
         ccfg1.setBackups(1);
-        ccfg1.setIndexedTypes(String.class, JoinSqlTestHelper.Person.class);
+        ccfg1.setQueryEntities(JoinSqlTestHelper.personQueryEntity());
 
         personCache = ignite(0).getOrCreateCache(ccfg1);
 
         CacheConfiguration<String, JoinSqlTestHelper.Organization> ccfg2 = new CacheConfiguration<>(ORG);
 
         ccfg2.setBackups(1);
-        ccfg2.setIndexedTypes(String.class, JoinSqlTestHelper.Organization.class);
+        ccfg2.setQueryEntities(JoinSqlTestHelper.organizationQueryEntity());
 
         IgniteCache<String, JoinSqlTestHelper.Organization> orgCache = ignite(0).getOrCreateCache(ccfg2);
 

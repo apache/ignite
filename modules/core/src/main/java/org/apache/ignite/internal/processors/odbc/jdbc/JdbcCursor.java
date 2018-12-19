@@ -21,24 +21,24 @@ import java.io.Closeable;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Jdbc Cursor.
+ * JDBC Cursor.
  */
 public abstract class JdbcCursor implements Closeable {
     /** Cursor Id generator. */
     private static final AtomicLong CURSOR_ID_GENERATOR = new AtomicLong();
 
     /** Cursor Id. */
-    private long cursorId;
+    private final long cursorId;
 
     /** Id of the request that created given cursor. */
-    private long reqId;
+    private final long reqId;
 
     /**
      * Constructor.
      *
      * @param reqId Id of the request that created given cursor.
      */
-    public JdbcCursor(long reqId) {
+    protected JdbcCursor(long reqId) {
         this.cursorId = CURSOR_ID_GENERATOR.getAndIncrement();
         this.reqId = reqId;
     }
