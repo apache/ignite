@@ -40,6 +40,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheIoManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.WalStateManager;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -52,7 +53,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Standa
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
-import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessorImpl;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -124,7 +124,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
         GridKernalContext kctx = new StandaloneGridKernalContext(
             log, null, null) {
             @Override public IgniteCacheObjectProcessor cacheObjects() {
-                return new IgniteCacheObjectProcessorImpl(this);
+                return new CacheObjectBinaryProcessorImpl(this);
             }
         };
 

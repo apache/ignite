@@ -661,7 +661,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public List<String> getUserAttributesFormatted() {
         assert cfg != null;
 
@@ -775,7 +774,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param hnd Default uncaught exception handler used by thread pools.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    @SuppressWarnings({"unchecked"})
     public void start(
         final IgniteConfiguration cfg,
         ExecutorService utilityCachePool,
@@ -1462,7 +1460,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param notifyEnabled Update notifier flag.
      * @throws IgniteCheckedException thrown if was unable to set up attribute.
      */
-    @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
     private void fillNodeAttributes(boolean notifyEnabled) throws IgniteCheckedException {
         ctx.addNodeAttribute(ATTR_REBALANCE_POOL_SIZE, configuration().getRebalanceThreadPoolSize());
         ctx.addNodeAttribute(ATTR_DATA_STREAMER_POOL_SIZE, configuration().getDataStreamerThreadPoolSize());
@@ -2819,7 +2816,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public String executeTask(String taskName, String arg) throws JMException {
         try {
             return compute().execute(taskName, arg);
@@ -3010,7 +3006,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <K, V> IgniteBiTuple<IgniteCache<K, V>, Boolean> getOrCreateCache0(
         CacheConfiguration<K, V> cacheCfg, boolean sql) {
         A.notNull(cacheCfg, "cacheCfg");

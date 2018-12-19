@@ -288,7 +288,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
      * @return List of shared memory IDs created while client-server interactions.
      * @throws Exception In case of any exception happen.
      */
-    @SuppressWarnings({"BusyWait", "TypeMayBeWeakened"})
+    @SuppressWarnings({"BusyWait"})
     private Collection<Integer> interactWithClient(IpcSharedMemoryServerEndpoint srv, boolean killClient)
         throws Exception {
         ProcessStartResult clientStartRes = startSharedMemoryTestClient();

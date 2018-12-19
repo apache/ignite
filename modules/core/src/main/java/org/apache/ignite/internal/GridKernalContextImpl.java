@@ -864,7 +864,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <K, V> DataStreamProcessor<K, V> dataStream() {
         return (DataStreamProcessor<K, V>)dataLdrProc;
     }
@@ -992,7 +991,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T createComponent(Class<T> cls) {
         T res = pluginProc.createComponent(cls);
 
