@@ -228,11 +228,4 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     @Override public String toString() {
         return S.toString(AffinityTopologyVersion.class, this);
     }
-
-    /**
-     * @return Short string representation (majorVer, minorVer).
-     */
-    public String toShortString() {
-        return "[" + topVer + ", " + minorTopVer + "]";
-    }
 }
