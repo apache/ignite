@@ -21,7 +21,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -39,8 +40,13 @@ public class CheckpointReadLockFailureTest extends GridCommonAbstractTest {
     /** */
     private static final AbstractFailureHandler FAILURE_HND = new AbstractFailureHandler() {
         @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
-            if (hndLatch != null && failureCtx.type() == FailureType.SYSTEM_WORKER_BLOCKED)
-                hndLatch.countDown();
+            if (Thread.currentThread().getName().startsWith(LOADER_THREAD_NAME_PREFIX)) {
+                if (failureCtx.type() != FailureType.SYSTEM_WORKER_BLOCKED)
+                    return true;
+
+                if (hndLatch != null)
+                    hndLatch.countDown();
+            }
 
             return false;
         }
@@ -48,6 +54,9 @@ public class CheckpointReadLockFailureTest extends GridCommonAbstractTest {
 
     /** */
     private static final long CHECKPOINT_FREQ = 5_000;
+
+    /** */
+    private static final String LOADER_THREAD_NAME_PREFIX = "cache-load";
 
     /** */
     private static volatile CountDownLatch hndLatch;
@@ -59,7 +68,7 @@ public class CheckpointReadLockFailureTest extends GridCommonAbstractTest {
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setPersistenceEnabled(true))
-                .setCheckpointFrequency(CHECKPOINT_FREQ)
+                .setCheckpointFrequency(Integer.MAX_VALUE)
                 .setCheckpointReadLockTimeout(1));
     }
 
@@ -93,30 +102,42 @@ public class CheckpointReadLockFailureTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        AtomicBoolean stopLoad = new AtomicBoolean();
-
         IgniteInternalFuture<Long> loadFut = GridTestUtils.runMultiThreadedAsync(() -> {
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
+            while (!Thread.currentThread().isInterrupted()) {
+                cache.put(rnd.nextInt(), rnd.nextInt());
+
+                doSleep(10);
+            }
+        }, 4, LOADER_THREAD_NAME_PREFIX);
+
+        IgniteCacheDatabaseSharedManager db = ignite.context().cache().context().database();
+
+        // Acquire and hold checkpoint read lock for a long time to prevent subsequent write lock acquisition.
+        IgniteInternalFuture longAcqReadLock = GridTestUtils.runAsync(() -> {
+            db.checkpointReadLock();
+
             try {
-                while (!stopLoad.get()) {
-                    cache.put(rnd.nextInt(), rnd.nextInt());
-
-                    doSleep(10);
-                }
+                doSleep(Long.MAX_VALUE);
             }
-            catch (Exception e) {
-                // No-op.
+            finally {
+                db.checkpointReadUnlock();
             }
-        }, 4, "cache-load");
+        });
 
-        ignite.context().cache().context().database().wakeupForCheckpoint("test");
+        // Initiating a checkpoint. Checkpointer will block soon trying to acquire checkpoint write lock.
+        GridTestUtils.runAsync(() -> {
+            db.wakeupForCheckpoint("test");
+        });
 
-        hndLatch.await();
+        // Now crossing fingers and hoping ReadWriteLock implementation in IgniteCacheDatabaseSharedManager
+        // honors waiting-for-write-lock contenders, and read lock acquisition in "cache-load" threads will time out.
+        assertTrue(hndLatch.await(30, TimeUnit.SECONDS));
 
-        stopLoad.set(true);
+        longAcqReadLock.cancel();
 
-        loadFut.get();
+        loadFut.cancel();
 
         stopAllGrids();
     }
