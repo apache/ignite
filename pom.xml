@@ -108,6 +108,7 @@
                 <module>modules/geospatial</module>
                 <module>modules/hibernate-4.2</module>
                 <module>modules/hibernate-5.1</module>
+                <module>modules/hibernate-5.3</module>
                 <module>modules/schedule</module>
                 <module>modules/web-console/web-agent</module>
                 <module>modules/yardstick</module>
@@ -245,6 +246,7 @@
             <modules>
                 <module>modules/hibernate-4.2</module>
                 <module>modules/hibernate-5.1</module>
+                <module>modules/hibernate-5.3</module>
                 <module>modules/geospatial</module>
                 <module>modules/schedule</module>
             </modules>
