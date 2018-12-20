@@ -47,13 +47,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 
 /**
@@ -344,7 +344,6 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-613")
     @Test
     public void testNodeLeft() throws Exception {
         Ignite g = startGrid("client");
@@ -352,7 +351,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
         try {
             assertTrue(g.configuration().isClientMode());
 
-            IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
+            IgniteCache<Integer, Integer> cache = jcache(g, Integer.class, Integer.class);
 
             for (int i = 0; i < 1000; i++)
                 cache.put(i, i);
@@ -383,7 +382,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
 
                     return true;
                 }
-            }, EVT_NODE_LEFT);
+            }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
             stopGrid("client");
 
