@@ -298,7 +298,6 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public Void call() throws Exception {
             String key1 = "key-" + base + "-" + i;
             String key2 = "key-" + base;
