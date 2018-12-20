@@ -85,7 +85,7 @@ public class PartitionCompositeNode implements PartitionNode {
 
     /** {@inheritDoc} */
     @Override public int joinGroup() {
-        // Similar to composite node, we cannot cache join group value here.
+        // Similar to group node, we cannot cache join group value here as it may be changed dynamically.
         return left.joinGroup();
     }
 
@@ -319,7 +319,15 @@ public class PartitionCompositeNode implements PartitionNode {
         // TODO: Merge only if they belong to the same group, otherwise this is "ALL"
         assert op == PartitionCompositeNodeOperator.OR;
 
-        return left.equals(right) ? left : PartitionGroupNode.merge(left, right);
+        if (left.equals(right))
+            return left;
+
+        HashSet<PartitionSingleNode> nodes = new HashSet<>();
+
+        nodes.add(left);
+        nodes.add(right);
+
+        return new PartitionGroupNode(nodes);
     }
 
     /** {@inheritDoc} */

@@ -35,22 +35,6 @@ public class PartitionGroupNode implements PartitionNode {
     private final Set<PartitionSingleNode> siblings;
 
     /**
-     * Merge two simple nodes.
-     *
-     * @param node1 Node 1.
-     * @param node2 Node 2.
-     * @return Group node.
-     */
-    public static PartitionGroupNode merge(PartitionSingleNode node1, PartitionSingleNode node2) {
-        HashSet<PartitionSingleNode> nodes = new HashSet<>();
-
-        nodes.add(node1);
-        nodes.add(node2);
-
-        return new PartitionGroupNode(nodes);
-    }
-
-    /**
      * Constructor.
      *
      * @param siblings Partitions.
