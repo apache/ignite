@@ -18,11 +18,14 @@
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItem.EMPTY_ARRAY;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.cleanupKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyGuardKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemKey;
@@ -128,6 +131,16 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
                         }
                     }
                 }
+
+                List<DistributedMetaStorageHistoryItem> locFullData = new ArrayList<>();
+
+                metastorage.iterate(
+                    localKeyPrefix(),
+                    (key, val) -> locFullData.add(new DistributedMetaStorageHistoryItem(key, (byte[])val)),
+                    false
+                );
+
+                startupExtras.locFullData = locFullData.toArray(EMPTY_ARRAY);
 
                 metastorage.iterate(
                     historyItemPrefix(),

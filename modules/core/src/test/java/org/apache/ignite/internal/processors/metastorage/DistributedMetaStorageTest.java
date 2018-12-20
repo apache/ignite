@@ -263,7 +263,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         assertEquals(histCache1, histCache2);
 
-        Method fullDataMtd = U.findNonPublicMethod(DistributedMetaStorageImpl.class, "fullData");
+        Method fullDataMtd = U.findNonPublicMethod(DistributedMetaStorageImpl.class, "localFullData");
 
         Object[] fullData1 = (Object[])fullDataMtd.invoke(globalMetastorage1);
 

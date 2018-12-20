@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /** */
@@ -31,9 +32,11 @@ class DistributedMetaStorageHistoryItem implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
+    @GridToStringInclude
     public final String key;
 
     /** */
+    @GridToStringInclude
     public final byte[] valBytes;
 
     /** */

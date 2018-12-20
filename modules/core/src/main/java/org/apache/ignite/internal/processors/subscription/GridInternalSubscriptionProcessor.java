@@ -22,7 +22,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
-import org.apache.ignite.internal.processors.metastorage.GlobalMetastorageLifecycleListener;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -38,7 +38,7 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
     private List<MetastorageLifecycleListener> metastorageListeners = new ArrayList<>();
 
     /** */
-    private List<GlobalMetastorageLifecycleListener> globalMetastorageListeners = new ArrayList<>();
+    private List<DistributedMetastorageLifecycleListener> globalMetastorageListeners = new ArrayList<>();
 
     /** */
     private List<DatabaseLifecycleListener> dbListeners = new ArrayList<>();
@@ -65,7 +65,7 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
     }
 
     /** */
-    public void registerGlobalMetastorageListener(@NotNull GlobalMetastorageLifecycleListener lsnr) {
+    public void registerGlobalMetastorageListener(@NotNull DistributedMetastorageLifecycleListener lsnr) {
         if (lsnr == null)
             throw new NullPointerException("Global metastorage subscriber should be not-null.");
 
@@ -73,7 +73,7 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
     }
 
     /** */
-    public List<GlobalMetastorageLifecycleListener> getGlobalMetastorageSubscribers() {
+    public List<DistributedMetastorageLifecycleListener> getGlobalMetastorageSubscribers() {
         return globalMetastorageListeners;
     }
 

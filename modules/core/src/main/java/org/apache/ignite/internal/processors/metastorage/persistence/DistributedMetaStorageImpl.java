@@ -43,7 +43,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadO
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageListener;
-import org.apache.ignite.internal.processors.metastorage.GlobalMetastorageLifecycleListener;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.GridConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -131,7 +131,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
         else {
             bridge = new EmptyDistributedMetaStorageBridge();
 
-            for (GlobalMetastorageLifecycleListener subscriber : isp.getGlobalMetastorageSubscribers())
+            for (DistributedMetastorageLifecycleListener subscriber : isp.getGlobalMetastorageSubscribers())
                 subscriber.onReadyForRead(this);
         }
 
@@ -166,7 +166,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
 
             GridInternalSubscriptionProcessor isp = ctx.internalSubscriptionProcessor();
 
-            for (GlobalMetastorageLifecycleListener subscriber : isp.getGlobalMetastorageSubscribers())
+            for (DistributedMetastorageLifecycleListener subscriber : isp.getGlobalMetastorageSubscribers())
                 subscriber.onReadyForWrite(this);
         }
     }
@@ -193,10 +193,10 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
 
         bridge = readOnlyBridge;
 
-        for (GlobalMetastorageLifecycleListener subscriber : isp.getGlobalMetastorageSubscribers())
+        for (DistributedMetastorageLifecycleListener subscriber : isp.getGlobalMetastorageSubscribers())
             subscriber.onReadyForRead(this);
 
-//        bridge = oldBridge; // OOPS!
+        bridge = oldBridge;
     }
 
     /** */
@@ -231,7 +231,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
 
         writeAvailable.countDown();
 
-        for (GlobalMetastorageLifecycleListener subscriber : isp.getGlobalMetastorageSubscribers())
+        for (DistributedMetastorageLifecycleListener subscriber : isp.getGlobalMetastorageSubscribers())
             subscriber.onReadyForWrite(this);
     }
 
@@ -381,7 +381,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
                         if (startupExtras == null || startupExtras.fullNodeData == null) {
                             ver0 = ver;
 
-                            fullData = fullData();
+                            fullData = localFullData();
 
                             hist = history(ver - histCache.size() + 1, actualVer);
                         }
@@ -445,13 +445,16 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
     }
 
     /** */
-    private DistributedMetaStorageHistoryItem[] fullData() {
-        List<DistributedMetaStorageHistoryItem> fullData = new ArrayList<>();
+    private DistributedMetaStorageHistoryItem[] localFullData() {
+        if (startupExtras != null && startupExtras.locFullData != null)
+            return startupExtras.locFullData;
+
+        List<DistributedMetaStorageHistoryItem> locFullData = new ArrayList<>();
 
         try {
             bridge.iterate(
                 "",
-                (key, val) -> fullData.add(new DistributedMetaStorageHistoryItem(key, (byte[])val)),
+                (key, val) -> locFullData.add(new DistributedMetaStorageHistoryItem(key, (byte[])val)),
                 false
             );
         }
@@ -460,7 +463,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
             throw U.convertException(e);
         }
 
-        return fullData.toArray(EMPTY_ARRAY);
+        return locFullData.toArray(EMPTY_ARRAY);
     }
 
     /** {@inheritDoc} */
@@ -630,6 +633,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
         startupExtras.clearLocData = true;
 
         startupExtras.fullNodeData = nodeData;
+
+        startupExtras.locFullData = null;
 
         startupExtras.firstToWrite = null;
 

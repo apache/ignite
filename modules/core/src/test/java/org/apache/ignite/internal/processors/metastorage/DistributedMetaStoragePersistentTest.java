@@ -179,10 +179,6 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         ignite = startGrid(1);
 
-        assertEquals("value1", ignite.context().globalMetastorage().read("key1"));
-
-        assertNull(ignite.context().globalMetastorage().read("key2"));
-
         startGrid(0);
 
         awaitPartitionMapExchange();
