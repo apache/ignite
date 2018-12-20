@@ -33,7 +33,4 @@ public interface InfModel<I, O> extends Function<I, O>, AutoCloseable {
      * @return Prediction result.
      */
     public O apply(I input);
-
-    /** {@inheritDoc} */
-    @Override public void close();
 }
