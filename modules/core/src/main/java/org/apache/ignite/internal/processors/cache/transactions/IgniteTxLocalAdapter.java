@@ -1177,7 +1177,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param computeInvoke If {@code true} computes return value for invoke operation.
      * @throws IgniteCheckedException If error.
      */
-    @SuppressWarnings("unchecked")
     protected final void postLockWrite(
         GridCacheContext cacheCtx,
         Iterable<KeyCacheObject> keys,

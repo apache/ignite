@@ -1211,7 +1211,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
          * @param evt Event.
          * @return Singleton iterable.
          */
-        @SuppressWarnings("unchecked")
         private Iterable<CacheEntryEvent<? extends K, ? extends V>> singleton(
             CacheEntryEvent<? extends K, ? extends V> evt) {
             assert evt instanceof CacheContinuousQueryEvent;
@@ -1291,7 +1290,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             impl = (CacheEntryEventFilter)in.readObject();
             types = in.readByte();

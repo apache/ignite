@@ -108,7 +108,6 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
     /** Filter to include only worker nodes. */
     private static final IgnitePredicate<ClusterNode> workerNodesFilter = new PN() {
-        @SuppressWarnings("unchecked")
         @Override public boolean apply(ClusterNode n) {
              return "worker".equals(n.attribute("segment"));
         }
