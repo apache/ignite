@@ -43,7 +43,7 @@ public class MvccDataRecord extends DataRecord {
     /**
      * @param writeEntries Write entries.
      */
-    public MvccDataRecord(List<DataEntry> writeEntries) {
+    public MvccDataRecord(List<MvccDataEntry> writeEntries) {
         this(writeEntries, U.currentTimeMillis());
     }
 
@@ -58,8 +58,9 @@ public class MvccDataRecord extends DataRecord {
      * @param writeEntries Write entries.
      * @param timestamp TimeStamp.
      */
-    public MvccDataRecord(List<DataEntry> writeEntries, long timestamp) {
-        super(writeEntries, timestamp);
+    @SuppressWarnings("unchecked")
+    public MvccDataRecord(List<MvccDataEntry> writeEntries, long timestamp) {
+        super((List)writeEntries, timestamp);
     }
 
     /** {@inheritDoc} */

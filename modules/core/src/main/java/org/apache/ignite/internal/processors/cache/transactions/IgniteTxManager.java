@@ -2454,8 +2454,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             cctx.database().checkpointReadLock();
 
             try {
-                if (cctx.wal() != null)
+                if (cctx.wal() != null) {
+                    tx.flushEnlistBuffer();
+
                     cctx.wal().log(newTxRecord(tx));
+                }
 
                 cctx.coordinators().updateState(tx.mvccSnapshot, TxState.PREPARED);
             }

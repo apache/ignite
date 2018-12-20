@@ -49,6 +49,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.ConsistentIdMapper;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.MvccDataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheLazyEntry;
@@ -141,6 +143,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** */
     private static final AtomicReferenceFieldUpdater<IgniteTxAdapter, TxCounters> TX_COUNTERS_UPD =
         AtomicReferenceFieldUpdater.newUpdater(IgniteTxAdapter.class, TxCounters.class, "txCounters");
+
+    public static final int MVCC_WAL_RECORD_BUFFER_SIZE = 20;
 
     /** Logger. */
     protected static IgniteLogger log;
@@ -277,6 +281,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** Mvcc tx update snapshot. */
     @GridToStringInclude
     protected volatile MvccSnapshot mvccSnapshot;
+
+    @GridToStringExclude
+    private List<MvccDataEntry> enlistBuffer;
 
     /** Rollback finish future. */
     @GridToStringExclude
@@ -418,13 +425,34 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /**
      * @return Mvcc info.
      */
-    @Override @Nullable public MvccSnapshot mvccSnapshot() {
+    @Override public @Nullable MvccSnapshot mvccSnapshot() {
         return mvccSnapshot;
     }
 
     /** {@inheritDoc} */
     @Override public void mvccSnapshot(MvccSnapshot mvccSnapshot) {
         this.mvccSnapshot = mvccSnapshot;
+    }
+
+
+    public void logMvccEntry(MvccDataEntry entry) throws IgniteCheckedException {
+        if (isRollbackOnly())
+            return; // Noop.
+
+        if (enlistBuffer == null)
+            enlistBuffer = new ArrayList<>(MVCC_WAL_RECORD_BUFFER_SIZE);
+
+        enlistBuffer.add(entry);
+
+        if (enlistBuffer.size() == MVCC_WAL_RECORD_BUFFER_SIZE)
+            flushEnlistBuffer();
+    }
+
+    public void flushEnlistBuffer() throws IgniteCheckedException {
+        if (!isRollbackOnly() && enlistBuffer != null)
+            cctx.wal().log(new MvccDataRecord(enlistBuffer));
+
+        enlistBuffer = null;
     }
 
     /**

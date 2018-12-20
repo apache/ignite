@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
@@ -370,7 +371,7 @@ public interface GridCacheEntryEx {
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
     public GridCacheUpdateTxResult mvccSet(
-        @Nullable IgniteInternalTx tx,
+        IgniteTxAdapter tx,
         UUID affNodeId,
         CacheObject val,
         EntryProcessor entryProc,
@@ -400,7 +401,7 @@ public interface GridCacheEntryEx {
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
     public GridCacheUpdateTxResult mvccRemove(
-        @Nullable IgniteInternalTx tx,
+        IgniteTxAdapter tx,
         UUID affNodeId,
         AffinityTopologyVersion topVer,
         MvccSnapshot mvccVer,
@@ -1195,7 +1196,7 @@ public interface GridCacheEntryEx {
      * @throws GridCacheEntryRemovedException, If entry has been removed.
      */
     public GridCacheUpdateTxResult mvccUpdateRowsWithPreloadInfo(
-        IgniteInternalTx tx,
+        IgniteTxAdapter tx,
         UUID affNodeId,
         AffinityTopologyVersion topVer,
         List<GridCacheEntryInfo> entries,
