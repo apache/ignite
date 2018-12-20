@@ -42,16 +42,16 @@ public class ServiceChangeBatchRequest implements DiscoveryCustomMessage {
 
     /** Change requests. */
     @GridToStringInclude
-    private final Collection<ServiceAbstractChange> reqs;
+    private final Collection<ServiceChangeAbstractRequest> reqs;
 
     /** Services deployment actions to be processed on services deployment process. */
     @GridToStringExclude
-    @Nullable private transient ServicesDeploymentActions servicesDeploymentActions;
+    @Nullable private transient ServiceDeploymentActions serviceDeploymentActions;
 
     /**
      * @param reqs Change requests.
      */
-    public ServiceChangeBatchRequest(Collection<ServiceAbstractChange> reqs) {
+    public ServiceChangeBatchRequest(Collection<ServiceChangeAbstractRequest> reqs) {
         assert !F.isEmpty(reqs);
 
         this.reqs = reqs;
@@ -60,22 +60,22 @@ public class ServiceChangeBatchRequest implements DiscoveryCustomMessage {
     /**
      * @return Change requests.
      */
-    public Collection<ServiceAbstractChange> requests() {
+    public Collection<ServiceChangeAbstractRequest> requests() {
         return Collections.unmodifiableCollection(reqs);
     }
 
     /**
      * @return Services deployment actions to be processed on services deployment process.
      */
-    @Nullable public ServicesDeploymentActions servicesDeploymentActions() {
-        return servicesDeploymentActions;
+    @Nullable public ServiceDeploymentActions servicesDeploymentActions() {
+        return serviceDeploymentActions;
     }
 
     /**
-     * @param servicesDeploymentActions Services deployment actions to be processed on services deployment process.
+     * @param serviceDeploymentActions Services deployment actions to be processed on services deployment process.
      */
-    public void servicesDeploymentActions(ServicesDeploymentActions servicesDeploymentActions) {
-        this.servicesDeploymentActions = servicesDeploymentActions;
+    public void servicesDeploymentActions(ServiceDeploymentActions serviceDeploymentActions) {
+        this.serviceDeploymentActions = serviceDeploymentActions;
     }
 
     /** {@inheritDoc} */

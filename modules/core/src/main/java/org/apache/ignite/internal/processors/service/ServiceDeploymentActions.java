@@ -25,9 +25,9 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Services deployments actions to process from deployment worker.
+ * Actions of change service state to be processed in the service deployment process.
  */
-public class ServicesDeploymentActions {
+public class ServiceDeploymentActions {
     /** Whenever it's necessary to deactivate service processor. */
     private boolean deactivate;
 

@@ -30,9 +30,11 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Services full cluster deployments message.
+ * Batch of services cluster deployment result.
+ * <p/>
+ * Contains collection of {@link ServiceClusterDeploymentResult}.
  */
-public class ServicesFullDeploymentsMessage implements DiscoveryCustomMessage {
+public class ServiceClusterDeploymentResultBatch implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -40,22 +42,22 @@ public class ServicesFullDeploymentsMessage implements DiscoveryCustomMessage {
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
     /** Deployment process id. */
-    private final ServicesDeploymentProcessId depId;
+    private final ServiceDeploymentProcessId depId;
 
     /** Services deployments results. */
     @GridToStringInclude
-    private Collection<ServiceFullDeploymentsResults> results;
+    private Collection<ServiceClusterDeploymentResult> results;
 
     /** Services deployment actions to be processed on services deployment process. */
     @GridToStringExclude
-    @Nullable private transient ServicesDeploymentActions servicesDeploymentActions;
+    @Nullable private transient ServiceDeploymentActions serviceDeploymentActions;
 
     /**
      * @param depId Deployment process id.
      * @param results Services deployments results.
      */
-    public ServicesFullDeploymentsMessage(@NotNull ServicesDeploymentProcessId depId,
-        @NotNull Collection<ServiceFullDeploymentsResults> results) {
+    public ServiceClusterDeploymentResultBatch(@NotNull ServiceDeploymentProcessId depId,
+        @NotNull Collection<ServiceClusterDeploymentResult> results) {
         this.depId = depId;
         this.results = results;
     }
@@ -63,29 +65,29 @@ public class ServicesFullDeploymentsMessage implements DiscoveryCustomMessage {
     /**
      * @return Deployment process id.
      */
-    public ServicesDeploymentProcessId deploymentId() {
+    public ServiceDeploymentProcessId deploymentId() {
         return depId;
     }
 
     /**
      * @return Services deployments results.
      */
-    public Collection<ServiceFullDeploymentsResults> results() {
+    public Collection<ServiceClusterDeploymentResult> results() {
         return results;
     }
 
     /**
      * @return Services deployment actions to be processed on services deployment process.
      */
-    @Nullable public ServicesDeploymentActions servicesDeploymentActions() {
-        return servicesDeploymentActions;
+    @Nullable public ServiceDeploymentActions servicesDeploymentActions() {
+        return serviceDeploymentActions;
     }
 
     /**
-     * @param servicesDeploymentActions Services deployment actions to be processed on services deployment process.
+     * @param serviceDeploymentActions Services deployment actions to be processed on services deployment process.
      */
-    public void servicesDeploymentActions(ServicesDeploymentActions servicesDeploymentActions) {
-        this.servicesDeploymentActions = servicesDeploymentActions;
+    public void servicesDeploymentActions(ServiceDeploymentActions serviceDeploymentActions) {
+        this.serviceDeploymentActions = serviceDeploymentActions;
     }
 
     /** {@inheritDoc} */
@@ -118,6 +120,6 @@ public class ServicesFullDeploymentsMessage implements DiscoveryCustomMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ServicesFullDeploymentsMessage.class, this);
+        return S.toString(ServiceClusterDeploymentResultBatch.class, this);
     }
 }

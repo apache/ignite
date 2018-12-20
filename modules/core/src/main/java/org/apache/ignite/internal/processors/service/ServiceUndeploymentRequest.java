@@ -17,55 +17,26 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import java.io.Serializable;
-import java.util.Collections;
-import java.util.Map;
-import java.util.UUID;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Service cluster deployments results.
+ * Service undeployment request.
  */
-public class ServiceFullDeploymentsResults implements Serializable {
+public class ServiceUndeploymentRequest extends ServiceChangeAbstractRequest {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Service id. */
-    private final IgniteUuid srvcId;
-
-    /** Per node deployments results. */
-    @GridToStringInclude
-    private final Map<UUID, ServiceSingleDeploymentsResults> results;
-
     /**
      * @param srvcId Service id.
-     * @param results Deployments results.
      */
-    public ServiceFullDeploymentsResults(@NotNull IgniteUuid srvcId,
-        @NotNull Map<UUID, ServiceSingleDeploymentsResults> results) {
-        this.srvcId = srvcId;
-        this.results = results;
-    }
-
-    /**
-     * @return Service id.
-     */
-    public IgniteUuid serviceId() {
-        return srvcId;
-    }
-
-    /**
-     * @return Per node deployments results.
-     */
-    public Map<UUID, ServiceSingleDeploymentsResults> results() {
-        return Collections.unmodifiableMap(results);
+    public ServiceUndeploymentRequest(@NotNull IgniteUuid srvcId) {
+        super(srvcId);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ServiceFullDeploymentsResults.class, this);
+        return S.toString(ServiceUndeploymentRequest.class, this);
     }
 }

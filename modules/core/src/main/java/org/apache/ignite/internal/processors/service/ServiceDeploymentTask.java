@@ -60,11 +60,11 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SER
 /**
  * Services deployment task.
  *
- * @see ServicesDeploymentActions
- * @see ServicesSingleDeploymentsMessage
- * @see ServicesFullDeploymentsMessage
+ * @see ServiceDeploymentActions
+ * @see ServiceSingleNodeDeploymentResultBatch
+ * @see ServiceClusterDeploymentResultBatch
  */
-class ServicesDeploymentTask {
+class ServiceDeploymentTask {
     /** Task's completion future. */
     private final GridFutureAdapter<?> completeStateFut = new GridFutureAdapter<>();
 
@@ -86,7 +86,7 @@ class ServicesDeploymentTask {
 
     /** Single deployments messages to process. */
     @GridToStringInclude
-    private final Map<UUID, ServicesSingleDeploymentsMessage> singleDepsMsgs = new HashMap<>();
+    private final Map<UUID, ServiceSingleNodeDeploymentResultBatch> singleDepsMsgs = new HashMap<>();
 
     /** Expected services assignments. */
     @GridToStringExclude
@@ -107,7 +107,7 @@ class ServicesDeploymentTask {
 
     /** Deployment process id. */
     @GridToStringInclude
-    private final ServicesDeploymentProcessId depId;
+    private final ServiceDeploymentProcessId depId;
 
     /** Coordinator node id. */
     @GridToStringExclude
@@ -122,13 +122,13 @@ class ServicesDeploymentTask {
     private volatile AffinityTopologyVersion evtTopVer;
 
     /** Services deployment actions. */
-    private volatile ServicesDeploymentActions depActions;
+    private volatile ServiceDeploymentActions depActions;
 
     /**
      * @param ctx Kernal context.
      * @param depId Service deployment process id.
      */
-    protected ServicesDeploymentTask(GridKernalContext ctx, ServicesDeploymentProcessId depId) {
+    protected ServiceDeploymentTask(GridKernalContext ctx, ServiceDeploymentProcessId depId) {
         assert ctx.service() instanceof IgniteServiceProcessor;
 
         this.depId = depId;
@@ -146,7 +146,7 @@ class ServicesDeploymentTask {
      * @param depActions Services deployment actions.
      */
     protected void onEvent(@NotNull DiscoveryEvent evt, @NotNull AffinityTopologyVersion evtTopVer,
-        @Nullable ServicesDeploymentActions depActions) {
+        @Nullable ServiceDeploymentActions depActions) {
         assert evt.type() == EVT_NODE_JOINED || evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED
             || evt.type() == EVT_DISCOVERY_CUSTOM_EVT : "Unexpected event type, evt=" + evt;
 
@@ -242,7 +242,7 @@ class ServicesDeploymentTask {
                     return;
                 }
 
-                depActions = new ServicesDeploymentActions();
+                depActions = new ServiceDeploymentActions();
 
                 depActions.servicesToDeploy(toDeploy);
             }
@@ -284,7 +284,7 @@ class ServicesDeploymentTask {
      * @param depActions Services deployment actions.
      */
     @SuppressWarnings("ErrorNotRethrown")
-    private void processDeploymentActions(@NotNull ServicesDeploymentActions depActions) {
+    private void processDeploymentActions(@NotNull ServiceDeploymentActions depActions) {
         srvcProc.updateDeployedServices(depActions);
 
         depActions.servicesToUndeploy().forEach((srvcId, desc) -> {
@@ -365,7 +365,7 @@ class ServicesDeploymentTask {
      * @param depId Deployment process id.
      * @param errors Deployment errors.
      */
-    private void createAndSendSingleDeploymentsMessage(ServicesDeploymentProcessId depId,
+    private void createAndSendSingleDeploymentsMessage(ServiceDeploymentProcessId depId,
         final Map<IgniteUuid, Collection<Throwable>> errors) {
         assert crdId != null : "Coordinator should be defined at this point, locId=" + ctx.localNodeId();
 
@@ -383,10 +383,10 @@ class ServicesDeploymentTask {
             else
                 depServicesIds.addAll(expDeps.keySet());
 
-            Map<IgniteUuid, ServiceSingleDeploymentsResults> results = new HashMap<>();
+            Map<IgniteUuid, ServiceSingleNodeDeploymentResult> results = new HashMap<>();
 
             for (IgniteUuid srvcId : depServicesIds) {
-                ServiceSingleDeploymentsResults depRes = new ServiceSingleDeploymentsResults(
+                ServiceSingleNodeDeploymentResult depRes = new ServiceSingleNodeDeploymentResult(
                     srvcProc.localInstancesCount(srvcId));
 
                 attachDeploymentErrors(depRes, errors.get(srvcId));
@@ -398,7 +398,7 @@ class ServicesDeploymentTask {
                 if (results.containsKey(srvcId))
                     return;
 
-                ServiceSingleDeploymentsResults depRes = new ServiceSingleDeploymentsResults(
+                ServiceSingleNodeDeploymentResult depRes = new ServiceSingleNodeDeploymentResult(
                     srvcProc.localInstancesCount(srvcId));
 
                 attachDeploymentErrors(depRes, err);
@@ -406,7 +406,7 @@ class ServicesDeploymentTask {
                 results.put(srvcId, depRes);
             });
 
-            ServicesSingleDeploymentsMessage msg = new ServicesSingleDeploymentsMessage(depId, results);
+            ServiceSingleNodeDeploymentResultBatch msg = new ServiceSingleNodeDeploymentResultBatch(depId, results);
 
             if (ctx.localNodeId().equals(crdId))
                 onReceiveSingleDeploymentsMessage(ctx.localNodeId(), msg);
@@ -427,7 +427,7 @@ class ServicesDeploymentTask {
      * @param snd Sender node id.
      * @param msg Single services map message.
      */
-    protected void onReceiveSingleDeploymentsMessage(UUID snd, ServicesSingleDeploymentsMessage msg) {
+    protected void onReceiveSingleDeploymentsMessage(UUID snd, ServiceSingleNodeDeploymentResultBatch msg) {
         assert depId.equals(msg.deploymentId()) : "Wrong message's deployment process id, msg=" + msg;
 
         initCrdFut.listen((IgniteInClosure<IgniteInternalFuture<?>>)fut -> {
@@ -452,7 +452,7 @@ class ServicesDeploymentTask {
      *
      * @param msg Full services map message.
      */
-    protected void onReceiveFullDeploymentsMessage(ServicesFullDeploymentsMessage msg) {
+    protected void onReceiveFullDeploymentsMessage(ServiceClusterDeploymentResultBatch msg) {
         assert depId.equals(msg.deploymentId()) : "Wrong message's deployment process id, msg=" + msg;
 
         initTaskFut.listen((IgniteInClosure<IgniteInternalFuture<?>>)fut -> {
@@ -461,7 +461,7 @@ class ServicesDeploymentTask {
 
             ctx.closure().runLocalSafe(() -> {
                 try {
-                    ServicesDeploymentActions depResults = msg.servicesDeploymentActions();
+                    ServiceDeploymentActions depResults = msg.servicesDeploymentActions();
 
                     assert depResults != null : "Services deployment actions should be attached.";
 
@@ -559,10 +559,10 @@ class ServicesDeploymentTask {
     private void onAllReceived() {
         assert !isCompleted();
 
-        Collection<ServiceFullDeploymentsResults> fullResults = buildFullDeploymentsResults(singleDepsMsgs);
+        Collection<ServiceClusterDeploymentResult> fullResults = buildFullDeploymentsResults(singleDepsMsgs);
 
         try {
-            ServicesFullDeploymentsMessage msg = new ServicesFullDeploymentsMessage(depId, fullResults);
+            ServiceClusterDeploymentResultBatch msg = new ServiceClusterDeploymentResultBatch(depId, fullResults);
 
             ctx.discovery().sendCustomEvent(msg);
         }
@@ -626,12 +626,12 @@ class ServicesDeploymentTask {
      * @param singleDepsMsgs Services single deployments messages.
      * @return Services full deployments results.
      */
-    private Collection<ServiceFullDeploymentsResults> buildFullDeploymentsResults(
-        Map<UUID, ServicesSingleDeploymentsMessage> singleDepsMsgs) {
-        final Map<IgniteUuid, Map<UUID, ServiceSingleDeploymentsResults>> singleResults = new HashMap<>();
+    private Collection<ServiceClusterDeploymentResult> buildFullDeploymentsResults(
+        Map<UUID, ServiceSingleNodeDeploymentResultBatch> singleDepsMsgs) {
+        final Map<IgniteUuid, Map<UUID, ServiceSingleNodeDeploymentResult>> singleResults = new HashMap<>();
 
         singleDepsMsgs.forEach((nodeId, msg) -> msg.results().forEach((srvcId, res) -> {
-            Map<UUID, ServiceSingleDeploymentsResults> depResults = singleResults
+            Map<UUID, ServiceSingleNodeDeploymentResult> depResults = singleResults
                 .computeIfAbsent(srvcId, r -> new HashMap<>());
 
             int cnt = res.count();
@@ -649,7 +649,7 @@ class ServicesDeploymentTask {
             if (cnt == 0 && res.errors().isEmpty())
                 return;
 
-            ServiceSingleDeploymentsResults singleDepRes = new ServiceSingleDeploymentsResults(cnt);
+            ServiceSingleNodeDeploymentResult singleDepRes = new ServiceSingleNodeDeploymentResult(cnt);
 
             if (!res.errors().isEmpty())
                 singleDepRes.errors(res.errors());
@@ -657,10 +657,10 @@ class ServicesDeploymentTask {
             depResults.put(nodeId, singleDepRes);
         }));
 
-        final Collection<ServiceFullDeploymentsResults> fullResults = new ArrayList<>();
+        final Collection<ServiceClusterDeploymentResult> fullResults = new ArrayList<>();
 
         singleResults.forEach((srvcId, dep) -> {
-            ServiceFullDeploymentsResults res = new ServiceFullDeploymentsResults(srvcId, dep);
+            ServiceClusterDeploymentResult res = new ServiceClusterDeploymentResult(srvcId, dep);
 
             fullResults.add(res);
         });
@@ -672,7 +672,7 @@ class ServicesDeploymentTask {
      * @param depRes Service single deployments results.
      * @param errors Deployment errors.
      */
-    private void attachDeploymentErrors(@NotNull ServiceSingleDeploymentsResults depRes,
+    private void attachDeploymentErrors(@NotNull ServiceSingleNodeDeploymentResult depRes,
         @Nullable Collection<Throwable> errors) {
         if (F.isEmpty(errors))
             return;
@@ -764,7 +764,7 @@ class ServicesDeploymentTask {
      *
      * @return Services deployment process id.
      */
-    public ServicesDeploymentProcessId deploymentId() {
+    public ServiceDeploymentProcessId deploymentId() {
         return depId;
     }
 
@@ -853,7 +853,7 @@ class ServicesDeploymentTask {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        ServicesDeploymentTask task = (ServicesDeploymentTask)o;
+        ServiceDeploymentTask task = (ServiceDeploymentTask)o;
 
         return depId.equals(task.depId);
     }
@@ -865,7 +865,7 @@ class ServicesDeploymentTask {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ServicesDeploymentTask.class, this,
+        return S.toString(ServiceDeploymentTask.class, this,
             "locNodeId", (ctx != null ? ctx.localNodeId() : "unknown"),
             "crdId", crdId);
     }

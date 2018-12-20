@@ -17,26 +17,37 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.io.Serializable;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Service undeployment request.
+ * Abstract class for service change requests.
  */
-public class ServiceUndeploymentChange extends ServiceAbstractChange {
+abstract class ServiceChangeAbstractRequest implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Service id. */
+    protected final IgniteUuid srvcId;
 
     /**
      * @param srvcId Service id.
      */
-    public ServiceUndeploymentChange(@NotNull IgniteUuid srvcId) {
-        super(srvcId);
+    protected ServiceChangeAbstractRequest(@NotNull IgniteUuid srvcId) {
+        this.srvcId = srvcId;
+    }
+
+    /**
+     * @return Service id.
+     */
+    public IgniteUuid serviceId() {
+        return srvcId;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ServiceUndeploymentChange.class, this);
+        return S.toString(ServiceChangeAbstractRequest.class, this);
     }
 }

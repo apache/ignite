@@ -61,12 +61,12 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_SERVICES;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 
 /**
- * Services deployment manager.
+ * Service deployment manager.
  *
- * @see ServicesDeploymentTask
- * @see ServicesDeploymentActions
+ * @see ServiceDeploymentTask
+ * @see ServiceDeploymentActions
  */
-public class ServicesDeploymentManager {
+public class ServiceDeploymentManager {
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
@@ -77,7 +77,7 @@ public class ServicesDeploymentManager {
     private final GridMessageListener commLsnr = new ServiceCommunicationListener();
 
     /** Services deployments tasks. */
-    private final Map<ServicesDeploymentProcessId, ServicesDeploymentTask> tasks = new ConcurrentHashMap<>();
+    private final Map<ServiceDeploymentProcessId, ServiceDeploymentTask> tasks = new ConcurrentHashMap<>();
 
     /** Discovery events received while cluster state transition was in progress. */
     private final List<PendingEventHolder> pendingEvts = new ArrayList<>();
@@ -101,7 +101,7 @@ public class ServicesDeploymentManager {
     /**
      * @param ctx Grid kernal context.
      */
-    protected ServicesDeploymentManager(@NotNull GridKernalContext ctx) {
+    protected ServiceDeploymentManager(@NotNull GridKernalContext ctx) {
         this.ctx = ctx;
 
         log = ctx.log(getClass());
@@ -172,7 +172,7 @@ public class ServicesDeploymentManager {
      * @param discoCache Discovery cache.
      * @param depActions Service deployment actions.
      */
-    protected void onLocalJoin(DiscoveryEvent evt, DiscoCache discoCache, ServicesDeploymentActions depActions) {
+    protected void onLocalJoin(DiscoveryEvent evt, DiscoCache discoCache, ServiceDeploymentActions depActions) {
         checkClusterStateAndAddTask(evt, discoCache, depActions);
     }
 
@@ -212,7 +212,7 @@ public class ServicesDeploymentManager {
      * @param depActions Services deployment actions.
      */
     private void checkClusterStateAndAddTask(@NotNull DiscoveryEvent evt, @NotNull DiscoCache discoCache,
-        @Nullable ServicesDeploymentActions depActions) {
+        @Nullable ServiceDeploymentActions depActions) {
         if (discoCache.state().transition())
             pendingEvts.add(new PendingEventHolder(evt, discoCache.version(), depActions));
         else if (discoCache.state().active())
@@ -231,11 +231,11 @@ public class ServicesDeploymentManager {
      * @param depActions Services deployment actions.
      */
     private void addTask(@NotNull DiscoveryEvent evt, @NotNull AffinityTopologyVersion topVer,
-        @Nullable ServicesDeploymentActions depActions) {
-        final ServicesDeploymentProcessId depId = deploymentId(evt, topVer);
+        @Nullable ServiceDeploymentActions depActions) {
+        final ServiceDeploymentProcessId depId = deploymentId(evt, topVer);
 
-        ServicesDeploymentTask task = tasks.computeIfAbsent(depId,
-            t -> new ServicesDeploymentTask(ctx, depId));
+        ServiceDeploymentTask task = tasks.computeIfAbsent(depId,
+            t -> new ServiceDeploymentTask(ctx, depId));
 
         if (!task.onEnqueued()) {
             if (log.isDebugEnabled()) {
@@ -261,11 +261,11 @@ public class ServicesDeploymentManager {
      * @param topVer Topology version.
      * @return Services deployment process id.
      */
-    private ServicesDeploymentProcessId deploymentId(@NotNull DiscoveryEvent evt,
+    private ServiceDeploymentProcessId deploymentId(@NotNull DiscoveryEvent evt,
         @NotNull AffinityTopologyVersion topVer) {
         return evt instanceof DiscoveryCustomEvent ?
-            new ServicesDeploymentProcessId(((DiscoveryCustomEvent)evt).customMessage().id()) :
-            new ServicesDeploymentProcessId(topVer);
+            new ServiceDeploymentProcessId(((DiscoveryCustomEvent)evt).customMessage().id()) :
+            new ServiceDeploymentProcessId(topVer);
     }
 
     /**
@@ -324,19 +324,19 @@ public class ServicesDeploymentManager {
                         pendingEvts.clear();
                     }
                     else {
-                        if (msg instanceof ServicesFullDeploymentsMessage) {
-                            ServicesFullDeploymentsMessage msg0 = (ServicesFullDeploymentsMessage)msg;
+                        if (msg instanceof ServiceClusterDeploymentResultBatch) {
+                            ServiceClusterDeploymentResultBatch msg0 = (ServiceClusterDeploymentResultBatch)msg;
 
                             if (log.isDebugEnabled()) {
                                 log.debug("Received services full deployments message : " +
                                     "[locId=" + ctx.localNodeId() + ", snd=" + snd + ", msg=" + msg0 + ']');
                             }
 
-                            ServicesDeploymentProcessId depId = msg0.deploymentId();
+                            ServiceDeploymentProcessId depId = msg0.deploymentId();
 
                             assert depId != null;
 
-                            ServicesDeploymentTask task = tasks.get(depId);
+                            ServiceDeploymentTask task = tasks.get(depId);
 
                             if (task != null) // May be null in case of double delivering
                                 task.onReceiveFullDeploymentsMessage(msg0);
@@ -344,7 +344,7 @@ public class ServicesDeploymentManager {
                         else if (msg instanceof CacheAffinityChangeMessage)
                             addTask(copyIfNeeded((DiscoveryCustomEvent)evt), discoCache.version(), null);
                         else {
-                            ServicesDeploymentActions depActions = null;
+                            ServiceDeploymentActions depActions = null;
 
                             if (msg instanceof ChangeGlobalStateMessage)
                                 depActions = ((ChangeGlobalStateMessage)msg).servicesDeploymentActions();
@@ -384,7 +384,7 @@ public class ServicesDeploymentManager {
         private AffinityTopologyVersion topVer;
 
         /** Services deployemnt actions. */
-        private ServicesDeploymentActions depActions;
+        private ServiceDeploymentActions depActions;
 
         /**
          * @param evt Discovery event.
@@ -392,7 +392,7 @@ public class ServicesDeploymentManager {
          * @param depActions Services deployment actions.
          */
         private PendingEventHolder(DiscoveryEvent evt,
-            AffinityTopologyVersion topVer, ServicesDeploymentActions depActions) {
+            AffinityTopologyVersion topVer, ServiceDeploymentActions depActions) {
             this.evt = evt;
             this.topVer = topVer;
             this.depActions = depActions;
@@ -409,8 +409,8 @@ public class ServicesDeploymentManager {
                 return;
 
             try {
-                if (msg instanceof ServicesSingleDeploymentsMessage) {
-                    ServicesSingleDeploymentsMessage msg0 = (ServicesSingleDeploymentsMessage)msg;
+                if (msg instanceof ServiceSingleNodeDeploymentResultBatch) {
+                    ServiceSingleNodeDeploymentResultBatch msg0 = (ServiceSingleNodeDeploymentResultBatch)msg;
 
                     if (log.isDebugEnabled()) {
                         log.debug("Received services single deployments message : " +
@@ -418,7 +418,7 @@ public class ServicesDeploymentManager {
                     }
 
                     tasks.computeIfAbsent(msg0.deploymentId(),
-                        t -> new ServicesDeploymentTask(ctx, msg0.deploymentId()))
+                        t -> new ServiceDeploymentTask(ctx, msg0.deploymentId()))
                         .onReceiveSingleDeploymentsMessage(nodeId, msg0);
                 }
             }
@@ -433,12 +433,12 @@ public class ServicesDeploymentManager {
      */
     private class ServicesDeploymentWorker extends GridWorker {
         /** Queue to process. */
-        private final LinkedBlockingQueue<ServicesDeploymentTask> tasksQueue = new LinkedBlockingQueue<>();
+        private final LinkedBlockingQueue<ServiceDeploymentTask> tasksQueue = new LinkedBlockingQueue<>();
 
         /** {@inheritDoc} */
         private ServicesDeploymentWorker() {
             super(ctx.igniteInstanceName(), "services-deployment-worker",
-                ServicesDeploymentManager.this.log, ctx.workersRegistry());
+                ServiceDeploymentManager.this.log, ctx.workersRegistry());
         }
 
         /** {@inheritDoc} */
@@ -446,7 +446,7 @@ public class ServicesDeploymentManager {
             Throwable err = null;
 
             try {
-                ServicesDeploymentTask task;
+                ServiceDeploymentTask task;
 
                 while (!isCancelled()) {
                     onIdle();
@@ -531,7 +531,7 @@ public class ServicesDeploymentManager {
         /**
          * Does additional actions after task's completion.
          */
-        private void taskPostProcessing(ServicesDeploymentTask task) {
+        private void taskPostProcessing(ServiceDeploymentTask task) {
             AffinityTopologyVersion readyVer = readyTopVer.get();
 
             readyTopVer.compareAndSet(readyVer, task.topologyVersion());

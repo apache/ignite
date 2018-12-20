@@ -36,10 +36,10 @@ import org.junit.runners.Parameterized;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Tests of {@link ServicesDeploymentProcessId}.
+ * Tests of {@link ServiceDeploymentProcessId}.
  */
 @RunWith(Parameterized.class)
-public class ServicesDeploymentProcessIdSelfTest {
+public class ServiceDeploymentProcessIdSelfTest {
     /** Tests discovery event. */
     private final DiscoveryEvent evt;
 
@@ -47,19 +47,19 @@ public class ServicesDeploymentProcessIdSelfTest {
     private final AffinityTopologyVersion topVer;
 
     /** Subject under test. */
-    private final ServicesDeploymentProcessId sut;
+    private final ServiceDeploymentProcessId sut;
 
     /**
      * @param data Tests data.
      */
-    public ServicesDeploymentProcessIdSelfTest(IgniteBiTuple<DiscoveryEvent, AffinityTopologyVersion> data) {
+    public ServiceDeploymentProcessIdSelfTest(IgniteBiTuple<DiscoveryEvent, AffinityTopologyVersion> data) {
         this.evt = data.get1();
         this.topVer = data.get2();
 
         if (evt instanceof DiscoveryCustomEvent)
-            this.sut = new ServicesDeploymentProcessId(((DiscoveryCustomEvent)evt).customMessage().id());
+            this.sut = new ServiceDeploymentProcessId(((DiscoveryCustomEvent)evt).customMessage().id());
         else
-            this.sut = new ServicesDeploymentProcessId(topVer);
+            this.sut = new ServiceDeploymentProcessId(topVer);
     }
 
     /**
@@ -74,7 +74,7 @@ public class ServicesDeploymentProcessIdSelfTest {
 
         customEvt.customMessage(
             new ServiceChangeBatchRequest(Collections.singletonList(
-                new ServiceUndeploymentChange(IgniteUuid.randomUuid())))
+                new ServiceUndeploymentRequest(IgniteUuid.randomUuid())))
         );
 
         ClusterNode node = new GridTestNode(UUID.randomUUID());

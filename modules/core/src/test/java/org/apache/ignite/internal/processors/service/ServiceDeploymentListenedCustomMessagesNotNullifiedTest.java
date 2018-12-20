@@ -42,7 +42,7 @@
  /**
   * <b>Tests in the class strongly depend on internal logic of discovery listeners and PME.</b>
   * <p/>
-  * Tests that custom messages of custom discovery events which are being listened by {@link ServicesDeploymentManager}
+  * Tests that custom messages of custom discovery events which are being listened by {@link ServiceDeploymentManager}
   * will not be nullified before the manager will be able to capture them.
   * <p/>
   * Main purpose is to check the messages which may be nullified in PME process at the end of exchange in {@link

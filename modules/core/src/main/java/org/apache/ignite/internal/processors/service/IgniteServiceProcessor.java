@@ -94,9 +94,9 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
  * Event driven implementation of service processor. Services deployment are managed by messages across discovery spi
  * and communication spi.
  *
- * @see ServicesDeploymentManager
- * @see ServicesDeploymentTask
- * @see ServicesDeploymentActions
+ * @see ServiceDeploymentManager
+ * @see ServiceDeploymentTask
+ * @see ServiceDeploymentActions
  * @see ServiceChangeBatchRequest
  */
 @SkipDaemon
@@ -116,8 +116,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * Collection reflects a services' state which will be reached as soon as a relevant deployment task will be
      * processed.
      *
-     * @see ServicesDeploymentActions
-     * @see ServicesDeploymentManager
+     * @see ServiceDeploymentActions
+     * @see ServiceDeploymentManager
      */
     private final ConcurrentMap<IgniteUuid, ServiceInfo> registeredServices = new ConcurrentHashMap<>();
 
@@ -130,8 +130,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * <p/>
      * It is catching up the state of {@link #registeredServices}.
      *
-     * @see ServicesDeploymentManager#readyTopologyVersion()
-     * @see ServicesDeploymentTask
+     * @see ServiceDeploymentManager#readyTopologyVersion()
+     * @see ServiceDeploymentTask
      */
     private final ConcurrentMap<IgniteUuid, ServiceInfo> deployedServices = new ConcurrentHashMap<>();
 
@@ -149,7 +149,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     private final Marshaller marsh = new JdkMarshaller();
 
     /** Services deployment manager. */
-    private volatile ServicesDeploymentManager depMgr = new ServicesDeploymentManager(ctx);
+    private volatile ServiceDeploymentManager depMgr = new ServiceDeploymentManager(ctx);
 
     /** Services topologies update mutex. */
     private final Object servicesTopsUpdateMux = new Object();
@@ -218,10 +218,10 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 }
             });
 
-        ctx.discovery().setCustomEventListener(ServicesFullDeploymentsMessage.class,
-            new CustomEventListener<ServicesFullDeploymentsMessage>() {
+        ctx.discovery().setCustomEventListener(ServiceClusterDeploymentResultBatch.class,
+            new CustomEventListener<ServiceClusterDeploymentResultBatch>() {
                 @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
-                    ServicesFullDeploymentsMessage msg) {
+                    ServiceClusterDeploymentResultBatch msg) {
                     processServicesFullDeployments(msg);
                 }
             });
@@ -310,7 +310,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         if (dataBag.commonDataCollectedFor(SERVICE_PROC.ordinal()))
             return;
 
-        ServicesCommonDiscoveryData clusterData = new ServicesCommonDiscoveryData(
+        ServiceProcessorCommonDiscoveryData clusterData = new ServiceProcessorCommonDiscoveryData(
             new ArrayList<>(registeredServices.values())
         );
 
@@ -322,7 +322,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         if (data.commonData() == null)
             return;
 
-        ServicesCommonDiscoveryData clusterData = (ServicesCommonDiscoveryData)data.commonData();
+        ServiceProcessorCommonDiscoveryData clusterData = (ServiceProcessorCommonDiscoveryData)data.commonData();
 
         for (ServiceInfo desc : clusterData.registeredServices())
             registeredServices.put(desc.serviceId(), desc);
@@ -332,7 +332,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
         ArrayList<ServiceInfo> staticServicesInfo = staticallyConfiguredServices(true);
 
-        dataBag.addJoiningNodeData(SERVICE_PROC.ordinal(), new ServicesJoinNodeDiscoveryData(staticServicesInfo));
+        dataBag.addJoiningNodeData(SERVICE_PROC.ordinal(), new ServiceProcessorJoinNodeDiscoveryData(staticServicesInfo));
     }
 
     /** {@inheritDoc} */
@@ -340,7 +340,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         if (data.joiningNodeData() == null)
             return;
 
-        ServicesJoinNodeDiscoveryData joinData = (ServicesJoinNodeDiscoveryData)data.joiningNodeData();
+        ServiceProcessorJoinNodeDiscoveryData joinData = (ServiceProcessorJoinNodeDiscoveryData)data.joiningNodeData();
 
         for (ServiceInfo desc : joinData.services()) {
             assert desc.topologySnapshot().isEmpty();
@@ -435,7 +435,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         try {
             disconnected = false;
 
-            depMgr = new ServicesDeploymentManager(ctx);
+            depMgr = new ServiceDeploymentManager(ctx);
 
             onKernalStart(active);
 
@@ -650,7 +650,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
             if (!cfgsCp.isEmpty()) {
                 try {
-                    Collection<ServiceAbstractChange> reqs = new ArrayList<>();
+                    Collection<ServiceChangeAbstractRequest> reqs = new ArrayList<>();
 
                     for (ServiceConfiguration cfg : cfgsCp) {
                         IgniteUuid srvcId = IgniteUuid.randomUuid();
@@ -659,7 +659,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
                         res.add(fut, true);
 
-                        reqs.add(new ServiceDeploymentChange(srvcId, cfg));
+                        reqs.add(new ServiceDeploymentRequest(srvcId, cfg));
 
                         depFuts.put(srvcId, fut);
                     }
@@ -730,7 +730,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
             Set<IgniteUuid> toRollback = new HashSet<>();
 
-            List<ServiceAbstractChange> reqs = new ArrayList<>();
+            List<ServiceChangeAbstractRequest> reqs = new ArrayList<>();
 
             try {
                 for (String name : servicesNames) {
@@ -761,7 +761,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
                     toRollback.add(srvcId);
 
-                    reqs.add(new ServiceUndeploymentChange(srvcId));
+                    reqs.add(new ServiceUndeploymentRequest(srvcId));
                 }
 
                 if (!reqs.isEmpty()) {
@@ -1411,7 +1411,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      *
      * @param depActions Service deployment actions.
      */
-    protected void updateDeployedServices(final ServicesDeploymentActions depActions) {
+    protected void updateDeployedServices(final ServiceDeploymentActions depActions) {
         if (!enterBusy())
             return;
 
@@ -1490,10 +1490,10 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             staticServicesInfo.forEach(desc -> registeredServices.put(desc.serviceId(), desc));
         }
 
-        ServicesDeploymentActions depActions = null;
+        ServiceDeploymentActions depActions = null;
 
         if (!registeredServices.isEmpty()) {
-            depActions = new ServicesDeploymentActions();
+            depActions = new ServiceDeploymentActions();
 
             depActions.servicesToDeploy(new HashMap<>(registeredServices));
         }
@@ -1504,7 +1504,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /**
      * @return Services deployment manager.
      */
-    public ServicesDeploymentManager deployment() {
+    public ServiceDeploymentManager deployment() {
         return depMgr;
     }
 
@@ -1545,12 +1545,12 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         DiscoveryDataClusterState state = ctx.state().clusterState();
 
         if (!state.active() || state.transition()) {
-            for (ServiceAbstractChange req : msg.requests()) {
+            for (ServiceChangeAbstractRequest req : msg.requests()) {
                 GridFutureAdapter<?> fut = null;
 
-                if (req instanceof ServiceDeploymentChange)
+                if (req instanceof ServiceDeploymentRequest)
                     fut = depFuts.remove(req.serviceId());
-                else if (req instanceof ServiceUndeploymentChange)
+                else if (req instanceof ServiceUndeploymentRequest)
                     fut = undepFuts.remove(req.serviceId());
 
                 if (fut != null) {
@@ -1565,11 +1565,11 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         Map<IgniteUuid, ServiceInfo> toDeploy = new HashMap<>();
         Map<IgniteUuid, ServiceInfo> toUndeploy = new HashMap<>();
 
-        for (ServiceAbstractChange req : msg.requests()) {
+        for (ServiceChangeAbstractRequest req : msg.requests()) {
             IgniteUuid reqSrvcId = req.serviceId();
             ServiceInfo oldDesc = registeredServices.get(reqSrvcId);
 
-            if (req instanceof ServiceDeploymentChange) {
+            if (req instanceof ServiceDeploymentRequest) {
                 IgniteCheckedException err = null;
 
                 if (oldDesc != null) { // In case of a collision of IgniteUuid.randomUuid() (almost impossible case)
@@ -1577,7 +1577,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                         "exists : [" + "srvcId" + reqSrvcId + ", srvcTop=" + oldDesc.topologySnapshot() + ']');
                 }
                 else {
-                    ServiceConfiguration cfg = ((ServiceDeploymentChange)req).configuration();
+                    ServiceConfiguration cfg = ((ServiceDeploymentRequest)req).configuration();
 
                     oldDesc = lookupInRegisteredServices(cfg.getName());
 
@@ -1621,7 +1621,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                     U.warn(log, err.getMessage(), err);
                 }
             }
-            else if (req instanceof ServiceUndeploymentChange) {
+            else if (req instanceof ServiceUndeploymentRequest) {
                 ServiceInfo rmv = registeredServices.remove(reqSrvcId);
 
                 assert oldDesc == rmv : "Concurrent map modification.";
@@ -1631,7 +1631,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         }
 
         if (!toDeploy.isEmpty() || !toUndeploy.isEmpty()) {
-            ServicesDeploymentActions depActions = new ServicesDeploymentActions();
+            ServiceDeploymentActions depActions = new ServiceDeploymentActions();
 
             if (!toDeploy.isEmpty())
                 depActions.servicesToDeploy(toDeploy);
@@ -1650,7 +1650,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         if (msg.activate() && registeredServices.isEmpty())
             return;
 
-        ServicesDeploymentActions depActions = new ServicesDeploymentActions();
+        ServiceDeploymentActions depActions = new ServiceDeploymentActions();
 
         if (msg.activate())
             depActions.servicesToDeploy(new HashMap<>(registeredServices));
@@ -1683,7 +1683,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         }
 
         if (!toUndeploy.isEmpty()) {
-            ServicesDeploymentActions depActions = new ServicesDeploymentActions();
+            ServiceDeploymentActions depActions = new ServiceDeploymentActions();
 
             depActions.servicesToUndeploy(toUndeploy);
 
@@ -1694,13 +1694,13 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /**
      * @param msg Message.
      */
-    private void processServicesFullDeployments(ServicesFullDeploymentsMessage msg) {
+    private void processServicesFullDeployments(ServiceClusterDeploymentResultBatch msg) {
         final Map<IgniteUuid, Map<UUID, Integer>> fullTops = new HashMap<>();
         final Map<IgniteUuid, Collection<byte[]>> fullErrors = new HashMap<>();
 
-        for (ServiceFullDeploymentsResults depRes : msg.results()) {
+        for (ServiceClusterDeploymentResult depRes : msg.results()) {
             final IgniteUuid srvcId = depRes.serviceId();
-            final Map<UUID, ServiceSingleDeploymentsResults> deps = depRes.results();
+            final Map<UUID, ServiceSingleNodeDeploymentResult> deps = depRes.results();
 
             final Map<UUID, Integer> top = new HashMap<>();
             final Collection<byte[]> errors = new ArrayList<>();
@@ -1727,7 +1727,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             servicesTopsUpdateMux.notifyAll();
         }
 
-        ServicesDeploymentActions depActions = new ServicesDeploymentActions();
+        ServiceDeploymentActions depActions = new ServiceDeploymentActions();
 
         depActions.deploymentTopologies(fullTops);
         depActions.deploymentErrors(fullErrors);

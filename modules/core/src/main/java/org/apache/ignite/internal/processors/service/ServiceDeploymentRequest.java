@@ -17,37 +17,40 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import java.io.Serializable;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.services.ServiceConfiguration;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Abstract class for service change actions.
+ * Service deployment request.
  */
-abstract class ServiceAbstractChange implements Serializable {
+public class ServiceDeploymentRequest extends ServiceChangeAbstractRequest {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Service id. */
-    protected final IgniteUuid srvcId;
+    /** Service configuration. */
+    private final ServiceConfiguration cfg;
 
     /**
      * @param srvcId Service id.
+     * @param cfg Service configuration.
      */
-    protected ServiceAbstractChange(@NotNull IgniteUuid srvcId) {
-        this.srvcId = srvcId;
+    public ServiceDeploymentRequest(@NotNull IgniteUuid srvcId, @NotNull ServiceConfiguration cfg) {
+        super(srvcId);
+
+        this.cfg = cfg;
     }
 
     /**
-     * @return Service id.
+     * @return Service configuration.
      */
-    public IgniteUuid serviceId() {
-        return srvcId;
+    public ServiceConfiguration configuration() {
+        return cfg;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ServiceAbstractChange.class, this);
+        return S.toString(ServiceDeploymentRequest.class, this);
     }
 }

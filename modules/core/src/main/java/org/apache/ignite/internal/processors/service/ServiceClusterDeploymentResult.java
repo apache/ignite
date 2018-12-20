@@ -17,40 +17,57 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.io.Serializable;
+import java.util.Collections;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.services.ServiceConfiguration;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Service deployment request.
+ * Service cluster deployment result.
+ * <p/>
+ * Contains coint of deployed service and deployment errors across the cluster mapped to nodes ids.
  */
-public class ServiceDeploymentChange extends ServiceAbstractChange {
+public class ServiceClusterDeploymentResult implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Service configuration. */
-    private final ServiceConfiguration cfg;
+    /** Service id. */
+    private final IgniteUuid srvcId;
+
+    /** Per node deployments results. */
+    @GridToStringInclude
+    private final Map<UUID, ServiceSingleNodeDeploymentResult> results;
 
     /**
      * @param srvcId Service id.
-     * @param cfg Service configuration.
+     * @param results Deployments results.
      */
-    public ServiceDeploymentChange(@NotNull IgniteUuid srvcId, @NotNull ServiceConfiguration cfg) {
-        super(srvcId);
-
-        this.cfg = cfg;
+    public ServiceClusterDeploymentResult(@NotNull IgniteUuid srvcId,
+        @NotNull Map<UUID, ServiceSingleNodeDeploymentResult> results) {
+        this.srvcId = srvcId;
+        this.results = results;
     }
 
     /**
-     * @return Service configuration.
+     * @return Service id.
      */
-    public ServiceConfiguration configuration() {
-        return cfg;
+    public IgniteUuid serviceId() {
+        return srvcId;
+    }
+
+    /**
+     * @return Per node deployments results.
+     */
+    public Map<UUID, ServiceSingleNodeDeploymentResult> results() {
+        return Collections.unmodifiableMap(results);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ServiceDeploymentChange.class, this);
+        return S.toString(ServiceClusterDeploymentResult.class, this);
     }
 }

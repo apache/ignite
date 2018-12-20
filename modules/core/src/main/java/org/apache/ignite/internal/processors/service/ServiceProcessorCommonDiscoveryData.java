@@ -23,9 +23,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Initial data container to be sent to newly joining node.
+ * Initial data container to be sent to newly joining node for initialization of {@link IgniteServiceProcessor}.
  */
-class ServicesCommonDiscoveryData implements Serializable {
+class ServiceProcessorCommonDiscoveryData implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -35,7 +35,7 @@ class ServicesCommonDiscoveryData implements Serializable {
     /**
      * @param registeredServices Clusters registered services descriptors.
      */
-    public ServicesCommonDiscoveryData(@NotNull ArrayList<ServiceInfo> registeredServices) {
+    public ServiceProcessorCommonDiscoveryData(@NotNull ArrayList<ServiceInfo> registeredServices) {
         this.registeredServices = registeredServices;
     }
 
@@ -50,6 +50,6 @@ class ServicesCommonDiscoveryData implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ServicesCommonDiscoveryData.class, this);
+        return S.toString(ServiceProcessorCommonDiscoveryData.class, this);
     }
 }

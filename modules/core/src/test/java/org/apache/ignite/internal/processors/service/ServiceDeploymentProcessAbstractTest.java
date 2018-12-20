@@ -90,7 +90,7 @@ public abstract class ServiceDeploymentProcessAbstractTest extends GridCommonAbs
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
             if (block && (msg instanceof GridIoMessage &&
-                ((GridIoMessage)msg).message() instanceof ServicesSingleDeploymentsMessage))
+                ((GridIoMessage)msg).message() instanceof ServiceSingleNodeDeploymentResultBatch))
                 return;
 
             super.sendMessage(node, msg, ackC);
@@ -111,7 +111,7 @@ public abstract class ServiceDeploymentProcessAbstractTest extends GridCommonAbs
 
         /** {@inheritDoc} */
         @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
-            if (block && GridTestUtils.getFieldValue(msg, "delegate") instanceof ServicesFullDeploymentsMessage)
+            if (block && GridTestUtils.getFieldValue(msg, "delegate") instanceof ServiceClusterDeploymentResultBatch)
                 return;
 
             super.sendCustomEvent(msg);

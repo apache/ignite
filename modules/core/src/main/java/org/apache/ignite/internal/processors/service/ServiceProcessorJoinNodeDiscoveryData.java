@@ -23,9 +23,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Services join node discovery data container.
+ * Initial data of {@link IgniteServiceProcessor} to send in cluster on joining node.
  */
-public class ServicesJoinNodeDiscoveryData implements Serializable {
+public class ServiceProcessorJoinNodeDiscoveryData implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -35,7 +35,7 @@ public class ServicesJoinNodeDiscoveryData implements Serializable {
     /**
      * @param staticServicesInfo Static services configurations info.
      */
-    public ServicesJoinNodeDiscoveryData(@NotNull ArrayList<ServiceInfo> staticServicesInfo) {
+    public ServiceProcessorJoinNodeDiscoveryData(@NotNull ArrayList<ServiceInfo> staticServicesInfo) {
         this.staticServicesInfo = staticServicesInfo;
     }
 
@@ -48,6 +48,6 @@ public class ServicesJoinNodeDiscoveryData implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ServicesJoinNodeDiscoveryData.class, this);
+        return S.toString(ServiceProcessorJoinNodeDiscoveryData.class, this);
     }
 }

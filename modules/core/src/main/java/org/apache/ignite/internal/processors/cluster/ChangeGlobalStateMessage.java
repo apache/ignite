@@ -25,7 +25,7 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.service.ServicesDeploymentActions;
+import org.apache.ignite.internal.processors.service.ServiceDeploymentActions;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -68,7 +68,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
 
     /** Services deployment actions to be processed on services deployment process. */
     @GridToStringExclude
-    @Nullable private transient ServicesDeploymentActions servicesDeploymentActions;
+    @Nullable private transient ServiceDeploymentActions serviceDeploymentActions;
 
     /**
      * @param reqId State change request ID.
@@ -125,15 +125,15 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     /**
      * @return Services deployment actions to be processed on services deployment process.
      */
-    @Nullable public ServicesDeploymentActions servicesDeploymentActions() {
-        return servicesDeploymentActions;
+    @Nullable public ServiceDeploymentActions servicesDeploymentActions() {
+        return serviceDeploymentActions;
     }
 
     /**
-     * @param servicesDeploymentActions Services deployment actions to be processed on services deployment process.
+     * @param serviceDeploymentActions Services deployment actions to be processed on services deployment process.
      */
-    public void servicesDeploymentActions(ServicesDeploymentActions servicesDeploymentActions) {
-        this.servicesDeploymentActions = servicesDeploymentActions;
+    public void servicesDeploymentActions(ServiceDeploymentActions serviceDeploymentActions) {
+        this.serviceDeploymentActions = serviceDeploymentActions;
     }
 
     /** {@inheritDoc} */
