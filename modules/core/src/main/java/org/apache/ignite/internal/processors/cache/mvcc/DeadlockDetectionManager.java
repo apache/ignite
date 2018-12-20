@@ -114,12 +114,10 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
 
         if (nearTx.nearXidVersion().equals(probe.initiatorVersion())) {
             // a deadlock found
-            // t0d0 indicate that deadlock caused transaction abort
             nearTx.rollbackAsync();
         }
         else {
             // probe each blocker
-            // t0d0 check if holds some lock already
             for (UUID pendingNodeId : getPendingResponseNodes(nearTx)) {
                 sendProbe(
                     probe.initiatorVersion(),

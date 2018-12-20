@@ -371,7 +371,7 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
                 fut.get(10, TimeUnit.SECONDS);
             }
             catch (IgniteCheckedException e) {
-                // t0d0 distill exception thrown by SQL API
+                // TODO check expected exceptions once https://issues.apache.org/jira/browse/IGNITE-9470 is resolved
                 if (X.hasCause(e, TransactionRollbackException.class)
                     || X.hasCause(e, IgniteTxRollbackCheckedException.class))
                     aborted++;
