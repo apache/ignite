@@ -118,7 +118,6 @@ public class GridContinuousMessage implements Message {
     /**
      * @return Message data.
      */
-    @SuppressWarnings("unchecked")
     public <T> T data() {
         return msgs != null ? (T)msgs : (T)data;
     }

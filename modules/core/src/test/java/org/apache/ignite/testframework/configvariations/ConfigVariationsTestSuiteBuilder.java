@@ -34,12 +34,10 @@ public class ConfigVariationsTestSuiteBuilder {
     private final TestSuite suite;
 
     /** */
-    @SuppressWarnings("unchecked")
     private ConfigParameter<IgniteConfiguration>[][] igniteParams =
         ConfigVariations.igniteBasicSet();
 
     /** */
-    @SuppressWarnings("unchecked")
     private ConfigParameter<CacheConfiguration>[][] cacheParams;
 
     /** */

@@ -17,17 +17,22 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import redis.clients.jedis.Jedis;
 
 /**
  * Tests for String atomic datastructures commands of Redis protocol.
  */
+@RunWith(JUnit4.class)
 public class RedisProtocolStringAtomicDatastructuresSelfTest extends RedisCommonAbstractTest {
     /**
      * Test that threads with datastructures commands wasn't deadlocked when PME happens.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicCommandsTopologyChange() throws Exception {
         try (Jedis jedis = pool.getResource()) {
             int size = grid(0).cachesx().size();

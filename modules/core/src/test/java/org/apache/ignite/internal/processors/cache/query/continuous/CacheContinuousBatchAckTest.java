@@ -77,7 +77,6 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
     protected static final AtomicBoolean filterOn = new AtomicBoolean(false);
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 

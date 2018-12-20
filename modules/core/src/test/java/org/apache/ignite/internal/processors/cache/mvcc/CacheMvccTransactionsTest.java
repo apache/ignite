@@ -93,6 +93,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -1574,9 +1575,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9949")
     public void testPutAllGetAll_ClientServer_Backups1_Restart_Scan() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9774");
-
         putAllGetAll(RestartMode.RESTART_RND_SRV, 4, 2, 1, 64, null, SCAN, PUT);
     }
 
@@ -2166,8 +2166,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      */
     @Test
     public void testNodesRestartNoHang() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5935");
-
         final int srvs = 4;
         final int clients = 4;
         final int writers = 6;
