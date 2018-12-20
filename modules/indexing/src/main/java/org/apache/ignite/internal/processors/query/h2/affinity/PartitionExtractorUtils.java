@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity;
 
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionAffinityFunctionType;
@@ -48,13 +49,13 @@ public class PartitionExtractorUtils {
      * @return Added table or {@code null} if table is exlcuded from the model.
      */
     public static PartitionJoinTable prepareTable(GridSqlAst from, PartitionTableModel tblModel) {
-        String alias = null;
+        // TODO: Dangerous, but should be true.
+        // Unwrap alias. We assume that every table must be aliased.
+        assert from instanceof GridSqlAlias;
 
-        if (from instanceof GridSqlAlias) {
-            alias = ((GridSqlAlias)from).alias();
+        String alias = ((GridSqlAlias)from).alias();
 
-            from = from.child();
-        }
+        from = from.child();
 
         if (from instanceof GridSqlTable) {
             // Normal table.
@@ -68,11 +69,6 @@ public class PartitionExtractorUtils {
 
                 return null;
             }
-
-            // Use identifier string because there might be two table with the same name but form different schemas.
-            // TODO: Be very careful here. Seems that alias should never be null here!
-            if (alias == null)
-                alias = tbl0.identifierString();
 
             String cacheName = tbl0.cacheName();
 
@@ -94,6 +90,13 @@ public class PartitionExtractorUtils {
 
             PartitionJoinTable tbl = new PartitionJoinTable(alias, cacheName, affColName, secondAffColName);
             PartitionJoinAffinityDescriptor aff = affinityDescriptorForCache(tbl0.cacheInfo().config());
+
+            if (aff == null) {
+                // Non-standard affinity, exclude table.
+                tblModel.addExcludedTable(alias);
+
+                return null;
+            }
 
             tblModel.addTable(tbl, aff);
 
@@ -199,11 +202,14 @@ public class PartitionExtractorUtils {
      * @return Affinity identifier.
      */
     private static PartitionJoinAffinityDescriptor affinityDescriptorForCache(CacheConfiguration ccfg) {
+        // Partition could be extracted only from PARTITIONED cache.
+        if (ccfg.getCacheMode() != CacheMode.PARTITIONED)
+            return null;
+
         PartitionAffinityFunctionType aff = ccfg.getAffinity().getClass().equals(RendezvousAffinityFunction.class) ?
             PartitionAffinityFunctionType.RENDEZVOUS : PartitionAffinityFunctionType.CUSTOM;
 
         return new PartitionJoinAffinityDescriptor(
-            ccfg.getCacheMode(),
             aff,
             ccfg.getAffinity().partitions(),
             ccfg.getNodeFilter() != null

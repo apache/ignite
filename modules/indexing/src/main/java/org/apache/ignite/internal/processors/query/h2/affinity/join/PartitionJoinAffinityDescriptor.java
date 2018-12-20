@@ -29,9 +29,6 @@ public class PartitionJoinAffinityDescriptor implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Cache mode. */
-    private final CacheMode cacheMode;
-
     /** Affinity function type. */
     private final PartitionAffinityFunctionType affFunc;
 
@@ -44,18 +41,15 @@ public class PartitionJoinAffinityDescriptor implements Serializable {
     /**
      * Constructor.
      *
-     * @param cacheMode Cache mode.
      * @param affFunc Affinity function type.
      * @param parts Number of partitions.
      * @param hasNodeFilter Whether node filter is set.
      */
     public PartitionJoinAffinityDescriptor(
-        CacheMode cacheMode,
         PartitionAffinityFunctionType affFunc,
         int parts,
         boolean hasNodeFilter
     ) {
-        this.cacheMode = cacheMode;
         this.affFunc = affFunc;
         this.parts = parts;
         this.hasNodeFilter = hasNodeFilter;
@@ -68,21 +62,17 @@ public class PartitionJoinAffinityDescriptor implements Serializable {
      * @return {@code True} if compatible.
      */
     public boolean isCompatible(PartitionJoinAffinityDescriptor other) {
-        // REPLICATED caches has special treatment during parititon pruning, so exclude them.
-        if (cacheMode == CacheMode.PARTITIONED) {
-            // Rendezvous affinity function is deterministic and doesn't depend on previous cluster view changes.
-            // In future other user affinity functions would be applicable as well if explicityl marked deterministic.
-            if (affFunc == PartitionAffinityFunctionType.RENDEZVOUS) {
-                // We cannot be sure that two caches are co-located if custom node filter is present.
-                // Nota that technically we may try to compare two filters. However, this adds unnecessary complexity
-                // and potential deserialization issues when SQL is called from client nodes or thin clients.
-                if (!hasNodeFilter) {
-                    return
-                        other.cacheMode == CacheMode.PARTITIONED &&
-                        other.affFunc == PartitionAffinityFunctionType.RENDEZVOUS &&
-                        !other.hasNodeFilter &&
-                        other.parts == parts;
-                }
+        // Rendezvous affinity function is deterministic and doesn't depend on previous cluster view changes.
+        // In future other user affinity functions would be applicable as well if explicityl marked deterministic.
+        if (affFunc == PartitionAffinityFunctionType.RENDEZVOUS) {
+            // We cannot be sure that two caches are co-located if custom node filter is present.
+            // Nota that technically we may try to compare two filters. However, this adds unnecessary complexity
+            // and potential deserialization issues when SQL is called from client nodes or thin clients.
+            if (!hasNodeFilter) {
+                return
+                    other.affFunc == PartitionAffinityFunctionType.RENDEZVOUS &&
+                    !other.hasNodeFilter &&
+                    other.parts == parts;
             }
         }
 
