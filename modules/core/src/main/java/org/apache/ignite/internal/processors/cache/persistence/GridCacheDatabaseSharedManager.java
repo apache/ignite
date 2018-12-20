@@ -2433,7 +2433,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         byte txState = convertToTxState(txRecord.state());
 
-                        cctx.coordinators().updateState(txRecord.mvccVersion(), txState, false);
+                        cctx.coordinators().updateState(txRecord.mvccVersion(), txState, true);
 
                         break;
 
