@@ -23,6 +23,7 @@ import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
@@ -3257,20 +3258,39 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @throws IgniteCheckedException If failed.
      */
     protected GridCommunicationClient createTcpClient(ClusterNode node, int connIdx) throws IgniteCheckedException {
-        return new GridTcpNioCommunicationClient(connIdx, createTcpSession(node, connIdx), log);
+        return new GridTcpNioCommunicationClient(connIdx, createNioSession(node, connIdx), log);
     }
 
     /**
-     * Establish TCP/IP connection between the current node and remote server. The handshake process will
-     * be performed:
+     * Returns the established TCP/IP connection between the current node and remote server. A handshake process of
+     * negotiation between two communicating nodes will be performed before the {@link GridNioSession} created.
+     * <p>
+     *     The handshaking process contains of these steps:
      *
+     *     <ol>
+     *         <li>The local node opens a new {@link SocketChannel} in the <em>blocking</em> mode.</li>
+     *         <li>The local node calls {@link SocketChannel#connect(SocketAddress)} to remote node.</li>
+     *         <li>The remote GridNioAcceptWorker thread accepts new connection.</li>
+     *         <li>The remote node sends back the {@link NodeIdMessage}.</li>
+     *         <li>The local node reads NodeIdMessage from created channel.</li>
+     *         <li>The local node sends the {@link HandshakeMessage2} to remote.</li>
+     *         <li>The remote node processes {@link HandshakeMessage2} in {@link GridNioServerListener#onMessage(GridNioSession, Object)}.</li>
+     *         <li>The remote node sends back the {@link RecoveryLastReceivedMessage}.</li>
+     *     </ol>
+     *
+     *     The handshaking process ends.
+     * </p>
+     * <p>
+     *     <em>Note.</em> The {@link HandshakeTimeoutObject} is created to control execution timeout during the
+     *     whole handshaking process. The {@link HandshakeTimeoutException} will be thrown if timout reached.
+     * </p>
      *
      * @param node Remote node identifier to connect with.
      * @param connIdx Connection index based on configured {@link ConnectionPolicy}.
-     * @return An {@link GridNioSession} connection representation.
+     * @return A {@link GridNioSession} connection representation.
      * @throws IgniteCheckedException If establish connection fails.
      */
-    protected GridNioSession createTcpSession(ClusterNode node, int connIdx) throws IgniteCheckedException {
+    private GridNioSession createNioSession(ClusterNode node, int connIdx) throws IgniteCheckedException {
         Collection<InetSocketAddress> addrs = nodeAddresses(node);
 
         GridNioSession session = null;
@@ -3554,7 +3574,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /**
-     * Process errors if TCP client to remote node hasn't been created.
+     * Process errors if TCP/IP {@link GridNioSession} creation to remote node hasn't been performed.
      *
      * @param node Remote node.
      * @param addrs Remote node addresses.
