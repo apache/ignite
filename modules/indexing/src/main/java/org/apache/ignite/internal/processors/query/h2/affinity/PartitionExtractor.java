@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinCondition;
-import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinGroup;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionTableModel;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinTable;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -42,7 +41,6 @@ import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -77,9 +75,10 @@ public class PartitionExtractor {
 
         GridSqlSelect select = (GridSqlSelect)qry;
 
-        prepareJoinModel(select.from(), select.where());
+        PartitionTableModel tblModel = prepareTableModel(select.from());
 
         // Currently we can extract data only from a single table.
+        // TODO: This no longer holds.
         GridSqlTable tbl = unwrapTable(select.from());
 
         if (tbl == null)
@@ -151,104 +150,65 @@ public class PartitionExtractor {
     }
 
     /**
-     * Prepare join model.
+     * Prepare table model.
      *
      * @param from FROM clause.
-     * @param where WHERE clause.
      * @return Join model.
      */
-    private PartitionTableModel prepareJoinModel(GridSqlAst from, GridSqlAst where) {
-        Set<String> leftJoined = new HashSet<>();
-        Collection<PartitionJoinCondition> conds = new HashSet<>();
+    private PartitionTableModel prepareTableModel(GridSqlAst from) {
+        PartitionTableModel res = new PartitionTableModel();
 
-        Collection<PartitionJoinGroup> grps = prepareJoinModelTables(from, leftJoined, conds);
+        prepareTableModel0(from, res);
 
-        // TODO
-        return null;
-    }
-
-    /**
-     * Prepare expressions from WHERE condition.
-     * <p>
-     * All conditions which qualifies for joined tables must be located at the top level of conjunctive expression.
-     * That is, (joinCond AND ...) is OK for us. But (joinCond OR ...) isn't.
-     * <p>
-     * Also we do not expect any additional join expressions on LEFT JOINed columns, so if they are met, processing is
-     * stopped.
-     *
-     * @param where WHERE condition.
-     * @param leftJoined Left joined tables.
-     * @param conds Condirtions.
-     */
-    private boolean prepareJoinModelConditions(GridSqlAst where, Collection<String> leftJoined,
-        Collection<PartitionJoinCondition> conds) {
-        // TODO
-        return false;
+        return res;
     }
 
     /**
      * Prepare tables which will be used in join model.
      *
      * @param from From flag.
-     * @param conds Conditions.
+     * @param model Table model.
      * @return {@code True} if extracted tables successfully, {@code false} if failed to extract.
      */
-    private List<PartitionJoinGroup> prepareJoinModelTables(
-        GridSqlAst from,
-        Collection<String> leftJoined,
-        Collection<PartitionJoinCondition> conds
-    ) {
+    private List<PartitionJoinTable> prepareTableModel0(GridSqlAst from, PartitionTableModel model) {
         if (from instanceof GridSqlJoin) {
             // Process JOIN recursively.
             GridSqlJoin join = (GridSqlJoin)from;
 
-            List<PartitionJoinGroup> leftGrp = prepareJoinModelTables(join.leftTable(), leftJoined, conds);
-
-            if (leftGrp == null)
-                return null;
-
-            List<PartitionJoinGroup> rightGrp = prepareJoinModelTables(join.leftTable(), leftJoined, conds);
-
-            if (rightGrp == null)
-                return null;
+            List<PartitionJoinTable> leftTbls = prepareTableModel0(join.leftTable(), model);
+            List<PartitionJoinTable> rightTbls = prepareTableModel0(join.leftTable(), model);
 
             if (join.isLeftOuter()) {
-                // Do not support complex LEFT-RIGHT join variations for now.
-                if (rightGrp.size() != 1)
-                    return null;
-
                 // "a LEFT JOIN b" is transformed into "a", and "b" is put into special stop-list.
                 // If a condition is met on "b" afterwards, we will stop partition pruning process.
-                for (PartitionJoinTable rightTbl : rightGrp.get(0).tables())
-                    leftJoined.add(rightTbl.alias());
+                for (PartitionJoinTable rightTbl : rightTbls)
+                    model.addExcludedTable(rightTbl.alias());
 
-                return leftGrp;
+                return leftTbls;
             }
 
-            // Extract condition from JOIN. Only equijoins are supported for now.
+            // Extract equi-join or cross-join from condition. For normal INNER JOINs most likely we will have "1=1"
+            // cross join here, real join condition will be found in WHERE clause later.
             GridSqlElement on = join.on();
 
             if (!PartitionExtractorUtils.isCrossJoinCondition(on)) {
-                PartitionJoinCondition cond = PartitionExtractorUtils.tryParseEquiJoinCondition(on);
+                PartitionJoinCondition cond = PartitionExtractorUtils.parseJoinCondition(on);
 
                 if (cond != null)
-                    conds.add(cond);
-                else
-                    // Non equi-join, stop partition pruning.
-                    return null;
+                    model.addJoin(cond);
             }
 
-            ArrayList<PartitionJoinGroup> res = new ArrayList<>(leftGrp.size() + rightGrp.size());
+            ArrayList<PartitionJoinTable> res = new ArrayList<>(leftTbls.size() + rightTbls.size());
 
-            res.addAll(leftGrp);
-            res.addAll(rightGrp);
+            res.addAll(leftTbls);
+            res.addAll(rightTbls);
 
             return res;
         }
 
-        PartitionJoinGroup grp = PartitionExtractorUtils.joinGroupForTable(from);
+        PartitionJoinTable tbl = PartitionExtractorUtils.prepareTable(from, model);
 
-        return Collections.singletonList(grp);
+        return Collections.singletonList(tbl);
     }
 
     /**

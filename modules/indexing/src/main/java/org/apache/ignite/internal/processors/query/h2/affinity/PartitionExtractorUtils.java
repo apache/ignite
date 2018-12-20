@@ -22,8 +22,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionAffinityFunctionType;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinAffinityDescriptor;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinCondition;
-import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinGroup;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinTable;
+import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionTableModel;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperation;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.h2.table.Column;
-import org.h2.value.Value;
 
 /**
  * Utility methods for partition extraction.
@@ -42,12 +41,13 @@ import org.h2.value.Value;
 public class PartitionExtractorUtils {
 
     /**
-     * Prepare join group for a single table.
+     * Prepare single table.
      *
-     * @param from Table.
-     * @return Join group.
+     * @param from Expression.
+     * @param tblModel Table model.
+     * @return Added table or {@code null} if table is exlcuded from the model.
      */
-    public static PartitionJoinGroup joinGroupForTable(GridSqlAst from) {
+    public static PartitionJoinTable prepareTable(GridSqlAst from, PartitionTableModel tblModel) {
         String alias = null;
 
         if (from instanceof GridSqlAlias) {
@@ -62,11 +62,15 @@ public class PartitionExtractorUtils {
 
             GridH2Table tbl0 = from0.dataTable();
 
-            if (tbl0 == null)
-                // Unknown table type, e.g. temp table.
-                return new PartitionJoinGroup(null).addTable(new PartitionJoinTable(alias));
+            // Unknown table type, e.g. temp table.
+            if (tbl0 == null) {
+                tblModel.addExcludedTable(alias);
+
+                return null;
+            }
 
             // Use identifier string because there might be two table with the same name but form different schemas.
+            // TODO: Be very careful here. Seems that alias should never be null here!
             if (alias == null)
                 alias = tbl0.identifierString();
 
@@ -88,17 +92,20 @@ public class PartitionExtractorUtils {
                 }
             }
 
-            PartitionJoinTable joinTbl = new PartitionJoinTable(alias, cacheName, affColName, secondAffColName);
+            PartitionJoinTable tbl = new PartitionJoinTable(alias, cacheName, affColName, secondAffColName);
+            PartitionJoinAffinityDescriptor aff = affinityDescriptorForCache(tbl0.cacheInfo().config());
 
-            PartitionJoinAffinityDescriptor affDesc = affinityDescriptorForCache(tbl0.cacheInfo().config());
+            tblModel.addTable(tbl, aff);
 
-            return new PartitionJoinGroup(affDesc).addTable(joinTbl);
+            return tbl;
         }
         else {
-            // Subquery/union
+            // Subquery/union/view, etc.
             assert alias != null;
 
-            return new PartitionJoinGroup(null).addTable(new PartitionJoinTable(alias));
+            tblModel.addExcludedTable(alias);
+
+            return null;
         }
     }
 
@@ -113,15 +120,15 @@ public class PartitionExtractorUtils {
             GridSqlOperation on0 = (GridSqlOperation)on;
 
             if (on0.operationType() == GridSqlOperationType.EQUAL) {
-                GridSqlConst left = PartitionExtractor.unwrapConst(on0.child(0));
-                GridSqlConst right = PartitionExtractor.unwrapConst(on0.child(1));
+                GridSqlConst leftConst = PartitionExtractor.unwrapConst(on0.child(0));
+                GridSqlConst rightConst = PartitionExtractor.unwrapConst(on0.child(1));
 
-                if (left != null && right != null) {
+                if (leftConst != null && rightConst != null) {
                     try {
-                        int leftVal = left.value().getInt();
-                        int rightVal = right.value().getInt();
+                        int leftConstval = leftConst.value().getInt();
+                        int rightConstVal = rightConst.value().getInt();
 
-                        return leftVal == rightVal;
+                        return leftConstval == rightConstVal;
                     }
                     catch (Exception ignore) {
                         // No-op.
@@ -140,11 +147,33 @@ public class PartitionExtractorUtils {
      * @param on Initial AST.
      * @return Join condition or {@code null} if not simple equijoin.
      */
-    public static PartitionJoinCondition tryParseEquiJoinCondition(GridSqlElement on) {
+    public static PartitionJoinCondition parseJoinCondition(GridSqlElement on) {
         if (on instanceof GridSqlOperation) {
             GridSqlOperation on0 = (GridSqlOperation)on;
 
             if (on0.operationType() == GridSqlOperationType.EQUAL) {
+                // Check for cross-join first.
+                GridSqlConst leftConst = PartitionExtractor.unwrapConst(on0.child(0));
+                GridSqlConst rightConst = PartitionExtractor.unwrapConst(on0.child(1));
+
+                if (leftConst != null && rightConst != null) {
+                    try {
+                        int leftConstval = leftConst.value().getInt();
+                        int rightConstVal = rightConst.value().getInt();
+
+                        if (leftConstval == rightConstVal)
+                            return PartitionJoinCondition.CROSS;
+                    }
+                    catch (Exception ignore) {
+                        // No-op.
+                    }
+                }
+
+                // This is not cross-join, neither normal join between columns.
+                if (leftConst != null || rightConst != null)
+                    return null;
+
+                // Check for normal equi-join.
                 GridSqlColumn left = PartitionExtractor.unwrapColumn(on0.child(0));
                 GridSqlColumn right = PartitionExtractor.unwrapColumn(on0.child(1));
 

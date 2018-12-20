@@ -59,6 +59,17 @@ public class PartitionTableModel {
      * @param alias Alias.
      */
     public void addExcludedTable(String alias) {
+        PartitionJoinTable tbl = tbls.remove(alias);
+
+        if (tbl != null) {
+            PartitionJoinGroup grp = grps.get(tbl.joinGroup());
+
+            assert grp != null;
+
+            if (grp.removeTable(tbl))
+                grps.remove(tbl.joinGroup());
+        }
+
         if (excludedTblNames == null)
             excludedTblNames = new HashSet<>();
 

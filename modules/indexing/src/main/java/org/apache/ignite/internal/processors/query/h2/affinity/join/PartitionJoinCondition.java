@@ -23,6 +23,9 @@ import org.apache.ignite.internal.util.typedef.F;
  * Join condition.
  */
 public class PartitionJoinCondition {
+    /** Cross JOIN. */
+    public static final PartitionJoinCondition CROSS = new PartitionJoinCondition(null, null, null, null, true);
+
     /** Left alias. */
     private final String leftAlias;
 
@@ -35,6 +38,9 @@ public class PartitionJoinCondition {
     /** Right column name. */
     private final String rightCol;
 
+    /** Whether this is a cross-join. */
+    private final boolean cross;
+
     /**
      * Constructor.
      *
@@ -44,10 +50,25 @@ public class PartitionJoinCondition {
      * @param rightCol Right column name.
      */
     public PartitionJoinCondition(String leftAlias, String rightAlias, String leftCol, String rightCol) {
+        this(leftAlias, rightAlias, leftCol, rightCol, false);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param leftAlias Left alias.
+     * @param rightAlias Right alias.
+     * @param leftCol Left column name.
+     * @param rightCol Right column name.
+     * @param cross Whether this is a cross-join.
+     */
+    private PartitionJoinCondition(String leftAlias, String rightAlias, String leftCol, String rightCol,
+        boolean cross) {
         this.leftAlias = leftAlias;
         this.rightAlias = rightAlias;
         this.leftCol = leftCol;
         this.rightCol = rightCol;
+        this.cross = cross;
     }
 
     /**
@@ -78,6 +99,13 @@ public class PartitionJoinCondition {
         return rightCol;
     }
 
+    /**
+     * @return Wheter this is a cross-join.
+     */
+    public boolean cross() {
+        return cross;
+    }
+
     /** {@inheritDoc} */
     @Override public int hashCode() {
         int res = leftAlias.hashCode();
@@ -85,6 +113,7 @@ public class PartitionJoinCondition {
         res = 31 * res + rightAlias.hashCode();
         res = 31 * res + leftCol.hashCode();
         res = 31 * res + rightCol.hashCode();
+        res = 31 * res + Boolean.hashCode(cross);
 
         return res;
     }
@@ -95,7 +124,7 @@ public class PartitionJoinCondition {
             PartitionJoinCondition other = (PartitionJoinCondition)obj;
 
             return F.eq(leftAlias, other.leftAlias) && F.eq(rightAlias, other.rightAlias) &&
-                F.eq(leftCol, other.leftCol) && F.eq(rightCol, other.rightCol);
+                F.eq(leftCol, other.leftCol) && F.eq(rightCol, other.rightCol) && F.eq(cross, other.cross);
         }
 
         return false;

@@ -61,6 +61,18 @@ public class PartitionJoinGroup {
     }
 
     /**
+     * Remove table from the group.
+     *
+     * @param tbl Table.
+     * @return If group is empty after removal.
+     */
+    public boolean removeTable(PartitionJoinTable tbl) {
+        tbls.remove(tbl);
+
+        return tbls.isEmpty();
+    }
+
+    /**
      * @return Affinity descriptor.
      */
     public PartitionJoinAffinityDescriptor affinityDescriptor() {
