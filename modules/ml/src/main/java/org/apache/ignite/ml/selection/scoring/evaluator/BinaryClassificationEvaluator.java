@@ -140,7 +140,7 @@ public class BinaryClassificationEvaluator {
             lbExtractor,
             mdl
         )) {
-            metricValues = binaryMetrics.score(cursor.iterator());
+            metricValues = binaryMetrics.scoreAll(cursor.iterator());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

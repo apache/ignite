@@ -27,6 +27,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.selection.cv.CrossValidation;
 import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.BinaryClassificationMetricValues;
+import org.apache.ignite.ml.selection.scoring.metric.BinaryClassificationMetrics;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 
@@ -81,7 +83,22 @@ public class CrossValidationExample {
                 4
             );
 
-            System.out.println(">>> Accuracy: " + Arrays.toString(scores));
+            BinaryClassificationMetrics metrics = new BinaryClassificationMetrics()
+                .withNegativeClsLb(0.0)
+                .withPositiveClsLb(1.0)
+                .withMetric(BinaryClassificationMetricValues::accuracy);
+
+            double[] scores2 = scoreCalculator.score(
+                trainer,
+                metrics,
+                ignite,
+                trainingSet,
+                (k, v) -> VectorUtils.of(v.x, v.y),
+                (k, v) -> v.lb,
+                4
+            );
+
+            System.out.println(">>> Accuracy: " + Arrays.toString(scores2));
 
             System.out.println(">>> Cross validation score calculator example completed.");
         }
