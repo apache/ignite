@@ -101,7 +101,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.plugin.security.SecurityPermission;
@@ -2034,15 +2033,12 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             IgniteCacheRestartingException restartingException = X.cause(e, IgniteCacheRestartingException.class);
 
             if (restartingException.restartFuture() == null) {
-                if (restartFut == null) {
-                    AffinityTopologyVersion topologyVersion = restartingException.getTopologyVersion();
+                if (restartFut == null)
+                    restartFut = suspend();
 
-                    if (topologyVersion != null)
-                        throw new WaitTopologyException(topologyVersion);
-                }
+                assert restartFut != null;
 
-                throw new IgniteCacheRestartingException(restartFut == null ?
-                        new IgniteFinishedFutureImpl<>(): new IgniteFutureImpl<>(restartFut), cacheName);
+                throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(restartFut), cacheName);
             }
             else
                 throw restartingException;
@@ -2247,36 +2243,33 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /**
-     * Restarts this cache proxy.
+     * Suspend this cache proxy.
+     * To make cache proxy active again, it's needed to restart it.
      */
-    public boolean restart() {
-        RestartFuture restartFut = new RestartFuture(cacheName);
+    public RestartFuture suspend() {
+        while (true) {
+            RestartFuture curFut = this.restartFut.get();
 
-        RestartFuture curFut = this.restartFut.get();
+            if (curFut == null) {
+                RestartFuture restartFut = new RestartFuture(cacheName);
 
-        boolean changed = this.restartFut.compareAndSet(curFut, restartFut);
+                if (this.restartFut.compareAndSet(null, restartFut)) {
+                    synchronized (this) {
+                        if (!restartFut.isDone()) {
+                            if (oldContext == null) {
+                                oldContext = ctx;
+                                delegate = null;
+                                ctx = null;
+                            }
+                        }
+                    }
 
-        if (changed && curFut != null)
-            restartFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
-                @Override public void apply(IgniteInternalFuture<Void> fut) {
-                    if (fut.error() != null)
-                        curFut.onDone(fut.error());
-                    else
-                        curFut.onDone();
-                }
-            });
-
-        synchronized (this) {
-            if (!restartFut.isDone()) {
-                if (oldContext == null) {
-                    oldContext = ctx;
-                    delegate = null;
-                    ctx = null;
+                    return restartFut;
                 }
             }
+            else
+                return curFut;
         }
-
-        return changed;
     }
 
     /**
@@ -2292,19 +2285,30 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     /**
      * If proxy is already being restarted, returns future to wait on, else restarts this cache proxy.
      *
-     * @return Future to wait on, or null.
+     * @param cache To use for restart proxy.
      */
-    public GridFutureAdapter<Void> opportunisticRestart() {
+    public void opportunisticRestart(IgniteInternalCache<K, V> cache) {
         RestartFuture restartFut = new RestartFuture(cacheName);
 
         while (true) {
-            if (this.restartFut.compareAndSet(null, restartFut))
-                return null;
+            if (this.restartFut.compareAndSet(null, restartFut)) {
+                onRestarted(cache.context(), cache.context().cache());
+
+                return;
+            }
 
             GridFutureAdapter<Void> curFut = this.restartFut.get();
 
-            if (curFut != null)
-                return curFut;
+            if (curFut != null) {
+                try {
+                    curFut.get();
+                }
+                catch (IgniteCheckedException ignore) {
+                    // Do notrhing.
+                }
+
+                return;
+            }
         }
     }
 

@@ -2778,7 +2778,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
 
                 if (proxy != null)
-                    proxy.restart();
+                    proxy.suspend();
             }
 
             if (proxy != null)
@@ -2809,7 +2809,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             proxy = jCacheProxies.get(req.cacheName());
 
             if (proxy != null)
-                proxy.restart();
+                proxy.suspend();
         }
         else {
             completeProxyInitialize(req.cacheName());
@@ -2862,7 +2862,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     IgniteCacheProxyImpl<?, ?> newProxy = new IgniteCacheProxyImpl(cache.context(), cache, false);
 
                     if (!cache.active())
-                        newProxy.restart();
+                        newProxy.suspend();
 
                     addjCacheProxy(cacheCtx.name(), newProxy);
                 }
