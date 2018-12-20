@@ -32,6 +32,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
@@ -526,18 +527,30 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             if (!F.isEmpty(backups)) {
                 assert backups.size() == 1 : backups;
 
-                UUID backupId = F.first(backups);
+                // Result of singleMapping() call can contain non-backup node when data rebalancing is in progress
+                // for a cache with 0 backups configured.
 
-                ClusterNode backup = cctx.discovery().node(backupId);
+                GridCacheContext<?, ?> cacheCtx = tx.txState().singleCacheContext(cctx);
 
-                // Nothing to do if backup has left the grid.
-                if (backup == null) {
-                    // No-op.
+                assert cacheCtx != null;
+
+                // TODO IGNITE-8823  The check currently commented hides the assertion in IgniteTxManager.removeTxReturn
+                // TODO IGNITE-8823  when number of backups is 0. Should understand what to do with non-backup nodes in
+                // TODO IGNITE-8823  Collection<UUID> backups. Reproducer: CacheRebalancingWithConcurrentProcessingTest.
+                /* if (cacheCtx.config().getBackups() == 1)*/ {
+                    UUID backupId = F.first(backups);
+
+                    ClusterNode backup = cctx.discovery().node(backupId);
+
+                    // Nothing to do if backup has left the grid.
+                    if (backup == null) {
+                        // No-op.
+                    }
+                    else if (backup.isLocal())
+                        cctx.tm().removeTxReturn(tx.xidVersion());
+                    else
+                        cctx.tm().sendDeferredAckResponse(backupId, tx.xidVersion());
                 }
-                else if (backup.isLocal())
-                    cctx.tm().removeTxReturn(tx.xidVersion());
-                else
-                    cctx.tm().sendDeferredAckResponse(backupId, tx.xidVersion());
             }
         }
     }
