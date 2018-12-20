@@ -17,8 +17,10 @@
 
 package org.apache.ignite.ml.util.generators.primitives.variable;
 
+import java.util.Arrays;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.util.generators.primitives.vector.VectorGenerator;
@@ -30,5 +32,11 @@ public interface RandomProducer extends Supplier<Double> {
 
     default IgniteFunction<Double, Double> noizify(IgniteFunction<Double, Double> f) {
         return t -> f.apply(t) + get();
+    }
+
+    public static VectorGenerator vectorize(RandomProducer... producers) {
+        A.notEmpty(producers, "producers");
+
+        return () -> VectorUtils.of(Arrays.stream(producers).mapToDouble(Supplier::get).toArray());
     }
 }

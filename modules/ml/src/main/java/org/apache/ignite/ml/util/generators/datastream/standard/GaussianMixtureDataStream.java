@@ -25,16 +25,16 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.generators.DataStreamGenerator;
 import org.apache.ignite.ml.util.generators.primitives.vector.VectorGenerator;
-import org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorUtils;
+import org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorPrimitives;
 import org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorsFamily;
 
 public class GaussianMixtureDataStream implements DataStreamGenerator {
     public static class Builder {
         private final List<Vector> means = new ArrayList<>();
-        private final List<Double> variances = new ArrayList<>();
+        private final List<Vector> variances = new ArrayList<>();
 
-        public Builder add(Vector mean, double variance) {
-            A.ensure(variance >= 0, "variance >= 0");
+        public Builder add(Vector mean, Vector variance) {
+            A.ensure(variance.size() >= 0, "variance.size() >= 0");
 
             means.add(mean);
             variances.add(variance);
@@ -45,7 +45,7 @@ public class GaussianMixtureDataStream implements DataStreamGenerator {
             A.notEmpty(means, "this.means.size()");
 
             Vector[] means = new Vector[this.means.size()];
-            double[] variances = new double[this.variances.size()];
+            Vector[] variances = new Vector[this.variances.size()];
             for(int i = 0; i<this.means.size(); i++) {
                 means[i] = this.means.get(i);
                 variances[i] = this.variances.get(i);
@@ -56,9 +56,9 @@ public class GaussianMixtureDataStream implements DataStreamGenerator {
     }
 
     private final Vector[] points;
-    private final double[] variances;
+    private final Vector[] variances;
 
-    private GaussianMixtureDataStream(Vector[] points, double[] variances) {
+    private GaussianMixtureDataStream(Vector[] points, Vector[] variances) {
         this.points = points;
         this.variances = variances;
     }
@@ -67,7 +67,7 @@ public class GaussianMixtureDataStream implements DataStreamGenerator {
         VectorGeneratorsFamily.Builder builder = new VectorGeneratorsFamily.Builder();
         long seed = System.currentTimeMillis();
         for (int i = 0; i < points.length; i++) {
-            VectorGenerator gauss = VectorGeneratorUtils.gauss(points[i].asArray(), variances[i], seed);
+            VectorGenerator gauss = VectorGeneratorPrimitives.gauss(points[i], variances[i], seed);
             builder = builder.with(gauss, 1.0);
             seed >>= 2;
         }

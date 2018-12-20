@@ -22,7 +22,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.generators.DataStreamGenerator;
-import org.apache.ignite.ml.util.generators.primitives.function.FunctionWithNoize;
 import org.apache.ignite.ml.util.generators.primitives.variable.GaussRandomProducer;
 import org.apache.ignite.ml.util.generators.primitives.variable.UniformRandomProducer;
 import org.apache.ignite.ml.util.generators.primitives.vector.ParametricVectorGenerator;
@@ -52,8 +51,8 @@ public class CirclesDataStream implements DataStreamGenerator {
 
             GaussRandomProducer randomProducer = new GaussRandomProducer(0, variance);
             builder = builder.with(new ParametricVectorGenerator(new UniformRandomProducer(-10, 10),
-                new FunctionWithNoize<>(t -> radius * Math.sin(t), randomProducer),
-                new FunctionWithNoize<>(t -> radius * Math.cos(t), randomProducer)
+                randomProducer.noizify(t -> radius * Math.sin(t)),
+                randomProducer.noizify(t -> radius * Math.cos(t))
             ), 1.0);
         }
 

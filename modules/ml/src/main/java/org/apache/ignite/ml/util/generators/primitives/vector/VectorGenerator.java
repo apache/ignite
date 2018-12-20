@@ -26,15 +26,36 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.generators.DataStreamGenerator;
+import org.apache.ignite.ml.util.generators.primitives.variable.RandomProducer;
 
 public interface VectorGenerator extends Supplier<Vector> {
+    public default VectorGenerator map(IgniteFunction<Vector, Vector> f) {
+        return () -> f.apply(get());
+    }
+
+    public default VectorGenerator filter(IgnitePredicate<Vector> predicate) {
+        return () -> {
+            Vector v = null;
+            do {
+                v = get();
+            } while(!predicate.apply(v));
+
+            return v;
+        };
+    }
+
     public default VectorGenerator concat(VectorGenerator other) {
-        VectorGenerator out = this;
-        return () -> VectorUtils.concat(out.get(), other.get());
+        return () -> VectorUtils.concat(this.get(), other.get());
+    }
+
+    public default VectorGenerator plus(VectorGenerator other) {
+        return () -> this.get().plus(other.get());
     }
 
     public default VectorGenerator shuffle() {
@@ -50,16 +71,14 @@ public interface VectorGenerator extends Supplier<Vector> {
         for(int i = 0; i < shuffledIds.size(); i++)
             shuffleMap.put(i, shuffledIds.get(i));
 
-        VectorGenerator out = this;
-        return () -> {
-            Vector original = out.get();
+        return map(original -> {
             Vector copy = original.copy();
             for(int to = 0; to < copy.size(); to++) {
                 int from = shuffleMap.get(to);
                 copy.set(to, original.get(from));
             }
             return copy;
-        };
+        });
     }
 
     public default VectorGenerator duplicateRandomFeatures(int increaseSize) {
@@ -68,23 +87,32 @@ public interface VectorGenerator extends Supplier<Vector> {
 
     public default VectorGenerator duplicateRandomFeatures(int increaseSize, Long seed) {
         Random rnd = new Random(seed);
-        Vector v = get();
-        int[] featuresDuplicateIds = rnd.ints().limit(increaseSize).map(i -> Math.abs(i) % v.size()).toArray();
-        VectorGenerator out = this;
-        return () -> {
-            Vector original = out.get();
+        return map(original -> {
             double[] values = new double[original.size() + increaseSize];
             for(int i = 0; i < original.size(); i++)
                 values[i] = original.get(i);
-            for(int i = 0; i < featuresDuplicateIds.length; i++)
-                values[original.size() + i] = original.get(featuresDuplicateIds[i]);
+            for(int i = 0; i < increaseSize; i++) {
+                int rndId = rnd.nextInt(original.size());
+                values[original.size() + i] = original.get(rndId);
+            }
             return VectorUtils.of(values);
-        };
+        });
     }
 
     public default VectorGenerator move(Vector v) {
-        VectorGenerator out = this;
-        return () -> out.get().plus(v);
+        return map(x -> x.plus(v));
+    }
+
+    public default VectorGenerator rotate(double angle) {
+        return map(x -> x.copy()
+            .set(0, x.get(0) * Math.cos(angle) + x.get(1) * Math.sin(angle))
+            .set(1, -x.get(0) * Math.sin(angle) + x.get(1) * Math.cos(angle))
+        );
+    }
+
+    public default VectorGenerator noisify(RandomProducer randomProducer) {
+        int vectorSize = get().size();
+        return plus(randomProducer.vectorize(vectorSize));
     }
 
     public default DataStreamGenerator asDataStream() {

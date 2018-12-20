@@ -19,6 +19,7 @@ package org.apache.ignite.ml.util.generators.primitives.vector;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -77,7 +78,8 @@ public class VectorGeneratorsFamily implements VectorGenerator {
         }
 
         public Builder map(IgniteFunction<VectorGenerator, VectorGenerator> f) {
-            mapper = x -> f.apply(mapper.apply(x));
+            final IgniteFunction<VectorGenerator, VectorGenerator> old = mapper;
+            mapper = x -> f.apply(old.apply(x));
             return this;
         }
 
