@@ -25,7 +25,6 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import org.apache.ignite.internal.GridKernalContext;
@@ -141,7 +140,7 @@ public class JdbcMetadataInfo {
      * Ignite has only one possible CATALOG_NAME, it is handled on the client (driver) side.
      *
      * @param protocolVer for what version of protocol to generate metadata. Early versions of protocol don't support
-     *        some features like default values or precision/scale. If {@code null}, current version will be used.
+     * some features like default values or precision/scale. If {@code null}, current version will be used.
      * @return List of metadatas about columns that match specified schema/tablename/columnname criterias.
      */
     public Collection<JdbcColumnMeta> getColumnsMeta(@Nullable ClientListenerProtocolVersion protocolVer,
@@ -209,7 +208,7 @@ public class JdbcMetadataInfo {
      * @param schemaNamePtrn sql pattern for schema name filter.
      * @return schema names that matches provided pattern.
      */
-    public Set<String> getSchemasMeta(String schemaNamePtrn) {
+    public SortedSet<String> getSchemasMeta(String schemaNamePtrn) {
         SortedSet<String> schemas = new TreeSet<>(); // to have values sorted.
 
         for (String cacheName : ctx.cache().publicCacheNames()) {
