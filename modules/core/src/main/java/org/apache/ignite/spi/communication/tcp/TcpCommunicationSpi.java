@@ -3785,12 +3785,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 ch.write(ByteBuffer.wrap(U.IGNITE_HEADER));
 
             // Step 2. Prepare Handshake message to send remote node.
-            int msgSize = msg.getMessageSize();
-
             if (log.isDebugEnabled())
                 log.debug("Writing handshake message [rmtNode=" + rmtNodeId + ", msg=" + msg + ']');
 
-            buf = ByteBuffer.allocate(msgSize);
+            buf = ByteBuffer.allocate(msg.getMessageSize());
 
             buf.order(ByteOrder.nativeOrder());
 
