@@ -86,7 +86,7 @@ public class PartitionExtractor {
             return null;
 
         // Do extract.
-        PartitionNode tree = extractFromExpression(select.where());
+        PartitionNode tree = extractFromExpression(select.where(), false);
 
         assert tree != null;
 
@@ -232,10 +232,14 @@ public class PartitionExtractor {
      * Extract partitions from expression.
      *
      * @param expr Expression.
+     * @param disjunct Whether current processing frame is located under disjunction ("OR"). In this case we cannot
+     *                 rely on join expressions like (A.a = B.b) to build co-location model because another conflicting
+     *                 join expression on the same tables migth be located on the other side of the "OR".
+     *                 Example: "JOIN on A.a = B.b OR A.a > B.b".
      * @return Partition tree.
      */
     @SuppressWarnings("EnumSwitchStatementWhichMissesCases")
-    private PartitionNode extractFromExpression(GridSqlAst expr) throws IgniteCheckedException {
+    private PartitionNode extractFromExpression(GridSqlAst expr, boolean disjunct) throws IgniteCheckedException {
         PartitionNode res = PartitionAllNode.INSTANCE;
 
         if (expr instanceof GridSqlOperation) {
@@ -243,7 +247,7 @@ public class PartitionExtractor {
 
             switch (op.operationType()) {
                 case AND:
-                    res = extractFromAnd(op);
+                    res = extractFromAnd(op, disjunct);
 
                     break;
 
@@ -270,13 +274,14 @@ public class PartitionExtractor {
      * Extract partition information from AND.
      *
      * @param op Operation.
+     * @param disjunct Disjunction marker.
      * @return Partition.
      */
-    private PartitionNode extractFromAnd(GridSqlOperation op) throws IgniteCheckedException {
+    private PartitionNode extractFromAnd(GridSqlOperation op, boolean disjunct) throws IgniteCheckedException {
         assert op.size() == 2;
 
-        PartitionNode part1 = extractFromExpression(op.child(0));
-        PartitionNode part2 = extractFromExpression(op.child(1));
+        PartitionNode part1 = extractFromExpression(op.child(0), disjunct);
+        PartitionNode part2 = extractFromExpression(op.child(1), disjunct);
 
         return new PartitionCompositeNode(part1, part2, PartitionCompositeNodeOperator.AND);
     }
@@ -290,8 +295,9 @@ public class PartitionExtractor {
     private PartitionNode extractFromOr(GridSqlOperation op) throws IgniteCheckedException {
         assert op.size() == 2;
 
-        PartitionNode part1 = extractFromExpression(op.child(0));
-        PartitionNode part2 = extractFromExpression(op.child(1));
+        // Parse inner expressions recursively with disjuncion flag set.
+        PartitionNode part1 = extractFromExpression(op.child(0), true);
+        PartitionNode part2 = extractFromExpression(op.child(1), true);
 
         return new PartitionCompositeNode(part1, part2, PartitionCompositeNodeOperator.OR);
     }
