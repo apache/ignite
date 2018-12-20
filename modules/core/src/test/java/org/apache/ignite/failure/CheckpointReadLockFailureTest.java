@@ -53,9 +53,6 @@ public class CheckpointReadLockFailureTest extends GridCommonAbstractTest {
     };
 
     /** */
-    private static final long CHECKPOINT_FREQ = 5_000;
-
-    /** */
     private static final String LOADER_THREAD_NAME_PREFIX = "cache-load";
 
     /** */
