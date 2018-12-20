@@ -188,6 +188,29 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * Trying to cancel already cancelled query.
+     * No exceptions exceped.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCancelCanceledQuery() throws Exception {
+        stmt.execute("SELECT 1;");
+
+        assertNotNull(stmt.getResultSet());
+
+        stmt.cancel();
+
+        stmt.cancel();
+
+        GridTestUtils.assertThrows(log, () -> {
+            stmt.getResultSet();
+
+            return null;
+        }, SQLException.class, "The query was cancelled while executing.");
+    }
+
+    /**
      * Trying to cancel closed query.
      * SQLException with message "Statement is closed." expected.
      *
@@ -295,6 +318,60 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
 
         // Ensures that there were no exceptions within async cancellation process.
         cancelRes.get(CHECK_RESULT_TIMEOUT);
+    }
+
+    /**
+     * Trying close canceling query. No exceptions expected.
+     * In order to guarantee correct concurrent processing of query itself and it's cancellation request
+     * two latches and some other stuff is used.
+     * For more details see <code>TestSQLFunctions#awaitLatchCancelled()</code>
+     * and <code>JdbcThinStatementCancelSelfTest#cancel(java.sql.Statement)</code>.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCloseCancelingQuery() throws Exception {
+        TestSQLFunctions.init();
+
+        IgniteInternalFuture res = GridTestUtils.runAsync(() -> {
+            try {
+                TestSQLFunctions.cancelLatch.await();
+
+                long cancelCntrBeforeCancel = ClientListenerProcessor.CANCEL_COUNTER.get();
+
+                stmt.cancel();
+
+                try {
+                    GridTestUtils.waitForCondition(
+                        () -> ClientListenerProcessor.CANCEL_COUNTER.get() == cancelCntrBeforeCancel + 1, TIMEOUT);
+                }
+                catch (IgniteInterruptedCheckedException ignored) {
+                    // No-op.
+                }
+
+                assertEquals(cancelCntrBeforeCancel + 1, ClientListenerProcessor.CANCEL_COUNTER.get());
+
+                // Nothing expected here, cause query was already marked as canceled.
+                stmt.close();
+
+                TestSQLFunctions.reqLatch.countDown();
+            }
+            catch (Exception e) {
+                log.error("Unexpected exception.", e);
+
+                fail("Unexpected exception");
+            }
+        });
+
+        GridTestUtils.assertThrows(log, () -> {
+            stmt.executeQuery("select * from Integer where _key in " +
+                "(select _key from Integer where awaitLatchCancelled() = 0) and shouldNotBeCalledInCaseOfCancellation()");
+
+            return null;
+        }, SQLException.class, "The query was cancelled while executing.");
+
+        // Ensures that there were no exceptions within async cancellation process.
+        res.get(CHECK_RESULT_TIMEOUT);
     }
 
     /**
