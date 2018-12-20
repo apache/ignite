@@ -21,6 +21,7 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestResult;
+import junit.framework.TestSuite;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
 
 /**
@@ -34,13 +35,22 @@ class ConfigVariationsMediator {
     private final JUnit4TestAdapter adapter;
 
     /** */
+    private final String name;
+
+    /** */
     ConfigVariationsMediator(Class<? extends IgniteConfigVariationsAbstractTest> cls, VariationsTestsConfig cfg) {
         adapter = prepare(cls, cfg);
+
+        name = cls.getSimpleName();
     }
 
     /** */
-    JUnit4TestAdapter adapter() {
-        return adapter;
+    TestSuite makeTestSuite() {
+        TestSuite suite = new TestSuite(name);
+
+        suite.addTest(adapter);
+
+        return suite;
     }
 
     /** */

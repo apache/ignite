@@ -198,7 +198,7 @@ public class ConfigVariationsTestSuiteBuilder {
             addedSuite = createMultiNodeTestSuite((Class<? extends IgniteCacheConfigVariationsAbstractTest>)cls,
                 testCfg, testedNodeCnt, withClients, skipWaitPartMapExchange);
        else
-            addedSuite = new IgniteConfigVariationsTestSuite(cls, testCfg);
+            addedSuite = new ConfigVariationsMediator(cls, testCfg).makeTestSuite();
 
         return addedSuite;
     }
@@ -225,7 +225,7 @@ public class ConfigVariationsTestSuiteBuilder {
                 stopNodes, startCache, stopCache, cfg.cacheStartMode(), cfg.gridCount(), i, withClients,
                 !skipWaitParMapExchange);
 
-            suite.addTest(new IgniteConfigVariationsTestSuite(cls, cfg0));
+            suite.addTest(new ConfigVariationsMediator(cls, cfg0).makeTestSuite());
         }
 
         return suite;

@@ -22,7 +22,7 @@ import junit.framework.TestResult;
 import junit.framework.TestSuite;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
 
-/**
+/** TODO IGNITE-10739 remove this.
  * Configuration variations test suite.
  */
 public class IgniteConfigVariationsTestSuite extends TestSuite {
@@ -32,7 +32,9 @@ public class IgniteConfigVariationsTestSuite extends TestSuite {
     /**
      * @param cls Test class.
      * @param cfg Configuration.
+     * @deprecated Use {@link ConfigVariationsMediator#makeTestSuite()} instead.
      */
+    @Deprecated
     public IgniteConfigVariationsTestSuite(Class<? extends IgniteConfigVariationsAbstractTest> cls,
         VariationsTestsConfig cfg) {
         super(cls);
