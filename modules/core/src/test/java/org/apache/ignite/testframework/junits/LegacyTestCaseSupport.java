@@ -21,9 +21,9 @@ import junit.framework.TestCase; // IMPL NOTE some old tests expect inherited de
 import junit.framework.TestResult;
 
 /**
- * Supports compatibility with old tests based on configurations variations.
+ * Supports compatibility with old test {@code IgniteTwitterStreamerTest}.
  */
-abstract class LegacyConfigVariationsSupport extends TestCase {
+abstract class LegacyTestCaseSupport extends TestCase {
     /**
      * Fallback to superclass.
      */

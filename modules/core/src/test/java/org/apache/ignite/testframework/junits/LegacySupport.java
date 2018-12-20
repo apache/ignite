@@ -27,7 +27,7 @@ import org.junit.runners.model.Statement;
  * inherited deprecated assertions and specific old interface for GridTestUtils.
  */
 @SuppressWarnings({"TransientFieldInNonSerializableClass"})
-public abstract class LegacySupport extends LegacyConfigVariationsSupport {
+public abstract class LegacySupport extends LegacyTestCaseSupport {
     /**
      * Supports obtaining test name for JUnit4 framework in a way that makes it available for legacy methods invoked
      * from {@code runTest(Statement)}.

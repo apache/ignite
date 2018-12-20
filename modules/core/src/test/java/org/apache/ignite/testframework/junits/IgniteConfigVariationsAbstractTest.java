@@ -25,7 +25,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import junit.framework.TestResult;
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -43,11 +42,6 @@ import org.junit.runners.model.Statement;
 
 /**
  * Common abstract test for Ignite tests based on configurations variations.
- * TODO IGNITE-10739 redesign this and related classes to get rid of JUnit 3 features.
- *
- * @deprecated This class uses obsolete methods of JUnit 3 framework and because of that you need to use JUnit 3
- * naming convention for test cases in classes extending it. Also, Junit 4 annotations like {@code Before}
- * and {@code Ignore} may not work. It is expected to be reworked per IGNITE-10739.
  */
 public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstractTest {
     /** */
@@ -79,35 +73,13 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     }
 
     /**
-     * @param testsCfg Tests configuration.
-     */
-    @Deprecated // todo replace with static setter and overridden runTestCase
-    public void setTestsConfiguration(VariationsTestsConfig testsCfg) {
-        assert this.testsCfg == null : "Test config must be set only once [oldTestCfg=" + this.testsCfg
-            + ", newTestCfg=" + testsCfg + "]";
-
-        this.testsCfg = testsCfg;
-    }
-
-    /** TODO IGNITE-10739 remove this.
      * {@inheritDoc}
      * <p>
-     * Fallback to TestCase functionality.</p>
+     * IMPL NOTE when this override was introduced, alternative was to replace multiple usages of instance member
+     * {@code testsCfg} splattered all over the project with those of static one {@code testsCfgInjected} - kind
+     * of cumbersome, risky and potentially redundant change given the chance of later migration to JUnit 5 and
+     * further rework to use dynamic test parameters that would likely cause removal of the static member.</p>
      */
-    @Override public int countTestCases() {
-        return countTestCasesFallback();
-    }
-
-    /** TODO IGNITE-10739 remove this.
-     * {@inheritDoc}
-     * <p>
-     * Fallback to TestCase functionality.</p>
-     */
-    @Override public void run(TestResult res) {
-        runFallback(res);
-    }
-
-    /** {@inheritDoc} */
     @Override protected void runTestCase(Statement testRoutine) throws Throwable {
         testsCfg = testsCfgInjected;
 
