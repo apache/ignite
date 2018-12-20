@@ -115,8 +115,4 @@ public class CacheHibernateBlobStoreSelfTest extends
         store.load("key");
     }
 
-    @Test
-    @Override public void testSimpleMultithreading() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1757");
-    }
 }
