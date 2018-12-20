@@ -75,6 +75,7 @@ public class PartitionExtractor {
 
         GridSqlSelect select = (GridSqlSelect)qry;
 
+        // Prepare table model.
         PartitionTableModel tblModel = prepareTableModel(select.from());
 
         // Currently we can extract data only from a single table.
