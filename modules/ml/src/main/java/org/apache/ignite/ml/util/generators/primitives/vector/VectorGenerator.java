@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -86,6 +87,8 @@ public interface VectorGenerator extends Supplier<Vector> {
     }
 
     public default VectorGenerator duplicateRandomFeatures(int increaseSize, Long seed) {
+        A.ensure(increaseSize > 0, "increaseSize > 0");
+
         Random rnd = new Random(seed);
         return map(original -> {
             double[] values = new double[original.size() + increaseSize];

@@ -73,7 +73,7 @@ public class VectorGeneratorPrimitives {
     }
 
     public static VectorGenerator zero(int size) {
-        return constant(VectorUtils.of(DoubleStream.of(0.).limit(size).toArray()));
+        return constant(VectorUtils.of(new double[size]));
     }
 
     public static VectorGenerator constant(Vector v) {
