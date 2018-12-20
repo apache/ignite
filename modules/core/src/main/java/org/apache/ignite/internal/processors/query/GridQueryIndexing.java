@@ -128,7 +128,7 @@ public interface GridQueryIndexing {
      * @param keepBinary Keep binary flag.
      * @param filter Cache name and key filter.
      * @param cancel Query cancel.
-     * @param qryId Running query id. {@code null) in case query is not registered.
+     * @param qryId Running query id. {@code null} in case query is not registered.
      * @return Cursor.
      */
     public FieldsQueryCursor<List<?>> queryLocalSqlFields(String schemaName, SqlFieldsQuery qry,
