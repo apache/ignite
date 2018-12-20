@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity.join;
 
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -35,23 +36,8 @@ public class PartitionJoinTable {
     /** Second affinity column name (possible when _KEY is affinity column and an alias for this column exists. */
     private final String secondAffColName;
 
-    /** Whether this is not a classical table. */
-    private final boolean nonTable;
-
-    /**
-     * Create join table for subquery.
-     *
-     * @param alias Alias.
-     */
-    public PartitionJoinTable(String alias) {
-        this.alias = alias;
-
-        cacheName = null;
-        affColName = null;
-        secondAffColName = null;
-
-        nonTable = true;
-    }
+    /** Join group index. */
+    private int joinGrp;
 
     /**
      * Constructor.
@@ -78,8 +64,6 @@ public class PartitionJoinTable {
             this.affColName = affColName;
             this.secondAffColName = secondAffColName;
         }
-
-        nonTable = false;
     }
 
     /**
@@ -106,21 +90,38 @@ public class PartitionJoinTable {
     /**
      * @return Affinity column name.
      */
-    public String affinityColName() {
+    public String affinityColumnName() {
         return affColName;
     }
 
     /**
      * @return Second affinity column name.
      */
-    public String secondAffinityColName() {
+    public String secondAffinityColumnName() {
         return secondAffColName;
     }
 
     /**
-     * @return Whether this is not a classical table (subquery, union, temp tables, etc).
+     * Check whether passed column is affinity column.
+     *
+     * @param colName Column name.
+     * @return {@code True} if affinity column.
      */
-    public boolean isNonTable() {
-        return nonTable;
+    public boolean isAffinityColumn(String colName) {
+        return F.eq(colName, affColName) || F.eq(colName, secondAffColName);
+    }
+
+    /**
+     * @return Join group index.
+     */
+    public int joinGroup() {
+        return joinGrp;
+    }
+
+    /**
+     * @param joinGrp Join group index.
+     */
+    public void joinGorup(int joinGrp) {
+        this.joinGrp = joinGrp;
     }
 }

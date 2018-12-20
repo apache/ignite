@@ -22,7 +22,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinCondition;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinGroup;
-import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinModel;
+import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionTableModel;
 import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinTable;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
@@ -157,7 +157,7 @@ public class PartitionExtractor {
      * @param where WHERE clause.
      * @return Join model.
      */
-    private PartitionJoinModel prepareJoinModel(GridSqlAst from, GridSqlAst where) {
+    private PartitionTableModel prepareJoinModel(GridSqlAst from, GridSqlAst where) {
         Set<String> leftJoined = new HashSet<>();
         Collection<PartitionJoinCondition> conds = new HashSet<>();
 
