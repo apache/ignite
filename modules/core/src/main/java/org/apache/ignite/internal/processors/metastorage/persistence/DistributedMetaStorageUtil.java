@@ -50,19 +50,19 @@ class DistributedMetaStorageUtil {
 
     /** */
     public static String localKey(String globalKey) {
-        return COMMON_KEY_PREFIX + KEY_PREFIX + globalKey;
+        return localKeyPrefix() + globalKey;
     }
 
     /** */
     public static String globalKey(String locKey) {
-        assert isLocalKey(locKey) : locKey;
+        assert locKey.startsWith(localKeyPrefix()) : locKey;
 
-        return locKey.substring((COMMON_KEY_PREFIX + KEY_PREFIX).length());
+        return locKey.substring(localKeyPrefix().length());
     }
 
     /** */
-    public static boolean isLocalKey(String key) {
-        return key.startsWith(COMMON_KEY_PREFIX + KEY_PREFIX);
+    public static String localKeyPrefix() {
+        return COMMON_KEY_PREFIX + KEY_PREFIX;
     }
 
     /** */
@@ -72,19 +72,19 @@ class DistributedMetaStorageUtil {
 
     /** */
     public static String historyItemKey(long ver) {
-        return COMMON_KEY_PREFIX + HISTORY_ITEM_KEY_PREFIX + ver;
-    }
-
-    /** */
-    public static boolean isHistoryItemKey(String locKey) {
-        return locKey.startsWith(COMMON_KEY_PREFIX + HISTORY_ITEM_KEY_PREFIX);
+        return historyItemPrefix() + ver;
     }
 
     /** */
     public static long historyItemVer(String histItemKey) {
-        assert isHistoryItemKey(histItemKey);
+        assert histItemKey.startsWith(historyItemPrefix());
 
-        return Long.parseLong(histItemKey.substring((COMMON_KEY_PREFIX + HISTORY_ITEM_KEY_PREFIX).length()));
+        return Long.parseLong(histItemKey.substring(historyItemPrefix().length()));
+    }
+
+    /** */
+    public static String historyItemPrefix() {
+        return COMMON_KEY_PREFIX + HISTORY_ITEM_KEY_PREFIX;
     }
 
     /** */

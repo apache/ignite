@@ -30,7 +30,7 @@ class NotAvailableDistributedMetaStorageBridge implements DistributedMetaStorage
 
     /** {@inheritDoc} */
     @Override public void iterate(
-        Predicate<String> globalKeyPred,
+        String globalKeyPre,
         BiConsumer<String, ? super Serializable> cb,
         boolean unmarshal
     ) {

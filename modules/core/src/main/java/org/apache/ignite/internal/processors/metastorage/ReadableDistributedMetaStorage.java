@@ -33,7 +33,7 @@ public interface ReadableDistributedMetaStorage {
 
     /** */
     void iterate(
-        @NotNull Predicate<String> keyPred,
+        @NotNull String keyPrefix,
         @NotNull BiConsumer<String, ? super Serializable> cb
     ) throws IgniteCheckedException;
 

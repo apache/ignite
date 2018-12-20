@@ -30,12 +30,11 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.COMMON_KEY_PREFIX;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.cleanupKey;
-import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.globalKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyGuardKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyVersionKey;
-import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.isLocalKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.localKey;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.localKeyPrefix;
 
 /** */
 class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBridge {
@@ -61,12 +60,12 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
 
     /** {@inheritDoc} */
     @Override public void iterate(
-        Predicate<String> globalKeyPred,
+        String globalKeyPrefix,
         BiConsumer<String, ? super Serializable> cb,
         boolean unmarshal
     ) throws IgniteCheckedException {
         metastorage.iterate(
-            key -> isLocalKey(key) && globalKeyPred.test(globalKey(key)),
+            localKeyPrefix() + globalKeyPrefix,
             cb,
             unmarshal
         );
@@ -114,7 +113,7 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
             if (startupExtras.clearLocData) {
                 Set<String> allKeys = new HashSet<>();
 
-                metastorage.iterate(key -> key.startsWith(COMMON_KEY_PREFIX), (key, val) -> allKeys.add(key), false);
+                metastorage.iterate(COMMON_KEY_PREFIX, (key, val) -> allKeys.add(key), false);
 
                 for (String key : allKeys)
                     metastorage.remove(key);

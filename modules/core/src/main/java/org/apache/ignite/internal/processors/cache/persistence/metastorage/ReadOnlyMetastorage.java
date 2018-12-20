@@ -17,11 +17,11 @@
 package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -37,19 +37,8 @@ public interface ReadOnlyMetastorage {
 
     /** */
     public void iterate(
-        @NotNull Predicate<String> keyPred,
+        @NotNull String keyPrefix,
         @NotNull BiConsumer<String, ? super Serializable> cb,
         boolean unmarshal
     ) throws IgniteCheckedException;
-
-    /**
-     * Read all keys matching provided predicate.
-     *
-     * @param keyPred Key predicate.
-     * @return Matched key-value pairs.
-     * @throws IgniteCheckedException If failed.
-     * @deprecated Method is poorly designed. It should be replaced with something better.
-     */
-    @Deprecated
-    Map<String, ? extends Serializable> readForPredicate(IgnitePredicate<String> keyPred) throws IgniteCheckedException;
 }

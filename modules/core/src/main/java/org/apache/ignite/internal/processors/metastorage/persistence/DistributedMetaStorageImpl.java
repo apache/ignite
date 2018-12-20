@@ -189,10 +189,14 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
             unlock();
         }
 
+        DistributedMetaStorageBridge oldBridge = bridge;
+
         bridge = readOnlyBridge;
 
         for (GlobalMetastorageLifecycleListener subscriber : isp.getGlobalMetastorageSubscribers())
             subscriber.onReadyForRead(this);
+
+//        bridge = oldBridge; // OOPS!
     }
 
     /** */
@@ -257,13 +261,13 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
 
     /** {@inheritDoc} */
     @Override public void iterate(
-        @NotNull Predicate<String> keyPred,
+        @NotNull String keyPrefix,
         @NotNull BiConsumer<String, ? super Serializable> cb
     ) throws IgniteCheckedException {
         lock();
 
         try {
-            bridge.iterate(keyPred, cb, true);
+            bridge.iterate(keyPrefix, cb, true);
         }
         finally {
             unlock();
@@ -329,8 +333,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
                 DistributedMetaStorageHistoryItem[] hist = joiningData.hist;
 
                 if (remoteVer - actualVer <= hist.length) {
-                    assert bridge instanceof ReadOnlyDistributedMetaStorageBridge
-                        || bridge instanceof EmptyDistributedMetaStorageBridge;
+//                    assert bridge instanceof NotAvailableDistributedMetaStorageBridge
+//                        || bridge instanceof EmptyDistributedMetaStorageBridge;
 
                     for (long v = actualVer + 1; v <= remoteVer; v++)
                         updateLater(hist[(int)(v - remoteVer + hist.length - 1)]);
@@ -446,7 +450,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
 
         try {
             bridge.iterate(
-                key -> true,
+                "",
                 (key, val) -> fullData.add(new DistributedMetaStorageHistoryItem(key, (byte[])val)),
                 false
             );

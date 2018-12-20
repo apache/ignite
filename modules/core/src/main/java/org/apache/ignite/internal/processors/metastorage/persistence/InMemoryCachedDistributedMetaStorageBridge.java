@@ -35,6 +35,7 @@ class InMemoryCachedDistributedMetaStorageBridge implements DistributedMetaStora
     /** */
     private final Map<String, byte[]> cache = new ConcurrentHashMap<>();
 
+    /** */
     public InMemoryCachedDistributedMetaStorageBridge(DistributedMetaStorageImpl dms) {
         this.dms = dms;
     }
@@ -48,12 +49,12 @@ class InMemoryCachedDistributedMetaStorageBridge implements DistributedMetaStora
 
     /** {@inheritDoc} */
     @Override public void iterate(
-        Predicate<String> globalKeyPred,
+        String globalKeyPrefix,
         BiConsumer<String, ? super Serializable> cb,
         boolean unmarshal
     ) throws IgniteCheckedException {
         for (Map.Entry<String, byte[]> entry : cache.entrySet()) {
-            if (globalKeyPred.test(entry.getKey()))
+            if (entry.getKey().startsWith(globalKeyPrefix))
                 cb.accept(entry.getKey(), unmarshal ? DistributedMetaStorageUtil.unmarshal(entry.getValue()) : entry.getValue());
         }
     }

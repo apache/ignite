@@ -20,18 +20,17 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.function.BiConsumer;
-import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.cleanupKey;
-import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.globalKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyGuardKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemKey;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemPrefix;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemVer;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyVersionKey;
-import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.isLocalKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.localKey;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.localKeyPrefix;
 
 /** */
 class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBridge {
@@ -54,12 +53,12 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
 
     /** {@inheritDoc} */
     @Override public void iterate(
-        Predicate<String> globalKeyPred,
+        String globalKeyPrefix,
         BiConsumer<String, ? super Serializable> cb,
         boolean unmarshal
     ) throws IgniteCheckedException {
         metastorage.iterate(
-            key -> isLocalKey(key) && globalKeyPred.test(globalKey(key)),
+            localKeyPrefix() + globalKeyPrefix,
             cb,
             unmarshal
         );
@@ -131,7 +130,7 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
                 }
 
                 metastorage.iterate(
-                    DistributedMetaStorageUtil::isHistoryItemKey,
+                    historyItemPrefix(),
                     (key, val) -> dms.addToHistoryCache(historyItemVer(key), (DistributedMetaStorageHistoryItem)val),
                     true
                 );

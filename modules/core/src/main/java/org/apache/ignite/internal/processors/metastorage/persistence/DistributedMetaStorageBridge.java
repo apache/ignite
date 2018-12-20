@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
 import java.util.function.BiConsumer;
-import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,7 +29,7 @@ interface DistributedMetaStorageBridge {
 
     /** */
     void iterate(
-        Predicate<String> globalKeyPred,
+        String globalKeyPrefix,
         BiConsumer<String, ? super Serializable> cb,
         boolean unmarshal
     ) throws IgniteCheckedException;

@@ -30,7 +30,7 @@ class EmptyDistributedMetaStorageBridge implements DistributedMetaStorageBridge 
 
     /** {@inheritDoc} */
     @Override public void iterate(
-        Predicate<String> globalKeyPred,
+        String globalKeyPrefix,
         BiConsumer<String, ? super Serializable> cb,
         boolean unmarshal
     ) {

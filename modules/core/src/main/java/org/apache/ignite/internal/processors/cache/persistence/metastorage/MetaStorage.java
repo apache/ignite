@@ -35,7 +35,6 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -276,7 +275,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
 
     /** */
     @Override public void iterate(
-        @NotNull Predicate<String> keyPred,
+        @NotNull String keyPrefix,
         @NotNull BiConsumer<String, ? super Serializable> cb,
         boolean unmarshal
     ) throws IgniteCheckedException {
@@ -288,7 +287,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
                 for (Map.Entry<String, byte[]> lastUpdate : lastUpdates.entrySet()) {
                     String key = lastUpdate.getKey();
 
-                    if (keyPred.test(key)) {
+                    if (key.startsWith(keyPrefix)) {
                         byte[] valBytes = lastUpdate.getValue();
 
                         if (valBytes == TOMBSTONE)
@@ -306,7 +305,11 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
             }
         }
 
-        GridCursor<MetastorageDataRow> cur = tree.find(null, null);
+        MetastorageDataRow lower = new MetastorageDataRow(keyPrefix, null);
+
+        MetastorageDataRow upper = new MetastorageDataRow(keyPrefix + "\uFFFF", null);
+
+        GridCursor<MetastorageDataRow> cur = tree.find(lower, upper);
 
         while (cur.next()) {
             MetastorageDataRow row = cur.get();
@@ -314,31 +317,18 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
             String key = row.key();
             byte[] valBytes = row.value();
 
-            if (keyPred.test(key)) {
-                // Either already added it, or this is a tombstone -> ignore.
-                if (lastUpdates != null && lastUpdates.containsKey(key))
-                    continue;
+            // Either already added it, or this is a tombstone -> ignore.
+            if (lastUpdates != null && lastUpdates.containsKey(key))
+                continue;
 
-                if (unmarshal) {
-                    Serializable val = marshaller.unmarshal(valBytes, getClass().getClassLoader());
+            if (unmarshal) {
+                Serializable val = marshaller.unmarshal(valBytes, getClass().getClassLoader());
 
-                    cb.accept(key, val);
-                }
-                else
-                    cb.accept(key, valBytes);
+                cb.accept(key, val);
             }
+            else
+                cb.accept(key, valBytes);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<String, ? extends Serializable> readForPredicate(
-        IgnitePredicate<String> keyPred
-    ) throws IgniteCheckedException {
-        Map<String, Serializable> res = new HashMap<>();
-
-        iterate(keyPred::apply, res::put, true);
-
-        return res.isEmpty() ? Collections.emptyMap() : res;
     }
 
     /**
@@ -372,7 +362,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
         removeData(key);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void putData(String key, byte[] data) throws IgniteCheckedException {
         if (!readOnly) {
             WALPointer ptr = wal.log(new MetastoreDataRecord(key, data));
@@ -394,7 +384,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
         }
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public byte[] getData(String key) throws IgniteCheckedException {
         if (readOnly) {
             if (lastUpdates != null) {
