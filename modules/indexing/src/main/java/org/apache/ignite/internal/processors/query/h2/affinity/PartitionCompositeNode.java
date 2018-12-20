@@ -111,9 +111,11 @@ public class PartitionCompositeNode implements PartitionNode {
         // If one of child nodes cannot be optimized, nothing can be done further.
         // Note that we cannot return "this" here because left or right parts might have been changed.
         if (left instanceof PartitionCompositeNode || right instanceof PartitionCompositeNode) {
-            // TODO: Check co-location groups here.
-            // TODO: If they do not match for OR - return "ALL"
-            // TODO: If they do not match for AND - then what?
+            // Should be "NONE" for AND in fact, but this would violate current non-collocated join semantics as
+            // explained in "optimizeSimpleAnd" method below.
+            if (left.joinGroup() != right.joinGroup())
+                return PartitionAllNode.INSTANCE;
+
             return new PartitionCompositeNode(left, right, op);
         }
 
@@ -190,8 +192,12 @@ public class PartitionCompositeNode implements PartitionNode {
      * @return Optimized node.
      */
     private PartitionNode optimizeGroupAnd(PartitionGroupNode left, PartitionNode right) {
-        // TODO: Careful
         assert op == PartitionCompositeNodeOperator.AND;
+
+        // Should be "NONE" for AND in fact, but this would violate current non-collocated join semantics as
+        // explained in "optimizeSimpleAnd" method below.
+        if (left.joinGroup() != right.joinGroup())
+            return PartitionAllNode.INSTANCE;
 
         // Optimistic check whether both sides are equal.
         if (right instanceof PartitionGroupNode) {
@@ -247,8 +253,11 @@ public class PartitionCompositeNode implements PartitionNode {
      * @return Optimized node.
      */
     private PartitionNode optimizeGroupOr(PartitionGroupNode left, PartitionNode right) {
-        // TODO: Careful
         assert op == PartitionCompositeNodeOperator.OR;
+
+        // Cannot merge disjunctive nodes if they belong to different join groups.
+        if (left.joinGroup() != right.joinGroup())
+            return PartitionAllNode.INSTANCE;
 
         HashSet<PartitionSingleNode> siblings = new HashSet<>(left.siblings());
 
@@ -290,6 +299,16 @@ public class PartitionCompositeNode implements PartitionNode {
     private PartitionNode optimizeSimpleAnd(PartitionSingleNode left, PartitionSingleNode right) {
         assert op == PartitionCompositeNodeOperator.AND;
 
+        // Currently we do not merge such nodes because it may violate existing broken (!!!) join semantics.
+        // Normally, if we have two non-collocated partition sets, then this should be an empty set for collocated
+        // query mode. Unfortunately, // current semantics of collocated query mode assume that even though both sides
+        // of expression are located on random nodes, there is a slight chance that they may accidentally reside on
+        // a single node and hence return some rows. We return "ALL" here to keep this broken semantics consistent
+        // irrespective of whether partition pruning is used or not. Once non-collocated joins are fixed, this
+        // condition will be changed to "NONE".
+        if (left.joinGroup() != right.joinGroup())
+            return PartitionAllNode.INSTANCE;
+
         // Check if both sides are equal.
         if (left.equals(right))
             // (X) and (X) -> X
@@ -301,9 +320,7 @@ public class PartitionCompositeNode implements PartitionNode {
             // X and Y -> NONE
             return PartitionNoneNode.INSTANCE;
 
-        // TODO: What should be done here wrt/ join groups?
-
-        // Otherwise this is either a mixed set, cannot reduce.
+        // Otherwise this is a mixed set, cannot reduce.
         // X and :Y -> (X) AND (:Y)
         return new PartitionCompositeNode(left, right, PartitionCompositeNodeOperator.AND);
     }
@@ -316,12 +333,17 @@ public class PartitionCompositeNode implements PartitionNode {
      * @return Optimized node.
      */
     private PartitionNode optimizeSimpleOr(PartitionSingleNode left, PartitionSingleNode right) {
-        // TODO: Merge only if they belong to the same group, otherwise this is "ALL"
         assert op == PartitionCompositeNodeOperator.OR;
 
+        // Cannot merge disjunctive nodes if they belong to different join groups.
+        if (left.joinGroup() != right.joinGroup())
+            return PartitionAllNode.INSTANCE;
+
+        // (A) or (A) -> (A)
         if (left.equals(right))
             return left;
 
+        // (A) or (B) -> (A, B)
         HashSet<PartitionSingleNode> nodes = new HashSet<>();
 
         nodes.add(left);
