@@ -87,9 +87,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -190,7 +188,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Before
     @Override public void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -198,7 +195,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @After
     @Override public void afterTest() throws Exception {
         stopAllGrids();
 
