@@ -27,12 +27,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -63,10 +65,19 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
             getAbsolutePath();
 
     /** Max table rows. */
-    private static final int MAX_ROWS = 100;
+    private static final int MAX_ROWS = 10000;
 
     /** Server thread pull size. */
     private static final int SERVER_THREAD_POOL_SIZE = 4;
+
+    /** Cancellation processing timeout. */
+    public static final int TIMEOUT = 5000;
+
+    /** Nodes count. */
+    private static final byte NODES_COUNT = 3;
+
+    /** Timeout for checking async result. */
+    public static final int CHECK_RESULT_TIMEOUT = 1_000;
 
     /** Connection. */
     private Connection conn;
@@ -105,7 +116,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGridsMultiThreaded(3);
+        startGridsMultiThreaded(NODES_COUNT);
 
         for (int i = 0; i < MAX_ROWS; ++i)
             grid(0).cache(DEFAULT_CACHE_NAME).put(i, i);
@@ -141,7 +152,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     * Test canceling statement without query.
+     * Trying to cancel stament without query. In given case cancel is noop, so no exception expected.
      */
     @Test
     public void testCancelingStmtWithoutQuery() {
@@ -156,6 +167,9 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * Trying to retrieve result set of a canceled query.
+     * SQLException with message "The query was cancelled while executing." expected.
+     *
      * @throws Exception If failed.
      */
     @Test
@@ -174,6 +188,9 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * Trying to cancel closed query.
+     * SQLException with message "Statement is closed." expected.
+     *
      * @throws Exception If failed.
      */
     @Test
@@ -188,6 +205,9 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * Trying to call <code>resultSet.next()</code> on a canceled query.
+     * SQLException with message "The query was cancelled while executing." expected.
+     *
      * @throws Exception If failed.
      */
     @Test
@@ -208,6 +228,8 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * Ensure that it's possible to execute new query on cancelled statement.
+     *
      * @throws Exception If failed.
      */
     @Test
@@ -226,6 +248,8 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * Ensure that stament cancel doesn't effect another statement workflow, created by the same connection.
+     *
      * @throws Exception If failed.
      */
     @Test
@@ -248,134 +272,128 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * Trying to cancel long running query. No exceptions expected.
+     * In order to guarantee correct concurrent processing of query itself and it's cancellation request
+     * two latches and some other stuff is used.
+     * For more details see <code>TestSQLFunctions#awaitLatchCancelled()</code>
+     * and <code>JdbcThinStatementCancelSelfTest#cancel(java.sql.Statement)</code>.
      *
+     * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     @Test
-    public void testCancelLongRunningQueryBasedOnJoins() {
-        GridTestUtils.runAsync(() -> {
-            try {
-                TestSQLFunctions.cancelLatch.await();
+    public void testCancelQuery() throws Exception {
+        TestSQLFunctions.init();
 
-                stmt.cancel();
-
-                TestSQLFunctions.reqLatch.countDown();
-            }
-            catch (Exception e) {
-                log.error("Unexpected exception.", e);
-
-                fail("Unexpected exception");
-            }
-        });
-
-//        long startTime = System.currentTimeMillis();
-//        try {
-//            stmt.executeQuery("SELECT * FROM Integer I1 join Integer I2 join Integer I3 join Integer I4 join Integer I5 join Integer I6 join Integer I7 join Integer I8 WHERE awaitLatch() = 0");
-//        }
-//        catch (SQLException e) {
-//            System.out.println(">>>>>>>>");
-//        }
-//        System.out.println("!!!!!!!!!!!!!" + (System.currentTimeMillis() - startTime));
+        IgniteInternalFuture cancelRes = cancel(stmt);
 
         GridTestUtils.assertThrows(log, () -> {
-            stmt.executeQuery("SELECT * FROM Integer WHERE awaitLatch() = 0");
-//            stmt.executeQuery("SELECT * FROM Integer I1 join Integer I2 join Integer I3 join Integer I4 WHERE awaitLatch() = 0");
+            stmt.executeQuery("select * from Integer where _key in " +
+                "(select _key from Integer where awaitLatchCancelled() = 0) and shouldNotBeCalledInCaseOfCancellation()");
 
             return null;
         }, SQLException.class, "The query was cancelled while executing.");
+
+        // Ensures that there were no exceptions within async cancellation process.
+        cancelRes.get(CHECK_RESULT_TIMEOUT);
     }
 
     /**
+     * Trying to cancel long running multiple statments query. No exceptions expected.
+     * In order to guarantee correct concurrent processing of query itself and it's cancellation request
+     * two latches and some other stuff is used.
+     * For more details see <code>TestSQLFunctions#awaitLatchCancelled()</code>
+     * and <code>JdbcThinStatementCancelSelfTest#cancel(java.sql.Statement)</code>.
+     *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     @Test
     public void testCancelMultipleStatementsQuery() throws Exception {
-        try (Statement anotherStatment = conn.createStatement()){
+        TestSQLFunctions.init();
+
+        try (Statement anotherStatment = conn.createStatement()) {
             anotherStatment.setFetchSize(1);
-            // Open the second cursor
+
             ResultSet rs = anotherStatment.executeQuery("select * from Integer");
 
             assert rs.next();
 
-            GridTestUtils.runAsync(() -> {
-                try {
-                    Thread.sleep(500);
-                    stmt.cancel();
-                }
-                catch (Exception e) {
-                    log.error("Unexpected exception.", e);
-                    fail("Unexpected exception");
-                }
-            });
+            IgniteInternalFuture cancelRes = cancel(stmt);
 
-            IgniteInternalFuture<Object> res = GridTestUtils.runAsync(() -> {
-                GridTestUtils.assertThrows(log, () -> {
-                    // Execute long running query
-                    stmt.execute(
-                        "select 100 from Integer I1 join Integer I2 join Integer I3 join Integer I4;"
-                            + "select 100 from Integer I1 join Integer I2 join Integer I3 join Integer I4;"
-                            + "select 100 from Integer I1 join Integer I2 join Integer I3 join Integer I4;"
-                            + "select 100 from Integer I1 join Integer I2 join Integer I3 join Integer I4;");
-                    return null;
-                }, SQLException.class, "The query was cancelled while executing");
-            });
-
-            res.get(1500, TimeUnit.MILLISECONDS);
+            GridTestUtils.assertThrows(log, () -> {
+                // Executes multiple long running query
+                stmt.execute(
+                    "select 100 from Integer;"
+                        + "select _key from Integer where awaitLatchCancelled() = 0;"
+                        + "select 100 from Integer I1 join Integer I2;"
+                        + "select * from Integer where shouldNotBeCalledInCaseOfCancellation()");
+                return null;
+            }, SQLException.class, "The query was cancelled while executing");
 
             assert rs.next() : "The other cursor mustn't be closed";
+
+            // Ensures that there were no exceptions within async cancellation process.
+            cancelRes.get(CHECK_RESULT_TIMEOUT);
         }
     }
 
     /**
+     * Trying to cancel long running batch query. No exceptions expected.
+     * In order to guarantee correct concurrent processing of query itself and it's cancellation request
+     * two latches and some other stuff is used.
+     * For more details see <code>TestSQLFunctions#awaitLatchCancelled()</code>
+     * and <code>JdbcThinStatementCancelSelfTest#cancel(java.sql.Statement)</code>.
+     *
      * @throws Exception If failed.
      */
     @Test
     public void testCancelBatchQuery() throws Exception {
+        TestSQLFunctions.init();
+
         try (Statement stmt2 = conn.createStatement()) {
             stmt2.setFetchSize(1);
 
-            // Open the second cursor
             ResultSet rs = stmt2.executeQuery("SELECT * from Integer");
 
             assert rs.next();
 
-            GridTestUtils.runAsync(() -> {
-                try {
-                    Thread.sleep(1000);
-                    stmt.cancel();
-                }
-                catch (Exception e) {
-                    log.error("Unexpected exception.", e);
-                    fail("Unexpected exception");
-                }
-            });
+            IgniteInternalFuture cancelRes = cancel(stmt);
 
             GridTestUtils.assertThrows(log, () -> {
-                // Execute long running query
                 stmt.addBatch("update Long set _val = _val + 1 where _key < sleep_func (30)");
+                stmt.addBatch("update Long set _val = _val + 1 where awaitLatchCancelled() = 0");
                 stmt.addBatch("update Long set _val = _val + 1 where _key < sleep_func (30)");
-                stmt.addBatch("update Long set _val = _val + 1 where _key < sleep_func (30)");
-                stmt.addBatch("update Long set _val = _val + 1 where _key < sleep_func (30)");
-                stmt.addBatch("update Long set _val = _val + 1 where _key < sleep_func (30)");
-                stmt.addBatch("update Long set _val = _val + 1 where _key < sleep_func (30)");
+                stmt.addBatch("update Long set _val = _val + 1 where shouldNotBeCalledInCaseOfCancellation()");
+
                 stmt.executeBatch();
                 return null;
             }, java.sql.SQLException.class, "The query was cancelled while executing");
 
             assert rs.next() : "The other cursor mustn't be closed";
+
+            // Ensures that there were no exceptions within async cancellation process.
+            cancelRes.get(CHECK_RESULT_TIMEOUT);
         }
     }
 
     /**
+     * Trying to cancel long running query in situation that there's no worker for cancel query,
+     * cause server thread pool is full. No exceptions expected.
+     * In order to guarantee correct concurrent processing of query itself and it's cancellation request
+     * thress latches and some other stuff is used.
+     * For more details see <code>TestSQLFunctions#awaitLatchCancelled()</code>,
+     * <code>TestSQLFunctions#awaitQuerySuspensionLatch()</code>
+     * and <code>JdbcThinStatementCancelSelfTest#cancel(java.sql.Statement)</code>.
+     *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     @Test
     public void testCancelAgainstFullServerThreadPool() throws Exception {
+        TestSQLFunctions.init();
+
         List<Statement> statements = Collections.synchronizedList(new ArrayList<>());
         List<Connection> connections = Collections.synchronizedList(new ArrayList<>());
 
+        // Prepares connections and statemens in order to use them for filling thread pool with pseuso-infine quries.
         for (int i = 0; i < SERVER_THREAD_POOL_SIZE; i++) {
             Connection yaConn = DriverManager.getConnection(URL);
 
@@ -389,34 +407,28 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
         }
 
         try {
-            GridTestUtils.runAsync(() -> {
-                try {
-                    Thread.sleep(500);
+            IgniteInternalFuture cancelRes = cancel(statements.get(SERVER_THREAD_POOL_SIZE - 1));
 
-                    for (int i = 0; i < SERVER_THREAD_POOL_SIZE; i++)
-                        statements.get(i).cancel();
-                }
-                catch (Exception e) {
-                    log.error("Unexpected exception.", e);
+            // Completely fills server thread pool.
+            IgniteInternalFuture<Long> fillPoolRes = fillServerThreadPool(statements, SERVER_THREAD_POOL_SIZE - 1);
 
-                    fail("Unexpected exception");
-                }
-            });
+            GridTestUtils.assertThrows(log, () -> {
+                statements.get(SERVER_THREAD_POOL_SIZE - 1).executeQuery(
+                    "select * from Integer where _key in " +
+                        "(select _key from Integer where awaitLatchCancelled() = 0) and" +
+                        " shouldNotBeCalledInCaseOfCancellation()");
 
-            IgniteInternalFuture<Object> res = null;
-            for (int i = 0; i < SERVER_THREAD_POOL_SIZE - 1; i++) {
-                final int statementIdx = i;
-                res = GridTestUtils.runAsync(() -> {
-                    GridTestUtils.assertThrows(log, () -> {
-                        statements.get(statementIdx).executeQuery("select 100 from Integer I1 join Integer I2" +
-                            " join Integer I3 join Integer I4 join Integer I5;");
+                return null;
+            }, SQLException.class, "The query was cancelled while executing.");
 
-                        return null;
-                    }, SQLException.class, "The query was cancelled while executing.");
-                });
-            }
+            // Releases queries in thread pool.
+            TestSQLFunctions.suspendQryLatch.countDown();
 
-            res.get(2, TimeUnit.SECONDS);
+            // Ensures that there were no exceptions within async cancellation process.
+            cancelRes.get(CHECK_RESULT_TIMEOUT);
+
+            // Ensures that there were no exceptions within async thread pool filling process.
+            fillPoolRes.get(CHECK_RESULT_TIMEOUT);
         }
         finally {
             for (Statement statement : statements)
@@ -428,11 +440,20 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * Trying to cancel fetch query in situation that there's no worker for cancel query,
+     * cause server thread pool is full. No exceptions expected.
+     * In order to guarantee correct concurrent processing of query itself and it's cancellation request
+     * thress latches and some other stuff is used.
+     * For more details see <code>TestSQLFunctions#awaitLatchCancelled()</code>,
+     * <code>TestSQLFunctions#awaitQuerySuspensionLatch()</code>
+     * and <code>JdbcThinStatementCancelSelfTest#cancel(java.sql.Statement)</code>.
+     *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     @Test
     public void testCancelFetchAgainstFullServerThreadPool() throws Exception {
+        TestSQLFunctions.init();
+
         stmt.setFetchSize(1);
 
         ResultSet rs = stmt.executeQuery("SELECT * from Integer");
@@ -442,6 +463,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
         List<Statement> statements = Collections.synchronizedList(new ArrayList<>());
         List<Connection> connections = Collections.synchronizedList(new ArrayList<>());
 
+        // Prepares connections and statemens in order to use them for filling thread pool with pseuso-infine quries.
         for (int i = 0; i < SERVER_THREAD_POOL_SIZE; i++) {
             Connection yaConn = DriverManager.getConnection(URL);
 
@@ -455,19 +477,11 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
         }
 
         try {
-            for (int i = 0; i < SERVER_THREAD_POOL_SIZE; i++) {
-                final int statementIdx = i;
-                GridTestUtils.runAsync(() -> {
-                    GridTestUtils.assertThrows(log, () -> {
-                        statements.get(statementIdx).executeQuery("select 100 from Integer I1 join Integer I2" +
-                            " join Integer I3 join Integer I4 join Integer I5;");
+            // Completely fills server thread pool.
+            IgniteInternalFuture<Long> fillPoolRes = fillServerThreadPool(statements,
+                SERVER_THREAD_POOL_SIZE - 1);
 
-                        return null;
-                    }, SQLException.class, "The query was cancelled while executing.");
-                });
-            }
-
-            IgniteInternalFuture<Object> res = GridTestUtils.runAsync(() -> {
+            IgniteInternalFuture fetchRes = GridTestUtils.runAsync(() -> {
                 GridTestUtils.assertThrows(log, () -> {
                     rs.next();
 
@@ -475,14 +489,16 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
                 }, SQLException.class, "The query was cancelled while executing.");
             });
 
-            Thread.sleep(100);
-
             stmt.cancel();
 
-            for (int i = 0; i < SERVER_THREAD_POOL_SIZE; i++)
-                statements.get(i).cancel();
+            // Ensures that there were no exceptions within async data fetching process.
+            fetchRes.get(CHECK_RESULT_TIMEOUT);
 
-            res.get(2, TimeUnit.SECONDS);
+            // Releases queries in thread pool.
+            TestSQLFunctions.suspendQryLatch.countDown();
+
+            // Ensure that there were no exceptions within async thread pool filling process.
+            fillPoolRes.get(CHECK_RESULT_TIMEOUT);
         }
         finally {
             for (Statement statement : statements)
@@ -494,12 +510,13 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     * Test cancelling long running file upload.
+     * Trying to cancel long running file upload. No exceptions expected.
+     *
+     * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     @Test
-    public void testCancellingLongRunningFileUpload() {
-        GridTestUtils.runAsync(() -> {
+    public void testCancellingLongRunningFileUpload() throws Exception {
+        IgniteInternalFuture cancelRes = GridTestUtils.runAsync(() -> {
             try {
                 Thread.sleep(200);
 
@@ -512,16 +529,75 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
             }
         });
 
-        GridTestUtils.runAsync(() -> {
-            GridTestUtils.assertThrows(log, () -> {
-                stmt.executeUpdate(
-                    "copy from '" + BULKLOAD_20_000_LINE_CSV_FILE + "' into Person" +
-                        " (_key, age, firstName, lastName)" +
-                        " format csv");
+        GridTestUtils.assertThrows(log, () -> {
+            stmt.executeUpdate(
+                "copy from '" + BULKLOAD_20_000_LINE_CSV_FILE + "' into Person" +
+                    " (_key, age, firstName, lastName)" +
+                    " format csv");
 
-                return null;
-            }, SQLException.class, "The query was cancelled while executing.");
+            return null;
+        }, SQLException.class, "The query was cancelled while executing.");
+
+        // Ensure that there were no exceptions within async cancellation process.
+        cancelRes.get(CHECK_RESULT_TIMEOUT);
+    }
+
+    /**
+     * Cancels current query, actual cancel will wait <code>cancelLatch</code> to be releaseds.
+     *
+     * @return <code>IgniteInternalFuture</code> to check whether exception was thrown.
+     */
+    private IgniteInternalFuture cancel(Statement stmt) {
+        return GridTestUtils.runAsync(() -> {
+            try {
+                TestSQLFunctions.cancelLatch.await();
+
+                long cancelCntrBeforeCancel = ClientListenerProcessor.CANCEL_COUNTER.get();
+
+                stmt.cancel();
+
+                try {
+                    GridTestUtils.waitForCondition(
+                        () -> ClientListenerProcessor.CANCEL_COUNTER.get() == cancelCntrBeforeCancel + 1, TIMEOUT);
+                }
+                catch (IgniteInterruptedCheckedException ignored) {
+                    // No-op.
+                }
+
+                assertEquals(cancelCntrBeforeCancel + 1, ClientListenerProcessor.CANCEL_COUNTER.get());
+
+                TestSQLFunctions.reqLatch.countDown();
+            }
+            catch (Exception e) {
+                log.error("Unexpected exception.", e);
+
+                fail("Unexpected exception");
+            }
         });
+    }
+
+    /**
+     * Fills Server Thread Pool with <code>qryCnt</code> queries. Given queries will wait for
+     * <code>suspendQryLatch</code> to be released.
+     *
+     * @param statements Statements.
+     * @param qryCnt Number of queries to execute.
+     * @return <code>IgniteInternalFuture</code> in order to check whether exception was thrown or not.
+     */
+    private IgniteInternalFuture<Long> fillServerThreadPool(List<Statement> statements, int qryCnt) {
+        AtomicInteger idx = new AtomicInteger(0);
+
+        return GridTestUtils.runMultiThreadedAsync(() -> {
+            try {
+                statements.get(idx.getAndIncrement()).executeQuery(
+                    "select * from Integer where awaitQuerySuspensionLatch();");
+            }
+            catch (SQLException e) {
+                log.error("Unexpected exception.", e);
+
+                fail("Unexpected exception");
+            }
+        }, qryCnt, "ThreadName");
     }
 
     /**
@@ -529,17 +605,32 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
      */
     public static class TestSQLFunctions {
         /** Request latch. */
-        static CountDownLatch reqLatch = new CountDownLatch(1);
+        static CountDownLatch reqLatch;
 
         /** Cancel latch. */
-        static CountDownLatch cancelLatch = new CountDownLatch(1);
+        static CountDownLatch cancelLatch;
+
+        /** Suspend query latch. */
+        static CountDownLatch suspendQryLatch;
 
         /**
-         * Await cyclic barrier twice, first time to wait for enter method, second time to wait for collecting running
-         * queries.
+         * Recreate latches.
+         */
+        static void init() {
+            reqLatch = new CountDownLatch(1);
+
+            cancelLatch = new CountDownLatch(1);
+
+            suspendQryLatch = new CountDownLatch(1);
+        }
+
+        /**
+         * Releases cancelLatch that leeds to sending cancel Query and waits until cancel Query is fully processed.
+         *
+         * @return 0;
          */
         @QuerySqlFunction
-        public static long awaitLatch() {
+        public static long awaitLatchCancelled() {
             try {
                 cancelLatch.countDown();
                 reqLatch.await();
@@ -547,6 +638,35 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
             catch (Exception ignored) {
                 // No-op.
             }
+
+            return 0;
+        }
+
+        /**
+         * Waits latch release.
+         *
+         * @return 0;
+         */
+        @QuerySqlFunction
+        public static long awaitQuerySuspensionLatch() {
+            try {
+                suspendQryLatch.await();
+            }
+            catch (Exception ignored) {
+                // No-op.
+            }
+
+            return 0;
+        }
+
+        /**
+         * If called fails with corresponding message.
+         *
+         * @return 0;
+         */
+        @QuerySqlFunction
+        public static long shouldNotBeCalledInCaseOfCancellation() {
+            fail("Query wasn't actually cancelled.");
 
             return 0;
         }
