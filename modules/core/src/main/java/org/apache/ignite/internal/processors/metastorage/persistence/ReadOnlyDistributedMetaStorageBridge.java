@@ -1,0 +1,141 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.metastorage.persistence;
+
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.function.BiConsumer;
+import java.util.function.Predicate;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
+
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.cleanupKey;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.globalKey;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyGuardKey;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemKey;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemVer;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyVersionKey;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.isLocalKey;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.localKey;
+
+/** */
+class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBridge {
+    /** */
+    private DistributedMetaStorageImpl dms;
+
+    /** */
+    private final ReadOnlyMetastorage metastorage;
+
+    /** */
+    public ReadOnlyDistributedMetaStorageBridge(DistributedMetaStorageImpl dms, ReadOnlyMetastorage metastorage) {
+        this.dms = dms;
+        this.metastorage = metastorage;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Serializable read(String globalKey) throws IgniteCheckedException {
+        return metastorage.read(localKey(globalKey));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void iterate(
+        Predicate<String> globalKeyPred,
+        BiConsumer<String, ? super Serializable> cb,
+        boolean unmarshal
+    ) throws IgniteCheckedException {
+        metastorage.iterate(
+            key -> isLocalKey(key) && globalKeyPred.test(globalKey(key)),
+            cb,
+            unmarshal
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override public void write(String globalKey, byte[] valBytes) {
+        throw new UnsupportedOperationException("write");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onUpdateMessage(DistributedMetaStorageHistoryItem histItem, Serializable val) {
+        throw new UnsupportedOperationException("onUpdateMessage");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeHistoryItem(long ver) {
+        throw new UnsupportedOperationException("removeHistoryItem");
+    }
+
+    /** */
+    public void readInitialData(StartupExtras startupExtras) throws IgniteCheckedException {
+        String cleanupKey = cleanupKey();
+        if (metastorage.getData(cleanupKey) != null) {
+            startupExtras.clearLocData = true;
+
+            startupExtras.verToSnd = dms.ver = 0;
+        }
+        else {
+            Long storedVer = (Long)metastorage.read(historyVersionKey());
+
+            if (storedVer == null)
+                startupExtras.verToSnd = dms.ver = 0;
+            else {
+                startupExtras.verToSnd = dms.ver = storedVer;
+
+                Serializable guard = metastorage.read(historyGuardKey(dms.ver));
+
+                if (guard != null) {
+                    // New value is already known, but listeners may not have been invoked.
+                    DistributedMetaStorageHistoryItem histItem = (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(dms.ver));
+
+                    assert histItem != null;
+
+                    startupExtras.deferredUpdates.add(histItem);
+                }
+                else {
+                    guard = metastorage.read(historyGuardKey(dms.ver + 1));
+
+                    if (guard != null) {
+                        DistributedMetaStorageHistoryItem histItem = (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(dms.ver + 1));
+
+                        if (histItem != null) {
+                            ++startupExtras.verToSnd;
+
+                            startupExtras.deferredUpdates.add(histItem);
+                        }
+                    }
+                    else {
+                        DistributedMetaStorageHistoryItem histItem = (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(dms.ver));
+
+                        if (histItem != null) {
+                            byte[] valBytes = metastorage.getData(localKey(histItem.key));
+
+                            if (!Arrays.equals(valBytes, histItem.valBytes))
+                                startupExtras.firstToWrite = histItem;
+                        }
+                    }
+                }
+
+                metastorage.iterate(
+                    DistributedMetaStorageUtil::isHistoryItemKey,
+                    (key, val) -> dms.addToHistoryCache(historyItemVer(key), (DistributedMetaStorageHistoryItem)val),
+                    true
+                );
+            }
+        }
+    }
+}

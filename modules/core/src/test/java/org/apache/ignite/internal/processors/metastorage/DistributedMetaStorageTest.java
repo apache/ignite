@@ -39,7 +39,9 @@ import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
 
-/** */
+/**
+ * Test for {@link DistributedMetaStorageImpl} with disabled persistence.
+ */
 @RunWith(JUnit4.class)
 public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     /** IP finder. */

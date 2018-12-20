@@ -27,7 +27,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage {
+class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -42,7 +42,6 @@ public class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessa
 
     /** */
     private final byte[] valBytes;
-
 
     /** */
     public DistributedMetaStorageUpdateMessage(UUID reqId, String key, byte[] valBytes) {

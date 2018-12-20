@@ -1,0 +1,100 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.metastorage.persistence;
+
+import java.io.Serializable;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
+import java.util.function.Predicate;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageListener;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
+
+/** */
+class InMemoryCachedDistributedMetaStorageBridge implements DistributedMetaStorageBridge {
+    /** */
+    private DistributedMetaStorageImpl dms;
+
+    /** */
+    private final Map<String, byte[]> cache = new ConcurrentHashMap<>();
+
+    public InMemoryCachedDistributedMetaStorageBridge(DistributedMetaStorageImpl dms) {
+        this.dms = dms;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Serializable read(String globalKey) throws IgniteCheckedException {
+        byte[] valBytes = cache.get(globalKey);
+
+        return DistributedMetaStorageUtil.unmarshal(valBytes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void iterate(
+        Predicate<String> globalKeyPred,
+        BiConsumer<String, ? super Serializable> cb,
+        boolean unmarshal
+    ) throws IgniteCheckedException {
+        for (Map.Entry<String, byte[]> entry : cache.entrySet()) {
+            if (globalKeyPred.test(entry.getKey()))
+                cb.accept(entry.getKey(), unmarshal ? DistributedMetaStorageUtil.unmarshal(entry.getValue()) : entry.getValue());
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void write(String globalKey, @Nullable byte[] valBytes) {
+        if (valBytes == null)
+            cache.remove(globalKey);
+        else
+            cache.put(globalKey, valBytes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onUpdateMessage(DistributedMetaStorageHistoryItem histItem, Serializable val) {
+        ++dms.ver;
+
+        dms.notifyListeners(histItem.key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeHistoryItem(long ver) {
+    }
+
+    /** */
+    public void restore(StartupExtras startupExtras) {
+        if (startupExtras.fullNodeData != null) {
+            DistributedMetaStorageNodeData fullNodeData = startupExtras.fullNodeData;
+
+            dms.ver = fullNodeData.ver;
+
+            for (DistributedMetaStorageHistoryItem item : fullNodeData.fullData)
+                cache.put(item.key, item.valBytes);
+
+            for (int i = 0, len = fullNodeData.hist.length; i < len; i++) {
+                DistributedMetaStorageHistoryItem histItem = fullNodeData.hist[i];
+
+                dms.addToHistoryCache(dms.ver + i + 1 - len, histItem);
+            }
+
+            for (IgniteBiTuple<Predicate<String>, DistributedMetaStorageListener<Serializable>> entry : dms.lsnrs)
+                entry.get2().onInit();
+        }
+    }
+}

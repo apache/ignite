@@ -24,6 +24,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,7 +32,9 @@ import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
 
-/** */
+/**
+ * Test for {@link DistributedMetaStorageImpl} with enabled persistence.
+ */
 @RunWith(JUnit4.class)
 public class DistributedMetaStoragePersistentTest extends DistributedMetaStorageTest {
     /** {@inheritDoc} */

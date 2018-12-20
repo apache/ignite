@@ -15,18 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metastorage;
+package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
-import org.jetbrains.annotations.NotNull;
+import java.util.function.BiConsumer;
+import java.util.function.Predicate;
+import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-@FunctionalInterface
-public interface DistributedMetaStorageListener<T extends Serializable> {
+interface DistributedMetaStorageBridge {
     /** */
-    default void onInit() {}
+    Serializable read(String globalKey) throws IgniteCheckedException;
 
     /** */
-    void onUpdate(@NotNull String key, @Nullable T val);
+    void iterate(
+        Predicate<String> globalKeyPred,
+        BiConsumer<String, ? super Serializable> cb,
+        boolean unmarshal
+    ) throws IgniteCheckedException;
+
+    /** */
+    void write(String globalKey, @Nullable byte[] valBytes) throws IgniteCheckedException;
+
+    /** */
+    void onUpdateMessage(DistributedMetaStorageHistoryItem histItem, Serializable val) throws IgniteCheckedException;
+
+    /** */
+    void removeHistoryItem(long ver) throws IgniteCheckedException;
 }

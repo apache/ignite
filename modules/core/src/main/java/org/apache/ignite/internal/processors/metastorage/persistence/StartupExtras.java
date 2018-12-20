@@ -15,18 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metastorage;
+package org.apache.ignite.internal.processors.metastorage.persistence;
 
-import java.io.Serializable;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 
 /** */
-@FunctionalInterface
-public interface DistributedMetaStorageListener<T extends Serializable> {
+@SuppressWarnings("PublicField")
+class StartupExtras {
     /** */
-    default void onInit() {}
+    public long verToSnd;
 
     /** */
-    void onUpdate(@NotNull String key, @Nullable T val);
+    public List<DistributedMetaStorageHistoryItem> deferredUpdates = new ArrayList<>();
+
+    /** */
+    public DistributedMetaStorageHistoryItem firstToWrite;
+
+    /** */
+    public boolean clearLocData;
+
+    /** */
+    public DistributedMetaStorageNodeData fullNodeData;
 }

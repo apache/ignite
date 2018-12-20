@@ -21,7 +21,7 @@ import java.io.Serializable;
 
 /** */
 @SuppressWarnings("PublicField")
-public class DistributedMetaStorageJoiningData implements Serializable {
+class DistributedMetaStorageJoiningData implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 

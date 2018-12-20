@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 /** */
 @SuppressWarnings("PublicField")
-public class DistributedMetaStorageHistoryItem implements Serializable {
+class DistributedMetaStorageHistoryItem implements Serializable {
     /** */
     public static final DistributedMetaStorageHistoryItem[] EMPTY_ARRAY = {};
 
