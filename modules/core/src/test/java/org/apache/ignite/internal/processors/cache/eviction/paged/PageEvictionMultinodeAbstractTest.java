@@ -25,7 +25,6 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -98,8 +97,9 @@ public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbst
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10738")
     public void testPageEvictionMvcc() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10738");
+
         for (int i = 0; i < CACHE_MODES.length; i++) {
             CacheConfiguration<Object, Object> cfg = cacheConfig(
                 "evict" + i, null, CACHE_MODES[i], CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT,
