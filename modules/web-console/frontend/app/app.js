@@ -152,7 +152,6 @@ import igniteChart from './components/ignite-chart';
 import igniteChartSelector from './components/ignite-chart-series-selector';
 import statusOutput from './components/status-output';
 import timedRedirection from './components/timed-redirection';
-import progressBar from './components/progress-bar';
 
 import pageProfile from './components/page-profile';
 import pagePasswordChanged from './components/page-password-changed';
@@ -271,7 +270,6 @@ export default angular.module('ignite-console', [
     formField.name,
     formSignup.name,
     timedRedirection.name,
-    progressBar.name,
     sidebar.name,
     permanentNotifications.name
 ])
