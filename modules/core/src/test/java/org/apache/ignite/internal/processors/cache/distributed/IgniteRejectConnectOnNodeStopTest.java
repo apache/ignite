@@ -54,11 +54,14 @@ public class IgniteRejectConnectOnNodeStopTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        cfg.setDiscoverySpi(new TestDiscoverySpi());
+
         TcpDiscoverySpi discoSpi = ((TcpDiscoverySpi)cfg.getDiscoverySpi());
 
         discoSpi.setReconnectCount(2);
         discoSpi.setAckTimeout(30_000);
         discoSpi.setSocketTimeout(30_000);
+        discoSpi.setIpFinder(sharedStaticIpFinder);
 
         TcpCommunicationSpi commSpi = (TcpCommunicationSpi)cfg.getCommunicationSpi();
 
