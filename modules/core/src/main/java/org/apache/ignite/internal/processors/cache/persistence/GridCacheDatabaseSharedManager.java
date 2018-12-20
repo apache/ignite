@@ -961,8 +961,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             // next physical recovery.
             memoryRecoveryRecordPtr = cctx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
 
-            U.debug(log, "Logged MemoryRecovery record: " + memoryRecoveryRecordPtr);
-
             for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
                 lsnr.afterBinaryMemoryRestore(this, binaryState);
 
@@ -2094,18 +2092,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             cctx.pageStore().beginRecover();
 
-            WALIterator it = cctx.wal().replay(status.startPtr);
+            WALRecord rec = cctx.wal().read(status.startPtr);
 
-            WALRecord rec = it.next().get2();
-
-            assert rec instanceof CheckpointRecord;
+            if (!(rec instanceof CheckpointRecord))
+                throw new StorageException("Checkpoint marker doesn't point to checkpoint record " +
+                    "[ptr=" + status.startPtr + ", rec=" + rec + "]");
 
             WALPointer cpMark = ((CheckpointRecord)rec).checkpointMark();
 
             if (cpMark != null)
                 recPtr = cpMark;
-
-            it.close();
         }
         else
             cctx.wal().notchLastCheckpointPtr(status.startPtr);

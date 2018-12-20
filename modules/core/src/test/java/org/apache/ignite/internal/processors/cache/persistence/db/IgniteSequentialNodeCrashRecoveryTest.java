@@ -159,9 +159,21 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
 
         System.out.println(dirtyAfterLoad);
 
+        assertFalse(dirtyAfterLoad.isEmpty());
+
         fileIoFactory = new CheckingIoFactory(dirtyAfterLoad);
 
-        startGrid(0);
+        g = startGrid(0);
+
+        {
+            IgniteCache<Object, Object> cache = g.cache("cache");
+
+            for (int i = 0; i < 400; i++)
+                cache.put(100 + (i % 100), Thread.currentThread().getName());
+
+            for (int i = 0; i < 200; i++)
+                assertTrue("i=" + i, cache.containsKey(i));
+        }
     }
 
     /**
