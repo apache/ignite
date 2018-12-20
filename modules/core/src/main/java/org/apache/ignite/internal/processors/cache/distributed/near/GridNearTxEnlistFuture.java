@@ -26,10 +26,12 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
@@ -68,6 +70,10 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
     /** SkipCntr field updater. */
     private static final AtomicIntegerFieldUpdater<GridNearTxEnlistFuture> SKIP_UPD =
         AtomicIntegerFieldUpdater.newUpdater(GridNearTxEnlistFuture.class, "skipCntr");
+
+    /** Res field updater. */
+    private static final AtomicReferenceFieldUpdater<GridNearTxEnlistFuture, GridCacheReturn> RES_UPD =
+        AtomicReferenceFieldUpdater.newUpdater(GridNearTxEnlistFuture.class, GridCacheReturn.class, "res");
 
     /** Marker object. */
     private static final Object FINISHED = new Object();
@@ -212,7 +218,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
                 ClusterNode node = cctx.affinity().primaryByKey(key, topVer);
 
                 if (node == null)
-                    throw new ClusterTopologyCheckedException("Failed to get primary node " +
+                    throw new ClusterTopologyServerNotFoundException("Failed to get primary node " +
                         "[topVer=" + topVer + ", key=" + key + ']');
 
                 tx.markQueryEnlisted(null);
@@ -598,19 +604,16 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
 
         assert res != null;
 
-        if (res.result().invokeResult()) {
-            if(this.res == null)
-                this.res = new GridCacheReturn(true, true);
+        if (this.res != null || !RES_UPD.compareAndSet(this, null, res.result())) {
+            GridCacheReturn res0 = this.res;
 
-            this.res.success(this.res.success() && err == null && res.result().success());
-
-            this.res.mergeEntryProcessResults(res.result());
+            if (res.result().invokeResult())
+                res0.mergeEntryProcessResults(res.result());
+            else if (res0.success() && !res.result().success())
+                res0.success(false);
         }
-        else
-            this.res = res.result();
 
         assert this.res != null && (this.res.emptyResult() || needRes || this.res.invokeResult() || !this.res.success());
-
 
         tx.hasRemoteLocks(true);
 
