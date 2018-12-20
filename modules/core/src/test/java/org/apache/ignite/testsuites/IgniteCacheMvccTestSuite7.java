@@ -17,6 +17,7 @@
 package org.apache.ignite.testsuites;
 
 import java.util.HashSet;
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.authentication.Authentication1kUsersNodeRestartTest;
@@ -70,8 +71,8 @@ public class IgniteCacheMvccTestSuite7  extends TestSuite {
         suite.addTest(IgniteCacheTestSuite7.suite(ignoredTests));
 
         // Add Mvcc clones.
-        suite.addTestSuite(MvccCacheGroupMetricsMBeanTest.class);
-        suite.addTestSuite(GridCacheRebalancingPartitionCountersMvccTest.class);
+        suite.addTest(new JUnit4TestAdapter(MvccCacheGroupMetricsMBeanTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheRebalancingPartitionCountersMvccTest.class));
 
 
         return suite;

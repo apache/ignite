@@ -48,6 +48,7 @@ public class IgniteCacheMetricsSelfTestSuite extends TestSuite {
     /**
      * @param ignoredTests Ignored tests.
      * @return Cache metrics test suite.
+     * @throws Exception If failed.
      */
     public static TestSuite suite(Collection<Class> ignoredTests) {
         TestSuite suite = new TestSuite("Cache Metrics Test Suite");

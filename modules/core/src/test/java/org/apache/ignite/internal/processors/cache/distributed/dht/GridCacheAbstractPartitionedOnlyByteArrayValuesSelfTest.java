@@ -23,6 +23,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheAbstractPartitionedByteArrayValuesSelfTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.junit.Assert.assertArrayEquals;
@@ -30,6 +33,7 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * Tests for byte array values in PARTITIONED-ONLY caches.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest extends
     GridCacheAbstractPartitionedByteArrayValuesSelfTest {
     /** */
@@ -90,6 +94,7 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomic() throws Exception {
         testAtomic0(cachesAtomic);
     }

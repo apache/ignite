@@ -31,11 +31,15 @@ import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests SPI in multi-threaded environment.
  */
 @GridSpiTest(spi = SharedFsCheckpointSpi.class, group = "Checkpoint SPI")
+@RunWith(JUnit4.class)
 public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
     GridSpiAbstractTest<SharedFsCheckpointSpi> {
     /** */
@@ -65,6 +69,7 @@ public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSpi() throws Exception {
         final AtomicInteger writeFinished = new AtomicInteger();
 

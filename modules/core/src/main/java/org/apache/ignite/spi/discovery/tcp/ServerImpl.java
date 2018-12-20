@@ -1959,15 +1959,15 @@ class ServerImpl extends TcpDiscoveryImpl {
             while (!isInterrupted()) {
                 Thread.sleep(spi.ipFinderCleanFreq);
 
-                if (!isLocalNodeCoordinator())
-                    continue;
-
                 if (spiStateCopy() != CONNECTED) {
                     if (log.isDebugEnabled())
                         log.debug("Stopping IP finder cleaner (SPI is not connected to topology).");
 
                     return;
                 }
+
+                if (!isLocalNodeCoordinator())
+                    continue;
 
                 if (spi.ipFinder.isShared())
                     cleanIpFinder();
@@ -2624,7 +2624,6 @@ class ServerImpl extends TcpDiscoveryImpl {
      */
     private class RingMessageWorker extends MessageWorker<TcpDiscoveryAbstractMessage> {
         /** Next node. */
-        @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
         private TcpDiscoveryNode next;
 
         /** Pending messages. */
@@ -3224,7 +3223,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             assert !forceSndPending || msg instanceof TcpDiscoveryNodeLeftMessage;
 
-                            if (failure || forceSndPending) {
+                            if (failure || forceSndPending || newNextNode) {
                                 if (log.isDebugEnabled())
                                     log.debug("Pending messages will be sent [failure=" + failure +
                                         ", newNextNode=" + newNextNode +

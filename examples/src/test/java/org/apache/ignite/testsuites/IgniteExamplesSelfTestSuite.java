@@ -104,7 +104,7 @@ public class IgniteExamplesSelfTestSuite extends TestSuite {
         suite.addTest(IgniteExamplesMLTestSuite.suite());
 
         // Encryption.
-        suite.addTestSuite(EncryptedCacheExampleSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(EncryptedCacheExampleSelfTest.class));
 
         return suite;
     }

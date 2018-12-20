@@ -31,6 +31,9 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * This test checks that entries count metrics, calculated by method
@@ -38,6 +41,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * over local partitions to get all set of metrics), have the same values as metrics, calculated by individual methods
  * (which use iteration over local partition per each method call).
  */
+@RunWith(JUnit4.class)
 public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 3;
@@ -104,6 +108,7 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
     /**
      * Test entities count, calculated by different implementations.
      */
+    @Test
     public void testEnitiesCount() throws Exception {
         awaitPartitionMapExchange();
 

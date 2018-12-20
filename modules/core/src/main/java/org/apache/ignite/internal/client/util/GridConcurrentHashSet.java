@@ -45,7 +45,6 @@ public class GridConcurrentHashSet<E> extends AbstractSet<E> {
      *
      * @param map Map to be used for set implementation.
      */
-    @SuppressWarnings({"unchecked"})
     public GridConcurrentHashSet(ConcurrentMap<E, ?> map) {
         this.map = (ConcurrentMap<E, Object>)map;
     }
@@ -55,7 +54,6 @@ public class GridConcurrentHashSet<E> extends AbstractSet<E> {
      *
      * @return Wrapped map.
      */
-    @SuppressWarnings({"unchecked"})
     protected final <T extends Map<E, Object>> T  map() {
         return (T)map;
     }

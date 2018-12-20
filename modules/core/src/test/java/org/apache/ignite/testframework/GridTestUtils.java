@@ -65,6 +65,7 @@ import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
@@ -563,7 +564,6 @@ public final class GridTestUtils {
      * @param it Input iterable of elements.
      * @param ps Array of predicates (by number of elements in iterable).
      */
-    @SuppressWarnings("ConstantConditions")
     public static <T> void assertOneToOne(Iterable<T> it, IgnitePredicate<T>... ps) {
         Collection<IgnitePredicate<T>> ps0 = new ArrayList<>(Arrays.asList(ps));
         Collection<T2<IgnitePredicate<T>, T>> passed = new ArrayList<>();
@@ -1959,7 +1959,7 @@ public final class GridTestUtils {
         if (ignoredTests != null && ignoredTests.contains(test))
             return;
 
-        suite.addTestSuite(test);
+        suite.addTest(new JUnit4TestAdapter(test));
     }
 
     /**

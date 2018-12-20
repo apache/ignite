@@ -41,6 +41,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -50,6 +54,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
  * Test cases for multi-threaded tests.
  */
 @SuppressWarnings({"FieldCanBeLocal"})
+@RunWith(JUnit4.class)
 public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /** Grid1. */
     private static Ignite ignite1;
@@ -67,6 +72,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
+    @Before
     @Override public void setUp() throws Exception {
         MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
@@ -203,6 +209,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testLockSingleThread() throws Exception {
         int k = 1;
         String v = String.valueOf(k);
@@ -237,6 +244,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testLock() throws Exception {
         final int kv = 1;
 
@@ -327,6 +335,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testLockAndPut() throws Exception {
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
@@ -412,6 +421,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testLockTimeoutTwoThreads() throws Exception {
         int keyCnt = 1;
 
@@ -507,6 +517,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Throwable If failed.
      */
+    @Test
     public void testLockReentrancy() throws Throwable {
         Affinity<Integer> aff = ignite1.affinity(DEFAULT_CACHE_NAME);
 
