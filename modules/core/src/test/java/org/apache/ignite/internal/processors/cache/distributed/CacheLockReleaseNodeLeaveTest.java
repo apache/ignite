@@ -39,6 +39,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -142,10 +143,9 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9213")
     @Test
     public void testLockTopologyChange() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9213");
-
         final int nodeCnt = 5;
         int threadCnt = 8;
         final int keys = 100;

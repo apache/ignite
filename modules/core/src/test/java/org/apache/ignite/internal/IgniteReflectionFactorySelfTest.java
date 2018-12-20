@@ -23,7 +23,7 @@ import java.util.Map;
 import org.apache.ignite.configuration.IgniteReflectionFactory;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+import static junit.framework.Assert.assertEquals;
 
 /**
  * Tests for {@link IgniteReflectionFactory} class.
