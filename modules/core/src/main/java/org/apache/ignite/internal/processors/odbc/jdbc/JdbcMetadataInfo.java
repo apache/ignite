@@ -21,6 +21,7 @@ import java.sql.DatabaseMetaData;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -29,6 +30,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -219,5 +221,38 @@ public class JdbcMetadataInfo {
         }
 
         return schemas;
+    }
+
+    /**
+     * See {@link DatabaseMetaData#getIndexInfo(String, String, String, boolean, boolean)} for details.
+     *
+     * Ignite has only one possible CATALOG_NAME, it is handled on the client (driver) side. Parameters {@code unique}
+     * {@code approximate} are ignored.
+     *
+     * @return Sorted by index name collection of index info, filtered according to specified criterias.
+     */
+    public SortedSet<JdbcIndexMeta> getIndexesMeta(String schemaNamePtrn, String tableNamePtrn) {
+        final Comparator<JdbcIndexMeta> byIndexName = new Comparator<JdbcIndexMeta>() {
+            @Override public int compare(JdbcIndexMeta o1, JdbcIndexMeta o2) {
+                return o1.indexName().compareTo(o2.indexName());
+            }
+        };
+
+        TreeSet<JdbcIndexMeta> meta = new TreeSet<>(byIndexName);
+
+        for (String cacheName : ctx.cache().publicCacheNames()) {
+            for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
+                if (!matches(table.schemaName(), schemaNamePtrn))
+                    continue;
+
+                if (!matches(table.tableName(), tableNamePtrn))
+                    continue;
+
+                for (GridQueryIndexDescriptor idxDesc : table.indexes().values())
+                    meta.add(new JdbcIndexMeta(table.schemaName(), table.tableName(), idxDesc));
+            }
+        }
+
+        return meta;
     }
 }

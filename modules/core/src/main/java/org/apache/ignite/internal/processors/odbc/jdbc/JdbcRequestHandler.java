@@ -22,7 +22,6 @@ import java.sql.ParameterMetaData;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -50,8 +49,6 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
-import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -862,22 +859,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private ClientListenerResponse getIndexesMeta(JdbcMetaIndexesRequest req) {
         try {
-            Collection<JdbcIndexMeta> meta = new HashSet<>();
+            Collection<JdbcIndexMeta> idxInfos = meta.getIndexesMeta(req.schemaName(), req.tableName());
 
-            for (String cacheName : ctx.cache().publicCacheNames()) {
-                for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
-                    if (!matches(table.schemaName(), req.schemaName()))
-                        continue;
-
-                    if (!matches(table.tableName(), req.tableName()))
-                        continue;
-
-                    for (GridQueryIndexDescriptor idxDesc : table.indexes().values())
-                        meta.add(new JdbcIndexMeta(table.schemaName(), table.tableName(), idxDesc));
-                }
-            }
-
-            return new JdbcResponse(new JdbcMetaIndexesResult(meta));
+            return new JdbcResponse(new JdbcMetaIndexesResult(idxInfos));
         }
         catch (Exception e) {
             U.error(log, "Failed to get parameters metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);

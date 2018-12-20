@@ -30,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcColumnMeta;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcIndexMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetadataInfo;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcPrimaryKeyMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTableMeta;
@@ -1073,35 +1075,18 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getIndexInfo(String catalog, String schema, String tbl, boolean unique,
         boolean approximate) throws SQLException {
-        updateMetaData();
+        conn.ensureNotClosed();
 
-        List<List<?>> rows = new ArrayList<>(indexes.size());
+        List<List<?>> rows = Collections.emptyList();
 
         if (isValidCatalog(catalog)) {
-            for (List<Object> idx : indexes) {
-                String idxSchema = (String)idx.get(0);
-                String idxTbl = (String)idx.get(1);
+            // Currently we are treating schema and tbl as sql patterns.
+            SortedSet<JdbcIndexMeta> idxMetas = newMeta.getIndexesMeta(schema, tbl);
 
-                if ((schema == null || schema.equals(idxSchema)) && (tbl == null || tbl.equals(idxTbl))) {
-                    List<Object> row = new ArrayList<>(13);
+            rows = new ArrayList<>(idxMetas.size());
 
-                    row.add(CATALOG_NAME);
-                    row.add(idxSchema);
-                    row.add(idxTbl);
-                    row.add(idx.get(2));
-                    row.add(null);
-                    row.add(idx.get(3));
-                    row.add((int)tableIndexOther);
-                    row.add(idx.get(4));
-                    row.add(idx.get(5));
-                    row.add((Boolean)idx.get(6) ? "D" : "A");
-                    row.add(0);
-                    row.add(0);
-                    row.add(null);
-
-                    rows.add(row);
-                }
-            }
+            for (JdbcIndexMeta idxMeta : idxMetas)
+                rows.addAll(indexRows(idxMeta));
         }
 
         return new JdbcResultSet(true, null,
@@ -1116,6 +1101,36 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
                 Integer.class.getName(), String.class.getName()),
             rows, true
         );
+    }
+
+    /**
+     * @param idxMeta Index metadata.
+     * @return List of result rows correspond to index.
+     */
+    private List<List<Object>> indexRows(JdbcIndexMeta idxMeta) {
+        List<List<Object>> rows = new ArrayList<>(idxMeta.fields().size());
+
+        for (int i = 0; i < idxMeta.fields().size(); ++i) {
+            List<Object> row = new ArrayList<>(13);
+
+            row.add(CATALOG_NAME);              // TABLE_CAT
+            row.add(idxMeta.schemaName());      // TABLE_SCHEM
+            row.add(idxMeta.tableName());       // TABLE_NAME
+            row.add(true);                      // NON_UNIQUE
+            row.add(null);                      // INDEX_QUALIFIER (index catalog)
+            row.add(idxMeta.indexName());       // INDEX_NAME
+            row.add(tableIndexOther);           // TYPE
+            row.add(i + 1);                     // ORDINAL_POSITION
+            row.add(idxMeta.fields().get(i));   // COLUMN_NAME
+            row.add(idxMeta.fieldsAsc().get(i) ? "A" : "D");  // ASC_OR_DESC
+            row.add((Integer)0);                // CARDINALITY
+            row.add((Integer)0);                // PAGES
+            row.add((String)null);              // FILTER_CONDITION
+
+            rows.add(row);
+        }
+
+        return rows;
     }
 
     /** {@inheritDoc} */
