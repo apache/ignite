@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.affinity;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionJoinTable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -30,14 +31,14 @@ import java.util.Collections;
 public abstract class PartitionSingleNode implements PartitionNode {
     /** Table descriptor. */
     @GridToStringExclude
-    protected final PartitionTableDescriptor tbl;
+    protected final PartitionJoinTable tbl;
 
     /**
      * Constructor.
      *
      * @param tbl Table descriptor.
      */
-    protected PartitionSingleNode(PartitionTableDescriptor tbl) {
+    protected PartitionSingleNode(PartitionJoinTable tbl) {
         this.tbl = tbl;
     }
 
@@ -59,6 +60,11 @@ public abstract class PartitionSingleNode implements PartitionNode {
      */
     public abstract boolean constant();
 
+    /** {@inheritDoc} */
+    @Override public int joinGroup() {
+        return tbl.joinGroup();
+    }
+
     /**
      * @return Partition for constant node, index for argument node.
      */
@@ -69,7 +75,7 @@ public abstract class PartitionSingleNode implements PartitionNode {
         int hash = (constant() ? 1 : 0);
 
         hash = 31 * hash + value();
-        hash = 31 * hash + tbl.hashCode();
+        hash = 31 * hash + tbl.alias().hashCode();
 
         return hash;
     }
@@ -84,6 +90,7 @@ public abstract class PartitionSingleNode implements PartitionNode {
 
         PartitionSingleNode other = (PartitionSingleNode)obj;
 
-        return F.eq(constant(), other.constant()) && F.eq(value(), other.value()) && F.eq(tbl, other.tbl);
+        return F.eq(constant(), other.constant()) && F.eq(value(), other.value()) &&
+            F.eq(tbl.alias(), other.tbl.alias());
     }
 }

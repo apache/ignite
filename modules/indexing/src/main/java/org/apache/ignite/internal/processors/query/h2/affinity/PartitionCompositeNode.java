@@ -84,6 +84,12 @@ public class PartitionCompositeNode implements PartitionNode {
     }
 
     /** {@inheritDoc} */
+    @Override public int joinGroup() {
+        // Similar to composite node, we cannot cache join group value here.
+        return left.joinGroup();
+    }
+
+    /** {@inheritDoc} */
     @Override public PartitionNode optimize() {
         PartitionNode left = this.left;
         PartitionNode right = this.right;
@@ -103,9 +109,13 @@ public class PartitionCompositeNode implements PartitionNode {
             return optimizeSpecial(right, left);
 
         // If one of child nodes cannot be optimized, nothing can be done further.
-        // Note that we cannot return "this" here because left or right parts might have been optimized.
-        if (left instanceof PartitionCompositeNode || right instanceof PartitionCompositeNode)
+        // Note that we cannot return "this" here because left or right parts might have been changed.
+        if (left instanceof PartitionCompositeNode || right instanceof PartitionCompositeNode) {
+            // TODO: Check co-location groups here.
+            // TODO: If they do not match for OR - return "ALL"
+            // TODO: If they do not match for AND - then what?
             return new PartitionCompositeNode(left, right, op);
+        }
 
         // Try optimizing composite nodes.
         if (left instanceof PartitionGroupNode)
@@ -180,6 +190,7 @@ public class PartitionCompositeNode implements PartitionNode {
      * @return Optimized node.
      */
     private PartitionNode optimizeGroupAnd(PartitionGroupNode left, PartitionNode right) {
+        // TODO: Careful
         assert op == PartitionCompositeNodeOperator.AND;
 
         // Optimistic check whether both sides are equal.
@@ -236,6 +247,7 @@ public class PartitionCompositeNode implements PartitionNode {
      * @return Optimized node.
      */
     private PartitionNode optimizeGroupOr(PartitionGroupNode left, PartitionNode right) {
+        // TODO: Careful
         assert op == PartitionCompositeNodeOperator.OR;
 
         HashSet<PartitionSingleNode> siblings = new HashSet<>(left.siblings());
@@ -289,7 +301,9 @@ public class PartitionCompositeNode implements PartitionNode {
             // X and Y -> NONE
             return PartitionNoneNode.INSTANCE;
 
-        // Otherwise it is a mixed set, cannot reduce.
+        // TODO: What should be done here wrt/ join groups?
+
+        // Otherwise this is either a mixed set, cannot reduce.
         // X and :Y -> (X) AND (:Y)
         return new PartitionCompositeNode(left, right, PartitionCompositeNodeOperator.AND);
     }
@@ -302,6 +316,7 @@ public class PartitionCompositeNode implements PartitionNode {
      * @return Optimized node.
      */
     private PartitionNode optimizeSimpleOr(PartitionSingleNode left, PartitionSingleNode right) {
+        // TODO: Merge only if they belong to the same group, otherwise this is "ALL"
         assert op == PartitionCompositeNodeOperator.OR;
 
         return left.equals(right) ? left : PartitionGroupNode.merge(left, right);

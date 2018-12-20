@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity;
 
+import org.apache.ignite.internal.processors.query.h2.affinity.join.PartitionTableModel;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.Collection;
@@ -39,6 +40,11 @@ public class PartitionNoneNode implements PartitionNode {
     /** {@inheritDoc} */
     @Override public Collection<Integer> apply(Object... args) {
         return Collections.emptySet();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int joinGroup() {
+        return PartitionTableModel.GRP_NONE;
     }
 
     /** {@inheritDoc} */

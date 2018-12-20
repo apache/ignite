@@ -72,6 +72,13 @@ public class PartitionGroupNode implements PartitionNode {
         return res;
     }
 
+    /** {@inheritDoc} */
+    @Override public int joinGroup() {
+        // Note that we cannot cache join group in constructor. We have strong invariant that all siblings always
+        // belongs to the same group. However, number of this group may be changed during expression tree traversing.
+        return siblings.iterator().next().joinGroup();
+    }
+
     /**
      * @return Siblings
      */

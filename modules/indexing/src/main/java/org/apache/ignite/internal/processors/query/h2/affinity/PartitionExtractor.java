@@ -352,7 +352,7 @@ public class PartitionExtractor {
                 return PartitionAllNode.INSTANCE;
 
             // Extract.
-            PartitionSingleNode part = extractSingle(leftCol.column(), rightConst, rightParam, tblModel);
+            PartitionSingleNode part = extractSingle(leftCol, rightConst, rightParam, tblModel);
 
             // Same thing as above: single unknown partition in disjunction defeats optimization.
             if (part == null)
@@ -411,7 +411,7 @@ public class PartitionExtractor {
         else
             return PartitionAllNode.INSTANCE;
 
-        PartitionSingleNode part = extractSingle(leftCol.column(), rightConst, rightParam, tblModel);
+        PartitionSingleNode part = extractSingle(leftCol, rightConst, rightParam, tblModel);
 
         return part != null ? part : PartitionAllNode.INSTANCE;
     }
@@ -426,30 +426,36 @@ public class PartitionExtractor {
      * @return Partition or {@code null} if failed to extract.
      */
     @Nullable private PartitionSingleNode extractSingle(
-        Column leftCol,
+        GridSqlColumn leftCol,
         GridSqlConst rightConst,
         GridSqlParameter rightParam,
         PartitionTableModel tblModel
     ) throws IgniteCheckedException {
         assert leftCol != null;
-        assert leftCol.getTable() != null;
-        assert leftCol.getTable() instanceof GridH2Table;
 
-        GridH2Table tbl = (GridH2Table)leftCol.getTable();
+        Column leftCol0 = leftCol.column();
 
-        if (!tbl.isColumnForPartitionPruning(leftCol))
+        assert leftCol0.getTable() != null;
+        assert leftCol0.getTable() instanceof GridH2Table;
+
+        GridH2Table tbl = (GridH2Table)leftCol0.getTable();
+
+        if (!tbl.isColumnForPartitionPruning(leftCol0))
             return null;
 
-        // TODO: Use table model instead
-        PartitionTableDescriptor tblDesc = descriptor(tbl);
+        PartitionJoinTable tbl0 = tblModel.table(leftCol.tableAlias());
+
+        // If table is in ignored set, then we cannot use it for partition extraction.
+        if (tbl0 == null)
+            return null;
 
         if (rightConst != null) {
             int part = idx.kernalContext().affinity().partition(tbl.cacheName(), rightConst.value().getObject());
 
-            return new PartitionConstantNode(tblDesc, part);
+            return new PartitionConstantNode(tbl0, part);
         }
         else if (rightParam != null)
-            return new PartitionParameterNode(tblDesc, idx, rightParam.index(), leftCol.getType());
+            return new PartitionParameterNode(tbl0, idx, rightParam.index(), leftCol0.getType());
         else
             return null;
     }

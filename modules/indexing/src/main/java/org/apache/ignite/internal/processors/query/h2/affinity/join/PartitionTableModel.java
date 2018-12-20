@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity.join;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -26,6 +28,9 @@ import java.util.Set;
  * Partition join model. Describes how tables are joined with each other.
  */
 public class PartitionTableModel {
+    /** Join group which could not be applied (e.g. for "ALL" case). */
+    public static final int GRP_NONE = -1;
+
     /** All tables observed during parsing excluding outer. */
     private final Map<String, PartitionJoinTable> tbls = new HashMap<>();
 
@@ -51,6 +56,20 @@ public class PartitionTableModel {
 
         tbls.put(tbl.alias(), tbl);
         grps.put(grpIdx, new PartitionJoinGroup(aff).addTable(tbl));
+    }
+
+    /**
+     * Get table by alias.
+     *
+     * @param alias Alias.
+     * @return Table or {@code null} if it cannot be used for partition pruning.
+     */
+    @Nullable public PartitionJoinTable table(String alias) {
+        PartitionJoinTable res = tbls.get(alias);
+
+        assert res != null || excludedTblNames.contains(alias);
+
+        return res;
     }
 
     /**

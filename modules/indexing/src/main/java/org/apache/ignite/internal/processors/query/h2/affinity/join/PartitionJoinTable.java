@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.affinity.join;
 
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -123,5 +124,10 @@ public class PartitionJoinTable {
      */
     public void joinGorup(int joinGrp) {
         this.joinGrp = joinGrp;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PartitionJoinTable.class, this);
     }
 }
