@@ -174,5 +174,7 @@ class SegmentCurrentStateStorage {
      */
     public void reset() {
         interrupted = false;
+
+        forceInterrupted = false;
     }
 }

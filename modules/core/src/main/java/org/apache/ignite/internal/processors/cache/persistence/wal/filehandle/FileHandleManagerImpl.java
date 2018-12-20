@@ -196,16 +196,6 @@ public class FileHandleManagerImpl implements FileHandleManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void init() {
-        //NOOP
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onActivate() {
-        //NOOP
-    }
-
-    /** {@inheritDoc} */
     @Override public void onDeactivate() throws IgniteCheckedException {
         FileWriteHandleImpl currHnd = currentHandle();
 

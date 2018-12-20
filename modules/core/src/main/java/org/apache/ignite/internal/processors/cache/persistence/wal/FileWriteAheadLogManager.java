@@ -465,8 +465,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 cctx, metrics, mmap, lastWALPtr::get, serializer, this::currentHandle
         );
 
-        fileHandleManager.init();
-
         lockedSegmentFileInputFactory = new LockedSegmentFileInputFactory(
                 segmentAware,
                 segmentRouter,
@@ -485,8 +483,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             archiver.restart();
         }
-
-        fileHandleManager.onActivate();
 
         if (dsCfg.isWalCompactionEnabled()) {
             assert compressor != null : "Compressor should be initialized.";
@@ -603,6 +599,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (log.isDebugEnabled())
             log.debug("Activated file write ahead log manager [nodeId=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
+        //NOOP implementation, we need to override it.
     }
 
     /** {@inheritDoc} */
@@ -666,9 +663,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         currHnd.finishResumeLogging();
 
-        if (mode == WALMode.BACKGROUND) {
+        if (mode == WALMode.BACKGROUND)
             backgroundFlushSchedule = cctx.time().schedule(this::doFlush, flushFreq, flushFreq);
-        }
 
         if (walAutoArchiveAfterInactivity > 0)
             scheduleNextInactivityPeriodElapsedCheck();
