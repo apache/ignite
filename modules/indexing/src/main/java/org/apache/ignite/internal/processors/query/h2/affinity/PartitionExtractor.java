@@ -86,7 +86,7 @@ public class PartitionExtractor {
             return null;
 
         // Do extract.
-        PartitionNode tree = extractFromExpression(select.where(), false);
+        PartitionNode tree = extractFromExpression(select.where(), tblModel, false);
 
         assert tree != null;
 
@@ -232,6 +232,7 @@ public class PartitionExtractor {
      * Extract partitions from expression.
      *
      * @param expr Expression.
+     * @param tblModel Table model.
      * @param disjunct Whether current processing frame is located under disjunction ("OR"). In this case we cannot
      *                 rely on join expressions like (A.a = B.b) to build co-location model because another conflicting
      *                 join expression on the same tables migth be located on the other side of the "OR".
@@ -239,7 +240,8 @@ public class PartitionExtractor {
      * @return Partition tree.
      */
     @SuppressWarnings("EnumSwitchStatementWhichMissesCases")
-    private PartitionNode extractFromExpression(GridSqlAst expr, boolean disjunct) throws IgniteCheckedException {
+    private PartitionNode extractFromExpression(GridSqlAst expr, PartitionTableModel tblModel, boolean disjunct)
+        throws IgniteCheckedException {
         PartitionNode res = PartitionAllNode.INSTANCE;
 
         if (expr instanceof GridSqlOperation) {
@@ -247,22 +249,22 @@ public class PartitionExtractor {
 
             switch (op.operationType()) {
                 case AND:
-                    res = extractFromAnd(op, disjunct);
+                    res = extractFromAnd(op, tblModel, disjunct);
 
                     break;
 
                 case OR:
-                    res = extractFromOr(op);
+                    res = extractFromOr(op, tblModel);
 
                     break;
 
                 case IN:
-                    res = extractFromIn(op);
+                    res = extractFromIn(op, tblModel);
 
                     break;
 
                 case EQUAL:
-                    res = extractFromEqual(op);
+                    res = extractFromEqual(op, tblModel);
             }
         }
 
@@ -274,14 +276,16 @@ public class PartitionExtractor {
      * Extract partition information from AND.
      *
      * @param op Operation.
+     * @param tblModel Table model.
      * @param disjunct Disjunction marker.
      * @return Partition.
      */
-    private PartitionNode extractFromAnd(GridSqlOperation op, boolean disjunct) throws IgniteCheckedException {
+    private PartitionNode extractFromAnd(GridSqlOperation op, PartitionTableModel tblModel, boolean disjunct)
+        throws IgniteCheckedException {
         assert op.size() == 2;
 
-        PartitionNode part1 = extractFromExpression(op.child(0), disjunct);
-        PartitionNode part2 = extractFromExpression(op.child(1), disjunct);
+        PartitionNode part1 = extractFromExpression(op.child(0), tblModel, disjunct);
+        PartitionNode part2 = extractFromExpression(op.child(1), tblModel, disjunct);
 
         return new PartitionCompositeNode(part1, part2, PartitionCompositeNodeOperator.AND);
     }
@@ -290,14 +294,16 @@ public class PartitionExtractor {
      * Extract partition information from OR.
      *
      * @param op Operation.
+     * @param tblModel Table model.
      * @return Partition.
      */
-    private PartitionNode extractFromOr(GridSqlOperation op) throws IgniteCheckedException {
+    private PartitionNode extractFromOr(GridSqlOperation op, PartitionTableModel tblModel)
+        throws IgniteCheckedException {
         assert op.size() == 2;
 
         // Parse inner expressions recursively with disjuncion flag set.
-        PartitionNode part1 = extractFromExpression(op.child(0), true);
-        PartitionNode part2 = extractFromExpression(op.child(1), true);
+        PartitionNode part1 = extractFromExpression(op.child(0), tblModel, true);
+        PartitionNode part2 = extractFromExpression(op.child(1), tblModel, true);
 
         return new PartitionCompositeNode(part1, part2, PartitionCompositeNodeOperator.OR);
     }
@@ -306,9 +312,11 @@ public class PartitionExtractor {
      * Extract partition information from IN.
      *
      * @param op Operation.
+     * @param tblModel Table model.
      * @return Partition.
      */
-    private PartitionNode extractFromIn(GridSqlOperation op) throws IgniteCheckedException {
+    private PartitionNode extractFromIn(GridSqlOperation op, PartitionTableModel tblModel)
+        throws IgniteCheckedException {
         // Operation should contain at least two children: left (column) and right (const or column).
         if (op.size() < 2)
             return PartitionAllNode.INSTANCE;
@@ -348,7 +356,7 @@ public class PartitionExtractor {
                 return PartitionAllNode.INSTANCE;
 
             // Extract.
-            PartitionSingleNode part = extractSingle(leftCol.column(), rightConst, rightParam);
+            PartitionSingleNode part = extractSingle(leftCol.column(), rightConst, rightParam, tblModel);
 
             // Same thing as above: single unknown partition in disjunction defeats optimization.
             if (part == null)
@@ -364,9 +372,11 @@ public class PartitionExtractor {
      * Extract partition information from equality.
      *
      * @param op Operation.
+     * @param tblModel Table model.
      * @return Partition.
      */
-    private PartitionNode extractFromEqual(GridSqlOperation op) throws IgniteCheckedException {
+    private PartitionNode extractFromEqual(GridSqlOperation op, PartitionTableModel tblModel)
+        throws IgniteCheckedException {
         assert op.operationType() == GridSqlOperationType.EQUAL;
 
         GridSqlElement left = op.child(0);
@@ -394,7 +404,7 @@ public class PartitionExtractor {
         else
             return PartitionAllNode.INSTANCE;
 
-        PartitionSingleNode part = extractSingle(leftCol.column(), rightConst, rightParam);
+        PartitionSingleNode part = extractSingle(leftCol.column(), rightConst, rightParam, tblModel);
 
         return part != null ? part : PartitionAllNode.INSTANCE;
     }
@@ -405,10 +415,16 @@ public class PartitionExtractor {
      * @param leftCol Left column.
      * @param rightConst Right constant.
      * @param rightParam Right parameter.
+     * @param tblModel Table model.
      * @return Partition or {@code null} if failed to extract.
      */
-    @Nullable private PartitionSingleNode extractSingle(Column leftCol, GridSqlConst rightConst,
-        GridSqlParameter rightParam) throws IgniteCheckedException {
+    // TODO: Make sure that join equality is processed on upper levels.
+    @Nullable private PartitionSingleNode extractSingle(
+        Column leftCol,
+        GridSqlConst rightConst,
+        GridSqlParameter rightParam,
+        PartitionTableModel tblModel
+    ) throws IgniteCheckedException {
         assert leftCol != null;
         assert leftCol.getTable() != null;
         assert leftCol.getTable() instanceof GridH2Table;
@@ -418,6 +434,7 @@ public class PartitionExtractor {
         if (!tbl.isColumnForPartitionPruning(leftCol))
             return null;
 
+        // TODO: Use table model instead
         PartitionTableDescriptor tblDesc = descriptor(tbl);
 
         if (rightConst != null) {
