@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.service;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -44,9 +43,6 @@ public class ServiceChangeBatchRequest implements DiscoveryCustomMessage {
     /** Change requests. */
     @GridToStringInclude
     private final Collection<ServiceChangeAbstractRequest> reqs;
-
-    /** Using counter. The message is expected to be handled in PME and service deployment process. */
-    private final AtomicInteger usingCounter = new AtomicInteger(2);
 
     /** Services deployment actions to be processed on services deployment process. */
     @GridToStringExclude
@@ -108,11 +104,6 @@ public class ServiceChangeBatchRequest implements DiscoveryCustomMessage {
         DiscoCache discoCache) {
         // No-op.
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int decrementUsingCounter() {
-        return usingCounter.decrementAndGet();
     }
 
     /** {@inheritDoc} */
