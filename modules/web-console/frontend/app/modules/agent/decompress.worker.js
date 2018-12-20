@@ -23,12 +23,16 @@ import bigIntJSON from 'json-bigint';
 // eslint-disable-next-line no-undef
 onmessage = function(e) {
     const data = e.data;
+    const payload = data.payload;
+    const useBigIntJson = data.useBigIntJson;
 
-    const binaryString = atob(data); // Decode from BASE64
+    const binaryString = atob(payload); // Decode from BASE64
 
     const unzipped = pako.inflate(binaryString, {to: 'string'});
 
-    const res = bigIntJSON({storeAsString: true}).parse(unzipped);
+    const res = useBigIntJson
+        ? bigIntJSON({storeAsString: true}).parse(unzipped)
+        : JSON.parse(unzipped);
 
     postMessage(_.get(res, 'result', res));
 };
