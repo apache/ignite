@@ -35,7 +35,15 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_DEADLOCK_DETECTION;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.belongToSameTx;
 
-// t0d0 javadoc
+/**
+ * Component participating in deadlock detection in a cluseter. Detection process is collaborative and it is performed
+ * by relaying special probe messages from waiting transaction to it's blocker.
+ * <p>
+ * Ideas for used detection algorithm are borrowed from Chandy-Misra-Haas deadlock detection algorithm for resource
+ * model.
+ * <p>
+ * Current implementation assumes that transactions obeys 2PL.
+ */
 public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
