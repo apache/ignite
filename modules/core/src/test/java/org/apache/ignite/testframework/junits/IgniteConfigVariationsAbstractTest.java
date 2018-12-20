@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.runners.model.Statement;
 
 /**
  * Common abstract test for Ignite tests based on configurations variations.
@@ -68,9 +69,20 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /** */
     protected volatile DataMode dataMode = DataMode.PLANE_OBJECT;
 
+    /** */
+    private static VariationsTestsConfig testsCfgInjected;
+
+    /**
+     * @param testsCfgInjected Tests configuration.
+     */
+    public static void injectTestsConfiguration(VariationsTestsConfig testsCfgInjected) {
+        IgniteConfigVariationsAbstractTest.testsCfgInjected = testsCfgInjected;
+    }
+
     /**
      * @param testsCfg Tests configuration.
      */
+    @Deprecated // todo replace with static setter and overridden runTestCase
     public void setTestsConfiguration(VariationsTestsConfig testsCfg) {
         assert this.testsCfg == null : "Test config must be set only once [oldTestCfg=" + this.testsCfg
             + ", newTestCfg=" + testsCfg + "]";
@@ -103,6 +115,13 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
      */
     @Override public String getName() {
         return getNameFallback();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void runTestCase(Statement testRoutine) throws Throwable {
+        testsCfg = testsCfgInjected;
+
+        super.runTestCase(testRoutine);
     }
 
     /** {@inheritDoc} */

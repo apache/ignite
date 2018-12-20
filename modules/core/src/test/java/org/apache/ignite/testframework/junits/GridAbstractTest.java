@@ -180,7 +180,7 @@ public abstract class GridAbstractTest extends LegacySupport {
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
 
-    /** Lock to maintain integrity of {@link TestCounters}. */
+    /** Lock to maintain integrity of {@link TestCounters} and of {@link IgniteConfigVariationsAbstractTest}. */
     private final Lock runSerializer = new ReentrantLock();
 
     /** Manages test execution and reporting. */

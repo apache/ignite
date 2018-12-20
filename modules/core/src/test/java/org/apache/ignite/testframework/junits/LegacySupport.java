@@ -51,7 +51,7 @@ public abstract class LegacySupport extends LegacyConfigVariationsSupport {
      *
      * @throws Throwable if any exception is thrown
      */
-    final void runTestCase(Statement testRoutine) throws Throwable {
+    protected void runTestCase(Statement testRoutine) throws Throwable {
         Throwable e = null;
         setUp();
         try {
