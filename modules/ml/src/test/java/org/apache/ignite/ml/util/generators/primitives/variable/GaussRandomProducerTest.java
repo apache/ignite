@@ -19,7 +19,7 @@ public class GaussRandomProducerTest {
         double varianceStat = IntStream.range(0, N).mapToDouble(i -> Math.pow(producer.get() - mean, 2)).sum() / N;
 
         assertEquals(mean, meanStat, 0.01);
-        assertEquals(varianceStat, varianceStat, 0.1);
+        assertEquals(variance, varianceStat, 0.1);
     }
 
     @Test

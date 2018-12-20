@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.util.generators.primitives.vector;
 
-import java.util.stream.DoubleStream;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;

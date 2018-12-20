@@ -37,4 +37,9 @@ public class UniformRandomProducerTest {
 
         assertEquals(producer1.get(), producer2.get(), 0.0001);
     }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testFail() {
+        new UniformRandomProducer(1, 0, 0L);
+    }
 }
