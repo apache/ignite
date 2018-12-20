@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSqlUpdateCounte
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccStreamingInsertTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTxNodeMappingTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTxRecoveryTest;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccDeadlockDetectionTest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccRepeatableReadBulkOpsTest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccRepeatableReadOperationsTest;
 import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildWithMvccEnabledSelfTest;
@@ -91,7 +92,9 @@ public class IgniteCacheMvccSqlTestSuite extends TestSuite {
         suite.addTest(new JUnit4TestAdapter(SqlTransactionsCommandsWithMvccEnabledSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(CacheMvccSizeTest.class));
         suite.addTest(new JUnit4TestAdapter(CacheMvccSqlUpdateCountersTest.class));
+
         suite.addTest(new JUnit4TestAdapter(CacheMvccSqlLockTimeoutTest.class));
+        suite.addTest(new JUnit4TestAdapter(MvccDeadlockDetectionTest.class));
 
         suite.addTest(new JUnit4TestAdapter(GridIndexRebuildWithMvccEnabledSelfTest.class));
 
