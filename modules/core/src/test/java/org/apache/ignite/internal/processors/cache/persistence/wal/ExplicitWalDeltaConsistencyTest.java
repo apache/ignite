@@ -30,7 +30,7 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyTest {
     /** {@inheritDoc} */
-    @Override public void afterTest() throws Exception {
+    @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
         super.afterTest();

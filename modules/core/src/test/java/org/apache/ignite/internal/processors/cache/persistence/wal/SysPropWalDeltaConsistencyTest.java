@@ -31,21 +31,21 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class SysPropWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyTest {
     /** {@inheritDoc} */
-    @Override public void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         System.setProperty(PageMemoryTrackerPluginProvider.IGNITE_ENABLE_PAGE_MEMORY_TRACKER, "true");
     }
 
     /** {@inheritDoc} */
-    @Override public void afterTestsStopped() throws Exception {
+    @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
         System.clearProperty(PageMemoryTrackerPluginProvider.IGNITE_ENABLE_PAGE_MEMORY_TRACKER);
     }
 
     /** {@inheritDoc} */
-    @Override public void afterTest() throws Exception {
+    @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
         super.afterTest();
