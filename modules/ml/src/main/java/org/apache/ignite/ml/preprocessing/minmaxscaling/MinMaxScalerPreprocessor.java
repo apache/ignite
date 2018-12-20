@@ -76,7 +76,7 @@ public class MinMaxScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, Ve
             double denom = max[i] - min[i];
             double scaled = num / denom;
 
-            if (Double.isNaN(denom))
+            if (Double.isNaN(scaled))
                 res.set(i, num);
             else
                 res.set(i, scaled);
