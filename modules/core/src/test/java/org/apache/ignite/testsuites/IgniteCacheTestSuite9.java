@@ -19,18 +19,7 @@ package org.apache.ignite.testsuites;
 
 import java.util.Collection;
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.CachePutIfAbsentTest;
-import org.apache.ignite.internal.processors.cache.ClientReconnectSelfTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectionsSelfTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheLoadRebalanceEvictionSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimarySyncBackPressureTest;
-import org.apache.ignite.internal.processors.cache.distributed.CacheOperationsInterruptTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePrimarySyncTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCachePrimarySyncTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCacheWriteSynchronizationModesMultithreadedTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteTxConcurrentRemoveObjectsTest;
-import org.apache.ignite.internal.processors.cache.transactions.TxDataConsistencyOnCommitFailureTest;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.internal.processors.continuous.IgniteContinuousQueryMetadataUpdateTest;
 
 /**
  * Test suite.
@@ -51,7 +40,7 @@ public class IgniteCacheTestSuite9 extends TestSuite {
         TestSuite suite = new TestSuite("IgniteCache Test Suite part 9");
 
         for (int i = 0; i < 50; i++)
-        suite.addTestSuite(ClientReconnectSelfTest.class);
+        suite.addTestSuite(IgniteContinuousQueryMetadataUpdateTest.class);
 
 /*
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheGetCustomCollectionsSelfTest.class, ignoredTests);
