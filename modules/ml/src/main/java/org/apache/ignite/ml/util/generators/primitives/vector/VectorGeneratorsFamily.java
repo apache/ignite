@@ -19,6 +19,7 @@ package org.apache.ignite.ml.util.generators.primitives.vector;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -53,7 +54,7 @@ public class VectorGeneratorsFamily implements VectorGenerator {
         return new DataStreamGenerator() {
             @Override public Stream<LabeledVector<Vector, Double>> labeled() {
                 return Stream.generate(gen::getWithId)
-                    .map(v -> new LabeledVector<>(v.vector, (double) v.distributionId));
+                    .map(v -> new LabeledVector<>(v.vector, (double)v.distributionId));
             }
         };
     }
@@ -61,6 +62,7 @@ public class VectorGeneratorsFamily implements VectorGenerator {
     public static class Builder {
         private final List<VectorGenerator> family = new ArrayList<>();
         private final List<Double> weights = new ArrayList<>();
+        private IgniteFunction<VectorGenerator, VectorGenerator> mapper = x -> x;
 
         public Builder with(VectorGenerator generator, double weight) {
             A.ensure(weight > 0, "weight > 0");
@@ -74,11 +76,18 @@ public class VectorGeneratorsFamily implements VectorGenerator {
             return with(generator, 1);
         }
 
+        public Builder map(IgniteFunction<VectorGenerator, VectorGenerator> f) {
+            mapper = x -> f.apply(mapper.apply(x));
+            return this;
+        }
+
         public VectorGeneratorsFamily build() {
             A.notEmpty(family, "family.size != 0");
             double sumOfWeigts = weights.stream().mapToDouble(x -> x).sum();
             double[] probs = weights.stream().mapToDouble(w -> w / sumOfWeigts).toArray();
-            return new VectorGeneratorsFamily(family, new DiscreteRandomProducer(probs));
+
+            List<VectorGenerator> mappedFamilily = family.stream().map(mapper).collect(Collectors.toList());
+            return new VectorGeneratorsFamily(mappedFamilily, new DiscreteRandomProducer(probs));
         }
     }
 
