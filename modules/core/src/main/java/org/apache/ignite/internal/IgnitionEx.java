@@ -1849,7 +1849,8 @@ public class IgnitionEx {
                             grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
                     }
                 },
-                workerRegistry);
+                workerRegistry,
+                cfg.getFailureDetectionTimeout());
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
@@ -1898,7 +1899,8 @@ public class IgnitionEx {
                     }
                 },
                 true,
-                workerRegistry);
+                workerRegistry,
+                cfg.getFailureDetectionTimeout());
 
             // Note that we do not pre-start threads here as igfs pool may not be needed.
             validateThreadPoolSize(cfg.getIgfsThreadPoolSize(), "IGFS");
