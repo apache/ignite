@@ -73,7 +73,7 @@ public class CrossValidationExample {
             CrossValidation<DecisionTreeNode, Double, Integer, LabeledPoint> scoreCalculator
                 = new CrossValidation<>();
 
-            double[] scores = scoreCalculator.score(
+            double[] accuracyScores = scoreCalculator.score(
                 trainer,
                 new Accuracy<>(),
                 ignite,
@@ -83,12 +83,14 @@ public class CrossValidationExample {
                 4
             );
 
+            System.out.println(">>> Accuracy: " + Arrays.toString(accuracyScores));
+
             BinaryClassificationMetrics metrics = new BinaryClassificationMetrics()
                 .withNegativeClsLb(0.0)
                 .withPositiveClsLb(1.0)
-                .withMetric(BinaryClassificationMetricValues::accuracy);
+                .withMetric(BinaryClassificationMetricValues::balancedAccuracy);
 
-            double[] scores2 = scoreCalculator.score(
+            double[] balancedAccuracyScores = scoreCalculator.score(
                 trainer,
                 metrics,
                 ignite,
@@ -98,7 +100,7 @@ public class CrossValidationExample {
                 4
             );
 
-            System.out.println(">>> Accuracy: " + Arrays.toString(scores2));
+            System.out.println(">>> Balanced Accuracy: " + Arrays.toString(balancedAccuracyScores));
 
             System.out.println(">>> Cross validation score calculator example completed.");
         }
