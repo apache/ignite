@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.authentication.AuthenticationProces
 import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheDataRegionConfigurationTest;
 import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMBeanTest;
-import org.apache.ignite.internal.processors.cache.CacheMetricsEnableRuntimeTest;
+import org.apache.ignite.internal.processors.cache.CacheMetricsManageTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartFailWithPersistenceTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeAdvancedSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeCoordinatorNotAffinityNodeSelfTest;
@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridC
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingWithAsyncClearingTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionMultinodeMixedRegionsTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheAssignmentNodeRestartsTest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheStartWithLoadTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.CheckpointBufferDeadlockTest;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionIntegrityWithPrimaryIndexCorruptionTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncWithPersistenceTest;
@@ -93,7 +92,7 @@ public class IgniteCacheTestSuite7 extends TestSuite {
         suite.addTestSuite(TxRollbackAsyncWithPersistenceTest.class);
 
         suite.addTestSuite(CacheGroupMetricsMBeanTest.class);
-        suite.addTestSuite(CacheMetricsEnableRuntimeTest.class);
+        suite.addTestSuite(CacheMetricsManageTest.class);
         suite.addTestSuite(PageEvictionMultinodeMixedRegionsTest.class);
 
         suite.addTestSuite(IgniteDynamicCacheStartFailWithPersistenceTest.class);
