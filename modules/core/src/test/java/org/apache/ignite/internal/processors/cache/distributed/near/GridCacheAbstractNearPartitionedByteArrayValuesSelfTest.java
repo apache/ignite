@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheAbstractPartitionedByteArrayValuesSelfTest;
+import org.junit.Ignore;
 
 /**
  * Tests for byte array values in NEAR-PARTITIONED caches.
@@ -31,16 +32,14 @@ public abstract class GridCacheAbstractNearPartitionedByteArrayValuesSelfTest ex
     }
 
     /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
     @Override public void testPessimisticMvcc() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
-
         super.testPessimisticMvcc();
     }
 
     /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
     @Override public void testPessimisticMvccMixed() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
-
         super.testPessimisticMvccMixed();
     }
 }
