@@ -26,33 +26,20 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.UUID;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteVersionUtils;
-import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
-import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
-import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcColumnMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcIndexMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetadataInfo;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcPrimaryKeyMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTableMeta;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.resources.IgniteInstanceResource;
 
 import static java.sql.Connection.TRANSACTION_NONE;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.RowIdLifetime.ROWID_UNSUPPORTED;
-import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
 
 /**
  * JDBC database metadata implementation.
@@ -67,13 +54,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** Connection. */
     private final JdbcConnection conn;
 
-    private final JdbcMetadataInfo newMeta;
-
-    /** Metadata. */
-    private Map<String, Map<String, Map<String, ColumnInfo>>> meta;
-
-    /** Index info. */
-    private Collection<List<Object>> indexes;
+    private final JdbcMetadataInfo meta;
 
     /**
      * @param conn Connection.
@@ -81,7 +62,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     JdbcDatabaseMetadata(JdbcConnection conn) {
         this.conn = conn;
 
-        newMeta = new JdbcMetadataInfo(conn.ignite().context());
+        meta = new JdbcMetadataInfo(conn.ignite().context());
     }
 
     /** {@inheritDoc} */
@@ -729,7 +710,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         boolean areTypesValid = tblTypes == null || Arrays.asList(tblTypes).contains("TABLE");
 
         if (isValidCatalog(catalog) && areTypesValid) {
-            List<JdbcTableMeta> tabMetas = newMeta.getTablesMeta(schemaPtrn, tblNamePtrn);
+            List<JdbcTableMeta> tabMetas = meta.getTablesMeta(schemaPtrn, tblNamePtrn);
 
             rows = new ArrayList<>(tabMetas.size());
 
@@ -811,7 +792,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
         if (isValidCatalog(catalog)) {
             Collection<JdbcColumnMeta> colMetas =
-                newMeta.getColumnsMeta(null /* latest */, schemaPtrn, tblNamePtrn, colNamePtrn);
+                meta.getColumnsMeta(null /* latest */, schemaPtrn, tblNamePtrn, colNamePtrn);
 
             rows = new ArrayList<>(colMetas.size());
 
@@ -979,7 +960,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         List<List<?>> rows;
 
         if (isValidCatalog(catalog)) {
-            Collection<JdbcPrimaryKeyMeta> tabsKeyInfo = newMeta.getPrimaryKeys(schemaPtrn, tblNamePtrn);
+            Collection<JdbcPrimaryKeyMeta> tabsKeyInfo = meta.getPrimaryKeys(schemaPtrn, tblNamePtrn);
 
             rows = new ArrayList<>();
 
@@ -1081,7 +1062,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
         if (isValidCatalog(catalog)) {
             // Currently we are treating schema and tbl as sql patterns.
-            SortedSet<JdbcIndexMeta> idxMetas = newMeta.getIndexesMeta(schema, tbl);
+            SortedSet<JdbcIndexMeta> idxMetas = meta.getIndexesMeta(schema, tbl);
 
             rows = new ArrayList<>(idxMetas.size());
 
@@ -1317,7 +1298,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         List<List<?>> rows = Collections.emptyList();
 
         if (isValidCatalog(catalog)) {
-            Set<String> schemas = newMeta.getSchemasMeta(schemaPtrn);
+            Set<String> schemas = meta.getSchemasMeta(schemaPtrn);
 
             rows = new ArrayList<>(schemas.size());
 
@@ -1424,71 +1405,6 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     }
 
     /**
-     * Updates meta data.
-     *
-     * @throws SQLException In case of error.
-     */
-    private void updateMetaData() throws SQLException {
-        conn.ensureNotClosed();
-
-        try {
-            Ignite ignite = conn.ignite();
-
-            UUID nodeId = conn.nodeId();
-
-            Collection<GridCacheSqlMetadata> metas;
-
-            UpdateMetadataTask task = new UpdateMetadataTask(conn.cacheName(), nodeId == null ? ignite : null);
-
-            metas = nodeId == null ? task.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(task);
-
-            meta = U.newHashMap(metas.size());
-
-            indexes = new ArrayList<>();
-
-            for (GridCacheSqlMetadata m : metas) {
-                String name = m.cacheName();
-
-                if (name == null)
-                    name = "PUBLIC";
-
-                Collection<String> types = m.types();
-
-                Map<String, Map<String, ColumnInfo>> typesMap = U.newHashMap(types.size());
-
-                for (String type : types) {
-                    Collection<String> notNullFields = m.notNullFields(type);
-
-                    Map<String, ColumnInfo> fields = new LinkedHashMap<>();
-
-                    for (Map.Entry<String, String> fld : m.fields(type).entrySet()) {
-                        ColumnInfo colInfo = new ColumnInfo(fld.getValue(),
-                            notNullFields == null ? false : notNullFields.contains(fld.getKey()));
-
-                        fields.put(fld.getKey(), colInfo);
-                    }
-
-                    typesMap.put(type.toUpperCase(), fields);
-
-                    for (GridCacheSqlIndexMetadata idx : m.indexes(type)) {
-                        int cnt = 0;
-
-                        for (String field : idx.fields()) {
-                            indexes.add(F.<Object>asList(name, type.toUpperCase(), !idx.unique(),
-                                idx.name(), ++cnt, field, idx.descending(field)));
-                        }
-                    }
-                }
-
-                meta.put(name, typesMap);
-            }
-        }
-        catch (Exception e) {
-            throw convertToSqlException(e, "Failed to get meta data from Ignite.");
-        }
-    }
-
-    /**
      * Checks whether string matches SQL pattern.
      *
      * @param str String.
@@ -1509,71 +1425,5 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
      */
     private static boolean isValidCatalog(String catalog) {
         return catalog == null || catalog.equalsIgnoreCase(CATALOG_NAME);
-    }
-
-    /**
-     *
-     */
-    private static class UpdateMetadataTask implements IgniteCallable<Collection<GridCacheSqlMetadata>> {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
-
-        /** Ignite. */
-        @IgniteInstanceResource
-        private Ignite ignite;
-
-        /** Cache name. */
-        private final String cacheName;
-
-        /**
-         * @param cacheName Cache name.
-         * @param ignite Ignite.
-         */
-        public UpdateMetadataTask(String cacheName, Ignite ignite) {
-            this.cacheName = cacheName;
-            this.ignite = ignite;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override public Collection<GridCacheSqlMetadata> call() throws Exception {
-            IgniteCache cache = ignite.cache(cacheName);
-
-            return ((IgniteCacheProxy)cache).context().queries().sqlMetadataV2();
-        }
-    }
-
-    /**
-     * Column info.
-     */
-    private static class ColumnInfo {
-        /** Class name. */
-        private final String typeName;
-
-        /** Not null flag. */
-        private final boolean notNull;
-
-        /**
-         * @param typeName Type name.
-         * @param notNull Not null flag.
-         */
-        private ColumnInfo(String typeName, boolean notNull) {
-            this.typeName = typeName;
-            this.notNull = notNull;
-        }
-
-        /**
-         * @return Type name.
-         */
-        public String typeName() {
-            return typeName;
-        }
-
-        /**
-         * @return Not null flag.
-         */
-        public boolean isNotNull() {
-            return notNull;
-        }
     }
 }
