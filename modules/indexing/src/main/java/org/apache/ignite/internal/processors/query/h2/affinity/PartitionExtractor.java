@@ -36,7 +36,6 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlParameter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
-import org.apache.ignite.internal.util.typedef.F;
 import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
@@ -96,10 +95,8 @@ public class PartitionExtractor {
         if (tree instanceof PartitionAllNode)
             return null;
 
-        // Return.
-        PartitionTableDescriptor desc = descriptor(tbl.dataTable());
-
-        return new PartitionResult(desc, tree);
+        // Done.
+        return new PartitionResult(tree);
     }
 
     /**
@@ -111,19 +108,23 @@ public class PartitionExtractor {
     @SuppressWarnings("IfMayBeConditional")
     public PartitionResult merge(List<GridCacheSqlQuery> qrys) {
         // Check if merge is possible.
-        PartitionTableDescriptor desc = null;
+        int joinGrp = PartitionTableModel.GRP_NONE;
 
         for (GridCacheSqlQuery qry : qrys) {
             PartitionResult qryRes = (PartitionResult)qry.derivedPartitions();
 
+            // Failed to get results for one query -> broadcast.
             if (qryRes == null)
-                // Failed to get results for one query -> broadcast.
                 return null;
 
-            if (desc == null)
-                desc = qryRes.descriptor();
-            else if (!F.eq(desc, qryRes.descriptor()))
-                // Queries refer to different tables, cannot merge -> broadcast.
+            // This only possible if query is resolved to "NONE". Will be skipped later during map request prepare.
+            if (qryRes.joinGroup() == PartitionTableModel.GRP_NONE)
+                continue;
+
+            if (joinGrp == PartitionTableModel.GRP_NONE)
+                joinGrp = qryRes.joinGroup();
+            else if (joinGrp != qryRes.joinGroup())
+                // Queries refer to different join gorups, cannot merge -> broadcast.
                 return null;
         }
 
@@ -147,7 +148,7 @@ public class PartitionExtractor {
         if (tree instanceof PartitionAllNode)
             return null;
 
-        return new PartitionResult(desc, tree);
+        return new PartitionResult(tree);
     }
 
     /**
@@ -458,16 +459,6 @@ public class PartitionExtractor {
             return new PartitionParameterNode(tbl0, idx, rightParam.index(), leftCol0.getType());
         else
             return null;
-    }
-
-    /**
-     * Get descriptor from table.
-     *
-     * @param tbl Table.
-     * @return Descriptor.
-     */
-    private static PartitionTableDescriptor descriptor(GridH2Table tbl) {
-        return new PartitionTableDescriptor(tbl.cacheName(), tbl.getName());
     }
 
     /**

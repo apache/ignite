@@ -24,10 +24,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Partition extraction result.
  */
 public class PartitionResult {
-    /** Descriptor. */
-    @GridToStringInclude
-    private final PartitionTableDescriptor desc;
-
     /** Tree. */
     @GridToStringInclude
     private final PartitionNode tree;
@@ -35,19 +31,10 @@ public class PartitionResult {
     /**
      * Constructor.
      *
-     * @param desc Descriptor.
      * @param tree Tree.
      */
-    public PartitionResult(PartitionTableDescriptor desc, PartitionNode tree) {
-        this.desc = desc;
+    public PartitionResult(PartitionNode tree) {
         this.tree = tree;
-    }
-
-    /**
-     * Descriptor.
-     */
-    public PartitionTableDescriptor descriptor() {
-        return desc;
     }
 
     /**
@@ -55,6 +42,13 @@ public class PartitionResult {
      */
     public PartitionNode tree() {
         return tree;
+    }
+
+    /**
+     * @return Join group.
+     */
+    public int joinGroup() {
+        return tree.joinGroup();
     }
 
     /** {@inheritDoc} */
