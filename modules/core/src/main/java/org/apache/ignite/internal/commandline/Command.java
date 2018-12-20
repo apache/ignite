@@ -73,5 +73,7 @@ public enum Command {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() { return text; }
+    @Override public String toString() { 
+        return text; 
+    }
 }
