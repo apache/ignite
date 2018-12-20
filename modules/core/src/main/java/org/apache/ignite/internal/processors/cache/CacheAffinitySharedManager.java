@@ -2062,7 +2062,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 cctx.exchange().exchangerUpdateHeartbeat();
 
                 fut.timeBag().finishLocalStage("Coordinator affinity cache init " +
-                    "[grp=" + grp.cacheOrGroupName() + "]");
+                    "[grp=" + desc.cacheOrGroupName() + "]");
             }
         });
 
