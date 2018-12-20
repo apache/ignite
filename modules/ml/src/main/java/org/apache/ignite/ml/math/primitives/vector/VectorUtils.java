@@ -213,13 +213,4 @@ public class VectorUtils {
         System.arraycopy(v2.asArray(), 0, vals, size1, size2);
         return new DenseVector(vals);
     }
-
-    public static Vector lerp(Vector[] vectors, double[] weights) {
-        A.notEmpty(vectors, "vectors.length != 0");
-        A.ensure(vectors.length == weights.length, "vectors.length == weights.length");
-
-        return IntStream.range(0, vectors.length)
-            .mapToObj(i -> vectors[i].times(weights[i]))
-            .reduce(Vector::plus).get();
-    }
 }
