@@ -50,7 +50,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 /**
  * Test for {@link TwitterStreamer}. Tests Public Status streaming API https://dev.twitter.com/streaming/public.
  */
-@RunWith(JUnit38ClassRunner.class) // TODO IGNITE-10739 migrate to JUnit 4
+@RunWith(JUnit38ClassRunner.class) // TODO IGNITE-10739 migrate to JUnit 4.
 public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
     /** Cache entries count. */
     private static final int CACHE_ENTRY_COUNT = 100;
