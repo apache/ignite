@@ -557,7 +557,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (dataRegionMap.isEmpty())
             return;
 
+        boolean hasMvccCache = false;
+
         for (CacheGroupDescriptor grpDesc : cctx.cache().cacheGroupDescriptors().values()) {
+            hasMvccCache |= grpDesc.config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
+
             String regionName = grpDesc.config().getDataRegionName();
 
             DataRegion region = regionName != null ? dataRegionMap.get(regionName) : dfltDataRegion;
@@ -580,14 +584,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
         }
 
-        boolean hasMvccCache = cctx.cache().cacheGroupDescriptors().values().stream()
-            .anyMatch(c -> c.config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT);
+        if (!hasMvccCache && dataRegionMap.containsKey(TxLog.TX_LOG_CACHE_NAME)) {
+            PageMemory memory = dataRegionMap.get(TxLog.TX_LOG_CACHE_NAME).pageMemory();
+
+            if (memory instanceof PageMemoryEx)
+                ((PageMemoryEx)memory).invalidate(TxLog.TX_LOG_CACHE_ID, PageIdAllocator.INDEX_PARTITION);
+        }
+
+        final boolean hasMvccCache0 = hasMvccCache;
 
         storeMgr.cleanupPageStoreIfMatch(
             new Predicate<Integer>() {
                 @Override public boolean test(Integer grpId) {
                     return MetaStorage.METASTORAGE_CACHE_ID != grpId &&
-                        (TxLog.TX_LOG_CACHE_ID != grpId || !hasMvccCache);
+                        (TxLog.TX_LOG_CACHE_ID != grpId || !hasMvccCache0);
                 }
             },
             true);
