@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.events;
 
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -26,6 +24,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -51,9 +50,6 @@ public class DiscoveryCustomEvent extends DiscoveryEvent {
     /** Affinity topology version. */
     private AffinityTopologyVersion affTopVer;
 
-    /** Nullifying custom message lock. */
-    private final Lock nullifyingCustomMsgLock = new ReentrantLock();
-
     /**
      * Default constructor.
      */
@@ -69,22 +65,23 @@ public class DiscoveryCustomEvent extends DiscoveryEvent {
     }
 
     /**
-     * @param customMsg New customMessage.
+     * Nullifies custom message field.
+     * <p/>
+     * Is used to reduce memory consumption during storing a history of processed events.
      */
-    public void customMessage(DiscoveryCustomMessage customMsg) {
-        if (customMsg == null) {
-            // Prevents the nullifying a custom message before all discovery listeners receive the event
-            // and will be able to capture data if needed.
-            nullifyingCustomMsgLock.lock();
+    public synchronized void nullifyCustomMessage() {
+        if (customMsg == null)
+            return;
 
-            try {
-                this.customMsg = null;
-            }
-            finally {
-                nullifyingCustomMsgLock.unlock();
-            }
-        }
+        if (customMsg.decrementUsingCounter() == 0)
+            customMsg = null;
+    }
 
+    /**
+     * @param customMsg New customMessage. <b>Should not be {@code null}</b>, use {@link #nullifyCustomMessage()} if you
+     * want to nullify custom message field.
+     */
+    public void customMessage(@NotNull DiscoveryCustomMessage customMsg) {
         this.customMsg = customMsg;
     }
 
@@ -105,21 +102,6 @@ public class DiscoveryCustomEvent extends DiscoveryEvent {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DiscoveryCustomEvent.class, this, super.toString());
-    }
-
-    /**
-     * Locks nullifying custom message.
-     */
-    @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    public void lockNullifyingCustomMessage() {
-        nullifyingCustomMsgLock.lock();
-    }
-
-    /**
-     * Unlocks nullifying custom message.
-     */
-    public void unlockNullifyingCustomMessage() {
-        nullifyingCustomMsgLock.unlock();
     }
 
     /**

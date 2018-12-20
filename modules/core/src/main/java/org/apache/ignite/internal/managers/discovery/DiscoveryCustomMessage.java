@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.managers.discovery;
 
 import java.io.Serializable;
+import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
@@ -108,4 +109,14 @@ public interface DiscoveryCustomMessage extends Serializable {
      * @return Reused discovery cache.
      */
     public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer, DiscoCache discoCache);
+
+    /**
+     * Decrements using counter and returns a count of handlers which are expecting the message to handle.
+     *
+     * @return Count of handlers expecting the message.
+     * @see DiscoveryCustomEvent#nullifyCustomMessage()
+     */
+    public default int decrementUsingCounter() {
+        return 0;
+    }
 }
