@@ -557,6 +557,8 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
      */
     @Test
     public void testActivateAfterFailGetLock() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10723");
+
         Ignite ig1P = primary(0);
         Ignite ig2P = primary(1);
         Ignite ig3P = primary(2);

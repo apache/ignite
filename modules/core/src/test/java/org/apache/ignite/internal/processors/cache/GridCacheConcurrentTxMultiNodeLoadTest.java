@@ -269,7 +269,7 @@ public class GridCacheConcurrentTxMultiNodeLoadTest extends GridCommonAbstractTe
      */
     private void displayReqCount() {
         new Thread(new Runnable() {
-            @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
+            @SuppressWarnings({"BusyWait"})
             @Override public void run() {
                 int interval = 10;
 

@@ -1360,7 +1360,6 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"ObjectEquality"})
     @Test
     public void testUsedCandidates() throws Exception {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
