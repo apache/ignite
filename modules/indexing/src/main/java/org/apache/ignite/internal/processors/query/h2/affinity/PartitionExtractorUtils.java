@@ -49,7 +49,6 @@ public class PartitionExtractorUtils {
      * @return Added table or {@code null} if table is exlcuded from the model.
      */
     public static PartitionJoinTable prepareTable(GridSqlAst from, PartitionTableModel tblModel) {
-        // TODO: Dangerous, but should be true.
         // Unwrap alias. We assume that every table must be aliased.
         assert from instanceof GridSqlAlias;
 
@@ -110,37 +109,6 @@ public class PartitionExtractorUtils {
 
             return null;
         }
-    }
-
-    /**
-     * Check whether this is a cross-join condition, i.e. 1=1.
-     *
-     * @param on Condition.
-     * @return {@code True} if cross-join.
-     */
-    public static boolean isCrossJoinCondition(GridSqlAst on) {
-        if (on instanceof GridSqlOperation) {
-            GridSqlOperation on0 = (GridSqlOperation)on;
-
-            if (on0.operationType() == GridSqlOperationType.EQUAL) {
-                GridSqlConst leftConst = PartitionExtractor.unwrapConst(on0.child(0));
-                GridSqlConst rightConst = PartitionExtractor.unwrapConst(on0.child(1));
-
-                if (leftConst != null && rightConst != null) {
-                    try {
-                        int leftConstval = leftConst.value().getInt();
-                        int rightConstVal = rightConst.value().getInt();
-
-                        return leftConstval == rightConstVal;
-                    }
-                    catch (Exception ignore) {
-                        // No-op.
-                    }
-                }
-            }
-        }
-
-        return false;
     }
 
     /**

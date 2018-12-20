@@ -190,14 +190,10 @@ public class PartitionExtractor {
 
             // Extract equi-join or cross-join from condition. For normal INNER JOINs most likely we will have "1=1"
             // cross join here, real join condition will be found in WHERE clause later.
-            GridSqlElement on = join.on();
+            PartitionJoinCondition cond = PartitionExtractorUtils.parseJoinCondition(join.on());
 
-            if (!PartitionExtractorUtils.isCrossJoinCondition(on)) {
-                PartitionJoinCondition cond = PartitionExtractorUtils.parseJoinCondition(on);
-
-                if (cond != null)
-                    model.addJoin(cond);
-            }
+            if (cond != null && cond.cross())
+                model.addJoin(cond);
 
             ArrayList<PartitionJoinTable> res = new ArrayList<>(leftTbls.size() + rightTbls.size());
 
@@ -264,7 +260,7 @@ public class PartitionExtractor {
                     break;
 
                 case EQUAL:
-                    res = extractFromEqual(op, tblModel);
+                    res = extractFromEqual(op, tblModel, disjunct);
             }
         }
 
@@ -373,9 +369,10 @@ public class PartitionExtractor {
      *
      * @param op Operation.
      * @param tblModel Table model.
+     * @param disjunct Disjunction flag. When set possible join expression will not be processed.
      * @return Partition.
      */
-    private PartitionNode extractFromEqual(GridSqlOperation op, PartitionTableModel tblModel)
+    private PartitionNode extractFromEqual(GridSqlOperation op, PartitionTableModel tblModel, boolean disjunct)
         throws IgniteCheckedException {
         assert op.operationType() == GridSqlOperationType.EQUAL;
 
@@ -401,6 +398,16 @@ public class PartitionExtractor {
             rightConst = null;
             rightParam = (GridSqlParameter)right;
         }
+        else if (right instanceof GridSqlColumn) {
+            if (!disjunct) {
+                PartitionJoinCondition cond = PartitionExtractorUtils.parseJoinCondition(op);
+
+                if (cond != null && cond.cross())
+                    tblModel.addJoin(cond);
+            }
+
+            return PartitionAllNode.INSTANCE;
+        }
         else
             return PartitionAllNode.INSTANCE;
 
@@ -418,7 +425,6 @@ public class PartitionExtractor {
      * @param tblModel Table model.
      * @return Partition or {@code null} if failed to extract.
      */
-    // TODO: Make sure that join equality is processed on upper levels.
     @Nullable private PartitionSingleNode extractSingle(
         Column leftCol,
         GridSqlConst rightConst,
