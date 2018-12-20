@@ -1889,7 +1889,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param cpy Copy flag.
      * @param ver GridCacheVersion.
      */
-    @SuppressWarnings("unchecked")
     public <K1, V1> void addResult(Map<K1, V1> map,
         KeyCacheObject key,
         CacheObject val,
@@ -1915,7 +1914,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param cpy Copy flag.
      * @param needVer Need version flag.
      */
-    @SuppressWarnings("unchecked")
     public <K1, V1> void addResult(Map<K1, V1> map,
         KeyCacheObject key,
         EntryGetResult getRes,
@@ -1943,7 +1941,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param ttl Entry TTL.
      * @param needVer Need version flag.
      */
-    @SuppressWarnings("unchecked")
     public <K1, V1> void addResult(Map<K1, V1> map,
         KeyCacheObject key,
         CacheObject val,
@@ -1991,7 +1988,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param needVer Need version flag.
      * @return EntryGetResult or value.
      */
-    @SuppressWarnings("unchecked")
     private <V1> V1 createValue(final GridCacheVersion ver,
         final long expireTime,
         final long ttl,

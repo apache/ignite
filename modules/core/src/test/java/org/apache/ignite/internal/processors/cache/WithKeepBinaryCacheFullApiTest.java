@@ -806,7 +806,6 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("serial")
     @Test
     public void testInvokeAllTx() throws Exception {
         if (!txShouldBeUsed())
@@ -998,7 +997,6 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("serial")
     @Test
     public void testInvokeAllAsyncTx() throws Exception {
         if (!txShouldBeUsed())

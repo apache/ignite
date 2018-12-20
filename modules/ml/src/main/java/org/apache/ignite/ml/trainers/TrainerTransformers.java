@@ -122,7 +122,7 @@ public class TrainerTransformers {
                     aggregator,
                     environment);
             }
-        };
+        }.withEnvironmentBuilder(trainer.envBuilder);
     }
 
     /**

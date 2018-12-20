@@ -82,7 +82,6 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     private static final String NO_CACHE_IGNITE_INSTANCE_NAME = "noCacheGrid";
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 

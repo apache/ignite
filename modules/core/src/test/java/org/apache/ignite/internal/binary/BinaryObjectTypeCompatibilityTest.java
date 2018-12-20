@@ -167,7 +167,6 @@ public class BinaryObjectTypeCompatibilityTest extends GridCommonAbstractTest {
      * @param <T> Result type.
      * @return Deserialized value, if {@link BinaryObject} was provided, or the same object otherwise.
      */
-    @SuppressWarnings("unchecked")
     private <T> T deserialize(Object obj) {
         if (obj instanceof BinaryObject)
             return ((BinaryObject)obj).deserialize();
