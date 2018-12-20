@@ -143,6 +143,8 @@ import org.apache.ignite.spi.IgniteSpiTimeoutObject;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
+import org.apache.ignite.spi.communication.tcp.internal.HandshakeException;
+import org.apache.ignite.spi.communication.tcp.internal.HandshakeTimeoutException;
 import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConnectionCheckFuture;
 import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationNodeConnectionCheckFuture;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
@@ -4100,32 +4102,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpCommunicationSpi.class, this);
-    }
-
-    /** Internal exception class for proper timeout handling. */
-    private static class HandshakeException extends IgniteCheckedException {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * @param msg Error message.
-         */
-        HandshakeException(String msg) {
-            super(msg);
-        }
-    }
-
-    /** Internal exception class for proper timeout handling. */
-    private static class HandshakeTimeoutException extends IgniteCheckedException {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * @param cause Exception cause
-         */
-        HandshakeTimeoutException(IgniteSpiOperationTimeoutException cause) {
-            super(cause);
-        }
     }
 
     /**
