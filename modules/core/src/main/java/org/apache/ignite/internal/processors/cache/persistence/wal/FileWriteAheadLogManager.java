@@ -630,7 +630,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
 
         /*
-            walDisableContext is started of FileWriteAheadLogManager, so we obtain actual walDisableContext here.
+            walDisableContext is started after FileWriteAheadLogManager, so we obtain actual walDisableContext ref here.
          */
         walDisableContext = cctx.walState().walDisableContext();
 
