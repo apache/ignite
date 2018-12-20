@@ -37,10 +37,14 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteContinuousQueryMetadataUpdateTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -70,6 +74,7 @@ public class IgniteContinuousQueryMetadataUpdateTest extends GridCommonAbstractT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testStartQueryOnMetadataUpdate() throws Exception {
         Ignite srv1 = startGrid(0);
         Ignite srv2 = startGrid(1);
