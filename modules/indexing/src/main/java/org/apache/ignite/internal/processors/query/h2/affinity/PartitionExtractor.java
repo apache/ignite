@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlParameter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
@@ -76,13 +75,6 @@ public class PartitionExtractor {
 
         // Prepare table model.
         PartitionTableModel tblModel = prepareTableModel(select.from());
-
-        // Currently we can extract data only from a single table.
-        // TODO: This no longer holds.
-        GridSqlTable tbl = unwrapTable(select.from());
-
-        if (tbl == null)
-            return null;
 
         // Do extract.
         PartitionNode tree = extractFromExpression(select.where(), tblModel, false);
@@ -207,22 +199,6 @@ public class PartitionExtractor {
         PartitionJoinTable tbl = PartitionExtractorUtils.prepareTable(from, model);
 
         return Collections.singletonList(tbl);
-    }
-
-    /**
-     * Try unwrapping the table.
-     *
-     * @param from From.
-     * @return Table or {@code null} if not a table.
-     */
-    @Nullable private static GridSqlTable unwrapTable(GridSqlAst from) {
-        if (from instanceof GridSqlAlias)
-            from = from.child();
-
-        if (from instanceof GridSqlTable)
-            return (GridSqlTable)from;
-
-        return null;
     }
 
     /**
