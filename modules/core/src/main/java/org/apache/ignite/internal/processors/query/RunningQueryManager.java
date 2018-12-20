@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -116,5 +117,8 @@ public class RunningQueryManager {
             run.cancel();
     }
 
-    // TODO: toString (see assert above)
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(RunningQueryManager.class, this);
+    }
 }

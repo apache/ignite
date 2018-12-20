@@ -973,21 +973,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean enforceJoinOrder = qry.isEnforceJoinOrder(), startTx = autoStartTx(qry);
         int timeout = qry.getTimeout();
 
-        // TODO: Not safe wrt to previously registered query ID
         final GridQueryFieldsResult res = queryLocalSqlFields(schemaName, sql, params, filter,
             enforceJoinOrder, startTx, timeout, cancel);
 
-        RegisteredQueryCursor<List<?>> cursor = new RegisteredQueryCursor<>(new Iterable<List<?>>() {
-            @SuppressWarnings("NullableProblems")
-            @Override public Iterator<List<?>> iterator() {
-                try {
-                    return new GridQueryCacheObjectsIterator(res.iterator(), objectContext(), keepBinary);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
+        Iterable<List<?>> iter = () -> {
+            try {
+                return new GridQueryCacheObjectsIterator(res.iterator(), objectContext(), keepBinary);
             }
-        }, cancel, runningQueryManager(), qryId);
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        };
+
+        QueryCursorImpl<List<?>> cursor = qryId != null
+            ? new RegisteredQueryCursor<>(iter, cancel, runningQueryManager(), qryId)
+            : new QueryCursorImpl<>(iter, cancel);
 
         cursor.fieldsMeta(res.metaData());
 
@@ -1655,6 +1655,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return Collections.singletonList(queryLocalSqlFields(schemaName, qry, keepBinary, filter, cancel, qryId));
         }
         catch (IgniteCheckedException e) {
+            runningQueryManager().unregisterRunningQuery(qryId);
+
             throw new IgniteSQLException("Failed to execute local statement [stmt=" + sqlQry +
                 ", params=" + Arrays.deepToString(qry.getArgs()) + "]", e);
         }
@@ -2023,9 +2025,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Long qryId = registerRunningQuery(schemaName, cancel, qry.getSql(), qry.isLocal(), registerAsNewQry);
 
         try {
-            RegisteredQueryCursor<List<?>> cursor = new RegisteredQueryCursor<>(
-                runQueryTwoStep(schemaName, twoStepQry, keepBinary, qry.isEnforceJoinOrder(), startTx, qry.getTimeout(),
-                    cancel, qry.getArgs(), partitions, qry.isLazy(), mvccTracker), cancel, runningQueryManager(), qryId);
+            Iterable<List<?>> iter = runQueryTwoStep(schemaName, twoStepQry, keepBinary, qry.isEnforceJoinOrder(), startTx, qry.getTimeout(),
+                cancel, qry.getArgs(), partitions, qry.isLazy(), mvccTracker);
+
+            QueryCursorImpl<List<?>> cursor = registerAsNewQry
+                ? new RegisteredQueryCursor<>(iter, cancel, runningQueryManager(), qryId)
+                : new QueryCursorImpl<>(iter, cancel);
 
             cursor.fieldsMeta(meta);
 

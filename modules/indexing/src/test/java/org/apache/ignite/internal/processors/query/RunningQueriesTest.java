@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNe
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateFilterRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -153,6 +154,14 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
                                 }
                             });
                     }
+                    else if (SchemaProposeDiscoveryMessage.class.isAssignableFrom(delegate.getClass())) {
+                        try {
+                            awaitTimeouted();
+                        }
+                        catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
                 }
 
                 super.sendCustomEvent(msg);
@@ -219,16 +228,40 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Check tracking running queries for DML.
+     * Check tracking running queries for DELETE.
      */
     @Test
-    public void testQueryDML() throws Exception {
+    public void testQueryDmlDelete() throws Exception {
+        testQueryDML("DELETE FROM /* comment */ Integer");
+    }
+
+    /**
+     * Check tracking running queries for INSERT.
+     */
+    @Test
+    public void testQueryDmlInsert() throws Exception {
+        testQueryDML("INSERT INTO Integer(_key, _val) VALUES(1,1)");
+    }
+
+    /**
+     * Check tracking running queries for UPDATE.
+     */
+    @Test
+    public void testQueryDmlUpdate() throws Exception {
+        testQueryDML("UPDATE Integer set _val = 1 where 1=1");
+    }
+
+    /**
+     * Check tracking running queries for DML.
+     *
+     * @param dmlQry DML query.
+     */
+    public void testQueryDML(String dmlQry) throws Exception {
         newBarrier(2);
 
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-        // TODO: Add INSERT/UPDATE
-        SqlFieldsQuery qry = new SqlFieldsQuery("DELETE FROM /* comment */ Integer");
+        SqlFieldsQuery qry = new SqlFieldsQuery(dmlQry);
 
         IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> cache.query(qry).getAll());
 
@@ -252,16 +285,60 @@ public class RunningQueriesTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Check tracking running queries for DDL.
+     * Check tracking running queries for DROP INDEX.
      */
     @Test
-    public void testQueryDDL() throws Exception {
+    public void testQueryDdlDropIndex() throws Exception {
+        newBarrier(1);
+
+        ignite.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("CREATE TABLE tst_idx_drop(id long PRIMARY KEY, cnt integer)"));
+
+        ignite.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("CREATE INDEX tst_idx_drop_idx ON default.tst_idx_drop(cnt)"));
+
+        testQueryDDL("DROP INDEX default.tst_idx_drop_idx");
+    }
+
+    /**
+     * Check tracking running queries for CREATE INDEX.
+     */
+    @Test
+    public void testQueryDdlCreateIndex() throws Exception {
+        newBarrier(1);
+
+        ignite.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("CREATE TABLE tst_idx_create(id long PRIMARY KEY, cnt integer)"));
+
+        testQueryDDL("CREATE INDEX tst_idx_create_idx ON default.tst_idx_create(cnt)");
+    }
+
+    /**
+     * Check tracking running queries for DROP TABLE.
+     */
+    @Test
+    public void testQueryDdlDropTable() throws Exception {
+        newBarrier(1);
+
+        ignite.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("CREATE TABLE tst_drop(id long PRIMARY KEY, cnt integer)"));
+
+        testQueryDDL("DROP TABLE default.tst_drop");
+    }
+
+    /**
+     * Check tracking running queries for CREATE TABLE.
+     */
+    @Test
+    public void testQueryDdlCreateTable() throws Exception {
+        testQueryDDL("CREATE TABLE tst_create(id long PRIMARY KEY, cnt integer)");
+    }
+
+    /**
+     * Check tracking running queries for DDL.
+     */
+    public void testQueryDDL(String sql) throws Exception {
         newBarrier(2);
 
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-        // TODO: CREATE/DROP + TABLE/INDEX
-        SqlFieldsQuery qry = new SqlFieldsQuery("CREATE TABLE tst(id long PRIMARY KEY, cnt integer)");
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
         IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> cache.query(qry).getAll());
 

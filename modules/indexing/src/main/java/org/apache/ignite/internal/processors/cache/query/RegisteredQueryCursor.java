@@ -48,34 +48,8 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
         Long qryId) {
         super(iterExec, cancel);
 
-        this.runningQryMgr = runningQryMgr;
-        this.qryId = qryId;
-    }
-
-    // TODO: Unused
-    /**
-     * @param iterExec Query executor.
-     * @param runningQryMgr Running query manager.
-     * @param qryId Registered running query id.
-     */
-    public RegisteredQueryCursor(Iterable<T> iterExec, RunningQueryManager runningQryMgr, Long qryId) {
-        super(iterExec);
-
-        this.runningQryMgr = runningQryMgr;
-        this.qryId = qryId;
-    }
-
-    // TODO: Unused
-    /**
-     * @param iterExec Query executor.
-     * @param cancel Cancellation closure.
-     * @param isQry Result type flag - {@code true} for query, {@code false} for update operation.
-     * @param runningQryMgr Running query manager.
-     * @param qryId Registered running query id.
-     */
-    public RegisteredQueryCursor(Iterable<T> iterExec, GridQueryCancel cancel, boolean isQry,
-        RunningQueryManager runningQryMgr, Long qryId) {
-        super(iterExec, cancel, isQry);
+        assert runningQryMgr != null;
+        assert qryId != null;
 
         this.runningQryMgr = runningQryMgr;
         this.qryId = qryId;
@@ -83,8 +57,7 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        // TODO: qryId - why nullable? Probably should never be null here.
-        if (unregistered.compareAndSet(false, true) && qryId != null)
+        if (unregistered.compareAndSet(false, true))
             runningQryMgr.unregisterRunningQuery(qryId);
 
         super.close();
