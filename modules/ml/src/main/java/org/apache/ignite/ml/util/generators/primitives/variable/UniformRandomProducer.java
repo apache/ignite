@@ -43,12 +43,4 @@ public class UniformRandomProducer extends RandomProducerWithGenerator {
 
         return result;
     }
-
-    public static UniformRandomProducer constant(double value) {
-        return new UniformRandomProducer(value, value);
-    }
-
-    public static UniformRandomProducer zero() {
-        return constant(0.0);
-    }
 }

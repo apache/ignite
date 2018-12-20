@@ -28,6 +28,7 @@ import org.apache.ignite.ml.util.generators.primitives.vector.VectorGenerator;
 public class DiscreteRandomProducer extends RandomProducerWithGenerator {
     private double EPS = 1e-5;
     private final double[] probs;
+    private final int[] ids;
 
     public DiscreteRandomProducer(double... probs) {
         this(System.currentTimeMillis(), probs);
@@ -41,22 +42,27 @@ public class DiscreteRandomProducer extends RandomProducerWithGenerator {
         A.ensure(allElementsAreGEZero, "all elements should be great or equals 0.0");
         A.ensure(sumOfProbsEqOne, "sum of probs should equal 1.0");
 
-        this.probs = probs;
+        this.probs = Arrays.copyOf(probs, probs.length);
+        this.ids = IntStream.range(0, probs.length).toArray();
+        sort(this.probs, ids, 0, probs.length - 1);
 
-        Arrays.sort(probs);
         int i = 0;
         int j = probs.length - 1;
         while (i < j) {
-            double temp = probs[i];
-            probs[i] = probs[j];
-            probs[j] = temp;
+            double temp = this.probs[i];
+            this.probs[i] = this.probs[j];
+            this.probs[j] = temp;
+
+            int idxTmp = this.ids[i];
+            this.ids[i] = this.ids[j];
+            this.ids[j] = idxTmp;
 
             i++;
             j--;
         }
 
-        for (i = 1; i < probs.length; i++)
-            probs[i] += probs[i - 1];
+        for (i = 1; i < this.probs.length; i++)
+            this.probs[i] += this.probs[i - 1];
     }
 
     public static DiscreteRandomProducer uniform(List<VectorGenerator> families) {
@@ -101,10 +107,10 @@ public class DiscreteRandomProducer extends RandomProducerWithGenerator {
         double p = generator().nextDouble();
         for(int i = 0; i < probs.length; i++) {
             if(probs[i] > p)
-                return (double) i;
+                return (double) ids[i];
         }
 
-        return (double) (probs.length - 1);
+        return (double) ids[probs.length - 1];
     }
 
     public int getInt() {
@@ -115,5 +121,34 @@ public class DiscreteRandomProducer extends RandomProducerWithGenerator {
         return probs.length;
     }
 
+    private void sort(double[] probs, int[] idx, int from, int to) {
+        if (from < to) {
+            double pivot = probs[(from + to) / 2];
 
+            int i = from, j = to;
+
+            while (i <= j) {
+                while (probs[i] < pivot)
+                    i++;
+                while (probs[j] > pivot)
+                    j--;
+
+                if (i <= j) {
+                    double tmpFeature = probs[i];
+                    probs[i] = probs[j];
+                    probs[j] = tmpFeature;
+
+                    int tmpLb = idx[i];
+                    idx[i] = idx[j];
+                    idx[j] = tmpLb;
+
+                    i++;
+                    j--;
+                }
+            }
+
+            sort(probs, idx, from, j);
+            sort(probs, idx, i, to);
+        }
+    }
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.util.generators;
+package org.apache.ignite.ml.util.generators.datastream;
 
 import java.util.Map;
 import java.util.stream.Collectors;

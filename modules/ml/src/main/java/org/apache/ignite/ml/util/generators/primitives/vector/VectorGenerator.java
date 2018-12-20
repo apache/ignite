@@ -31,7 +31,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.util.generators.DataStreamGenerator;
+import org.apache.ignite.ml.util.generators.datastream.DataStreamGenerator;
 import org.apache.ignite.ml.util.generators.primitives.variable.RandomProducer;
 
 public interface VectorGenerator extends Supplier<Vector> {

@@ -17,8 +17,10 @@
 
 package org.apache.ignite.ml.util.generators.primitives.vector;
 
+import java.util.stream.DoubleStream;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.util.generators.primitives.variable.GaussRandomProducer;
 import org.apache.ignite.ml.util.generators.primitives.variable.RandomProducer;
 import org.apache.ignite.ml.util.generators.primitives.variable.UniformRandomProducer;
@@ -68,5 +70,13 @@ public class VectorGeneratorPrimitives {
 
     public static VectorGenerator circle(double radius) {
         return circle(radius, System.currentTimeMillis());
+    }
+
+    public static VectorGenerator zero(int size) {
+        return constant(VectorUtils.of(DoubleStream.of(0.).limit(size).toArray()));
+    }
+
+    public static VectorGenerator constant(Vector v) {
+        return () -> v;
     }
 }
