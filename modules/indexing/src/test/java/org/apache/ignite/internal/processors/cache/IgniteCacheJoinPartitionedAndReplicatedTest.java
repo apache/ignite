@@ -37,6 +37,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -50,6 +51,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 @RunWith(JUnit4.class)
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-5016")
 public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -175,10 +177,9 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5016")
     @Test
     public void testJoin() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5016");
-
         Ignite client = grid(2);
 
         IgniteCache<Object, Object> personCache = client.cache(PERSON_CACHE);
@@ -229,10 +230,9 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
 
     /**
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5016")
     @Test
     public void testReplicatedToPartitionedLeftJoin() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5016");
-
         Ignite client = grid(2);
 
         IgniteCache<Object, Object> personCache = client.cache(PERSON_CACHE);
