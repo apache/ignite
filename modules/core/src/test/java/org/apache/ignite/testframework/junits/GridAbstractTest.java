@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiPredicate;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import org.apache.ignite.Ignite;
@@ -122,6 +123,7 @@ import org.apache.log4j.Priority;
 import org.apache.log4j.RollingFileAppender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
@@ -2643,10 +2645,13 @@ public abstract class GridAbstractTest extends LegacySupport {
                 if (this0.forceTestCnt)
                     cnt = this0.testCnt;
                 else {
+                    BiPredicate<Method, Class<? extends Annotation>> annotated
+                        = (m, cls) -> m.getAnnotation(cls) != null;
+
                     cnt = 0;
 
                     for (Method m : this0.getClass().getMethods())
-                        if (m.getAnnotation(Test.class) != null)
+                        if (annotated.test(m, Test.class) && !annotated.test(m, Ignore.class))
                             cnt++;
                 }
 
