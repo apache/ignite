@@ -93,6 +93,8 @@ public class LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest extends Grid
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10652");
+
         super.beforeTest();
 
         cleanPersistenceDir();
@@ -112,7 +114,6 @@ public class LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest extends Grid
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10652")
     @Test
     public void testAtomic() throws Exception {
         atomicityMode = CacheAtomicityMode.ATOMIC;
@@ -123,7 +124,6 @@ public class LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest extends Grid
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10652")
     @Test
     public void testTx() throws Exception {
         atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
