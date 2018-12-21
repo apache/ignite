@@ -17,8 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.examples.ComputeScheduleExampleMultiNodeSelfTest;
 import org.apache.ignite.examples.ComputeScheduleExampleSelfTest;
 import org.apache.ignite.examples.HibernateL2CacheExampleMultiNodeSelfTest;
