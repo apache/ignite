@@ -414,6 +414,37 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test baseline remove node on not active cluster via control.sh
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBaselineRemoveOnNotActiveCluster() throws Exception {
+        Ignite ignite = startGrids(1);
+        Ignite other = startGrid("nodeToStop");
+
+        assertFalse(ignite.cluster().active());
+
+        ignite.cluster().active(true);
+
+        String offlineNodeConsId = consistentIds(other);
+
+        stopGrid("nodeToStop");
+
+        assertEquals(2, ignite.cluster().currentBaselineTopology().size());
+
+        ignite.cluster().active(false);
+
+        assertFalse(ignite.cluster().active());
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "remove", offlineNodeConsId));
+
+        assertTrue(testOut.toString().contains("Changing BaselineTopology on inactive cluster is not allowed."));
+    }
+
+    /**
      * Test baseline set works via control.sh
      *
      * @throws Exception If failed.

@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -94,7 +95,7 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
         /**
          * @return Current baseline.
          */
-        private Map<String, BaselineNode> currentBaseLine() {
+        @NotNull private Map<String, BaselineNode> currentBaseLine() {
             Map<String, BaselineNode> nodes = new HashMap<>();
 
             Collection<BaselineNode> baseline = ignite.cluster().currentBaselineTopology();
@@ -173,11 +174,13 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
         private VisorBaselineTaskResult remove(List<String> consistentIds) {
             Map<String, BaselineNode> baseline = currentBaseLine();
 
-            for (String consistentId : consistentIds) {
-                BaselineNode node = baseline.remove(consistentId);
+            if (!baseline.isEmpty()) {
+                for (String consistentId : consistentIds) {
+                    BaselineNode node = baseline.remove(consistentId);
 
-                if (node == null)
-                    throw new IllegalStateException("Node not found for consistent ID: " + consistentId);
+                    if (node == null)
+                        throw new IllegalStateException("Node not found for consistent ID: " + consistentId);
+                }
             }
 
             return set0(baseline.values());
