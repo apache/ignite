@@ -15,12 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.opt;
+package org.apache.ignite.internal.processors.query.h2.opt.join;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import javax.cache.CacheException;
+
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
