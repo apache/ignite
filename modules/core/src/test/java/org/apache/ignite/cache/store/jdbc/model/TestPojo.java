@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.store.jdbc.common;
+package org.apache.ignite.cache.store.jdbc.model;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -25,7 +25,7 @@ import java.sql.Date;
 /**
  * Test JDBC POJO object.
  */
-public class TestPogo implements Serializable {
+public class TestPojo implements Serializable {
     /** */
     @QuerySqlField
     private String value1;
@@ -41,12 +41,12 @@ public class TestPogo implements Serializable {
     /**
      * Default constructor.
      */
-    public TestPogo() {
+    public TestPojo() {
         // No-op.
     }
 
     /** */
-    public TestPogo(String value1, int value2, Date value3) {
+    public TestPojo(String value1, int value2, Date value3) {
         this.value1 = value1;
 
         this.value2 = value2;
@@ -92,7 +92,7 @@ public class TestPogo implements Serializable {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        TestPogo pogo = (TestPogo)o;
+        TestPojo pogo = (TestPojo)o;
 
         return Objects.equals(value1, pogo.value1) &&
             Objects.equals(value2, pogo.value2) &&
@@ -107,7 +107,7 @@ public class TestPogo implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "TestPogo{" +
+        return "TestPojo{" +
             "value1='" + value1 + '\'' +
             ", value2=" + value2 +
             ", value3=" + value3 +

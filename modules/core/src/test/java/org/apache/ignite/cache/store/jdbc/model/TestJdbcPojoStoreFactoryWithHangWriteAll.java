@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.store.jdbc.common;
+package org.apache.ignite.cache.store.jdbc.model;
 
 import java.sql.PreparedStatement;
 import java.util.Collection;
@@ -24,14 +24,10 @@ import javax.cache.CacheException;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import javax.sql.DataSource;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory;
 import org.apache.ignite.cache.store.jdbc.JdbcTypeField;
-import org.apache.ignite.internal.IgniteComponentType;
-import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -39,15 +35,11 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TestJdbcPojoStoreFactoryWithHangWriteAll<K, V> extends CacheJdbcPojoStoreFactory<K, V> {
     /** */
-    @SpringApplicationContextResource
-    private transient Object appCtx;
-
-    /** */
     private static long count = 0;
 
     /** {@inheritDoc} */
     @Override public CacheJdbcPojoStore<K, V> create() {
-        CacheJdbcPojoStore<K, V> store = new NoRetryCacheJdbcPojoStore<>();
+        CacheJdbcPojoStore<K, V> store = new TestJdbcPojoStoreWithHangWriteAll<>();
 
         store.setBatchSize(getBatchSize());
         store.setDialect(getDialect());
@@ -58,31 +50,13 @@ public class TestJdbcPojoStoreFactoryWithHangWriteAll<K, V> extends CacheJdbcPoj
         store.setHasher(getHasher());
         store.setTransformer(getTransformer());
         store.setSqlEscapeAll(isSqlEscapeAll());
-
-        if (getDataSourceBean() != null) {
-            if (appCtx == null)
-                throw new IgniteException("Spring application context resource is not injected.");
-
-            try {
-                IgniteSpringHelper spring = IgniteComponentType.SPRING.create(false);
-
-                DataSource data = spring.loadBeanFromAppContext(appCtx, getDataSourceBean());
-
-                store.setDataSource(data);
-            }
-            catch (Exception e) {
-                throw new IgniteException("Failed to load bean in application context [beanName=" +
-                    getDataSourceBean() + ", igniteConfig=" + appCtx + ']', e);
-            }
-        }
-        else if (getDataSourceFactory() != null)
-            store.setDataSource(getDataSourceFactory().create());
+        store.setDataSource(getDataSourceFactory().create());
 
         return store;
     }
 
     /** */
-    public static class NoRetryCacheJdbcPojoStore<K,V> extends CacheJdbcPojoStore<K,V> {
+    public static class TestJdbcPojoStoreWithHangWriteAll<K,V> extends CacheJdbcPojoStore<K,V> {
         /** {@inheritDoc} */
         @Override protected void fillParameter(PreparedStatement stmt, int idx, JdbcTypeField field, @Nullable Object fieldVal) throws CacheException {
             try {
@@ -100,14 +74,14 @@ public class TestJdbcPojoStoreFactoryWithHangWriteAll<K, V> extends CacheJdbcPoj
             DataSource ds = getDataSource();
 
             try {
-                if (ds instanceof TestJdbcPogoDataSource)
-                    ((TestJdbcPogoDataSource)ds).switchPerThreadMode(false);
+                if (ds instanceof TestJdbcPojoDataSource)
+                    ((TestJdbcPojoDataSource)ds).switchPerThreadMode(false);
 
                 super.loadCache(clo, args);
             }
             finally {
-                if (ds instanceof TestJdbcPogoDataSource)
-                    ((TestJdbcPogoDataSource)ds).switchPerThreadMode(true);
+                if (ds instanceof TestJdbcPojoDataSource)
+                    ((TestJdbcPojoDataSource)ds).switchPerThreadMode(true);
             }
         }
 

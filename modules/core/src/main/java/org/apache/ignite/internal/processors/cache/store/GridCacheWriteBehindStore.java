@@ -439,10 +439,24 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 val.readLock().lock();
 
                 try {
-                    if (val.operation() == StoreOperation.PUT)
-                        loaded.put(key, val.entry().getValue());
+                    StoreOperation op;
+
+                    V value;
+
+                    if (writeCoalescing && val.nextEntry() != null) {
+                        op = val.nextOperation();
+
+                        value = val.nextEntry().getValue();
+                    } else {
+                        op = val.operation();
+
+                        value = val.entry().getValue();
+                    }
+
+                    if (op == StoreOperation.PUT)
+                        loaded.put(key, value);
                     else
-                        assert val.operation() == StoreOperation.RMV : val.operation();
+                        assert op == StoreOperation.RMV : op;
                 }
                 finally {
                     val.readLock().unlock();
@@ -484,9 +498,23 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             val.readLock().lock();
 
             try {
-                switch (val.operation()) {
+                StoreOperation op;
+
+                V value;
+
+                if (writeCoalescing && val.nextEntry() != null) {
+                    op = val.nextOperation();
+
+                    value = val.nextEntry().getValue();
+                } else {
+                    op = val.operation();
+
+                    value = val.entry().getValue();
+                }
+
+                switch (op) {
                     case PUT:
-                        return val.entry().getValue();
+                        return value;
 
                     case RMV:
                         return null;
@@ -597,7 +625,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 if (prev.status() == ValueStatus.PENDING || prev.status() == ValueStatus.PENDING_AND_UPDATED) {
                     // Flush process in progress, save next value and update the status.
 
-                    prev.addNext(newVal.val, newVal.storeOperation);
+                    prev.setNext(newVal.val, newVal.storeOperation);
 
                     prev.status(ValueStatus.PENDING_AND_UPDATED);
 
@@ -716,14 +744,22 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         Map<K, Entry<? extends K, ? extends V>> batch = U.newLinkedHashMap(valMap.size());
 
         for (Map.Entry<K, StatefulValue<K, V>> e : valMap.entrySet()) {
-            if (operation == null)
-                operation = e.getValue().operation();
+            StatefulValue<K, V> val = e.getValue();
 
-            assert operation == e.getValue().operation();
+            val.readLock().lock();
 
-            assert e.getValue().status() == ValueStatus.PENDING || e.getValue().status() == ValueStatus.PENDING_AND_UPDATED;
+            try {
+                if (operation == null)
+                    operation = val.operation();
 
-            batch.put(e.getKey(), e.getValue().entry());
+                assert operation == val.operation();
+
+                assert val.status() == ValueStatus.PENDING || val.status() == ValueStatus.PENDING_AND_UPDATED;
+
+                batch.put(e.getKey(), val.entry());
+            } finally {
+                val.readLock().unlock();
+            }
         }
 
         boolean result = updateStore(operation, batch, initSes, flusher);
@@ -737,9 +773,9 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 try {
                     if (writeCoalescing) {
                         if (val.status() == ValueStatus.PENDING_AND_UPDATED) {
-                            val.update(val.nextVal, val.nextStoreOperation, ValueStatus.NEW);
+                            val.update(val.nextEntry(), val.nextOperation(), ValueStatus.NEW);
 
-                            val.addNext(null, null);
+                            val.setNext(null, null);
                         }
                         else {
                             val.status(ValueStatus.FLUSHED);
@@ -774,8 +810,8 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 val.writeLock().lock();
 
                 try {
-                    if(val.status() == ValueStatus.PENDING_AND_UPDATED)
-                        val.update(val.nextVal, val.nextStoreOperation, ValueStatus.NEW);
+                    if (val.status() == ValueStatus.PENDING_AND_UPDATED)
+                        val.update(val.nextEntry(), val.nextOperation(), ValueStatus.NEW);
                     else {
                         val.status(ValueStatus.RETRY);
 
@@ -1411,6 +1447,20 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         }
 
         /**
+         * @return Next stored value.
+         */
+        private Entry<? extends K, ? extends V> nextEntry() {
+            return nextVal;
+        }
+
+        /**
+         * @return Store operation.
+         */
+        private StoreOperation nextOperation() {
+            return nextStoreOperation;
+        }
+
+        /**
          * @return Stored value.
          */
         private Entry<? extends K, ? extends V> entry() {
@@ -1461,7 +1511,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
          * @param val Value.
          * @param storeOperation Store operation.
          */
-        private void addNext(@Nullable Entry<? extends K, ? extends V> val,
+        private void setNext(@Nullable Entry<? extends K, ? extends V> val,
             StoreOperation storeOperation) {
             this.nextVal = val;
             this.nextStoreOperation = storeOperation;

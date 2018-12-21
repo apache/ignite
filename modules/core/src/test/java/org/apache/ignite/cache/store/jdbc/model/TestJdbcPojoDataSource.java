@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.store.jdbc.common;
+package org.apache.ignite.cache.store.jdbc.model;
 
 import java.io.PrintWriter;
 import java.sql.Array;
@@ -44,7 +44,7 @@ import javax.sql.DataSource;
 /**
  * Test JDBC POJO DataSource.
  */
-public class TestJdbcPogoDataSource implements DataSource {
+public class TestJdbcPojoDataSource implements DataSource {
     /** */
     private final ThreadLocal<ConnectionHolder> holder = new ThreadLocal<ConnectionHolder>() {
         @Override
