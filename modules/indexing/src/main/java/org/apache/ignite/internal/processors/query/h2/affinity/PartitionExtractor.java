@@ -66,7 +66,7 @@ public class PartitionExtractor {
      * @param qry Query.
      * @return Partitions.
      */
-    public PartitionNode extract(GridSqlQuery qry) throws IgniteCheckedException {
+    public PartitionResult extract(GridSqlQuery qry) throws IgniteCheckedException {
         // No unions support yet.
         if (!(qry instanceof GridSqlSelect))
             return null;
@@ -88,7 +88,7 @@ public class PartitionExtractor {
             return null;
 
         // Done.
-        return tree;
+        return new PartitionResult(tree);
     }
 
     /**
@@ -98,12 +98,12 @@ public class PartitionExtractor {
      * @return Partition result or {@code null} if nothing is resolved.
      */
     @SuppressWarnings("IfMayBeConditional")
-    public PartitionNode merge(List<GridCacheSqlQuery> qrys) {
+    public PartitionResult merge(List<GridCacheSqlQuery> qrys) {
         // Check if merge is possible.
         int joinGrp = PartitionTableModel.GRP_NONE;
 
         for (GridCacheSqlQuery qry : qrys) {
-            PartitionNode qryRes = (PartitionNode)qry.derivedPartitions();
+            PartitionResult qryRes = (PartitionResult)qry.derivedPartitions();
 
             // Failed to get results for one query -> broadcast.
             if (qryRes == null)
@@ -124,12 +124,12 @@ public class PartitionExtractor {
         PartitionNode tree = null;
 
         for (GridCacheSqlQuery qry : qrys) {
-            PartitionNode qryRes = (PartitionNode) qry.derivedPartitions();
+            PartitionResult qryRes = (PartitionResult)qry.derivedPartitions();
 
             if (tree == null)
-                tree = qryRes;
+                tree = qryRes.tree();
             else
-                tree = new PartitionCompositeNode(tree, qryRes, PartitionCompositeNodeOperator.OR);
+                tree = new PartitionCompositeNode(tree, qryRes.tree(), PartitionCompositeNodeOperator.OR);
         }
 
         // Optimize.
@@ -140,7 +140,7 @@ public class PartitionExtractor {
         if (tree instanceof PartitionAllNode)
             return null;
 
-        return tree;
+        return new PartitionResult(tree);
     }
 
     /**
