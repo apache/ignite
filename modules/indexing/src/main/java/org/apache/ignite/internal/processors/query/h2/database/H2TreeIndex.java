@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
@@ -458,7 +459,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
             GridCursor<GridH2Row> range = ((BPlusTree)t).find(first, last, filter, null);
 
             if (range == null)
-                range = EMPTY_CURSOR;
+                range = H2Utils.EMPTY_CURSOR;
 
             return new H2Cursor(range);
         }

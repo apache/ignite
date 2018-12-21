@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
+import org.apache.ignite.internal.processors.query.h2.opt.join.SegmentKey;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
@@ -39,7 +40,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMes
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteTree;
-import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -622,42 +622,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
         return new SegmentKey(node, segmentForPartition(partition));
     }
 
-    /** */
-    protected class SegmentKey {
-        /** */
-        final ClusterNode node;
-
-        /** */
-        final int segmentId;
-
-        SegmentKey(ClusterNode node, int segmentId) {
-            assert node != null;
-
-            this.node = node;
-            this.segmentId = segmentId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            SegmentKey key = (SegmentKey)o;
-
-            return segmentId == key.segmentId && node.id().equals(key.node.id());
-
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            int result = node.hashCode();
-            result = 31 * result + segmentId;
-            return result;
-        }
-    }
-
     /**
      * @param row Row.
      * @return Row message.
@@ -1158,9 +1122,9 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 List<GridH2RowRangeBounds> bounds;
 
                 if (stream == null) {
-                    stream = new RangeStream(qctx, segmentKey.node);
+                    stream = new RangeStream(qctx, segmentKey.node());
 
-                    stream.req = createRequest(qctx, batchLookupId, segmentKey.segmentId);
+                    stream.req = createRequest(qctx, batchLookupId, segmentKey.segmentId());
                     stream.req.bounds(bounds = new ArrayList<>());
 
                     rangeStreams.put(segmentKey, stream);
@@ -1637,17 +1601,4 @@ public abstract class GridH2IndexBase extends BaseIndex {
             throw new UnsupportedOperationException("operation is not supported");
         }
     }
-
-    /** Empty cursor. */
-    protected static final GridCursor<GridH2Row> EMPTY_CURSOR = new GridCursor<GridH2Row>() {
-        /** {@inheritDoc} */
-        @Override public boolean next() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridH2Row get() {
-            return null;
-        }
-    };
 }
