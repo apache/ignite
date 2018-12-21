@@ -27,32 +27,58 @@ import org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorsFa
 
 import static org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorPrimitives.ring;
 
+/**
+ * Represents a data stream of vectors produced by family of ring-like distributions around zero blurred
+ * by gauss distribution. First ring equals minRadius next ring radius = prev_radius + distanceBetweenRings.
+ */
 public class RingsDataStream implements DataStreamGenerator {
-    private final int countOfCircles;
+    /** Count of rings. */
+    private final int countOfRings;
+
+    /** Min radius. */
     private final double minRadius;
-    private final double distanceBetweenCircles;
+
+    /** Distance between circles. */
+    private final double distanceBetweenRings;
+
+    /** Seed. */
     private long seed;
 
-    public RingsDataStream(int countOfCircles, double minRadius, double distanceBetweenCircles) {
-        this(countOfCircles, minRadius, distanceBetweenCircles, System.currentTimeMillis());
+    /**
+     * Create an intance of RingsDataStream.
+     *
+     * @param countOfRings count of circles.
+     * @param minRadius min radius.
+     * @param distanceBetweenRings distance between circles.
+     */
+    public RingsDataStream(int countOfRings, double minRadius, double distanceBetweenRings) {
+        this(countOfRings, minRadius, distanceBetweenRings, System.currentTimeMillis());
     }
 
-    public RingsDataStream(int countOfCircles, double minRadius, double distanceBetweenCircles, long seed) {
-        A.ensure(countOfCircles > 0, "countOfCircles > 0");
+    /**
+     * Create an intance of RingsDataStream.
+     *
+     * @param countOfRings count of circles.
+     * @param minRadius min radius.
+     * @param distanceBetweenRings distance between circles.
+     * @param seed seed.
+     */
+    public RingsDataStream(int countOfRings, double minRadius, double distanceBetweenRings, long seed) {
+        A.ensure(countOfRings > 0, "countOfRings > 0");
         A.ensure(minRadius > 0, "minRadius > 0");
-        A.ensure(distanceBetweenCircles > 0, "distanceBetweenCircles > 0");
+        A.ensure(distanceBetweenRings > 0, "distanceBetweenRings > 0");
 
-        this.countOfCircles = countOfCircles;
+        this.countOfRings = countOfRings;
         this.minRadius = minRadius;
-        this.distanceBetweenCircles = distanceBetweenCircles;
+        this.distanceBetweenRings = distanceBetweenRings;
         this.seed = seed;
     }
 
-    @Override
-    public Stream<LabeledVector<Vector, Double>> labeled() {
+    /** {@inheritDoc} */
+    @Override public Stream<LabeledVector<Vector, Double>> labeled() {
         VectorGeneratorsFamily.Builder builder = new VectorGeneratorsFamily.Builder();
-        for (int i = 0; i < countOfCircles; i++) {
-            final double radius = minRadius + distanceBetweenCircles * i;
+        for (int i = 0; i < countOfRings; i++) {
+            final double radius = minRadius + distanceBetweenRings * i;
             final double variance = 0.1 * (i + 1);
 
             GaussRandomProducer gauss = new GaussRandomProducer(0, variance, seed);

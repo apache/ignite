@@ -23,23 +23,44 @@ import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.generators.DataStreamGenerator;
 import org.apache.ignite.ml.util.generators.primitives.scalar.UniformRandomProducer;
 
+/**
+ * 2D-Vectors data stream with two separable classes.
+ */
 public class TwoSeparableClassesDataStream implements DataStreamGenerator {
+    /** Margin. */
     private final double margin;
+
+    /** Variance. */
     private final double variance;
+
+    /** Seed. */
     private long seed;
 
+    /**
+     * Create an instance of TwoSeparableClassesDataStream. Note that margin can be less than zero.
+     *
+     * @param margin margin.
+     * @param variance variance.
+     */
     public TwoSeparableClassesDataStream(double margin, double variance) {
         this(margin, variance, System.currentTimeMillis());
     }
 
+    /**
+     * Create an instance of TwoSeparableClassesDataStream. Note that margin can be less than zero.
+     *
+     * @param margin margin.
+     * @param variance variance.
+     * @param seed seed.
+     */
     public TwoSeparableClassesDataStream(double margin, double variance, long seed) {
         this.margin = margin;
         this.variance = variance;
         this.seed = seed;
     }
 
-    @Override
-    public Stream<LabeledVector<Vector, Double>> labeled() {
+    /** {@inheritDoc} */
+    @Override public Stream<LabeledVector<Vector, Double>> labeled() {
         seed >>= 2;
         double minCordValue = -variance - Math.abs(margin);
         double maxCordValue = variance + Math.abs(margin);
@@ -50,14 +71,17 @@ public class TwoSeparableClassesDataStream implements DataStreamGenerator {
             .filter(v -> between(v.features().get(1), -variance, variance));
     }
 
+    /** */
     private boolean between(double x, double min, double max) {
         return x >= min && x <= max;
     }
 
+    /** */
     private double classify(Vector v) {
         return v.get(0) - v.get(1) > 0 ? -1.0 : 1.0;
     }
 
+    /** */
     private Vector applyMargin(Vector v) {
         Vector copy = v.copy();
         copy.set(0, copy.get(0) + Math.signum(v.get(0) - v.get(1)) * margin);

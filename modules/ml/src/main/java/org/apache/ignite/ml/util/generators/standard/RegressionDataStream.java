@@ -25,13 +25,35 @@ import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.generators.DataStreamGenerator;
 import org.apache.ignite.ml.util.generators.primitives.scalar.UniformRandomProducer;
 
+/**
+ * Represents a generator of regression data stream based on Vector->Double function where each Vector
+ * was produced from hypercube with sides = [minXValue, maxXValue].
+ */
 public class RegressionDataStream implements DataStreamGenerator {
+    /** Function. */
     private final IgniteFunction<Vector, Double> function;
+
+    /** Min x value for each dimension. */
     private final double minXValue;
+
+    /** Max x value. */
     private final double maxXValue;
+
+    /** Vector size. */
     private final int vectorSize;
+
+    /** Seed. */
     private long seed;
 
+    /**
+     * Creates an instance of RegressionDataStream.
+     *
+     * @param vectorSize vector size.
+     * @param function function.
+     * @param minXValue min x value.
+     * @param maxXValue max x value.
+     * @param seed seed.
+     */
     private RegressionDataStream(int vectorSize, IgniteFunction<Vector, Double> function,
         double minXValue, double maxXValue, long seed) {
 
@@ -45,11 +67,20 @@ public class RegressionDataStream implements DataStreamGenerator {
         this.vectorSize = vectorSize;
     }
 
+    /**
+     * Creates an instance of RegressionDataStream.
+     *
+     * @param vectorSize vector size.
+     * @param function function.
+     * @param minXValue min x value.
+     * @param maxXValue max x value.
+     */
     public RegressionDataStream(int vectorSize, IgniteFunction<Vector, Double> function, double minXValue,
         double maxXValue) {
         this(vectorSize, function, minXValue, maxXValue, System.currentTimeMillis());
     }
 
+    /** {@inheritDoc} */
     @Override public Stream<LabeledVector<Vector, Double>> labeled() {
         seed >>= 2;
         return new UniformRandomProducer(minXValue, maxXValue, seed)
@@ -57,12 +88,29 @@ public class RegressionDataStream implements DataStreamGenerator {
             .labeled(function);
     }
 
+    /**
+     * Creates two dimensional regression data stream.
+     *
+     * @param function double->double function.
+     * @param minXValue min x value.
+     * @param maxXValue max x value.
+     * @return RegressionDataStream instance.
+     */
     public static RegressionDataStream twoDimensional(IgniteFunction<Double, Double> function,
         double minXValue, double maxXValue) {
 
         return twoDimensional(function, minXValue, maxXValue, System.currentTimeMillis());
     }
 
+    /**
+     * Creates two dimensional regression data stream.
+     *
+     * @param function double->double function.
+     * @param minXValue min x value.
+     * @param maxXValue max x value.
+     * @param seed seed.
+     * @return RegressionDataStream instance.
+     */
     public static RegressionDataStream twoDimensional(IgniteFunction<Double, Double> function,
         double minXValue, double maxXValue, long seed) {
 

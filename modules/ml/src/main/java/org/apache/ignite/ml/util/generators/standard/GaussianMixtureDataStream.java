@@ -30,40 +30,70 @@ import org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorsFa
 
 import static org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorPrimitives.gauss;
 
+/**
+ * Data stream generator representing gaussian mixture.
+ */
 public class GaussianMixtureDataStream implements DataStreamGenerator {
-    private final List<IgniteFunction<Long, VectorGenerator>> components;
+    /** Gaussian component generators. */
+    private final List<IgniteFunction<Long, VectorGenerator>> componentGenerators;
+
+    /** Seed. */
     private long seed;
 
-    private GaussianMixtureDataStream(List<IgniteFunction<Long, VectorGenerator>> components, long seed) {
-        this.components = components;
+    /**
+     * Create an instance of GaussianMixtureDataStream.
+     *
+     * @param componentGenerators component generators.
+     * @param seed seed.
+     */
+    private GaussianMixtureDataStream(List<IgniteFunction<Long, VectorGenerator>> componentGenerators, long seed) {
+        this.componentGenerators = componentGenerators;
         this.seed = seed;
     }
 
+    /** {@inheritDoc} */
     @Override public Stream<LabeledVector<Vector, Double>> labeled() {
         VectorGeneratorsFamily.Builder builder = new VectorGeneratorsFamily.Builder();
-        for (int i = 0; i < components.size(); i++) {
-            builder = builder.add(components.get(i).apply(seed), 1.0);
+        for (int i = 0; i < componentGenerators.size(); i++) {
+            builder = builder.add(componentGenerators.get(i).apply(seed), 1.0);
             seed >>= 2;
         }
 
         return builder.build().asDataStream().labeled();
     }
 
+    /**
+     * Builder for gaussian mixture.
+     */
     public static class Builder {
-        private List<IgniteFunction<Long, VectorGenerator>> components = new ArrayList<>();
+        /** Gaussian component generators. */
+        private List<IgniteFunction<Long, VectorGenerator>> componentGenerators = new ArrayList<>();
 
+        /**
+         * Adds multidimentional gaussian component.
+         *
+         * @param mean mean value.
+         * @param variance variance for each component.
+         */
         public Builder add(Vector mean, Vector variance) {
-            components.add(seed -> gauss(mean, variance, seed));
+            componentGenerators.add(seed -> gauss(mean, variance, seed));
             return this;
         }
 
+        /**
+         * @return GaussianMixtureDataStream instance.
+         */
         public GaussianMixtureDataStream build() {
             return build(System.currentTimeMillis());
         }
 
+        /**
+         * @param seed seed.
+         * @return GaussianMixtureDataStream instance.
+         */
         public GaussianMixtureDataStream build(long seed) {
-            A.notEmpty(components, "this.means.size()");
-            return new GaussianMixtureDataStream(components, seed);
+            A.notEmpty(componentGenerators, "this.means.size()");
+            return new GaussianMixtureDataStream(componentGenerators, seed);
         }
     }
 }
