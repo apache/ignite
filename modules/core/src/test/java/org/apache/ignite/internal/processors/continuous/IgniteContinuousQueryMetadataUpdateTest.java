@@ -43,8 +43,8 @@ import org.junit.runners.JUnit4;
 
 /**
  * Test for the start continuous query process. Processing the {@link StartRoutineDiscoveryMessage} message should not
- * awaiting metadata update. It may lead to possible deadlock in discovery thread in the case of mutable discovery
- * messages and peer class loading enabled. See IGNITE-10238, IGNITE-6668 for details.
+ * awaiting metadata update. Otherwise, it may lead to possible deadlock in discovery thread in the case of mutable
+ * discovery messages and peer class loading enabled. See IGNITE-10238, IGNITE-6668 for details.
  */
 @RunWith(JUnit4.class)
 public class IgniteContinuousQueryMetadataUpdateTest extends GridCommonAbstractTest {
@@ -104,7 +104,7 @@ public class IgniteContinuousQueryMetadataUpdateTest extends GridCommonAbstractT
     }
 
     /**
-     * Test SPI.
+     * Test discovery SPI.
      */
     private static class TestDiscoverySpi extends TestTcpDiscoverySpi {
         /** {@inheritDoc} */
