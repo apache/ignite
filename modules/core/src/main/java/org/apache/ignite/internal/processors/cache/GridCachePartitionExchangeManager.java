@@ -763,7 +763,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         stopErr = cctx.kernalContext().clientDisconnected() ?
             new IgniteClientDisconnectedCheckedException(cctx.kernalContext().cluster().clientReconnectFuture(),
                 "Client node disconnected: " + cctx.igniteInstanceName()) :
-            new IgniteInterruptedCheckedException("Node is stopping: " + cctx.igniteInstanceName());
+            new IgniteCheckedException("Node is stopping: " + cctx.igniteInstanceName());
 
         // Stop exchange worker
         U.cancel(exchWorker);
@@ -2873,6 +2873,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 }
                             }
 
+                            exchFut.timeBag().finishGlobalStage("Waiting in exchange queue");
+
                             exchFut.init(newCrd);
 
                             int dumpCnt = 0;
@@ -2918,7 +2920,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                             "topVer=" + exchFut.initialVersion() +
                                             ", node=" + cctx.localNodeId() + "]. " +
                                             (curTimeout <= 0 && !txRolledBack ? "Consider changing " +
-                                            "TransactionConfiguration.txTimeoutOnPartitionMapSynchronization" +
+                                            "TransactionConfiguration.txTimeoutOnPartitionMapExchange" +
                                             " to non default value to avoid this message. " : "") +
                                             "Dumping pending objects that might be the cause: ");
 

@@ -62,7 +62,7 @@ public class BaggedLogisticRegressionSGDTrainerExample {
                 .fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
             System.out.println(">>> Create new logistic regression trainer object.");
-            LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>()
+            LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
                 .withUpdatesStgy(new UpdatesStrategy<>(
                     new SimpleGDUpdateCalculator(0.2),
                     SimpleGDParameterUpdate::sumLocal,
@@ -97,9 +97,7 @@ public class BaggedLogisticRegressionSGDTrainerExample {
 
             System.out.println(">>> ---------------------------------");
 
-            Arrays.stream(score).forEach(sc -> {
-                System.out.println("\n>>> Accuracy " + sc);
-            });
+            Arrays.stream(score).forEach(sc -> System.out.println("\n>>> Accuracy " + sc));
 
             System.out.println(">>> Bagged logistic regression model over partitioned dataset usage example completed.");
         }

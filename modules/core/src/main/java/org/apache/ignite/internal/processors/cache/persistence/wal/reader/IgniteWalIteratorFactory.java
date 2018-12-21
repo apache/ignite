@@ -174,7 +174,8 @@ public class IgniteWalIteratorFactory {
         iteratorParametersBuilder.validate();
 
         return new StandaloneWalRecordsIterator(log,
-            prepareSharedCtx(iteratorParametersBuilder),
+            iteratorParametersBuilder.sharedCtx == null ? prepareSharedCtx(iteratorParametersBuilder) :
+                iteratorParametersBuilder.sharedCtx,
             iteratorParametersBuilder.ioFactory,
             resolveWalFiles(iteratorParametersBuilder),
             iteratorParametersBuilder.filter,
@@ -410,6 +411,14 @@ public class IgniteWalIteratorFactory {
          */
         @Nullable private File marshallerMappingFileStoreDir;
 
+        /**
+         * Cache shared context. In case context is specified binary objects converting and unmarshalling will be
+         * performed using processors of this shared context.
+         * <br> This field can't be specified together with {@link #binaryMetadataFileStoreDir} or
+         * {@link #marshallerMappingFileStoreDir} fields.
+         * */
+        @Nullable private GridCacheSharedContext sharedCtx;
+
         /** */
         @Nullable private IgniteBiPredicate<RecordType, WALPointer> filter;
 
@@ -509,6 +518,16 @@ public class IgniteWalIteratorFactory {
         }
 
         /**
+         * @param sharedCtx Cache shared context.
+         * @return IteratorParametersBuilder Self reference.
+         */
+        public IteratorParametersBuilder sharedContext(GridCacheSharedContext sharedCtx) {
+            this.sharedCtx = sharedCtx;
+
+            return this;
+        }
+
+        /**
          * @param filter Record filter for skip records during iteration.
          * @return IteratorParametersBuilder Self reference.
          */
@@ -562,6 +581,7 @@ public class IgniteWalIteratorFactory {
                 .ioFactory(ioFactory)
                 .binaryMetadataFileStoreDir(binaryMetadataFileStoreDir)
                 .marshallerMappingFileStoreDir(marshallerMappingFileStoreDir)
+                .sharedContext(sharedCtx)
                 .from(lowBound)
                 .to(highBound)
                 .filter(filter)
@@ -576,6 +596,10 @@ public class IgniteWalIteratorFactory {
             A.ensure(U.isPow2(pageSize), "Page size must be a power of 2.");
 
             A.ensure(bufferSize >= pageSize * 2, "Buffer to small.");
+
+            A.ensure(sharedCtx == null || (binaryMetadataFileStoreDir == null &&
+                marshallerMappingFileStoreDir == null), "GridCacheSharedContext and binaryMetadataFileStoreDir/" +
+                "marshallerMappingFileStoreDir can't be specified in the same time");
         }
 
         /**

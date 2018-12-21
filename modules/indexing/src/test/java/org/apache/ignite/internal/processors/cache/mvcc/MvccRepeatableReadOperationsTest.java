@@ -29,6 +29,9 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.GET;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
@@ -36,6 +39,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstract
 /**
  * Test basic mvcc cache operation operations.
  */
+@RunWith(JUnit4.class)
 public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsTest {
     /** {@inheritDoc} */
     @Override protected Map<Integer, MvccTestAccount> getEntries(
@@ -164,6 +168,7 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
      *
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testGetAndUpdateOperations() throws IgniteCheckedException {
         Ignite node1 = grid(0);
 
@@ -225,6 +230,7 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
      *
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testPutIfAbsentConsistency() throws IgniteCheckedException {
         Ignite node1 = grid(0);
 
@@ -265,6 +271,7 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
      *
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testReplaceConsistency() throws IgniteCheckedException {
         Ignite node1 = grid(0);
 

@@ -99,10 +99,12 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -177,6 +179,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 return RMV_PROCESSOR.process(e, args);
             }
         };
+
+    /** {@inheritDoc} */
+    @Before
+    @Override public void setUp() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-9543");
+
+        super.setUp();
+    }
 
     /** Dflt grid. */
     protected transient Ignite dfltIgnite;
@@ -4473,7 +4484,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         storeStgy.removeFromStore(key);
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
-            @SuppressWarnings("unchecked")
             @Override public boolean applyx() {
                 try {
                     Integer val = c.get(key);

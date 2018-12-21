@@ -172,7 +172,6 @@ public class GridSingleSplitsRedeployLoadTest extends GridCommonAbstractTest {
      * @return Loaded task class.
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"unchecked"})
     private Class<? extends ComputeTask<?, ?>> loadTaskClass() throws Exception {
         return (Class<? extends ComputeTask<?, ?>>)getExternalClassLoader().loadClass(TASK_NAME);
     }

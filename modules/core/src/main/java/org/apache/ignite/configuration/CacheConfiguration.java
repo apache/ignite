@@ -798,7 +798,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return Eviction filter or {@code null}.
      */
-    @SuppressWarnings("unchecked")
     public EvictionFilter<K, V> getEvictionFilter() {
         return (EvictionFilter<K, V>)evictFilter;
     }
@@ -895,7 +894,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return Cache store factory.
      */
-    @SuppressWarnings("unchecked")
     public Factory<CacheStore<? super K, ? super V>> getCacheStoreFactory() {
         return (Factory<CacheStore<? super K, ? super V>>)storeFactory;
     }
@@ -906,7 +904,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param storeFactory Cache store factory.
      * @return {@code this} for chaining.
      */
-    @SuppressWarnings("unchecked")
     public CacheConfiguration<K, V> setCacheStoreFactory(
         Factory<? extends CacheStore<? super K, ? super V>> storeFactory) {
         this.storeFactory = storeFactory;
@@ -1040,7 +1037,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param atomicityMode Cache atomicity mode.
      * @return {@code this} for chaining.
      */
-    @SuppressWarnings("unchecked")
     public CacheConfiguration<K, V> setAtomicityMode(CacheAtomicityMode atomicityMode) {
         this.atomicityMode = atomicityMode;
 

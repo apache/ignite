@@ -134,7 +134,6 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
             near(grid(i)).removeAll();

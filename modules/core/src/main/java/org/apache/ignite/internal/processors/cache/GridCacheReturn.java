@@ -122,7 +122,6 @@ public class GridCacheReturn implements Externalizable, Message {
     /**
      * @return Value.
      */
-    @SuppressWarnings("unchecked")
     @Nullable public <V> V value() {
         return (V)v;
     }
@@ -221,7 +220,6 @@ public class GridCacheReturn implements Externalizable, Message {
      * @param err Error.
      * @param keepBinary Keep binary.
      */
-    @SuppressWarnings("unchecked")
     public synchronized void addEntryProcessResult(
         GridCacheContext cctx,
         KeyCacheObject key,
@@ -288,7 +286,6 @@ public class GridCacheReturn implements Externalizable, Message {
     /**
      * @param other Other result to merge with.
      */
-    @SuppressWarnings("unchecked")
     public synchronized void mergeEntryProcessResults(GridCacheReturn other) {
         assert invokeRes || v == null : "Invalid state to merge: " + this;
         assert other.invokeRes;

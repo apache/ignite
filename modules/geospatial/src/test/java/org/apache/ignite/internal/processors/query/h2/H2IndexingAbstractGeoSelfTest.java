@@ -49,6 +49,9 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
@@ -56,6 +59,7 @@ import org.locationtech.jts.io.WKTReader;
 /**
  * Geo-indexing test.
  */
+@RunWith(JUnit4.class)
 public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static final int CNT = 100;
@@ -232,6 +236,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimitiveGeometry() throws Exception {
         IgniteCache<Long, Geometry> cache = createCache("geom", true, Long.class, Geometry.class);
 
@@ -257,6 +262,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testGeo() throws Exception {
         checkGeo(false);
     }
@@ -266,6 +272,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testGeoDynamic() throws Exception {
         checkGeo(true);
     }
@@ -348,6 +355,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testGeoMultithreaded() throws Exception {
         checkGeoMultithreaded(false);
     }
@@ -357,6 +365,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testGeoMultithreadedDynamic() throws Exception {
         checkGeoMultithreaded(true);
     }
@@ -492,6 +501,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
      *
      * @throws Exception if fails.
      */
+    @Test
     public void testSegmentedGeoIndexJoinPartitioned() throws Exception {
         checkSegmentedGeoIndexJoin(true, false);
     }
@@ -501,6 +511,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
      *
      * @throws Exception if fails.
      */
+    @Test
     public void testSegmentedGeoIndexJoinPartitionedDynamic() throws Exception {
         checkSegmentedGeoIndexJoin(true, true);
     }
@@ -510,6 +521,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
      *
      * @throws Exception if fails.
      */
+    @Test
     public void testSegmentedGeoIndexJoinReplicated() throws Exception {
         checkSegmentedGeoIndexJoin(false, false);
     }
@@ -519,6 +531,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
      *
      * @throws Exception if fails.
      */
+    @Test
     public void testSegmentedGeoIndexJoinReplicatedDynamic() throws Exception {
         checkSegmentedGeoIndexJoin(false, true);
     }

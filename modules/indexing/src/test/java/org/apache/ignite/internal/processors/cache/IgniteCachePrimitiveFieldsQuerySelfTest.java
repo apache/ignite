@@ -31,10 +31,14 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteCachePrimitiveFieldsQuerySelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -93,6 +97,7 @@ public class IgniteCachePrimitiveFieldsQuerySelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testStaticCache() throws Exception {
         checkCache(ignite(0).<Integer, IndexedType>cache(CACHE_NAME));
     }
@@ -112,7 +117,7 @@ public class IgniteCachePrimitiveFieldsQuerySelfTest extends GridCommonAbstractT
     }
 
     /**
-     * 
+     *
      */
     @SuppressWarnings("unused")
     private static class IndexedType {
