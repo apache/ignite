@@ -32,12 +32,4 @@ public class QueryRetryException extends IgniteException {
     public QueryRetryException(String tableName) {
         super("The query must be retried. The table version is changed [table=" + tableName + ']');
     }
-
-    /**
-     * @param tableName Table name.
-     * @param c Cause.
-     */
-    public QueryRetryException(String tableName, Throwable c) {
-        super("The query must be retried. The table version is changed [table=" + tableName + ']', c);
-    }
 }

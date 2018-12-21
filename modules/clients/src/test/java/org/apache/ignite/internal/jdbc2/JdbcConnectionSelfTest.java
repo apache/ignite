@@ -323,7 +323,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
             assertTrue(((JdbcConnection)conn).isEnforceJoinOrder());
             assertFalse(((JdbcConnection)conn).isDistributedJoins());
             assertFalse(((JdbcConnection)conn).isCollocatedQuery());
-            assertTrue(((JdbcConnection)conn).isLazy());
+            assertFalse(((JdbcConnection)conn).isLazy());
             assertFalse(((JdbcConnection)conn).skipReducerOnUpdate());
         }
 
@@ -332,7 +332,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
             assertFalse(((JdbcConnection)conn).isEnforceJoinOrder());
             assertTrue(((JdbcConnection)conn).isDistributedJoins());
             assertFalse(((JdbcConnection)conn).isCollocatedQuery());
-            assertTrue(((JdbcConnection)conn).isLazy());
+            assertFalse(((JdbcConnection)conn).isLazy());
             assertFalse(((JdbcConnection)conn).skipReducerOnUpdate());
         }
 
@@ -341,15 +341,15 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
             assertFalse(((JdbcConnection)conn).isEnforceJoinOrder());
             assertFalse(((JdbcConnection)conn).isDistributedJoins());
             assertTrue(((JdbcConnection)conn).isCollocatedQuery());
-            assertTrue(((JdbcConnection)conn).isLazy());
+            assertFalse(((JdbcConnection)conn).isLazy());
             assertFalse(((JdbcConnection)conn).skipReducerOnUpdate());
         }
 
-        try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "lazy=false@" + configURL())) {
+        try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "lazy=true@" + configURL())) {
             assertFalse(((JdbcConnection)conn).isEnforceJoinOrder());
             assertFalse(((JdbcConnection)conn).isDistributedJoins());
             assertFalse(((JdbcConnection)conn).isCollocatedQuery());
-            assertFalse(((JdbcConnection)conn).isLazy());
+            assertTrue(((JdbcConnection)conn).isLazy());
             assertFalse(((JdbcConnection)conn).skipReducerOnUpdate());
         }
         try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "skipReducerOnUpdate=true@"
@@ -357,7 +357,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
             assertFalse(((JdbcConnection)conn).isEnforceJoinOrder());
             assertFalse(((JdbcConnection)conn).isDistributedJoins());
             assertFalse(((JdbcConnection)conn).isCollocatedQuery());
-            assertTrue(((JdbcConnection)conn).isLazy());
+            assertFalse(((JdbcConnection)conn).isLazy());
             assertTrue(((JdbcConnection)conn).skipReducerOnUpdate());
         }
     }

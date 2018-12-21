@@ -50,10 +50,10 @@ public class SqlFieldsQuery extends Query<List<?>> {
     private static final long serialVersionUID = 0L;
 
     /**
-     * Used to test disabled lazy mode for whole suite.
+     * Used to test enable lazy mode for whole suite.
      * Must be removed when support lazy=false will be removed.
      */
-    private static boolean DFLT_LAZY = true;
+    private static boolean DFLT_LAZY = false;
 
     /** SQL Query. */
     private String sql;
@@ -302,24 +302,19 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /**
      * Sets lazy query execution flag.
      * <p>
+     * By default Ignite attempts to fetch the whole query result set to memory and send it to the client. For small
+     * and medium result sets this provides optimal performance and minimize duration of internal database locks, thus
+     * increasing concurrency.
+     * <p>
      * If result set is too big to fit in available memory this could lead to excessive GC pauses and even
      * OutOfMemoryError. Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory
      * consumption at the cost of moderate performance hit.
-     * Now lazy mode is optimized for small and medium result set. Small result set means results rows count
-     * less then page size (see {@link #setPageSize}).
      * <p>
-     * To compatibility with previous version behavior lazy mode may be switched off. In this case Ignite attempts
-     * to fetch the whole query result set to memory and send it to the client.
-     * <p>
-     * Since version 2.8 lazy mode is used by default.
-     * Defaults to {@code true}, meaning that the result set is fetched lazily if it is possible.
+     * Defaults to {@code false}, meaning that the whole result set is fetched to memory eagerly.
      *
      * @param lazy Lazy query execution flag.
      * @return {@code this} For chaining.
-     *
-     * @deprecated Since Ignite 2.8.
      */
-    @Deprecated
     public SqlFieldsQuery setLazy(boolean lazy) {
         this.lazy = lazy;
 
@@ -333,7 +328,6 @@ public class SqlFieldsQuery extends Query<List<?>> {
      *
      * @return Lazy flag.
      */
-    @Deprecated
     public boolean isLazy() {
         return lazy;
     }

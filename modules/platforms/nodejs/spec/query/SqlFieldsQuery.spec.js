@@ -77,12 +77,12 @@ describe('sql fields query test suite >', () => {
             catch(error => done.fail(error));
     });
 
-    it('get all with page size lazy default', (done) => {
+    it('get all with page size lazy true', (done) => {
         Promise.resolve().
             then(async () => {
                 let cache = igniteClient.getCache(CACHE_NAME);
                 const cursor = await cache.query(
-                    new SqlFieldsQuery(`SELECT * FROM ${TABLE_NAME}`).setPageSize(1));
+                    new SqlFieldsQuery(`SELECT * FROM ${TABLE_NAME}`).setPageSize(1).setLazy(true));
                 const set = new Set();
                 for (let fields of await cursor.getAll()) {
                     expect(fields.length).toBe(2);

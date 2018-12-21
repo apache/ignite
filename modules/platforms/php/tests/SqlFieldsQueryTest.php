@@ -64,10 +64,10 @@ final class SqlFieldsQueryTestCase extends TestCase
         $this->assertEquals($set->count(), self::ELEMENTS_NUMBER);
     }
 
-    public function testGetAllWithPageSize(): void
+    public function testGetAllWithPageSizeLazyTrue(): void
     {
         $cache = self::$cache;
-        $cursor = $cache->query((new SqlFieldsQuery(self::$selectFromTable))->setPageSize(1));
+        $cursor = $cache->query((new SqlFieldsQuery(self::$selectFromTable))->setPageSize(1)->setLazy(true));
         $set = new Set();
         foreach ($cursor->getAll() as $fields) {
             $this->checkCursorResult($fields);
@@ -100,10 +100,10 @@ final class SqlFieldsQueryTestCase extends TestCase
         $this->assertEquals($set->count(), self::ELEMENTS_NUMBER);
     }
 
-    public function testIterateCursorWithPageSize(): void
+    public function testIterateCursorWithPageSizeLazyTrue(): void
     {
         $cache = self::$cache;
-        $cursor = $cache->query((new SqlFieldsQuery(self::$selectFromTable))->setPageSize(2));
+        $cursor = $cache->query((new SqlFieldsQuery(self::$selectFromTable))->setPageSize(2)->setLazy(true));
         $set = new Set();
         foreach ($cursor as $fields) {
             $this->checkCursorResult($fields);
