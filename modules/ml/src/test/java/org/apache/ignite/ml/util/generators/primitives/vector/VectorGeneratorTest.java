@@ -35,8 +35,8 @@ public class VectorGeneratorTest {
         VectorGenerator g12 = g1.concat(g2);
         VectorGenerator g21 = g2.concat(g1);
 
-        assertArrayEquals(new double[]{1.,2.,3.,4.}, g12.get().asArray(), 1e-7);
-        assertArrayEquals(new double[]{3.,4., 1.,2.}, g21.get().asArray(), 1e-7);
+        assertArrayEquals(new double[] {1., 2., 3., 4.}, g12.get().asArray(), 1e-7);
+        assertArrayEquals(new double[] {3., 4., 1., 2.}, g21.get().asArray(), 1e-7);
     }
 
     @Test
@@ -46,7 +46,7 @@ public class VectorGeneratorTest {
         VectorGenerator g12 = g1.plus(g2);
         VectorGenerator g21 = g2.plus(g1);
 
-        assertArrayEquals(new double[]{4.,6.}, g21.get().asArray(), 1e-7);
+        assertArrayEquals(new double[] {4., 6.}, g21.get().asArray(), 1e-7);
         assertArrayEquals(g21.get().asArray(), g12.get().asArray(), 1e-7);
     }
 
@@ -89,7 +89,8 @@ public class VectorGeneratorTest {
 
         try {
             assertArrayEquals(v1.asArray(), v2.asArray(), 1e-7);
-        } catch (ArrayComparisonFailure e) {
+        }
+        catch (ArrayComparisonFailure e) {
             //this is valid situation - duplicater should get different features
         }
     }
@@ -106,7 +107,7 @@ public class VectorGeneratorTest {
             .move(VectorUtils.of(2., 4.))
             .get();
 
-        assertArrayEquals(new double[]{ 3., 5.}, res.asArray(), 1e-7);
+        assertArrayEquals(new double[] {3., 5.}, res.asArray(), 1e-7);
     }
 
     @Test(expected = CardinalityException.class)
@@ -125,7 +126,7 @@ public class VectorGeneratorTest {
 
     @Test
     public void rotate() {
-        double[] angles = { 0., Math.PI / 2, -Math.PI / 2, Math.PI, 2 * Math.PI, Math.PI / 4};
+        double[] angles = {0., Math.PI / 2, -Math.PI / 2, Math.PI, 2 * Math.PI, Math.PI / 4};
         Vector[] exp = new Vector[] {
             VectorUtils.of(1., 0., 100.),
             VectorUtils.of(0., -1., 100.),

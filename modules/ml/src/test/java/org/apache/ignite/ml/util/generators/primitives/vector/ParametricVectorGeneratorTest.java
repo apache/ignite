@@ -3,7 +3,8 @@ package org.apache.ignite.ml.util.generators.primitives.vector;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 public class ParametricVectorGeneratorTest {
     @Test
@@ -17,7 +18,7 @@ public class ParametricVectorGeneratorTest {
         ).get();
 
         assertEquals(4, vec.size());
-        assertArrayEquals(new double[]{ 2., 4., 6., 100.}, vec.asArray(), 1e-7);
+        assertArrayEquals(new double[] {2., 4., 6., 100.}, vec.asArray(), 1e-7);
     }
 
     @Test(expected = IllegalArgumentException.class)

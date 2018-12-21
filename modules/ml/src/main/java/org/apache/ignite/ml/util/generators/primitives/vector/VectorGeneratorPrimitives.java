@@ -51,7 +51,7 @@ public class VectorGeneratorPrimitives {
         A.notEmpty(dimensions.asArray(), "dimensions.size() != 0");
 
         UniformRandomProducer[] producers = new UniformRandomProducer[dimensions.size()];
-        for(int i = 0; i < producers.length; i++)
+        for (int i = 0; i < producers.length; i++)
             producers[i] = new UniformRandomProducer(-dimensions.get(i), dimensions.get(i), seed >>= 2);
 
         return RandomProducer.vectorize(producers);

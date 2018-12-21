@@ -25,7 +25,9 @@ import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class DataStreamGeneratorTest {
     @Test
@@ -130,7 +132,8 @@ public class DataStreamGeneratorTest {
         checkDataset(N / 2, b3, v -> (Double)v.label() < 0);
     }
 
-    private void checkDataset(int sampleSize, DatasetBuilder<Vector, Double> datasetBuilder, Predicate<LabeledVector> labelCheck) throws Exception {
+    private void checkDataset(int sampleSize, DatasetBuilder<Vector, Double> datasetBuilder,
+        Predicate<LabeledVector> labelCheck) throws Exception {
 
         try (Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset = buildDataset(datasetBuilder)) {
             List<LabeledVector> res = dataset.compute(this::map, this::reduce);
@@ -158,7 +161,8 @@ public class DataStreamGeneratorTest {
                 return Collections.emptyList();
             else
                 return r;
-        } else {
+        }
+        else {
             List<LabeledVector> res = new ArrayList<>();
             res.addAll(l);
             res.addAll(r);

@@ -45,7 +45,8 @@ public interface VectorGenerator extends Supplier<Vector> {
             Vector v = null;
             do {
                 v = get();
-            } while(!predicate.apply(v));
+            }
+            while (!predicate.apply(v));
 
             return v;
         };
@@ -69,12 +70,12 @@ public interface VectorGenerator extends Supplier<Vector> {
         Collections.shuffle(shuffledIds, rnd);
 
         final Map<Integer, Integer> shuffleMap = new HashMap<>();
-        for(int i = 0; i < shuffledIds.size(); i++)
+        for (int i = 0; i < shuffledIds.size(); i++)
             shuffleMap.put(i, shuffledIds.get(i));
 
         return map(original -> {
             Vector copy = original.copy();
-            for(int to = 0; to < copy.size(); to++) {
+            for (int to = 0; to < copy.size(); to++) {
                 int from = shuffleMap.get(to);
                 copy.set(to, original.get(from));
             }
@@ -92,9 +93,9 @@ public interface VectorGenerator extends Supplier<Vector> {
         Random rnd = new Random(seed);
         return map(original -> {
             double[] values = new double[original.size() + increaseSize];
-            for(int i = 0; i < original.size(); i++)
+            for (int i = 0; i < original.size(); i++)
                 values[i] = original.get(i);
-            for(int i = 0; i < increaseSize; i++) {
+            for (int i = 0; i < increaseSize; i++) {
                 int rndId = rnd.nextInt(original.size());
                 values[original.size() + i] = original.get(rndId);
             }

@@ -5,7 +5,9 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class VectorGeneratorPrimitivesTest {
     @Test
@@ -27,7 +29,7 @@ public class VectorGeneratorPrimitivesTest {
 
         VectorGeneratorPrimitives.ring(1., 0, Math.PI / 2)
             .asDataStream().unlabeled().limit(1000)
-            .forEach(v ->  {
+            .forEach(v -> {
                 assertTrue(v.get(0) >= 0.);
                 assertTrue(v.get(1) >= 0.);
             });
@@ -56,8 +58,8 @@ public class VectorGeneratorPrimitivesTest {
     public void testGauss() {
         VectorGenerator gen = VectorGeneratorPrimitives.gauss(VectorUtils.of(2., 100.), VectorUtils.of(20., 1.), 10L);
 
-        final double[] mean = new double[]{2., 100.};
-        final double[] variance = new double[]{20., 1.};
+        final double[] mean = new double[] {2., 100.};
+        final double[] variance = new double[] {20., 1.};
 
         final int N = 50000;
         Vector meanStat = IntStream.range(0, N).mapToObj(i -> gen.get()).reduce(Vector::plus).get().times(1. / N);

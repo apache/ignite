@@ -32,5 +32,7 @@ public abstract class RandomProducerWithGenerator implements RandomProducer {
 
     protected Random generator() {
         return rnd;
-    };
+    }
+
+    ;
 }

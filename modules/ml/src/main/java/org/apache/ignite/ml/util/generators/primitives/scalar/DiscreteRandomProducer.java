@@ -95,7 +95,7 @@ public class DiscreteRandomProducer extends RandomProducerWithGenerator {
         long sum = Arrays.stream(rnd).sum();
 
         double[] result = new double[numberOfValues];
-        for(int i = 0; i < result.length; i++)
+        for (int i = 0; i < result.length; i++)
             result[i] = rnd[i] / Math.max(1.0, sum);
 
         return result;
@@ -104,12 +104,12 @@ public class DiscreteRandomProducer extends RandomProducerWithGenerator {
     @Override public Double get() {
         //TODO: optimize this to binary search.
         double p = generator().nextDouble();
-        for(int i = 0; i < probs.length; i++) {
-            if(probs[i] > p)
-                return (double) ids[i];
+        for (int i = 0; i < probs.length; i++) {
+            if (probs[i] > p)
+                return (double)ids[i];
         }
 
-        return (double) ids[probs.length - 1];
+        return (double)ids[probs.length - 1];
     }
 
     public int getInt() {

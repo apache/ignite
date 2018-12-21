@@ -37,7 +37,7 @@ public interface RandomProducer extends Supplier<Double> {
 
     default Vector noizify(Vector vector) {
         Vector copy = vector.copy();
-        for(int i = 0; i < vector.size(); i++)
+        for (int i = 0; i < vector.size(); i++)
             copy.set(i, copy.get(i) + get());
         return copy;
     }

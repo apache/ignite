@@ -1,6 +1,5 @@
 package org.apache.ignite.ml.util.generators.primitives.vector;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -72,7 +71,7 @@ public class VectorGeneratorsFamilyTest {
             .build(0L);
 
         Set<Double> validValues = DoubleStream.of(0., 1., 2.).boxed().collect(Collectors.toSet());
-        for(int i = 0; i < 100; i++) {
+        for (int i = 0; i < 100; i++) {
             Vector vector = family.get();
             assertTrue(validValues.contains(vector.get(0)));
         }

@@ -45,7 +45,8 @@ public class RegressionDataStream implements DataStreamGenerator {
         this.vectorSize = vectorSize;
     }
 
-    public RegressionDataStream(int vectorSize, IgniteFunction<Vector, Double> function, double minXValue, double maxXValue) {
+    public RegressionDataStream(int vectorSize, IgniteFunction<Vector, Double> function, double minXValue,
+        double maxXValue) {
         this(vectorSize, function, minXValue, maxXValue, System.currentTimeMillis());
     }
 
