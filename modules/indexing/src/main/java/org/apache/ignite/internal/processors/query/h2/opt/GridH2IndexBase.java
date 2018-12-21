@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
+import org.apache.ignite.internal.processors.query.h2.opt.join.CursorIteratorWrapper;
 import org.apache.ignite.internal.processors.query.h2.opt.join.RangeSource;
 import org.apache.ignite.internal.processors.query.h2.opt.join.SegmentKey;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
@@ -1453,48 +1454,4 @@ public abstract class GridH2IndexBase extends BaseIndex {
             columnIds[pos] = columns[pos].getColumnId();
     }
 
-    /**
-     *
-     */
-    private static final class CursorIteratorWrapper implements Iterator<GridH2Row> {
-        /** */
-        private final H2Cursor cursor;
-
-        /** Next element. */
-        private GridH2Row next;
-
-        /**
-         * @param cursor Cursor.
-         */
-        private CursorIteratorWrapper(H2Cursor cursor) {
-            assert cursor != null;
-
-            this.cursor = cursor;
-
-            if (cursor.next())
-                next = (GridH2Row)cursor.get();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean hasNext() {
-            return next != null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridH2Row next() {
-            GridH2Row res = next;
-
-            if (cursor.next())
-                next = (GridH2Row)cursor.get();
-            else
-                next = null;
-
-            return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void remove() {
-            throw new UnsupportedOperationException("operation is not supported");
-        }
-    }
 }
