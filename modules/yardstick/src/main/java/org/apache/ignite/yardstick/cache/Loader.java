@@ -71,7 +71,9 @@ public class Loader implements IgniteClosure<Integer, Integer> {
     @Override public Integer apply(Integer integer) {
         CacheConfiguration<Integer, SampleValue> cc = cache.getConfiguration(CacheConfiguration.class);
 
-        String dataRegName = cc.getDataRegionName();
+        String dataRegName = cc.getDataRegionName() == null ?
+            ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName():
+            cc.getDataRegionName();
 
         BenchmarkUtils.println("Data region name = " + dataRegName);
 

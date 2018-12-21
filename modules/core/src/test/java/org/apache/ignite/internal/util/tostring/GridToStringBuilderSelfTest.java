@@ -37,6 +37,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_COLLECTION_LIMIT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_MAX_LENGTH;
@@ -46,10 +49,12 @@ import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.ident
  * Tests for {@link GridToStringBuilder}.
  */
 @GridCommonTest(group = "Utils")
+@RunWith(JUnit4.class)
 public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testToString() throws Exception {
         TestClass1 obj = new TestClass1();
 
@@ -64,6 +69,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testToStringWithAdditions() throws Exception {
         TestClass1 obj = new TestClass1();
 
@@ -81,6 +87,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testToStringCheckSimpleListRecursionPrevention() throws Exception {
         ArrayList<Object> list1 = new ArrayList<>();
         ArrayList<Object> list2 = new ArrayList<>();
@@ -95,6 +102,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testToStringCheckSimpleMapRecursionPrevention() throws Exception {
         HashMap<Object, Object> map1 = new HashMap<>();
         HashMap<Object, Object> map2 = new HashMap<>();
@@ -109,6 +117,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testToStringCheckListAdvancedRecursionPrevention() throws Exception {
         ArrayList<Object> list1 = new ArrayList<>();
         ArrayList<Object> list2 = new ArrayList<>();
@@ -123,6 +132,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testToStringCheckMapAdvancedRecursionPrevention() throws Exception {
         HashMap<Object, Object> map1 = new HashMap<>();
         HashMap<Object, Object> map2 = new HashMap<>();
@@ -137,6 +147,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testToStringCheckObjectRecursionPrevention() throws Exception {
         Node n1 = new Node();
         Node n2 = new Node();
@@ -244,6 +255,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * JUnit.
      */
+    @Test
     public void testToStringPerformance() {
         TestClass1 obj = new TestClass1();
 
@@ -286,6 +298,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testArrLimitWithRecursion() throws Exception {
         int limit = IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, 100);
 
@@ -325,6 +338,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testToStringCollectionLimits() throws Exception {
         int limit = IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, 100);
 
@@ -429,6 +443,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testToStringColAndMapLimitWithRecursion() throws Exception {
         int limit = IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, 100);
         Map strMap = new TreeMap<>();
@@ -479,6 +494,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testToStringSizeLimits() throws Exception {
         int limit = IgniteSystemProperties.getInteger(IGNITE_TO_STRING_MAX_LENGTH, 10_000);
         int tailLen = limit / 10 * 2;
@@ -509,6 +525,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testObjectPlusStringToString() {
         IgniteTxKey k = new IgniteTxKey(new KeyCacheObjectImpl(1, null, 1), 123);
 
@@ -520,6 +537,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testHierarchy() {
         Wrapper w = new Wrapper();
         Parent p = w.p;

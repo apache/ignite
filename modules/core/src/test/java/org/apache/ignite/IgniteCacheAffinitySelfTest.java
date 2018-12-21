@@ -32,6 +32,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -39,6 +42,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * Tests for {@link GridAffinityProcessor.CacheAffinityProxy}.
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
     /** Initial grid count. */
     private int GRID_CNT = 3;
@@ -87,6 +91,7 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testAffinity() throws Exception {
         checkAffinity();
 

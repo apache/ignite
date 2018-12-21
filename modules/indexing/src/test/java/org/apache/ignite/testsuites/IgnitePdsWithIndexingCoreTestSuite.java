@@ -16,6 +16,7 @@
 */
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsAtomicCacheHistoricalRebalancingTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsAtomicCacheRebalancingTest;
@@ -50,46 +51,45 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRollove
 public class IgnitePdsWithIndexingCoreTestSuite extends TestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Persistent Store With Indexing Test Suite");
 
-        suite.addTestSuite(IgnitePdsCacheIntegrationTest.class);
-        suite.addTestSuite(IgnitePdsPageEvictionTest.class);
-        suite.addTestSuite(IgnitePdsMultiNodePutGetRestartTest.class);
-        suite.addTestSuite(IgnitePersistentStoreCacheGroupsTest.class);
-        suite.addTestSuite(PersistenceDirectoryWarningLoggingTest.class);
-        suite.addTestSuite(WalPathsTest.class);
-        suite.addTestSuite(WalRecoveryTxLogicalRecordsTest.class);
-        suite.addTestSuite(WalRolloverRecordLoggingFsyncTest.class);
-        suite.addTestSuite(WalRolloverRecordLoggingLogOnlyTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsCacheIntegrationTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsPageEvictionTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsMultiNodePutGetRestartTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgnitePersistentStoreCacheGroupsTest.class));
+        suite.addTest(new JUnit4TestAdapter(PersistenceDirectoryWarningLoggingTest.class));
+        suite.addTest(new JUnit4TestAdapter(WalPathsTest.class));
+        suite.addTest(new JUnit4TestAdapter(WalRecoveryTxLogicalRecordsTest.class));
+        suite.addTest(new JUnit4TestAdapter(WalRolloverRecordLoggingFsyncTest.class));
+        suite.addTest(new JUnit4TestAdapter(WalRolloverRecordLoggingLogOnlyTest.class));
 
-        suite.addTestSuite(IgniteWalRecoveryTest.class);
-        suite.addTestSuite(IgniteWalRecoveryWithCompactionTest.class);
-        suite.addTestSuite(IgnitePdsNoActualWalHistoryTest.class);
-        suite.addTestSuite(IgniteWalRebalanceTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteWalRecoveryTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteWalRecoveryWithCompactionTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsNoActualWalHistoryTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteWalRebalanceTest.class));
 
-        suite.addTestSuite(IgnitePdsAtomicCacheRebalancingTest.class);
-        suite.addTestSuite(IgnitePdsAtomicCacheHistoricalRebalancingTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsAtomicCacheRebalancingTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsAtomicCacheHistoricalRebalancingTest.class));
 
-        suite.addTestSuite(IgnitePdsTxCacheRebalancingTest.class);
-        suite.addTestSuite(IgnitePdsTxHistoricalRebalancingTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsTxCacheRebalancingTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsTxHistoricalRebalancingTest.class));
 
-        suite.addTestSuite(IgniteWalRecoveryPPCTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteWalRecoveryPPCTest.class));
 
-        suite.addTestSuite(IgnitePdsDiskErrorsRecoveringTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsDiskErrorsRecoveringTest.class));
 
-        suite.addTestSuite(IgnitePdsCacheDestroyDuringCheckpointTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsCacheDestroyDuringCheckpointTest.class));
 
-        suite.addTestSuite(IgnitePdsBinaryMetadataOnClusterRestartTest.class);
-        suite.addTestSuite(IgnitePdsMarshallerMappingRestoreOnNodeStartTest.class);
-        suite.addTestSuite(IgnitePdsThreadInterruptionTest.class);
-        suite.addTestSuite(IgnitePdsBinarySortObjectFieldsTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsBinaryMetadataOnClusterRestartTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsMarshallerMappingRestoreOnNodeStartTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsThreadInterruptionTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsBinarySortObjectFieldsTest.class));
 
-        suite.addTestSuite(IgnitePdsCorruptedIndexTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgnitePdsCorruptedIndexTest.class));
 
-        suite.addTestSuite(IgniteLogicalRecoveryTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteLogicalRecoveryTest.class));
 
         return suite;
     }

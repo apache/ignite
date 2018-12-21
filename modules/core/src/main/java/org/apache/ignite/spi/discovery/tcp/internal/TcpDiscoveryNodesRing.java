@@ -162,7 +162,7 @@ public class TcpDiscoveryNodesRing {
      * @return Collection of visible remote nodes.
      */
     public Collection<TcpDiscoveryNode> visibleRemoteNodes() {
-        return nodes(VISIBLE_NODES, F.remoteNodes(locNode.id()));
+        return nodes(F.remoteNodes(locNode.id()), VISIBLE_NODES);
     }
 
     /**

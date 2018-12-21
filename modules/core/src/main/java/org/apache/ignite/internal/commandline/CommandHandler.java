@@ -101,6 +101,7 @@ import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTask;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
+import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
 import org.apache.ignite.internal.visor.verify.IndexIntegrityCheckIssue;
 import org.apache.ignite.internal.visor.verify.IndexValidationIssue;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesPartitionResult;
@@ -154,6 +155,7 @@ import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.V
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.GROUPS;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 
 /**
  * Class that execute several commands passed via command line.
@@ -198,6 +200,13 @@ public class CommandHandler {
     /** Command exclude caches. */
     private static final String CMD_EXCLUDE_CACHES = "--excludeCaches";
 
+    /** Cache filter. */
+    private static final String CACHE_FILTER = "--cacheFilter";
+
+    /** One cache filter option should used message. */
+    public static final String ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG = "Should use only one of option: " +
+        CMD_EXCLUDE_CACHES + ", " + CACHE_FILTER + " or pass caches explicitly";
+
     /** */
     private static final String CMD_USER_ATTRIBUTES = "--user-attributes";
 
@@ -205,6 +214,9 @@ public class CommandHandler {
 
     /** */
     private static final String CMD_SSL_PROTOCOL = "--ssl-protocol";
+
+    /** */
+    private static final String CMD_SSL_CIPHER_SUITES = "--ssl-cipher-suites";
 
     /** */
     private static final String CMD_SSL_KEY_ALGORITHM = "--ssl-key-algorithm";
@@ -232,21 +244,29 @@ public class CommandHandler {
 
     static {
         AUX_COMMANDS.add(CMD_HELP);
+
         AUX_COMMANDS.add(CMD_HOST);
         AUX_COMMANDS.add(CMD_PORT);
+
         AUX_COMMANDS.add(CMD_PASSWORD);
         AUX_COMMANDS.add(CMD_USER);
+
         AUX_COMMANDS.add(CMD_AUTO_CONFIRMATION);
+
         AUX_COMMANDS.add(CMD_PING_INTERVAL);
         AUX_COMMANDS.add(CMD_PING_TIMEOUT);
+
         AUX_COMMANDS.add(CMD_SSL_PROTOCOL);
+        AUX_COMMANDS.add(CMD_SSL_CIPHER_SUITES);
+
         AUX_COMMANDS.add(CMD_SSL_KEY_ALGORITHM);
+        AUX_COMMANDS.add(CMD_KEYSTORE_TYPE);
         AUX_COMMANDS.add(CMD_KEYSTORE);
         AUX_COMMANDS.add(CMD_KEYSTORE_PASSWORD);
-        AUX_COMMANDS.add(CMD_KEYSTORE_TYPE);
+
+        AUX_COMMANDS.add(CMD_TRUSTSTORE_TYPE);
         AUX_COMMANDS.add(CMD_TRUSTSTORE);
         AUX_COMMANDS.add(CMD_TRUSTSTORE_PASSWORD);
-        AUX_COMMANDS.add(CMD_TRUSTSTORE_TYPE);
     }
 
     /** Broadcast uuid. */
@@ -355,13 +375,7 @@ public class CommandHandler {
     private static final String UTILITY_NAME = "control.sh";
 
     /** Common options. */
-    private static final String COMMON_OPTIONS = String.join(" ", op(CMD_HOST, "HOST_OR_IP"),
-        op(CMD_PORT, "PORT"), op(CMD_USER, "USER"), op(CMD_PASSWORD, "PASSWORD"),
-        op(CMD_PING_INTERVAL, "PING_INTERVAL"), op(CMD_PING_TIMEOUT, "PING_TIMEOUT"),
-        op(CMD_SSL_PROTOCOL, "SSL_PROTOCOL"), op(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM"),
-        op(CMD_KEYSTORE, "KEYSTORE"), op(CMD_KEYSTORE_TYPE, "KEYSTORE_TYPE"),
-        op(CMD_KEYSTORE_PASSWORD, "KEYSTORE_PASSWORD"), op(CMD_TRUSTSTORE, "TRUSTSTORE"),
-        op(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE"), op(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD"));
+    private static final String COMMON_OPTIONS = String.join(" ", getCommonOptions());
 
     /** Utility name with common options. */
     private static final String UTILITY_NAME_WITH_COMMON_OPTIONS = String.join(" ", UTILITY_NAME, COMMON_OPTIONS);
@@ -386,6 +400,34 @@ public class CommandHandler {
 
     /** Check if experimental commands are enabled. Default {@code false}. */
     private final boolean enableExperimental = IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, false);
+
+    /**
+     * Creates list of common utility options.
+     *
+     * @return List of common utility options.
+     */
+    private static List<String> getCommonOptions() {
+        List<String> list = new ArrayList<>(32);
+
+        list.add(op(CMD_HOST, "HOST_OR_IP"));
+        list.add(op(CMD_PORT, "PORT"));
+        list.add(op(CMD_USER, "USER"));
+        list.add(op(CMD_PASSWORD, "PASSWORD"));
+        list.add(op(CMD_PING_INTERVAL, "PING_INTERVAL"));
+        list.add(op(CMD_PING_TIMEOUT, "PING_TIMEOUT"));
+
+        list.add(op(CMD_SSL_PROTOCOL, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ...]"));
+        list.add(op(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1[, SSL_CIPHER_2, ...]"));
+        list.add(op(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM"));
+        list.add(op(CMD_KEYSTORE_TYPE, "KEYSTORE_TYPE"));
+        list.add(op(CMD_KEYSTORE, "KEYSTORE"));
+        list.add(op(CMD_KEYSTORE_PASSWORD, "KEYSTORE_PASSWORD"));
+        list.add(op(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE"));
+        list.add(op(CMD_TRUSTSTORE, "TRUSTSTORE"));
+        list.add(op(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD"));
+
+        return list;
+    }
 
     /**
      * Output specified string to console.
@@ -633,11 +675,12 @@ public class CommandHandler {
 
     /**
      * @param client Client.
-     *
      * @return List of hosts.
      */
     private Stream<IgniteBiTuple<GridClientNode, String>> listHosts(GridClient client) throws GridClientException {
-        return client.compute().nodes(GridClientNode::connectable).stream()
+        return client.compute()
+            .nodes(GridClientNode::connectable)
+            .stream()
             .flatMap(node -> Stream.concat(
                 node.tcpAddresses() == null ? Stream.empty() : node.tcpAddresses().stream(),
                 node.tcpHostNames() == null ? Stream.empty() : node.tcpHostNames().stream()
@@ -647,17 +690,19 @@ public class CommandHandler {
 
     /**
      * @param client Client.
-     *
      * @return List of hosts.
      */
-    private Stream<IgniteBiTuple<GridClientNode, List<String>>> listHostsByClientNode(GridClient client) throws GridClientException {
+    private Stream<IgniteBiTuple<GridClientNode, List<String>>> listHostsByClientNode(
+        GridClient client
+    ) throws GridClientException {
         return client.compute().nodes(GridClientNode::connectable).stream()
             .map(node -> new IgniteBiTuple<>(node,
                 Stream.concat(
                     node.tcpAddresses() == null ? Stream.empty() : node.tcpAddresses().stream(),
                     node.tcpHostNames() == null ? Stream.empty() : node.tcpHostNames().stream()
                 )
-                .map(addr -> addr + ":" + node.tcpPort()).collect(Collectors.toList())));
+                .map(addr -> addr + ":" + node.tcpPort()).collect(Collectors.toList()))
+            );
     }
 
     /**
@@ -812,11 +857,15 @@ public class CommandHandler {
         nl();
         log(i("Subcommands:"));
 
-        usageCache(LIST, "regexPattern", "[groups|seq]", "[nodeId]", op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE.text()));
-        usageCache(CONTENTION, "minQueueSize", "[nodeId]", "[maxPrint]");
+        usageCache(LIST, "regexPattern", op(or("groups", "seq")), op("nodeId"), op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE
+            .text()));
+        usageCache(CONTENTION, "minQueueSize", op("nodeId"), op("maxPrint"));
         usageCache(IDLE_VERIFY, op(CMD_DUMP), op(CMD_SKIP_ZEROS), op(or(CMD_EXCLUDE_CACHES + " cache1,...,cacheN",
-            "cache1,...,cacheN")));
-        usageCache(VALIDATE_INDEXES, "[cache1,...,cacheN]", "[nodeId]", op(or(VI_CHECK_FIRST + " N", VI_CHECK_THROUGH + " K")));
+            op(CACHE_FILTER, or(CacheFilterEnum.ALL.toString(), CacheFilterEnum.SYSTEM.toString(),
+                CacheFilterEnum.PERSISTENT.toString(), CacheFilterEnum.NOT_PERSISTENT.toString())), "cache1,...," +
+                "cacheN")));
+        usageCache(VALIDATE_INDEXES, "[cache1,...,cacheN]", op("nodeId"), op(or(VI_CHECK_FIRST + " N",
+            VI_CHECK_THROUGH + " K")));
         usageCache(DISTRIBUTION, or("nodeId", NULL), "[cacheName1,...,cacheNameN]", op(CMD_USER_ATTRIBUTES, "attName1,...,attrNameN"));
         usageCache(RESET_LOST_PARTITIONS, "cacheName1,...,cacheNameN");
         nl();
@@ -839,7 +888,7 @@ public class CommandHandler {
             log("Contention check failed on nodes:");
 
             for (Map.Entry<UUID, Exception> e : res.exceptions().entrySet()) {
-                log("Node ID = " + e.getKey());
+                log("Node ID: " + e.getKey());
 
                 log("Exception message:");
                 log(e.getValue().getMessage());
@@ -874,7 +923,7 @@ public class CommandHandler {
             log("Index validation failed on nodes:");
 
             for (Map.Entry<UUID, Exception> e : taskRes.exceptions().entrySet()) {
-                log(i("Node ID = " + e.getKey()));
+                log(i("Node ID: " + e.getKey()));
 
                 log(i("Exception message:"));
                 log(i(e.getValue().getMessage(), 2));
@@ -1036,10 +1085,9 @@ public class CommandHandler {
             executeTaskByNameOnNode(client, VisorCacheConfigurationCollectorTask.class.getName(), taskArg, nodeId);
 
         Map<String, Integer> cacheToMapped =
-            viewRes.cacheInfos().stream().collect(Collectors.toMap(x -> x.getCacheName(), x -> x.getMapped()));
+            viewRes.cacheInfos().stream().collect(Collectors.toMap(CacheInfo::getCacheName, CacheInfo::getMapped));
 
         printCachesConfig(res, cacheArgs.outputFormat(), cacheToMapped);
-
     }
 
     /**
@@ -1137,7 +1185,8 @@ public class CommandHandler {
         String path = executeTask(
             client,
             VisorIdleVerifyDumpTask.class,
-            new VisorIdleVerifyDumpTaskArg(cacheArgs.caches(), cacheArgs.excludeCaches(), cacheArgs.isSkipZeros())
+            new VisorIdleVerifyDumpTaskArg(cacheArgs.caches(), cacheArgs.excludeCaches(), cacheArgs.isSkipZeros(), cacheArgs
+                .getCacheFilterEnum())
         );
 
         log("VisorIdleVerifyDumpTask successfully written output to '" + path + "'");
@@ -1822,19 +1871,21 @@ public class CommandHandler {
 
         VisorTxTaskArg txArgs = null;
 
-        String sslProtocol = SslContextFactory.DFLT_SSL_PROTOCOL;
+        String sslProtocol = DFLT_SSL_PROTOCOL;
+
+        String sslCipherSuites = "";
 
         String sslKeyAlgorithm = SslContextFactory.DFLT_KEY_ALGORITHM;
 
-        String sslKeyStorePath = null;
-
         String sslKeyStoreType = SslContextFactory.DFLT_STORE_TYPE;
+
+        String sslKeyStorePath = null;
 
         char sslKeyStorePassword[] = null;
 
-        String sslTrustStorePath = null;
-
         String sslTrustStoreType = SslContextFactory.DFLT_STORE_TYPE;
+
+        String sslTrustStorePath = null;
 
         char sslTrustStorePassword[] = null;
 
@@ -1955,38 +2006,43 @@ public class CommandHandler {
 
                         break;
 
+                    case CMD_SSL_CIPHER_SUITES:
+                        sslCipherSuites = nextArg("Expected SSL cipher suites");
+
+                        break;
+
                     case CMD_SSL_KEY_ALGORITHM:
                         sslKeyAlgorithm = nextArg("Expected SSL key algorithm");
 
                         break;
 
                     case CMD_KEYSTORE:
-                        sslKeyStorePath = nextArg("Expected keystore path");
+                        sslKeyStorePath = nextArg("Expected SSL key store path");
 
                         break;
 
                     case CMD_KEYSTORE_PASSWORD:
-                        sslKeyStorePassword = nextArg("Expected keystore password").toCharArray();
+                        sslKeyStorePassword = nextArg("Expected SSL key store password").toCharArray();
 
                         break;
 
                     case CMD_KEYSTORE_TYPE:
-                        sslKeyStoreType = nextArg("Expected keystore type");
+                        sslKeyStoreType = nextArg("Expected SSL key store type");
 
                         break;
 
                     case CMD_TRUSTSTORE:
-                        sslTrustStorePath = nextArg("Expected truststore path");
+                        sslTrustStorePath = nextArg("Expected SSL trust store path");
 
                         break;
 
                     case CMD_TRUSTSTORE_PASSWORD:
-                        sslTrustStorePassword = nextArg("Expected truststore password").toCharArray();
+                        sslTrustStorePassword = nextArg("Expected SSL trust store password").toCharArray();
 
                         break;
 
                     case CMD_TRUSTSTORE_TYPE:
-                        sslTrustStoreType = nextArg("Expected truststore type");
+                        sslTrustStoreType = nextArg("Expected SSL trust store type");
 
                         break;
 
@@ -2011,9 +2067,13 @@ public class CommandHandler {
 
         Command cmd = commands.get(0);
 
-        return new Arguments(cmd, host, port, user, pwd, baselineAct, baselineArgs, txArgs, cacheArgs, walAct, walArgs,
+        return new Arguments(cmd, host, port, user, pwd,
+            baselineAct, baselineArgs,
+            txArgs, cacheArgs,
+            walAct, walArgs,
             pingTimeout, pingInterval, autoConfirmation,
-            sslProtocol, sslKeyAlgorithm, sslKeyStorePath, sslKeyStorePassword, sslKeyStoreType,
+            sslProtocol, sslCipherSuites,
+            sslKeyAlgorithm, sslKeyStorePath, sslKeyStorePassword, sslKeyStoreType,
             sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType);
     }
 
@@ -2052,19 +2112,26 @@ public class CommandHandler {
                     if (CMD_DUMP.equals(nextArg))
                         cacheArgs.dump(true);
                     else if (CMD_EXCLUDE_CACHES.equals(nextArg)) {
-                        if (cacheArgs.caches() != null)
-                            throw new IllegalArgumentException("Should use only one of option: " +
-                                CMD_EXCLUDE_CACHES + " or pass caches explicitly");
+                        if (cacheArgs.caches() != null || cacheArgs.getCacheFilterEnum() != CacheFilterEnum.ALL)
+                            throw new IllegalArgumentException(ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG);
 
                         parseExcludeCacheNames(nextArg("Specify caches, which will be excluded."),
                             cacheArgs);
                     }
                     else if (CMD_SKIP_ZEROS.equals(nextArg))
                         cacheArgs.skipZeros(true);
+                    else if (CACHE_FILTER.equals(nextArg)) {
+                        if (cacheArgs.caches() != null || cacheArgs.excludeCaches() != null)
+                            throw new IllegalArgumentException(ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG);
+
+                        String filter = nextArg("The cache filter should be specified. The following values can be " +
+                            "used: " + Arrays.toString(CacheFilterEnum.values()) + '.').toUpperCase();
+
+                        cacheArgs.setCacheFilterEnum(CacheFilterEnum.valueOf(filter));
+                    }
                     else {
-                        if (cacheArgs.caches() != null)
-                            throw new IllegalArgumentException("Should use only one of option: " +
-                                CMD_EXCLUDE_CACHES + " or pass caches explicitly");
+                        if (cacheArgs.excludeCaches() != null || cacheArgs.getCacheFilterEnum() != CacheFilterEnum.ALL)
+                            throw new IllegalArgumentException(ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG);
 
                         parseCacheNames(nextArg, cacheArgs);
                     }
@@ -2417,6 +2484,41 @@ public class CommandHandler {
     }
 
     /**
+     * Requests password from console with message.
+     *
+     * @param msg Message.
+     * @return Password.
+     */
+    private char[] requestPasswordFromConsole(String msg) {
+        Console console = System.console();
+
+        if (console == null)
+            throw new UnsupportedOperationException("Failed to securely read password (console is unavailable): " + msg);
+        else
+            return console.readPassword(msg);
+    }
+
+    /**
+     * Requests user data from console with message.
+     *
+     * @param msg Message.
+     * @return Input user data.
+     */
+    private String requestDataFromConsole(String msg) {
+        Console console = System.console();
+
+        if (console != null)
+            return console.readLine(msg);
+        else {
+            Scanner scanner = new Scanner(System.in);
+
+            log(msg);
+
+            return scanner.nextLine();
+        }
+    }
+
+    /**
      * Check if raw arg is command or option.
      *
      * @return {@code true} If raw arg is command, overwise {@code false}.
@@ -2527,6 +2629,69 @@ public class CommandHandler {
     }
 
     /**
+     * Split string into items.
+     *
+     * @param s String to process.
+     * @param delim Delimiter.
+     * @return List with items.
+     */
+    private List<String> split(String s, String delim) {
+        if (F.isEmpty(s))
+            return Collections.emptyList();
+
+        return Arrays.stream(s.split(delim))
+            .map(String::trim)
+            .filter(item -> !item.isEmpty())
+            .collect(Collectors.toList());
+    }
+
+    /** */
+    private void printHelp() {
+        log("This utility can do the following commands:");
+
+        usage(i("Activate cluster:"), ACTIVATE);
+        usage(i("Deactivate cluster:"), DEACTIVATE, op(CMD_AUTO_CONFIRMATION));
+        usage(i("Print current cluster state:"), STATE);
+        usage(i("Print cluster baseline topology:"), BASELINE);
+        usage(i("Add nodes into baseline topology:"), BASELINE, BASELINE_ADD, "consistentId1[,consistentId2,....,consistentIdN]", op(CMD_AUTO_CONFIRMATION));
+        usage(i("Remove nodes from baseline topology:"), BASELINE, BASELINE_REMOVE, "consistentId1[,consistentId2,....,consistentIdN]", op(CMD_AUTO_CONFIRMATION));
+        usage(i("Set baseline topology:"), BASELINE, BASELINE_SET, "consistentId1[,consistentId2,....,consistentIdN]", op(CMD_AUTO_CONFIRMATION));
+        usage(i("Set baseline topology based on version:"), BASELINE, BASELINE_SET_VERSION + " topologyVersion", op(CMD_AUTO_CONFIRMATION));
+        usage(i("List or kill transactions:"), TX, op(TX_XID, "XID"), op(TX_DURATION, "SECONDS"), op(TX_SIZE, "SIZE"), op(TX_LABEL, "PATTERN_REGEX"), op(or(TX_SERVERS, TX_CLIENTS)), op(TX_NODES, "consistentId1[,consistentId2,....,consistentIdN]"), op(TX_LIMIT, "NUMBER"), op(TX_ORDER, or("DURATION", "SIZE", CMD_TX_ORDER_START_TIME)), op(TX_KILL), op(CMD_AUTO_CONFIRMATION));
+
+        if (enableExperimental) {
+            usage(i("Print absolute paths of unused archived wal segments on each node:"), WAL, WAL_PRINT, "[consistentId1,consistentId2,....,consistentIdN]");
+            usage(i("Delete unused archived wal segments on each node:"), WAL, WAL_DELETE, "[consistentId1,consistentId2,....,consistentIdN] ", op(CMD_AUTO_CONFIRMATION));
+        }
+
+        log(i("View caches information in a cluster. For more details type:"));
+        log(i(String.join(" ", UTILITY_NAME, CACHE.text(), HELP.text()), 2));
+        nl();
+
+        log("By default commands affecting the cluster require interactive confirmation.");
+        log("Use " + CMD_AUTO_CONFIRMATION + " option to disable it.");
+        nl();
+
+        log("Default values:");
+        log(i("HOST_OR_IP=" + DFLT_HOST, 2));
+        log(i("PORT=" + DFLT_PORT, 2));
+        log(i("PING_INTERVAL=" + DFLT_PING_INTERVAL, 2));
+        log(i("PING_TIMEOUT=" + DFLT_PING_TIMEOUT, 2));
+        log(i("SSL_PROTOCOL=" + DFLT_SSL_PROTOCOL, 2));
+        log(i("SSL_KEY_ALGORITHM=" + SslContextFactory.DFLT_KEY_ALGORITHM, 2));
+        log(i("KEY_STORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
+        log(i("TRUST_STORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
+        nl();
+
+        log("Exit codes:");
+        log(i(EXIT_CODE_OK + " - successful execution.", 2));
+        log(i(EXIT_CODE_INVALID_ARGUMENTS + " - invalid arguments.", 2));
+        log(i(EXIT_CODE_CONNECTION_FAILED + " - connection failed.", 2));
+        log(i(ERR_AUTHENTICATION_FAILED + " - authentication failed.", 2));
+        log(i(EXIT_CODE_UNEXPECTED_ERROR + " - unexpected error.", 2));
+    }
+
+    /**
      * Parse and execute command.
      *
      * @param rawArgs Arguments to parse and execute.
@@ -2540,48 +2705,7 @@ public class CommandHandler {
 
         try {
             if (F.isEmpty(rawArgs) || (rawArgs.size() == 1 && CMD_HELP.equalsIgnoreCase(rawArgs.get(0)))) {
-                log("This utility can do the following commands:");
-
-                usage(i("Activate cluster:"), ACTIVATE);
-                usage(i("Deactivate cluster:"), DEACTIVATE, op(CMD_AUTO_CONFIRMATION));
-                usage(i("Print current cluster state:"), STATE);
-                usage(i("Print cluster baseline topology:"), BASELINE);
-                usage(i("Add nodes into baseline topology:"), BASELINE, BASELINE_ADD, "consistentId1[,consistentId2,....,consistentIdN]", op(CMD_AUTO_CONFIRMATION));
-                usage(i("Remove nodes from baseline topology:"), BASELINE, BASELINE_REMOVE, "consistentId1[,consistentId2,....,consistentIdN]", op(CMD_AUTO_CONFIRMATION));
-                usage(i("Set baseline topology:"), BASELINE, BASELINE_SET, "consistentId1[,consistentId2,....,consistentIdN]", op(CMD_AUTO_CONFIRMATION));
-                usage(i("Set baseline topology based on version:"), BASELINE, BASELINE_SET_VERSION + " topologyVersion", op(CMD_AUTO_CONFIRMATION));
-                usage(i("List or kill transactions:"), TX, op(TX_XID, "XID"), op(TX_DURATION, "SECONDS"), op(TX_SIZE, "SIZE"), op(TX_LABEL, "PATTERN_REGEX"), op(or(TX_SERVERS, TX_CLIENTS)), op(TX_NODES, "consistentId1[,consistentId2,....,consistentIdN]"), op(TX_LIMIT, "NUMBER"), op(TX_ORDER, or("DURATION", "SIZE", CMD_TX_ORDER_START_TIME)), op(TX_KILL), op(CMD_AUTO_CONFIRMATION));
-
-                if (enableExperimental) {
-                    usage(i("Print absolute paths of unused archived wal segments on each node:"), WAL, WAL_PRINT, "[consistentId1,consistentId2,....,consistentIdN]");
-                    usage(i("Delete unused archived wal segments on each node:"), WAL, WAL_DELETE, "[consistentId1,consistentId2,....,consistentIdN] ", op(CMD_AUTO_CONFIRMATION));
-                }
-
-                log(i("View caches information in a cluster. For more details type:"));
-                log(i(String.join(" ", UTILITY_NAME, CACHE.text(), HELP.text()), 2));
-                nl();
-
-                log("By default commands affecting the cluster require interactive confirmation.");
-                log("Use " + CMD_AUTO_CONFIRMATION + " option to disable it.");
-                nl();
-
-                log("Default values:");
-                log(i("HOST_OR_IP=" + DFLT_HOST, 2));
-                log(i("PORT=" + DFLT_PORT, 2));
-                log(i("PING_INTERVAL=" + DFLT_PING_INTERVAL, 2));
-                log(i("PING_TIMEOUT=" + DFLT_PING_TIMEOUT, 2));
-                log(i("SSL_PROTOCOL=" + SslContextFactory.DFLT_SSL_PROTOCOL, 2));
-                log(i("SSL_KEY_ALGORITHM=" + SslContextFactory.DFLT_KEY_ALGORITHM, 2));
-                log(i("KEYSTORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
-                log(i("TRUSTSTORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
-                nl();
-
-                log("Exit codes:");
-                log(i(EXIT_CODE_OK + " - successful execution.", 2));
-                log(i(EXIT_CODE_INVALID_ARGUMENTS + " - invalid arguments.", 2));
-                log(i(EXIT_CODE_CONNECTION_FAILED + " - connection failed.", 2));
-                log(i(ERR_AUTHENTICATION_FAILED + " - authentication failed.", 2));
-                log(i(EXIT_CODE_UNEXPECTED_ERROR + " - unexpected error.", 2));
+                printHelp();
 
                 return EXIT_CODE_OK;
             }
@@ -2610,7 +2734,7 @@ public class CommandHandler {
 
             boolean tryConnectAgain = true;
 
-            int tryConnectMaxCount=3;
+            int tryConnectMaxCount = 3;
 
             while (tryConnectAgain) {
                 tryConnectAgain = false;
@@ -2632,14 +2756,24 @@ public class CommandHandler {
                 if (!F.isEmpty(args.sslKeyStorePath())) {
                     GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
 
-                    factory.setProtocol(args.sslProtocol());
+                    List<String> sslProtocols = split(args.sslProtocol(), ",");
 
+                    String sslProtocol = F.isEmpty(sslProtocols) ? DFLT_SSL_PROTOCOL : sslProtocols.get(0);
+
+                    factory.setProtocol(sslProtocol);
                     factory.setKeyAlgorithm(args.sslKeyAlgorithm());
+
+                    if (sslProtocols.size() > 1)
+                        factory.setProtocols(sslProtocols);
+
+                    factory.setCipherSuites(split(args.getSslCipherSuites(), ","));
 
                     factory.setKeyStoreFilePath(args.sslKeyStorePath());
 
                     if (args.sslKeyStorePassword() != null)
                         factory.setKeyStorePassword(args.sslKeyStorePassword());
+                    else
+                        factory.setKeyStorePassword(requestPasswordFromConsole("SSL keystore password: "));
 
                     factory.setKeyStoreType(args.sslKeyStoreType());
 
@@ -2650,6 +2784,8 @@ public class CommandHandler {
 
                         if (args.sslTrustStorePassword() != null)
                             factory.setTrustStorePassword(args.sslTrustStorePassword());
+                        else
+                            factory.setTrustStorePassword(requestPasswordFromConsole("SSL truststore password: "));
 
                         factory.setTrustStoreType(args.sslTrustStoreType());
                     }
@@ -2697,36 +2833,24 @@ public class CommandHandler {
                 }
                 catch (Throwable e) {
                     if (tryConnectMaxCount > 0 && isAuthError(e)) {
-                        System.out.println("Authentication error, try connection again.");
+                        log("Authentication error, try connection again.");
 
-                        final Console console = System.console();
+                        if (F.isEmpty(args.getUserName()))
+                            args.setUserName(requestDataFromConsole("user: "));
 
-                        if (console != null) {
-                            if (F.isEmpty(args.getUserName()))
-                                args.setUserName(console.readLine("user: "));
-
-                            args.setPassword(new String(console.readPassword("password: ")));
-                        }
-                        else {
-                            Scanner scanner = new Scanner(System.in);
-
-                            if (F.isEmpty(args.getUserName())){
-                                System.out.println("user: ");
-
-                                args.setUserName(scanner.next());
-                            }
-
-                            System.out.println("password: ");
-
-                            args.setPassword(scanner.next());
-                        }
+                        args.setPassword(new String(requestPasswordFromConsole("password: ")));
 
                         tryConnectAgain = true;
 
                         tryConnectMaxCount--;
                     }
-                    else
+                    else {
+                        if (tryConnectMaxCount == 0)
+                            throw new GridClientAuthenticationException("Authentication error, maximum number of " +
+                                "retries exceeded");
+
                         throw e;
+                    }
                 }
             }
             return EXIT_CODE_OK;
@@ -2759,7 +2883,6 @@ public class CommandHandler {
      *
      * @return Last operation result;
      */
-    @SuppressWarnings("unchecked")
     public <T> T getLastOperationResult() {
         return (T)lastOperationRes;
     }

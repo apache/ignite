@@ -191,9 +191,7 @@ public class VisorExecutorServiceConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return Positive value if striped pool should be initialized
-     *      with configured number of threads (stripes) and used for requests processing
-     *      or non-positive value to process requests in system pool.
+     * @return The number of threads (stripes) to be used for requests processing.
      */
     public int getStripedPoolSize() {
         return stripedPoolSize;

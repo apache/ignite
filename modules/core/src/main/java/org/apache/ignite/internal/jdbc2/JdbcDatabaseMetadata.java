@@ -1363,7 +1363,6 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Database meta data is not a wrapper for " + iface.getName());

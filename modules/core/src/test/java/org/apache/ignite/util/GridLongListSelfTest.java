@@ -19,17 +19,22 @@ package org.apache.ignite.util;
 
 import junit.framework.TestCase;
 import org.apache.ignite.internal.util.GridLongList;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.util.GridLongList.asList;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridLongListSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
+    @Test
     public void testCopyWithout() throws Exception {
         assertCopy(
             new GridLongList(new long[] {}),
@@ -67,6 +72,7 @@ public class GridLongListSelfTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testTruncate() {
         GridLongList list = asList(1, 2, 3, 4, 5, 6, 7, 8);
 
@@ -108,6 +114,7 @@ public class GridLongListSelfTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testRemove() {
         GridLongList list = asList(1,2,3,4,5,6);
 
@@ -130,6 +137,7 @@ public class GridLongListSelfTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testSort() {
         assertEquals(new GridLongList(), new GridLongList().sort());
         assertEquals(asList(1), asList(1).sort());
@@ -154,6 +162,7 @@ public class GridLongListSelfTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testArray() {
         GridLongList list = new GridLongList();
 

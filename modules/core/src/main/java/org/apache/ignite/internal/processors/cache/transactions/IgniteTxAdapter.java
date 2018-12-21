@@ -1185,10 +1185,10 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             }
 
             if (valid) {
-                this.state = state;
-
                 if (timedOut)
                     this.timedOut = true;
+
+                this.state = state;
 
                 if (log.isDebugEnabled())
                     log.debug("Changed transaction state [prev=" + prev + ", new=" + this.state + ", tx=" + this + ']');
@@ -1764,7 +1764,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @throws IgniteCheckedException In case of eny exception.
      * @throws GridCacheEntryRemovedException If entry got removed.
      */
-    @SuppressWarnings({"unchecked", "ConstantConditions"})
+    @SuppressWarnings({"unchecked"})
     protected IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext> conflictResolve(
         GridCacheOperation op,
         IgniteTxEntry txEntry,

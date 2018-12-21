@@ -35,10 +35,14 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * BinaryObjectExceptionSelfTest
  */
+@RunWith(JUnit4.class)
 public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String TEST_KEY = "test_key";
@@ -86,6 +90,7 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUnexpectedFieldType() throws Exception {
         IgniteEx grid = grid(0);
 
@@ -156,6 +161,7 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFailedMarshallingLogging() throws Exception {
         BinaryMarshaller marshaller = createStandaloneBinaryMarshaller();
 
