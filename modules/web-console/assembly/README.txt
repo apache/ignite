@@ -114,8 +114,8 @@ Troubleshooting
 2. Root permission is required to bind to 80 port under macOS and Linux, but you may always start Web Console
    on another port if you don't have such permission.
 3. For extended debug output start Web Console as following:
-     On Linux execute command in terminal: `DEBUG=mongodb-* ./gridgain-web-console-linux`
-     On macOS execute command in terminal: `DEBUG=mongodb-* ./gridgain-web-console-macos`
+     On Linux execute command in terminal: `DEBUG=mongodb-* ./ignite-web-console-linux`
+     On macOS execute command in terminal: `DEBUG=mongodb-* ./ignite-web-console-macos`
      On Windows execute two commands in terminal:
          `SET DEBUG=mongodb-*`
          `ignite-web-console-win.exe`
