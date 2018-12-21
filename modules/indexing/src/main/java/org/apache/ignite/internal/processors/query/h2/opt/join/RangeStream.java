@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.opt.join;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -34,7 +33,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.h2.engine.Database;
 import org.h2.index.Cursor;
 import org.h2.result.Row;
 import org.h2.value.Value;
@@ -57,14 +55,8 @@ import static org.h2.result.Row.MEMORY_CALCULATE;
  * Per node range stream.
  */
 public class RangeStream {
-    /** H2 database. */
-    private final Database database;
-
     /** Kernal context. */
-    private final GridKernalContext kctx;
-
-    /** Logger. */
-    private final IgniteLogger log;
+    private final GridKernalContext ctx;
 
     /** Index. */
     private final GridH2IndexBase idx;
@@ -97,11 +89,8 @@ public class RangeStream {
      * @param qctx Query context.
      * @param node Node.
      */
-    public RangeStream(Database database, GridKernalContext kctx, IgniteLogger log, GridH2IndexBase idx,
-        GridH2QueryContext qctx, ClusterNode node) {
-        this.database = database;
-        this.kctx = kctx;
-        this.log = log;
+    public RangeStream(GridKernalContext ctx, GridH2IndexBase idx, GridH2QueryContext qctx, ClusterNode node) {
+        this.ctx = ctx;
         this.idx = idx;
         this.node = node;
         this.qctx = qctx;
@@ -114,9 +103,6 @@ public class RangeStream {
         remainingRanges = req.bounds().size();
 
         assert remainingRanges > 0;
-
-        if (log.isDebugEnabled())
-            log.debug("Starting stream: [node=" + node + ", req=" + req + "]");
 
         idx.send(singletonList(node), req);
     }
@@ -154,7 +140,7 @@ public class RangeStream {
             if (qctx.isCleared())
                 throw H2Utils.retryException("Query is cancelled.");
 
-            if (kctx.isStopping())
+            if (ctx.isStopping())
                 throw H2Utils.retryException("Local node is stopping.");
 
             GridH2IndexRangeResponse res;
@@ -215,7 +201,7 @@ public class RangeStream {
                 }
             }
 
-            if (!kctx.discovery().alive(node))
+            if (!ctx.discovery().alive(node))
                 throw H2Utils.retryException("Node has left topology: " + node.id());
         }
     }
@@ -288,14 +274,14 @@ public class RangeStream {
 
         for (int i = 0; i < vals0.length; i++) {
             try {
-                vals0[i] = vals.get(i).value(kctx);
+                vals0[i] = vals.get(i).value(ctx);
             }
             catch (IgniteCheckedException e) {
                 throw new CacheException(e);
             }
         }
 
-        return database.createRow(vals0, MEMORY_CALCULATE);
+        return idx.getDatabase().createRow(vals0, MEMORY_CALCULATE);
     }
 
     /**

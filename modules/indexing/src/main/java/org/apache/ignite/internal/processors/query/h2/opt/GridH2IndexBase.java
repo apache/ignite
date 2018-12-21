@@ -326,7 +326,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         GridCacheContext<?, ?> cctx = getTable().rowDescriptor().context();
 
-        return new DistributedLookupBatch(cctx, ucast, affColId);
+        return new DistributedLookupBatch(this, cctx, ucast, affColId);
     }
 
     /** {@inheritDoc} */
@@ -497,15 +497,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /**
-     * @param v1 First value.
-     * @param v2 Second value.
-     * @return {@code true} If they equal.
-     */
-    private boolean equal(Value v1, Value v2) {
-        return v1 == v2 || (v1 != null && v2 != null && v1.compareTypeSafe(v2, getDatabase().getCompareMode()) == 0);
-    }
-
-    /**
      * @param qctx Query context.
      * @param batchLookupId Batch lookup ID.
      * @param segmentId Segment ID.
@@ -583,7 +574,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param isLocalQry Local query flag.
      * @return Segment key for Affinity key.
      */
-    private SegmentKey rangeSegment(GridCacheContext<?, ?> cctx, GridH2QueryContext qctx, Object affKeyObj, boolean isLocalQry) {
+    public SegmentKey rangeSegment(GridCacheContext<?, ?> cctx, GridH2QueryContext qctx, Object affKeyObj,
+        boolean isLocalQry) {
         assert affKeyObj != null && affKeyObj != EXPLICIT_NULL : affKeyObj;
 
         ClusterNode node;
@@ -656,7 +648,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param row Search row.
      * @return Row message.
      */
-    private GridH2RowMessage toSearchRowMessage(SearchRow row) {
+    public GridH2RowMessage toSearchRowMessage(SearchRow row) {
         if (row == null)
             return null;
 
@@ -738,7 +730,10 @@ public abstract class GridH2IndexBase extends BaseIndex {
     /**
      * Index lookup batch.
      */
-    private class DistributedLookupBatch implements IndexLookupBatch {
+    private static class DistributedLookupBatch implements IndexLookupBatch {
+        /** Index. */
+        private final GridH2IndexBase idx;
+
         /** */
         final GridCacheContext<?,?> cctx;
 
@@ -774,7 +769,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
          * @param ucast Unicast or broadcast query.
          * @param affColId Affinity column ID.
          */
-        DistributedLookupBatch(GridCacheContext<?, ?> cctx, boolean ucast, int affColId) {
+        DistributedLookupBatch(GridH2IndexBase idx, GridCacheContext<?, ?> cctx, boolean ucast, int affColId) {
+            this.idx = idx;
             this.cctx = cctx;
             this.ucast = ucast;
             this.affColId = affColId;
@@ -798,7 +794,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
             if (affKeyFirst != null && equal(affKeyFirst, affKeyLast))
                 return affKeyFirst == ValueNull.INSTANCE ? EXPLICIT_NULL : affKeyFirst.getObject();
 
-            if (getTable().rowDescriptor().isKeyColumn(affColId))
+            if (idx.getTable().rowDescriptor().isKeyColumn(affColId))
                 return null;
 
             // Try to extract affinity key from primary key.
@@ -861,12 +857,12 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 if (affKey == EXPLICIT_NULL) // Affinity key is explicit null, we will not find anything.
                     return false;
 
-                segmentKeys = F.asList(rangeSegment(cctx, qctx, affKey, locQry));
+                segmentKeys = F.asList(idx.rangeSegment(cctx, qctx, affKey, locQry));
             }
             else {
                 // Affinity key is not provided or is not the same in upper and lower bounds, we have to broadcast.
                 if (broadcastSegments == null)
-                    broadcastSegments = broadcastSegments(qctx, cctx, locQry);
+                    broadcastSegments = idx.broadcastSegments(qctx, cctx, locQry);
 
                 segmentKeys = broadcastSegments;
             }
@@ -879,8 +875,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
             final int rangeId = res.size();
 
             // Create messages.
-            GridH2RowMessage first = toSearchRowMessage(firstRow);
-            GridH2RowMessage last = toSearchRowMessage(lastRow);
+            GridH2RowMessage first = idx.toSearchRowMessage(firstRow);
+            GridH2RowMessage last = idx.toSearchRowMessage(lastRow);
 
             // Range containing upper and lower bounds.
             GridH2RowRangeBounds rangeBounds = rangeBounds(rangeId, first, last);
@@ -895,8 +891,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 List<GridH2RowRangeBounds> bounds;
 
                 if (stream == null) {
-                    stream =
-                        new RangeStream(database, kernalContext(), log, GridH2IndexBase.this, qctx, segmentKey.node());
+                    stream = new RangeStream(cctx.kernalContext(), idx, qctx, segmentKey.node());
 
                     stream.request(createRequest(qctx, batchLookupId, segmentKey.segmentId()));
                     stream.request().bounds(bounds = new ArrayList<>());
@@ -915,11 +910,20 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
             Future<Cursor> fut = new DoneFuture<>(segmentKeys.size() == 1 ?
                 new UnicastCursor(rangeId, segmentKeys, rangeStreams) :
-                new BroadcastCursor(GridH2IndexBase.this, rangeId, segmentKeys, rangeStreams));
+                new BroadcastCursor(idx, rangeId, segmentKeys, rangeStreams));
 
             res.add(fut);
 
             return true;
+        }
+
+        /**
+         * @param v1 First value.
+         * @param v2 Second value.
+         * @return {@code true} If they equal.
+         */
+        private boolean equal(Value v1, Value v2) {
+            return v1 == v2 || (v1 != null && v2 != null && v1.compareTypeSafe(v2, idx.getDatabase().getCompareMode()) == 0);
         }
 
         /** {@inheritDoc} */
@@ -949,9 +953,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
             qctx.putStreams(batchLookupId, rangeStreams);
 
             // Start streaming.
-            assert ctx != null;
-            assert log != null;
-
             for (RangeStream stream : rangeStreams.values()) {
                 stream.start();
             }
