@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt.join;
 
-import org.apache.ignite.internal.util.typedef.F;
 import org.h2.index.Cursor;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * Simple cursor from a single node.
@@ -37,16 +33,13 @@ public class UnicastCursor implements Cursor {
 
     /**
      * @param rangeId Range ID.
-     * @param keys Remote index segment keys.
-     * @param rangeStreams Range streams.
+     * @param stream Stream.
      */
-    public UnicastCursor(int rangeId, List<SegmentKey> keys, Map<SegmentKey, RangeStream> rangeStreams) {
-        assert keys.size() == 1;
+    public UnicastCursor(int rangeId, RangeStream stream) {
+        assert stream != null;
 
         this.rangeId = rangeId;
-        this.stream = rangeStreams.get(F.first(keys));
-
-        assert stream != null;
+        this.stream = stream;
     }
 
     /** {@inheritDoc} */

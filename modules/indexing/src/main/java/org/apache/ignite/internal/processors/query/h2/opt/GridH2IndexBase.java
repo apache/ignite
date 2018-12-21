@@ -45,8 +45,6 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.CIX2;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.NullLogger;
@@ -66,7 +64,6 @@ import org.h2.value.Value;
 import javax.cache.CacheException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -489,123 +486,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /**
-     * @param qctx Query context.
-     * @param batchLookupId Batch lookup ID.
-     * @param segmentId Segment ID.
-     * @return Index range request.
-     */
-    public static GridH2IndexRangeRequest createRequest(GridH2QueryContext qctx, int batchLookupId, int segmentId) {
-        GridH2IndexRangeRequest req = new GridH2IndexRangeRequest();
-
-        req.originNodeId(qctx.originNodeId());
-        req.queryId(qctx.queryId());
-        req.originSegmentId(qctx.segment());
-        req.segment(segmentId);
-        req.batchLookupId(batchLookupId);
-
-        return req;
-    }
-
-
-    /**
-     * @param qctx Query context.
-     * @param cctx Cache context.
-     * @param isLocalQry Local query flag.
-     * @return Collection of nodes for broadcasting.
-     */
-    public List<SegmentKey> broadcastSegments(GridH2QueryContext qctx, GridCacheContext<?, ?> cctx, boolean isLocalQry) {
-        Map<UUID, int[]> partMap = qctx.partitionsMap();
-
-        List<ClusterNode> nodes;
-
-        if (isLocalQry) {
-            if (partMap != null && !partMap.containsKey(cctx.localNodeId()))
-                return Collections.emptyList(); // Prevent remote index call for local queries.
-
-            nodes = Collections.singletonList(cctx.localNode());
-        }
-        else {
-            if (partMap == null)
-                nodes = new ArrayList<>(CU.affinityNodes(cctx, qctx.topologyVersion()));
-            else {
-                nodes = new ArrayList<>(partMap.size());
-
-                GridKernalContext ctx = kernalContext();
-
-                for (UUID nodeId : partMap.keySet()) {
-                    ClusterNode node = ctx.discovery().node(nodeId);
-
-                    if (node == null)
-                        throw H2Utils.retryException("Failed to get node by ID during broadcast [nodeId=" + nodeId + ']');
-
-                    nodes.add(node);
-                }
-            }
-
-            if (F.isEmpty(nodes))
-                throw H2Utils.retryException("Failed to collect affinity nodes during broadcast [" +
-                    "cacheName=" + cctx.name() + ']');
-        }
-
-        int segmentsCount = segmentsCount();
-
-        List<SegmentKey> res = new ArrayList<>(nodes.size() * segmentsCount);
-
-        for (ClusterNode node : nodes) {
-            for (int seg = 0; seg < segmentsCount; seg++)
-                res.add(new SegmentKey(node, seg));
-        }
-
-        return res;
-    }
-
-    /**
-     * @param cctx Cache context.
-     * @param qctx Query context.
-     * @param affKeyObj Affinity key.
-     * @param isLocalQry Local query flag.
-     * @return Segment key for Affinity key.
-     */
-    public SegmentKey rangeSegment(GridCacheContext<?, ?> cctx, GridH2QueryContext qctx, Object affKeyObj,
-        boolean isLocalQry) {
-        assert affKeyObj != null && affKeyObj != EXPLICIT_NULL : affKeyObj;
-
-        ClusterNode node;
-
-        int partition = cctx.affinity().partition(affKeyObj);
-
-        if (isLocalQry) {
-            if (qctx.partitionsMap() != null) {
-                // If we have explicit partitions map, we have to use it to calculate affinity node.
-                UUID nodeId = qctx.nodeForPartition(partition, cctx);
-
-                if(!cctx.localNodeId().equals(nodeId))
-                    return null; // Prevent remote index call for local queries.
-            }
-
-            if (!cctx.affinity().primaryByKey(cctx.localNode(), partition, qctx.topologyVersion()))
-                return null;
-
-            node = cctx.localNode();
-        }
-        else{
-            if (qctx.partitionsMap() != null) {
-                // If we have explicit partitions map, we have to use it to calculate affinity node.
-                UUID nodeId = qctx.nodeForPartition(partition, cctx);
-
-            node = cctx.discovery().node(nodeId);
-        }
-        else // Get primary node for current topology version.
-            node = cctx.affinity().primaryByKey(affKeyObj, qctx.topologyVersion());
-
-            if (node == null) // Node was not found, probably topology changed and we need to retry the whole query.
-                throw H2Utils.retryException("Failed to get primary node by key for range segment.");
-        }
-
-        return new SegmentKey(node, segmentForPartition(partition));
-    }
-
-    /**
      * @param msg Row message.
      * @return Search row.
      */
@@ -682,14 +562,16 @@ public abstract class GridH2IndexBase extends BaseIndex {
         }
     }
 
-    /** @return Index segments count. */
-    protected abstract int segmentsCount();
+    /**
+     * @return Index segments count.
+     */
+    public abstract int segmentsCount();
 
     /**
      * @param partition Partition idx.
      * @return Segment ID for given key
      */
-    protected int segmentForPartition(int partition){
+    public int segmentForPartition(int partition){
         return segmentsCount() == 1 ? 0 : (partition % segmentsCount());
     }
 

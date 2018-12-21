@@ -17,12 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt.join;
 
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.h2.index.Cursor;
 import org.h2.index.IndexLookupBatch;
 import org.h2.result.SearchRow;
@@ -36,6 +40,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Future;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.LOCAL_ONLY;
@@ -136,7 +141,7 @@ public class DistributedLookupBatch implements IndexLookupBatch {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
+    @SuppressWarnings({"ForLoopReplaceableByForEach", "IfMayBeConditional"})
     @Override public boolean addSearchRows(SearchRow firstRow, SearchRow lastRow) {
         if (qctx == null || findCalled) {
             if (qctx == null) {
@@ -173,12 +178,12 @@ public class DistributedLookupBatch implements IndexLookupBatch {
             if (affKey == GridH2IndexBase.EXPLICIT_NULL) // Affinity key is explicit null, we will not find anything.
                 return false;
 
-            segmentKeys = F.asList(idx.rangeSegment(cctx, qctx, affKey, locQry));
+            segmentKeys = F.asList(rangeSegment(affKey, locQry));
         }
         else {
             // Affinity key is not provided or is not the same in upper and lower bounds, we have to broadcast.
             if (broadcastSegments == null)
-                broadcastSegments = idx.broadcastSegments(qctx, cctx, locQry);
+                broadcastSegments = broadcastSegments(locQry);
 
             segmentKeys = broadcastSegments;
         }
@@ -224,11 +229,14 @@ public class DistributedLookupBatch implements IndexLookupBatch {
                 batchFull = true;
         }
 
-        Future<Cursor> fut = new DoneFuture<>(segmentKeys.size() == 1 ?
-            new UnicastCursor(rangeId, segmentKeys, rangeStreams) :
-            new BroadcastCursor(idx, rangeId, segmentKeys, rangeStreams));
+        Cursor cur;
 
-        res.add(fut);
+        if (segmentKeys.size() == 1)
+            cur = new UnicastCursor(rangeId, rangeStreams.get(F.first(segmentKeys)));
+        else
+            cur = new BroadcastCursor(idx, rangeId, segmentKeys, rangeStreams);
+
+        res.add(new DoneFuture<>(cur));
 
         return true;
     }
@@ -239,7 +247,8 @@ public class DistributedLookupBatch implements IndexLookupBatch {
      * @return {@code true} If they equal.
      */
     private boolean equal(Value v1, Value v2) {
-        return v1 == v2 || (v1 != null && v2 != null && v1.compareTypeSafe(v2, idx.getDatabase().getCompareMode()) == 0);
+        return v1 == v2 || (v1 != null && v2 != null &&
+            v1.compareTypeSafe(v2, idx.getDatabase().getCompareMode()) == 0);
     }
 
     /** {@inheritDoc} */
@@ -275,6 +284,7 @@ public class DistributedLookupBatch implements IndexLookupBatch {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @Override public List<Future<Cursor>> find() {
         batchFull = false;
         findCalled = true;
@@ -306,5 +316,115 @@ public class DistributedLookupBatch implements IndexLookupBatch {
     /** {@inheritDoc} */
     @Override public String getPlanSQL() {
         return ucast ? "unicast" : "broadcast";
+    }
+
+    /**
+     * @param affKeyObj Affinity key.
+     * @param isLocalQry Local query flag.
+     * @return Segment key for Affinity key.
+     */
+    public SegmentKey rangeSegment(Object affKeyObj, boolean isLocalQry) {
+        assert affKeyObj != null && affKeyObj != GridH2IndexBase.EXPLICIT_NULL : affKeyObj;
+
+        ClusterNode node;
+
+        int partition = cctx.affinity().partition(affKeyObj);
+
+        if (isLocalQry) {
+            if (qctx.partitionsMap() != null) {
+                // If we have explicit partitions map, we have to use it to calculate affinity node.
+                UUID nodeId = qctx.nodeForPartition(partition, cctx);
+
+                if(!cctx.localNodeId().equals(nodeId))
+                    return null; // Prevent remote index call for local queries.
+            }
+
+            if (!cctx.affinity().primaryByKey(cctx.localNode(), partition, qctx.topologyVersion()))
+                return null;
+
+            node = cctx.localNode();
+        }
+        else{
+            if (qctx.partitionsMap() != null) {
+                // If we have explicit partitions map, we have to use it to calculate affinity node.
+                UUID nodeId = qctx.nodeForPartition(partition, cctx);
+
+                node = cctx.discovery().node(nodeId);
+            }
+            else // Get primary node for current topology version.
+                node = cctx.affinity().primaryByKey(affKeyObj, qctx.topologyVersion());
+
+            if (node == null) // Node was not found, probably topology changed and we need to retry the whole query.
+                throw H2Utils.retryException("Failed to get primary node by key for range segment.");
+        }
+
+        return new SegmentKey(node, idx.segmentForPartition(partition));
+    }
+
+    /**
+     * @param isLocalQry Local query flag.
+     * @return Collection of nodes for broadcasting.
+     */
+    public List<SegmentKey> broadcastSegments(boolean isLocalQry) {
+        Map<UUID, int[]> partMap = qctx.partitionsMap();
+
+        List<ClusterNode> nodes;
+
+        if (isLocalQry) {
+            if (partMap != null && !partMap.containsKey(cctx.localNodeId()))
+                return Collections.emptyList(); // Prevent remote index call for local queries.
+
+            nodes = Collections.singletonList(cctx.localNode());
+        }
+        else {
+            if (partMap == null)
+                nodes = new ArrayList<>(CU.affinityNodes(cctx, qctx.topologyVersion()));
+            else {
+                nodes = new ArrayList<>(partMap.size());
+
+                for (UUID nodeId : partMap.keySet()) {
+                    ClusterNode node = cctx.kernalContext().discovery().node(nodeId);
+
+                    if (node == null)
+                        throw H2Utils.retryException("Failed to get node by ID during broadcast [" +
+                            "nodeId=" + nodeId + ']');
+
+                    nodes.add(node);
+                }
+            }
+
+            if (F.isEmpty(nodes))
+                throw H2Utils.retryException("Failed to collect affinity nodes during broadcast [" +
+                    "cacheName=" + cctx.name() + ']');
+        }
+
+        int segmentsCount = idx.segmentsCount();
+
+        List<SegmentKey> res = new ArrayList<>(nodes.size() * segmentsCount);
+
+        for (ClusterNode node : nodes) {
+            for (int seg = 0; seg < segmentsCount; seg++)
+                res.add(new SegmentKey(node, seg));
+        }
+
+        return res;
+    }
+
+    /**
+     * @param qctx Query context.
+     * @param batchLookupId Batch lookup ID.
+     * @param segmentId Segment ID.
+     * @return Index range request.
+     */
+    public static GridH2IndexRangeRequest createRequest(GridH2QueryContext qctx, int batchLookupId, int segmentId) {
+        GridH2IndexRangeRequest req = new GridH2IndexRangeRequest();
+
+        req.originNodeId(qctx.originNodeId());
+        req.queryId(qctx.queryId());
+        req.originSegmentId(qctx.segment());
+        req.segment(segmentId);
+        req.batchLookupId(batchLookupId);
+
+        return req;
     }
 }

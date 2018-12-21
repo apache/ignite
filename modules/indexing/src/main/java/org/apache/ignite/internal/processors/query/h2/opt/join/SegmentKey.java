@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.query.h2.opt.join;
 
 import org.apache.ignite.cluster.ClusterNode;
 
-/** */
+/**
+ * Segment key.
+ */
 public class SegmentKey {
     /** */
-    final ClusterNode node;
+    private final ClusterNode node;
 
     /** */
     private final int segmentId;

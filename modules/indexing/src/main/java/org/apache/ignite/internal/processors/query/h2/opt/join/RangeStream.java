@@ -164,7 +164,7 @@ public class RangeStream {
 
                         if (remainingRanges > 0) {
                             if (req.bounds() != null)
-                                req = GridH2IndexBase.createRequest(qctx, req.batchLookupId(), req.segment());
+                                req = DistributedLookupBatch.createRequest(qctx, req.batchLookupId(), req.segment());
 
                             // Prefetch next page.
                             idx.send(singletonList(node), req);

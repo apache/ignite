@@ -35,16 +35,16 @@ public class BroadcastCursor implements Cursor, Comparator<RangeStream> {
     private final GridH2IndexBase idx;
 
     /** */
-    final int rangeId;
+    private final int rangeId;
 
     /** */
-    final RangeStream[] streams;
+    private final RangeStream[] streams;
 
     /** */
-    boolean first = true;
+    private boolean first = true;
 
     /** */
-    int off;
+    private int off;
 
     /**
      * @param rangeId Range ID.
