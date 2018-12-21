@@ -15,13 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.util.generators.primitives.variable;
+package org.apache.ignite.ml.util.generators.primitives.scalar;
 
 import java.util.Arrays;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.util.generators.primitives.vector.VectorGenerator;
 
@@ -32,6 +33,13 @@ public interface RandomProducer extends Supplier<Double> {
 
     default IgniteFunction<Double, Double> noizify(IgniteFunction<Double, Double> f) {
         return t -> f.apply(t) + get();
+    }
+
+    default Vector noizify(Vector vector) {
+        Vector copy = vector.copy();
+        for(int i = 0; i < vector.size(); i++)
+            copy.set(i, copy.get(i) + get());
+        return copy;
     }
 
     public static VectorGenerator vectorize(RandomProducer... producers) {

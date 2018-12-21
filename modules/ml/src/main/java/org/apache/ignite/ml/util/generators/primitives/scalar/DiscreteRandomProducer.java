@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.util.generators.primitives.variable;
+package org.apache.ignite.ml.util.generators.primitives.scalar;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.util.generators.primitives.vector.VectorGenerator;

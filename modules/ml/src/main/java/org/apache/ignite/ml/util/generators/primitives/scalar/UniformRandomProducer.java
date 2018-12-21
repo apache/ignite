@@ -15,36 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.util.generators.primitives.variable;
+package org.apache.ignite.ml.util.generators.primitives.scalar;
 
 import org.apache.ignite.internal.util.typedef.internal.A;
 
-public class GaussRandomProducer extends RandomProducerWithGenerator {
-    private final double mean;
-    private final double variance;
+public class UniformRandomProducer extends RandomProducerWithGenerator {
+    private final double from;
+    private final double to;
 
-    public GaussRandomProducer() {
-        this(0.0, 1.0, System.currentTimeMillis());
+    public UniformRandomProducer(double from, double to) {
+        this(from, to, System.currentTimeMillis());
     }
 
-    public GaussRandomProducer(long seed) {
-        this(0.0, 1.0, seed);
-    }
-
-    public GaussRandomProducer(double mean, double variance) {
-        this(mean, variance, System.currentTimeMillis());
-    }
-
-    public GaussRandomProducer(double mean, double variance, long seed) {
+    public UniformRandomProducer(double from, double to, long seed) {
         super(seed);
 
-        A.ensure(variance > 0, "variance > 0");
+        A.ensure(to >= from, "from > to");
 
-        this.mean = mean;
-        this.variance = variance;
+        this.from = from;
+        this.to = to;
     }
 
     @Override public Double get() {
-        return mean + generator().nextGaussian() * Math.sqrt(variance);
+        double result = generator().nextDouble() * (to - from) + from;
+        if (result > to)
+            result = to;
+
+        return result;
     }
 }

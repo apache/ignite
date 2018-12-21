@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.util.generators.datastream;
+package org.apache.ignite.ml.util.generators;
 
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -28,6 +28,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.DatasetRow;
 import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.util.generators.primitives.scalar.RandomProducer;
 
 public interface DataStreamGenerator {
     Stream<LabeledVector<Vector, Double>> labeled();
@@ -38,6 +39,19 @@ public interface DataStreamGenerator {
 
     default Stream<LabeledVector<Vector, Double>> labeled(IgniteFunction<Vector, Double> classifier) {
         return labeled().map(DatasetRow::features).map(v -> new LabeledVector<>(v, classifier.apply(v)));
+    }
+
+    default DataStreamGenerator mapVectors(IgniteFunction<Vector, Vector> f) {
+        DataStreamGenerator orig = this;
+        return new DataStreamGenerator() {
+            @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+                return orig.labeled().map(v -> new LabeledVector<>(f.apply(v.features()), v.label()));
+            }
+        };
+    }
+
+    default DataStreamGenerator blur(RandomProducer rnd) {
+        return mapVectors(rnd::noizify);
     }
 
     default Map<Vector, Double> asMap(int datasetSize) {

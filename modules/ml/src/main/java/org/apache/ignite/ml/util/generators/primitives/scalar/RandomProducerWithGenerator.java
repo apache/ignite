@@ -15,32 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.util.generators.primitives.variable;
+package org.apache.ignite.ml.util.generators.primitives.scalar;
 
-import org.apache.ignite.internal.util.typedef.internal.A;
+import java.util.Random;
 
-public class UniformRandomProducer extends RandomProducerWithGenerator {
-    private final double from;
-    private final double to;
+public abstract class RandomProducerWithGenerator implements RandomProducer {
+    private final Random rnd;
 
-    public UniformRandomProducer(double from, double to) {
-        this(from, to, System.currentTimeMillis());
+    public RandomProducerWithGenerator() {
+        this(System.currentTimeMillis());
     }
 
-    public UniformRandomProducer(double from, double to, long seed) {
-        super(seed);
-
-        A.ensure(to >= from, "from > to");
-
-        this.from = from;
-        this.to = to;
+    public RandomProducerWithGenerator(long seed) {
+        this.rnd = new Random(seed);
     }
 
-    @Override public Double get() {
-        double result = generator().nextDouble() * (to - from) + from;
-        if (result > to)
-            result = to;
-
-        return result;
-    }
+    protected Random generator() {
+        return rnd;
+    };
 }

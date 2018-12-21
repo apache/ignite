@@ -1,13 +1,19 @@
 package org.apache.ignite.ml.util.generators.primitives.vector;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class VectorGeneratorsFamilyTest {
     @Test
@@ -32,9 +38,9 @@ public class VectorGeneratorsFamilyTest {
         for (int i = 0; i < 3; i++)
             counters.put(i, counters.get(i).divide(N));
 
-        assertArrayEquals(new double[]{0.5, 1.0}, counters.get(0).asArray(), 1e-2);
-        assertArrayEquals(new double[]{0.25, .5}, counters.get(1).asArray(), 1e-2);
-        assertArrayEquals(new double[]{0.25, 1.}, counters.get(2).asArray(), 1e-2);
+        assertArrayEquals(new double[] {0.5, 1.0}, counters.get(0).asArray(), 1e-2);
+        assertArrayEquals(new double[] {0.25, .5}, counters.get(1).asArray(), 1e-2);
+        assertArrayEquals(new double[] {0.25, 1.}, counters.get(2).asArray(), 1e-2);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -48,6 +54,40 @@ public class VectorGeneratorsFamilyTest {
     }
 
     @Test
-    public void getWithId() {
+    public void testMap() {
+        VectorGeneratorsFamily family = new VectorGeneratorsFamily.Builder()
+            .add(() -> VectorUtils.of(1., 2.))
+            .map(g -> g.move(VectorUtils.of(1, -1)))
+            .build(0L);
+
+        assertArrayEquals(new double[] {2., 1.}, family.get().asArray(), 1e-7);
+    }
+
+    @Test
+    public void testGet() {
+        VectorGeneratorsFamily family = new VectorGeneratorsFamily.Builder()
+            .add(() -> VectorUtils.of(0.))
+            .add(() -> VectorUtils.of(1.))
+            .add(() -> VectorUtils.of(2.))
+            .build(0L);
+
+        Set<Double> validValues = DoubleStream.of(0., 1., 2.).boxed().collect(Collectors.toSet());
+        for(int i = 0; i < 100; i++) {
+            Vector vector = family.get();
+            assertTrue(validValues.contains(vector.get(0)));
+        }
+    }
+
+    @Test
+    public void testAsDataStream() {
+        VectorGeneratorsFamily family = new VectorGeneratorsFamily.Builder()
+            .add(() -> VectorUtils.of(0.))
+            .add(() -> VectorUtils.of(1.))
+            .add(() -> VectorUtils.of(2.))
+            .build(0L);
+
+        family.asDataStream().labeled().limit(100).forEach(v -> {
+            assertEquals(v.features().get(0), v.label(), 1e-7);
+        });
     }
 }

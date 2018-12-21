@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.util.generators.datastream.standard;
+package org.apache.ignite.ml.util.generators.standard;
 
 import java.util.stream.Stream;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.util.generators.datastream.DataStreamGenerator;
-import org.apache.ignite.ml.util.generators.primitives.variable.UniformRandomProducer;
+import org.apache.ignite.ml.util.generators.DataStreamGenerator;
+import org.apache.ignite.ml.util.generators.primitives.scalar.UniformRandomProducer;
 
 public class RegressionDataStream implements DataStreamGenerator {
     private final IgniteFunction<Vector, Double> function;

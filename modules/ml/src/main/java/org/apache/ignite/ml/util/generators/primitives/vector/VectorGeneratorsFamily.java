@@ -25,8 +25,8 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.util.generators.datastream.DataStreamGenerator;
-import org.apache.ignite.ml.util.generators.primitives.variable.DiscreteRandomProducer;
+import org.apache.ignite.ml.util.generators.DataStreamGenerator;
+import org.apache.ignite.ml.util.generators.primitives.scalar.DiscreteRandomProducer;
 
 public class VectorGeneratorsFamily implements VectorGenerator {
     private final List<VectorGenerator> family;
@@ -108,10 +108,6 @@ public class VectorGeneratorsFamily implements VectorGenerator {
 
         public int distributionId() {
             return distributionId;
-        }
-
-        public VectorWithDistributionId map(IgniteFunction<Vector, Vector> f) {
-            return new VectorWithDistributionId(f.apply(vector), distributionId);
         }
     }
 }

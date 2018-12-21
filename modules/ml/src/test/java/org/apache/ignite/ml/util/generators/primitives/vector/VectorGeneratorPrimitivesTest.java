@@ -1,10 +1,8 @@
 package org.apache.ignite.ml.util.generators.primitives.vector;
 
-import java.util.Random;
 import java.util.stream.IntStream;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.util.generators.primitives.variable.GaussRandomProducer;
 import org.junit.Test;
 
 import static org.junit.Assert.*;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.util.generators.datastream.standard;
+package org.apache.ignite.ml.util.generators.standard;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.util.generators.datastream.DataStreamGenerator;
+import org.apache.ignite.ml.util.generators.DataStreamGenerator;
 import org.apache.ignite.ml.util.generators.primitives.vector.VectorGenerator;
 import org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorsFamily;
 

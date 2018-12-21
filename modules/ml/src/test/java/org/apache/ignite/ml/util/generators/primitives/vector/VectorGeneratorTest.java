@@ -3,7 +3,7 @@ package org.apache.ignite.ml.util.generators.primitives.vector;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.util.generators.primitives.variable.UniformRandomProducer;
+import org.apache.ignite.ml.util.generators.primitives.scalar.UniformRandomProducer;
 import org.junit.Test;
 import org.junit.internal.ArrayComparisonFailure;
 

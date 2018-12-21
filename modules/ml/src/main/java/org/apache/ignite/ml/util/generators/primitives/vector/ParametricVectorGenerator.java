@@ -23,8 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.util.generators.primitives.variable.RandomProducer;
-import org.apache.ignite.ml.util.generators.primitives.vector.VectorGenerator;
+import org.apache.ignite.ml.util.generators.primitives.scalar.RandomProducer;
 
 public class ParametricVectorGenerator implements VectorGenerator {
     private final List<IgniteFunction<Double, Double>> perDimensionGenerators;
