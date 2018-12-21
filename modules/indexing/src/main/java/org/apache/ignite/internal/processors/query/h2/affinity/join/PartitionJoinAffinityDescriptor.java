@@ -62,6 +62,9 @@ public class PartitionJoinAffinityDescriptor implements Serializable {
      * @return {@code True} if compatible.
      */
     public boolean isCompatible(PartitionJoinAffinityDescriptor other) {
+        if (other == null)
+            return false;
+
         // Rendezvous affinity function is deterministic and doesn't depend on previous cluster view changes.
         // In future other user affinity functions would be applicable as well if explicityl marked deterministic.
         if (affFunc == PartitionAffinityFunctionType.RENDEZVOUS) {

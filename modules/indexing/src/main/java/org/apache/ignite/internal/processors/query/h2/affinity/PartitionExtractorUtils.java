@@ -88,7 +88,7 @@ public class PartitionExtractorUtils {
             }
 
             PartitionJoinTable tbl = new PartitionJoinTable(alias, cacheName, affColName, secondAffColName);
-            PartitionJoinAffinityDescriptor aff = affinityDescriptorForCache(tbl0.cacheInfo().config());
+            PartitionJoinAffinityDescriptor aff = affinityForCache(tbl0.cacheInfo().config());
 
             if (aff == null) {
                 // Non-standard affinity, exclude table.
@@ -169,7 +169,7 @@ public class PartitionExtractorUtils {
      * @param ccfg Cache configuration.
      * @return Affinity identifier.
      */
-    private static PartitionJoinAffinityDescriptor affinityDescriptorForCache(CacheConfiguration ccfg) {
+    public static PartitionJoinAffinityDescriptor affinityForCache(CacheConfiguration ccfg) {
         // Partition could be extracted only from PARTITIONED cache.
         if (ccfg.getCacheMode() != CacheMode.PARTITIONED)
             return null;

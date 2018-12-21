@@ -99,7 +99,7 @@ public class PartitionExtractor {
      * @return Partition result or {@code null} if nothing is resolved.
      */
     @SuppressWarnings("IfMayBeConditional")
-    public PartitionResult merge(List<GridCacheSqlQuery> qrys) {
+    public PartitionResult mergeMapQueries(List<GridCacheSqlQuery> qrys) {
         // Check if merge is possible.
         PartitionJoinAffinityDescriptor aff = null;
 

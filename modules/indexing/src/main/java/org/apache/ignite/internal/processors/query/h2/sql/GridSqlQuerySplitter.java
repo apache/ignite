@@ -137,13 +137,12 @@ public class GridSqlQuerySplitter {
     /**
      * @param params Query parameters.
      * @param collocatedGrpBy If it is a collocated GROUP BY query.
-     * @param idx Indexing.
+     * @param extractor Partition extractor.
      */
-    public GridSqlQuerySplitter(Object[] params, boolean collocatedGrpBy, IgniteH2Indexing idx) {
+    public GridSqlQuerySplitter(Object[] params, boolean collocatedGrpBy, PartitionExtractor extractor) {
         this.params = params;
         this.collocatedGrpBy = collocatedGrpBy;
-
-        extractor = new PartitionExtractor(idx);
+        this.extractor = extractor;
     }
 
     /**
@@ -207,7 +206,7 @@ public class GridSqlQuerySplitter {
 
         qry.explain(false);
 
-        GridSqlQuerySplitter splitter = new GridSqlQuerySplitter(params, collocatedGrpBy, h2);
+        GridSqlQuerySplitter splitter = new GridSqlQuerySplitter(params, collocatedGrpBy, h2.partitionExtractor());
 
         // Normalization will generate unique aliases for all the table filters in FROM.
         // Also it will collect all tables and schemas from the query.
@@ -262,7 +261,7 @@ public class GridSqlQuerySplitter {
         twoStepQry.distributedJoins(distributedJoins);
 
         // all map queries must have non-empty derivedPartitions to use this feature.
-        twoStepQry.derivedPartitions(splitter.extractor.merge(twoStepQry.mapQueries()));
+        twoStepQry.derivedPartitions(splitter.extractor.mergeMapQueries(twoStepQry.mapQueries()));
 
         twoStepQry.forUpdate(forUpdate);
 

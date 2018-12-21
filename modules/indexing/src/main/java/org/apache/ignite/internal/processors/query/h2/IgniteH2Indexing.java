@@ -92,7 +92,8 @@ import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
-import org.apache.ignite.internal.processors.query.h2.affinity.PartitionNode;
+import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
+import org.apache.ignite.internal.processors.query.h2.affinity.PartitionResult;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeClientIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
@@ -254,6 +255,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** */
     private DdlStatementsProcessor ddlProc;
+
+    /** Partition extractor. */
+    private PartitionExtractor partExtractor;
 
     /** */
     private volatile GridBoundedConcurrentLinkedHashMap<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery> twoStepCache =
@@ -1952,55 +1956,74 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (cancel == null)
             cancel = new GridQueryCancel();
 
-        // TODO: Use intersection (https://issues.apache.org/jira/browse/IGNITE-10567)
-        int partitions[] = qry.getPartitions();
+        // When explicit partitions are set, there must be an owning cache they should be applied to.
+        int explicitParts[] = qry.getPartitions();
+        PartitionResult derivedParts = twoStepQry.derivedPartitions();
 
-        if (partitions == null && twoStepQry.derivedPartitions() != null) {
-            try {
-                PartitionNode partTree = twoStepQry.derivedPartitions().tree();
+        int parts[] = calculatePartitions(explicitParts, derivedParts, qry.getArgs());
 
-                Collection<Integer> partitions0 = partTree.apply(qry.getArgs());
+        if (parts != null && parts.length == 0) {
+            return new QueryCursorImpl<>(new Iterable<List<?>>() {
+                @Override public Iterator<List<?>> iterator() {
+                    return new Iterator<List<?>>() {
 
-                if (F.isEmpty(partitions0))
-                    partitions = new int[0];
-                else {
-                    partitions = new int[partitions0.size()];
-
-                    int i = 0;
-
-                    for (Integer part : partitions0)
-                        partitions[i++] = part;
-                }
-
-                if (partitions.length == 0) //here we know that result of requested query is empty
-                    return new QueryCursorImpl<List<?>>(new Iterable<List<?>>(){
-                        @Override public Iterator<List<?>> iterator() {
-                            return new Iterator<List<?>>(){
-
-                                @Override public boolean hasNext() {
-                                    return false;
-                                }
-
-                                @Override public List<?> next() {
-                                    return null;
-                                }
-                            };
+                        @Override public boolean hasNext() {
+                            return false;
                         }
-                    });
-            }
-            catch (IgniteCheckedException e) {
-                throw new CacheException("Failed to calculate derived partitions: [qry=" + qry.getSql() + ", params=" +
-                    Arrays.deepToString(qry.getArgs()) + "]", e);
-            }
+
+                        @SuppressWarnings("IteratorNextCanNotThrowNoSuchElementException")
+                        @Override public List<?> next() {
+                            return null;
+                        }
+                    };
+                }
+            });
         }
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
             runQueryTwoStep(schemaName, twoStepQry, keepBinary, qry.isEnforceJoinOrder(), startTx, qry.getTimeout(),
-                cancel, qry.getArgs(), partitions, qry.isLazy(), mvccTracker), cancel);
+                cancel, qry.getArgs(), parts, qry.isLazy(), mvccTracker), cancel);
 
         cursor.fieldsMeta(meta);
 
         return cursor;
+    }
+
+    /**
+     * Calculate partitions for the query.
+     *
+     * @param explicitParts Explicit partitions provided in SqlFieldsQuery.partitions property.
+     * @param derivedParts Derived partitions found during partition pruning.
+     * @param args Arguments.
+     * @return Calculated partitions or {@code null} if failed to calculate and there should be a broadcast.
+     */
+    @SuppressWarnings("ZeroLengthArrayAllocation")
+    private int[] calculatePartitions(int[] explicitParts, PartitionResult derivedParts, Object[] args) {
+        if (!F.isEmpty(explicitParts))
+            return explicitParts;
+        else if (derivedParts != null) {
+            try {
+                Collection<Integer> realParts = derivedParts.tree().apply(args);
+
+                if (F.isEmpty(realParts))
+                    return new int[0];
+                else {
+                    int[] realParts0 = new int[realParts.size()];
+
+                    int i = 0;
+
+                    for (Integer realPart : realParts)
+                        realParts0[i++] = realPart;
+
+                    return realParts0;
+                }
+            }
+            catch (IgniteCheckedException e) {
+                throw new CacheException("Failed to calculate derived partitions for query.", e);
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -2292,6 +2315,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         dmlProc = new DmlStatementsProcessor(ctx, this);
         ddlProc = new DdlStatementsProcessor(ctx, schemaMgr);
+
+        partExtractor = new PartitionExtractor(this);
 
         if (JdbcUtils.serializer != null)
             U.warn(log, "Custom H2 serialization is already configured, will override.");
@@ -2597,6 +2622,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public SchemaManager schemaManager() {
         return schemaMgr;
+    }
+
+    /**
+     * @return Partition extractor.
+     */
+    public PartitionExtractor partitionExtractor() {
+        return partExtractor;
     }
 
     /**

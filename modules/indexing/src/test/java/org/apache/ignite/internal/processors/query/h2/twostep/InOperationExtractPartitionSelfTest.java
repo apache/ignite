@@ -156,30 +156,6 @@ public class InOperationExtractPartitionSelfTest extends GridCommonAbstractTest 
     @Test
     public void testMultipleValueList() {
         testInOperator(Arrays.asList(ORG + 0, ORG + 3, ORG + String.valueOf(ORG_COUNT - 1)), null, 3, 3);
-        testInOperator(Arrays.asList("ORG", ORG + 0, ORG + 4, ORG + String.valueOf(ORG_COUNT - 1)), null, 3, 4);
-        testInOperator(Arrays.asList(ORG + 0, ORG + 5, ORG + String.valueOf(ORG_COUNT - 1), "ORG"), null, 3, 4);
-        testInOperator(Arrays.asList(ORG + 0, ORG + 6, "MID", ORG + String.valueOf(ORG_COUNT - 1), "ORG"), null, 3, 5);
-
-        final List<String> allArgs3 = Arrays.asList("?", "?", "?");
-        final List<String> allArgs4 = Arrays.asList("?", "?", "?", "?");
-
-        testInOperator(allArgs3, new String[] {ORG + 0, ORG + 7, ORG + String.valueOf(ORG_COUNT - 1)}, 3, 3);
-        testInOperator(allArgs4, new String[] {"ORG", ORG + 0, ORG + 8, ORG + String.valueOf(ORG_COUNT - 1)}, 3, 4);
-        testInOperator(allArgs4, new String[] {ORG + 0, ORG + 9, ORG + String.valueOf(ORG_COUNT - 1), "ORG"}, 3, 4);
-        testInOperator(allArgs4, new String[] {ORG + 0, "MID", ORG + String.valueOf(ORG_COUNT - 1), "ORG"}, 2, 4);
-
-        testInOperator(
-            Arrays.asList("?", ORG + 9, ORG + String.valueOf(ORG_COUNT - 1), "?"),
-            new String[] {ORG + 0, "ORG"},
-            3,
-            4
-        );
-        testInOperator(
-            Arrays.asList("?", "?", ORG + String.valueOf(ORG_COUNT - 1), "ORG"),
-            new String[] {ORG + 0, "MID"},
-            2,
-            4
-        );
     }
 
     /**
