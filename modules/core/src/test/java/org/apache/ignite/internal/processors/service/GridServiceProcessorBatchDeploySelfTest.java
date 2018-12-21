@@ -41,6 +41,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -449,10 +450,9 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10021")
     @Test
     public void testCancelAllTopologyChange() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10021");
-
         Ignite client = grid(CLIENT_NODE_NAME);
 
         int numServices = 500;
