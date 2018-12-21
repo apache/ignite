@@ -80,7 +80,7 @@ module.exports = {
 
         // Configure SSL options.
         if (_isTrue('server:ssl')) {
-            const SSLOptions = {
+            const sslOptions = {
                 enable301Redirects: true,
                 trustXFPHeader: true
             };
@@ -91,7 +91,7 @@ module.exports = {
                 const hasOption = !!cfgValue;
 
                 if (hasOption)
-                    SSLOptions[cfg] = fromFile ? fs.readFileSync(cfgValue) : cfgValue;
+                    sslOptions[cfg] = fromFile ? fs.readFileSync(cfgValue) : cfgValue;
 
                 return hasOption;
             };
@@ -115,9 +115,13 @@ module.exports = {
             const honorCipherOrder = nconf.get(`server:honorCipherOrder`);
 
             if (honorCipherOrder)
-                SSLOptions.honorCipherOrder = _isTrue(honorCipherOrder);
+                sslOptions.honorCipherOrder = _isTrue(honorCipherOrder);
 
-            settings.server.SSLOptions = SSLOptions;
+            // Special care for case, when user set password for something like "123456".
+            if (sslOptions.passphrase)
+                sslOptions.passphrase = sslOptions.passphrase.toString();
+
+            settings.server.SSLOptions = sslOptions;
         }
 
         return settings;
