@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
+import org.apache.ignite.internal.processors.query.h2.opt.join.BroadcastCursor;
 import org.apache.ignite.internal.processors.query.h2.opt.join.CursorIteratorWrapper;
 import org.apache.ignite.internal.processors.query.h2.opt.join.RangeSource;
 import org.apache.ignite.internal.processors.query.h2.opt.join.RangeStream;
@@ -68,7 +69,6 @@ import org.h2.value.ValueNull;
 
 import javax.cache.CacheException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -736,129 +736,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /**
-     * Merge cursor from multiple nodes.
-     */
-    private class BroadcastCursor implements Cursor, Comparator<RangeStream> {
-        /** */
-        final int rangeId;
-
-        /** */
-        final RangeStream[] streams;
-
-        /** */
-        boolean first = true;
-
-        /** */
-        int off;
-
-        /**
-         * @param rangeId Range ID.
-         * @param segmentKeys Remote nodes.
-         * @param rangeStreams Range streams.
-         */
-        BroadcastCursor(int rangeId, Collection<SegmentKey> segmentKeys, Map<SegmentKey, RangeStream> rangeStreams) {
-
-            this.rangeId = rangeId;
-
-            streams = new RangeStream[segmentKeys.size()];
-
-            int i = 0;
-
-            for (SegmentKey segmentKey : segmentKeys) {
-                RangeStream stream = rangeStreams.get(segmentKey);
-
-                assert stream != null;
-
-                streams[i++] = stream;
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public int compare(RangeStream o1, RangeStream o2) {
-            if (o1 == o2)
-                return 0;
-
-            // Nulls are at the beginning of array.
-            if (o1 == null)
-                return -1;
-
-            if (o2 == null)
-                return 1;
-
-            return compareRows(o1.get(rangeId), o2.get(rangeId));
-        }
-
-        /**
-         * Try to fetch the first row.
-         *
-         * @return {@code true} If we were able to find at least one row.
-         */
-        private boolean goFirst() {
-            // Fetch first row from all the streams and sort them.
-            for (int i = 0; i < streams.length; i++) {
-                if (!streams[i].next(rangeId)) {
-                    streams[i] = null;
-                    off++; // After sorting this offset will cut off all null elements at the beginning of array.
-                }
-            }
-
-            if (off == streams.length)
-                return false;
-
-            Arrays.sort(streams, this);
-
-            return true;
-        }
-
-        /**
-         * Fetch next row.
-         *
-         * @return {@code true} If we were able to find at least one row.
-         */
-        private boolean goNext() {
-            assert off != streams.length;
-
-            if (!streams[off].next(rangeId)) {
-                // Next row from current min stream was not found -> nullify that stream and bump offset forward.
-                streams[off] = null;
-
-                return ++off != streams.length;
-            }
-
-            // Bubble up current min stream with respect to fetched row to achieve correct sort order of streams.
-            bubbleUp(streams, off, this);
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean next() {
-            if (first) {
-                first = false;
-
-                return goFirst();
-            }
-
-            return goNext();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Row get() {
-            return streams[off].get(rangeId);
-        }
-
-        /** {@inheritDoc} */
-        @Override public SearchRow getSearchRow() {
-            return get();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean previous() {
-            throw new UnsupportedOperationException();
-        }
-    }
-
-    /**
      * Index lookup batch.
      */
     private class DistributedLookupBatch implements IndexLookupBatch {
@@ -1038,7 +915,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
             Future<Cursor> fut = new DoneFuture<>(segmentKeys.size() == 1 ?
                 new UnicastCursor(rangeId, segmentKeys, rangeStreams) :
-                new BroadcastCursor(rangeId, segmentKeys, rangeStreams));
+                new BroadcastCursor(GridH2IndexBase.this, rangeId, segmentKeys, rangeStreams));
 
             res.add(fut);
 
