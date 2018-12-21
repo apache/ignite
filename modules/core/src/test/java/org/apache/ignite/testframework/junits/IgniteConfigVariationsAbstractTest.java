@@ -56,8 +56,8 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /** */
     private static final File workDir = new File(U.getIgniteHome() + File.separator + "workOfConfigVariationsTests");
 
-    /** Dummy (intentionally invalid) initial stub to just let people launch test classes not from suite. */
-    protected VariationsTestsConfig testsCfg = new VariationsTestsConfig(null, "Dummy config", false, null, 0, false);
+    /** Dummy initial stub to just let people launch test classes not from suite. */
+    protected VariationsTestsConfig testsCfg = new VariationsTestsConfig(null, "Dummy config", false, null, 1, false);
 
     /** */
     protected volatile DataMode dataMode = DataMode.PLANE_OBJECT;
@@ -172,6 +172,8 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected String testDescription() {
+        assert testsCfg != null: "Tests should be run using test suite.";
+
         return super.testDescription() + '-' + testsCfg.description() + '-' + testsCfg.gridCount() + "-node(s)";
     }
 
