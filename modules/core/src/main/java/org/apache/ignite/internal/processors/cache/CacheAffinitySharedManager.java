@@ -1778,8 +1778,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                         assert prev.isDone() && prev.topologyVersion().compareTo(topVer) < 0 : prev;
 
-                        if (log.isDebugEnabled()) {
-                            log.debug("Need initialize affinity on coordinator [" +
+                        if (log.isInfoEnabled()) {
+                            log.info("Need initialize affinity on coordinator [" +
                                 "cacheGrp=" + desc.cacheOrGroupName() +
                                 "prevAff=" + prev.topologyVersion() + ']');
                         }
