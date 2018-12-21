@@ -50,7 +50,7 @@ class BinaryMetadataFileStore {
     private final GridKernalContext ctx;
 
     /** */
-    private final FileIOFactory fileIOFactory;
+    private FileIOFactory fileIOFactory;
 
     /** */
     private final IgniteLogger log;
@@ -71,13 +71,10 @@ class BinaryMetadataFileStore {
         this.ctx = ctx;
         this.log = log;
 
-        if (!CU.isPersistenceEnabled(ctx.config())) {
-            this.fileIOFactory = null;
-
+        if (!CU.isPersistenceEnabled(ctx.config()))
             return;
-        }
-        else
-            this.fileIOFactory = ctx.config().getDataStorageConfiguration().getFileIOFactory();
+
+        fileIOFactory = ctx.config().getDataStorageConfiguration().getFileIOFactory();
 
         if (binaryMetadataFileStoreDir != null)
             workDir = binaryMetadataFileStoreDir;
@@ -107,19 +104,12 @@ class BinaryMetadataFileStore {
 
             byte[] marshalled = U.marshal(ctx, binMeta);
 
-            if (fileIOFactory != null) {
-                try (final FileIO out = fileIOFactory.create(file)) {
-                    int left = marshalled.length;
-                    while ((left -= out.writeFully(marshalled, 0, Math.min(marshalled.length, left))) > 0)
-                        ;
+            try (final FileIO out = fileIOFactory.create(file)) {
+                int left = marshalled.length;
+                while ((left -= out.writeFully(marshalled, 0, Math.min(marshalled.length, left))) > 0)
+                    ;
 
-                    out.force();
-                }
-            }
-            else {
-                try (FileOutputStream out = new FileOutputStream(file, false)) {
-                    out.write(marshalled);
-                }
+                out.force();
             }
         }
         catch (Exception e) {
@@ -130,7 +120,7 @@ class BinaryMetadataFileStore {
 
             ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
-            throw new RuntimeException(msg ,e);
+            throw new RuntimeException(msg, e);
         }
     }
 
