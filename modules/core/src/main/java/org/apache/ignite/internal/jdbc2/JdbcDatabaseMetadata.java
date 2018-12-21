@@ -40,14 +40,16 @@ import static java.sql.Connection.TRANSACTION_NONE;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.RowIdLifetime.ROWID_UNSUPPORTED;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.CATALOG_NAME;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.columnRow;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.indexRows;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.primaryKeyRows;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.tableRow;
 
 /**
  * JDBC database metadata implementation.
  */
 public class JdbcDatabaseMetadata implements DatabaseMetaData {
-    /** The only possible name for catalog. */
-    public static final String CATALOG_NAME = "IGNITE";
-
     /** Driver name. */
     public static final String DRIVER_NAME = "Apache Ignite JDBC Driver";
 
@@ -715,7 +717,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
             rows = new ArrayList<>(tabMetas.size());
 
             for (JdbcTableMeta m : tabMetas)
-                rows.add(tableRow(m.schemaName(), m.tableName()));
+                rows.add(tableRow(m));
         }
 
         return new JdbcResultSet(true, null,
@@ -728,28 +730,6 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
                 String.class.getName(), String.class.getName(), String.class.getName()),
             rows, true
         );
-    }
-
-    /**
-     * @param schema Schema name.
-     * @param tbl Table name.
-     * @return Table metadata row.
-     */
-    private List<Object> tableRow(String schema, String tbl) {
-        List<Object> row = new ArrayList<>(10);
-
-        row.add(CATALOG_NAME);
-        row.add(schema);
-        row.add(tbl.toUpperCase());
-        row.add("TABLE");
-        row.add(null);
-        row.add(null);
-        row.add(null);
-        row.add(null);
-        row.add(null);
-        row.add(null);
-
-        return row;
     }
 
     /** {@inheritDoc} */
@@ -796,10 +776,8 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
             rows = new ArrayList<>(colMetas.size());
 
-            for (JdbcColumnMeta col : colMetas) {
-                rows.add(columnRow(col.schemaName(), col.tableName(), col.columnName(), col.dataType(),
-                    col.dataTypeName(), col.isNullable(), ++cnt));
-            }
+            for (JdbcColumnMeta col : colMetas)
+                rows.add(columnRow(col, ++cnt));
         }
 
         return new JdbcResultSet(true, null,
@@ -857,48 +835,6 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
                 String.class.getName()),    // 24
             rows, true
         );
-    }
-
-    /**
-     * @param schema Schema name.
-     * @param tbl Table name.
-     * @param col Column name.
-     * @param type Type.
-     * @param typeName Type name.
-     * @param nullable Nullable flag.
-     * @param pos Ordinal position.
-     * @return Column metadata row.
-     */
-    private List<Object> columnRow(String schema, String tbl, String col, int type, String typeName,
-        boolean nullable, int pos) {
-        List<Object> row = new ArrayList<>(24);
-
-        row.add(CATALOG_NAME);          // 1. TABLE_CAT
-        row.add(schema);                // 2. TABLE_SCHEM
-        row.add(tbl);                   // 3. TABLE_NAME
-        row.add(col);                   // 4. COLUMN_NAME
-        row.add(type);                  // 5. DATA_TYPE
-        row.add(typeName);              // 6. TYPE_NAME
-        row.add(null);                  // 7. COLUMN_SIZE
-        row.add(null);                  // 8. BUFFER_LENGTH
-        row.add(null);                  // 9. DECIMAL_DIGITS
-        row.add(10);                    // 10. NUM_PREC_RADIX
-        row.add(nullable ? columnNullable : columnNoNulls); // 11. NULLABLE
-        row.add(null);                  // 12. REMARKS
-        row.add(null);                  // 13. COLUMN_DEF
-        row.add(type);                  // 14. SQL_DATA_TYPE
-        row.add(null);                  // 15. SQL_DATETIME_SUB
-        row.add(Integer.MAX_VALUE);     // 16. CHAR_OCTET_LENGTH
-        row.add(pos);                   // 17. ORDINAL_POSITION
-        row.add(nullable ? "YES" : "NO"); // 18. IS_NULLABLE
-        row.add(null);                  // 19. SCOPE_CATALOG
-        row.add(null);                  // 20. SCOPE_SCHEMA
-        row.add(null);                  // 21. SCOPE_TABLE
-        row.add(null);                  // 22. SOURCE_DATA_TYPE
-        row.add("NO");                  // 23. IS_AUTOINCREMENT
-        row.add("NO");                  // 24. IS_GENERATEDCOLUMN
-
-        return row;
     }
 
     /** {@inheritDoc} */
@@ -981,29 +917,6 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         );
     }
 
-    /**
-     * @param pkMeta Primary key metadata.
-     * @return Result set rows for primary key.
-     */
-    private List<List<Object>> primaryKeyRows(JdbcPrimaryKeyMeta pkMeta) {
-        List<List<Object>> rows = new ArrayList<>(pkMeta.fields().size());
-
-        for (int i = 0; i < pkMeta.fields().size(); ++i) {
-            List<Object> row = new ArrayList<>(6);
-
-            row.add(CATALOG_NAME); // table catalog
-            row.add(pkMeta.schemaName());
-            row.add(pkMeta.tableName());
-            row.add(pkMeta.fields().get(i));
-            row.add(i + 1); // sequence number
-            row.add(pkMeta.name());
-
-            rows.add(row);
-        }
-
-        return rows;
-    }
-
     /** {@inheritDoc} */
     @Override public ResultSet getImportedKeys(String catalog, String schema, String tbl) throws SQLException {
         return new JdbcResultSet(true, null,
@@ -1082,36 +995,6 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
                 Integer.class.getName(), String.class.getName()),
             rows, true
         );
-    }
-
-    /**
-     * @param idxMeta Index metadata.
-     * @return List of result rows correspond to index.
-     */
-    private List<List<Object>> indexRows(JdbcIndexMeta idxMeta) {
-        List<List<Object>> rows = new ArrayList<>(idxMeta.fields().size());
-
-        for (int i = 0; i < idxMeta.fields().size(); ++i) {
-            List<Object> row = new ArrayList<>(13);
-
-            row.add(CATALOG_NAME);              // TABLE_CAT
-            row.add(idxMeta.schemaName());      // TABLE_SCHEM
-            row.add(idxMeta.tableName());       // TABLE_NAME
-            row.add(true);                      // NON_UNIQUE
-            row.add(null);                      // INDEX_QUALIFIER (index catalog)
-            row.add(idxMeta.indexName());       // INDEX_NAME
-            row.add(tableIndexOther);           // TYPE
-            row.add(i + 1);                     // ORDINAL_POSITION
-            row.add(idxMeta.fields().get(i));   // COLUMN_NAME
-            row.add(idxMeta.fieldsAsc().get(i) ? "A" : "D");  // ASC_OR_DESC
-            row.add((Integer)0);                // CARDINALITY
-            row.add((Integer)0);                // PAGES
-            row.add((String)null);              // FILTER_CONDITION
-
-            rows.add(row);
-        }
-
-        return rows;
     }
 
     /** {@inheritDoc} */
@@ -1417,10 +1300,10 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     }
 
     /**
-     * Checks if specified catalog matches the only possible catalog value. See {@link #CATALOG_NAME}.
+     * Checks if specified catalog matches the only possible catalog value. See {@link JdbcUtils#CATALOG_NAME}.
      *
      * @param catalog Catalog name or {@code null}.
-     * @return {@code true} If catalog equal ignoring case to {@link #CATALOG_NAME} or null (which means any catalog).
+     * @return {@code true} If catalog equal ignoring case to {@link JdbcUtils#CATALOG_NAME} or null (which means any catalog).
      *  Otherwise returns {@code false}.
      */
     private static boolean isValidCatalog(String catalog) {
