@@ -102,7 +102,11 @@ class BinaryMetadataFileStore {
                 && ctx.config().getDataStorageConfiguration() != null
                 && ctx.config().getDataStorageConfiguration().getFileIOFactory() != null) {
                 try (final FileIO out = ctx.config().getDataStorageConfiguration().getFileIOFactory().create(file)) {
-                    out.write(marshalled, 0, marshalled.length);
+                    int left = marshalled.length;
+                    while ((left -= out.writeFully(marshalled, 0, Math.min(marshalled.length, left))) > 0)
+                        ;
+
+                    out.force();
                 }
             }
             else {
@@ -112,9 +116,14 @@ class BinaryMetadataFileStore {
             }
         }
         catch (Exception e) {
-            U.error(log, "Failed to save metadata for typeId: " + binMeta.typeId() +
-                "; exception was thrown: " + e.getMessage());
+            final String msg = "Failed to save metadata for typeId: " + binMeta.typeId() +
+                "; exception was thrown: " + e.getMessage();
+
+            U.error(log, msg);
+
             ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+            throw new RuntimeException(msg ,e);
         }
     }
 

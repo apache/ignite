@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -30,6 +31,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
@@ -48,7 +50,7 @@ public class IgnitePdsNoSpaceLeftOnDeviceTest extends GridCommonAbstractTest {
 
         final DataStorageConfiguration dataStorageConfiguration = new DataStorageConfiguration();
 
-        dataStorageConfiguration.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
+        dataStorageConfiguration.getDefaultDataRegionConfiguration().setPersistenceEnabled(true).setMaxSize(1<<24);
         dataStorageConfiguration.setFileIOFactory(new FailingFileIOFactory());
 
         cfg.setDataStorageConfiguration(dataStorageConfiguration);
@@ -77,8 +79,8 @@ public class IgnitePdsNoSpaceLeftOnDeviceTest extends GridCommonAbstractTest {
     }
 
     /**
-     * https://issues.apache.org/jira/browse/IGNITE-9120
-     * Metadata writer does not propagate error to failure handler
+     * The tests to validate <a href="https://issues.apache.org/jira/browse/IGNITE-9120">IGNITE-9120</a>
+     * Metadata writer does not propagate error to failure handler.
      *
      * @throws Exception If failed.
      */
@@ -86,7 +88,9 @@ public class IgnitePdsNoSpaceLeftOnDeviceTest extends GridCommonAbstractTest {
     public void testWhileWritingBinaryMetadataFile() throws Exception {
         final IgniteEx ignite0 = startGrid(0);
 
-        startGrid(1);
+        final IgniteEx ignite1 = startGrid(1);
+
+        FailingFileIOFactory.setUnluckyConsistentId(ignite1.localNode().consistentId().toString());
 
         ignite0.cluster().active(true);
 
@@ -123,12 +127,27 @@ public class IgnitePdsNoSpaceLeftOnDeviceTest extends GridCommonAbstractTest {
          */
         private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();
 
+        /**
+         * Node ConsistentId for which the error will be generated
+         */
+        private static final AtomicReference<String> unluckyConsistentId =new AtomicReference<>();
+
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-            if (file.getAbsolutePath().contains("node01-") && file.getAbsolutePath().contains("binary_meta"))
+            if (unluckyConsistentId.get()!=null
+                && file.getAbsolutePath().contains(unluckyConsistentId.get())
+                && file.getAbsolutePath().contains(StandaloneGridKernalContext.BINARY_META_FOLDER))
                 throw new IOException("No space left on device");
 
             return delegateFactory.create(file, modes);
+        }
+
+        /**
+         * Set node ConsistentId for which the error will be generated
+         * @param unluckyConsistentId Node ConsistentId.
+         */
+        public static void setUnluckyConsistentId(String unluckyConsistentId){
+            FailingFileIOFactory.unluckyConsistentId.set(unluckyConsistentId);
         }
     }
 }
