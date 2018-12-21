@@ -95,7 +95,7 @@ public class IgnitePdsWithIndexingCoreTestSuite {
 
         suite.addTest(new JUnit4TestAdapter(IgniteLogicalRecoveryTest.class));
 
-        suite.addTestSuite(IgniteSequentialNodeCrashRecoveryTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteSequentialNodeCrashRecoveryTest.class));
 
         return suite;
     }
