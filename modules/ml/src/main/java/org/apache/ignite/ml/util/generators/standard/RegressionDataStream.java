@@ -48,11 +48,11 @@ public class RegressionDataStream implements DataStreamGenerator {
     /**
      * Creates an instance of RegressionDataStream.
      *
-     * @param vectorSize vector size.
-     * @param function function.
-     * @param minXValue min x value.
-     * @param maxXValue max x value.
-     * @param seed seed.
+     * @param vectorSize Vector size.
+     * @param function Function.
+     * @param minXValue Min x value.
+     * @param maxXValue Max x value.
+     * @param seed Seed.
      */
     private RegressionDataStream(int vectorSize, IgniteFunction<Vector, Double> function,
         double minXValue, double maxXValue, long seed) {
@@ -70,10 +70,10 @@ public class RegressionDataStream implements DataStreamGenerator {
     /**
      * Creates an instance of RegressionDataStream.
      *
-     * @param vectorSize vector size.
-     * @param function function.
-     * @param minXValue min x value.
-     * @param maxXValue max x value.
+     * @param vectorSize Vector size.
+     * @param function Function.
+     * @param minXValue Min x value.
+     * @param maxXValue Max x value.
      */
     public RegressionDataStream(int vectorSize, IgniteFunction<Vector, Double> function, double minXValue,
         double maxXValue) {
@@ -91,9 +91,9 @@ public class RegressionDataStream implements DataStreamGenerator {
     /**
      * Creates two dimensional regression data stream.
      *
-     * @param function double->double function.
-     * @param minXValue min x value.
-     * @param maxXValue max x value.
+     * @param function Double->double function.
+     * @param minXValue Min x value.
+     * @param maxXValue Max x value.
      * @return RegressionDataStream instance.
      */
     public static RegressionDataStream twoDimensional(IgniteFunction<Double, Double> function,
@@ -105,10 +105,10 @@ public class RegressionDataStream implements DataStreamGenerator {
     /**
      * Creates two dimensional regression data stream.
      *
-     * @param function double->double function.
-     * @param minXValue min x value.
-     * @param maxXValue max x value.
-     * @param seed seed.
+     * @param function Double->double function.
+     * @param minXValue Min x value.
+     * @param maxXValue Max x value.
+     * @param seed Seed.
      * @return RegressionDataStream instance.
      */
     public static RegressionDataStream twoDimensional(IgniteFunction<Double, Double> function,

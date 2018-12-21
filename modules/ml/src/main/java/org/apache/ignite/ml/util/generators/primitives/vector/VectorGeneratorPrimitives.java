@@ -31,10 +31,10 @@ public class VectorGeneratorPrimitives {
     /**
      * Returns vector generator of vectors from multidimension gauss distribution.
      *
-     * @param means mean values per dimension.
-     * @param variances variance values per dimension.
-     * @param seed seed.
-     * @return generator.
+     * @param means Mean values per dimension.
+     * @param variances Variance values per dimension.
+     * @param seed Seed.
+     * @return Generator.
      */
     public static VectorGenerator gauss(Vector means, Vector variances, Long seed) {
         A.notEmpty(means.asArray(), "mean.size() != 0");
@@ -49,9 +49,9 @@ public class VectorGeneratorPrimitives {
     /**
      * Returns vector generator of vectors from multidimension gauss distribution.
      *
-     * @param means mean values per dimension.
-     * @param variances variance values per dimension.
-     * @return generator.
+     * @param means Mean values per dimension.
+     * @param variances Variance values per dimension.
+     * @return Generator.
      */
     public static VectorGenerator gauss(Vector means, Vector variances) {
         return gauss(means, variances, System.currentTimeMillis());
@@ -60,10 +60,10 @@ public class VectorGeneratorPrimitives {
     /**
      * Returns vector generator of 2D-vectors from ring-like distribution.
      *
-     * @param radius ring radius.
-     * @param fromAngle from angle.
-     * @param toAngle to angle.
-     * @return generator.
+     * @param radius Ring radius.
+     * @param fromAngle From angle.
+     * @param toAngle To angle.
+     * @return Generator.
      */
     public static VectorGenerator ring(double radius, double fromAngle, double toAngle) {
         return ring(radius, fromAngle, toAngle, System.currentTimeMillis());
@@ -72,11 +72,11 @@ public class VectorGeneratorPrimitives {
     /**
      * Returns vector generator of 2D-vectors from ring-like distribution around zero.
      *
-     * @param radius ring radius.
-     * @param fromAngle from angle.
-     * @param toAngle to angle.
-     * @param seed seed.
-     * @return generator.
+     * @param radius Ring radius.
+     * @param fromAngle From angle.
+     * @param toAngle To angle.
+     * @param seed Seed.
+     * @return Generator.
      */
     public static VectorGenerator ring(double radius, double fromAngle, double toAngle, long seed) {
         return new ParametricVectorGenerator(
@@ -89,8 +89,8 @@ public class VectorGeneratorPrimitives {
     /**
      * Returns vector generator of vectors from multidimension uniform distribution around zero.
      *
-     * @param bounds parallelogram bounds.
-     * @return generator.
+     * @param bounds Parallelogram bounds.
+     * @return Generator.
      */
     public static VectorGenerator parallelogram(Vector bounds) {
         return parallelogram(bounds, System.currentTimeMillis());
@@ -99,9 +99,9 @@ public class VectorGeneratorPrimitives {
     /**
      * Returns vector generator of vectors from multidimension uniform distribution around zero.
      *
-     * @param bounds parallelogram bounds.
-     * @param seed seed.
-     * @return generator.
+     * @param bounds Parallelogram bounds.
+     * @param seed Seed.
+     * @return Generator.
      */
     public static VectorGenerator parallelogram(Vector bounds, long seed) {
         A.notEmpty(bounds.asArray(), "bounds.size() != 0");
@@ -116,8 +116,8 @@ public class VectorGeneratorPrimitives {
     /**
      * Returns vector generator of 2D-vectors from circle-like distribution around zero.
      *
-     * @param radius circle radius.
-     * @return generator.
+     * @param radius Circle radius.
+     * @return Generator.
      */
     public static VectorGenerator circle(double radius) {
         return circle(radius, System.currentTimeMillis());
@@ -126,9 +126,9 @@ public class VectorGeneratorPrimitives {
     /**
      * Returns vector generator of 2D-vectors from circle-like distribution around zero.
      *
-     * @param radius circle radius.
-     * @param seed seed.
-     * @return generator.
+     * @param radius Circle radius.
+     * @param seed Seed.
+     * @return Generator.
      */
     public static VectorGenerator circle(double radius, long seed) {
         return new UniformRandomProducer(-radius, radius, seed)
@@ -137,16 +137,16 @@ public class VectorGeneratorPrimitives {
     }
 
     /**
-     * @param size vector size.
-     * @return generator of constant vector = zero.
+     * @param size Vector size.
+     * @return Generator of constant vector = zero.
      */
     public static VectorGenerator zero(int size) {
         return constant(VectorUtils.of(new double[size]));
     }
 
     /**
-     * @param v constant.
-     * @return generator of constant vector.
+     * @param v Constant.
+     * @return Generator of constant vector.
      */
     public static VectorGenerator constant(Vector v) {
         return () -> v;

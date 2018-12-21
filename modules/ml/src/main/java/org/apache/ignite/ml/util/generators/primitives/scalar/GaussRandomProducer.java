@@ -38,7 +38,7 @@ public class GaussRandomProducer extends RandomProducerWithGenerator {
     /**
      * Creates an instance of GaussRandomProducer with mean = 0 and variance = 1.0.
      *
-     * @param seed seed.
+     * @param seed Seed.
      */
     public GaussRandomProducer(long seed) {
         this(0.0, 1.0, seed);
@@ -47,8 +47,8 @@ public class GaussRandomProducer extends RandomProducerWithGenerator {
     /**
      * Creates an instance of GaussRandomProducer.
      *
-     * @param mean mean.
-     * @param variance variance.
+     * @param mean Mean.
+     * @param variance Variance.
      */
     public GaussRandomProducer(double mean, double variance) {
         this(mean, variance, System.currentTimeMillis());
@@ -57,9 +57,9 @@ public class GaussRandomProducer extends RandomProducerWithGenerator {
     /**
      * Creates an instance of GaussRandomProducer.
      *
-     * @param mean mean.
-     * @param variance variance.
-     * @param seed seed.
+     * @param mean Mean.
+     * @param variance Variance.
+     * @param seed Seed.
      */
     public GaussRandomProducer(double mean, double variance, long seed) {
         super(seed);

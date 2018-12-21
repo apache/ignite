@@ -44,7 +44,7 @@ public class UniformRandomProducer extends RandomProducerWithGenerator {
      *
      * @param from Generate values from this value.
      * @param to Generate values to this value.
-     * @param seed seed.
+     * @param seed Seed.
      */
     public UniformRandomProducer(double from, double to, long seed) {
         super(seed);

@@ -39,8 +39,8 @@ public class TwoSeparableClassesDataStream implements DataStreamGenerator {
     /**
      * Create an instance of TwoSeparableClassesDataStream. Note that margin can be less than zero.
      *
-     * @param margin margin.
-     * @param variance variance.
+     * @param margin Margin.
+     * @param variance Variance.
      */
     public TwoSeparableClassesDataStream(double margin, double variance) {
         this(margin, variance, System.currentTimeMillis());
@@ -49,9 +49,9 @@ public class TwoSeparableClassesDataStream implements DataStreamGenerator {
     /**
      * Create an instance of TwoSeparableClassesDataStream. Note that margin can be less than zero.
      *
-     * @param margin margin.
-     * @param variance variance.
-     * @param seed seed.
+     * @param margin Margin.
+     * @param variance Variance.
+     * @param seed Seed.
      */
     public TwoSeparableClassesDataStream(double margin, double variance, long seed) {
         this.margin = margin;

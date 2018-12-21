@@ -43,8 +43,8 @@ public class GaussianMixtureDataStream implements DataStreamGenerator {
     /**
      * Create an instance of GaussianMixtureDataStream.
      *
-     * @param componentGenerators component generators.
-     * @param seed seed.
+     * @param componentGenerators Component generators.
+     * @param seed Seed.
      */
     private GaussianMixtureDataStream(List<IgniteFunction<Long, VectorGenerator>> componentGenerators, long seed) {
         this.componentGenerators = componentGenerators;
@@ -72,8 +72,8 @@ public class GaussianMixtureDataStream implements DataStreamGenerator {
         /**
          * Adds multidimentional gaussian component.
          *
-         * @param mean mean value.
-         * @param variance variance for each component.
+         * @param mean Mean value.
+         * @param variance Variance for each component.
          */
         public Builder add(Vector mean, Vector variance) {
             componentGenerators.add(seed -> gauss(mean, variance, seed));
@@ -88,7 +88,7 @@ public class GaussianMixtureDataStream implements DataStreamGenerator {
         }
 
         /**
-         * @param seed seed.
+         * @param seed Seed.
          * @return GaussianMixtureDataStream instance.
          */
         public GaussianMixtureDataStream build(long seed) {

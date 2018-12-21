@@ -36,14 +36,14 @@ abstract class RandomProducerWithGenerator implements RandomProducer {
     /**
      * Creates an instance of RandomProducerWithGenerator.
      *
-     * @param seed seed.
+     * @param seed Seed.
      */
     protected RandomProducerWithGenerator(long seed) {
         this.rnd = new Random(seed);
     }
 
     /**
-     * @return java preudorandom values generator.
+     * @return Java preudorandom values generator.
      */
     protected Random generator() {
         return rnd;

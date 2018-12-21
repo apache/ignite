@@ -47,9 +47,9 @@ public class RingsDataStream implements DataStreamGenerator {
     /**
      * Create an intance of RingsDataStream.
      *
-     * @param countOfRings count of circles.
-     * @param minRadius min radius.
-     * @param distanceBetweenRings distance between circles.
+     * @param countOfRings Count of circles.
+     * @param minRadius Min radius.
+     * @param distanceBetweenRings Distance between circles.
      */
     public RingsDataStream(int countOfRings, double minRadius, double distanceBetweenRings) {
         this(countOfRings, minRadius, distanceBetweenRings, System.currentTimeMillis());
@@ -58,10 +58,10 @@ public class RingsDataStream implements DataStreamGenerator {
     /**
      * Create an intance of RingsDataStream.
      *
-     * @param countOfRings count of circles.
-     * @param minRadius min radius.
-     * @param distanceBetweenRings distance between circles.
-     * @param seed seed.
+     * @param countOfRings Count of circles.
+     * @param minRadius Min radius.
+     * @param distanceBetweenRings Distance between circles.
+     * @param seed Seed.
      */
     public RingsDataStream(int countOfRings, double minRadius, double distanceBetweenRings, long seed) {
         A.ensure(countOfRings > 0, "countOfRings > 0");

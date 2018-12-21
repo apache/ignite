@@ -40,7 +40,7 @@ public class DiscreteRandomProducer extends RandomProducerWithGenerator {
     /**
      * Creates an instance of DiscreteRandomProducer.
      *
-     * @param probs discrete distribution probabilities.
+     * @param probs Discrete distribution probabilities.
      */
     public DiscreteRandomProducer(double... probs) {
         this(System.currentTimeMillis(), probs);
@@ -49,8 +49,8 @@ public class DiscreteRandomProducer extends RandomProducerWithGenerator {
     /**
      * Creates an instance of DiscreteRandomProducer.
      *
-     * @param seed seed.
-     * @param probs discrete distribution probabilities.
+     * @param seed Seed.
+     * @param probs Discrete distribution probabilities.
      */
     public DiscreteRandomProducer(long seed, double... probs) {
         super(seed);
@@ -86,8 +86,8 @@ public class DiscreteRandomProducer extends RandomProducerWithGenerator {
     /**
      * Creates a producer of random values from uniform discrete distribution.
      *
-     * @param numberOfValues number of distinct values.
-     * @return producer.
+     * @param numberOfValues Number of distinct values.
+     * @return Producer.
      */
     public static DiscreteRandomProducer uniform(int numberOfValues) {
         return uniform(numberOfValues, System.currentTimeMillis());
@@ -96,9 +96,9 @@ public class DiscreteRandomProducer extends RandomProducerWithGenerator {
     /**
      * Creates a producer of random values from uniform discrete distribution.
      *
-     * @param numberOfValues number of distinct values.
-     * @param seed seed.
-     * @return producer.
+     * @param numberOfValues Number of distinct values.
+     * @param seed Seed.
+     * @return Producer.
      */
     public static DiscreteRandomProducer uniform(int numberOfValues, long seed) {
         return new DiscreteRandomProducer(seed, IntStream.range(0, numberOfValues)
@@ -109,8 +109,8 @@ public class DiscreteRandomProducer extends RandomProducerWithGenerator {
     /**
      * Generates pseudorandom discrete distribution.
      *
-     * @param numberOfValues number of distinct values of pseudorandom variable.
-     * @return probabilities array.
+     * @param numberOfValues Number of distinct values of pseudorandom variable.
+     * @return Probabilities array.
      */
     public static double[] randomDistribution(int numberOfValues) {
         return randomDistribution(numberOfValues, System.currentTimeMillis());
@@ -119,9 +119,9 @@ public class DiscreteRandomProducer extends RandomProducerWithGenerator {
     /**
      * Generates pseudorandom discrete distribution.
      *
-     * @param numberOfValues number of distinct values of pseudorandom variable.
-     * @param seed seed.
-     * @return probabilities array.
+     * @param numberOfValues Number of distinct values of pseudorandom variable.
+     * @param seed Seed.
+     * @return Probabilities array.
      */
     public static double[] randomDistribution(int numberOfValues, long seed) {
         A.ensure(numberOfValues > 0, "numberOfValues > 0");
@@ -151,14 +151,14 @@ public class DiscreteRandomProducer extends RandomProducerWithGenerator {
     }
 
     /**
-     * @return value of preudorandom discrete variable.
+     * @return Value of preudorandom discrete variable.
      */
     public int getInt() {
         return get().intValue();
     }
 
     /**
-     * @return count of distinct values of distribution.
+     * @return Count of distinct values of distribution.
      */
     public int size() {
         return probs.length;
@@ -167,10 +167,10 @@ public class DiscreteRandomProducer extends RandomProducerWithGenerator {
     /**
      * Sort of probabilities values and corresponded indicies.
      *
-     * @param probs probabilities.
-     * @param idx random variable values.
-     * @param from from.
-     * @param to to.
+     * @param probs Probabilities.
+     * @param idx Random variable values.
+     * @param from From.
+     * @param to To.
      */
     private void sort(double[] probs, int[] idx, int from, int to) {
         if (from < to) {

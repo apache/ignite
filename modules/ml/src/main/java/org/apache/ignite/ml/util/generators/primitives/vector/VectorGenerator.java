@@ -42,8 +42,8 @@ public interface VectorGenerator extends Supplier<Vector> {
     /**
      * Maps values of vector generator using mapper.
      *
-     * @param mapper mapper.
-     * @return vector generator with mapped vectors.
+     * @param mapper Mapper.
+     * @return Vector generator with mapped vectors.
      */
     public default VectorGenerator map(IgniteFunction<Vector, Vector> mapper) {
         return () -> mapper.apply(get());
@@ -52,8 +52,8 @@ public interface VectorGenerator extends Supplier<Vector> {
     /**
      * Filters values of vector generator using predicate.
      *
-     * @param predicate predicate.
-     * @return vector generator with filtered vectors.
+     * @param predicate Predicate.
+     * @return Vector generator with filtered vectors.
      */
     public default VectorGenerator filter(IgnitePredicate<Vector> predicate) {
         return () -> {
@@ -70,8 +70,8 @@ public interface VectorGenerator extends Supplier<Vector> {
     /**
      * Creates new generator by concatenation of vectors of this generator and other.
      *
-     * @param other other.
-     * @return generator of concatenated vectors.
+     * @param other Other.
+     * @return Generator of concatenated vectors.
      */
     public default VectorGenerator concat(VectorGenerator other) {
         return () -> VectorUtils.concat(this.get(), other.get());
@@ -80,8 +80,8 @@ public interface VectorGenerator extends Supplier<Vector> {
     /**
      * Creates new generator by concatenation of vectors of this generator and random producer.
      *
-     * @param producer producer.
-     * @return generator of concatenated vector and noize.
+     * @param producer Producer.
+     * @return Generator of concatenated vector and noize.
      */
     public default VectorGenerator concat(RandomProducer producer) {
         return () -> VectorUtils.concat(this.get(), VectorUtils.of(producer.get()));
@@ -90,8 +90,8 @@ public interface VectorGenerator extends Supplier<Vector> {
     /**
      * Creates new generator by sum of vectors of this generator and other.
      *
-     * @param other other.
-     * @return generator of vector sums.
+     * @param other Other.
+     * @return Generator of vector sums.
      */
     public default VectorGenerator plus(VectorGenerator other) {
         return () -> this.get().plus(other.get());
@@ -101,7 +101,7 @@ public interface VectorGenerator extends Supplier<Vector> {
      * Creates a permanent rearrangement mapping of features in vector and applies this rearrangement for each vectors
      * of current generator.
      *
-     * @return generator of vectors with shuffled features.
+     * @return Generator of vectors with shuffled features.
      */
     public default VectorGenerator shuffle() {
         return shuffle(System.currentTimeMillis());
@@ -111,8 +111,8 @@ public interface VectorGenerator extends Supplier<Vector> {
      * Creates a permanent rearrangement mapping of features in vector and applies this rearrangement for each vectors
      * of current generator.
      *
-     * @param seed seed.
-     * @return generator of vectors with shuffled features.
+     * @param seed Seed.
+     * @return Generator of vectors with shuffled features.
      */
     public default VectorGenerator shuffle(Long seed) {
         Random rnd = new Random(seed);
@@ -137,8 +137,8 @@ public interface VectorGenerator extends Supplier<Vector> {
      * Increase vectors of generator by increaseSize and sets to new values random selected feature values from already
      * set components.
      *
-     * @param increaseSize increase size.
-     * @return generator.
+     * @param increaseSize Increase size.
+     * @return Generator.
      */
     public default VectorGenerator duplicateRandomFeatures(int increaseSize) {
         return duplicateRandomFeatures(increaseSize, System.currentTimeMillis());
@@ -148,9 +148,9 @@ public interface VectorGenerator extends Supplier<Vector> {
      * Increase vectors of generator by increaseSize and sets to new values random selected feature values from already
      * set components.
      *
-     * @param increaseSize increase size.
-     * @param seed seed.
-     * @return generator.
+     * @param increaseSize Increase size.
+     * @param seed Seed.
+     * @return Generator.
      */
     public default VectorGenerator duplicateRandomFeatures(int increaseSize, Long seed) {
         A.ensure(increaseSize > 0, "increaseSize > 0");
@@ -171,8 +171,8 @@ public interface VectorGenerator extends Supplier<Vector> {
     /**
      * Moves all vectors to other position by summing with input vector.
      *
-     * @param v vector.
-     * @return generator with old vectors plus input vector.
+     * @param v Vector.
+     * @return Generator with old vectors plus input vector.
      */
     public default VectorGenerator move(Vector v) {
         return map(x -> x.plus(v));
@@ -181,8 +181,8 @@ public interface VectorGenerator extends Supplier<Vector> {
     /**
      * Rotate first two components of all vectors of generator by angle around zero.
      *
-     * @param angle angle.
-     * @return generator.
+     * @param angle Angle.
+     * @return Generator.
      */
     public default VectorGenerator rotate(double angle) {
         return rotate(angle, 0, 1);
@@ -191,10 +191,10 @@ public interface VectorGenerator extends Supplier<Vector> {
     /**
      * Rotate selected two components of all vectors of generator by angle around zero.
      *
-     * @param angle
-     * @param firstComponent first component id.
-     * @param secondComponent second component id.
-     * @return generator.
+     * @param angle Angle.
+     * @param firstComponent First component id.
+     * @param secondComponent Second component id.
+     * @return Generator.
      */
     public default VectorGenerator rotate(double angle, int firstComponent, int secondComponent) {
         return map(x -> x.copy()
@@ -206,8 +206,8 @@ public interface VectorGenerator extends Supplier<Vector> {
     /**
      * Adds noize to all components of generated vectors.
      *
-     * @param randomProducer random producer.
-     * @return generator.
+     * @param randomProducer Random producer.
+     * @return Generator.
      */
     public default VectorGenerator noisify(RandomProducer randomProducer) {
         int vectorSize = get().size();

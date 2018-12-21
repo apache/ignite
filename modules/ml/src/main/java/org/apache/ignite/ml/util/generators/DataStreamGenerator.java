@@ -35,20 +35,20 @@ import org.apache.ignite.ml.util.generators.primitives.scalar.RandomProducer;
  */
 public interface DataStreamGenerator {
     /**
-     * @return stream of {@link LabeledVector} in according to dataset shape.
+     * @return Stream of {@link LabeledVector} in according to dataset shape.
      */
     public Stream<LabeledVector<Vector, Double>> labeled();
 
     /**
-     * @return stream of unlabeled {@link Vector} in according to dataset shape.
+     * @return Stream of unlabeled {@link Vector} in according to dataset shape.
      */
     public default Stream<Vector> unlabeled() {
         return labeled().map(DatasetRow::features);
     }
 
     /**
-     * @param classifier user defined classifier for vectors stream.
-     * @return stream of {@link LabeledVector} in according to dataset shape and user's classifier.
+     * @param classifier User defined classifier for vectors stream.
+     * @return Stream of {@link LabeledVector} in according to dataset shape and user's classifier.
      */
     public default Stream<LabeledVector<Vector, Double>> labeled(IgniteFunction<Vector, Double> classifier) {
         return labeled().map(DatasetRow::features).map(v -> new LabeledVector<>(v, classifier.apply(v)));
@@ -57,8 +57,8 @@ public interface DataStreamGenerator {
     /**
      * Apply user defined mapper to vectors stream without labels hiding.
      *
-     * @param f mapper of vectors of data stream.
-     * @return stream of mapped vectors.
+     * @param f Mapper of vectors of data stream.
+     * @return Stream of mapped vectors.
      */
     public default DataStreamGenerator mapVectors(IgniteFunction<Vector, Vector> f) {
         DataStreamGenerator orig = this;
@@ -70,8 +70,8 @@ public interface DataStreamGenerator {
     }
 
     /**
-     * @param rnd generator of pseudorandom scalars modifying vector components with label saving.
-     * @return stream of blurred vectors with same labels.
+     * @param rnd Generator of pseudorandom scalars modifying vector components with label saving.
+     * @return Stream of blurred vectors with same labels.
      */
     public default DataStreamGenerator blur(RandomProducer rnd) {
         return mapVectors(rnd::noizify);
@@ -80,8 +80,8 @@ public interface DataStreamGenerator {
     /**
      * Convert first N values from stream to map.
      *
-     * @param datasetSize dataset size.
-     * @return map of vectors and labels.
+     * @param datasetSize Dataset size.
+     * @return Map of vectors and labels.
      */
     public default Map<Vector, Double> asMap(int datasetSize) {
         return labeled().limit(datasetSize)
@@ -91,9 +91,9 @@ public interface DataStreamGenerator {
     /**
      * Convert first N values from stream to {@link DatasetBuilder}.
      *
-     * @param datasetSize dataset size.
-     * @param partitions partitions count.
-     * @return dataset builder.
+     * @param datasetSize Dataset size.
+     * @param partitions Partitions count.
+     * @return Dataset builder.
      */
     public default DatasetBuilder<Vector, Double> asDatasetBuilder(int datasetSize, int partitions) {
         return new DatasetBuilderAdapter(this, datasetSize, partitions);
@@ -102,10 +102,10 @@ public interface DataStreamGenerator {
     /**
      * Convert first N values from stream to {@link DatasetBuilder}.
      *
-     * @param datasetSize dataset size.
-     * @param filter data filter.
-     * @param partitions partitions count.
-     * @return dataset builder.
+     * @param datasetSize Dataset size.
+     * @param filter Data filter.
+     * @param partitions Partitions count.
+     * @return Dataset builder.
      */
     public default DatasetBuilder<Vector, Double> asDatasetBuilder(int datasetSize, IgniteBiPredicate<Vector, Double> filter,
         int partitions) {
@@ -116,11 +116,11 @@ public interface DataStreamGenerator {
     /**
      * Convert first N values from stream to {@link DatasetBuilder}.
      *
-     * @param datasetSize dataset size.
-     * @param filter data filter.
-     * @param partitions partitions count.
-     * @param upstreamTransformerBuilder upstream transformer builder.
-     * @return dataset builder.
+     * @param datasetSize Dataset size.
+     * @param filter Data filter.
+     * @param partitions Partitions count.
+     * @param upstreamTransformerBuilder Upstream transformer builder.
+     * @return Dataset builder.
      */
     public default DatasetBuilder<Vector, Double> asDatasetBuilder(int datasetSize, IgniteBiPredicate<Vector, Double> filter,
         int partitions, UpstreamTransformerBuilder<Vector, Double> upstreamTransformerBuilder) {
