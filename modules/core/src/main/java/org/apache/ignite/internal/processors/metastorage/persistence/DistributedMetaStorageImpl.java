@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageListener;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
@@ -62,7 +63,9 @@ import static org.apache.ignite.internal.processors.metastorage.persistence.Dist
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.unmarshal;
 
 /** */
-public class DistributedMetaStorageImpl extends GridProcessorAdapter implements DistributedMetaStorage {
+public class DistributedMetaStorageImpl extends GridProcessorAdapter
+    implements DistributedMetaStorage, IgniteChangeGlobalStateSupport
+{
     /** */
     private static final int COMPONENT_ID = META_STORAGE.ordinal();
 
@@ -73,7 +76,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
     private DistributedMetaStorageBridge bridge = new NotAvailableDistributedMetaStorageBridge();
 
     /** */
-    private final CountDownLatch writeAvailable = new CountDownLatch(1);
+    private CountDownLatch writeAvailable = new CountDownLatch(1);
 
     /** */
     long ver;
@@ -99,6 +102,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
 
     /** */
     private StartupExtras startupExtras = new StartupExtras();
+
+    /** */
+    private boolean active;
+
+    /** */
+    private final Object innerStateLock = new Object();
 
     /**
      * @param ctx Kernal context.
@@ -147,27 +156,46 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
         if (!isPersistenceEnabled(ctx.config())) {
-            synchronized (this) {
-                InMemoryCachedDistributedMetaStorageBridge memCachedBridge =
-                    new InMemoryCachedDistributedMetaStorageBridge(this);
+            if (!(bridge instanceof InMemoryCachedDistributedMetaStorageBridge)) {
+                synchronized (innerStateLock) {
+                    assert startupExtras != null;
 
-                memCachedBridge.restore(startupExtras);
+                    InMemoryCachedDistributedMetaStorageBridge memCachedBridge =
+                        new InMemoryCachedDistributedMetaStorageBridge(this);
 
-                executeDeferredUpdates(memCachedBridge);
+                    memCachedBridge.restore(startupExtras);
 
-                bridge = memCachedBridge;
+                    executeDeferredUpdates(memCachedBridge);
 
-                writeAvailable.countDown();
+                    bridge = memCachedBridge;
 
-                startupExtras = null;
+                    startupExtras = null;
+                }
             }
+
+            writeAvailable.countDown();
 
             GridInternalSubscriptionProcessor isp = ctx.internalSubscriptionProcessor();
 
             for (DistributedMetastorageLifecycleListener subscriber : isp.getGlobalMetastorageSubscribers())
                 subscriber.onReadyForWrite(this);
+        }
+
+        synchronized (innerStateLock) {
+            active = true;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate(GridKernalContext kctx) {
+        synchronized (innerStateLock) {
+            active = false;
+
+            bridge = new NotAvailableDistributedMetaStorageBridge();
+
+            writeAvailable = new CountDownLatch(1);
         }
     }
 
@@ -177,6 +205,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
         GridInternalSubscriptionProcessor isp
     ) throws IgniteCheckedException {
         assert isPersistenceEnabled(ctx.config());
+
+        assert startupExtras != null;
 
         ReadOnlyDistributedMetaStorageBridge readOnlyBridge = new ReadOnlyDistributedMetaStorageBridge(this, metastorage);
 
@@ -206,23 +236,25 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
     ) throws IgniteCheckedException {
         assert isPersistenceEnabled(ctx.config());
 
-        synchronized (this) {
-            long metaStorageMaxSize = ctx.config().getDataStorageConfiguration().getSystemRegionMaxSize();
-
-            histMaxBytes = Math.min(histMaxBytes, metaStorageMaxSize / 2);
-
+        synchronized (innerStateLock) {
             WritableDistributedMetaStorageBridge writableBridge = new WritableDistributedMetaStorageBridge(this, metastorage);
 
-            lock();
+            if (startupExtras != null) {
+                long metaStorageMaxSize = ctx.config().getDataStorageConfiguration().getSystemRegionMaxSize();
 
-            try {
-                writableBridge.restore(startupExtras);
-            }
-            finally {
-                unlock();
-            }
+                histMaxBytes = Math.min(histMaxBytes, metaStorageMaxSize / 2);
 
-            executeDeferredUpdates(writableBridge);
+                lock();
+
+                try {
+                    writableBridge.restore(startupExtras);
+                }
+                finally {
+                    unlock();
+                }
+
+                executeDeferredUpdates(writableBridge);
+            }
 
             bridge = writableBridge;
 
@@ -264,6 +296,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
         @NotNull String keyPrefix,
         @NotNull BiConsumer<String, ? super Serializable> cb
     ) throws IgniteCheckedException {
+        if (!active)
+            throw new IllegalStateException("Cluster is not active");
+
         lock();
 
         try {
@@ -317,7 +352,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
 
         long remoteVer = joiningData.ver;
 
-        synchronized (this) {
+        synchronized (innerStateLock) {
             long actualVer;
 
             if (startupExtras == null)
@@ -333,8 +368,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
                 DistributedMetaStorageHistoryItem[] hist = joiningData.hist;
 
                 if (remoteVer - actualVer <= hist.length) {
-//                    assert bridge instanceof NotAvailableDistributedMetaStorageBridge
-//                        || bridge instanceof EmptyDistributedMetaStorageBridge;
+                    assert bridge instanceof NotAvailableDistributedMetaStorageBridge
+                        || bridge instanceof EmptyDistributedMetaStorageBridge;
 
                     for (long v = actualVer + 1; v <= remoteVer; v++)
                         updateLater(hist[(int)(v - remoteVer + hist.length - 1)]);
@@ -482,6 +517,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter implements 
 
     /** */
     private void startWrite(String key, byte[] valBytes) throws IgniteCheckedException {
+//        if (!active)
+//            throw new IllegalStateException("Cluster is not active");
+
         UUID reqId = UUID.randomUUID();
 
         GridFutureAdapter<?> fut = new DistributedMetaStorageUpdateFuture(reqId, updateFuts);

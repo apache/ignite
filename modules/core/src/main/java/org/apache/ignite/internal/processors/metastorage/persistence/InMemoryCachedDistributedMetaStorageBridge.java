@@ -95,7 +95,7 @@ class InMemoryCachedDistributedMetaStorageBridge implements DistributedMetaStora
             }
 
             for (IgniteBiTuple<Predicate<String>, DistributedMetaStorageListener<Serializable>> entry : dms.lsnrs)
-                entry.get2().onInit();
+                entry.get2().onReInit();
         }
     }
 }

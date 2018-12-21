@@ -116,7 +116,6 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
 
         try {
-
             IgniteEx ignite = startGrid(0);
 
             startGrid(1);

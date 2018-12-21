@@ -25,7 +25,9 @@ import org.jetbrains.annotations.Nullable;
 @FunctionalInterface
 public interface DistributedMetaStorageListener<T extends Serializable> {
     /** */
-    default void onInit() {}
+    //TODO split these two methods into two different listeners types.
+    // There should be only one "reinit" listener per component.
+    default void onReInit() {}
 
     /** */
     void onUpdate(@NotNull String key, @Nullable T val);

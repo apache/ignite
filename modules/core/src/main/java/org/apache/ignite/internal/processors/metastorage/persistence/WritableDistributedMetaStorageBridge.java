@@ -142,7 +142,7 @@ class WritableDistributedMetaStorageBridge implements DistributedMetaStorageBrid
                 metastorage.write(historyVersionKey(), dms.ver);
 
                 for (IgniteBiTuple<Predicate<String>, DistributedMetaStorageListener<Serializable>> entry : dms.lsnrs)
-                    entry.get2().onInit();
+                    entry.get2().onReInit();
             }
 
             metastorage.remove(cleanupKey);

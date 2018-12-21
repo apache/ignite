@@ -17,12 +17,8 @@
 package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
 import java.io.Serializable;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCheckedException;
-import org.jetbrains.annotations.NotNull;
 
 /**
  *
@@ -35,10 +31,17 @@ public interface ReadOnlyMetastorage {
     //TODO Rename to "readData".
     byte[] getData(String key) throws IgniteCheckedException;
 
-    /** */
+    /**
+     * Read all key/value pairs where key has provided prefix.
+     *
+     * @param keyPrefix Key prefix.
+     * @param cb Callback to invoke on each matching key/value pair.
+     * @param unmarshal {@code True} if object passed into {@code cb} should be unmarshalled.
+     * @throws IgniteCheckedException If failed.
+     */
     public void iterate(
-        @NotNull String keyPrefix,
-        @NotNull BiConsumer<String, ? super Serializable> cb,
+        String keyPrefix,
+        BiConsumer<String, ? super Serializable> cb,
         boolean unmarshal
     ) throws IgniteCheckedException;
 }

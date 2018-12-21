@@ -27,7 +27,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -73,7 +72,6 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.NotNull;
@@ -273,10 +271,10 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
     }
 
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void iterate(
-        @NotNull String keyPrefix,
-        @NotNull BiConsumer<String, ? super Serializable> cb,
+        String keyPrefix,
+        BiConsumer<String, ? super Serializable> cb,
         boolean unmarshal
     ) throws IgniteCheckedException {
         if (empty)
