@@ -31,10 +31,14 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.List;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for empty transaction while is then enlisted with real value.
  */
+@RunWith(JUnit4.class)
 public class MvccEmptyTransactionSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -48,6 +52,7 @@ public class MvccEmptyTransactionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testEmptyTransaction() throws Exception {
         Ignition.start(config("srv", false));
 

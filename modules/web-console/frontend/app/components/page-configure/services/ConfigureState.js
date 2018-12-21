@@ -15,10 +15,8 @@
  * limitations under the License.
  */
 
-import {Subject} from 'rxjs/Subject';
-import {BehaviorSubject} from 'rxjs/BehaviorSubject';
-import 'rxjs/add/operator/do';
-import 'rxjs/add/operator/scan';
+import {Subject, BehaviorSubject} from 'rxjs';
+import {tap, scan} from 'rxjs/operators';
 
 export default class ConfigureState {
     constructor() {
@@ -38,7 +36,10 @@ export default class ConfigureState {
             }
         };
 
-        this.actions$.scan(reducer, {}).do((v) => this.state$.next(v)).subscribe();
+        this.actions$.pipe(
+            scan(reducer, {}),
+            tap((v) => this.state$.next(v))
+        ).subscribe();
     }
 
     addReducer(combineFn) {

@@ -35,11 +35,15 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test verifies that binary metadata of values stored in cache and indexes upon these values
  * is handled correctly on cluster restart when persistent store is enabled and compact footer is turned on.
  */
+@RunWith(JUnit4.class)
 public class IgniteDbSingleNodeWithIndexingWalRestoreTest extends GridCommonAbstractTest {
     /** */
     private static final String BINARY_TYPE_NAME = "BinaryPerson";
@@ -125,6 +129,7 @@ public class IgniteDbSingleNodeWithIndexingWalRestoreTest extends GridCommonAbst
     /**
      * Test for values without class created with BinaryObjectBuilder.
      */
+    @Test
     public void testClasslessBinaryValuesRestored() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -162,6 +167,7 @@ public class IgniteDbSingleNodeWithIndexingWalRestoreTest extends GridCommonAbst
      * Test for regular objects stored in cache with compactFooter=true setting
      * (no metainformation to deserialize values is stored with values themselves).
      */
+    @Test
     public void testRegularClassesRestored() throws Exception {
         IgniteEx ig = startGrid(0);
 

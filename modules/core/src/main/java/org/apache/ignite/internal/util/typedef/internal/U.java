@@ -24,5 +24,4 @@ import org.apache.ignite.internal.util.IgniteUtils;
  * (like Scala, for example) we resort to these types of measures. This is intended for internal
  * use only and meant to provide for more terse code when readability of code is not compromised.
  */
-@SuppressWarnings({"ExtendsUtilityClass"})
 public class U extends IgniteUtils { /* No-op. */ }

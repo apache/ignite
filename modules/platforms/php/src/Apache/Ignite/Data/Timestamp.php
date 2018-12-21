@@ -49,7 +49,9 @@ class Timestamp extends Date
      */
     public static function fromDateTime(DateTime $dateTime)
     {
-        return new Timestamp($dateTime->getTimestamp() * 1000, 0);
+        $micros = $dateTime->format('u');
+        $millis = intval($micros / 1000);
+        return new Timestamp($dateTime->getTimestamp() * 1000 + $millis, ($micros % 1000) * 1000);
     }
     
     /**

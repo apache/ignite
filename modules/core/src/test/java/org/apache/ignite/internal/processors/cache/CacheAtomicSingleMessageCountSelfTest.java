@@ -41,6 +41,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -48,6 +51,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests single / transform messages being sent between nodes in ATOMIC mode.
  */
+@RunWith(JUnit4.class)
 public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTest {
     /** VM ip finder for TCP discovery. */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -85,6 +89,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleMessage() throws Exception {
         startGrids(2);
 
@@ -117,6 +122,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleTransformMessage() throws Exception {
         startGrids(2);
 
@@ -159,6 +165,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleFilterMessage() throws Exception {
         startGrids(2);
 

@@ -17,9 +17,14 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
 /**
  * Multinode test for PRIMARY mode.
  */
+@RunWith(JUnit4.class)
 public class IgfsPrimaryMultiNodeSelfTest extends IgfsPrimarySelfTest {
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
@@ -29,6 +34,7 @@ public class IgfsPrimaryMultiNodeSelfTest extends IgfsPrimarySelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     @Override public void testCreateConsistencyMultithreaded() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-8823");
     }

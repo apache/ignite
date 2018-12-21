@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 
 /**
@@ -28,7 +29,7 @@ public class GridRestSuite extends TestSuite {
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Apache Ignite REST Api suite");
 
-        suite.addTest(new TestSuite(RestSetupSimpleTest.class));
+        suite.addTest(new JUnit4TestAdapter(RestSetupSimpleTest.class));
 
         return suite;
     }

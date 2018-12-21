@@ -45,12 +45,16 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
 /**
  * Test for binary objects stored in cache.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheBinaryObjectsAbstractMultiThreadedSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -124,7 +128,9 @@ public abstract class GridCacheBinaryObjectsAbstractMultiThreadedSelfTest extend
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("BusyWait") public void testGetPut() throws Exception {
+    @SuppressWarnings("BusyWait")
+    @Test
+    public void testGetPut() throws Exception {
         final AtomicBoolean flag = new AtomicBoolean();
 
         final LongAdder cnt = new LongAdder();

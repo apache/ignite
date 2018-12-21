@@ -31,6 +31,7 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -103,6 +104,12 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     /** {@inheritDoc} */
     @Override protected boolean checkState(ANNClassificationModel mdl) {
         return mdl.getDistanceMeasure().equals(distance) && mdl.getCandidates().rowSize() == k;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ANNClassificationTrainer withEnvironmentBuilder(
+        LearningEnvironmentBuilder envBuilder) {
+        return (ANNClassificationTrainer)super.withEnvironmentBuilder(envBuilder);
     }
 
     /** */
@@ -180,7 +187,8 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
         );
 
         try (Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset = datasetBuilder.build(
-            (upstream, upstreamSize) -> new EmptyContext(),
+            envBuilder,
+            (env, upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
             return dataset.compute(data -> {

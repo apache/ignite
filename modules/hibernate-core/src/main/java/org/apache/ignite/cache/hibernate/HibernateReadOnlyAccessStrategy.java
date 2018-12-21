@@ -55,7 +55,8 @@ public class HibernateReadOnlyAccessStrategy extends HibernateAccessStrategyAdap
      * @param cache Cache.
      * @param eConverter Exception converter.
      */
-    public HibernateReadOnlyAccessStrategy(Ignite ignite,
+    public HibernateReadOnlyAccessStrategy(
+        Ignite ignite,
         HibernateCacheProxy cache,
         HibernateExceptionConverter eConverter) {
         super(ignite, cache, eConverter);
@@ -68,6 +69,9 @@ public class HibernateReadOnlyAccessStrategy extends HibernateAccessStrategyAdap
 
     /** {@inheritDoc} */
     @Override public boolean afterInsert(Object key, Object val) {
+        if (log.isDebugEnabled())
+            log.debug("Put [cache=" + cache.name() + ", key=" + key + ']');
+
         try {
             cache.put(key, val);
 

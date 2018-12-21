@@ -455,7 +455,6 @@ public class GridCacheUtils {
      */
     public static <K, V> IgniteClosure<Integer, IgnitePredicate<Cache.Entry<K, V>>[]> factory() {
         return new IgniteClosure<Integer, IgnitePredicate<Cache.Entry<K, V>>[]>() {
-            @SuppressWarnings({"unchecked"})
             @Override public IgnitePredicate<Cache.Entry<K, V>>[] apply(Integer len) {
                 return (IgnitePredicate<Cache.Entry<K, V>>[])(len == 0 ? EMPTY : new IgnitePredicate[len]);
             }
@@ -527,7 +526,6 @@ public class GridCacheUtils {
     /**
      * @return Empty filter.
      */
-    @SuppressWarnings({"unchecked"})
     public static <K, V> IgnitePredicate<Cache.Entry<K, V>>[] empty() {
         return (IgnitePredicate<Cache.Entry<K, V>>[])EMPTY_FILTER;
     }
@@ -535,7 +533,6 @@ public class GridCacheUtils {
     /**
      * @return Empty filter.
      */
-    @SuppressWarnings({"unchecked"})
     public static CacheEntryPredicate[] empty0() {
         return EMPTY_FILTER0;
     }
@@ -550,7 +547,6 @@ public class GridCacheUtils {
     /**
      * @return Closure which converts transaction entry xid to XID version.
      */
-    @SuppressWarnings( {"unchecked"})
     public static IgniteClosure<IgniteInternalTx, GridCacheVersion> tx2xidVersion() {
         return (IgniteClosure<IgniteInternalTx, GridCacheVersion>)tx2xidVer;
     }
@@ -566,7 +562,6 @@ public class GridCacheUtils {
     /**
      * @return Closure that converts entry info to key.
      */
-    @SuppressWarnings({"unchecked"})
     public static <K, V> IgniteClosure<GridCacheEntryInfo, K> info2Key() {
         return (IgniteClosure<GridCacheEntryInfo, K>)info2key;
     }
@@ -793,7 +788,6 @@ public class GridCacheUtils {
      * @return Buffer that contains obtained byte array.
      * @throws IgniteCheckedException If marshalling failed.
      */
-    @SuppressWarnings("unchecked")
     public static byte[] marshal(GridCacheContext ctx, Object obj)
         throws IgniteCheckedException {
         assert ctx != null;
@@ -1317,7 +1311,7 @@ public class GridCacheUtils {
 
         if (e instanceof CachePartialUpdateCheckedException)
             return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);
-        else if (e instanceof ClusterTopologyServerNotFoundException)
+        else if (e.hasCause(ClusterTopologyServerNotFoundException.class))
             return new CacheServerNotFoundException(e.getMessage(), e);
         else if (e instanceof SchemaOperationException)
             return new CacheException(e.getMessage(), e);
@@ -1585,7 +1579,7 @@ public class GridCacheUtils {
     /**
      * @return default TX configuration if system cache is used or current grid TX config otherwise.
      */
-    public static TransactionConfiguration transactionConfiguration(final @Nullable GridCacheContext sysCacheCtx,
+    public static TransactionConfiguration transactionConfiguration(@Nullable final GridCacheContext sysCacheCtx,
         final IgniteConfiguration cfg) {
         return sysCacheCtx != null && sysCacheCtx.systemTx()
             ? DEFAULT_TX_CFG
@@ -1755,7 +1749,7 @@ public class GridCacheUtils {
         boolean readThrough,
         boolean skipVals
     ) {
-        if (!readThrough || skipVals ||
+        if (cctx.mvccEnabled() || !readThrough || skipVals ||
             (key != null && !cctx.affinity().backupsByKey(key, topVer).contains(cctx.localNode())))
             return null;
 

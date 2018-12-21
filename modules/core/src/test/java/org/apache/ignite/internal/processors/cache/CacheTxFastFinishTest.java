@@ -35,6 +35,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -48,6 +51,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheTxFastFinishTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -91,6 +95,7 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFastFinishTxNearCache() throws Exception {
         nearCache = true;
 
@@ -100,6 +105,7 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFastFinishTx() throws Exception {
         fastFinishTx();
     }
@@ -107,7 +113,7 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    private void fastFinishTx() throws Exception {
+    protected void fastFinishTx() throws Exception {
         startGrid(0);
 
         fastFinishTx(ignite(0));
@@ -142,7 +148,7 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
     /**
      * @param ignite Node.
      */
-    private void fastFinishTx(Ignite ignite) {
+    protected void fastFinishTx(Ignite ignite) {
         IgniteTransactions txs = ignite.transactions();
 
         IgniteCache cache = ignite.cache(DEFAULT_CACHE_NAME);
@@ -202,7 +208,7 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
      * @param tx Transaction.
      * @param commit Commit flag.
      */
-    private void checkFastTxFinish(Transaction tx, boolean commit) {
+    protected void checkFastTxFinish(Transaction tx, boolean commit) {
         if (commit)
             tx.commit();
         else
@@ -218,7 +224,7 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
      * @param tx Transaction.
      * @param commit Commit flag.
      */
-    private void checkNormalTxFinish(Transaction tx, boolean commit) {
+    protected void checkNormalTxFinish(Transaction tx, boolean commit) {
         IgniteInternalTx tx0 = ((TransactionProxyImpl)tx).tx();
 
         if (commit) {

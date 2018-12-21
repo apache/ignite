@@ -21,6 +21,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -43,6 +44,9 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     /** Moving partitions. */
     private Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions;
 
+    /** Exceptions. */
+    private Map<UUID, Exception> exceptions;
+
     /**
      * @param cntrConflicts Counter conflicts.
      * @param hashConflicts Hash conflicts.
@@ -51,11 +55,13 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     public IdleVerifyResultV2(
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> cntrConflicts,
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashConflicts,
-        Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions,
+        Map<UUID, Exception> exceptions
     ) {
         this.cntrConflicts = cntrConflicts;
         this.hashConflicts = hashConflicts;
         this.movingPartitions = movingPartitions;
+        this.exceptions = exceptions;
     }
 
     /**
@@ -65,10 +71,16 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeMap(out, cntrConflicts);
         U.writeMap(out, hashConflicts);
         U.writeMap(out, movingPartitions);
+        U.writeMap(out, exceptions);
     }
 
     /** {@inheritDoc} */
@@ -77,6 +89,9 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         cntrConflicts = U.readMap(in);
         hashConflicts = U.readMap(in);
         movingPartitions = U.readMap(in);
+
+        if (protoVer >= V2)
+            exceptions = U.readMap(in);
     }
 
     /**
@@ -105,6 +120,13 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
      */
     public boolean hasConflicts() {
         return !F.isEmpty(hashConflicts()) || !F.isEmpty(counterConflicts());
+    }
+
+    /**
+     * @return Exceptions on nodes.
+     */
+    public Map<UUID, Exception> exceptions() {
+        return exceptions;
     }
 
     /**
@@ -158,6 +180,16 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
             }
 
             printer.accept("\n");
+        }
+
+        if (!F.isEmpty(exceptions())) {
+            printer.accept("Idle verify failed on nodes:\n");
+
+            for (Map.Entry<UUID, Exception> e : exceptions().entrySet()) {
+                printer.accept("Node ID: " + e.getKey() + "\n");
+                printer.accept("Exception message:" + "\n");
+                printer.accept(e.getValue().getMessage() + "\n");
+            }
         }
     }
 

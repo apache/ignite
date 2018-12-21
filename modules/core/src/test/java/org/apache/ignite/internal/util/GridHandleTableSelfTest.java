@@ -18,14 +18,19 @@
 package org.apache.ignite.internal.util;
 
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link GridHandleTable}.
  */
+@RunWith(JUnit4.class)
 public class GridHandleTableSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGrow() throws Exception {
         GridHandleTable table = new GridHandleTable(8, 2);
 

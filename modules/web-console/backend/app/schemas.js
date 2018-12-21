@@ -136,7 +136,7 @@ module.exports.factory = function(mongoose) {
         clusters: [{type: ObjectId, ref: 'Cluster'}],
         domains: [{type: ObjectId, ref: 'DomainModel'}],
         cacheMode: {type: String, enum: ['PARTITIONED', 'REPLICATED', 'LOCAL']},
-        atomicityMode: {type: String, enum: ['ATOMIC', 'TRANSACTIONAL']},
+        atomicityMode: {type: String, enum: ['ATOMIC', 'TRANSACTIONAL', 'TRANSACTIONAL_SNAPSHOT']},
         partitionLossPolicy: {
             type: String,
             enum: ['READ_ONLY_SAFE', 'READ_ONLY_ALL', 'READ_WRITE_SAFE', 'READ_WRITE_ALL', 'IGNORE']
@@ -326,7 +326,9 @@ module.exports.factory = function(mongoose) {
         memoryPolicyName: String,
         dataRegionName: String,
         sqlIndexMaxInlineSize: Number,
-        topologyValidator: String
+        topologyValidator: String,
+        diskPageCompression: {type: String, enum: ['SKIP_GARBAGE', 'ZSTD', 'LZ4', 'SNAPPY']},
+        diskPageCompressionLevel: Number
     });
 
     Cache.index({name: 1, space: 1, clusters: 1}, {unique: true});
@@ -985,6 +987,7 @@ module.exports.factory = function(mongoose) {
         consistentId: String,
         failureDetectionTimeout: Number,
         clientFailureDetectionTimeout: Number,
+        systemWorkerBlockedTimeout: Number,
         workDirectory: String,
         lateAffinityAssignment: Boolean,
         utilityCacheKeepAliveTime: Number,
@@ -1054,7 +1057,8 @@ module.exports.factory = function(mongoose) {
             fileIOFactory: {type: String, enum: ['RANDOM', 'ASYNC']},
             walAutoArchiveAfterInactivity: Number,
             writeThrottlingEnabled: Boolean,
-            walCompactionEnabled: Boolean
+            walCompactionEnabled: Boolean,
+            checkpointReadLockTimeout: Number
         },
         memoryConfiguration: {
             systemCacheInitialSize: Number,
@@ -1109,7 +1113,9 @@ module.exports.factory = function(mongoose) {
             rateTimeInterval: Number,
             tlbSize: Number,
             subIntervals: Number
-        }
+        },
+        mvccVacuumThreadCount: Number,
+        mvccVacuumFrequency: Number
     });
 
     Cluster.index({name: 1, space: 1}, {unique: true});

@@ -18,10 +18,14 @@
 package org.apache.ignite.gridify.hierarchy;
 
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Gridify hierarchy test.
  */
+@RunWith(JUnit4.class)
 public class GridifyHierarchyTest extends GridCommonAbstractTest {
     /** */
     public GridifyHierarchyTest() {
@@ -38,6 +42,7 @@ public class GridifyHierarchyTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGridifyHierarchyPrivate() throws Exception {
         Target target = new Target();
 

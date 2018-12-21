@@ -51,6 +51,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -61,6 +64,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test for distributed queries with node restarts.
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest {
     /** */
     private static final String PARTITIONED_QRY = "select co.id, count(*) cnt\n" +
@@ -199,6 +203,7 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestarts() throws Exception {
         int duration = 90 * 1000;
         int qryThreadNum = 4;

@@ -37,6 +37,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -45,6 +48,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 /**
  * Test Managers to add and remove local message listener.
  */
+@RunWith(JUnit4.class)
 public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -85,6 +89,7 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSendMessage() throws Exception {
         startGridsMultiThreaded(2);
 
@@ -121,6 +126,7 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddLocalMessageListener() throws Exception {
         startGrid();
 
@@ -136,6 +142,7 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveLocalMessageListener() throws Exception {
         startGrid();
 

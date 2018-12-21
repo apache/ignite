@@ -45,10 +45,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for weighted map-reduce planned.
  */
+@RunWith(JUnit4.class)
 public class HadoopWeightedMapReducePlannerTest extends GridCommonAbstractTest {
     /** ID 1. */
     private static final UUID ID_1 = new UUID(0, 1);
@@ -111,6 +115,7 @@ public class HadoopWeightedMapReducePlannerTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOneIgfsSplitAffinity() throws Exception {
         IgfsMock igfs = LocationsBuilder.create().add(0, NODE_1).add(50, NODE_2).add(100, NODE_3).buildIgfs();
 
@@ -139,6 +144,7 @@ public class HadoopWeightedMapReducePlannerTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testHdfsSplitsAffinity() throws Exception {
         IgfsMock igfs = LocationsBuilder.create().add(0, NODE_1).add(50, NODE_2).add(100, NODE_3).buildIgfs();
 
@@ -171,6 +177,7 @@ public class HadoopWeightedMapReducePlannerTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testHdfsSplitsReplication() throws Exception {
         IgfsMock igfs = LocationsBuilder.create().add(0, NODE_1).add(50, NODE_2).add(100, NODE_3).buildIgfs();
 

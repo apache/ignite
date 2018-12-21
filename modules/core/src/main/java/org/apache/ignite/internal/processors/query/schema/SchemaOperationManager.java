@@ -36,7 +36,6 @@ import java.util.UUID;
 /**
  * Schema operation manager.
  */
-@SuppressWarnings("ThrowableResultOfMethodCallIgnored")
 public class SchemaOperationManager {
     /** Kernal context. */
     private final GridKernalContext ctx;

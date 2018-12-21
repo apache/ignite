@@ -105,17 +105,8 @@ public class H2Schema {
         if (tbls.putIfAbsent(tbl.tableName(), tbl) != null)
             throw new IllegalStateException("Table already registered: " + tbl.fullTableName());
 
-        if (typeToTbl.putIfAbsent(new H2TypeKey(tbl.cache().name(), tbl.typeName()), tbl) != null)
+        if (typeToTbl.putIfAbsent(new H2TypeKey(tbl.cacheName(), tbl.typeName()), tbl) != null)
             throw new IllegalStateException("Table already registered: " + tbl.fullTableName());
-    }
-
-    /**
-     * @param tbl Table descriptor.
-     */
-    public void remove(H2TableDescriptor tbl) {
-        tbls.remove(tbl.tableName());
-
-        typeToTbl.remove(new H2TypeKey(tbl.cache().name(), tbl.typeName()));
     }
 
     /**
@@ -128,7 +119,7 @@ public class H2Schema {
 
         tbls.remove(tbl.tableName());
 
-        typeToTbl.remove(new H2TypeKey(tbl.cache().name(), tbl.typeName()));
+        typeToTbl.remove(new H2TypeKey(tbl.cacheName(), tbl.typeName()));
     }
 
     /**

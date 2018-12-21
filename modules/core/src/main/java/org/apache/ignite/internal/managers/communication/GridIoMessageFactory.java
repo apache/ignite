@@ -134,9 +134,12 @@ import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTxAndQ
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccActiveQueriesMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccFutureResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccQuerySnapshotRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccRecoveryFinishedMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccSnapshotResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccTxSnapshotRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccWaitTxsRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -193,6 +196,7 @@ import org.apache.ignite.spi.collision.jobstealing.JobStealingRequest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage2;
+import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
 
@@ -342,6 +346,11 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case TcpCommunicationSpi.HANDSHAKE_MSG_TYPE:
                 msg = new HandshakeMessage();
+
+                break;
+
+            case TcpCommunicationSpi.HANDSHAKE_WAIT_MSG_TYPE:
+                msg = new HandshakeWaitMessage();
 
                 break;
 
@@ -1096,7 +1105,22 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-                // [-3..119] [124..129] [-23..-27] [-36..-55]- this
+            case 164:
+                msg = new MvccRecoveryFinishedMessage();
+
+                break;
+
+            case 165:
+                msg = new PartitionCountersNeighborcastRequest();
+
+                break;
+
+            case 166:
+                msg = new PartitionCountersNeighborcastResponse();
+
+                break;
+
+            // [-3..119] [124..129] [-23..-28] [-36..-55] - this
             // [120..123] - DR
             // [-4..-22, -30..-35] - SQL
             // [2048..2053] - Snapshots

@@ -19,6 +19,9 @@ package org.apache.ignite.internal.util;
 
 import java.util.Arrays;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.util.GridArrays.clearTail;
 import static org.apache.ignite.internal.util.GridArrays.remove;
@@ -26,12 +29,14 @@ import static org.apache.ignite.internal.util.GridArrays.set;
 
 /**
  */
+@RunWith(JUnit4.class)
 public class GridArraysSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String[] EMPTY = {};
 
     /**
      */
+    @Test
     public void testSet() {
         String[] arr = set(EMPTY, 4, "aa");
 
@@ -71,6 +76,7 @@ public class GridArraysSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testClearTail() {
         String[] arr = new String[10];
 
@@ -105,6 +111,7 @@ public class GridArraysSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testRemoveLong() {
         long[] arr = {0,1,2,3,4,5,6};
 
@@ -117,6 +124,7 @@ public class GridArraysSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testRemove() {
         Integer[] arr = {0,1,2,3,4,5,6};
 

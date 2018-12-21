@@ -21,16 +21,21 @@ import java.util.concurrent.Callable;
 import junit.framework.TestCase;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests assertions in DataStorageConfiguration.
  */
+@RunWith(JUnit4.class)
 public class DataStorageConfigurationValidationTest extends TestCase {
     /**
      * Tests {@link DataStorageConfiguration#walSegmentSize} property assertion.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testWalSegmentSizeOverflow() throws Exception {
         final DataStorageConfiguration cfg = new DataStorageConfiguration();
 
@@ -46,6 +51,7 @@ public class DataStorageConfigurationValidationTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetWalSegmentSizeShouldThrowExceptionWhenSizeLessThen512Kb() throws Exception {
         final DataStorageConfiguration cfg = new DataStorageConfiguration();
 
@@ -61,6 +67,7 @@ public class DataStorageConfigurationValidationTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetWalSegmentSizeShouldBeOkWhenSizeBetween512KbAnd2Gb() throws Exception {
         final DataStorageConfiguration cfg = new DataStorageConfiguration();
 

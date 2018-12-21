@@ -22,10 +22,14 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import org.apache.ignite.jdbc.JdbcErrorsAbstractSelfTest;
 import org.apache.ignite.lang.IgniteCallable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test SQLSTATE codes propagation with thin client driver.
  */
+@RunWith(JUnit4.class)
 public class JdbcErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
     /** Path to JDBC configuration for node that is to start. */
     private static final String CFG_PATH = "modules/clients/src/test/config/jdbc-config.xml";
@@ -40,6 +44,7 @@ public class JdbcErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
      * due to <b>communication problems</b> (not due to clear misconfiguration).
      * @throws SQLException if failed.
      */
+    @Test
     public void testConnectionError() throws SQLException {
         final String path = "jdbc:ignite:сfg://cache=test@/unknown/path";
 
@@ -56,6 +61,7 @@ public class JdbcErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
      * Test error code for the case when connection string is a mess.
      * @throws SQLException if failed.
      */
+    @Test
     public void testInvalidConnectionStringFormat() throws SQLException {
         final String cfgPath = "cache=";
 

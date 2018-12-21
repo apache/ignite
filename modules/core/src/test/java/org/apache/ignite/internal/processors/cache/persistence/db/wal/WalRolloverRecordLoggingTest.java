@@ -30,6 +30,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
+import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -38,9 +39,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class WalRolloverRecordLoggingTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -50,11 +56,6 @@ public abstract class WalRolloverRecordLoggingTest extends GridCommonAbstractTes
         /** */
         private RolloverRecord() {
             super(null);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean rollOver() {
-            return true;
         }
     }
 
@@ -97,6 +98,7 @@ public abstract class WalRolloverRecordLoggingTest extends GridCommonAbstractTes
     }
 
     /** */
+    @Test
     public void testAvoidInfinityWaitingOnRolloverOfSegment() throws Exception {
         IgniteEx ig = startGrid(0);
 
@@ -142,7 +144,7 @@ public abstract class WalRolloverRecordLoggingTest extends GridCommonAbstractTes
                 dbMgr.checkpointReadLock();
 
                 try {
-                    walMgr.log(rec);
+                    walMgr.log(rec, RolloverType.NEXT_SEGMENT);
                 }
                 finally {
                     dbMgr.checkpointReadUnlock();

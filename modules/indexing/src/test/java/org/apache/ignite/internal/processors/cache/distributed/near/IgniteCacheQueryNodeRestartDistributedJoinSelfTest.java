@@ -33,11 +33,14 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for distributed queries with node restarts.
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCacheQueryAbstractDistributedJoinSelfTest {
     /** Total nodes. */
     private int totalNodes = 6;
@@ -65,6 +68,7 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestarts() throws Exception {
         restarts(false);
     }
@@ -72,6 +76,7 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartsBroadcast() throws Exception {
         restarts(true);
     }
@@ -102,11 +107,11 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
 
         assertEquals(broadcastQry, plan.contains("batched:broadcast"));
 
-        final List<List<?>> goldenRes = grid(0).cache("pu").query(qry0).getAll();
+        final List<List<?>> pRes = grid(0).cache("pu").query(qry0).getAll();
 
         Thread.sleep(3000);
 
-        assertEquals(goldenRes, grid(0).cache("pu").query(qry0).getAll());
+        assertEquals(pRes, grid(0).cache("pu").query(qry0).getAll());
 
         final SqlFieldsQuery qry1;
 
@@ -123,7 +128,7 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
 
         final List<List<?>> rRes = grid(0).cache("co").query(qry1).getAll();
 
-        assertFalse(goldenRes.isEmpty());
+        assertFalse(pRes.isEmpty());
         assertFalse(rRes.isEmpty());
 
         final AtomicInteger qryCnt = new AtomicInteger();
@@ -162,12 +167,9 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
                             qry.setPageSize(smallPageSize ? 30 : 1000);
 
                             try {
-                                assertEquals(goldenRes, cache.query(qry).getAll());
+                                assertEquals(pRes, cache.query(qry).getAll());
                             }
                             catch (CacheException e) {
-                                if (!smallPageSize)
-                                    log.error("Unexpected exception at the test", e);
-
                                 assertTrue("On large page size must retry.", smallPageSize);
 
                                 boolean failedOnRemoteFetch = false;
@@ -267,7 +269,7 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
             }
         }, restartThreadsNum, "restart-thread");
 
-        GridTestUtils.waitForCondition(() -> fail.get(), duration);
+        Thread.sleep(duration);
 
         info("Stopping...");
 

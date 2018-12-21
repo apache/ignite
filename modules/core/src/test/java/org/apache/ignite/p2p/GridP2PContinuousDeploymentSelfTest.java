@@ -29,6 +29,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -38,6 +41,7 @@ import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 /**
  * Tests for continuous deployment with cache and changing topology.
  */
+@RunWith(JUnit4.class)
 public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -114,6 +118,7 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testDeployment() throws Exception {
         startGridsMultiThreaded(GRID_CNT);
 
@@ -139,6 +144,7 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testServerJoinWithP2PClassDeployedInCluster() throws Exception {
         startGrids(GRID_CNT);
 

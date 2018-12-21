@@ -114,6 +114,7 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
         List<TreeRoot> models = null;
         try (Dataset<EmptyContext, BootstrappedDatasetPartition> dataset = datasetBuilder.build(
+            envBuilder,
             new EmptyContextBuilder<>(),
             new BootstrappedDatasetBuilder<>(featureExtractor, lbExtractor, amountOfTrees, subSampleSize))) {
 

@@ -39,10 +39,14 @@ import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Multithreaded cache API tests.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static final Random RND = new Random();
@@ -163,6 +167,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testContainsKey() throws Exception {
         runTest(new CI1<IgniteCache<String, Integer>>() {
             @Override public void apply(IgniteCache<String, Integer> cache) {
@@ -175,6 +180,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGet() throws Exception {
         runTest(new CIX1<IgniteCache<String, Integer>>() {
             @Override public void applyx(IgniteCache<String, Integer> cache) {
@@ -189,6 +195,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGetAsyncOld() throws Exception {
         runTest(new CIX1<IgniteCache<String, Integer>>() {
             @Override public void applyx(IgniteCache<String, Integer> cache) {
@@ -210,6 +217,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGetAsync() throws Exception {
         runTest(new CIX1<IgniteCache<String, Integer>>() {
             @Override public void applyx(IgniteCache<String, Integer> cache) {
@@ -225,6 +233,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGetAll() throws Exception {
         runTest(new CIX1<IgniteCache<String, Integer>>() {
             @Override public void applyx(IgniteCache<String, Integer> cache) {
@@ -243,6 +252,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGetAllAsyncOld() throws Exception {
         runTest(new CIX1<IgniteCache<String, Integer>>() {
             @Override public void applyx(IgniteCache<String, Integer> cache) {
@@ -265,6 +275,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGetAllAsync() throws Exception {
         runTest(new CIX1<IgniteCache<String, Integer>>() {
             @Override public void applyx(IgniteCache<String, Integer> cache) {
@@ -283,6 +294,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testRemove() throws Exception {
         runTest(new CIX1<IgniteCache<String, Integer>>() {
             @Override public void applyx(IgniteCache<String, Integer> cache) {
@@ -314,6 +326,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testRemoveAsyncOld() throws Exception {
         runTest(new CIX1<IgniteCache<String, Integer>>() {
             @Override public void applyx(IgniteCache<String, Integer> cache) {
@@ -352,6 +365,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testRemoveAsync() throws Exception {
         runTest(new CIX1<IgniteCache<String, Integer>>() {
             @Override public void applyx(IgniteCache<String, Integer> cache) {
@@ -384,6 +398,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testRemoveAll() throws Exception {
         runTest(new CIX1<IgniteCache<String, Integer>>() {
             @Override public void applyx(IgniteCache<String, Integer> cache) {
@@ -404,6 +419,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testRemoveAllAsyncOld() throws Exception {
         runTest(new CIX1<IgniteCache<String, Integer>>() {
             @Override public void applyx(IgniteCache<String, Integer> cache) {
@@ -428,6 +444,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testRemoveAllAsync() throws Exception {
         runTest(new CIX1<IgniteCache<String, Integer>>() {
             @Override public void applyx(IgniteCache<String, Integer> cache) {

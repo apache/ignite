@@ -124,7 +124,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** Alive check time (used by clients). */
     @GridToStringExclude
-    private transient long aliveCheckTime;
+    private transient volatile long aliveCheckTime;
 
     /** Client router node ID. */
     @GridToStringExclude
@@ -240,7 +240,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T attribute(String name) {
         // Even though discovery SPI removes this attribute after authentication, keep this check for safety.
         if (IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS.equals(name))
@@ -497,6 +496,13 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         assert isClient() : this;
 
         this.aliveCheckTime = U.currentTimeMillis() + aliveTime;
+    }
+
+    /**
+     * @return Client alive check time.
+     */
+    public long clientAliveTime() {
+        return aliveCheckTime;
     }
 
     /**

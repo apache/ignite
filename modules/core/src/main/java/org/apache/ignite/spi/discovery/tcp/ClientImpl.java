@@ -305,6 +305,11 @@ class ClientImpl extends TcpDiscoveryImpl {
             }
         }.start();
 
+        timer.schedule(
+            new MetricsSender(),
+            spi.metricsUpdateFreq,
+            spi.metricsUpdateFreq);
+
         try {
             joinLatch.await();
 
@@ -316,11 +321,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         catch (InterruptedException e) {
             throw new IgniteSpiException("Thread has been interrupted.", e);
         }
-
-        timer.schedule(
-            new MetricsSender(),
-            spi.metricsUpdateFreq,
-            spi.metricsUpdateFreq);
 
         spi.printStartInfo();
     }
@@ -541,7 +541,6 @@ class ClientImpl extends TcpDiscoveryImpl {
      * @throws IgniteSpiException If failed.
      * @see TcpDiscoverySpi#joinTimeout
      */
-    @SuppressWarnings("BusyWait")
     @Nullable private T2<SocketStream, Boolean> joinTopology(
         InetSocketAddress prevAddr,
         long timeout,
@@ -732,7 +731,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     TcpDiscoveryNode node = locNode;
 
                     if (locNode.order() > 0) {
-                        node = locNode.clientReconnectNode(spi.spiCtx.nodeAttributes());
+                        node = locNode.clientReconnectNode(spi.locNodeAttrs);
 
                         marshalCredentials(node);
                     }
@@ -1653,7 +1652,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("InfiniteLoopStatement")
         @Override protected void body() throws InterruptedException {
             state = STARTING;
 

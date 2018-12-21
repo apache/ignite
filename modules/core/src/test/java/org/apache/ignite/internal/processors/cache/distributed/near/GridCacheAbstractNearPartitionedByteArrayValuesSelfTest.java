@@ -29,4 +29,18 @@ public abstract class GridCacheAbstractNearPartitionedByteArrayValuesSelfTest ex
     @Override protected NearCacheConfiguration nearConfiguration() {
         return new NearCacheConfiguration();
     }
+
+    /** {@inheritDoc} */
+    @Override public void testPessimisticMvcc() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+
+        super.testPessimisticMvcc();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testPessimisticMvccMixed() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+
+        super.testPessimisticMvccMixed();
+    }
 }

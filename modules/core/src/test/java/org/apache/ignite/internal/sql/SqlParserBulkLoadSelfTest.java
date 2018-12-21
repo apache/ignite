@@ -17,11 +17,17 @@
 
 package org.apache.ignite.internal.sql;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
 /**
  * Tests for SQL parser: COPY command.
  */
+@RunWith(JUnit4.class)
 public class SqlParserBulkLoadSelfTest extends SqlParserAbstractSelfTest {
     /** Tests for COPY command. */
+    @Test
     public void testCopy() {
         assertParseError(null,
             "copy grom 'any.file' into Person (_key, age, firstName, lastName) format csv",

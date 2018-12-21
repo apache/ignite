@@ -28,9 +28,13 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager.TOP_VER_BASE_TIME;
@@ -38,6 +42,7 @@ import static org.apache.ignite.internal.processors.cache.version.GridCacheVersi
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -70,6 +75,7 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionAtomic() throws Exception {
         atomicityMode = ATOMIC;
 
@@ -79,8 +85,19 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionTransactional() throws Exception {
         atomicityMode = TRANSACTIONAL;
+
+        checkVersion();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testVersionMvccTx() throws Exception {
+        atomicityMode = TRANSACTIONAL_SNAPSHOT;
 
         checkVersion();
     }

@@ -28,9 +28,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFilter;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -358,8 +359,9 @@ public interface GridCacheEntryEx {
      * @param topVer Topology version.
      * @param mvccVer Mvcc version.
      * @param op Cache operation.
-     * @param needHistory Whether to collect rows created or affected by the current tx.
+     * @param needHist Whether to collect rows created or affected by the current tx.
      * @param noCreate Entry should not be created when enabled, e.g. SQL INSERT.
+     * @param needOldVal Flag if it is need to return the old value (value before current tx has been started).
      * @param filter Filter.
      * @param retVal Previous value return flag.
      * @return Tuple containing success flag and old value. If success is {@code false},
@@ -377,8 +379,9 @@ public interface GridCacheEntryEx {
         AffinityTopologyVersion topVer,
         MvccSnapshot mvccVer,
         GridCacheOperation op,
-        boolean needHistory,
+        boolean needHist,
         boolean noCreate,
+        boolean needOldVal,
         @Nullable CacheEntryPredicate filter,
         boolean retVal) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
@@ -387,7 +390,8 @@ public interface GridCacheEntryEx {
      * @param affNodeId Partitioned node iD.
      * @param topVer Topology version.
      * @param mvccVer Mvcc version.
-     * @param needHistory Whether to collect rows created or affected by the current tx.
+     * @param needHist Whether to collect rows created or affected by the current tx.
+     * @param needOldValue Flag if it is need to return the old value (value before current tx has been started).
      * @param filter Filter.
      * @param retVal Previous value return flag.
      * @return Tuple containing success flag and old value. If success is {@code false},
@@ -400,7 +404,8 @@ public interface GridCacheEntryEx {
         UUID affNodeId,
         AffinityTopologyVersion topVer,
         MvccSnapshot mvccVer,
-        boolean needHistory,
+        boolean needHist,
+        boolean needOldValue,
         @Nullable CacheEntryPredicate filter,
         boolean retVal) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
@@ -708,6 +713,16 @@ public interface GridCacheEntryEx {
     public boolean checkSerializableReadVersion(GridCacheVersion serReadVer) throws GridCacheEntryRemovedException;
 
     /**
+     * Retrieves the last committed MVCC entry version.
+     * @param onheapOnly {@code True} if a specified peek mode instructs to look only in the on-heap storage.
+     * @return Last committed entry if either or {@code null} otherwise.
+     * @throws GridCacheEntryRemovedException If entry has been removed.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public CacheObject mvccPeek(boolean onheapOnly)
+        throws GridCacheEntryRemovedException, IgniteCheckedException;
+
+    /**
      * Peeks into entry without loading value or updating statistics.
      *
      * @param heap Read from heap flag.
@@ -727,12 +742,11 @@ public interface GridCacheEntryEx {
     /**
      * Peeks into entry without loading value or updating statistics.
      *
-     * @param plc Expiry policy if TTL should be updated.
      * @return Value.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public CacheObject peek(@Nullable IgniteCacheExpiryPolicy plc)
+    @Nullable public CacheObject peek()
         throws GridCacheEntryRemovedException, IgniteCheckedException;
 
     /**
@@ -1171,8 +1185,12 @@ public interface GridCacheEntryEx {
      * @param tx Transaction.
      * @param affNodeId Affinity node id.
      * @param topVer Topology version.
+     * @param entries Entries.
      * @param op Cache operation.
-     * @param mvccVer Mvcc version.  @return Update result.
+     * @param mvccVer Mvcc version.
+     * @param futId Future id.
+     * @param batchNum Batch number.
+     * @return Update result.
      * @throws IgniteCheckedException, If failed.
      * @throws GridCacheEntryRemovedException, If entry has been removed.
      */
@@ -1182,7 +1200,9 @@ public interface GridCacheEntryEx {
         AffinityTopologyVersion topVer,
         List<GridCacheEntryInfo> entries,
         GridCacheOperation op,
-        MvccSnapshot mvccVer)
+        MvccSnapshot mvccVer,
+        IgniteUuid futId,
+        int batchNum)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**

@@ -30,8 +30,12 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -43,6 +47,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Near-only cache node startup test.
  */
+@RunWith(JUnit4.class)
 public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
     /** Shared ip finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -52,6 +57,11 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
 
     /** Use cache flag. */
     private boolean cache = true;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -82,31 +92,37 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testStartupFirstOneNode() throws Exception {
         checkStartupNearNode(0, 2);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testStartupLastOneNode() throws Exception {
         checkStartupNearNode(1, 2);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testStartupFirstTwoNodes() throws Exception {
         checkStartupNearNode(0, 3);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testStartupInMiddleTwoNodes() throws Exception {
         checkStartupNearNode(1, 3);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testStartupLastTwoNodes() throws Exception {
         checkStartupNearNode(2, 3);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testKeyMapping() throws Exception {
         try {
             cache = true;
@@ -129,6 +145,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testKeyMappingOnComputeNode() throws Exception {
         try {
             cache = true;
@@ -160,6 +177,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testNodeLeave() throws Exception {
         try {
             cache = true;

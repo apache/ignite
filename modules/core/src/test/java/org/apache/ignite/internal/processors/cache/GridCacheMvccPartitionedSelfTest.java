@@ -30,6 +30,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -37,6 +40,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * Test cases for multi-threaded tests in partitioned cache.
  */
+@RunWith(JUnit4.class)
 public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
     /** */
     private static final UUID nodeId = UUID.randomUUID();
@@ -88,6 +92,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
     /**
      * Tests remote candidates.
      */
+    @Test
     public void testNearLocalsWithPending() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -122,6 +127,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
     /**
      * Tests remote candidates.
      */
+    @Test
     public void testNearLocalsWithCommitted() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -155,6 +161,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
     /**
      * Tests remote candidates.
      */
+    @Test
     public void testNearLocalsWithRolledback() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -188,6 +195,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
     /**
      * Tests remote candidates.
      */
+    @Test
     public void testNearLocals() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -218,6 +226,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
     /**
      * Tests remote candidates.
      */
+    @Test
     public void testNearLocalsWithOwned() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -257,6 +266,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddPendingRemote0() throws Exception {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -289,6 +299,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddPendingRemote1() throws Exception {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -332,6 +343,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddPendingRemote2() throws Exception {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -376,6 +388,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
     /**
      * Tests salvageRemote method
      */
+    @Test
     public void testSalvageRemote() {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -434,6 +447,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearRemoteConsistentOrdering0() throws Exception {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -472,6 +486,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearRemoteConsistentOrdering1() throws Exception {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -517,6 +532,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearRemoteConsistentOrdering2() throws Exception {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -562,6 +578,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearRemoteConsistentOrdering3() throws Exception {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -601,6 +618,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSerializableReadLocksAdd() throws Exception {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -678,6 +696,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSerializableReadLocksAssign() throws Exception {
         GridCacheAdapter<String, String> cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
@@ -817,6 +836,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSerializableLocks() throws Exception {
         checkSerializableAdd(false);
 

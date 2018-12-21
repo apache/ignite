@@ -35,12 +35,16 @@ import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 
 /**
  * Test marshaller context.
  */
+@RunWith(JUnit4.class)
 public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
     /** Inner logger. */
     private InnerLogger innerLog;
@@ -73,6 +77,7 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
     /**
      * Multithreaded test, used custom class loader
      */
+    @Test
     public void testMultithreadedUpdate() throws Exception {
         multithreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {

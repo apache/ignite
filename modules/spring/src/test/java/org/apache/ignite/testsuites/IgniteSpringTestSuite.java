@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.cache.spring.GridSpringCacheManagerMultiJvmSelfTest;
 import org.apache.ignite.cache.spring.GridSpringCacheManagerSelfTest;
@@ -57,51 +58,51 @@ public class IgniteSpringTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new IgniteTestSuite("Spring Test Suite");
 
-        suite.addTestSuite(GridSpringBeanSerializationSelfTest.class);
-        suite.addTestSuite(IgniteSpringBeanTest.class);
-        suite.addTestSuite(GridFactorySelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridSpringBeanSerializationSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteSpringBeanTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridFactorySelfTest.class));
 
         suite.addTest(IgniteResourceSelfTestSuite.suite());
 
-        suite.addTestSuite(IgniteExcludeInConfigurationTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteExcludeInConfigurationTest.class));
 
         // Tests moved to this suite since they require Spring functionality.
-        suite.addTestSuite(GridP2PUserVersionChangeSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridP2PUserVersionChangeSelfTest.class));
 
-        suite.addTestSuite(GridSpringCacheManagerSelfTest.class);
-        suite.addTestSuite(GridSpringCacheManagerSpringBeanSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridSpringCacheManagerSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridSpringCacheManagerSpringBeanSelfTest.class));
 
-        suite.addTestSuite(IgniteDynamicCacheConfigTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteDynamicCacheConfigTest.class));
 
-        suite.addTestSuite(IgniteStartFromStreamConfigurationTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteStartFromStreamConfigurationTest.class));
 
-        suite.addTestSuite(CacheSpringStoreSessionListenerSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheSpringStoreSessionListenerSelfTest.class));
 
-        suite.addTestSuite(CacheJdbcBlobStoreFactorySelfTest.class);
-        suite.addTestSuite(CacheJdbcPojoStoreFactorySelfTest.class);
-        suite.addTestSuite(CachePojoStoreXmlSelfTest.class);
-        suite.addTestSuite(CachePojoStoreXmlWithSqlEscapeSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheJdbcBlobStoreFactorySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheJdbcPojoStoreFactorySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(CachePojoStoreXmlSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(CachePojoStoreXmlWithSqlEscapeSelfTest.class));
 
-        suite.addTestSuite(GridSpringTransactionManagerSelfTest.class);
-        suite.addTestSuite(GridSpringTransactionManagerSpringBeanSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridSpringTransactionManagerSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridSpringTransactionManagerSpringBeanSelfTest.class));
 
-        suite.addTestSuite(GridServiceInjectionSpringResourceTest.class);
-        suite.addTestSuite(IgniteSpringBeanSpringResourceInjectionTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridServiceInjectionSpringResourceTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteSpringBeanSpringResourceInjectionTest.class));
 
-        suite.addTestSuite(GridTransformSpringInjectionSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridTransformSpringInjectionSelfTest.class));
 
-        suite.addTestSuite(SpringCacheManagerContextInjectionTest.class);
-        suite.addTestSuite(SpringTransactionManagerContextInjectionTest.class);
+        suite.addTest(new JUnit4TestAdapter(SpringCacheManagerContextInjectionTest.class));
+        suite.addTest(new JUnit4TestAdapter(SpringTransactionManagerContextInjectionTest.class));
 
-        suite.addTestSuite(SpringCacheTest.class);
+        suite.addTest(new JUnit4TestAdapter(SpringCacheTest.class));
 
-        suite.addTestSuite(SpringEncryptedCacheRestartTest.class);
-        suite.addTestSuite(SpringEncryptedCacheRestartClientTest.class);
+        suite.addTest(new JUnit4TestAdapter(SpringEncryptedCacheRestartTest.class));
+        suite.addTest(new JUnit4TestAdapter(SpringEncryptedCacheRestartClientTest.class));
 
-        //suite.addTestSuite(GridSpringCacheManagerMultiJvmSelfTest.class);
-        suite.addTestSuite(GridSpringCacheManagerMultiJvmSelfTest.class);
+        //suite.addTest(new JUnit4TestAdapter(GridSpringCacheManagerMultiJvmSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridSpringCacheManagerMultiJvmSelfTest.class));
 
-        suite.addTestSuite(GridCommandLineLoaderTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridCommandLineLoaderTest.class));
 
         return suite;
     }

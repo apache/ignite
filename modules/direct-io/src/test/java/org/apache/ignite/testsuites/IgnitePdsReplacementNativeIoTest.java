@@ -18,10 +18,14 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsPageReplacementTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Page replacement light variant of test for native direct IO (wastes real IOPs on agents)
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsReplacementNativeIoTest extends IgnitePdsPageReplacementTest {
 
     /** {@inheritDoc} */
@@ -36,6 +40,7 @@ public class IgnitePdsReplacementNativeIoTest extends IgnitePdsPageReplacementTe
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testPageReplacement() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, "false");
 

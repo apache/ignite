@@ -19,10 +19,8 @@ package org.apache.ignite.internal.processors.cache.store;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.processor.EntryProcessor;
@@ -37,15 +35,18 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /**
  * This class provides non write coalescing tests for {@link org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore}.
  */
+@RunWith(JUnit4.class)
 public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCacheAbstractTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -83,6 +84,7 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNonCoalescingIncrementing() throws Exception {
         Ignite ignite = grid(0);
 

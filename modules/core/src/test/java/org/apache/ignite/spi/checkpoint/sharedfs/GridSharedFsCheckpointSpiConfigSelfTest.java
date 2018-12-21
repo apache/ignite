@@ -20,15 +20,20 @@ package org.apache.ignite.spi.checkpoint.sharedfs;
 import java.util.LinkedList;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Grid shared file system checkpoint SPI config self test.
  */
 @GridSpiTest(spi = SharedFsCheckpointSpi.class, group = "Checkpoint SPI")
+@RunWith(JUnit4.class)
 public class GridSharedFsCheckpointSpiConfigSelfTest extends GridSpiAbstractConfigTest<SharedFsCheckpointSpi> {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeConfig() throws Exception {
         checkNegativeSpiProperty(new SharedFsCheckpointSpi(), "directoryPaths", null);
         checkNegativeSpiProperty(new SharedFsCheckpointSpi(), "directoryPaths", new LinkedList<String>());

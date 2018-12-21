@@ -34,10 +34,14 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class DdlTransactionSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -84,6 +88,7 @@ public class DdlTransactionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxIsCommittedOnDdlRequestMultinodeClient() throws Exception {
         startGridsMultiThreaded(4, false);
 
@@ -132,6 +137,7 @@ public class DdlTransactionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxIsCommittedOnDdlRequestMultinode() throws Exception {
         Ignite node = startGridsMultiThreaded(4);
 
@@ -174,6 +180,7 @@ public class DdlTransactionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxIsCommittedOnDdlRequest() throws Exception {
         Ignite node = startGrid();
 
@@ -216,6 +223,7 @@ public class DdlTransactionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDdlRequestWithoutTxMultinodeClient() throws Exception {
         startGridsMultiThreaded(4, false);
 
@@ -260,6 +268,7 @@ public class DdlTransactionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDdlRequestWithoutTxMultinode() throws Exception {
         Ignite node = startGridsMultiThreaded(4);
 
@@ -298,6 +307,7 @@ public class DdlTransactionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDdlRequestWithoutTx() throws Exception {
         Ignite node = startGrid();
 

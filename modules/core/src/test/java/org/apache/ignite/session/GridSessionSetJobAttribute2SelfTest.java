@@ -35,11 +35,15 @@ import org.apache.ignite.compute.ComputeTaskSessionFullSupport;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Job attribute test.
  */
 @GridCommonTest(group = "Task Session")
+@RunWith(JUnit4.class)
 public class GridSessionSetJobAttribute2SelfTest extends GridCommonAbstractTest {
     /** */
     private static final String TEST_ATTR_KEY = "grid.tasksession.test.attr";
@@ -52,6 +56,7 @@ public class GridSessionSetJobAttribute2SelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJobSetAttribute() throws Exception {
         try {
             Ignite ignite1 = startGrid(1);

@@ -42,6 +42,9 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
@@ -57,10 +60,12 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * TODO IGNITE-6739: dynamic index create.
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxSql_SingleNode_SinglePartition() throws Exception {
         accountsTxReadAll(1, 0, 0, 1,
             new InitIndexing(Integer.class, MvccTestAccount.class), false, SQL, PUT);
@@ -69,6 +74,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxSql_WithRemoves_SingleNode_SinglePartition() throws Exception {
         accountsTxReadAll(1, 0, 0, 1,
             new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL, PUT);
@@ -77,6 +83,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxSql_SingleNode() throws Exception {
         accountsTxReadAll(1, 0, 0, 64,
             new InitIndexing(Integer.class, MvccTestAccount.class), false, SQL, PUT);
@@ -85,6 +92,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxSql_SingleNode_Persistence() throws Exception {
         persistence = true;
 
@@ -94,6 +102,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxSumSql_SingleNode() throws Exception {
         accountsTxReadAll(1, 0, 0, 64,
             new InitIndexing(Integer.class, MvccTestAccount.class), false, SQL_SUM, PUT);
@@ -102,6 +111,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxSql_WithRemoves_SingleNode() throws Exception {
         accountsTxReadAll(1, 0, 0, 64,
             new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL, PUT);
@@ -110,6 +120,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxSql_WithRemoves_SingleNode_Persistence() throws Exception {
         persistence = true;
 
@@ -119,6 +130,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxSql_ClientServer_Backups2() throws Exception {
         accountsTxReadAll(4, 2, 2, 64,
             new InitIndexing(Integer.class, MvccTestAccount.class), false, SQL, PUT);
@@ -127,6 +139,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateSingleValue_SingleNode() throws Exception {
         updateSingleValue(true, false);
     }
@@ -134,6 +147,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateSingleValue_LocalQuery_SingleNode() throws Exception {
         updateSingleValue(true, true);
     }
@@ -141,6 +155,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateSingleValue_ClientServer() throws Exception {
         updateSingleValue(false, false);
     }
@@ -355,6 +370,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinTransactional_SingleNode() throws Exception {
         joinTransactional(true, false);
     }
@@ -362,6 +378,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinTransactional_ClientServer() throws Exception {
         joinTransactional(false, false);
     }
@@ -369,6 +386,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinTransactional_DistributedJoins_ClientServer() throws Exception {
         joinTransactional(false, true);
     }
@@ -524,6 +542,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinTransactional_DistributedJoins_ClientServer2() throws Exception {
         final int KEYS = 100;
 
@@ -632,6 +651,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedJoinSimple() throws Exception {
         startGridsMultiThreaded(4);
 
@@ -693,6 +713,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheRecreate() throws Exception {
         cacheRecreate(new InitIndexing(Integer.class, MvccTestAccount.class));
     }
@@ -700,6 +721,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheRecreateChangeIndexedType() throws Exception {
         Ignite srv0 = startGrid(0);
 
@@ -775,6 +797,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testChangeValueType1() throws Exception {
         Ignite srv0 = startGrid(0);
 
@@ -802,6 +825,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testChangeValueType2() throws Exception {
         Ignite srv0 = startGrid(0);
 
@@ -833,6 +857,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCountTransactional_SingleNode() throws Exception {
         countTransactional(true);
     }
@@ -840,6 +865,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCountTransactional_ClientServer() throws Exception {
         countTransactional(false);
     }
@@ -979,6 +1005,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxMinTransactional_SingleNode() throws Exception {
         maxMinTransactional(true);
     }
@@ -986,6 +1013,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxMinTransactional_ClientServer() throws Exception {
         maxMinTransactional(false);
     }
@@ -1140,6 +1168,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSqlQueriesWithMvcc() throws Exception {
         Ignite srv0 = startGrid(0);
 
@@ -1243,6 +1272,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSqlSimple() throws Exception {
         startGrid(0);
 
@@ -1310,6 +1340,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSqlSimplePutRemoveRandom() throws Exception {
         startGrid(0);
 

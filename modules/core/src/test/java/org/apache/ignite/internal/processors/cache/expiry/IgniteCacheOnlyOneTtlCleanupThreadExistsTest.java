@@ -21,11 +21,15 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Checks that one and only one Ttl cleanup worker thread must exists, and only
  * if at least one cache with set 'eagerTtl' flag exists.
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheOnlyOneTtlCleanupThreadExistsTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME1 = "cache-1";
@@ -36,6 +40,7 @@ public class IgniteCacheOnlyOneTtlCleanupThreadExistsTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOnlyOneTtlCleanupThreadExists() throws Exception {
         try (final Ignite g = startGrid(0)) {
             checkCleanupThreadExists(false);

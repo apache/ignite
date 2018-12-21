@@ -23,10 +23,14 @@ import java.util.Random;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests off-heap map.
  */
+@RunWith(JUnit4.class)
 public abstract class GridOffHeapMapPerformanceAbstractTest extends GridCommonAbstractTest {
     /** Random. */
     private static final Random RAND = new Random();
@@ -133,6 +137,7 @@ public abstract class GridOffHeapMapPerformanceAbstractTest extends GridCommonAb
     /**
      * Test plain hash map.
      */
+    @Test
     public void testHashMapPutRemove() {
         Map<String, String> map = new HashMap<>(LOAD_CNT);
 
@@ -187,6 +192,7 @@ public abstract class GridOffHeapMapPerformanceAbstractTest extends GridCommonAb
     /**
      *
      */
+    @Test
     public void testInsertRemoveLoad() {
         info("Starting insert performance test...");
 
@@ -240,6 +246,7 @@ public abstract class GridOffHeapMapPerformanceAbstractTest extends GridCommonAb
     /**
      *
      */
+    @Test
     public void testPutRemoveLoad() {
         info("Starting put performance test...");
 

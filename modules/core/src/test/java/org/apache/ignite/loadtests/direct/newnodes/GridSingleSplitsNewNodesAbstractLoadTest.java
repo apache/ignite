@@ -29,11 +29,15 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Base class for single split on new nodes tests.
  */
 @GridCommonTest(group = "Load Test")
+@RunWith(JUnit4.class)
 public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommonAbstractTest {
     /**
      * @param cfg Current configuration.
@@ -42,7 +46,6 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
     protected abstract DiscoverySpi getDiscoverySpi(IgniteConfiguration cfg);
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -88,6 +91,7 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
      *
      * @throws Exception If task execution failed.
      */
+    @Test
     public void testLoad() throws Exception {
         final Ignite ignite = startGrid(getTestIgniteInstanceName());
 

@@ -36,9 +36,13 @@ import org.hibernate.Transaction;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.service.ServiceRegistryBuilder;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.cache.hibernate.HibernateAccessStrategyFactory.DFLT_CACHE_NAME_PROPERTY;
 import static org.apache.ignite.cache.hibernate.HibernateL2CacheSelfTest.CONNECTION_URL;
 import static org.apache.ignite.cache.hibernate.HibernateL2CacheSelfTest.hibernateProperties;
 import static org.hibernate.cache.spi.access.AccessType.NONSTRICT_READ_WRITE;
@@ -46,9 +50,10 @@ import static org.hibernate.cache.spi.access.AccessType.NONSTRICT_READ_WRITE;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class HibernateL2CacheMultiJvmTest extends GridCommonAbstractTest {
     /** */
-    private static final String CACHE_NAME = "hibernateCache";
+    private static final String TIMESTAMP_CACHE = "org.hibernate.cache.spi.UpdateTimestampsCache";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -57,17 +62,26 @@ public class HibernateL2CacheMultiJvmTest extends GridCommonAbstractTest {
         if (!getTestIgniteInstanceName(0).equals(igniteInstanceName))
             cfg.setClientMode(true);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
-
-        ccfg.setName(CACHE_NAME);
-        ccfg.setWriteSynchronizationMode(FULL_SYNC);
-
-        cfg.setCacheConfiguration(ccfg);
+        cfg.setCacheConfiguration(
+            cacheConfiguration(TIMESTAMP_CACHE),
+            cacheConfiguration(Entity1.class.getName()),
+            cacheConfiguration(Entity2.class.getName()),
+            cacheConfiguration(Entity3.class.getName())
+        );
 
         cfg.setMarshaller(new BinaryMarshaller());
 
         cfg.setPeerClassLoadingEnabled(false);
 
+        return cfg;
+    }
+
+    private CacheConfiguration cacheConfiguration(String cacheName) {
+        CacheConfiguration cfg = new CacheConfiguration();
+        cfg.setName(cacheName);
+        cfg.setCacheMode(PARTITIONED);
+        cfg.setAtomicityMode(ATOMIC);
+        cfg.setWriteSynchronizationMode(FULL_SYNC);
         return cfg;
     }
 
@@ -89,6 +103,7 @@ public class HibernateL2CacheMultiJvmTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testL2Cache() throws Exception {
         Ignite srv = ignite(0);
 
@@ -240,8 +255,6 @@ public class HibernateL2CacheMultiJvmTest extends GridCommonAbstractTest {
 
             for (Map.Entry<String, String> e : hibernateProperties(nodeName, NONSTRICT_READ_WRITE.name()).entrySet())
                 cfg.setProperty(e.getKey(), e.getValue());
-
-            cfg.setProperty(DFLT_CACHE_NAME_PROPERTY, CACHE_NAME);
 
             return cfg;
         }

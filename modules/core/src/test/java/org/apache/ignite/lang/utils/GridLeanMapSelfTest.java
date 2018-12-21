@@ -25,17 +25,22 @@ import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link GridLeanMap}.
  */
 @GridCommonTest(group = "Lang")
+@RunWith(JUnit4.class)
 public class GridLeanMapSelfTest extends GridCommonAbstractTest {
     /**
      * JUnit.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultMap() throws Exception {
         Map<String, String> map = new GridLeanMap<>();
 
@@ -102,7 +107,7 @@ public class GridLeanMapSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
+    @Test
     public void testEmptyMap() throws Exception {
         Map<String, String> map = new GridLeanMap<>(0);
 
@@ -169,6 +174,7 @@ public class GridLeanMapSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOneEntryMap() throws Exception {
         Map<String, String> map = new GridLeanMap<>(0);
 
@@ -224,6 +230,7 @@ public class GridLeanMapSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMapPutSameKey() throws Exception {
         Map<String, String> map = new GridLeanMap<>(0);
 
@@ -242,6 +249,7 @@ public class GridLeanMapSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleEntriesMap() throws Exception {
         Map<String, String> map = new GridLeanMap<>(0);
 
@@ -333,6 +341,7 @@ public class GridLeanMapSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMapRemove() throws Exception {
         Map<String, String> map = new GridLeanMap<>(0);
 
@@ -387,6 +396,7 @@ public class GridLeanMapSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMapClear() throws Exception {
         Map<String, String> map = new GridLeanMap<>();
 
@@ -408,6 +418,7 @@ public class GridLeanMapSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEntrySet() throws Exception {
         Map<String, String> map = new GridLeanMap<>();
 
@@ -460,6 +471,7 @@ public class GridLeanMapSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testWithInitSize1() throws Exception {
         // Batch mode.
         Map<String, String> map = new GridLeanMap<>(4);
@@ -528,6 +540,7 @@ public class GridLeanMapSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testWithInitSize2() throws Exception {
         // Batch mode.
         Map<String, String> map = new GridLeanMap<>(10);

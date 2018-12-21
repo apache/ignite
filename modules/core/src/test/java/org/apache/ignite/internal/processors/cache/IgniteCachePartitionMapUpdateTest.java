@@ -32,12 +32,16 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteCachePartitionMapUpdateTest extends GridCommonAbstractTest {
     /** */
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -115,6 +119,7 @@ public class IgniteCachePartitionMapUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionMapUpdate1() throws Exception {
         cache1 = false;
         cache2 = false;
@@ -156,6 +161,7 @@ public class IgniteCachePartitionMapUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionMapUpdate2() throws Exception {
         startClientCache = true;
 
@@ -165,6 +171,7 @@ public class IgniteCachePartitionMapUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandom() throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -202,6 +209,7 @@ public class IgniteCachePartitionMapUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandom2() throws Exception {
         startClientCache = true;
 

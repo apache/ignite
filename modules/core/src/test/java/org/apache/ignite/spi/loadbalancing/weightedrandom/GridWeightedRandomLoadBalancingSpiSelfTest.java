@@ -27,17 +27,22 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Weighted random load balancing SPI.
  */
 @GridSpiTest(spi = WeightedRandomLoadBalancingSpi.class, group = "Load Balancing SPI")
+@RunWith(JUnit4.class)
 public class GridWeightedRandomLoadBalancingSpiSelfTest extends
     GridSpiAbstractTest<WeightedRandomLoadBalancingSpi> {
     /**
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ObjectEquality"})
+    @Test
     public void testSingleNode() throws Exception {
         List<ClusterNode> nodes = Collections.singletonList((ClusterNode)new GridTestNode(UUID.randomUUID()));
 
@@ -54,6 +59,7 @@ public class GridWeightedRandomLoadBalancingSpiSelfTest extends
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleNodes() throws Exception {
         List<ClusterNode> nodes = new ArrayList<>();
 

@@ -24,8 +24,12 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -37,6 +41,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Test ensuring that PRIMARY_SYNC mode works correctly.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbstractTest {
     /** Grids count. */
     private static final int GRID_CNT = 3;
@@ -75,6 +80,12 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
         startGrids(GRID_CNT);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        if (nearConfiguration() != null)
+            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+    }
+
     /**
      * @return Distribution mode.
      */
@@ -83,6 +94,7 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimarySync() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
             for (int j = 0; j < GRID_CNT; j++) {

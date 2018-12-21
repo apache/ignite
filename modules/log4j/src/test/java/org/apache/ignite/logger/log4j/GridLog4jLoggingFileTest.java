@@ -18,24 +18,26 @@
 package org.apache.ignite.logger.log4j;
 
 import java.io.File;
-import junit.framework.TestCase;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * Grid Log4j SPI test.
  */
 @GridCommonTest(group = "Logger")
-public class GridLog4jLoggingFileTest extends TestCase {
+public class GridLog4jLoggingFileTest {
     /** */
     private IgniteLogger log;
 
     /** Logger config */
     private File xml;
 
-    /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    /** TODO IGNITE-10177 add annotation @Before here. */
+    private void setUp() throws Exception {
         xml = GridTestUtils.resolveIgnitePath("modules/core/src/test/config/log4j-test.xml");
 
         assert xml != null;
@@ -47,7 +49,10 @@ public class GridLog4jLoggingFileTest extends TestCase {
     /**
      * Tests log4j logging SPI.
      */
-    public void testLog() {
+    @Test
+    public void testLog() throws Exception {
+        setUp();
+
         System.out.println(log.toString());
 
         assertTrue(log.toString().contains("Log4JLogger"));

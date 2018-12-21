@@ -52,7 +52,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                 PageSize = 999,
                 EnforceJoinOrder = true,
                 Timeout = TimeSpan.FromSeconds(2.5),
+#pragma warning disable 618
                 ReplicatedOnly = true,
+#pragma warning restore 618
                 Colocated = true,
                 Lazy = true
             }).Where(x => x.Key > 10).ToCacheQueryable();
@@ -76,7 +78,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             Assert.AreEqual(999, fq.PageSize);
             Assert.IsFalse(fq.EnableDistributedJoins);
             Assert.IsTrue(fq.EnforceJoinOrder);
+#pragma warning disable 618
             Assert.IsTrue(fq.ReplicatedOnly);
+#pragma warning restore 618
             Assert.IsTrue(fq.Colocated);
             Assert.AreEqual(TimeSpan.FromSeconds(2.5), fq.Timeout);
             Assert.IsTrue(fq.Lazy);
@@ -103,8 +107,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 #pragma warning restore 618 // Type or member is obsolete
 
             fq = fieldsQuery.GetFieldsQuery();
-	        fq.Lazy = false;
-
             Assert.AreEqual(GetSqlEscapeAll()
                     ? "select _T0.\"Name\" from PERSON_ORG_SCHEMA.\"Person\" as _T0"
                     : "select _T0.NAME from PERSON_ORG_SCHEMA.Person as _T0",

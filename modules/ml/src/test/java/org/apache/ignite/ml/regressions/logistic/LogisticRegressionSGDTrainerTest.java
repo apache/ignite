@@ -27,8 +27,6 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
-import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
-import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
 import org.junit.Test;
 
 /**
@@ -45,12 +43,12 @@ public class LogisticRegressionSGDTrainerTest extends TrainerTest {
         for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
             cacheMock.put(i, twoLinearlySeparableClasses[i]);
 
-        LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>()
+        LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
             .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
                 SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
             .withMaxIterations(100000)
             .withLocIterations(100)
-            .withBatchSize(10)
+            .withBatchSize(14)
             .withSeed(123L);
 
         LogisticRegressionModel mdl = trainer.fit(
@@ -72,7 +70,7 @@ public class LogisticRegressionSGDTrainerTest extends TrainerTest {
         for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
             cacheMock.put(i, twoLinearlySeparableClasses[i]);
 
-        LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>()
+        LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
             .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
                 SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
             .withMaxIterations(100000)

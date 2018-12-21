@@ -27,16 +27,21 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteChangeGlobalStateDataStructureTest extends IgniteChangeGlobalStateAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeActivateAndActivateAtomicLong() throws Exception {
         String lName = "myLong";
 
@@ -108,6 +113,7 @@ public class IgniteChangeGlobalStateDataStructureTest extends IgniteChangeGlobal
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeActivateAndActivateCountDownLatch() throws Exception {
         final AtomicInteger cnt = new AtomicInteger();
 
@@ -202,6 +208,7 @@ public class IgniteChangeGlobalStateDataStructureTest extends IgniteChangeGlobal
     /**
      *
      */
+    @Test
     public void testDeActivateAndActivateAtomicSequence(){
         String seqName = "mySeq";
 

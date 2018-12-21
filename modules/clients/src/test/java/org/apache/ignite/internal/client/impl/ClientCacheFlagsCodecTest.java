@@ -25,14 +25,19 @@ import junit.framework.TestCase;
 
 import org.apache.ignite.internal.client.GridClientCacheFlag;
 import org.apache.ignite.internal.util.typedef.F;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests conversions between GridClientCacheFlag.
  */
+@RunWith(JUnit4.class)
 public class ClientCacheFlagsCodecTest extends TestCase {
     /**
      * Tests that each client flag will be correctly converted to server flag.
      */
+    @Test
     public void testEncodingDecodingFullness() {
         for (GridClientCacheFlag f : GridClientCacheFlag.values()) {
             int bits = GridClientCacheFlag.encodeCacheFlags(EnumSet.of(f));
@@ -48,6 +53,7 @@ public class ClientCacheFlagsCodecTest extends TestCase {
     /**
      * Tests that groups of client flags can be correctly converted to corresponding server flag groups.
      */
+    @Test
     public void testGroupEncodingDecoding() {
         // All.
         doTestGroup(GridClientCacheFlag.values());

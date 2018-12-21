@@ -22,16 +22,21 @@ import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsIpcEndpointType;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link IgfsServer} that checks all IPC endpoint registration types
  * permitted for Linux and Mac OS.
  */
+@RunWith(JUnit4.class)
 public class IgfsServerManagerIpcEndpointRegistrationOnLinuxAndMacSelfTest
     extends IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoopbackAndShmemEndpointsRegistration() throws Exception {
         IgniteConfiguration cfg = gridConfigurationManyIgfsCaches(3);
 

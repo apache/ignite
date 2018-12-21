@@ -34,11 +34,15 @@ import org.apache.ignite.spi.collision.CollisionJobContext;
 import org.apache.ignite.spi.collision.CollisionSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Collision job context test.
  */
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class GridCollisionJobsContextSelfTest extends GridCommonAbstractTest {
     /** */
     public GridCollisionJobsContextSelfTest() {
@@ -64,6 +68,7 @@ public class GridCollisionJobsContextSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testCollisionJobContext() throws Exception {
         G.ignite(getTestIgniteInstanceName()).compute().execute(new GridTestTask(), "some-arg");
     }

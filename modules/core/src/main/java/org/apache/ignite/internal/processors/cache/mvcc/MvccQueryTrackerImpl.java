@@ -61,6 +61,9 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
     /** */
     private final boolean canRemap;
 
+    /** */
+    private boolean done;
+
     /**
      * @param cctx Cache context.
      */
@@ -136,6 +139,9 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
 
     /** {@inheritDoc} */
     @Override public void onDone() {
+        if (!checkDone())
+            return;
+
         MvccProcessor prc = cctx.shared().coordinators();
 
         MvccSnapshot snapshot = snapshot();
@@ -151,7 +157,7 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
     @Override public IgniteInternalFuture<Void> onDone(@NotNull GridNearTxLocal tx, boolean commit) {
         MvccSnapshot snapshot = snapshot(), txSnapshot = tx.mvccSnapshot();
 
-        if (snapshot == null && txSnapshot == null)
+        if (!checkDone() || snapshot == null && txSnapshot == null)
             return commit ? new GridFinishedFuture<>() : null;
 
         MvccProcessor prc = cctx.shared().coordinators();
@@ -221,7 +227,7 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
      * @return {@code True} if topology is valid.
      */
     private boolean checkTopology(AffinityTopologyVersion topVer, MvccSnapshotResponseListener lsnr) {
-        MvccCoordinator crd = cctx.affinity().mvccCoordinator(topVer);
+        MvccCoordinator crd = cctx.shared().coordinators().currentCoordinator();
 
         if (crd == null) {
             lsnr.onError(noCoordinatorError(topVer));
@@ -233,16 +239,6 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
 
         synchronized (this) {
             crdVer = crd.coordinatorVersion();
-        }
-
-        MvccCoordinator curCrd = cctx.topology().mvccCoordinator();
-
-        if (!crd.equals(curCrd)) {
-            assert cctx.topology().topologyVersionFuture().initialVersion().compareTo(topVer) > 0;
-
-            tryRemap(lsnr);
-
-            return false;
         }
 
         return true;
@@ -326,6 +322,14 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
         }
 
         return true;
+    }
+
+    /** */
+    private synchronized boolean checkDone() {
+        if (!done)
+            return done = true;
+
+        return false;
     }
 
     /** {@inheritDoc} */

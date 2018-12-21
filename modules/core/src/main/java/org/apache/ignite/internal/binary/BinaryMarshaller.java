@@ -73,7 +73,6 @@ public class BinaryMarshaller extends AbstractNodeNameAwareMarshaller {
      * <p/>
      * @param ctx Binary context.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private void setBinaryContext(BinaryContext ctx, IgniteConfiguration cfg) {
         ctx.configure(this, cfg);
 

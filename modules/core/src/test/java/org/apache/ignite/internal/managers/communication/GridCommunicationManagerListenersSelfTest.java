@@ -33,11 +33,15 @@ import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Grid communication manager self test.
  */
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstractTest {
     /** */
     public GridCommunicationManagerListenersSelfTest() {
@@ -47,7 +51,7 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
     /**
      * Works fine.
      */
-    @SuppressWarnings({"deprecation"})
+    @Test
     public void testDifferentListeners() {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -68,6 +72,7 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
     /**
      * Fails on the 1001st time.
      */
+    @Test
     public void testMultipleExecutionsWithoutListeners() {
         checkLoop(1001);
     }
@@ -76,7 +81,7 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
      * This is the workaround- as long as we keep a message listener in
      * the stack, our FIFO bug isn't exposed.  Comment above out to see.
      */
-    @SuppressWarnings({"deprecation"})
+    @Test
     public void testOneListener() {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -101,6 +106,7 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
      * Now, our test will fail on the first message added after our safety
      * message listener has been removed.
      */
+    @Test
     public void testSingleExecutionWithoutListeners() {
         checkLoop(1);
     }

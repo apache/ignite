@@ -28,14 +28,17 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsCacheRestoreTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -58,14 +61,15 @@ public class IgnitePdsCacheRestoreTest extends GridCommonAbstractTest {
             ccfgs = null;
         }
 
+        long regionMaxSize = 20L * 1024 * 1024;
+
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setMaxSize(10L * 1024 * 1024).setPersistenceEnabled(true))
-            .setPageSize(4 * 1024)
+                new DataRegionConfiguration().setMaxSize(regionMaxSize).setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY);
 
         memCfg.setDataRegionConfigurations(new DataRegionConfiguration()
-            .setMaxSize(10L * 1024 * 1024)
+            .setMaxSize(regionMaxSize)
             .setName(NO_PERSISTENCE_REGION)
             .setPersistenceEnabled(false));
 
@@ -93,6 +97,7 @@ public class IgnitePdsCacheRestoreTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestoreAndNewCache1() throws Exception {
         restoreAndNewCache(false);
     }
@@ -100,6 +105,7 @@ public class IgnitePdsCacheRestoreTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestoreAndNewCache2() throws Exception {
         restoreAndNewCache(true);
     }
@@ -211,6 +217,7 @@ public class IgnitePdsCacheRestoreTest extends GridCommonAbstractTest {
         ccfgs[2] = cacheConfiguration("c3");
 
         ccfgs[2].setDataRegionName(NO_PERSISTENCE_REGION);
+        ccfgs[2].setDiskPageCompression(null);
 
         return ccfgs;
     }

@@ -29,12 +29,16 @@ import org.apache.ignite.IgniteJdbcDriver;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.Arrays.asList;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheMvccStreamingInsertTest extends CacheMvccAbstractTest {
     /** */
     private IgniteCache<Object, Object> sqlNexus;
@@ -68,6 +72,7 @@ public class CacheMvccStreamingInsertTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStreamingInsertWithoutOverwrite() throws Exception {
         conn.createStatement().execute("SET STREAMING 1 BATCH_SIZE 2 ALLOW_OVERWRITE 0 " +
             " PER_NODE_BUFFER_SIZE 1000 FLUSH_FREQUENCY 100");
@@ -93,6 +98,7 @@ public class CacheMvccStreamingInsertTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateWithOverwrite() throws Exception {
         conn.createStatement().execute("SET STREAMING 1 BATCH_SIZE 2 ALLOW_OVERWRITE 1 " +
             " PER_NODE_BUFFER_SIZE 1000 FLUSH_FREQUENCY 100");

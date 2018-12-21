@@ -36,6 +36,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -44,6 +47,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Tests cache access from within jobs.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -97,6 +101,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticRepeatableRead() throws Exception {
         checkTransactions(PESSIMISTIC, REPEATABLE_READ, 1000);
     }
@@ -104,6 +109,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticSerializable() throws Exception {
         checkTransactions(PESSIMISTIC, SERIALIZABLE, 1000);
     }

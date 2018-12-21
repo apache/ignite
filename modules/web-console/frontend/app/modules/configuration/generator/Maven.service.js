@@ -182,6 +182,9 @@ export default class IgniteMavenGenerator {
 
             if (_.get(cache, 'nodeFilter.kind') === 'Exclude')
                 this.addDependency(deps, 'org.apache.ignite', 'ignite-extdata-p2p', igniteVer);
+
+            if (cache.diskPageCompression)
+                this.addDependency(deps, 'org.apache.ignite', 'ignite-compress', igniteVer);
         });
 
         if (cluster.discovery.kind === 'Jdbc') {

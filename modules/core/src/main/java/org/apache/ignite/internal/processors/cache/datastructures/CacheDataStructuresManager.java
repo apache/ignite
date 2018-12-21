@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.datastructures.GridTransactionalCac
 import org.apache.ignite.internal.processors.datastructures.SetItemKey;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -223,7 +224,6 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @return Queue header.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     @Nullable public <T> GridCacheQueueProxy<T> queue(final String name,
         final int cap,
         boolean colloc,
@@ -422,7 +422,6 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param topVer Topology version.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     private void removeSetData(IgniteUuid setId, AffinityTopologyVersion topVer) throws IgniteCheckedException {
         boolean loc = cctx.isLocal();
 
@@ -464,7 +463,6 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param separated Separated cache flag.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public void removeSetData(IgniteUuid id, boolean separated) throws IgniteCheckedException {
         assert id != null;
 
@@ -472,7 +470,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             while (true) {
                 AffinityTopologyVersion topVer = cctx.topologyVersionFuture().get();
 
-                Collection<ClusterNode> nodes = CU.affinityNodes(cctx, topVer);
+                Collection<ClusterNode> nodes = F.view(cctx.discovery().nodes(topVer), node -> !node.isDaemon());
 
                 try {
                     cctx.closures().callAsyncNoFailover(BROADCAST,
@@ -502,10 +500,12 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                         throw e;
                 }
 
+                Collection<ClusterNode> affNodes = CU.affinityNodes(cctx, topVer);
+
                 try {
                     cctx.closures().callAsyncNoFailover(BROADCAST,
                         new RemoveSetDataCallable(cctx.name(), id, topVer),
-                        nodes,
+                        affNodes,
                         true,
                         0, false).get();
                 }
@@ -516,7 +516,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
                         continue;
                     }
-                    else if (!pingNodes(nodes)) {
+                    else if (!pingNodes(affNodes)) {
                         if (log.isDebugEnabled())
                             log.debug("RemoveSetData job failed and set data node left, will retry: " + e);
 
@@ -554,7 +554,6 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     /**
      * @param setId Set ID.
      */
-    @SuppressWarnings("unchecked")
     private void blockSet(IgniteUuid setId) {
         GridCacheSetProxy set = setsMap.remove(setId);
 
@@ -650,9 +649,9 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
             GridCacheAdapter cache = ((IgniteKernal)ignite).context().cache().internalCache(cacheName);
 
-            assert cache != null : cacheName;
-
-            cache.context().dataStructures().blockSet(setId);
+            // On non-affinity node cache starts on demand, so it may not be running.
+            if (cache != null)
+                cache.context().dataStructures().blockSet(setId);
 
             return null;
         }

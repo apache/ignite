@@ -42,8 +42,12 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -54,6 +58,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String VALUE = createValue();
@@ -100,8 +105,11 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictions() throws Exception {
         try {
+            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+
             final Ignite ignite1 = startGrid(1);
 
             final IgniteCache<Integer, Object> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
@@ -234,7 +242,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
             "Sizes do not match [s1=" + cache1.size(ALL_PEEK_MODES) + ", s2=" + cache2.size(ALL_PEEK_MODES) + ']';
 
         for (Integer key : cache1.keySet()) {
-            Object e = cache1.localPeek(key, new CachePeekMode[] {CachePeekMode.ONHEAP}, null);
+            Object e = cache1.localPeek(key, new CachePeekMode[] {CachePeekMode.ONHEAP});
 
             if (e != null)
                 assert cache2.containsKey(key) : "Cache2 does not contain key: " + key;

@@ -18,14 +18,20 @@
 
 namespace Apache\Ignite\Tests;
 
+use \DateTime;
 use Ds\Map;
 use Ds\Set;
 use PHPUnit\Framework\TestCase;
+use Apache\Ignite\Type\ObjectType;
 use Apache\Ignite\Type\MapObjectType;
 use Apache\Ignite\Type\CollectionObjectType;
 use Apache\Ignite\Type\ObjectArrayType;
 use Apache\Ignite\Type\ComplexObjectType;
 use Apache\Ignite\Data\BinaryObject;
+use Apache\Ignite\Data\Date;
+use Apache\Ignite\Data\Timestamp;
+use Apache\Ignite\Data\EnumItem;
+use Apache\Ignite\Exception\ClientException;
 
 class TstComplObjectWithPrimitiveFields
 {
@@ -488,6 +494,119 @@ final class CachePutGetTestCase extends TestCase
             array_push($array, $innerArray);
         }
         $this->putGetObjectArrays(new ObjectArrayType(new ObjectArrayType(new ComplexObjectType())), $array);
+    }
+
+    public function testPutGetDateTime(): void
+    {
+        $this->putGetDate("Y-m-d H:i:s", "2018-10-19 18:31:13", 0);
+        $this->putGetDate("Y-m-d H:i:s", "2018-10-19 18:31:13", 29726);
+        $this->putGetDate("Y-m-d H:i:s", "2018-10-19 18:31:13", 999999);
+
+        $this->putGetTimestamp("Y-m-d H:i:s", "2018-10-19 18:31:13", 0);
+        $this->putGetTimestamp("Y-m-d H:i:s", "2018-10-19 18:31:13", 29726000);
+        $this->putGetTimestamp("Y-m-d H:i:s", "2018-10-19 18:31:13", 999999999);
+
+        $this->putGetTimestampFromDateTime("Y-m-d H:i:s", "2018-10-19 18:31:13", 0);
+        $this->putGetTimestampFromDateTime("Y-m-d H:i:s", "2018-10-19 18:31:13", 29726);
+        $this->putGetTimestampFromDateTime("Y-m-d H:i:s", "2018-10-19 18:31:13", 999999);
+    }
+
+    public function testPutEnumItems(): void
+    {
+        $fakeTypeId = 12345;
+        $enumItem1 = new EnumItem($fakeTypeId);
+        $enumItem1->setOrdinal(1);
+        $this->putEnumItem($enumItem1, null);
+        $this->putEnumItem($enumItem1, ObjectType::ENUM);
+        $enumItem2 = new EnumItem($fakeTypeId);
+        $enumItem2->setName('name');
+        $this->putEnumItem($enumItem2, null);
+        $this->putEnumItem($enumItem2, ObjectType::ENUM);
+        $enumItem3 = new EnumItem($fakeTypeId);
+        $enumItem3->setOrdinal(2);
+        $this->putEnumItem($enumItem3, null);
+        $this->putEnumItem($enumItem3, ObjectType::ENUM);
+    }
+
+    private function putEnumItem($value, $valueType): void
+    {
+        $key = microtime();
+        self::$cache->
+            setKeyType(null)->
+            setValueType($valueType);
+        // Enums registration is not supported by the client, therefore put EnumItem must throw ClientException
+        try {
+            self::$cache->put($key, $value);
+            $this->fail('put EnumItem must throw ClientException');
+        } catch (ClientException $e) {
+            $this->assertContains('Enum item can not be serialized', $e->getMessage());
+        } finally {
+            self::$cache->removeAll();
+        }
+    }
+
+    private function putGetDate(string $format, string $dateString, int $micros): void
+    {
+        $key = microtime();
+        self::$cache->
+            setKeyType(null)->
+            setValueType(ObjectType::DATE);
+        try {
+            $dt = DateTime::createFromFormat("$format.u", sprintf("%s.%06d", $dateString, $micros));
+            $iDate = Date::fromDateTime($dt);
+            self::$cache->put($key, $iDate);
+            $result = self::$cache->get($key);
+
+            $this->assertEquals(sprintf("%06d", intval($micros / 1000) * 1000), $result->toDateTime()->format('u'));
+            $this->assertEquals($dateString, $result->toDateTime()->format($format));
+        } finally {
+            self::$cache->removeAll();
+        }
+    }
+
+    private function putGetTimestamp(string $format, string $dateString, int $nanos): void
+    {
+        $key = microtime();
+        self::$cache->
+            setKeyType(null)->
+            setValueType(ObjectType::TIMESTAMP);
+
+        try {
+            $millis = intval($nanos / 1000000);
+            $nanosInMillis = $nanos % 1000000;
+            self::$cache->put($key,
+                new Timestamp(
+                    DateTime::createFromFormat($format, $dateString)->getTimestamp() * 1000 + $millis,
+                    $nanosInMillis
+                )
+            );
+            $result = self::$cache->get($key);
+
+            $this->assertEquals($nanos % 1000000, $result->getNanos());
+            $this->assertEquals($dateString, $result->toDateTime()->format($format));
+        } finally {
+            self::$cache->removeAll();
+        }
+    }
+
+    private function putGetTimestampFromDateTime(string $format, string $dateString, $micros): void
+    {
+        $key = microtime();
+        self::$cache->
+            setKeyType(null)->
+            setValueType(ObjectType::TIMESTAMP);
+
+        try {
+            self::$cache->put($key, Timestamp::fromDateTime(
+                DateTime::createFromFormat("$format.u", sprintf("%s.%06d", $dateString, $micros))
+            ));
+            $result = self::$cache->get($key);
+
+            $this->assertEquals(intval($micros / 1000) * 1000, $result->toDateTime()->format('u'));
+            $this->assertEquals($dateString, $result->toDateTime()->format($format));
+        } finally {
+            self::$cache->removeAll();
+        }
     }
 
     private function putGetObjectArrays(?ObjectArrayType $arrayType, array $value): void

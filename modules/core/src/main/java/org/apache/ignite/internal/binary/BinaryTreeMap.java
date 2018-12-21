@@ -57,7 +57,6 @@ public class BinaryTreeMap implements Binarylizable, Serializable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
         BinaryRawWriter rawWriter = writer.rawWriter();
 

@@ -30,12 +30,16 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  * Based scanCount with offheap index issue.
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheOffheapIndexScanTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -75,6 +79,7 @@ public class IgniteCacheOffheapIndexScanTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryPlan() throws Exception {
         for (int i = 0 ; i < 1000; i++)
             cache.put(i, new Person(i, "firstName" + i, "lastName" + i, i % 100));

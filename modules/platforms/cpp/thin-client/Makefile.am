@@ -63,6 +63,7 @@ libignite_thin_client_la_SOURCES = \
     src/impl/data_router.cpp \
     src/impl/ssl/ssl_gateway.cpp \
     src/impl/ssl/secure_socket_client.cpp \
+    src/impl/ssl/ssl_api.cpp \
     src/ignite_client.cpp
 
 clean-local:

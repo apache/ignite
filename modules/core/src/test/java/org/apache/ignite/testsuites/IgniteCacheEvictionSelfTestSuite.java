@@ -17,10 +17,12 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.Collection;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.GridCachePreloadingEvictionsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearEvictionSelfTest;
+import org.apache.ignite.internal.processors.cache.eviction.DhtAndNearEvictionTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheConcurrentEvictionConsistencySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheConcurrentEvictionsSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEmptyEntriesLocalSelfTest;
@@ -29,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.eviction.GridCacheEvictableEn
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEvictionFilterSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEvictionLockUnlockSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEvictionTouchSelfTest;
-import org.apache.ignite.internal.processors.cache.eviction.DhtAndNearEvictionTest;
 import org.apache.ignite.internal.processors.cache.eviction.fifo.FifoEvictionPolicyFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.fifo.FifoEvictionPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.lru.LruEvictionPolicyFactorySelfTest;
@@ -49,53 +50,54 @@ import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruPageE
 import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruPageEvictionWithRebalanceTest;
 import org.apache.ignite.internal.processors.cache.eviction.sorted.SortedEvictionPolicyFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.sorted.SortedEvictionPolicySelfTest;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Test suite for cache eviction.
  */
 public class IgniteCacheEvictionSelfTestSuite extends TestSuite {
     /**
+     * @param ignoredTests Ignored tests.
      * @return Cache eviction test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite(Collection<Class> ignoredTests) {
         TestSuite suite = new TestSuite("Ignite Cache Eviction Test Suite");
 
-        suite.addTest(new TestSuite(FifoEvictionPolicySelfTest.class));
-        suite.addTest(new TestSuite(SortedEvictionPolicySelfTest.class));
-        suite.addTest(new TestSuite(LruEvictionPolicySelfTest.class));
-        suite.addTest(new TestSuite(FifoEvictionPolicyFactorySelfTest.class));
-        suite.addTest(new TestSuite(SortedEvictionPolicyFactorySelfTest.class));
-        suite.addTest(new TestSuite(LruEvictionPolicyFactorySelfTest.class));
-        suite.addTest(new TestSuite(LruNearEvictionPolicySelfTest.class));
-        suite.addTest(new TestSuite(LruNearOnlyNearEvictionPolicySelfTest.class));
-        suite.addTest(new TestSuite(GridCacheNearEvictionSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheAtomicNearEvictionSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheEvictionFilterSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheConcurrentEvictionsSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheConcurrentEvictionConsistencySelfTest.class));
-        suite.addTest(new TestSuite(GridCacheEvictionTouchSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheEvictionLockUnlockSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePreloadingEvictionsSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheEmptyEntriesPartitionedSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheEmptyEntriesLocalSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheEvictableEntryEqualsSelfTest.class));
+        GridTestUtils.addTestIfNeeded(suite, FifoEvictionPolicySelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, SortedEvictionPolicySelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, LruEvictionPolicySelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, FifoEvictionPolicyFactorySelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, SortedEvictionPolicyFactorySelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, LruEvictionPolicyFactorySelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, LruNearEvictionPolicySelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, LruNearOnlyNearEvictionPolicySelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheNearEvictionSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicNearEvictionSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheEvictionFilterSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheConcurrentEvictionsSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheConcurrentEvictionConsistencySelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheEvictionTouchSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheEvictionLockUnlockSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCachePreloadingEvictionsSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheEmptyEntriesPartitionedSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheEmptyEntriesLocalSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheEvictableEntryEqualsSelfTest.class, ignoredTests);
 
-        suite.addTest(new TestSuite(RandomLruPageEvictionMultinodeTest.class));
-        suite.addTest(new TestSuite(RandomLruNearEnabledPageEvictionMultinodeTest.class));
-        suite.addTest(new TestSuite(Random2LruPageEvictionMultinodeTest.class));
-        suite.addTest(new TestSuite(Random2LruNearEnabledPageEvictionMultinodeTest.class));
-        suite.addTest(new TestSuite(RandomLruPageEvictionWithRebalanceTest.class));
-        suite.addTest(new TestSuite(Random2LruPageEvictionWithRebalanceTest.class));
-        suite.addTest(new TestSuite(PageEvictionTouchOrderTest.class));
-        suite.addTest(new TestSuite(PageEvictionReadThroughTest.class));
-        suite.addTest(new TestSuite(PageEvictionDataStreamerTest.class));
+        GridTestUtils.addTestIfNeeded(suite, RandomLruPageEvictionMultinodeTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, RandomLruNearEnabledPageEvictionMultinodeTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, Random2LruPageEvictionMultinodeTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, Random2LruNearEnabledPageEvictionMultinodeTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, RandomLruPageEvictionWithRebalanceTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, Random2LruPageEvictionWithRebalanceTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, PageEvictionTouchOrderTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, PageEvictionReadThroughTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, PageEvictionDataStreamerTest.class, ignoredTests);
 
-        suite.addTest(new TestSuite(PageEvictionMetricTest.class));
+        GridTestUtils.addTestIfNeeded(suite, PageEvictionMetricTest.class, ignoredTests);
 
-        suite.addTest(new TestSuite(PageEvictionPagesRecyclingAndReusingTest.class));
+        GridTestUtils.addTestIfNeeded(suite, PageEvictionPagesRecyclingAndReusingTest.class, ignoredTests);
 
-        suite.addTest(new TestSuite(DhtAndNearEvictionTest.class));
+        GridTestUtils.addTestIfNeeded(suite, DhtAndNearEvictionTest.class, ignoredTests);
 
         return suite;
     }

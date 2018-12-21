@@ -225,7 +225,6 @@ abstract class GridCacheAbstractLoadTest {
     /**
      * @return Write threads count.
      */
-    @SuppressWarnings({"ConstantConditions"})
     protected int writeThreads() {
         int ratio = (int)(threads * writeRatio);
 
@@ -235,7 +234,6 @@ abstract class GridCacheAbstractLoadTest {
     /**
      * @return Read threads count.
      */
-    @SuppressWarnings({"ConstantConditions"})
     protected int readThreads() {
         int ratio = (int)(threads * (1 - writeRatio));
 
@@ -336,7 +334,6 @@ abstract class GridCacheAbstractLoadTest {
      * @return Configuration.
      * @throws IgniteCheckedException If fails.
      */
-    @SuppressWarnings("unchecked")
     protected IgniteConfiguration configuration(String springCfgPath, String log) throws IgniteCheckedException {
         File path = GridTestUtils.resolveIgnitePath(springCfgPath);
 

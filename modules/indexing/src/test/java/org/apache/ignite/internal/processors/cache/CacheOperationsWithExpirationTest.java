@@ -36,6 +36,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -44,6 +47,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheOperationsWithExpirationTest extends GridCommonAbstractTest {
     /** */
     private static final int KEYS = 10_000;
@@ -78,6 +82,7 @@ public class CacheOperationsWithExpirationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicIndexEnabled() throws Exception {
         concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, true));
     }
@@ -85,6 +90,7 @@ public class CacheOperationsWithExpirationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomic() throws Exception {
         concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, false));
     }

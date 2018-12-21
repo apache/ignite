@@ -25,7 +25,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -384,7 +383,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
         if (!ctx.clientNode()) {
             users = new ConcurrentHashMap<>();
@@ -1310,7 +1308,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             if (ctx.clientNode())
                 return;

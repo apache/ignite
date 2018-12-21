@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -122,109 +123,109 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         TestSuite suite = new TestSuite("Ignite Hadoop MR Test Suite");
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopUserLibsSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopUserLibsSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopWeightedMapReducePlannerTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopWeightedMapReducePlannerTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(BasicUserNameMapperSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(KerberosUserNameMapperSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(ChainedUserNameMapperSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(BasicUserNameMapperSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(KerberosUserNameMapperSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(ChainedUserNameMapperSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(KerberosHadoopFileSystemFactorySelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(KerberosHadoopFileSystemFactorySelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopTeraSortTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopTeraSortTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopSnappyTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopSnappyFullMapReduceTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopSnappyTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopSnappyFullMapReduceTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopIgfs20FileSystemLoopbackPrimarySelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopIgfs20FileSystemLoopbackPrimarySelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopIgfsDualSyncSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopIgfsDualAsyncSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopIgfsDualSyncSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopIgfsDualAsyncSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(Hadoop1OverIgfsDualSyncTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(Hadoop1OverIgfsDualAsyncTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(Hadoop1OverIgfsProxyTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(Hadoop1OverIgfsDualSyncTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(Hadoop1OverIgfsDualAsyncTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(Hadoop1OverIgfsProxyTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopFIleSystemFactorySelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopFIleSystemFactorySelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemLoopbackExternalPrimarySelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemLoopbackExternalSecondarySelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemLoopbackExternalDualSyncSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemLoopbackExternalDualAsyncSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemLoopbackEmbeddedPrimarySelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemLoopbackEmbeddedSecondarySelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemLoopbackEmbeddedDualSyncSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemLoopbackEmbeddedDualAsyncSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemClientBasedPrimarySelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemClientBasedDualAsyncSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemClientBasedDualSyncSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemClientBasedProxySelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemLoopbackExternalToClientPrimarySelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemLoopbackExternalToClientDualSyncSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemLoopbackExternalToClientDualAsyncSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemLoopbackExternalToClientProxySelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(IgniteHadoopFileSystemLoopbackExternalPrimarySelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(IgniteHadoopFileSystemLoopbackExternalSecondarySelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(IgniteHadoopFileSystemLoopbackExternalDualSyncSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(IgniteHadoopFileSystemLoopbackExternalDualAsyncSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(IgniteHadoopFileSystemLoopbackEmbeddedPrimarySelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(IgniteHadoopFileSystemLoopbackEmbeddedSecondarySelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(IgniteHadoopFileSystemLoopbackEmbeddedDualSyncSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(IgniteHadoopFileSystemLoopbackEmbeddedDualAsyncSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(IgniteHadoopFileSystemClientBasedPrimarySelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(IgniteHadoopFileSystemClientBasedDualAsyncSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(IgniteHadoopFileSystemClientBasedDualSyncSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(IgniteHadoopFileSystemClientBasedProxySelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(IgniteHadoopFileSystemLoopbackExternalToClientPrimarySelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(IgniteHadoopFileSystemLoopbackExternalToClientDualSyncSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(IgniteHadoopFileSystemLoopbackExternalToClientDualAsyncSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(IgniteHadoopFileSystemLoopbackExternalToClientProxySelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemClientSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(IgniteHadoopFileSystemClientSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemLoggerStateSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemLoggerSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(IgniteHadoopFileSystemLoggerStateSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(IgniteHadoopFileSystemLoggerSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemHandshakeSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(IgniteHadoopFileSystemHandshakeSelfTest.class.getName())));
 
         suite.addTest(IgfsEventsTestSuite.suiteNoarchOnly());
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopFileSystemsTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopFileSystemsTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopExecutorServiceTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopExecutorServiceTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopValidationSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopValidationSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopJobTrackerSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopJobTrackerSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopHashMapSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopDataStreamSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopConcurrentHashMultimapSelftest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopHashMapSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopDataStreamSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopConcurrentHashMultimapSelftest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopSkipListSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopSkipListSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopTaskExecutionSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopTaskExecutionSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopV2JobSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopV2JobSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopSerializationWrapperSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopSplitWrapperSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopSerializationWrapperSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopSplitWrapperSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopTasksV1Test.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopTasksV2Test.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopTasksV1Test.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopTasksV2Test.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopMapReduceTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopWeightedPlannerMapReduceTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopNoHadoopMapReduceTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopMapReduceErrorResilienceTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopMapReduceTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopWeightedPlannerMapReduceTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopNoHadoopMapReduceTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopMapReduceErrorResilienceTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopMapReduceEmbeddedSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopMapReduceEmbeddedSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopSortingTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopSortingTest.class.getName())));
 
         // TODO https://issues.apache.org/jira/browse/IGNITE-3167
-//        suite.addTest(new TestSuite(ldr.loadClass(HadoopExternalTaskExecutionSelfTest.class.getName())));
-//        suite.addTest(new TestSuite(ldr.loadClass(HadoopExternalCommunicationSelfTest.class.getName())));
-//        suite.addTest(new TestSuite(ldr.loadClass(HadoopSortingExternalTest.class.getName())));
+//        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopExternalTaskExecutionSelfTest.class.getName())));
+//        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopExternalCommunicationSelfTest.class.getName())));
+//        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopSortingExternalTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopGroupingTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopGroupingTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopClientProtocolSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopClientProtocolEmbeddedSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopClientProtocolMultipleServersSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopClientProtocolSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopClientProtocolEmbeddedSelfTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopClientProtocolMultipleServersSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopCommandLineTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopCommandLineTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopSecondaryFileSystemConfigurationTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopSecondaryFileSystemConfigurationTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopTxConfigCacheTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(HadoopTxConfigCacheTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemClientBasedOpenTest.class.getName())));
+        suite.addTest(new JUnit4TestAdapter(ldr.loadClass(IgniteHadoopFileSystemClientBasedOpenTest.class.getName())));
 
          return suite;
     }

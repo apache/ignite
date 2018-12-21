@@ -52,14 +52,14 @@ import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSe
  */
 public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest {
     /** SQL to create test table. */
-    final static String CREATE_SQL = "CREATE TABLE IF NOT EXISTS Person (id int primary key, name varchar)";
+    static final String CREATE_SQL = "CREATE TABLE IF NOT EXISTS Person (id int primary key, name varchar)";
 
     /** SQL to create test table with additional columns to drop. */
-    final static String CREATE_SQL_4_COLS = "CREATE TABLE IF NOT EXISTS Person (id int primary key, " +
+    static final String CREATE_SQL_4_COLS = "CREATE TABLE IF NOT EXISTS Person (id int primary key, " +
         "name varchar, age int, city varchar)";
 
     /** SQL to drop test table. */
-    final static String DROP_SQL = "DROP TABLE Person";
+    static final String DROP_SQL = "DROP TABLE Person";
 
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -231,7 +231,6 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
      * @param sql Statement.
      * @param msg Expected message.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     protected void assertThrows(final Ignite node, final String sql, String msg) {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -249,7 +248,6 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
      * @param cls Expected exception class.
      * @param msg Expected message.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     protected void assertThrowsAnyCause(final Ignite node, final String sql, Class<? extends Throwable> cls,
         String msg) {
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {

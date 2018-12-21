@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheBaselineTopologyTest;
@@ -46,34 +47,34 @@ public class IgniteStandByClusterSuite extends TestSuite {
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Activate/DeActivate Cluster Test Suite");
 
-        suite.addTestSuite(IgniteClusterActivateDeactivateTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteClusterActivateDeactivateTest.class));
 
-        suite.addTestSuite(IgniteStandByClusterTest.class);
-        suite.addTestSuite(IgniteStandByClientReconnectTest.class);
-        suite.addTestSuite(IgniteStandByClientReconnectToNewClusterTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteStandByClusterTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteStandByClientReconnectTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteStandByClientReconnectToNewClusterTest.class));
 
-        suite.addTestSuite(JoinActiveNodeToActiveCluster.class);
-        suite.addTestSuite(JoinActiveNodeToInActiveCluster.class);
-        suite.addTestSuite(JoinInActiveNodeToActiveCluster.class);
-        suite.addTestSuite(JoinInActiveNodeToInActiveCluster.class);
+        suite.addTest(new JUnit4TestAdapter(JoinActiveNodeToActiveCluster.class));
+        suite.addTest(new JUnit4TestAdapter(JoinActiveNodeToInActiveCluster.class));
+        suite.addTest(new JUnit4TestAdapter(JoinInActiveNodeToActiveCluster.class));
+        suite.addTest(new JUnit4TestAdapter(JoinInActiveNodeToInActiveCluster.class));
 
-        suite.addTestSuite(JoinActiveNodeToActiveClusterWithPersistence.class);
-        suite.addTestSuite(JoinActiveNodeToInActiveClusterWithPersistence.class);
-        suite.addTestSuite(JoinInActiveNodeToActiveClusterWithPersistence.class);
-        suite.addTestSuite(JoinInActiveNodeToInActiveClusterWithPersistence.class);
+        suite.addTest(new JUnit4TestAdapter(JoinActiveNodeToActiveClusterWithPersistence.class));
+        suite.addTest(new JUnit4TestAdapter(JoinActiveNodeToInActiveClusterWithPersistence.class));
+        suite.addTest(new JUnit4TestAdapter(JoinInActiveNodeToActiveClusterWithPersistence.class));
+        suite.addTest(new JUnit4TestAdapter(JoinInActiveNodeToInActiveClusterWithPersistence.class));
 
-//TODO https://issues.apache.org/jira/browse/IGNITE-9081 suite.addTestSuite(IgniteChangeGlobalStateTest.class);
-//TODO https://issues.apache.org/jira/browse/IGNITE-9081 suite.addTestSuite(IgniteChangeGlobalStateCacheTest.class);
-//TODO https://issues.apache.org/jira/browse/IGNITE-9081 suite.addTestSuite(IgniteChangeGlobalStateDataStructureTest.class);
-//TODO https://issues.apache.org/jira/browse/IGNITE-9081 suite.addTestSuite(IgniteChangeGlobalStateServiceTest.class);
+//TODO https://issues.apache.org/jira/browse/IGNITE-9081 suite.addTest(new JUnit4TestAdapter(IgniteChangeGlobalStateTest.class));
+//TODO https://issues.apache.org/jira/browse/IGNITE-9081 suite.addTest(new JUnit4TestAdapter(IgniteChangeGlobalStateCacheTest.class));
+//TODO https://issues.apache.org/jira/browse/IGNITE-9081 suite.addTest(new JUnit4TestAdapter(IgniteChangeGlobalStateDataStructureTest.class));
+//TODO https://issues.apache.org/jira/browse/IGNITE-9081 suite.addTest(new JUnit4TestAdapter(IgniteChangeGlobalStateServiceTest.class));
 
-        suite.addTestSuite(IgniteChangeGlobalStateDataStreamerTest.class);
-        suite.addTestSuite(IgniteChangeGlobalStateFailOverTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteChangeGlobalStateDataStreamerTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteChangeGlobalStateFailOverTest.class));
 
-        suite.addTestSuite(IgniteNoParrallelClusterIsAllowedTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteNoParrallelClusterIsAllowedTest.class));
 
-        suite.addTestSuite(CacheBaselineTopologyTest.class);
-        suite.addTestSuite(IgniteBaselineAffinityTopologyActivationTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheBaselineTopologyTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteBaselineAffinityTopologyActivationTest.class));
 
         return suite;
     }

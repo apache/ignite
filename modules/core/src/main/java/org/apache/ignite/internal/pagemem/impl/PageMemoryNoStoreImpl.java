@@ -38,6 +38,8 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
@@ -71,7 +73,6 @@ import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
  * Note that first 8 bytes of page header are used either for page marker or for next relative pointer depending
  * on whether the page is in use or not.
  */
-@SuppressWarnings({"LockAcquiredButNotSafelyReleased", "FieldAccessedSynchronizedAndUnsynchronized"})
 public class PageMemoryNoStoreImpl implements PageMemory {
     /** */
     public static final long PAGE_MARKER = 0xBEEAAFDEADBEEF01L;
@@ -238,7 +239,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("OverlyStrongTypeCast")
     @Override public void stop(boolean deallocate) throws IgniteException {
         if (log.isDebugEnabled())
             log.debug("Stopping page memory.");
@@ -282,11 +282,9 @@ public class PageMemoryNoStoreImpl implements PageMemory {
                 relPtr = allocSeg.allocateFreePage(flags);
 
                 if (relPtr != INVALID_REL_PTR) {
-                    if (relPtr != INVALID_REL_PTR) {
-                        absPtr = allocSeg.absolute(PageIdUtils.pageIndex(relPtr));
+                    absPtr = allocSeg.absolute(PageIdUtils.pageIndex(relPtr));
 
-                        break;
-                    }
+                    break;
                 }
                 else
                     allocSeg = addSegment(seg0);
@@ -445,11 +443,20 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public long acquirePage(int cacheId, long pageId) {
+        return acquirePage(cacheId, pageId, IoStatisticsHolderNoOp.INSTANCE);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long acquirePage(int cacheId, long pageId, IoStatisticsHolder statHolder) {
         int pageIdx = PageIdUtils.pageIndex(pageId);
 
         Segment seg = segment(pageIdx);
 
-        return seg.acquirePage(pageIdx);
+        long absPtr = seg.acquirePage(pageIdx);
+
+        statHolder.trackLogicalRead(absPtr + PAGE_OVERHEAD);
+
+        return absPtr;
     }
 
     /** {@inheritDoc} */

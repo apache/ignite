@@ -45,7 +45,7 @@ public abstract class ImpurityHistogramsComputer<S extends ImpurityComputer<Boot
     private static final long serialVersionUID = -4984067145908187508L;
 
     /**
-     * Computes histograms for each features.
+     * Computes histograms for each feature.
      *
      * @param roots Random forest roots.
      * @param histMeta Histograms meta.

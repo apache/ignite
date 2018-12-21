@@ -63,6 +63,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
     /**
      * @param key Key for event.
      * @param tx Possible surrounding transaction.
+     * @param txLbl Possible lable of possible surrounding transaction.
      * @param val Read value.
      * @param subjId Subject ID.
      * @param taskName Task name.
@@ -70,6 +71,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
      */
     public void readEvent(KeyCacheObject key,
         @Nullable IgniteInternalTx tx,
+        @Nullable String txLbl,
         @Nullable CacheObject val,
         @Nullable UUID subjId,
         @Nullable String taskName,
@@ -77,7 +79,9 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         if (isRecordable(EVT_CACHE_OBJECT_READ)) {
             addEvent(cctx.affinity().partition(key),
                 key,
+                cctx.localNodeId(),
                 tx,
+                txLbl,
                 null,
                 EVT_CACHE_OBJECT_READ,
                 val,
@@ -107,7 +111,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
      */
     public void addEvent(int part,
         KeyCacheObject key,
-        IgniteInternalTx tx,
+        @Nullable IgniteInternalTx tx,
         @Nullable GridCacheMvccCandidate owner,
         int type,
         @Nullable CacheObject newVal,
@@ -143,7 +147,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             0,
             null,
             cctx.localNodeId(),
-            (IgniteUuid)null,
+            null,
+            null,
             null,
             type,
             null,
@@ -174,7 +179,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
     public void addEvent(int part,
         KeyCacheObject key,
         UUID nodeId,
-        IgniteInternalTx tx,
+        @Nullable IgniteInternalTx tx,
         GridCacheMvccCandidate owner,
         int type,
         CacheObject newVal,
@@ -188,7 +193,9 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
     {
         addEvent(part,
             key,
-            nodeId, tx == null ? null : tx.xid(),
+            nodeId,
+            tx,
+            null,
             owner == null ? null : owner.version(),
             type,
             newVal,
@@ -234,7 +241,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         addEvent(part,
             key,
             evtNodeId,
-            tx == null ? null : tx.xid(),
+            tx,
+            null,
             owner == null ? null : owner.version(),
             type,
             newVal,
@@ -251,7 +259,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
      * @param part Partition.
      * @param key Key for the event.
      * @param evtNodeId Event node ID.
-     * @param xid Transaction ID.
+     * @param tx Possible surrounding transaction.
+     * @param txLbl Possible label of possible surrounding transaction.
      * @param lockId Lock ID.
      * @param type Event type.
      * @param newVal New value.
@@ -266,7 +275,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         int part,
         KeyCacheObject key,
         UUID evtNodeId,
-        @Nullable IgniteUuid xid,
+        @Nullable IgniteInternalTx tx,
+        @Nullable String txLbl,
         @Nullable Object lockId,
         int type,
         @Nullable CacheObject newVal,
@@ -324,6 +334,10 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                 oldVal0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(oldVal, true, false);
             }
 
+            IgniteUuid xid = tx == null ? null : tx.xid();
+
+            String finalTxLbl = (tx == null || tx.label() == null) ? txLbl : tx.label();
+
             cctx.gridEvents().record(new CacheEvent(cctx.name(),
                 cctx.localNode(),
                 evtNode,
@@ -333,6 +347,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                 cctx.isNear(),
                 key0,
                 xid,
+                finalTxLbl,
                 lockId,
                 val0,
                 hasNewVal,
@@ -371,6 +386,10 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
      */
     public boolean isRecordable(int type) {
         GridCacheContext cctx0 = cctx;
+
+        // Event recording is impossible in recovery mode.
+        if (cctx0 != null && cctx0.kernalContext().recoveryMode())
+            return false;
 
         return cctx0 != null && cctx0.userCache() && cctx0.gridEvents().isRecordable(type)
             && !cctx0.config().isEventsDisabled();

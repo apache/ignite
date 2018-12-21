@@ -26,10 +26,14 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}.
  */
+@RunWith(JUnit4.class)
 public class TcpClientDiscoveryMarshallerCheckSelfTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -82,6 +86,7 @@ public class TcpClientDiscoveryMarshallerCheckSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMarshallerInConsistency() throws Exception {
         startGrid(0);
 
@@ -101,6 +106,7 @@ public class TcpClientDiscoveryMarshallerCheckSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInconsistentCompactFooterSingle() throws Exception {
         clientServerInconsistentConfigFail(false, 1, 1);
     }
@@ -108,6 +114,7 @@ public class TcpClientDiscoveryMarshallerCheckSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInconsistentCompactFooterMulti() throws Exception {
         clientServerInconsistentConfigFail(true, 2, 10);
     }

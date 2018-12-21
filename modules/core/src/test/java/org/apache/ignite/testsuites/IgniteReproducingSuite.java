@@ -39,7 +39,7 @@ public class IgniteReproducingSuite extends TestSuite {
 
         //uncomment to add some test
         //for (int i = 0; i < 100; i++)
-        //    suite.addTestSuite(IgniteCheckpointDirtyPagesForLowLoadTest.class);
+        //    suite.addTest(new JUnit4TestAdapter(IgniteCheckpointDirtyPagesForLowLoadTest.class));
 
         return suite;
     }

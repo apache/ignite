@@ -69,6 +69,22 @@
             <outputDirectory>/platforms/php</outputDirectory>
         </file>
 
+        <!-- Copy Python files. -->
+        <file>
+            <source>modules/platforms/python/LICENSE</source>
+            <outputDirectory>/platforms/python</outputDirectory>
+        </file>
+
+        <file>
+            <source>modules/platforms/python/README.md</source>
+            <outputDirectory>/platforms/python</outputDirectory>
+        </file>
+
+        <file>
+            <source>modules/platforms/python/setup.py</source>
+            <outputDirectory>/platforms/python</outputDirectory>
+        </file>
+
         <!-- Other files. -->
         <file>
             <source>assembly/LICENSE_IGNITE</source>
@@ -225,7 +241,7 @@
             <outputDirectory>/platforms/nodejs/examples</outputDirectory>
         </fileSet>
 
-        <!-- Copy PHP sources.. -->
+        <!-- Copy PHP sources. -->
         <fileSet>
             <directory>modules/platforms/php/src</directory>
             <outputDirectory>/platforms/php/src</outputDirectory>
@@ -234,6 +250,17 @@
         <fileSet>
             <directory>modules/platforms/php/examples</directory>
             <outputDirectory>/platforms/php/examples</outputDirectory>
+        </fileSet>
+
+        <!-- Copy Python sources. -->
+        <fileSet>
+            <directory>modules/platforms/python/pyignite</directory>
+            <outputDirectory>/platforms/python/pyignite</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>modules/platforms/python/requirements</directory>
+            <outputDirectory>/platforms/python/requirements</outputDirectory>
         </fileSet>
 
         <!-- Other files. -->

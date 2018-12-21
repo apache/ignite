@@ -32,10 +32,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests rendezvous affinity function with CLIENT_ONLY node (GG-8768).
  */
+@RunWith(JUnit4.class)
 public class GridCacheRendezvousAffinityClientSelfTest extends GridCommonAbstractTest {
     /** Client node. */
     private boolean client;
@@ -63,6 +67,7 @@ public class GridCacheRendezvousAffinityClientSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientNode() throws Exception {
         try {
             client = true;

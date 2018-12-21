@@ -1,6 +1,158 @@
 Apache Ignite Release Notes
 ===========================
 
+Apache Ignite In-Memory Database and Caching Platform 2.7
+---------------------------------------------------------
+
+Ignite:
+* Added experimental support for multi-version concurrency control with snapshot isolation
+  - available for both cache API and SQL
+  - use CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT to enable it
+  - not production ready, data consistency is not guaranteed in case of node failures
+* Implemented Transparent Data Encryption based on JKS certificates
+* Implemented Node.JS Thin Client
+* Implemented Python Thin Client
+* Implemented PHP Thin Client
+* Ignite start scripts now support Java 9 and higher
+* Added ability to set WAL history size in bytes
+* Added SslContextFactory.protocols and SslContextFactory.cipherSuites properties to control which SSL encryption algorithms can be used
+* Added JCache 1.1 compliance
+* Added IgniteCompute.withNoResultCache method with semantics similar to ComputeTaskNoResultCache annotation
+* Spring Data 2.0 is now supported in the separate module 'ignite-spring-data_2.0'
+* Added monitoring of critical system workers
+* Added ability to provide custom implementations of ExceptionListener for JmsStreamer
+* Ignite KafkaStreamer was upgraded to use new KafkaConsmer configuration
+* S3 IP Finder now supports subfolder usage instead of bucket root
+* Improved dynamic cache start speed
+* Improved checkpoint performance by decreasing mark duration.
+* Added ability to manage compression level for compressed WAL archives.
+* Added metrics for Entry Processor invocations.
+* Added JMX metrics: ClusterMetricsMXBean.getTotalBaselineNodes and ClusterMetricsMXBean.getActiveBaselineNodes
+* Node uptime metric now includes days count
+* Exposed info about thin client connections through JMX
+* Introduced new system property IGNITE_REUSE_MEMORY_ON_DEACTIVATE to enable reuse of allocated memory on node deactivation (disabled by default)
+* Optimistic transaction now will be properly rolled back if waiting too long for a new topology on remap
+* ScanQuery with setLocal flag now checks if the partition is actually present on local node
+* Improved cluster behaviour when a left node does not cause partition affinity assignment changes
+* Interrupting user thread during partition initialization will no longer cause node to stop
+* Fixed problem when partition lost event was not triggered if multiple nodes left cluster
+* Fixed massive node drop from the cluster on temporary network issues
+* Fixed service redeployment on cluster reactivation
+* Fixed client node stability under ZooKeeper discovery
+* Massive performance and stability improvements
+
+Ignite .Net:
+* Add .NET Core 2.1 support
+* Added thin client connection failover
+
+Ignite C++:
+* Implemented Thin Client with base cache operations
+* Implemented smart affinity routing for Thin Client to send requests directly to nodes containing data when possible
+* Added Clang compiler support
+
+SQL:
+* Added experimental support for fully ACID transactional SQL with the snapshot isolation:
+  - use CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT to enable it
+  - a transaction can be started through native API (IgniteTransactions), thin JDBC driver or ODBC driver
+  - not production ready, data consistency is not guaranteed in case of node failures
+* Added a set of system views located in "IGNITE" schema to view cluster information (NODES, NODE_ATTRIBUTES, NODE_METRICS, BASELINE_NODES)
+* Added ability to create predefined SQL schemas
+* Added GROUP_CONCAT function support
+* Added string length constraint
+* Custom Java objects are now inlined into primary and secondary indexes what may significantly improve performance when AFFINITY_KEY is used
+* Added timeout to fail query execution in case it cannot be mapped to topology
+* Restricted number of cores allocated for CREATE INDEX by default to 4 to avoid contention on index tree Fixed transaction hanging during runtime error on commit.
+* Fixed possible memory leak when result set size is multiple of the page size
+* Fixed situation when data may be returned from cache partitions in LOST state even when PartitionLossPolicy doesn't permit it
+* Fixed "Caches have distinct sets of data nodes" during SQL JOIN query execution between REPLICATED and PARTITIONED caches
+* Fixed wrong result for SQL queries when item size exceeds the page size
+* Fixed error during SQL query from client node with the local flag set to "true"
+* Fixed handling UUID as a column type
+
+JDBC:
+* Implemented DataSource interface for the thin driver
+
+ODBC:
+* Added streaming mode support
+* Fixed crash in Linux when there are more than 1023 open file descriptors
+* Fixed bug that prevented cursors on a server from being closed
+* Fixed segmentation fault when reusing a closed connection
+
+Web Console:
+* Added new metrics: WAL and Data size on disk
+* Added support for "collocated" query mode on Query screen
+* Added support for Java 9+ for Web Agent.
+* Added ability to show/hide password field value
+* Implemented execution of selected part of SQL query
+* Implemented explain of the selected part of SQL query
+* Implemented connection to a secured cluster
+* Implemented responsive full-screen layout
+* Split "Sign In" page to three separate pages
+* UI updated to modern look and feel
+* Improved backend stability
+* Fixed fail when working with web sockets
+
+REST:
+* Added option IGNITE_REST_GETALL_AS_ARRAY for array format in "getAll" call
+
+Visor:
+* Added output of node "Consistent ID"
+* Visor now collects information about cache groups instead of separate caches to reduce memory consumption
+* Improved help for "start" command
+* Fixed output of cache metrics
+
+Control utility:
+* Added information about transaction start time
+* Added command to collect information about a distribution of partitions
+* Added command to reset lost partitions
+* Added support for empty label (control.sh --tx label null)
+* Added atomicity mode to utility output.
+* Added orphaned local and remote transactions and ability to rollback them
+* Added "--dump" flag to dump current partition state to file.
+* Renamed command argument '--force' to '--yes'
+* Removed "initOrder" and "loc keys" from an info
+* Fixed control utility hanging when connected to a joining node with PME
+
+ML:
+* Added TensorFlow integration
+* Added Estimator API support to TensorFlow cluster on top of Apache Ignite
+* Added ANN algorithm based on ACD concept
+* Added Random Forest algorithm
+* Added OneHotEncoder for categorical features
+* Added model estimation
+* Added K-fold cross-validation for ML models
+* Added splitter for splitting the dataset into test and train subsets
+* Added ability of filtering data during datasets creation
+* Added encoding categorical features with One-of-K Encoder
+* Added MinMax scaler preprocessor
+* Added gradient boosting for trees
+* Added indexing for decision trees
+* Added GDB convergence by error support
+* Added ability to build pipeline of data preprocessing and model training
+* Added ability to start and maintain TensorFlow cluster on top of Apache Ignite
+* Added support of Multi-Class for Logistic Regression
+* Implemented distributed binary logistic regression
+
+Dependency updates:
+* Apache Camel updated to 2.22.0
+* Apache Commons Beanutils updated to 1.9.3
+* Apache Hadoop Yarn updated to 2.7.7
+* Apache Kafka updated to 1.1.0
+* Apache Lucene updated to 7.4.0
+* Apache Mesos updated to 1.5.0
+* Apache Tomcat updated to 9.0.10
+* Apache Zookeeper updated to 3.4.13
+* Guava updated to 25.1-jre
+* Jackson Databind updated to 2.9.6
+* Jackson 1 usages replaced with Jackson 2
+* JCraft updated to 0.1.54
+* H2 version updated to 1.4.197
+* Log4j 2.x updated to 2.11.0
+* Netty updated to 4.1.27.Final
+* RocketMQ updated to 4.3.0
+* Scala 2.10.x was updated to 2.10.7
+* Scala 2.11.x updated to 2.11.12
+
 Apache Ignite In-Memory Database and Caching Platform 2.6
 ---------------------------------------------------------
 Ignite:

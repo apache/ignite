@@ -61,13 +61,16 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 
 /**
  * Class for multithreaded {@link TcpCommunicationSpi} test.
  */
-@SuppressWarnings({"JUnitAbstractTestClassNamingConvention"})
+@RunWith(JUnit4.class)
 public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstractTest<TcpCommunicationSpi> {
     /** Connection idle timeout */
     public static final int IDLE_CONN_TIMEOUT = 2000;
@@ -126,7 +129,6 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
     /**
      * Accumulating listener.
      */
-    @SuppressWarnings({"deprecation"})
     private static class MessageListener implements CommunicationListener<Message> {
         /** Node id of local node. */
         private final UUID locNodeId;
@@ -194,6 +196,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSendToRandomNodesMultithreaded() throws Exception {
         info(">>> Starting send to random nodes multithreaded test. <<<");
 
@@ -279,6 +282,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFlowSend() throws Exception {
         reject = true;
 
@@ -389,6 +393,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPassThroughPerformance() throws Exception {
         reject = true;
 

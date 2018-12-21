@@ -23,14 +23,19 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridCacheVersionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyVersionDrId() throws Exception {
         GridCacheVersion ver = version(10, 0);
 
@@ -76,6 +81,7 @@ public class GridCacheVersionSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMarshalling() throws Exception {
         GridCacheVersion ver = version(1, 1);
         GridCacheVersionEx verEx = new GridCacheVersionEx(2, 2, 0, ver);

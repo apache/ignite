@@ -28,7 +28,11 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -38,6 +42,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  * Test {@link IgniteCache#clear()} operation in multinode environment with nodes
  * having caches with different names.
  */
+@RunWith(JUnit4.class)
 public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
     /** Grid nodes count. */
     private static final int GRID_CNT = 3;
@@ -65,6 +70,14 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
 
     /** Cache mode which will be passed to grid configuration. */
     private String cacheName = CACHE_NAME;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-7952");
+
+        super.beforeTestsStarted();
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -122,6 +135,7 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of exception.
      */
+    @Test
     public void testGlobalClearAllPartitioned() throws Exception {
         cacheMode = PARTITIONED;
 
@@ -135,6 +149,7 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of exception.
      */
+    @Test
     public void testGlobalClearAllReplicated() throws Exception {
         cacheMode = REPLICATED;
 

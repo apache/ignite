@@ -34,6 +34,8 @@ class SegmentArchivedStorage extends SegmentObservable {
      * no segments archived.
      */
     private volatile long lastAbsArchivedIdx = -1;
+    /** Latest truncated segment. */
+    private volatile long lastTruncatedArchiveIdx = -1;
 
     /**
      * @param segmentLockStorage Protects WAL work segments from moving.
@@ -135,5 +137,19 @@ class SegmentArchivedStorage extends SegmentObservable {
      */
     private synchronized void onSegmentUnlocked(long segmentId) {
         notifyAll();
+    }
+
+    /**
+     * @param lastTruncatedArchiveIdx Last truncated segment.
+     */
+    void lastTruncatedArchiveIdx(long lastTruncatedArchiveIdx) {
+        this.lastTruncatedArchiveIdx = lastTruncatedArchiveIdx;
+    }
+
+    /**
+     * @return Last truncated segment.
+     */
+    long lastTruncatedArchiveIdx() {
+        return lastTruncatedArchiveIdx;
     }
 }

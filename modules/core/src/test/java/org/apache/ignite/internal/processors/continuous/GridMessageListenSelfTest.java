@@ -33,18 +33,23 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.messaging.MessagingListenActor;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Message listen test.
  */
+@RunWith(JUnit4.class)
 public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 3;
@@ -142,6 +147,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNullTopic() throws Exception {
         latch = new CountDownLatch(MSG_CNT * GRID_CNT);
 
@@ -149,9 +155,10 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
         send();
 
-        assert latch.await(2, SECONDS);
+        assertTrue(latch.await(2, SECONDS));
 
-        Thread.sleep(500);
+        // Make sure that no more messages received than expected.
+        U.sleep(500);
 
         assertEquals(MSG_CNT * GRID_CNT, cnt.get());
 
@@ -161,16 +168,18 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNonNullTopic() throws Exception {
         latch = new CountDownLatch(MSG_CNT * GRID_CNT);
 
-        listen(grid(0).cluster(), null, true);
+        listen(grid(0).cluster(), TOPIC, true);
 
         send();
 
-        assert latch.await(2, SECONDS);
+        assertTrue(latch.await(2, SECONDS));
 
-        Thread.sleep(500);
+        // Make sure that no more messages received than expected.
+        U.sleep(500);
 
         assertEquals(MSG_CNT * GRID_CNT, cnt.get());
 
@@ -180,6 +189,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopListen() throws Exception {
         latch = new CountDownLatch(GRID_CNT);
 
@@ -205,6 +215,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testProjection() throws Exception {
         latch = new CountDownLatch(MSG_CNT * (GRID_CNT - 1));
 
@@ -224,6 +235,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeJoin() throws Exception {
         latch = new CountDownLatch(MSG_CNT * (GRID_CNT + 1));
 
@@ -256,6 +268,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeJoinWithProjection() throws Exception {
         latch = new CountDownLatch(MSG_CNT * GRID_CNT);
 
@@ -295,6 +308,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNullTopicWithDeployment() throws Exception {
         Class<?> cls = getExternalClassLoader().loadClass(LSNR_CLS_NAME);
 
@@ -314,6 +328,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNonNullTopicWithDeployment() throws Exception {
         ClassLoader ldr = getExternalClassLoader();
 
@@ -338,6 +353,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testListenActor() throws Exception {
         latch = new CountDownLatch(MSG_CNT * (GRID_CNT + 1));
 

@@ -23,10 +23,14 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
 import org.apache.ignite.cache.CachePeekMode;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * MERGE statement test.
  */
+@RunWith(JUnit4.class)
 public class JdbcMergeStatementSelfTest extends JdbcAbstractDmlStatementSelfTest {
     /** SQL query. */
     private static final String SQL = "merge into Person(_key, id, firstName, lastName, age, data) values " +
@@ -130,6 +134,7 @@ public class JdbcMergeStatementSelfTest extends JdbcAbstractDmlStatementSelfTest
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testExecuteUpdate() throws SQLException {
         int res = stmt.executeUpdate(SQL);
 
@@ -139,6 +144,7 @@ public class JdbcMergeStatementSelfTest extends JdbcAbstractDmlStatementSelfTest
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testExecute() throws SQLException {
         boolean res = stmt.execute(SQL);
 
@@ -148,6 +154,7 @@ public class JdbcMergeStatementSelfTest extends JdbcAbstractDmlStatementSelfTest
     /**
      * @throws SQLException if failed.
      */
+    @Test
     public void testBatch() throws SQLException {
         prepStmt.setString(1, "p1");
         prepStmt.setInt(2, 1);

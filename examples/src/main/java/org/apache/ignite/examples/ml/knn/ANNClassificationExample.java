@@ -20,6 +20,7 @@ package org.apache.ignite.examples.ml.knn;
 import java.util.Arrays;
 import java.util.UUID;
 import javax.cache.Cache;
+import org.apache.commons.math3.util.Precision;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -51,7 +52,7 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
  */
 public class ANNClassificationExample {
     /** Run example. */
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> ANN multi-class classification algorithm over cached dataset usage example started.");
         // Start ignite grid.
@@ -102,7 +103,7 @@ public class ANNClassificationExample {
                     totalPredictionTime += (endPredictionTime - startPredictionTime);
 
                     totalAmount++;
-                    if (groundTruth != prediction)
+                    if (!Precision.equals(groundTruth, prediction, Precision.EPSILON))
                         amountOfErrors++;
 
                     System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);

@@ -20,6 +20,7 @@ package org.apache.ignite.ml.tree.randomforest;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
@@ -81,7 +82,8 @@ public class RandomForestClassifierTrainerTest extends TrainerTest {
             meta.add(new FeatureMeta("", i, false));
         RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(meta)
             .withAmountOfTrees(100)
-            .withFeaturesCountSelectionStrgy(x -> 2);
+            .withFeaturesCountSelectionStrgy(x -> 2)
+            .withEnvironmentBuilder(TestUtils.testEnvBuilder());
 
         ModelsComposition originalMdl = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
         ModelsComposition updatedOnSameDS = trainer.update(originalMdl, sample, parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);

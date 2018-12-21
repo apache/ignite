@@ -23,17 +23,25 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_BLOCKED;
+
 /**
  * Abstract superclass for {@link FailureHandler} implementations.
- * Maintains a set of ignored failure types.
+ * Maintains a set of ignored failure types. Failure handler will not invalidate kernal context for this failures
+ * and will not handle it.
  */
 public abstract class AbstractFailureHandler implements FailureHandler {
     /** */
     @GridToStringInclude
-    private Set<FailureType> ignoredFailureTypes = Collections.emptySet();
+    private Set<FailureType> ignoredFailureTypes = Collections.singleton(SYSTEM_WORKER_BLOCKED);
 
-    /** {@inheritDoc} */
-    @Override public void setIgnoredFailureTypes(Set<FailureType> failureTypes) {
+    /**
+     * Sets failure types that must be ignored by failure handler.
+     *
+     * @param failureTypes Set of failure type that must be ignored.
+     * @see FailureType
+     */
+    public void setIgnoredFailureTypes(Set<FailureType> failureTypes) {
         ignoredFailureTypes = Collections.unmodifiableSet(failureTypes);
     }
 
@@ -45,7 +53,7 @@ public abstract class AbstractFailureHandler implements FailureHandler {
     }
 
     /** {@inheritDoc} */
-    public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+    @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
         return !ignoredFailureTypes.contains(failureCtx.type()) && handle(ignite, failureCtx);
     }
 

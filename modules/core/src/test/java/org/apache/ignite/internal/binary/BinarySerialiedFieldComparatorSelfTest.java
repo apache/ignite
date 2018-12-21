@@ -19,10 +19,10 @@ package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -30,10 +30,14 @@ import java.util.Date;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Unit tests for serialized field comparer.
  */
+@RunWith(JUnit4.class)
 public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTest {
     /** Type counter. */
     private static final AtomicInteger TYPE_CTR = new AtomicInteger();
@@ -42,7 +46,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
     private static final String FIELD_SINGLE = "single";
 
     /** Pointers to release. */
-    private final Set<Long> ptrs = new ConcurrentHashSet<>();
+    private final Set<Long> ptrs = new GridConcurrentHashSet<>();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -80,6 +84,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testByte() throws Exception {
         checkTwoValues((byte)1, (byte)2);
     }
@@ -89,6 +94,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBoolean() throws Exception {
         checkTwoValues(true, false);
     }
@@ -98,6 +104,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testShort() throws Exception {
         checkTwoValues((short)1, (short)2);
     }
@@ -107,6 +114,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testChar() throws Exception {
         checkTwoValues('a', 'b');
     }
@@ -116,6 +124,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testInt() throws Exception {
         checkTwoValues(1, 2);
     }
@@ -125,6 +134,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLong() throws Exception {
         checkTwoValues(1L, 2L);
     }
@@ -134,6 +144,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFloat() throws Exception {
         checkTwoValues(1.0f, 2.0f);
     }
@@ -143,6 +154,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDouble() throws Exception {
         checkTwoValues(1.0d, 2.0d);
     }
@@ -152,6 +164,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testString() throws Exception {
         checkTwoValues("str1", "str2");
     }
@@ -161,6 +174,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDate() throws Exception {
         long time = System.currentTimeMillis();
 
@@ -172,6 +186,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTimestamp() throws Exception {
         long time = System.currentTimeMillis();
 
@@ -183,6 +198,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUuid() throws Exception {
         checkTwoValues(UUID.randomUUID(), UUID.randomUUID());
     }
@@ -192,6 +208,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDecimal() throws Exception {
         checkTwoValues(new BigDecimal("12.3E+7"), new BigDecimal("12.4E+7"));
         checkTwoValues(new BigDecimal("12.3E+7"), new BigDecimal("12.3E+8"));
@@ -202,6 +219,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testInnerObject() throws Exception {
         checkTwoValues(new InnerClass(1), new InnerClass(2));
     }
@@ -211,6 +229,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testByteArray() throws Exception {
         checkTwoValues(new byte[] { 1, 2 }, new byte[] { 1, 3 });
         checkTwoValues(new byte[] { 1, 2 }, new byte[] { 1 });
@@ -223,6 +242,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBooleanArray() throws Exception {
         checkTwoValues(new boolean[] { true, false }, new boolean[] { false, true });
         checkTwoValues(new boolean[] { true, false }, new boolean[] { true });
@@ -235,6 +255,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testShortArray() throws Exception {
         checkTwoValues(new short[] { 1, 2 }, new short[] { 1, 3 });
         checkTwoValues(new short[] { 1, 2 }, new short[] { 1 });
@@ -247,6 +268,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCharArray() throws Exception {
         checkTwoValues(new char[] { 1, 2 }, new char[] { 1, 3 });
         checkTwoValues(new char[] { 1, 2 }, new char[] { 1 });
@@ -259,6 +281,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIntArray() throws Exception {
         checkTwoValues(new int[] { 1, 2 }, new int[] { 1, 3 });
         checkTwoValues(new int[] { 1, 2 }, new int[] { 1 });
@@ -271,6 +294,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLongArray() throws Exception {
         checkTwoValues(new long[] { 1, 2 }, new long[] { 1, 3 });
         checkTwoValues(new long[] { 1, 2 }, new long[] { 1 });
@@ -283,6 +307,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFloatArray() throws Exception {
         checkTwoValues(new float[] { 1.0f, 2.0f }, new float[] { 1.0f, 3.0f });
         checkTwoValues(new float[] { 1.0f, 2.0f }, new float[] { 1.0f });
@@ -295,6 +320,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDoubleArray() throws Exception {
         checkTwoValues(new double[] { 1.0d, 2.0d }, new double[] { 1.0d, 3.0d });
         checkTwoValues(new double[] { 1.0d, 2.0d }, new double[] { 1.0d });
@@ -307,6 +333,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testStringArray() throws Exception {
         checkTwoValues(new String[] { "a", "b" }, new String[] { "a", "c" });
         checkTwoValues(new String[] { "a", "b" }, new String[] { "a" });
@@ -319,6 +346,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDateArray() throws Exception {
         long curTime = System.currentTimeMillis();
 
@@ -337,6 +365,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTimestampArray() throws Exception {
         long curTime = System.currentTimeMillis();
 
@@ -355,6 +384,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUuidArray() throws Exception {
         UUID v1 = UUID.randomUUID();
         UUID v2 = UUID.randomUUID();
@@ -371,6 +401,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDecimalArray() throws Exception {
         BigDecimal v1 = new BigDecimal("12.3E+7");
         BigDecimal v2 = new BigDecimal("12.4E+7");
@@ -395,6 +426,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testInnerObjectArray() throws Exception {
         InnerClass v1 = new InnerClass(1);
         InnerClass v2 = new InnerClass(2);

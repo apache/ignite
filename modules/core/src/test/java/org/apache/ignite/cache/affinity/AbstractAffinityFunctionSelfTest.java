@@ -32,10 +32,14 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstractTest {
     /** MAC prefix. */
     private static final String MAC_PREF = "MAC";
@@ -50,6 +54,7 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeRemovedNoBackups() throws Exception {
         checkNodeRemoved(0);
     }
@@ -57,6 +62,7 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeRemovedOneBackup() throws Exception {
         checkNodeRemoved(1);
     }
@@ -64,6 +70,7 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeRemovedTwoBackups() throws Exception {
         checkNodeRemoved(2);
     }
@@ -71,6 +78,7 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeRemovedThreeBackups() throws Exception {
         checkNodeRemoved(3);
     }
@@ -78,6 +86,7 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomReassignmentNoBackups() throws Exception {
         checkRandomReassignment(0);
     }
@@ -85,6 +94,7 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomReassignmentOneBackup() throws Exception {
         checkRandomReassignment(1);
     }
@@ -92,6 +102,7 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomReassignmentTwoBackups() throws Exception {
         checkRandomReassignment(2);
     }
@@ -99,6 +110,7 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomReassignmentThreeBackups() throws Exception {
         checkRandomReassignment(3);
     }
@@ -107,6 +119,7 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
      * @param backups Number of backups.
      * @throws Exception If failed.
      */
+    @Test
     public void testNullKeyForPartitionCalculation() throws Exception {
         AffinityFunction aff = affinityFunction();
 

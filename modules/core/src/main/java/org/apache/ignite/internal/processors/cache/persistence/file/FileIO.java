@@ -253,4 +253,23 @@ public interface FileIO extends AutoCloseable {
      * @throws IOException If some I/O error occurs.
      */
     @Override public void close() throws IOException;
+
+    /**
+     * @return File system block size or negative value if unknown.
+     */
+    public int getFileSystemBlockSize();
+
+    /**
+     * @param position Starting file position.
+     * @param len Number of bytes to free.
+     * @return The actual freed size or negative value if not supported.
+     */
+    int punchHole(long position, int len);
+
+    /**
+     * @return Approximate system dependent size of the storage or negative
+     *          value if not supported.
+     * @see #punchHole
+     */
+    long getSparseSize();
 }

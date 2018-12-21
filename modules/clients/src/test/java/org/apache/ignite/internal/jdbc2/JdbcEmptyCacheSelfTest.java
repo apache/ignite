@@ -24,6 +24,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.sql.*;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteJdbcDriver.*;
 import static org.apache.ignite.cache.CacheMode.*;
@@ -32,6 +35,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 /**
  * Tests for empty cache.
  */
+@RunWith(JUnit4.class)
 public class JdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -99,6 +103,7 @@ public class JdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSelectNumber() throws Exception {
         ResultSet rs = stmt.executeQuery("select 1");
 
@@ -117,6 +122,7 @@ public class JdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSelectString() throws Exception {
         ResultSet rs = stmt.executeQuery("select 'str'");
 

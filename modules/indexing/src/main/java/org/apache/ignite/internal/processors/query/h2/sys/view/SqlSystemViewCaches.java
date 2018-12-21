@@ -124,7 +124,7 @@ public class SqlSystemViewCaches extends SqlAbstractLocalSystemView {
                 cache.cacheId(),
                 cache.cacheType(),
                 cache.groupId(),
-                cache.groupDescriptor().groupName(),
+                cache.groupDescriptor().cacheOrGroupName(),
                 cache.cacheConfiguration().getCacheMode(),
                 cache.cacheConfiguration().getAtomicityMode(),
                 cache.cacheConfiguration().isOnheapCacheEnabled(),

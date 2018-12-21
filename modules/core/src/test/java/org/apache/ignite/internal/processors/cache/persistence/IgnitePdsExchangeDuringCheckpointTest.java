@@ -24,15 +24,18 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsExchangeDuringCheckpointTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -43,6 +46,7 @@ public class IgnitePdsExchangeDuringCheckpointTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testExchangeOnNodeLeft() throws Exception {
         for (int i = 0; i < 5; i++) {
             startGrids(3);
@@ -64,6 +68,7 @@ public class IgnitePdsExchangeDuringCheckpointTest extends GridCommonAbstractTes
     /**
      *
      */
+    @Test
     public void testExchangeOnNodeJoin() throws Exception {
         for (int i = 0; i < 5; i++) {
             startGrids(2);
@@ -106,6 +111,7 @@ public class IgnitePdsExchangeDuringCheckpointTest extends GridCommonAbstractTes
 
         CacheConfiguration ccfgNp = new CacheConfiguration("nonPersistentCache");
         ccfgNp.setDataRegionName(NO_PERSISTENCE_REGION);
+        ccfgNp.setDiskPageCompression(null);
 
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 4096));
 

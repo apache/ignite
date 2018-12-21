@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.selection;
 
+import junit.framework.JUnit4TestAdapter;
+import junit.framework.TestSuite;
 import org.apache.ignite.ml.selection.cv.CrossValidationTest;
 import org.apache.ignite.ml.selection.paramgrid.ParameterSetGeneratorTest;
 import org.apache.ignite.ml.selection.scoring.cursor.CacheBasedLabelPairCursorTest;
@@ -29,25 +31,32 @@ import org.apache.ignite.ml.selection.scoring.metric.RecallTest;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitterTest;
 import org.apache.ignite.ml.selection.split.mapper.SHA256UniformMapperTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for all tests located in org.apache.ignite.ml.selection.* package.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    CrossValidationTest.class,
-    EvaluatorTest.class,
-    ParameterSetGeneratorTest.class,
-    CacheBasedLabelPairCursorTest.class,
-    LocalLabelPairCursorTest.class,
-    AccuracyTest.class,
-    PrecisionTest.class,
-    RecallTest.class,
-    FmeasureTest.class,
-    SHA256UniformMapperTest.class,
-    TrainTestDatasetSplitterTest.class
-})
+@RunWith(AllTests.class)
 public class SelectionTestSuite {
-    // No-op.
+    /** */
+    public static TestSuite suite() {
+        TestSuite suite = new TestSuite();
+
+        /** JUnit 4 tests. */
+        suite.addTest(new JUnit4TestAdapter(CrossValidationTest.class));
+        suite.addTest(new JUnit4TestAdapter(ParameterSetGeneratorTest.class));
+        suite.addTest(new JUnit4TestAdapter(LocalLabelPairCursorTest.class));
+        suite.addTest(new JUnit4TestAdapter(AccuracyTest.class));
+        suite.addTest(new JUnit4TestAdapter(PrecisionTest.class));
+        suite.addTest(new JUnit4TestAdapter(RecallTest.class));
+        suite.addTest(new JUnit4TestAdapter(FmeasureTest.class));
+        suite.addTest(new JUnit4TestAdapter(SHA256UniformMapperTest.class));
+        suite.addTest(new JUnit4TestAdapter(TrainTestDatasetSplitterTest.class));
+
+        /** JUnit 3 tests. */
+        suite.addTestSuite(EvaluatorTest.class);
+        suite.addTestSuite(CacheBasedLabelPairCursorTest.class);
+
+        return suite;
+    }
 }

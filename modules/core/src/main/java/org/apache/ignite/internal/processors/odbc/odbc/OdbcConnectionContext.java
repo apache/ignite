@@ -188,5 +188,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** {@inheritDoc} */
     @Override public void onDisconnected() {
         handler.onDisconnect();
+
+        super.onDisconnected();
     }
 }

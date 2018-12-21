@@ -26,5 +26,26 @@ import java.util.function.Function;
  * @see java.util.function.Function
  */
 public interface IgniteFunction<T, R> extends Function<T, R>, Serializable {
+    /**
+     * {@link IgniteFunction} returning specified constant.
+     *
+     * @param r Constant to return.
+     * @param <T> Type of input.
+     * @param <R> Type of output.
+     * @return {@link IgniteFunction} returning specified constant.
+     */
+    // TODO: IGNITE-10653 Maybe we should add toString description to identity and constant.
+    public static <T, R> IgniteFunction<T, R> constant(R r) {
+        return (IgniteFunction<T, R>)t -> r;
+    }
 
+    /**
+     * Identity function.
+     *
+     * @param <T> Type of input and output.
+     * @return Identity function.
+     */
+    public static <T> IgniteFunction<T, T> identity() {
+        return (IgniteFunction<T, T>)t -> t;
+    }
 }

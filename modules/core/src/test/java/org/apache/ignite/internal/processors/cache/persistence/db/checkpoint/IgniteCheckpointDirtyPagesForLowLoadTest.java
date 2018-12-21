@@ -36,11 +36,15 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test generates low load to grid in having some shared groups. Test checks if pages marked dirty after some time will
  * became reasonable low for 1 put.
  */
+@RunWith(JUnit4.class)
 public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstractTest {
     /** Caches in group. */
     private static final int CACHES_IN_GRP = 1;
@@ -68,7 +72,6 @@ public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstract
         cfg.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
-        dsCfg.setPageSize(1024); //smaller page to reduce overhead to short values
         dsCfg.setDefaultDataRegionConfiguration(
             new DataRegionConfiguration()
                 .setPersistenceEnabled(true)
@@ -99,6 +102,7 @@ public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstract
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testManyCachesAndNotManyPuts() throws Exception {
         try {
             IgniteEx ignite = startGrid(0);

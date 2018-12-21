@@ -531,7 +531,6 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void delete(Object key) {
         try {
             if (log.isDebugEnabled())

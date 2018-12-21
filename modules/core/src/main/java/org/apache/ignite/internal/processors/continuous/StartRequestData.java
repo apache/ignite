@@ -245,7 +245,6 @@ class StartRequestData implements Externalizable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         boolean b = in.readBoolean();
 

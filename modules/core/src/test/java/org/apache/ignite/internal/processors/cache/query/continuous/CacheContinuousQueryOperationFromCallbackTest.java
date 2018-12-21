@@ -60,6 +60,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -71,6 +74,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbstractTest {
     /** */
     public static final int KEYS = 10;
@@ -136,6 +140,47 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testAtomicOneBackup() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, ATOMIC, FULL_SYNC);
+
+        doTest(ccfg, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTxOneBackupFilter() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL, FULL_SYNC);
+
+        doTest(ccfg, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTxOneBackupFilterPrimary() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL, PRIMARY_SYNC);
+
+        doTest(ccfg, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTxOneBackup() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL, FULL_SYNC);
+
+        doTest(ccfg, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testAtomicTwoBackups() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC, FULL_SYNC);
 
@@ -145,6 +190,7 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxTwoBackupsFilter() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL, FULL_SYNC);
 
@@ -154,6 +200,7 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxTwoBackupsFilterPrimary() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL, PRIMARY_SYNC);
 
@@ -163,6 +210,7 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxReplicatedFilter() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED, 0, TRANSACTIONAL, FULL_SYNC);
 
@@ -172,6 +220,7 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxTwoBackup() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL, FULL_SYNC);
 
@@ -181,6 +230,7 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxReplicated() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED, 2, TRANSACTIONAL, FULL_SYNC);
 
@@ -190,6 +240,7 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxReplicatedPrimary() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED, 2, TRANSACTIONAL, PRIMARY_SYNC);
 

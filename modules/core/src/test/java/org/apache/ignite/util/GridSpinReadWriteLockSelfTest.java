@@ -23,10 +23,14 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridSpinReadWriteLockSelfTest extends GridCommonAbstractTest {
     /** Constructor. */
     public GridSpinReadWriteLockSelfTest() {
@@ -36,6 +40,7 @@ public class GridSpinReadWriteLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testWriteLockReentry() throws Exception {
         GridSpinReadWriteLock lock = new GridSpinReadWriteLock();
 
@@ -51,6 +56,7 @@ public class GridSpinReadWriteLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testReadLockReentry() throws Exception {
         final GridSpinReadWriteLock lock = new GridSpinReadWriteLock();
 
@@ -93,6 +99,7 @@ public class GridSpinReadWriteLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testLockDowngrade() throws Exception {
         GridSpinReadWriteLock lock = new GridSpinReadWriteLock();
 
@@ -124,6 +131,7 @@ public class GridSpinReadWriteLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testMonitorState() throws Exception {
         GridSpinReadWriteLock lock = new GridSpinReadWriteLock();
 

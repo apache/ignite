@@ -19,15 +19,20 @@ package org.apache.ignite.spi.eventstorage.memory;
 
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Memory event storage SPI config test.
  */
 @GridSpiTest(spi = MemoryEventStorageSpi.class, group = "Event Storage SPI")
+@RunWith(JUnit4.class)
 public class GridMemoryEventStorageSpiConfigSelfTest extends GridSpiAbstractConfigTest<MemoryEventStorageSpi> {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNegativeConfig() throws Exception {
         checkNegativeSpiProperty(new MemoryEventStorageSpi(), "expireCount", 0);
         checkNegativeSpiProperty(new MemoryEventStorageSpi(), "expireAgeMs", 0);

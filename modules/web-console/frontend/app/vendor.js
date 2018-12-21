@@ -28,6 +28,8 @@ import 'angular-messages';
 import '@uirouter/angularjs';
 import '@uirouter/angularjs/lib/legacy/stateEvents';
 
+import 'resize-observer-polyfill';
+
 import 'tf-metatags';
 import 'angular-translate';
 import 'angular-smart-table';

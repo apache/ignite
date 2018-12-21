@@ -36,10 +36,14 @@ import javax.cache.event.CacheEntryUpdatedListener;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridCommonAbstractTest {
     /** URL of classes. */
     private static final URL[] URLS;
@@ -97,6 +101,7 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testWarningMessageOnClientNode() throws Exception {
         ldr = new URLClassLoader(URLS, getClass().getClassLoader());
 
@@ -121,6 +126,7 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testNoWarningMessageOnClientNode() throws Exception {
         ldr = new URLClassLoader(URLS, getClass().getClassLoader());
 
@@ -143,6 +149,7 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testExceptionOnServerNode() throws Exception {
         ldr = new URLClassLoader(URLS, getClass().getClassLoader());
 
@@ -168,6 +175,7 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testNoExceptionOnServerNode() throws Exception {
         ldr = new URLClassLoader(URLS, getClass().getClassLoader());
 

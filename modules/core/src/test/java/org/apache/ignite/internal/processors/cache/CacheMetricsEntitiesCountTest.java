@@ -17,15 +17,23 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * This test checks that entries count metrics, calculated by method
@@ -33,6 +41,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * over local partitions to get all set of metrics), have the same values as metrics, calculated by individual methods
  * (which use iteration over local partition per each method call).
  */
+@RunWith(JUnit4.class)
 public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 3;
@@ -48,35 +57,45 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
         CachePeekMode.ONHEAP, CachePeekMode.PRIMARY, CachePeekMode.BACKUP, CachePeekMode.NEAR};
 
     /** Cache count. */
-    private static final int CACHE_CNT = 4;
+    private static int cacheCnt = 4;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration<?, ?> ccfg0 = new CacheConfiguration<>()
+        Collection<CacheConfiguration> ccfgs = new ArrayList<>(4);
+
+        ccfgs.add(new CacheConfiguration<>()
             .setName(CACHE_PREFIX + 0)
-            .setCacheMode(CacheMode.LOCAL);
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+            .setCacheMode(CacheMode.REPLICATED)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
-        CacheConfiguration<?, ?> ccfg1 = new CacheConfiguration<>()
+        ccfgs.add(new CacheConfiguration<>()
             .setName(CACHE_PREFIX + 1)
-            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-            .setCacheMode(CacheMode.REPLICATED);
-
-        CacheConfiguration<?, ?> ccfg2 = new CacheConfiguration<>()
-            .setName(CACHE_PREFIX + 2)
-            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-            .setCacheMode(CacheMode.PARTITIONED)
-            .setBackups(1);
-
-        CacheConfiguration<?, ?> ccfg3 = new CacheConfiguration<>()
-            .setName(CACHE_PREFIX + 3)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
             .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(1)
-            .setNearConfiguration(new NearCacheConfiguration<>());
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
-        cfg.setCacheConfiguration(ccfg0, ccfg1, ccfg2, ccfg3);
+        ccfgs.add(new CacheConfiguration<>()
+            .setName(CACHE_PREFIX + 2)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setBackups(1)
+            .setNearConfiguration(new NearCacheConfiguration<>())
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
+        if (!MvccFeatureChecker.forcedMvcc() || MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.LOCAL_CACHE)) {
+            ccfgs.add(new CacheConfiguration<>()
+                .setName(CACHE_PREFIX + 3)
+                .setCacheMode(CacheMode.LOCAL)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+        }
+
+        cacheCnt = ccfgs.size();
+
+        cfg.setCacheConfiguration(U.toArray(ccfgs, new CacheConfiguration[cacheCnt]));
 
         return cfg;
     }
@@ -89,15 +108,16 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
     /**
      * Test entities count, calculated by different implementations.
      */
+    @Test
     public void testEnitiesCount() throws Exception {
         awaitPartitionMapExchange();
 
         for (int igniteIdx = 0; igniteIdx < GRID_CNT; igniteIdx++)
-            for (int cacheIdx = 0; cacheIdx < CACHE_CNT; cacheIdx++)
+            for (int cacheIdx = 0; cacheIdx < cacheCnt; cacheIdx++)
                 fillCache(igniteIdx, cacheIdx);
 
         for (int igniteIdx = 0; igniteIdx < GRID_CNT; igniteIdx++)
-            for (int cacheIdx = 0; cacheIdx < CACHE_CNT; cacheIdx++)
+            for (int cacheIdx = 0; cacheIdx < cacheCnt; cacheIdx++)
                 checkCache(igniteIdx, cacheIdx);
     }
 

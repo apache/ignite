@@ -25,10 +25,14 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * {@link IgfsEntryInfo} test case.
  */
+@RunWith(JUnit4.class)
 public class IgfsFileInfoSelfTest extends IgfsCommonAbstractTest {
     /** Marshaller to test {@link Externalizable} interface. */
     private final Marshaller marshaller;
@@ -44,13 +48,13 @@ public class IgfsFileInfoSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSerialization() throws Exception {
         marshaller.setContext(new MarshallerContextTestImpl());
 
         multithreaded(new Callable<Object>() {
             private final Random rnd = new Random();
 
-            @SuppressWarnings("deprecation") // Suppress due to default constructor should never be used directly.
             @Nullable @Override public Object call() throws IgniteCheckedException {
                 testSerialization(IgfsUtils.createDirectory(IgniteUuid.randomUuid()));
 

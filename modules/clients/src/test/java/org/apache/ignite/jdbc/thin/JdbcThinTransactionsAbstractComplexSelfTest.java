@@ -44,13 +44,17 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test to check various transactional scenarios.
  */
+@RunWith(JUnit4.class)
 public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcThinAbstractSelfTest {
     /** Client node index. */
-    final static int CLI_IDX = 1;
+    static final int CLI_IDX = 1;
 
     /**
      * Closure to perform ordinary delete after repeatable read.
@@ -227,6 +231,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testSingleDmlStatement() throws SQLException {
         insertPerson(6, "John", "Doe", 2, 2);
 
@@ -237,6 +242,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testMultipleDmlStatements() throws SQLException {
         executeInTransaction(new TransactionClosure() {
             @Override public void apply(Connection conn) {
@@ -259,6 +265,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testBatchDmlStatements() throws SQLException {
         doBatchedInsert();
 
@@ -271,7 +278,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @Test
     public void testBatchDmlStatementsIntermediateFailure() throws SQLException {
         insertPerson(6, "John", "Doe", 2, 2);
 
@@ -339,6 +346,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testInsertAndQueryMultipleCaches() throws SQLException {
         executeInTransaction(new TransactionClosure() {
             @Override public void apply(Connection conn) {
@@ -360,6 +368,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testColocatedJoinSelectAndInsertInTransaction() throws SQLException {
         // We'd like to put some Google into cities with over 1K population which don't have it yet
         executeInTransaction(new TransactionClosure() {
@@ -383,6 +392,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testDistributedJoinSelectAndInsertInTransaction() throws SQLException {
         try (Connection c = connect("distributedJoins=true")) {
             // We'd like to put some Google into cities with over 1K population which don't have it yet
@@ -408,6 +418,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testInsertFromExpression() throws SQLException {
         executeInTransaction(new TransactionClosure() {
             @Override public void apply(Connection conn) {
@@ -420,6 +431,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testAutoRollback() throws SQLException {
         try (Connection c = connect()) {
             begin(c);
@@ -435,6 +447,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testRepeatableReadWithConcurrentDelete() throws Exception {
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
@@ -446,6 +459,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testRepeatableReadWithConcurrentFastDelete() throws Exception {
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
@@ -457,6 +471,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testRepeatableReadWithConcurrentCacheRemove() throws Exception {
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
@@ -468,6 +483,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testRepeatableReadAndDeleteWithConcurrentDelete() throws Exception {
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
@@ -479,6 +495,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testRepeatableReadAndDeleteWithConcurrentFastDelete() throws Exception {
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
@@ -490,6 +507,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testRepeatableReadAndDeleteWithConcurrentCacheRemove() throws Exception {
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
@@ -501,6 +519,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testRepeatableReadAndFastDeleteWithConcurrentDelete() throws Exception {
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
@@ -512,6 +531,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testRepeatableReadAndFastDeleteWithConcurrentFastDelete() throws Exception {
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
@@ -523,6 +543,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testRepeatableReadAndFastDeleteWithConcurrentCacheRemove() throws Exception {
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
@@ -534,6 +555,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testRepeatableReadAndDeleteWithConcurrentDeleteAndRollback() throws Exception {
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
@@ -545,6 +567,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testRepeatableReadAndDeleteWithConcurrentFastDeleteAndRollback() throws Exception {
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
@@ -556,6 +579,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testRepeatableReadAndDeleteWithConcurrentCacheRemoveAndRollback() throws Exception {
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
@@ -567,6 +591,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testRepeatableReadAndFastDeleteWithConcurrentDeleteAndRollback() throws Exception {
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
@@ -578,6 +603,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testRepeatableReadAndFastDeleteWithConcurrentFastDeleteAndRollback() throws Exception {
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
@@ -589,6 +615,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testRepeatableReadAndFastDeleteWithConcurrentCacheRemoveAndRollback() throws Exception {
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
@@ -600,6 +627,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testRepeatableReadWithConcurrentUpdate() throws Exception {
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
@@ -611,6 +639,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testRepeatableReadWithConcurrentCacheReplace() throws Exception {
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
@@ -628,6 +657,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testRepeatableReadAndUpdateWithConcurrentUpdate() throws Exception {
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
@@ -639,6 +669,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testRepeatableReadAndUpdateWithConcurrentCacheReplace() throws Exception {
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
@@ -656,6 +687,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testRepeatableReadAndUpdateWithConcurrentUpdateAndRollback() throws Exception {
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
@@ -667,6 +699,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @Test
     public void testRepeatableReadAndUpdateWithConcurrentCacheReplaceAndRollback() throws Exception {
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
@@ -688,7 +721,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      *     (must yield an exception).
      * @throws Exception if failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void doTestRepeatableRead(final IgniteInClosure<Connection> concurrentWriteClo,
         final IgniteInClosure<Connection> afterReadClo) throws Exception {
         final CountDownLatch repeatableReadLatch = new CountDownLatch(1);
@@ -755,11 +787,11 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
 
                     return null;
                 }
-            }, IgniteCheckedException.class, "Mvcc version mismatch.");
+            }, IgniteCheckedException.class, "Cannot serialize transaction due to write conflict");
 
             assertTrue(X.hasCause(ex, SQLException.class));
 
-            assertTrue(X.getCause(ex).getMessage().contains("Mvcc version mismatch."));
+            assertTrue(X.getCause(ex).getMessage().contains("Cannot serialize transaction due to write conflict"));
         }
         else
             readFut.get();
@@ -1016,7 +1048,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      * Person class.
      */
-    private final static class Person {
+    private static final class Person {
         /** */
         @QuerySqlField
         public int id;

@@ -19,6 +19,7 @@ package org.apache.ignite.ml.composition.boosting;
 
 import org.apache.ignite.ml.composition.boosting.loss.SquaredError;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
@@ -52,5 +53,10 @@ public abstract class GDBRegressionTrainer extends GDBTrainer {
     /** {@inheritDoc} */
     @Override protected double internalLabelToExternal(double x) {
         return x;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GDBRegressionTrainer withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        return (GDBRegressionTrainer)super.withEnvironmentBuilder(envBuilder);
     }
 }

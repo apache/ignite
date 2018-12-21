@@ -36,6 +36,9 @@ import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
@@ -46,6 +49,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Test for MVCC caches update counters behaviour.
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
@@ -55,6 +59,7 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateCountersInsertSimple() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -93,6 +98,7 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateCountersDoubleUpdate() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -139,6 +145,7 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateCountersRollback() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -185,6 +192,7 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeleteOwnKey() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, 1)
             .setCacheMode(CacheMode.REPLICATED)
@@ -320,6 +328,7 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateCountersMultithreaded() throws Exception {
         final int writers = 4;
 

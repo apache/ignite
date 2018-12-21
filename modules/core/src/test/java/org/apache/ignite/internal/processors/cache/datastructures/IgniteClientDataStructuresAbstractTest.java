@@ -43,10 +43,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonAbstractTest {
     /** */
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -87,6 +91,7 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSequence() throws Exception {
         Ignite clientNode = clientIgnite();
         Ignite srvNode = serverNode();
@@ -147,6 +152,7 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicLong() throws Exception {
         Ignite clientNode = clientIgnite();
         Ignite srvNode = serverNode();
@@ -226,6 +232,7 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSet() throws Exception {
         Ignite clientNode = clientIgnite();
         Ignite srvNode = serverNode();
@@ -274,6 +281,7 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLatch() throws Exception {
         Ignite clientNode = clientIgnite();
         Ignite srvNode = serverNode();
@@ -352,6 +360,7 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSemaphore() throws Exception {
         Ignite clientNode = clientIgnite();
         Ignite srvNode = serverNode();
@@ -430,6 +439,7 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReentrantLock() throws Exception {
         Ignite clientNode = clientIgnite();
         Ignite srvNode = serverNode();
@@ -520,6 +530,7 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueue() throws Exception {
         Ignite clientNode = clientIgnite();
         Ignite srvNode = serverNode();

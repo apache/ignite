@@ -24,10 +24,14 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for new NIO server with SSL enabled.
  */
+@RunWith(JUnit4.class)
 public class GridNioSslSelfTest extends GridNioSelfTest {
     /** Test SSL context. */
     private static SSLContext sslCtx;
@@ -75,12 +79,14 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testWriteTimeout() throws Exception {
         // Skip base test because it enables "skipWrite" mode in the GridNioServer
         // which makes SSL handshake impossible.
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testAsyncSendReceive() throws Exception {
         // No-op, do not want to mess with SSL channel.
     }

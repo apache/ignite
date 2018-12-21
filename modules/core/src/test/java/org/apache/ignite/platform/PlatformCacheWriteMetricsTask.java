@@ -41,7 +41,6 @@ import java.util.Map;
 /**
  * Test task writing predefined metrics values to a stream.
  */
-@SuppressWarnings("UnusedDeclaration")
 public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Object> {
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Long ptr) {

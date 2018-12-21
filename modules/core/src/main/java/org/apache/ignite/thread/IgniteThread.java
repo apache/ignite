@@ -57,10 +57,10 @@ public class IgniteThread extends Thread {
     private final byte plc;
 
     /** */
-    private boolean executingEntryProcessor;
+    private boolean holdsTopLock;
 
     /** */
-    private boolean holdsTopLock;
+    private boolean forbiddenToRequestBinaryMetadata;
 
     /**
      * Creates thread with given worker.
@@ -164,17 +164,10 @@ public class IgniteThread extends Thread {
     }
 
     /**
-     * @return {@code True} if thread is currently executing entry processor.
+     * @return {@code True} if thread is not allowed to request binary metadata to avoid potential deadlock.
      */
-    public boolean executingEntryProcessor() {
-        return executingEntryProcessor;
-    }
-
-    /**
-     * @return {@code True} if thread is currently holds topology lock.
-     */
-    public boolean holdsTopLock() {
-        return holdsTopLock;
+    public boolean isForbiddenToRequestBinaryMetadata() {
+        return holdsTopLock || forbiddenToRequestBinaryMetadata;
     }
 
     /**
@@ -183,11 +176,8 @@ public class IgniteThread extends Thread {
     public static void onEntryProcessorEntered(boolean holdsTopLock) {
         Thread curThread = Thread.currentThread();
 
-        if (curThread instanceof IgniteThread) {
-            ((IgniteThread)curThread).executingEntryProcessor = true;
-
+        if (curThread instanceof IgniteThread)
             ((IgniteThread)curThread).holdsTopLock = holdsTopLock;
-        }
     }
 
     /**
@@ -197,7 +187,27 @@ public class IgniteThread extends Thread {
         Thread curThread = Thread.currentThread();
 
         if (curThread instanceof IgniteThread)
-            ((IgniteThread)curThread).executingEntryProcessor = false;
+            ((IgniteThread)curThread).holdsTopLock = false;
+    }
+
+    /**
+     * Callback on entering critical section where binary metadata requests are forbidden.
+     */
+    public static void onForbidBinaryMetadataRequestSectionEntered() {
+        Thread curThread = Thread.currentThread();
+
+        if (curThread instanceof IgniteThread)
+            ((IgniteThread)curThread).forbiddenToRequestBinaryMetadata = true;
+    }
+
+    /**
+     * Callback on leaving critical section where binary metadata requests are forbidden.
+     */
+    public static void onForbidBinaryMetadataRequestSectionLeft() {
+        Thread curThread = Thread.currentThread();
+
+        if (curThread instanceof IgniteThread)
+            ((IgniteThread)curThread).forbiddenToRequestBinaryMetadata = false;
     }
 
     /**

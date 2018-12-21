@@ -357,7 +357,6 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @param key Thread-local context key.
      * @return Thread-local context value, if any.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable private <V> V getThreadContext(GridTaskThreadContextKey key) {
         return thCtx == null ? null : (V)thCtx.get(key);
     }
@@ -469,7 +468,6 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     /**
      * Maps this task's jobs to nodes and sends them out.
      */
-    @SuppressWarnings({"unchecked"})
     @Override protected void body() {
         evtLsnr.onTaskStarted(this);
 
@@ -1039,7 +1037,6 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @param results Existing job results.
      * @return Job result policy.
      */
-    @SuppressWarnings({"CatchGenericClass"})
     @Nullable private ComputeJobResultPolicy result(final ComputeJobResult jobRes, final List<ComputeJobResult> results) {
         assert !Thread.holdsLock(mux);
 
@@ -1648,7 +1645,6 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public boolean equals(Object obj) {
         if (this == obj)
             return true;

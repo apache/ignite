@@ -48,7 +48,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
@@ -171,7 +170,6 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /**
      * @return Full map string representation.
      */
-    @SuppressWarnings({"ConstantConditions"})
     private String fullMapString() {
         return node2part == null ? "null" : FULL_MAP_DEBUG ? node2part.toFullString() : node2part.toString();
     }
@@ -180,7 +178,6 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
      * @param map Map to get string for.
      * @return Full map string representation.
      */
-    @SuppressWarnings({"ConstantConditions"})
     private String mapString(GridDhtPartitionMap map) {
         return map == null ? "null" : FULL_MAP_DEBUG ? map.toFullString() : map.toString();
     }
@@ -202,11 +199,6 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public MvccCoordinator mvccCoordinator() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean holdsLock() {
         return lock.isWriteLockedByCurrentThread() || lock.getReadHoldCount() > 0;
     }
@@ -215,7 +207,6 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     @Override public void updateTopologyVersion(
         GridDhtTopologyFuture exchFut,
         DiscoCache discoCache,
-        MvccCoordinator mvccCrd,
         long updSeq,
         boolean stopping
     ) throws IgniteInterruptedCheckedException {
@@ -718,7 +709,6 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Override public boolean update(
         @Nullable AffinityTopologyVersion exchangeVer,
         GridDhtPartitionFullMap partMap,
@@ -885,7 +875,6 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Override public boolean update(
         @Nullable GridDhtPartitionExchangeId exchId,
         GridDhtPartitionMap parts,
@@ -1119,7 +1108,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void ownMoving(AffinityTopologyVersion topVer) {
+    @Override public void ownMoving(AffinityTopologyVersion rebFinishedTopVer) {
         // No-op
     }
 
@@ -1236,6 +1225,11 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @Override public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros) {
         return CachePartitionPartialCountersMap.EMPTY;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finalizeUpdateCounters() {
+        // No-op.
     }
 
     /** {@inheritDoc} */

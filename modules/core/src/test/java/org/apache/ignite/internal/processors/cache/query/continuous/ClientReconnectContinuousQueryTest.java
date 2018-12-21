@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -37,10 +38,14 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
     /** Client index. */
     private static final int CLIENT_IDX = 1;
@@ -77,6 +82,12 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
         else {
             CacheConfiguration ccfg = defaultCacheConfiguration();
 
+            ccfg.setAtomicityMode(atomicityMode());
+
+            // TODO IGNITE-9530 Remove this clause.
+            if (atomicityMode() == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
+                ccfg.setNearConfiguration(null);
+
             cfg.setCacheConfiguration(ccfg);
         }
 
@@ -84,10 +95,18 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return Transaction snapshot.
+     */
+    protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL;
+    }
+
+    /**
      * Test client reconnect to alive grid.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnect() throws Exception {
         try {
             startGrids(2);

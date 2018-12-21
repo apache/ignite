@@ -110,11 +110,8 @@ import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
 import static javax.cache.event.EventType.REMOVED;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
-import static org.apache.ignite.IgniteSystemProperties.getString;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -124,9 +121,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions"})
 public class GridServiceProcessor extends GridProcessorAdapter implements IgniteChangeGlobalStateSupport {
-    /** */
-    private final Boolean srvcCompatibilitySysProp;
-
     /** Time to wait before reassignment retries. */
     private static final long RETRY_TIMEOUT = 1000;
 
@@ -183,10 +177,6 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
         depExe = Executors.newSingleThreadExecutor(new IgniteThreadFactory(ctx.igniteInstanceName(),
             "srvc-deploy", oomeHnd));
-
-        String servicesCompatibilityMode = getString(IGNITE_SERVICES_COMPATIBILITY_MODE);
-
-        srvcCompatibilitySysProp = servicesCompatibilityMode == null ? null : Boolean.valueOf(servicesCompatibilityMode);
     }
 
     /**
@@ -205,8 +195,6 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        ctx.addNodeAttribute(ATTR_SERVICES_COMPATIBILITY_MODE, srvcCompatibilitySysProp);
-
         if (ctx.isDaemon())
             return;
 
@@ -220,7 +208,6 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
         if (ctx.isDaemon() || !active)
             return;
@@ -811,7 +798,6 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     /**
      * @return Future.
      */
-    @SuppressWarnings("unchecked")
     public IgniteInternalFuture<?> cancelAll() {
         Iterator<Cache.Entry<Object, Object>> it = serviceEntries(ServiceDeploymentPredicate.INSTANCE);
 
@@ -1011,7 +997,6 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      * @param <T> Service type.
      * @return Service by specified service name.
      */
-    @SuppressWarnings("unchecked")
     public <T> T service(String name) {
         ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE, null);
 
@@ -1076,7 +1061,6 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      * @return The proxy of a service by its name and class.
      * @throws IgniteException If failed to create proxy.
      */
-    @SuppressWarnings("unchecked")
     public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> svcItf, boolean sticky, long timeout)
         throws IgniteException {
         ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE, null);
@@ -1118,7 +1102,6 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      * @param <T> Service type.
      * @return Services by specified service name.
      */
-    @SuppressWarnings("unchecked")
     public <T> Collection<T> services(String name) {
         ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE, null);
 
@@ -1582,7 +1565,6 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     /**
      * Service deployment listener.
      */
-    @SuppressWarnings("unchecked")
     private class ServiceEntriesListener implements CacheEntryUpdatedListener<Object, Object> {
         /** {@inheritDoc} */
         @Override public void onUpdated(final Iterable<CacheEntryEvent<?, ?>> deps) {

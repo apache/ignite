@@ -38,7 +38,6 @@ import java.util.List;
  *
  * @see <a href="http://jcommander.org/">JCommander command line parameters parsing library</a>
  */
-@SuppressWarnings("FieldCanBeLocal")
 public class CommandLineTransformer {
     /** Prefix for every custom JVM option. */
     static final String JVM_OPTION_PREFIX = "-J";

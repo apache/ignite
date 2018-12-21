@@ -32,6 +32,7 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -78,6 +79,11 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
     }
 
     /** {@inheritDoc} */
+    @Override public KMeansTrainer withEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        return (KMeansTrainer)super.withEnvironmentBuilder(envBuilder);
+    }
+
+    /** {@inheritDoc} */
     @Override protected <K, V> KMeansModel updateModel(KMeansModel mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
@@ -91,7 +97,8 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
         Vector[] centers;
 
         try (Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset = datasetBuilder.build(
-            (upstream, upstreamSize) -> new EmptyContext(),
+            envBuilder,
+            (env, upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
             final Integer cols = dataset.compute(org.apache.ignite.ml.structures.Dataset::colSize, (a, b) -> {

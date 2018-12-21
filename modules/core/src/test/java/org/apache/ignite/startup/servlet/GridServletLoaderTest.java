@@ -29,6 +29,9 @@ import javax.management.remote.JMXServiceURL;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Servlet loader test.
@@ -58,6 +61,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
  * {@code JAVA_OPTS="${JAVA_OPTS} "-Dcom.sun.management.jmxremote.port=1097" "-Dcom.sun.management.jmxremote.ssl=false" "-Dcom.sun.management.jmxremote.authenticate=false" "}
  */
 @GridCommonTest(group = "Loaders")
+@RunWith(JUnit4.class)
 public class GridServletLoaderTest extends GridCommonAbstractTest {
     /** */
     public static final int JMX_RMI_CONNECTOR_PORT = 1097;
@@ -68,7 +72,7 @@ public class GridServletLoaderTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"unchecked"})
+    @Test
     public void testLoader() throws Exception {
         JMXConnector jmx = null;
 

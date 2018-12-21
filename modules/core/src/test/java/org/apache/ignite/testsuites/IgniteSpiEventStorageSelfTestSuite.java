@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.spi.eventstorage.memory.GridMemoryEventStorageMultiThreadedSelfTest;
 import org.apache.ignite.spi.eventstorage.memory.GridMemoryEventStorageSpiConfigSelfTest;
@@ -34,10 +35,10 @@ public class IgniteSpiEventStorageSelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Event Storage Test Suite");
 
-        suite.addTest(new TestSuite(GridMemoryEventStorageSpiSelfTest.class));
-        suite.addTest(new TestSuite(GridMemoryEventStorageSpiStartStopSelfTest.class));
-        suite.addTest(new TestSuite(GridMemoryEventStorageMultiThreadedSelfTest.class));
-        suite.addTest(new TestSuite(GridMemoryEventStorageSpiConfigSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridMemoryEventStorageSpiSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridMemoryEventStorageSpiStartStopSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridMemoryEventStorageMultiThreadedSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridMemoryEventStorageSpiConfigSelfTest.class));
 
         return suite;
     }

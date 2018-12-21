@@ -20,9 +20,11 @@ package org.apache.ignite.ml.dataset.impl.bootstrapping;
 import java.util.Arrays;
 import java.util.Iterator;
 import org.apache.commons.math3.distribution.PoissonDistribution;
+import org.apache.commons.math3.random.Well19937c;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
@@ -69,13 +71,22 @@ public class BootstrappedDatasetBuilder<K,V> implements PartitionDataBuilder<K,V
     }
 
     /** {@inheritDoc} */
-    @Override public BootstrappedDatasetPartition build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize,
+    @Override public BootstrappedDatasetPartition build(
+        LearningEnvironment env,
+        Iterator<UpstreamEntry<K, V>> upstreamData,
+        long upstreamDataSize,
         EmptyContext ctx) {
 
         BootstrappedVector[] dataset = new BootstrappedVector[Math.toIntExact(upstreamDataSize)];
 
         int cntr = 0;
-        PoissonDistribution poissonDistribution = new PoissonDistribution(subsampleSize);
+
+        PoissonDistribution poissonDistribution = new PoissonDistribution(
+            new Well19937c(env.randomNumbersGenerator().nextLong()),
+            subsampleSize,
+            PoissonDistribution.DEFAULT_EPSILON,
+            PoissonDistribution.DEFAULT_MAX_ITERATIONS);
+
         while(upstreamData.hasNext()) {
             UpstreamEntry<K, V> nextRow = upstreamData.next();
             Vector features = featureExtractor.apply(nextRow.getKey(), nextRow.getValue());

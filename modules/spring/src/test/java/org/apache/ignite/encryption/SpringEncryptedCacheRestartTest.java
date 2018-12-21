@@ -29,10 +29,14 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** */
+@RunWith(JUnit4.class)
 public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
     /** {@inheritDoc} */
     @Override protected void createEncryptedCache(IgniteEx grid0, IgniteEx grid1, String cacheName, String cacheGroup) {
@@ -63,6 +67,7 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testEncryptionKeysEqualsOnThirdNodeJoin() throws Exception {
         T2<IgniteEx, IgniteEx> g = startTestGrids(true);
 
@@ -97,6 +102,7 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateEncryptedCacheGroup() throws Exception {
         IgniteEx g0 = (IgniteEx)IgnitionEx.start(
             IgniteUtils.resolveIgnitePath(
@@ -134,6 +140,7 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateNotEncryptedCacheInEncryptedGroupFails() throws Exception {
         IgniteEx g0 = (IgniteEx)IgnitionEx.start(
             IgniteUtils.resolveIgnitePath(
@@ -151,6 +158,7 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testStartWithEncryptedOnDiskPlainInCfg() throws Exception {
         doTestDiffCfgAndPersistentFlagVal(
             "modules/spring/src/test/config/enc/enc-cache.xml",
@@ -158,6 +166,7 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testStartWithPlainOnDiskEncryptedInCfg() throws Exception {
         doTestDiffCfgAndPersistentFlagVal(
             "modules/spring/src/test/config/enc/not-encrypted-cache.xml",

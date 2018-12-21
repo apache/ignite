@@ -43,9 +43,13 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -53,6 +57,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Checks that transactions don't hang during checkpoint creation.
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -164,6 +169,7 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      * */
+    @Test
     public void testTransactionsDontHang() throws Exception {
         try {
             final Ignite g = startGrids(2);
@@ -193,10 +199,17 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
 
                                 TestEntity entity = TestEntity.newTestEntity(locRandom);
 
-                                try (Transaction tx = g.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                                    cache.put(randomKey, entity);
+                                while (true) {
+                                    try (Transaction tx = g.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                        cache.put(randomKey, entity);
 
-                                    tx.commit();
+                                        tx.commit();
+
+                                        break;
+                                    }
+                                    catch (Exception e) {
+                                        MvccFeatureChecker.assertMvccWriteConflict(e);
+                                    }
                                 }
 
                                 operationCnt.increment();

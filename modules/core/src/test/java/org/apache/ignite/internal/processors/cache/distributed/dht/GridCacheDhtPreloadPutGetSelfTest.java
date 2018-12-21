@@ -33,8 +33,12 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
@@ -45,6 +49,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test cases for partitioned cache {@link GridDhtPreloader preloader}.
  */
+@RunWith(JUnit4.class)
 public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
     /** Key count. */
     private static final int KEY_CNT = 1000;
@@ -92,6 +97,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetAsync0() throws Exception {
         preloadMode = ASYNC;
         backups = 0;
@@ -102,6 +108,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetAsync1() throws Exception {
         preloadMode = ASYNC;
         backups = 1;
@@ -112,6 +119,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetAsync2() throws Exception {
         preloadMode = ASYNC;
         backups = 2;
@@ -122,6 +130,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetSync0() throws Exception {
         preloadMode = SYNC;
         backups = 0;
@@ -132,6 +141,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetSync1() throws Exception {
         preloadMode = SYNC;
         backups = 1;
@@ -142,6 +152,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetSync2() throws Exception {
         preloadMode = SYNC;
         backups = 2;
@@ -152,6 +163,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetNone0() throws Exception {
         preloadMode = NONE;
         backups = 0;
@@ -162,7 +174,11 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetNone1() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10261");
+
         preloadMode = NONE;
         backups = 1;
 
@@ -172,7 +188,11 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetNone2() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10261");
+
         preloadMode = NONE;
         backups = 2;
 

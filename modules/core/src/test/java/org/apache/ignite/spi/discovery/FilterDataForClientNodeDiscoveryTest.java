@@ -32,10 +32,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -56,6 +60,7 @@ public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDataBag() throws Exception {
         startGrid(configuration(0, false));
         startGrid(configuration(1, false));
@@ -73,6 +78,7 @@ public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDiscoveryServerOnlyCustomMessage() throws Exception {
         startGrid(configuration(0, false));
         startGrid(configuration(1, false));

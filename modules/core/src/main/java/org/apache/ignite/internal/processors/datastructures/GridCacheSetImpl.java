@@ -181,7 +181,6 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public boolean isEmpty() {
         onAccess();
 
@@ -514,9 +513,10 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      * @return Nodes where set data request should be sent.
      * @throws IgniteCheckedException If all cache nodes left grid.
      */
-    @SuppressWarnings("unchecked")
     private Collection<ClusterNode> dataNodes(AffinityTopologyVersion topVer) throws IgniteCheckedException {
-        if (ctx.isLocal() || ctx.isReplicated())
+        assert ctx.isPartitioned() || collocated : "Non-collocated mode is supported only for PARTITIONED caches.";
+
+        if (ctx.isLocal() || (ctx.isReplicated() && ctx.affinityNode()))
             return Collections.singleton(ctx.localNode());
 
         Collection<ClusterNode> nodes;

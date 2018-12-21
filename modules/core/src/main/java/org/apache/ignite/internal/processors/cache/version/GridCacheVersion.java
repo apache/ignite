@@ -220,7 +220,6 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("IfMayBeConditional")
     @Override public int compareTo(GridCacheVersion other) {
         int res = Integer.compare(topologyVersion(), other.topologyVersion());
 

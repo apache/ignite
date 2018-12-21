@@ -33,8 +33,12 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * We start writing to unstable cluster.
@@ -42,6 +46,7 @@ import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
  * There will be entries in WAL which belongs to evicted partitions.
  * We should ignore them (not throw exceptions). This point is tested.
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstractTest {
     /** Checkpoint frequency. */
     private static final long CHECKPOINT_FREQUENCY = 2_000_000;
@@ -49,13 +54,14 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
     /** Cluster size. */
     private static final int CLUSTER_SIZE = 5;
 
-    /** */
-    private static final String CACHE_NAME = "cache1";
-
     /**
      * @throws Exception When fails.
      */
+    @Test
     public void test() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
+
         Ignite ex = startGrid(0);
 
         ex.active(true);
@@ -79,7 +85,7 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
 
                     startLatch.countDown();
 
-                    IgniteCache<Object, Object> cache1 = ex1.cache(CACHE_NAME);
+                    IgniteCache<Object, Object> cache1 = ex1.cache(DEFAULT_CACHE_NAME);
 
                     int key = keyCnt.get();
 
@@ -139,7 +145,7 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
 
         checkTopology(CLUSTER_SIZE);
 
-        IgniteCache<Object, Object> cache1 = ex.cache(CACHE_NAME);
+        IgniteCache<Object, Object> cache1 = ex.cache(DEFAULT_CACHE_NAME);
 
         assert keyCnt.get() > 0;
 
@@ -155,7 +161,7 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
 
         cfg.setActiveOnStart(false);
 
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(CACHE_NAME);
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);

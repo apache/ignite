@@ -31,10 +31,14 @@ import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * IGFS Hadoop file system Ignite client -based self test.
  */
+@RunWith(JUnit4.class)
 public abstract class IgniteHadoopFileSystemClientBasedAbstractSelfTest extends IgniteHadoopFileSystemAbstractSelfTest {
     /** Alive node index. */
     private static final int ALIVE_NODE_IDX = GRID_COUNT - 1;
@@ -88,6 +92,7 @@ public abstract class IgniteHadoopFileSystemClientBasedAbstractSelfTest extends 
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testClientReconnect() throws Exception {
         Path filePath = new Path(PRIMARY_URI, "file1");
 
@@ -115,6 +120,7 @@ public abstract class IgniteHadoopFileSystemClientBasedAbstractSelfTest extends 
      *
      * @throws Exception If error occurs.
      */
+    @Test
     @Override public void testClientReconnectMultithreaded() throws Exception {
         final ConcurrentLinkedQueue<FileSystem> q = new ConcurrentLinkedQueue<>();
 

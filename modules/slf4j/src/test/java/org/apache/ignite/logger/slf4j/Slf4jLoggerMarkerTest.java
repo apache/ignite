@@ -20,11 +20,15 @@ package org.apache.ignite.logger.slf4j;
 import java.io.File;
 import junit.framework.TestCase;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.slf4j.LoggerFactory;
 
 /**
  * Testing that markers are supported by log4j2 implementation.
  */
+@RunWith(JUnit4.class)
 public class Slf4jLoggerMarkerTest extends TestCase {
     /** Path to full log. */
     private static final String LOG_ALL = "work/log/all.log";
@@ -47,6 +51,7 @@ public class Slf4jLoggerMarkerTest extends TestCase {
     }
 
     /** */
+    @Test
     public void testMarkerFiltering() throws Exception {
         // create log
         Slf4jLogger log = new Slf4jLogger(LoggerFactory.getLogger(Slf4jLoggerMarkerTest.class));

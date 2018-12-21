@@ -28,6 +28,11 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.NotNull;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -39,6 +44,7 @@ import static org.mockito.Mockito.when;
  *
  * Test modifies static final field, used only for development
  */
+@RunWith(JUnit4.class)
 public class GridManagerMxBeanIllegalArgumentHandleTest extends TestCase {
     /** Original value of {@link GridDiscoveryManager#mem} to be restored after test */
     private Object mxBeanToRestore;
@@ -50,6 +56,7 @@ public class GridManagerMxBeanIllegalArgumentHandleTest extends TestCase {
     private boolean correctSetupOfTestPerformed;
 
     /** {@inheritDoc} Changes field to always failing mock */
+    @Before
     @Override public void setUp() throws Exception {
         super.setUp();
         try {
@@ -95,6 +102,7 @@ public class GridManagerMxBeanIllegalArgumentHandleTest extends TestCase {
      *
      * @throws Exception if field set failed
      */
+    @After
     @Override public void tearDown() throws Exception {
         super.tearDown();
         if (correctSetupOfTestPerformed)
@@ -102,6 +110,7 @@ public class GridManagerMxBeanIllegalArgumentHandleTest extends TestCase {
     }
 
     /** Creates minimal disco manager mock, checks illegal state is not propagated */
+    @Test
     public void testIllegalStateIsCatch() {
         final IgniteConfiguration cfg = new IgniteConfiguration();
         cfg.setDiscoverySpi(new TcpDiscoverySpi());

@@ -76,7 +76,7 @@ public class JdbcThinConnection implements Connection {
     private static final Logger LOG = Logger.getLogger(JdbcThinConnection.class.getName());
 
     /** Statements modification mutex. */
-    final private Object stmtsMux = new Object();
+    private final Object stmtsMux = new Object();
 
     /** Schema name. */
     private String schema;
@@ -654,7 +654,6 @@ public class JdbcThinConnection implements Connection {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Connection is not a wrapper for " + iface.getName());
@@ -739,7 +738,6 @@ public class JdbcThinConnection implements Connection {
      * @return Server response.
      * @throws SQLException On any error.
      */
-    @SuppressWarnings("unchecked")
     <R extends JdbcResult> R sendRequest(JdbcRequest req) throws SQLException {
         ensureConnected();
 
@@ -747,7 +745,7 @@ public class JdbcThinConnection implements Connection {
             JdbcResponse res = cliIo.sendRequest(req);
 
             if (res.status() != ClientListenerResponse.STATUS_SUCCESS)
-                throw new SQLException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()));
+                throw new SQLException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()), res.status());
 
             return (R)res.response();
         }

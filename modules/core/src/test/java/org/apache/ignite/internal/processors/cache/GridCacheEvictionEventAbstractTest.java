@@ -35,7 +35,12 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_EVICTED;
 import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
@@ -45,9 +50,19 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 /**
  * Eviction event self test.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /** {@inheritDoc} */
+    @Before
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+
+        super.setUp();
+    }
 
     /**
      *
@@ -93,6 +108,7 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionEvent() throws Exception {
         Ignite g = grid();
 

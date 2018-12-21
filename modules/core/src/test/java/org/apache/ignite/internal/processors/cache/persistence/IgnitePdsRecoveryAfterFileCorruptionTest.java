@@ -23,6 +23,7 @@ import java.nio.ByteOrder;
 import java.util.Collection;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -52,10 +53,14 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * This test generates WAL & Page Store with N pages, then rewrites pages with zeroes and tries to acquire all pages.
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstractTest {
     /** Ip finder. */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -77,6 +82,8 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
         ccfg.setAffinity(new RendezvousAffinityFunction(true, 1));
 
         ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
+
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -117,6 +124,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPageRecoveryAfterFileCorruption() throws Exception {
         IgniteEx ig = startGrid(0);
 

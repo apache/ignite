@@ -39,10 +39,14 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * This is a specific test for IGNITE-8900.
  */
+@RunWith(JUnit4.class)
 public class BigEntryQueryTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE = "cache";
@@ -55,6 +59,7 @@ public class BigEntryQueryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testBigEntriesSelect() throws Exception {
         startGrids(2);
 

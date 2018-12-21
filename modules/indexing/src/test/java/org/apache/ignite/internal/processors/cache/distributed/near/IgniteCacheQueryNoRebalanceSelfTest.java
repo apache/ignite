@@ -28,10 +28,14 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test added to check for https://issues.apache.org/jira/browse/IGNITE-3326.
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheQueryNoRebalanceSelfTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -62,6 +66,7 @@ public class IgniteCacheQueryNoRebalanceSelfTest extends GridCommonAbstractTest 
     /**
      * Tests correct query execution with disabled re-balancing.
      */
+    @Test
     public void testQueryNoRebalance() {
         IgniteCache<Object, Object> cache = grid().cache(DEFAULT_CACHE_NAME);
 

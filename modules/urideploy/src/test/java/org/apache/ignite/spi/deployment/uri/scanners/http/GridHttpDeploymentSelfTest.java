@@ -30,11 +30,15 @@ import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test http scanner.
  */
 @GridSpiTest(spi = UriDeploymentSpi.class, group = "Deployment SPI")
+@RunWith(JUnit4.class)
 public class GridHttpDeploymentSelfTest extends GridUriDeploymentAbstractSelfTest {
     /** Frequency */
     private static final int FREQ = 5000;
@@ -107,6 +111,7 @@ public class GridHttpDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployUndeploy2Files() throws Exception {
         String taskName = "org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask3";
 
@@ -133,6 +138,7 @@ public class GridHttpDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSameContantFiles() throws Exception {
         String taskName = "org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask3";
 

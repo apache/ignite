@@ -148,7 +148,6 @@ public class CacheManager implements javax.cache.CacheManager {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <K, V, C extends Configuration<K, V>> Cache<K, V> createCache(String cacheName, C cacheCfg)
         throws IllegalArgumentException {
         kernalGateway.readLock();

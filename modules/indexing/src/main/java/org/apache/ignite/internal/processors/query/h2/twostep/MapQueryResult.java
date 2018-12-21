@@ -22,7 +22,6 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -61,9 +60,6 @@ class MapQueryResult {
         }
     }
 
-    /** Logger. */
-    private final IgniteLogger log;
-
     /** Indexing. */
     private final IgniteH2Indexing h2;
 
@@ -100,23 +96,26 @@ class MapQueryResult {
     /** */
     private final Object[] params;
 
+    /** Lazy worker. */
+    private final MapQueryLazyWorker lazyWorker;
+
     /**
-     * @param h2 H2 indexing.
      * @param rs Result set.
      * @param cctx Cache context.
      * @param qrySrcNodeId Query source node.
      * @param qry Query.
      * @param params Query params.
+     * @param lazyWorker Lazy worker.
      */
     MapQueryResult(IgniteH2Indexing h2, ResultSet rs, @Nullable GridCacheContext cctx,
-        UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params) {
-        this.log = h2.kernalContext().log(MapQueryResult.class);
+        UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params, @Nullable MapQueryLazyWorker lazyWorker) {
         this.h2 = h2;
         this.cctx = cctx;
         this.qry = qry;
         this.params = params;
         this.qrySrcNodeId = qrySrcNodeId;
         this.cpNeeded = F.eq(h2.kernalContext().localNodeId(), qrySrcNodeId);
+        this.lazyWorker = lazyWorker;
 
         if (rs != null) {
             this.rs = rs;
@@ -175,6 +174,8 @@ class MapQueryResult {
      * @return {@code true} If there are no more rows available.
      */
     synchronized boolean fetchNextPage(List<Value[]> rows, int pageSize) {
+        assert lazyWorker == null || lazyWorker == MapQueryLazyWorker.currentWorker();
+
         if (closed)
             return true;
 
@@ -258,13 +259,30 @@ class MapQueryResult {
      * Close the result.
      */
     public void close() {
+        if (lazyWorker != null && MapQueryLazyWorker.currentWorker() == null) {
+            lazyWorker.submit(new Runnable() {
+                @Override public void run() {
+                    close();
+                }
+            });
+
+            lazyWorker.awaitStop();
+
+            return;
+        }
+
         synchronized (this) {
+            assert lazyWorker == null || lazyWorker == MapQueryLazyWorker.currentWorker();
+
             if (closed)
                 return;
 
             closed = true;
 
-            U.close(rs, log);
+            U.closeQuiet(rs);
+
+            if (lazyWorker != null)
+                lazyWorker.stop(false);
         }
     }
 }

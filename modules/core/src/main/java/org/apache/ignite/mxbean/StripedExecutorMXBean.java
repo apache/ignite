@@ -25,9 +25,19 @@ public interface StripedExecutorMXBean {
     /**
      * Checks for starvation in striped pool, dumps in log information if potential starvation
      * was found.
+     *
+     * @deprecated Will be removed at 3.0.
      */
+    @Deprecated
     @MXBeanDescription("Checks for starvation in striped pool.")
     public void checkStarvation();
+
+    /**
+     *
+     * @return {@code True} if possible starvation in striped pool is detected.
+     */
+    @MXBeanDescription("True if possible starvation in striped pool is detected.")
+    public boolean detectStarvation();
 
     /**
      * @return Stripes count.

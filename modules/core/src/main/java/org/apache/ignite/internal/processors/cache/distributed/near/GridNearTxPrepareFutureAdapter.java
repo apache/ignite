@@ -195,7 +195,6 @@ public abstract class GridNearTxPrepareFutureAdapter extends
      * @param res Response.
      * @param updateMapping Update mapping flag.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     final void onPrepareResponse(GridDistributedTxMapping m,
         GridNearTxPrepareResponse res,
         boolean updateMapping) {

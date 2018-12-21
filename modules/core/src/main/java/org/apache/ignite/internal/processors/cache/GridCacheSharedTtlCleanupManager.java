@@ -130,6 +130,10 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
             Throwable err = null;
 
             try {
+                cctx.discovery().localJoin();
+
+                assert !cctx.kernalContext().recoveryMode();
+
                 while (!isCancelled()) {
                     boolean expiredRemains = false;
 

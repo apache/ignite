@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import com.google.common.collect.Sets;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,7 +50,6 @@ import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
-import com.google.common.collect.Sets;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -98,12 +98,17 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -117,6 +122,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
  *
  */
 @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
+@RunWith(JUnit4.class)
 public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -126,6 +132,9 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
     /** */
     private static final String GROUP2 = "grp2";
+
+    /** */
+    private static final String GROUP3 = "grp3";
 
     /** */
     private static final String CACHE1 = "cache1";
@@ -174,6 +183,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCloseCache1() throws Exception {
         startGrid(0);
 
@@ -208,6 +218,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateDestroyCaches1() throws Exception {
         createDestroyCaches(1);
     }
@@ -215,6 +226,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateDestroyCaches2() throws Exception {
         createDestroyCaches(5);
     }
@@ -222,6 +234,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateCacheWithSameNameInAnotherGroup() throws Exception {
         startGridsMultiThreaded(2);
 
@@ -240,6 +253,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateDestroyCachesAtomicPartitioned() throws Exception {
         createDestroyCaches(PARTITIONED, ATOMIC);
     }
@@ -247,6 +261,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateDestroyCachesTxPartitioned() throws Exception {
         createDestroyCaches(PARTITIONED, TRANSACTIONAL);
     }
@@ -254,6 +269,15 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testCreateDestroyCachesMvccTxPartitioned() throws Exception {
+        createDestroyCaches(PARTITIONED, TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testCreateDestroyCachesAtomicReplicated() throws Exception {
         createDestroyCaches(REPLICATED, ATOMIC);
     }
@@ -261,6 +285,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateDestroyCachesTxReplicated() throws Exception {
         createDestroyCaches(REPLICATED, TRANSACTIONAL);
     }
@@ -268,6 +293,15 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testCreateDestroyCachesMvccTxReplicated() throws Exception {
+        createDestroyCaches(REPLICATED, TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testScanQueryAtomicPartitioned() throws Exception {
         scanQuery(PARTITIONED, ATOMIC);
     }
@@ -275,6 +309,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testScanQueryTxPartitioned() throws Exception {
         scanQuery(PARTITIONED, TRANSACTIONAL);
     }
@@ -282,6 +317,15 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testScanQueryMvccTxPartitioned() throws Exception {
+        scanQuery(PARTITIONED, TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testScanQueryAtomicReplicated() throws Exception {
         scanQuery(REPLICATED, ATOMIC);
     }
@@ -289,6 +333,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testScanQueryTxReplicated() throws Exception {
         scanQuery(REPLICATED, TRANSACTIONAL);
     }
@@ -296,6 +341,16 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testScanQueryMvccTxReplicated() throws Exception {
+        scanQuery(REPLICATED, TRANSACTIONAL_SNAPSHOT);
+    }
+
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testScanQueryAtomicLocal() throws Exception {
         scanQuery(LOCAL, ATOMIC);
     }
@@ -303,6 +358,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testScanQueryTxLocal() throws Exception {
         scanQuery(LOCAL, TRANSACTIONAL);
     }
@@ -310,6 +366,17 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testScanQueryMvccTxLocal() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+
+        scanQuery(LOCAL, TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testEntriesTtlAtomicPartitioned() throws Exception {
         entriesTtl(PARTITIONED, ATOMIC);
     }
@@ -317,6 +384,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntriesTtlTxPartitioned() throws Exception {
         entriesTtl(PARTITIONED, TRANSACTIONAL);
     }
@@ -324,6 +392,17 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testEntriesTtlMvccTxPartitioned() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7311");
+
+        entriesTtl(PARTITIONED, TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testEntriesTtlAtomicReplicated() throws Exception {
         entriesTtl(REPLICATED, ATOMIC);
     }
@@ -331,6 +410,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntriesTtlTxReplicated() throws Exception {
         entriesTtl(REPLICATED, TRANSACTIONAL);
     }
@@ -338,6 +418,17 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testEntriesTtlMvccTxReplicated() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7311");
+
+        entriesTtl(REPLICATED, TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testEntriesTtlAtomicLocal() throws Exception {
         entriesTtl(LOCAL, ATOMIC);
     }
@@ -345,6 +436,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntriesTtlTxLocal() throws Exception {
         entriesTtl(LOCAL, TRANSACTIONAL);
     }
@@ -352,6 +444,18 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testEntriesTtlMvccTxLocal() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+        fail("https://issues.apache.org/jira/browse/IGNITE-7311");
+
+        entriesTtl(LOCAL, TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testCacheIteratorAtomicPartitioned() throws Exception {
         cacheIterator(PARTITIONED, ATOMIC);
     }
@@ -359,6 +463,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheIteratorTxPartitioned() throws Exception {
         cacheIterator(PARTITIONED, TRANSACTIONAL);
     }
@@ -366,6 +471,15 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testCacheIteratorMvccTxPartitioned() throws Exception {
+        cacheIterator(PARTITIONED, TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testCacheIteratorAtomicReplicated() throws Exception {
         cacheIterator(REPLICATED, ATOMIC);
     }
@@ -373,6 +487,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheIteratorTxReplicated() throws Exception {
         cacheIterator(REPLICATED, TRANSACTIONAL);
     }
@@ -380,6 +495,15 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testCacheIteratorMvccTxReplicated() throws Exception {
+        cacheIterator(REPLICATED, TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testCacheIteratorAtomicLocal() throws Exception {
         cacheIterator(LOCAL, ATOMIC);
     }
@@ -387,6 +511,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheIteratorTxLocal() throws Exception {
         cacheIterator(LOCAL, TRANSACTIONAL);
     }
@@ -394,6 +519,17 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testCacheIteratorMvccTxLocal() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+
+        cacheIterator(LOCAL, TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testScanQueryMultiplePartitionsAtomicPartitioned() throws Exception {
         scanQueryMultiplePartitions(PARTITIONED, ATOMIC);
     }
@@ -401,6 +537,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testScanQueryMultiplePartitionsTxPartitioned() throws Exception {
         scanQueryMultiplePartitions(PARTITIONED, TRANSACTIONAL);
     }
@@ -408,6 +545,15 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testScanQueryMultiplePartitionsMvccTxPartitioned() throws Exception {
+        scanQueryMultiplePartitions(PARTITIONED, TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testScanQueryMultiplePartitionsAtomicReplicated() throws Exception {
         scanQueryMultiplePartitions(REPLICATED, ATOMIC);
     }
@@ -415,6 +561,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testScanQueryMultiplePartitionsTxReplicated() throws Exception {
         scanQueryMultiplePartitions(REPLICATED, TRANSACTIONAL);
     }
@@ -422,6 +569,15 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testScanQueryMultiplePartitionsMvccTxReplicated() throws Exception {
+        scanQueryMultiplePartitions(REPLICATED, TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testContinuousQueryTxReplicated() throws Exception {
         continuousQuery(REPLICATED, TRANSACTIONAL);
     }
@@ -429,6 +585,15 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testContinuousQueryMvccTxReplicated() throws Exception {
+        continuousQuery(REPLICATED, TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testContinuousQueryTxPartitioned() throws Exception {
         continuousQuery(PARTITIONED, TRANSACTIONAL);
     }
@@ -436,6 +601,15 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testContinuousQueryMvccTxPartitioned() throws Exception {
+        continuousQuery(PARTITIONED, TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testContinuousQueryTxLocal() throws Exception {
         continuousQuery(LOCAL, TRANSACTIONAL);
     }
@@ -443,6 +617,17 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testContinuousQueryMvccTxLocal() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+
+        continuousQuery(LOCAL, TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testContinuousQueryAtomicReplicated() throws Exception {
         continuousQuery(REPLICATED, ATOMIC);
     }
@@ -450,6 +635,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousQueryAtomicPartitioned() throws Exception {
         continuousQuery(PARTITIONED, ATOMIC);
     }
@@ -457,6 +643,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousQueryAtomicLocal() throws Exception {
         continuousQuery(LOCAL, ATOMIC);
     }
@@ -1194,6 +1381,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDiscoveryDataConsistency1() throws Exception {
         ccfgs = staticConfigurations1(true);
         Ignite srv0 = startGrid(0);
@@ -1288,8 +1476,9 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartManyCaches() throws Exception {
-        final int CACHES = 5_000;
+        final int CACHES =  SF.apply(5_000);
 
         final int NODES = 4;
 
@@ -1330,6 +1519,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalance1() throws Exception {
         Ignite srv0 = startGrid(0);
 
@@ -1341,6 +1531,10 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             srv0.createCache(cacheConfiguration(GROUP2, "c3", PARTITIONED, TRANSACTIONAL, 2, false));
         IgniteCache<Object, Object> srv0Cache4 =
             srv0.createCache(cacheConfiguration(GROUP2, "c4", PARTITIONED, TRANSACTIONAL, 2, false));
+        IgniteCache<Object, Object> srv0Cache5 =
+            srv0.createCache(cacheConfiguration(GROUP3, "c5", PARTITIONED, TRANSACTIONAL_SNAPSHOT, 2, false));
+        IgniteCache<Object, Object> srv0Cache6 =
+            srv0.createCache(cacheConfiguration(GROUP3, "c6", PARTITIONED, TRANSACTIONAL_SNAPSHOT, 2, false));
 
         final int ITEMS = 1_000;
 
@@ -1349,6 +1543,9 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
             srv0Cache3.put(new Key1(i), i);
             srv0Cache4.put(new Key1(i), -i);
+
+            srv0Cache5.put(new Key1(i), i);
+            srv0Cache6.put(new Key1(i), -i);
         }
 
         assertEquals(ITEMS, srv0Cache1.size());
@@ -1356,6 +1553,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         assertEquals(0, srv0Cache2.size());
         assertEquals(ITEMS, srv0Cache3.size());
         assertEquals(ITEMS, srv0Cache4.localSize());
+        assertEquals(ITEMS, srv0Cache5.size());
+        assertEquals(ITEMS, srv0Cache6.localSize());
 
         startGrid(1);
 
@@ -1368,6 +1567,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             IgniteCache<Object, Object> cache2 = node.cache("c2");
             IgniteCache<Object, Object> cache3 = node.cache("c3");
             IgniteCache<Object, Object> cache4 = node.cache("c4");
+            IgniteCache<Object, Object> cache5 = node.cache("c5");
+            IgniteCache<Object, Object> cache6 = node.cache("c6");
 
             assertEquals(ITEMS * 2, cache1.size(CachePeekMode.ALL));
             assertEquals(ITEMS, cache1.localSize(CachePeekMode.ALL));
@@ -1380,11 +1581,20 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             assertEquals(ITEMS * 2, cache4.size(CachePeekMode.ALL));
             assertEquals(ITEMS, cache4.localSize(CachePeekMode.ALL));
 
+            assertEquals(ITEMS * 2, cache5.size(CachePeekMode.ALL));
+            assertEquals(ITEMS, cache5.localSize(CachePeekMode.ALL));
+
+            assertEquals(ITEMS * 2, cache6.size(CachePeekMode.ALL));
+            assertEquals(ITEMS, cache6.localSize(CachePeekMode.ALL));
+
+
             for (int k = 0; k < ITEMS; k++) {
                 assertEquals(i, cache1.localPeek(new Key1(i)));
                 assertNull(cache2.localPeek(new Key1(i)));
                 assertEquals(i, cache3.localPeek(new Key1(i)));
                 assertEquals(-i, cache4.localPeek(new Key1(i)));
+                assertEquals(i, cache5.localPeek(new Key1(i)));
+                assertEquals(-i, cache6.localPeek(new Key1(i)));
             }
         }
 
@@ -1402,6 +1612,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             IgniteCache<Object, Object> cache2 = node.cache("c2");
             IgniteCache<Object, Object> cache3 = node.cache("c3");
             IgniteCache<Object, Object> cache4 = node.cache("c4");
+            IgniteCache<Object, Object> cache5 = node.cache("c5");
+            IgniteCache<Object, Object> cache6 = node.cache("c6");
 
             assertEquals(ITEMS * 3, cache1.size(CachePeekMode.ALL));
             assertEquals(ITEMS, cache1.localSize(CachePeekMode.ALL));
@@ -1409,6 +1621,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             assertEquals(ITEMS * 2, cache2.localSize(CachePeekMode.ALL));
             assertEquals(ITEMS, cache3.localSize(CachePeekMode.ALL));
             assertEquals(ITEMS, cache4.localSize(CachePeekMode.ALL));
+            assertEquals(ITEMS, cache5.localSize(CachePeekMode.ALL));
+            assertEquals(ITEMS, cache6.localSize(CachePeekMode.ALL));
         }
 
         IgniteCache<Object, Object> srv2Cache1 = srv2.cache("c1");
@@ -1424,6 +1638,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalance2() throws Exception {
         Ignite srv0 = startGrid(0);
 
@@ -1507,6 +1722,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoKeyIntersectTx() throws Exception {
         testNoKeyIntersect(TRANSACTIONAL);
     }
@@ -1514,6 +1730,15 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testNoKeyIntersectMvccTx() throws Exception {
+        testNoKeyIntersect(TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testNoKeyIntersectAtomic() throws Exception {
         testNoKeyIntersect(ATOMIC);
     }
@@ -1825,6 +2050,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheApiTxPartitioned() throws Exception {
         cacheApiTest(PARTITIONED, TRANSACTIONAL);
     }
@@ -1832,6 +2058,17 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testCacheApiMvccTxPartitioned() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7952");
+
+        cacheApiTest(PARTITIONED, TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testCacheApiTxReplicated() throws Exception {
         cacheApiTest(REPLICATED, TRANSACTIONAL);
     }
@@ -1839,6 +2076,17 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testCacheApiMvccTxReplicated() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7952");
+
+        cacheApiTest(REPLICATED, TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testCacheApiAtomicPartitioned() throws Exception {
         cacheApiTest(PARTITIONED, ATOMIC);
     }
@@ -1846,6 +2094,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheApiAtomicReplicated() throws Exception {
         cacheApiTest(REPLICATED, ATOMIC);
     }
@@ -2638,6 +2887,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheAtomicPartitioned() throws Exception {
         loadCache(PARTITIONED, ATOMIC);
     }
@@ -2645,6 +2895,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheAtomicReplicated() throws Exception {
         loadCache(REPLICATED, ATOMIC);
     }
@@ -2652,6 +2903,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheTxPartitioned() throws Exception {
         loadCache(PARTITIONED, TRANSACTIONAL);
     }
@@ -2659,6 +2911,17 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testLoadCacheMvccTxPartitioned() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7954");
+
+        loadCache(PARTITIONED, TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testLoadCacheTxReplicated() throws Exception {
         loadCache(REPLICATED, TRANSACTIONAL);
     }
@@ -2666,6 +2929,17 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testLoadCacheMvccTxReplicated() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7954");
+
+        loadCache(REPLICATED, TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testLoadCacheAtomicLocal() throws Exception {
         loadCache(LOCAL, ATOMIC);
     }
@@ -2673,8 +2947,19 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheTxLocal() throws Exception {
         loadCache(LOCAL, TRANSACTIONAL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testLoadCacheMvccTxLocal() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+
+        loadCache(LOCAL, TRANSACTIONAL_SNAPSHOT);
     }
 
     /**
@@ -2724,6 +3009,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentOperationsSameKeys() throws Exception {
         final int SRVS = 4;
         final int CLIENTS = 4;
@@ -2828,6 +3114,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentOperationsAndCacheDestroy() throws Exception {
         final int SRVS = 4;
         final int CLIENTS = 4;
@@ -2854,6 +3141,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
             srv0.createCache(
                 cacheConfiguration(GROUP2, GROUP2 + "-" + i, PARTITIONED, TRANSACTIONAL, grp2Backups, i % 2 == 0));
+
+            // TODO IGNITE-7164: add Mvcc cache to test.
         }
 
         final AtomicInteger idx = new AtomicInteger();
@@ -2975,6 +3264,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStaticConfigurationsValidation() throws Exception {
         ccfgs = new CacheConfiguration[2];
 
@@ -3015,6 +3305,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheIdConflict() throws Exception {
         ccfgs = new CacheConfiguration[]{new CacheConfiguration("AaAaAa"), new CacheConfiguration("AaAaBB")};
 
@@ -3058,6 +3349,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheGroupIdConflict1() throws Exception {
         ccfgs = new CacheConfiguration[]{new CacheConfiguration(CACHE1).setGroupName("AaAaAa"),
             new CacheConfiguration(CACHE2).setGroupName("AaAaBB")};
@@ -3102,6 +3394,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheGroupIdConflict2() throws Exception {
         ccfgs = new CacheConfiguration[]{new CacheConfiguration("AaAaAa"),
             new CacheConfiguration(CACHE2).setGroupName("AaAaBB")};
@@ -3146,6 +3439,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheGroupIdConflict3() throws Exception {
         ccfgs = new CacheConfiguration[]{new CacheConfiguration(CACHE2).setGroupName("AaAaBB"),
             new CacheConfiguration("AaAaAa")};
@@ -3190,6 +3484,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheGroupNameConflict1() throws Exception {
         ccfgs = new CacheConfiguration[]{new CacheConfiguration("cache1"), new CacheConfiguration("cache2").setGroupName("cache1")};
 
@@ -3233,6 +3528,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheGroupNameConflict2() throws Exception {
         ccfgs = new CacheConfiguration[]{new CacheConfiguration("cache2").setGroupName("cache1"), new CacheConfiguration("cache1")};
 
@@ -3276,6 +3572,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConfigurationConsistencyValidation() throws Exception {
         startGrids(2);
 
@@ -3305,6 +3602,16 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                 assertTrue("Unexpected message: " + e.getMessage(),
                     e.getMessage().contains("Backups mismatch for caches related to the same group [groupName=grp1"));
             }
+
+            try {
+                ignite(i).createCache(cacheConfiguration(GROUP1, "c2", PARTITIONED, TRANSACTIONAL_SNAPSHOT, 1, false));
+
+                fail();
+            }
+            catch (CacheException e) {
+                assertTrue("Unexpected message: " + e.getMessage(),
+                    e.getMessage().contains("Atomicity mode mismatch for caches related to the same group [groupName=grp1"));
+            }
         }
     }
 
@@ -3321,6 +3628,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         ccfgs[4] = cacheConfiguration(GROUP1, "c5", PARTITIONED, ATOMIC, 2, false);
         ccfgs[5] = cacheConfiguration(GROUP1, "c6", PARTITIONED, TRANSACTIONAL, 2, false);
 
+        //TODO IGNITE-9323: Check Mvcc mode.
+
         return ccfgs;
     }
 
@@ -3329,6 +3638,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testInterceptors() throws Exception {
         for (int i = 0; i < 4; i++) {
             ccfgs = interceptorConfigurations();
@@ -3384,6 +3694,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         ccfgs[4] = cacheConfiguration(GROUP1, "c5", PARTITIONED, ATOMIC, 2, false);
         ccfgs[5] = cacheConfiguration(GROUP1, "c6", PARTITIONED, TRANSACTIONAL, 2, false);
 
+        //TODO IGNITE-8582: Check Mvcc mode.
+
         return ccfgs;
     }
 
@@ -3392,6 +3704,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheStores() throws Exception {
         for (int i = 0; i < 4; i++) {
             ccfgs = cacheStoreConfigurations();
@@ -3464,6 +3777,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityMappers() throws Exception {
         for (int i = 0; i < 4; i++) {
             ccfgs = mapperConfigurations();
@@ -3526,6 +3840,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousQueriesMultipleGroups1() throws Exception {
         continuousQueriesMultipleGroups(1);
     }
@@ -3533,6 +3848,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousQueriesMultipleGroups2() throws Exception {
         continuousQueriesMultipleGroups(4);
     }
@@ -3559,7 +3875,9 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         client.createCache(cacheConfiguration(null, "c7", PARTITIONED, ATOMIC, 1, false));
         client.createCache(cacheConfiguration(null, "c8", PARTITIONED, TRANSACTIONAL, 1, false));
 
-        String[] cacheNames = {"c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8"};
+        client.createCache(cacheConfiguration(GROUP3, "c9", PARTITIONED, TRANSACTIONAL_SNAPSHOT, 1, false));
+
+        String[] cacheNames = {"c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9"};
 
         AtomicInteger c1 = registerListener(client, "c1");
 
@@ -3577,6 +3895,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheIdSort() throws Exception {
         Ignite node = startGrid(0);
 
@@ -3651,6 +3970,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDataCleanup() throws Exception {
         Ignite node = startGrid(0);
 
@@ -3711,6 +4031,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartsAndCacheCreateDestroy() throws Exception {
         final int SRVS = 5;
 
@@ -3722,7 +4043,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         client = false;
 
-        final int CACHES = 10;
+        final int CACHES = SF.applyLB(10, 2);
 
         final AtomicReferenceArray<IgniteCache> caches = new AtomicReferenceArray<>(CACHES);
 
@@ -3737,7 +4058,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         final AtomicInteger cacheCntr = new AtomicInteger();
 
         try {
-            for (int i = 0; i < 10; i++) {
+            final int ITERATIONS_COUNT = SF.applyLB(10, 1);
+            for (int i = 0; i < ITERATIONS_COUNT; i++) {
                 stop.set(false);
 
                 final AtomicReference<Exception> err = new AtomicReference<>();
@@ -3858,7 +4180,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                     }
                 }, 8, "op-thread");
 
-                Thread.sleep(10_000);
+                Thread.sleep(SF.applyLB(10_000, 1_000));
 
                 stop.set(true);
 

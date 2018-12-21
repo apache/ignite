@@ -21,6 +21,9 @@ import org.apache.ignite.igfs.IgfsInputStream;
 import org.apache.ignite.igfs.mapreduce.IgfsFileRange;
 import org.apache.ignite.igfs.mapreduce.records.IgfsNewLineRecordResolver;
 import org.apache.ignite.internal.util.typedef.F;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.igfs.mapreduce.records.IgfsNewLineRecordResolver.SYM_CR;
 import static org.apache.ignite.igfs.mapreduce.records.IgfsNewLineRecordResolver.SYM_LF;
@@ -28,12 +31,14 @@ import static org.apache.ignite.igfs.mapreduce.records.IgfsNewLineRecordResolver
 /**
  * New line split resolver self test.
  */
+@RunWith(JUnit4.class)
 public class IgfsNewLineDelimiterRecordResolverSelfTest extends IgfsAbstractRecordResolverSelfTest {
     /**
      * Test new line delimtier record resovler.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test() throws Exception{
         byte[] data = array(F.t(wrap(1), 8), F.t(wrap(SYM_LF), 1), F.t(wrap(1), 8), F.t(wrap(SYM_CR, SYM_LF), 1),
             F.t(wrap(1), 8));

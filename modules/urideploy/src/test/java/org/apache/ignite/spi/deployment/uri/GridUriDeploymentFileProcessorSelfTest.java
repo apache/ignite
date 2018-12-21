@@ -20,24 +20,26 @@ package org.apache.ignite.spi.deployment.uri;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 import org.apache.ignite.util.antgar.IgniteDeploymentGarAntTask;
 import org.apache.tools.ant.Project;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @GridSpiTest(spi = UriDeploymentSpi.class, group = "Deployment SPI")
+@RunWith(JUnit4.class)
 public class GridUriDeploymentFileProcessorSelfTest extends GridUriDeploymentAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTaskCorrect() throws Exception {
         proceedTest("correct.gar", "ignite.xml",
             "org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask0", true);
@@ -46,6 +48,7 @@ public class GridUriDeploymentFileProcessorSelfTest extends GridUriDeploymentAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTaskWithBrokenXML() throws Exception {
         proceedTest("broken.gar", "ignite.brokenxml", "brokenxml-task", false);
     }
@@ -53,6 +56,7 @@ public class GridUriDeploymentFileProcessorSelfTest extends GridUriDeploymentAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTaskWithEmptyXML() throws Exception {
         proceedTest("empty.gar", "ignite.empty", "emptyxml-task", false);
     }
@@ -60,6 +64,7 @@ public class GridUriDeploymentFileProcessorSelfTest extends GridUriDeploymentAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTaskWithIncorrectRefsXML() throws Exception {
         proceedTest("incorrefs.gar", "ignite.incorrefs", "incorrectref-task", false);
     }

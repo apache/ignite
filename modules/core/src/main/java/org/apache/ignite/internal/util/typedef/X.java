@@ -291,7 +291,6 @@ public final class X {
      * @param <T> Type of cloning object.
      * @return Copy of a passed in object.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public static <T> T cloneObject(@Nullable T obj, boolean deep, boolean honorCloneable) {
         if (obj == null)
             return null;
@@ -310,7 +309,6 @@ public final class X {
      * @param <T> Type of cloning object.
      * @return Copy of a passed in object.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable private static <T> T shallowClone(@Nullable T obj) {
         if (obj == null)
             return null;
@@ -524,7 +522,6 @@ public final class X {
      * @param cls Cause class to get cause (if {@code null}, {@code null} is returned).
      * @return First causing exception of passed in class, {@code null} otherwise.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public static <T extends Throwable> T cause(@Nullable Throwable t, @Nullable Class<T> cls) {
         if (t == null || cls == null)
             return null;

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.concurrent.ConcurrentMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
@@ -34,6 +34,9 @@ import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT;
@@ -44,6 +47,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests leaks at the IgniteH2Indexing
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
     /** */
     private static final long TEST_TIMEOUT = 2 * 60 * 1000;
@@ -119,17 +123,15 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
      * @return size of statement cache.
      */
     private static int getStatementCacheSize(GridQueryProcessor qryProcessor) {
-        IgniteH2Indexing h2Idx = GridTestUtils.getFieldValue(qryProcessor, GridQueryProcessor.class, "idx");
 
-        ConcurrentMap<Thread, ConcurrentMap<H2ConnectionWrapper, Boolean>> conns =
-            GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "conns");
+        IgniteH2Indexing h2Idx = (IgniteH2Indexing)qryProcessor.getIndexing();
+
+        Map<Thread, H2ConnectionWrapper> conns = h2Idx.connections().connectionsForThread();
 
         int cntr = 0;
 
-        for (ConcurrentMap<H2ConnectionWrapper, Boolean> connPerThread: conns.values()) {
-            for (H2ConnectionWrapper w : connPerThread.keySet())
-                cntr += w.statementCacheSize();
-        }
+        for (H2ConnectionWrapper w : conns.values())
+            cntr += w.statementCacheSize();
 
         return cntr;
     }
@@ -137,7 +139,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testLeaksInIgniteH2IndexingOnTerminatedThread() throws Exception {
         final IgniteCache<Integer, Integer> c = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -149,10 +151,10 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
             // Open iterator on the created cursor: add entries to the cache.
             IgniteInternalFuture<?> fut = multithreadedAsync(
                 new CAX() {
+                    @SuppressWarnings("unchecked")
                     @Override public void applyx() throws IgniteCheckedException {
                         while (!stop.get()) {
                             c.query(new SqlQuery(Integer.class, "_val >= 0")).getAll();
-
                             c.query(new SqlQuery(Integer.class, "_val >= 1")).getAll();
                         }
                     }
@@ -190,6 +192,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLeaksInIgniteH2IndexingOnUnusedThread() throws Exception {
         final IgniteCache<Integer, Integer> c = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -201,6 +204,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
             // Open iterator on the created cursor: add entries to the cache
             IgniteInternalFuture<?> fut = multithreadedAsync(
                 new CAX() {
+                    @SuppressWarnings("unchecked")
                     @Override public void applyx() throws IgniteCheckedException {
                         c.query(new SqlQuery(Integer.class, "_val >= 0")).getAll();
 

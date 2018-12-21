@@ -33,11 +33,15 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @GridSpiTest(spi = UriDeploymentSpi.class, group = "Deployment SPI")
+@RunWith(JUnit4.class)
 public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<UriDeploymentSpi> {
     /**
      * @return List of URI to use as deployment source.
@@ -52,6 +56,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<UriDepl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleDeploy() throws Exception {
         UriDeploymentSpi spi = getSpi();
 
@@ -71,6 +76,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<UriDepl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleRedeploy() throws Exception {
         for (int i = 0; i < 100; i++)
             testSimpleDeploy();
@@ -79,6 +85,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<UriDepl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleDeployWithName() throws Exception {
         UriDeploymentSpi spi = getSpi();
 
@@ -98,6 +105,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<UriDepl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleRedeployWithName() throws Exception {
         for (int i = 0; i < 100; i++)
             testSimpleDeployWithName();
@@ -106,6 +114,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<UriDepl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleDeployTwoTasks() throws Exception {
         UriDeploymentSpi spi = getSpi();
 
@@ -135,6 +144,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<UriDepl
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleRedeployTwoTasks() throws Exception {
         for (int i = 0; i < 100; i++)
             testSimpleDeployTwoTasks();

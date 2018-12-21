@@ -30,6 +30,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -37,6 +40,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * Test filtered put.
  */
+@RunWith(JUnit4.class)
 public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -89,6 +93,7 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAndRollbackCheckNear() throws Exception {
         doPutAndRollback();
 
@@ -100,6 +105,7 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAndRollbackCheckDht() throws Exception {
         doPutAndRollback();
 

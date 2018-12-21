@@ -39,11 +39,15 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnhea
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentLinkedHashMap;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests H2RowCacheRegistry.
  */
 @SuppressWarnings({"unchecked", "ConstantConditions"})
+@RunWith(JUnit4.class)
 public class H2RowCacheSelfTest extends GridCommonAbstractTest {
     /** Keys count. */
     private static final int ENTRIES = 1_000;
@@ -79,6 +83,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testDestroyCacheCreation() {
         final String cacheName0 = "cache0";
         final String cacheName1 = "cache1";
@@ -99,6 +104,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testDestroyCacheSingleCacheInGroup() throws IgniteCheckedException {
         checkDestroyCache();
     }
@@ -106,6 +112,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testDestroyCacheWithOtherCacheInGroup() throws IgniteCheckedException {
         grid().getOrCreateCache(cacheConfiguration("cacheWithoutOnheapCache", false));
 
@@ -115,6 +122,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeleteEntryCacheSingleCacheInGroup() throws Exception {
         checkDeleteEntry();
     }
@@ -122,6 +130,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeleteEntryWithOtherCacheInGroup() throws Exception {
         grid().getOrCreateCache(cacheConfiguration("cacheWithoutOnheapCache", false));
 
@@ -131,6 +140,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateEntryCacheSingleCacheInGroup() throws Exception {
         checkDeleteEntry();
     }
@@ -138,6 +148,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateEntryWithOtherCacheInGroup() throws Exception {
         grid().getOrCreateCache(cacheConfiguration("cacheWithoutOnheapCache", false));
 
@@ -147,6 +158,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFixedSize() throws Exception {
         int maxSize = 100;
         String cacheName = "cacheWithLimitedSize";

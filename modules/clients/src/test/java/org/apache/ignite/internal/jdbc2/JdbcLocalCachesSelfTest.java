@@ -29,6 +29,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_NODE_ID;
@@ -38,6 +41,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test JDBC with several local caches.
  */
+@RunWith(JUnit4.class)
 public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -98,6 +102,7 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCache1() throws Exception {
         Properties cfg = new Properties();
 
@@ -129,6 +134,7 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCountAll() throws Exception {
         Properties cfg = new Properties();
 
@@ -154,6 +160,7 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCache2() throws Exception {
         Properties cfg = new Properties();
 

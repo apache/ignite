@@ -18,12 +18,16 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /**
  * Continuous queries tests for replicated atomic cache.
  */
+@RunWith(JUnit4.class)
 public class GridCacheContinuousQueryReplicatedAtomicSelfTest extends GridCacheContinuousQueryReplicatedSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
@@ -31,6 +35,7 @@ public class GridCacheContinuousQueryReplicatedAtomicSelfTest extends GridCacheC
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testInternalKey() throws Exception {
         // No-op.
     }

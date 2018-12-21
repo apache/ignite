@@ -27,6 +27,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
 import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
 import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
@@ -35,12 +40,14 @@ import static org.apache.ignite.igfs.IgfsMode.PROXY;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgfsModeResolverSelfTest extends TestCase {
     /** */
     private IgfsModeResolver reslvr;
 
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Before
+    @Override public void setUp() throws Exception {
         reslvr = new IgfsModeResolver(DUAL_SYNC, new ArrayList<>(Arrays.asList(new T2<>(
             new IgfsPath("/a/b/c/d"), PROXY), new T2<>(new IgfsPath("/a/P/"), PRIMARY), new T2<>(new IgfsPath("/a/b/"),
             DUAL_ASYNC))));
@@ -49,6 +56,7 @@ public class IgfsModeResolverSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCanContain() throws Exception {
         for (IgfsMode m: IgfsMode.values()) {
             // Each mode can contain itself:
@@ -68,6 +76,7 @@ public class IgfsModeResolverSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testResolve() throws Exception {
         assertEquals(DUAL_SYNC, reslvr.resolveMode(IgfsPath.ROOT));
         assertEquals(DUAL_SYNC, reslvr.resolveMode(new IgfsPath("/a")));
@@ -89,6 +98,7 @@ public class IgfsModeResolverSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testModesValidation() throws Exception {
         // Another mode inside PRIMARY directory:
         try {
@@ -148,6 +158,7 @@ public class IgfsModeResolverSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDualParentsWithPrimaryChild() throws Exception {
         Set<IgfsPath> set = new HashSet<>();
 

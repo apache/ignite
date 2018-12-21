@@ -46,11 +46,11 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testsuites.IgniteIgnore;
 import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 
 /**
@@ -101,8 +101,8 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
         ignite1 = grid(0);
         ignite2 = grid(1);
@@ -111,19 +111,6 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
         cache1 = jcache(ignite1, CacheKey.class, CacheValue.class);
         cache2 = jcache(ignite2, CacheKey.class, CacheValue.class);
         cache3 = jcache(ignite3, CacheKey.class, CacheValue.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        ignite1 = null;
-        ignite2 = null;
-        ignite3 = null;
-
-        cache1 = null;
-        cache2 = null;
-        cache3 = null;
     }
 
     /**
@@ -346,14 +333,13 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     /**
      * @throws Exception If failed.
      */
-    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-613", forceFailure = true)
     public void testNodeLeft() throws Exception {
         Ignite g = startGrid("client");
 
         try {
             assertTrue(g.configuration().isClientMode());
 
-            IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
+            IgniteCache<Integer, Integer> cache = jcache(g, Integer.class, Integer.class);
 
             for (int i = 0; i < 1000; i++)
                 cache.put(i, i);
@@ -384,7 +370,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
 
                     return true;
                 }
-            }, EVT_NODE_LEFT);
+            }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
             stopGrid("client");
 

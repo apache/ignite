@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.logger.slf4j.Slf4jLoggerMarkerTest;
 
@@ -30,7 +31,7 @@ public class IgniteSlf4jTestSuite extends TestSuite {
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Slf4j Logging Test Suite");
 
-        suite.addTestSuite(Slf4jLoggerMarkerTest.class);
+        suite.addTest(new JUnit4TestAdapter(Slf4jLoggerMarkerTest.class));
 
         return suite;
     }

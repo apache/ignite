@@ -17,6 +17,8 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.Set;
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.commandline.CommandHandlerParsingTest;
 import org.apache.ignite.internal.pagemem.impl.PageIdUtilsSelfTest;
@@ -57,13 +59,10 @@ import org.apache.ignite.util.GridSpinReadWriteLockSelfTest;
 import org.apache.ignite.util.GridStringBuilderFactorySelfTest;
 import org.apache.ignite.util.GridTopologyHeapSizeSelfTest;
 import org.apache.ignite.util.GridTransientTest;
-import org.apache.ignite.util.IgniteTaskTrackingThreadPoolExecutorTest;
 import org.apache.ignite.util.mbeans.GridMBeanDisableSelfTest;
 import org.apache.ignite.util.mbeans.GridMBeanExoticNamesSelfTest;
 import org.apache.ignite.util.mbeans.GridMBeanSelfTest;
 import org.apache.ignite.util.mbeans.WorkersControlMXBeanTest;
-
-import java.util.Set;
 
 /**
  * Test suite for Ignite utility classes.
@@ -71,78 +70,73 @@ import java.util.Set;
 public class IgniteUtilSelfTestSuite extends TestSuite {
     /**
      * @return Grid utility methods tests suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         return suite(null);
     }
 
     /**
      * @param ignoredTests Tests don't include in the execution.
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
+    public static TestSuite suite(Set<Class> ignoredTests) {
         TestSuite suite = new TestSuite("Ignite Util Test Suite");
 
-        suite.addTestSuite(GridThreadPoolExecutorServiceSelfTest.class);
-        suite.addTestSuite(IgniteThreadPoolSizeTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridThreadPoolExecutorServiceSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteThreadPoolSizeTest.class));
         GridTestUtils.addTestIfNeeded(suite, IgniteUtilsSelfTest.class, ignoredTests);
-        suite.addTestSuite(GridSpinReadWriteLockSelfTest.class);
-        suite.addTestSuite(GridQueueSelfTest.class);
-        suite.addTestSuite(GridStringBuilderFactorySelfTest.class);
-        suite.addTestSuite(GridToStringBuilderSelfTest.class);
-        suite.addTestSuite(CircularStringBuilderSelfTest.class);
-        suite.addTestSuite(GridByteArrayListSelfTest.class);
-        suite.addTestSuite(GridMBeanSelfTest.class);
-        suite.addTestSuite(GridMBeanDisableSelfTest.class);
-        suite.addTestSuite(GridMBeanExoticNamesSelfTest.class);
-        suite.addTestSuite(GridLongListSelfTest.class);
-        suite.addTestSuite(GridThreadTest.class);
-        suite.addTestSuite(GridIntListSelfTest.class);
-        suite.addTestSuite(GridArraysSelfTest.class);
-        suite.addTestSuite(GridCacheUtilsSelfTest.class);
-        suite.addTestSuite(IgniteExceptionRegistrySelfTest.class);
-        suite.addTestSuite(GridMessageCollectionTest.class);
-        suite.addTestSuite(WorkersControlMXBeanTest.class);
-        suite.addTestSuite(GridConcurrentLinkedDequeMultiThreadedTest.class);
-        suite.addTestSuite(GridLogThrottleTest.class);
-        suite.addTestSuite(GridRandomSelfTest.class);
-        suite.addTestSuite(GridSnapshotLockSelfTest.class);
-        suite.addTestSuite(GridTopologyHeapSizeSelfTest.class);
-        suite.addTestSuite(GridTransientTest.class);
-        suite.addTestSuite(IgniteDevOnlyLogTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridSpinReadWriteLockSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridQueueSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridStringBuilderFactorySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridToStringBuilderSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(CircularStringBuilderSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridByteArrayListSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridMBeanSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridMBeanDisableSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridMBeanExoticNamesSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridLongListSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridThreadTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridIntListSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridArraysSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheUtilsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteExceptionRegistrySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridMessageCollectionTest.class));
+        suite.addTest(new JUnit4TestAdapter(WorkersControlMXBeanTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridConcurrentLinkedDequeMultiThreadedTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridLogThrottleTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridRandomSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridSnapshotLockSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridTopologyHeapSizeSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridTransientTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteDevOnlyLogTest.class));
 
         // Sensitive toString.
-        suite.addTestSuite(IncludeSensitiveAtomicTest.class);
-        suite.addTestSuite(IncludeSensitiveTransactionalTest.class);
+        suite.addTest(new JUnit4TestAdapter(IncludeSensitiveAtomicTest.class));
+        suite.addTest(new JUnit4TestAdapter(IncludeSensitiveTransactionalTest.class));
 
         // Metrics.
-        suite.addTestSuite(ClusterMetricsSnapshotSerializeSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(ClusterMetricsSnapshotSerializeSelfTest.class));
 
         // Unsafe.
-        suite.addTestSuite(GridUnsafeMemorySelfTest.class);
-        suite.addTestSuite(GridUnsafeStripedLruSefTest.class);
-        suite.addTestSuite(GridUnsafeMapSelfTest.class);
-        suite.addTestSuite(GridUnsafePartitionedMapSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridUnsafeMemorySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridUnsafeStripedLruSefTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridUnsafeMapSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridUnsafePartitionedMapSelfTest.class));
 
         // NIO.
-        suite.addTestSuite(GridNioSessionMetaKeySelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridNioSessionMetaKeySelfTest.class));
         GridTestUtils.addTestIfNeeded(suite, GridNioSelfTest.class, ignoredTests);
-        suite.addTestSuite(GridNioFilterChainSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridNioFilterChainSelfTest.class));
         GridTestUtils.addTestIfNeeded(suite, GridNioSslSelfTest.class, ignoredTests);
-        suite.addTestSuite(GridNioDelimitedBufferSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridNioDelimitedBufferSelfTest.class));
 
-        suite.addTestSuite(GridPartitionMapSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridPartitionMapSelfTest.class));
 
         //dbx
-        suite.addTestSuite(PageIdUtilsSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(PageIdUtilsSelfTest.class));
 
         // control.sh
-        suite.addTestSuite(CommandHandlerParsingTest.class);
-
-        // Thread pool.
-        suite.addTestSuite(IgniteTaskTrackingThreadPoolExecutorTest.class);
+        suite.addTest(new JUnit4TestAdapter(CommandHandlerParsingTest.class));
 
         return suite;
     }

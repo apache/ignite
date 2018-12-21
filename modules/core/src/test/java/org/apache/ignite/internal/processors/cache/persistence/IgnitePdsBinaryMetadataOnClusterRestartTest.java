@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
-import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -40,14 +39,17 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "cache1";
@@ -73,6 +75,8 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setConsistentId(gridName);
 
         if (customWorkSubDir != null)
             cfg.setWorkDirectory(Paths.get(U.defaultWorkDirectory(), customWorkSubDir).toString());
@@ -116,6 +120,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     /**
      * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a> refer to the following JIRA for more context about the problem verified by the test.
      */
+    @Test
     public void testUpdatedBinaryMetadataIsPreservedOnJoinToOldCoordinator() throws Exception {
         Ignite ignite0 = startGridInASeparateWorkDir("A");
         Ignite ignite1 = startGridInASeparateWorkDir("B");
@@ -169,6 +174,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     /**
      * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a> refer to the following JIRA for more context about the problem verified by the test.
      */
+    @Test
     public void testNewBinaryMetadataIsWrittenOnOldCoordinator() throws Exception {
         Ignite ignite0 = startGridInASeparateWorkDir("A");
         Ignite ignite1 = startGridInASeparateWorkDir("B");
@@ -223,6 +229,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
      *
      * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a> refer to the following JIRA for more context about the problem verified by the test.
      */
+    @Test
     public void testNewBinaryMetadataIsPropagatedToAllOutOfDataNodes() throws Exception {
         Ignite igniteA = startGridInASeparateWorkDir("A");
         startGridInASeparateWorkDir("B");
@@ -290,6 +297,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
      *
      * @see <a href="https://issues.apache.org/jira/browse/IGNITE-7258">IGNITE-7258</a> refer to the following JIRA for more context about the problem verified by the test.
      */
+    @Test
     public void testNodeWithIncompatibleMetadataIsProhibitedToJoinTheCluster() throws Exception {
         final String decimalFieldName = "decField";
 
@@ -358,8 +366,8 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     ) throws Exception {
         String workDir = U.defaultWorkDirectory();
 
-        Path fromFile = Paths.get(workDir, fromWorkDir, "binary_meta", "node00-" + fromConsId, fileName);
-        Path toFile = Paths.get(workDir, toWorkDir, "binary_meta", "node00-" + toConsId, fileName);
+        Path fromFile = Paths.get(workDir, fromWorkDir, "binary_meta", fromConsId, fileName);
+        Path toFile = Paths.get(workDir, toWorkDir, "binary_meta", toConsId, fileName);
 
         Files.copy(fromFile, toFile, StandardCopyOption.REPLACE_EXISTING);
     }
@@ -368,6 +376,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
      * Test verifies that binary metadata from regular java classes is saved and restored correctly
      * on cluster restart.
      */
+    @Test
     public void testStaticMetadataIsRestoredOnRestart() throws Exception {
         clientMode = false;
 
@@ -443,6 +452,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
      * Test verifies that metadata for binary types built with BinaryObjectBuilder is saved and updated correctly
      * on cluster restart.
      */
+    @Test
     public void testDynamicMetadataIsRestoredOnRestart() throws Exception {
         clientMode = false;
         //1: start two nodes, add single BinaryObject
@@ -509,6 +519,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     /**
      *
      */
+    @Test
     public void testBinaryEnumMetadataIsRestoredOnRestart() throws Exception {
         clientMode = false;
 
@@ -550,6 +561,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     /**
      * Test verifies that metadata is saved, stored and delivered to client nodes correctly.
      */
+    @Test
     public void testMixedMetadataIsRestoredOnRestart() throws Exception {
         clientMode = false;
 

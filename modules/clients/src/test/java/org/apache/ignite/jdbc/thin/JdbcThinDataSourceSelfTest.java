@@ -43,11 +43,15 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * DataSource test.
  */
 @SuppressWarnings("ThrowableNotThrown")
+@RunWith(JUnit4.class)
 public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -98,6 +102,7 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJndi() throws Exception {
         IgniteJdbcThinDataSource ids = new IgniteJdbcThinDataSource();
 
@@ -117,6 +122,7 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUrlCompose() throws Exception {
         IgniteJdbcThinDataSource ids = new IgniteJdbcThinDataSource();
 
@@ -139,24 +145,26 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testResetUrl() throws Exception {
         IgniteJdbcThinDataSource ids = new IgniteJdbcThinDataSource();
 
-        ids.setUrl("jdbc:ignite:thin://127.0.0.1:10800/test?lazy=false");
+        ids.setUrl("jdbc:ignite:thin://127.0.0.1:10800/test?lazy=true");
 
         assertEquals("test", ids.getSchema());
-        assertFalse(ids.isLazy());
+        assertTrue(ids.isLazy());
 
         ids.setUrl("jdbc:ignite:thin://mydomain.org,localhost?collocated=true");
 
         assertNull(ids.getSchema());
-        assertTrue(ids.isLazy());
+        assertFalse(ids.isLazy());
         assertTrue(ids.isCollocated());
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSqlHints() throws Exception {
         IgniteJdbcThinDataSource ids = new IgniteJdbcThinDataSource();
 
@@ -168,7 +176,7 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
             assertFalse(io.connectionProperties().isAutoCloseServerCursor());
             assertFalse(io.connectionProperties().isCollocated());
             assertFalse(io.connectionProperties().isEnforceJoinOrder());
-            assertTrue(io.connectionProperties().isLazy());
+            assertFalse(io.connectionProperties().isLazy());
             assertFalse(io.connectionProperties().isDistributedJoins());
             assertFalse(io.connectionProperties().isReplicatedOnly());
         }
@@ -176,7 +184,7 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
         ids.setAutoCloseServerCursor(true);
         ids.setCollocated(true);
         ids.setEnforceJoinOrder(true);
-        ids.setLazy(false);
+        ids.setLazy(true);
         ids.setDistributedJoins(true);
         ids.setReplicatedOnly(true);
 
@@ -186,7 +194,7 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
             assertTrue(io.connectionProperties().isAutoCloseServerCursor());
             assertTrue(io.connectionProperties().isCollocated());
             assertTrue(io.connectionProperties().isEnforceJoinOrder());
-            assertFalse(io.connectionProperties().isLazy());
+            assertTrue(io.connectionProperties().isLazy());
             assertTrue(io.connectionProperties().isDistributedJoins());
             assertTrue(io.connectionProperties().isReplicatedOnly());
         }
@@ -195,6 +203,7 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTcpNoDelay() throws Exception {
         IgniteJdbcThinDataSource ids = new IgniteJdbcThinDataSource();
 
@@ -218,6 +227,7 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSocketBuffers() throws Exception {
         final IgniteJdbcThinDataSource ids = new IgniteJdbcThinDataSource();
 

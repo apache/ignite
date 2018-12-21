@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.tools.GridToolsSelfTest;
 
@@ -26,12 +27,11 @@ import org.apache.ignite.tools.GridToolsSelfTest;
 public class IgniteToolsSelfTestSuite extends TestSuite {
     /**
      * @return Grid ant tasks tests suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Ant Tasks Test Suite");
 
-        suite.addTest(new TestSuite(GridToolsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridToolsSelfTest.class));
 
         return suite;
     }

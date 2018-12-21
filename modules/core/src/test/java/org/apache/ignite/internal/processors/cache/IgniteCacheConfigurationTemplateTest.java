@@ -35,12 +35,16 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -102,6 +106,7 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateFromTemplate() throws Exception {
         addTemplate = true;
 
@@ -156,6 +161,7 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetOrCreateFromTemplate() throws Exception {
         addTemplate = true;
 
@@ -233,6 +239,7 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartClientNodeFirst() throws Exception {
         addTemplate = true;
         clientMode = true;
@@ -259,6 +266,7 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddCacheConfigurationMultinode() throws Exception {
         addTemplate = true;
 
@@ -306,6 +314,7 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoPartitionExchangeForTemplate() throws Exception{
         final int GRID_CNT = 3;
 
@@ -355,6 +364,7 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTemplateCleanup() throws Exception {
         startGridsMultiThreaded(3);
 

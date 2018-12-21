@@ -1,7 +1,6 @@
 *.log
 /out/
 /work/
-.idea/
 */build/
 xcuserdata/
 *.iws
@@ -30,6 +29,10 @@ git-patch-prop-local.sh
 *.classname*
 *.exe
 .mvn/
+
+#Ignore all Intellij IDEA files (except default inspections config)
+.idea/
+!.idea/inspectionProfiles/Project_Default.xml
 
 #Visual Studio files
 *.[Oo]bj

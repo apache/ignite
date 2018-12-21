@@ -40,6 +40,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -52,6 +55,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Tests near transactions.
  */
+@RunWith(JUnit4.class)
 public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
     /** */
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -96,6 +100,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings( {"unchecked"})
+    @Test
     public void testTxCleanup() throws Exception {
         backups = 1;
 
@@ -184,6 +189,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxReadersUpdate() throws Exception {
         startGridsMultiThreaded(GRID_CNT);
 
@@ -240,7 +246,6 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param g Grid.
      * @param tm Transaction manager.
      */
-    @SuppressWarnings( {"unchecked"})
     private void checkTm(Ignite g, IgniteTxManager tm) {
         Collection<IgniteInternalTx> txs = tm.activeTransactions();
 

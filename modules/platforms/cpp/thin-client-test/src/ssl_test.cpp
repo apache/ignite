@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE(SslConnectionReject2)
     cfg.SetEndPoints("127.0.0.1:11110");
 
     cfg.SetSslMode(SslMode::DISABLE);
-    
+
     BOOST_CHECK_THROW(IgniteClient::Start(cfg), ignite::IgniteError);
 }
 

@@ -207,5 +207,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** {@inheritDoc} */
     @Override public void onDisconnected() {
         handler.onDisconnect();
+
+        super.onDisconnected();
     }
 }

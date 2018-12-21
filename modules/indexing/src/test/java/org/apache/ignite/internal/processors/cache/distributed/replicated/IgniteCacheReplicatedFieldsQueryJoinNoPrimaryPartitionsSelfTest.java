@@ -26,6 +26,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -36,6 +39,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Tests non-collocated join with REPLICATED cache and no primary partitions for that cache on some nodes.
  */
 @SuppressWarnings("unused")
+@RunWith(JUnit4.class)
 public class IgniteCacheReplicatedFieldsQueryJoinNoPrimaryPartitionsSelfTest extends GridCommonAbstractTest {
     /** Client node name. */
     public static final String NODE_CLI = "client";
@@ -103,6 +107,7 @@ public class IgniteCacheReplicatedFieldsQueryJoinNoPrimaryPartitionsSelfTest ext
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinNonCollocated() throws Exception {
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT COUNT(*) FROM PartValue p, RepValue r WHERE p.repId=r.id");
 

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -480,5 +479,24 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
         evictRate = new HitRateMetrics((int) rateTimeInterval, subInts);
         pageReplaceRate = new HitRateMetrics((int)rateTimeInterval, subInts);
         pageReplaceAge = new HitRateMetrics((int)rateTimeInterval, subInts);
+    }
+
+    /**
+     * Clear metrics.
+     */
+    public void clear() {
+        totalAllocatedPages.reset();
+        grpAllocationTrackers.values().forEach(GroupAllocationTracker::reset);
+        largeEntriesPages.reset();
+        dirtyPages.reset();
+        readPages.reset();
+        writtenPages.reset();
+        replacedPages.reset();
+        offHeapSize.set(0);
+        checkpointBufferSize.set(0);
+        allocRate.clear();
+        evictRate.clear();
+        pageReplaceRate.clear();
+        pageReplaceAge.clear();
     }
 }

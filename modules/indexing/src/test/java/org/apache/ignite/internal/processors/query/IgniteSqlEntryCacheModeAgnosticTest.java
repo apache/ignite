@@ -29,6 +29,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.util.List;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -38,6 +41,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * Test different cache modes for query entry
  */
+@RunWith(JUnit4.class)
 public class IgniteSqlEntryCacheModeAgnosticTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -116,6 +120,7 @@ public class IgniteSqlEntryCacheModeAgnosticTest extends GridCommonAbstractTest 
     /**
      * It should not matter what cache mode does entry cache use, if there is no join
      */
+    @Test
     public void testCrossCacheModeQuery() throws Exception {
         Ignite ignite = startGrid();
 

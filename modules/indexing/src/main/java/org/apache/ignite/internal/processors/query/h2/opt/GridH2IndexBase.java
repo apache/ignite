@@ -87,6 +87,7 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2Collocati
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.PREPARE;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor.COL_NOT_EXISTS;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_ERROR;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_NOT_FOUND;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_OK;
@@ -1048,6 +1049,9 @@ public abstract class GridH2IndexBase extends BaseIndex {
          * @return Affinity key or {@code null}.
          */
         private Object getAffinityKey(SearchRow firstRow, SearchRow lastRow) {
+            if (affColId == COL_NOT_EXISTS)
+                return null;
+
             if (firstRow == null || lastRow == null)
                 return null;
 
@@ -1109,7 +1113,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 rangeStreams = new HashMap<>();
             }
 
-            Object affKey = affColId == -1 ? null : getAffinityKey(firstRow, lastRow);
+            Object affKey = getAffinityKey(firstRow, lastRow);
 
             boolean locQry = localQuery();
 

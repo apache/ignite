@@ -32,10 +32,14 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests case when connection is closed only for one side, when other is not notified.
  */
+@RunWith(JUnit4.class)
 public class TcpCommunicationSpiHalfOpenedConnectionTest extends GridCommonAbstractTest {
     /** Client spi. */
     private TcpCommunicationSpi clientSpi;
@@ -66,6 +70,7 @@ public class TcpCommunicationSpiHalfOpenedConnectionTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnect() throws Exception {
         pairedConnections = false;
 
@@ -75,6 +80,7 @@ public class TcpCommunicationSpiHalfOpenedConnectionTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectPaired() throws Exception {
         pairedConnections = true;
 

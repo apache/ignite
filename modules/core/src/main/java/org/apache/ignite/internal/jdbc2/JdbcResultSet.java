@@ -181,7 +181,6 @@ public class JdbcResultSet implements ResultSet {
     }
 
         /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public boolean next() throws SQLException {
         ensureNotClosed();
 
@@ -1753,7 +1752,6 @@ public class JdbcResultSet implements ResultSet {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Result set is not a wrapper for " + iface.getName());
@@ -1836,7 +1834,6 @@ public class JdbcResultSet implements ResultSet {
      * @return Object field value.
      * @throws SQLException In case of error.
      */
-    @SuppressWarnings("unchecked")
     private Object getValue(int colIdx) throws SQLException {
         ensureNotClosed();
         ensureHasCurrentRow();

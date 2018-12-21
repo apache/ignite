@@ -27,6 +27,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -37,6 +40,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Test ensuring that values are visible inside OPTIMISTIC transaction in co-located cache.
  */
+@RunWith(JUnit4.class)
 public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 3;
@@ -110,6 +114,7 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticTransaction() throws Exception {
         for (IgniteCache<Integer, String> cache : caches) {
             Transaction tx = cache.unwrap(Ignite.class).transactions().txStart(OPTIMISTIC, REPEATABLE_READ);

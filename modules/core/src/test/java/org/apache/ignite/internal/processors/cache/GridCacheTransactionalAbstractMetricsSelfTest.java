@@ -26,6 +26,9 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionMetrics;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -37,6 +40,7 @@ import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 /**
  * Transactional cache metrics test.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends GridCacheAbstractMetricsSelfTest {
     /** */
     private static final int TX_CNT = 3;
@@ -47,6 +51,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticReadCommittedCommits() throws Exception {
         testCommits(OPTIMISTIC, READ_COMMITTED, true);
     }
@@ -54,6 +59,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticReadCommittedCommitsNoData() throws Exception {
         testCommits(OPTIMISTIC, READ_COMMITTED, false);
     }
@@ -61,6 +67,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticRepeatableReadCommits() throws Exception {
         testCommits(OPTIMISTIC, REPEATABLE_READ, true);
     }
@@ -68,6 +75,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticRepeatableReadCommitsNoData() throws Exception {
         testCommits(OPTIMISTIC, REPEATABLE_READ, false);
     }
@@ -75,6 +83,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticSerializableCommits() throws Exception {
         testCommits(OPTIMISTIC, SERIALIZABLE, true);
     }
@@ -82,6 +91,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticSerializableCommitsNoData() throws Exception {
         testCommits(OPTIMISTIC, SERIALIZABLE, false);
     }
@@ -89,6 +99,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticReadCommittedCommits() throws Exception {
         testCommits(PESSIMISTIC, READ_COMMITTED, true);
     }
@@ -96,6 +107,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticReadCommittedCommitsNoData() throws Exception {
         testCommits(PESSIMISTIC, READ_COMMITTED, false);
     }
@@ -103,6 +115,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticRepeatableReadCommits() throws Exception {
         testCommits(PESSIMISTIC, REPEATABLE_READ, true);
     }
@@ -110,6 +123,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticRepeatableReadCommitsNoData() throws Exception {
         testCommits(PESSIMISTIC, REPEATABLE_READ, false);
     }
@@ -117,6 +131,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticSerializableCommits() throws Exception {
         testCommits(PESSIMISTIC, SERIALIZABLE, true);
     }
@@ -124,6 +139,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticSerializableCommitsNoData() throws Exception {
         testCommits(PESSIMISTIC, SERIALIZABLE, false);
     }
@@ -131,6 +147,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticReadCommittedRollbacks() throws Exception {
         testRollbacks(OPTIMISTIC, READ_COMMITTED, true);
     }
@@ -138,6 +155,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticReadCommittedRollbacksNoData() throws Exception {
         testRollbacks(OPTIMISTIC, READ_COMMITTED, false);
     }
@@ -145,6 +163,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticRepeatableReadRollbacks() throws Exception {
         testRollbacks(OPTIMISTIC, REPEATABLE_READ, true);
     }
@@ -152,6 +171,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticRepeatableReadRollbacksNoData() throws Exception {
         testRollbacks(OPTIMISTIC, REPEATABLE_READ, false);
     }
@@ -159,6 +179,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticSerializableRollbacks() throws Exception {
         testRollbacks(OPTIMISTIC, SERIALIZABLE, true);
     }
@@ -166,6 +187,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticSerializableRollbacksNoData() throws Exception {
         testRollbacks(OPTIMISTIC, SERIALIZABLE, false);
     }
@@ -173,6 +195,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticReadCommittedRollbacks() throws Exception {
         testRollbacks(PESSIMISTIC, READ_COMMITTED, true);
     }
@@ -180,6 +203,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticReadCommittedRollbacksNoData() throws Exception {
         testRollbacks(PESSIMISTIC, READ_COMMITTED, false);
     }
@@ -187,6 +211,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticRepeatableReadRollbacks() throws Exception {
         testRollbacks(PESSIMISTIC, REPEATABLE_READ, true);
     }
@@ -194,6 +219,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticRepeatableReadRollbacksNoData() throws Exception {
         testRollbacks(PESSIMISTIC, REPEATABLE_READ, false);
     }
@@ -201,6 +227,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticSerializableRollbacks() throws Exception {
         testRollbacks(PESSIMISTIC, SERIALIZABLE, true);
     }
@@ -208,6 +235,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticSerializableRollbacksNoData() throws Exception {
         testRollbacks(PESSIMISTIC, SERIALIZABLE, false);
     }
@@ -215,6 +243,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticSuspendedReadCommittedTxTimeoutRollbacks() throws Exception {
         doTestSuspendedTxTimeoutRollbacks(OPTIMISTIC, READ_COMMITTED);
     }
@@ -222,6 +251,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticSuspendedRepeatableReadTxTimeoutRollbacks() throws Exception {
         doTestSuspendedTxTimeoutRollbacks(OPTIMISTIC, REPEATABLE_READ);
     }
@@ -229,6 +259,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticSuspendedSerializableTxTimeoutRollbacks() throws Exception {
         doTestSuspendedTxTimeoutRollbacks(OPTIMISTIC, SERIALIZABLE);
     }

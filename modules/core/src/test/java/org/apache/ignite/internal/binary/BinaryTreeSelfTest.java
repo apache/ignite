@@ -33,10 +33,14 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for TreeMap and TreeSet structures.
  */
+@RunWith(JUnit4.class)
 public class BinaryTreeSelfTest extends GridCommonAbstractTest {
     /** Data structure size. */
     private static final int SIZE = 100;
@@ -69,6 +73,7 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTreeMapAsValueRegularNoComparator() throws Exception {
         checkTreeMapAsValue(false, false);
     }
@@ -78,6 +83,7 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTreeMapAsValueRegularComparator() throws Exception {
         checkTreeMapAsValue(false, true);
     }
@@ -87,6 +93,7 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTreeMapAsValueBinaryNoComparator() throws Exception {
         checkTreeMapAsValue(true, false);
     }
@@ -96,6 +103,7 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTreeMapAsValueBinaryComparator() throws Exception {
         checkTreeMapAsValue(true, true);
     }
@@ -105,6 +113,7 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTreeMapAsKeyNoComparator() throws Exception {
         checkTreeMapAsKey(false);
     }
@@ -114,6 +123,7 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTreeMapAsKeyComparator() throws Exception {
         checkTreeMapAsKey(true);
     }
@@ -224,6 +234,7 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTreeSetAsValueRegularNoComparator() throws Exception {
         checkTreeSetAsValue(false, false);
     }
@@ -233,6 +244,7 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTreeSetAsValueRegularComparator() throws Exception {
         checkTreeSetAsValue(false, true);
     }
@@ -242,6 +254,7 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTreeSetAsValueBinaryNoComparator() throws Exception {
         checkTreeSetAsValue(true, false);
     }
@@ -251,6 +264,7 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTreeSetAsValueBinaryComparator() throws Exception {
         checkTreeSetAsValue(true, true);
     }
@@ -260,6 +274,7 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTreeSetAsKeyNoComparator() throws Exception {
         checkTreeSetAsKey(false);
     }
@@ -269,6 +284,7 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTreeSetAsKeyComparator() throws Exception {
         checkTreeSetAsKey(true);
     }

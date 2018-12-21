@@ -43,18 +43,22 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 
 /**
  * Client-based discovery SPI test with failure detection timeout enabled.
  */
+@RunWith(JUnit4.class)
 public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscoverySpiSelfTest {
     /** */
-    private final static int FAILURE_AWAIT_TIME = 7_000;
+    private static final int FAILURE_AWAIT_TIME = 7_000;
 
     /** */
-    private final static long FAILURE_THRESHOLD = 10_000;
+    private static final long FAILURE_THRESHOLD = 10_000;
 
     /** Failure detection timeout for nodes configuration. */
     private static long failureThreshold = FAILURE_THRESHOLD;
@@ -110,6 +114,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
     /**
      * @throws Exception in case of error.
      */
+    @Test
     public void testFailureDetectionTimeoutEnabled() throws Exception {
         startServerNodes(1);
         startClientNodes(1);
@@ -130,6 +135,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
     /**
      * @throws Exception in case of error.
      */
+    @Test
     public void testFailureTimeoutWorkabilityAvgTimeout() throws Exception {
         failureThreshold = 3000;
 
@@ -144,6 +150,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
     /**
      * @throws Exception in case of error.
      */
+    @Test
     public void testFailureTimeoutWorkabilitySmallTimeout() throws Exception {
         failureThreshold = 500;
 
@@ -160,6 +167,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
      *
      * @throws Exception in case of error.
      */
+    @Test
     public void testFailureTimeoutServerClient() throws Exception {
         failureThreshold = 3000;
         clientFailureDetectionTimeout = 2000;
@@ -213,6 +221,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
      *
      * @throws Exception in case of error.
      */
+    @Test
     public void testFailureTimeout3Server() throws Exception {
         failureThreshold = 1000;
         clientFailureDetectionTimeout = 10000;
@@ -319,6 +328,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnectOnCoordinatorRouterFail1() throws Exception {
         clientReconnectOnCoordinatorRouterFail(1);
     }
@@ -326,6 +336,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnectOnCoordinatorRouterFail2() throws Exception {
         clientReconnectOnCoordinatorRouterFail(2);
     }

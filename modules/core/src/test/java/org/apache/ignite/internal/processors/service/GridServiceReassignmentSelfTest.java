@@ -30,10 +30,14 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests service reassignment.
  */
+@RunWith(JUnit4.class)
 public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstractSelfTest {
     /** */
     private static final String SERVICE_NAME = "testService";
@@ -46,6 +50,7 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClusterSingleton() throws Exception {
         checkReassigns(1, 1);
     }
@@ -53,6 +58,7 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeSingleton() throws Exception {
         checkReassigns(0, 1);
     }
@@ -60,6 +66,7 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLimited1() throws Exception {
         checkReassigns(5, 2);
     }
@@ -67,6 +74,7 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLimited2() throws Exception {
         checkReassigns(7, 3);
     }

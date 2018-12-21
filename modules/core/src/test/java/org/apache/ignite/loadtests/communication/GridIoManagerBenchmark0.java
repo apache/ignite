@@ -47,12 +47,16 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
     /** */
     public static final int CONCUR_MSGS = 10 * 1024;
@@ -103,7 +107,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("deprecation")
+    @Test
     public void testThroughput() throws Exception {
         final IgniteKernal sndKernal = (IgniteKernal)grid(0);
         final IgniteKernal rcvKernal = (IgniteKernal)grid(1);
@@ -199,7 +203,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("deprecation")
+    @Test
     public void testLatency() throws Exception {
         final IgniteKernal sndKernal = (IgniteKernal)grid(0);
         final IgniteKernal rcvKernal = (IgniteKernal)grid(1);
@@ -295,7 +299,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("deprecation")
+    @Test
     public void testVariableLoad() throws Exception {
         final IgniteKernal sndKernal = (IgniteKernal)grid(0);
         final IgniteKernal rcvKernal = (IgniteKernal)grid(1);

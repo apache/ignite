@@ -31,12 +31,16 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Tests {@link TcpDiscoverySpi} in client mode with multiple client nodes that interact with a cache concurrently.
  */
+@RunWith(JUnit4.class)
 public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstractSelfTest {
     /** Server nodes count. */
     private static int srvNodesCnt;
@@ -104,6 +108,7 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheConcurrentlyWithMultipleClientNodes() throws Exception {
         srvNodesCnt = 2;
         clientNodesCnt = 3;

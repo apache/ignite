@@ -31,11 +31,15 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.apache.log4j.Level;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Single split load test.
  */
 @GridCommonTest(group = "Load Test")
+@RunWith(JUnit4.class)
 public class SingleSplitsLoadTest extends GridCommonAbstractTest {
     /** */
     public SingleSplitsLoadTest() {
@@ -43,7 +47,6 @@ public class SingleSplitsLoadTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration cfg = super.getConfiguration();
 
@@ -81,6 +84,7 @@ public class SingleSplitsLoadTest extends GridCommonAbstractTest {
      *
      * @throws Exception If task execution failed.
      */
+    @Test
     public void testLoad() throws Exception {
         final Ignite ignite = G.ignite(getTestIgniteInstanceName());
 

@@ -36,12 +36,16 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Tests for {@link ClusterGroup#forCacheNodes(String)} method.
  */
+@RunWith(JUnit4.class)
 public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -126,6 +130,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testProjectionForDefaultCache() throws Exception {
         final ClusterGroup prj = ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME);
 
@@ -149,6 +154,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testProjectionForNamedCache() throws Exception {
         final ClusterGroup prj = ignite.cluster().forCacheNodes(CACHE_NAME);
 
@@ -171,6 +177,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testProjectionForDataCaches() throws Exception {
         ClusterGroup prj = ignite.cluster().forDataNodes(DEFAULT_CACHE_NAME);
 
@@ -182,6 +189,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testProjectionForClientCaches() throws Exception {
         ClusterGroup prj = ignite.cluster().forClientNodes(CACHE_NAME);
 
@@ -193,6 +201,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testProjectionForWrongCacheName() throws Exception {
         ClusterGroup prj = ignite.cluster().forCacheNodes("wrong");
 
@@ -203,6 +212,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testProjections() throws Exception {
         ClusterNode locNode = ignite.cluster().localNode();
         UUID locId = locNode.id();

@@ -18,14 +18,19 @@
 package org.apache.ignite.internal.util;
 
 import junit.framework.TestCase;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Grid cleaner tests.
  */
+@RunWith(JUnit4.class)
 public class GridCleanerTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreate() throws Exception {
         Object cleaner = GridCleaner.create(this, new Runnable() {
             @Override public void run() {

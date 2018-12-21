@@ -42,10 +42,14 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests service proxy timeouts.
  */
+@RunWith(JUnit4.class)
 public class IgniteServiceProxyTimeoutInitializedTest extends GridCommonAbstractTest {
     /** */
     private static Service srvc;
@@ -102,7 +106,8 @@ public class IgniteServiceProxyTimeoutInitializedTest extends GridCommonAbstract
      *
      * @throws Exception If fail.
      */
-    @SuppressWarnings({"Convert2Lambda", "ThrowableResultOfMethodCallIgnored"})
+    @SuppressWarnings({"Convert2Lambda"})
+    @Test
     public void testUnavailableService() throws Exception {
         srvc = new TestWaitServiceImpl();
 
@@ -142,7 +147,8 @@ public class IgniteServiceProxyTimeoutInitializedTest extends GridCommonAbstract
      *
      * @throws Exception If fail.
      */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "Convert2Lambda"})
+    @SuppressWarnings({"Convert2Lambda"})
+    @Test
     public void testServiceException() throws Exception {
         srvc = new HangServiceImpl();
 

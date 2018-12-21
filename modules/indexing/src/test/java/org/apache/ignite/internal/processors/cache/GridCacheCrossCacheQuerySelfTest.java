@@ -45,6 +45,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -52,6 +55,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 /**
  * Tests cross cache queries.
  */
+@RunWith(JUnit4.class)
 public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     /** */
     private static final String PART_CACHE_NAME = "partitioned";
@@ -128,6 +132,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTwoStepGroupAndAggregates() throws Exception {
         IgniteInternalCache<Integer, FactPurchase> cache = ((IgniteKernal)ignite).getCache(PART_CACHE_NAME);
 
@@ -228,6 +233,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testApiQueries() throws Exception {
         IgniteCache<Object,Object> c = ignite.cache(PART_CACHE_NAME);
 
@@ -243,6 +249,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiStatement() throws Exception {
         final IgniteInternalCache<Integer, FactPurchase> cache = ((IgniteKernal)ignite).getCache(PART_CACHE_NAME);
 

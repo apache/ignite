@@ -29,10 +29,15 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.logging.log4j.Level;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Grid Log4j2 SPI test.
  */
+@RunWith(JUnit4.class)
 public class Log4j2LoggerVerboseModeSelfTest extends TestCase {
     /** */
     private static final String LOG_PATH_VERBOSE_TEST = "modules/core/src/test/config/log4j2-verbose-test.xml";
@@ -40,7 +45,8 @@ public class Log4j2LoggerVerboseModeSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
-    @Override protected void setUp() throws Exception {
+    @Before
+    @Override public void setUp() throws Exception {
         Log4J2Logger.cleanup();
 
     }
@@ -50,6 +56,7 @@ public class Log4j2LoggerVerboseModeSelfTest extends TestCase {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testVerboseMode() throws Exception {
         final PrintStream backupSysOut = System.out;
         final PrintStream backupSysErr = System.err;

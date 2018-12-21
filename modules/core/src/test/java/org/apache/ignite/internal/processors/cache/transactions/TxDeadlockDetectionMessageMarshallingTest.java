@@ -33,10 +33,14 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class TxDeadlockDetectionMessageMarshallingTest extends GridCommonAbstractTest {
     /** Topic. */
     private static final String TOPIC = "mytopic";
@@ -45,7 +49,6 @@ public class TxDeadlockDetectionMessageMarshallingTest extends GridCommonAbstrac
     private static boolean clientMode;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -57,6 +60,7 @@ public class TxDeadlockDetectionMessageMarshallingTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMessageUnmarshallWithoutCacheContext() throws Exception {
         try {
             Ignite ignite = startGrid(0);

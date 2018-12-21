@@ -17,16 +17,29 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
+import org.apache.ignite.internal.processors.query.h2.IndexRebuildPartialClosure;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
-import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
+import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.command.dml.Insert;
@@ -47,22 +60,9 @@ import org.h2.table.TableType;
 import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.LongAdder;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor.COL_NOT_EXISTS;
 
 /**
  * H2 Table implementation.
@@ -71,8 +71,8 @@ public class GridH2Table extends TableBase {
     /** Insert hack flag. */
     private static final ThreadLocal<Boolean> INSERT_HACK = new ThreadLocal<>();
 
-    /** Cache context. */
-    private final GridCacheContext cctx;
+    /** Cache context info. */
+    private final GridCacheContextInfo cacheInfo;
 
     /** */
     private final GridH2RowDescriptor desc;
@@ -90,13 +90,7 @@ public class GridH2Table extends TableBase {
     private final Map<String, GridH2IndexBase> tmpIdxs = new HashMap<>();
 
     /** */
-    private final ReadWriteLock lock;
-
-    /** Number of reading threads which currently move execution from query pool to dedicated thread. */
-    private final AtomicInteger lazyTransferCnt = new AtomicInteger();
-
-    /** Has writer that waits lock in the loop. */
-    private volatile boolean hasWaitedWriter;
+    private final ReentrantReadWriteLock lock;
 
     /** */
     private boolean destroyed;
@@ -105,7 +99,10 @@ public class GridH2Table extends TableBase {
     private final ConcurrentMap<Session, Boolean> sessions = new ConcurrentHashMap<>();
 
     /** */
-    private IndexColumn affKeyCol;
+    private final IndexColumn affKeyCol;
+
+    /** */
+    private final int affKeyColId;
 
     /** */
     private final LongAdder size = new LongAdder();
@@ -132,42 +129,47 @@ public class GridH2Table extends TableBase {
      * @param desc Row descriptor.
      * @param rowFactory Row factory.
      * @param idxsFactory Indexes factory.
-     * @param cctx Cache context.
+     * @param cacheInfo Cache context info.
      */
+    @SuppressWarnings("ConstantConditions")
     public GridH2Table(CreateTableData createTblData, GridH2RowDescriptor desc, H2RowFactory rowFactory,
-        GridH2SystemIndexFactory idxsFactory, GridCacheContext cctx) {
+        GridH2SystemIndexFactory idxsFactory, GridCacheContextInfo cacheInfo) {
         super(createTblData);
 
         assert idxsFactory != null;
 
         this.desc = desc;
-        this.cctx = cctx;
+        this.cacheInfo = cacheInfo;
 
-        if (desc.context() != null && !desc.context().customAffinityMapper()) {
-            boolean affinityColExists = true;
+        if (!desc.type().customAffinityKeyMapper()) {
+            String affKeyFieldName = desc.type().affinityKey();
 
-            String affKey = desc.type().affinityKey();
+            if (affKeyFieldName != null) {
+                if (doesColumnExist(affKeyFieldName)) {
+                    int colId = getColumn(affKeyFieldName).getColumnId();
 
-            int affKeyColId = -1;
-
-            if (affKey != null) {
-                if (doesColumnExist(affKey)) {
-                    affKeyColId = getColumn(affKey).getColumnId();
-
-                    if (desc.isKeyColumn(affKeyColId))
-                        affKeyColId = KEY_COL;
+                    if (desc.isKeyColumn(colId)) {
+                        affKeyCol = indexColumn(GridH2KeyValueRowOnheap.KEY_COL, SortOrder.ASCENDING);
+                        affKeyColId = GridH2KeyValueRowOnheap.KEY_COL;
+                    }
+                    else {
+                        affKeyCol = indexColumn(colId, SortOrder.ASCENDING);
+                        affKeyColId = colId;
+                    }
                 }
-                else
-                    affinityColExists = false;
+                else {
+                    affKeyCol = null;
+                    affKeyColId = COL_NOT_EXISTS;
+                }
             }
-            else
-                affKeyColId = KEY_COL;
-
-            if (affinityColExists) {
-                affKeyCol = indexColumn(affKeyColId, SortOrder.ASCENDING);
-
-                assert affKeyCol != null;
+            else {
+                affKeyCol = indexColumn(GridH2KeyValueRowOnheap.KEY_COL, SortOrder.ASCENDING);
+                affKeyColId = GridH2KeyValueRowOnheap.KEY_COL;
             }
+        }
+        else {
+            affKeyCol = null;
+            affKeyColId = COL_NOT_EXISTS;
         }
 
         this.rowFactory = rowFactory;
@@ -182,11 +184,14 @@ public class GridH2Table extends TableBase {
         assert idxs != null;
 
         List<Index> clones = new ArrayList<>(idxs.size());
+
         for (Index index : idxs) {
             Index clone = createDuplicateIndexIfNeeded(index);
+
             if (clone != null)
                 clones.add(clone);
         }
+
         idxs.addAll(clones);
 
         boolean hasHashIndex = idxs.size() >= 2 && index(0).getIndexType().isHash();
@@ -208,7 +213,7 @@ public class GridH2Table extends TableBase {
      * @return {@code true} If this is a partitioned table.
      */
     public boolean isPartitioned() {
-        return desc != null && desc.context().config().getCacheMode() == PARTITIONED;
+        return desc != null && desc.cacheInfo().config().getCacheMode() == PARTITIONED;
     }
 
     /**
@@ -216,6 +221,25 @@ public class GridH2Table extends TableBase {
      */
     @Nullable public IndexColumn getAffinityKeyColumn() {
         return affKeyCol;
+    }
+
+    /**
+     * Check whether passed column can be used for partition pruning.
+     *
+     * @param col Column.
+     * @return {@code True} if affinity key column.
+     */
+    public boolean isColumnForPartitionPruning(Column col) {
+        int colId = col.getColumnId();
+
+        return colId == affKeyColId || desc.isKeyColumn(colId);
+    }
+
+    /**
+     * @return Whether custom affintiy mapper is used.
+     */
+    public boolean isCustomAffinityMapper() {
+        return desc.type().customAffinityKeyMapper();
     }
 
     /** {@inheritDoc} */
@@ -234,21 +258,35 @@ public class GridH2Table extends TableBase {
      * @return Cache name.
      */
     public String cacheName() {
-        return cctx.name();
+        return cacheInfo.name();
     }
 
     /**
      * @return Cache ID.
      */
     public int cacheId() {
-        return cctx.cacheId();
+        return cacheInfo.cacheId();
+    }
+
+    /**
+     * @return Cache context info.
+     */
+    public GridCacheContextInfo cacheInfo() {
+        return cacheInfo;
+    }
+
+    /**
+     * @return {@code true} If Cache is lazy (not full inited).
+     */
+    public boolean isCacheLazy() {
+        return cacheInfo.cacheContext() == null;
     }
 
     /**
      * @return Cache context.
      */
-    public GridCacheContext cache() {
-        return cctx;
+    @Nullable public GridCacheContext cacheContext() {
+        return cacheInfo.cacheContext();
     }
 
     /** {@inheritDoc} */
@@ -272,11 +310,6 @@ public class GridH2Table extends TableBase {
         sessions.put(ses, exclusive);
 
         ses.addLock(this);
-
-        GridH2QueryContext qctx = GridH2QueryContext.get();
-
-        if (qctx != null)
-           qctx.lockedTables().add(this);
 
         return false;
     }
@@ -304,44 +337,15 @@ public class GridH2Table extends TableBase {
         Lock l = exclusive ? lock.writeLock() : lock.readLock();
 
         try {
-            if (exclusive) {
-                // Attempting to obtain exclusive lock for DDL.
-                // Lock is considered acquired only if "lazyTransferCnt" is zero, meaning that 
-                // currently there are no reader threads moving query execution from query 
-                // pool to dedicated thread.
-                // It is possible that reader which is currently transferring execution gets
-                // queued after the write lock we are trying to acquire. So we use timed waiting
-                // and a loop to avoid deadlocks.
-                for (;;) {
-                    if (l.tryLock(200, TimeUnit.MILLISECONDS)) {
-                        if (lazyTransferCnt.get() == 0)
-                            break;
-                        else
-                            l.unlock();
-                    }
-
-                    hasWaitedWriter = true;
-
-                    Thread.yield();
-                }
-
-                hasWaitedWriter = false;
-            }
+            if (!exclusive || !GridMapQueryExecutor.FORCE_LAZY)
+                l.lockInterruptibly();
             else {
-                // Attempt to acquire read lock (query execution, DML, cache update).
-                // If query is being executed inside a query pool, we do not want it to be blocked
-                // for a long time, as it would prevent other queries from being executed. So we
-                // wait a little and then force transfer to dedicated thread by throwing special
-                // timeout exception.GridNioSslSelfTest
-                // If query is not in the query pool, then we simply wait for lock acquisition.
-                if (isSqlNotInLazy()) {
-                    if (hasWaitedWriter || !l.tryLock(200, TimeUnit.MILLISECONDS)) {
-                        throw new GridH2RetryException("Long wait on Table lock: [tableName=" + getName()
-                            + ", hasWaitedWriter=" + hasWaitedWriter + ']');
-                    }
+                for (;;) {
+                    if (l.tryLock(200, TimeUnit.MILLISECONDS))
+                        break;
+                    else
+                        Thread.yield();
                 }
-                else
-                    l.lockInterruptibly();
             }
         }
         catch (InterruptedException e) {
@@ -363,49 +367,6 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-     * Check if table is being locked in not lazy thread by SQL query.
-     *
-     * @return {@code True} if is in query pool.
-     */
-    private static boolean isSqlNotInLazy() {
-        return GridH2QueryContext.get() != null && MapQueryLazyWorker.currentWorker() == null;
-    }
-
-    /**
-     * Callback invoked when session is to be transferred to lazy thread. In order to prevent concurrent changes
-     * by DDL during move we increment counter before releasing read lock.
-     *
-     * @param ses Session.
-     */
-    public void onLazyTransferStarted(Session ses) {
-        assert sessions.containsKey(ses) : "Detached session have not locked the table: " + getName();
-
-        lazyTransferCnt.incrementAndGet();
-
-        lock.readLock().unlock();
-    }
-
-    /**
-     * Callback invoked when lazy transfer finished. Acquire the lock, decrement transfer counter.
-     *
-     * @param ses Session to detach.
-     */
-    public void onLazyTransferFinished(Session ses) {
-        assert sessions.containsKey(ses) : "Attached session have not locked the table: " + getName();
-
-        try {
-            lock.readLock().lockInterruptibly();
-
-            lazyTransferCnt.decrementAndGet();
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new IgniteInterruptedException("Thread got interrupted while trying to acquire table lock.", e);
-        }
-    }
-
-    /**
      * Check if table is not destroyed.
      */
     private void ensureNotDestroyed() {
@@ -419,7 +380,6 @@ public class GridH2Table extends TableBase {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     @Override public void removeChildrenAndResources(Session ses) {
         lock(true);
 
@@ -494,11 +454,6 @@ public class GridH2Table extends TableBase {
 
         if (exclusive == null)
             return;
-
-        GridH2QueryContext qctx = GridH2QueryContext.get();
-
-        if (qctx != null)
-            qctx.lockedTables().remove(this);
 
         unlock(exclusive);
     }
@@ -641,12 +596,39 @@ public class GridH2Table extends TableBase {
     }
 
     /**
+     * Collect indexes for rebuild.
      *
+     * @param clo Closure.
+     */
+    public void collectIndexesForPartialRebuild(IndexRebuildPartialClosure clo) {
+        for (int i = sysIdxsCnt; i < idxs.size(); i++) {
+            Index idx = idxs.get(i);
+
+            if (idx instanceof H2TreeIndex) {
+                H2TreeIndex idx0 = (H2TreeIndex)idx;
+
+                if (idx0.rebuildRequired())
+                    clo.addIndex(this, idx0);
+            }
+        }
+    }
+
+    /**
+     * Mark or unmark index rebuild state.
      */
     public void markRebuildFromHashInProgress(boolean value) {
         assert !value || (idxs.size() >= 2 && index(1).getIndexType().isHash()) : "Table has no hash index.";
 
         rebuildFromHashInProgress = value;
+
+        lock.writeLock().lock();
+
+        try {
+            incrementModificationCounter();
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**
@@ -727,7 +709,7 @@ public class GridH2Table extends TableBase {
             if (cloneIdx != null)
                 database.addSchemaObject(ses, cloneIdx);
 
-            setModified();
+            incrementModificationCounter();
 
             return idx;
         }
@@ -945,7 +927,7 @@ public class GridH2Table extends TableBase {
      * @return Proxy index.
      */
     private Index createDuplicateIndexIfNeeded(Index target) {
-        if (!(target instanceof H2TreeIndex) && !(target instanceof SpatialIndex))
+        if (!(target instanceof H2TreeIndexBase) && !(target instanceof SpatialIndex))
             return null;
 
         IndexColumn[] cols = target.getIndexColumns();
@@ -1031,7 +1013,7 @@ public class GridH2Table extends TableBase {
 
             desc.refreshMetadataFromTypeDescriptor();
 
-            setModified();
+            incrementModificationCounter();
         }
         finally {
             unlock(true);
@@ -1042,7 +1024,7 @@ public class GridH2Table extends TableBase {
      * Drop columns.
      *
      * @param cols Columns.
-     * @param ifExists IF EXISTS flag.
+     * @param ifExists If EXISTS flag.
      */
     public void dropColumns(List<String> cols, boolean ifExists) {
         assert !ifExists || cols.size() == 1;
@@ -1094,7 +1076,7 @@ public class GridH2Table extends TableBase {
                     ((GridH2IndexBase)idx).refreshColumnIds();
             }
 
-            setModified();
+            incrementModificationCounter();
         }
         finally {
             unlock(true);
@@ -1120,6 +1102,15 @@ public class GridH2Table extends TableBase {
         }
 
         return columns;
+    }
+
+    /**
+     * Increment modification counter to force recompilation of existing prepared statements.
+     */
+    private void incrementModificationCounter() {
+        assert lock.isWriteLockedByCurrentThread();
+
+        setModified();
     }
 
     /**

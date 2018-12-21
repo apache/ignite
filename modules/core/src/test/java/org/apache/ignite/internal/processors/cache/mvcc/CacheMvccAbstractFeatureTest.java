@@ -276,7 +276,7 @@ public abstract class CacheMvccAbstractFeatureTest extends CacheMvccAbstractTest
     }
 
     /** */
-    final static Comparator<Cache.Entry<Integer, Person>> ENTRY_CMP =
+    static final Comparator<Cache.Entry<Integer, Person>> ENTRY_CMP =
         new Comparator<Cache.Entry<Integer, Person>>() {
         @Override public int compare(Cache.Entry<Integer, Person> o1, Cache.Entry<Integer, Person> o2) {
             return o1.getKey().compareTo(o2.getKey());

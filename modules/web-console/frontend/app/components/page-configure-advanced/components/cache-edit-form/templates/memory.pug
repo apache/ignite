@@ -63,6 +63,43 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     tip: 'Name of data region configuration for this cache'
                 })
 
+            //- Since ignite 2.8
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.8.0")')
+                +form-field__dropdown({
+                    label: 'Disk page compression:',
+                    model: `${model}.diskPageCompression`,
+                    name: '"diskPageCompression"',
+                    placeholder: 'IGNITE_DEFAULT_DISK_PAGE_COMPRESSION',
+                    options: '::$ctrl.Caches.diskPageCompression',
+                    tip: `Memory modes control whether value is stored in on-heap memory, off-heap memory, or swap space
+                        <ul>
+                            <li>SKIP_GARBAGE - retain only useful data from half-filled pages, but do not apply any compression</li>
+                            <li>ZSTD - Zstd compression<br/></li>
+                            <li>LZ4 - LZ4 compression<br/></li>
+                            <li>SNAPPY - Snappy compression<br/></li>
+                        </ul>`
+                })
+            .pc-form-grid-col-60(ng-if=`$ctrl.available("2.8.0") && ${model}.diskPageCompression === "ZSTD"`)
+                +form-field__number({
+                    label: 'Disk page compression level:',
+                    model: `${model}.diskPageCompressionLevel`,
+                    name: '"diskPageCompressionLevel"',
+                    placeholder: '3',
+                    min: -131072,
+                    max: 22,
+                    tip: 'Disk page compression level from -131072 to 22 or empty to use default 3.<br/>'
+                })
+            .pc-form-grid-col-60(ng-if=`$ctrl.available("2.8.0") && ${model}.diskPageCompression === "LZ4"`)
+                +form-field__number({
+                    label: 'Disk page compression level:',
+                    model: `${model}.diskPageCompressionLevel`,
+                    name: '"diskPageCompressionLevel"',
+                    placeholder: '0',
+                    min: 0,
+                    max: 17,
+                    tip: 'Disk page compression level from 0 to 17 or empty to use default 0.<br/>'
+                })
+
             //- Removed in ignite 2.0
             .pc-form-grid-col-60(ng-if-start='$ctrl.available(["1.0.0", "2.0.0"])')
                 +form-field__dropdown({

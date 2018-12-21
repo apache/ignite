@@ -375,7 +375,6 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <K1, V1> ClientCache<K1, V1> withKeepBinary() {
         TcpClientCache<K1, V1> binCache;
 

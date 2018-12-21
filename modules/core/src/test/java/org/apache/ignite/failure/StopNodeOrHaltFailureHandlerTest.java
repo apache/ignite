@@ -28,10 +28,14 @@ import org.apache.ignite.internal.util.typedef.PE;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * {@link StopNodeOrHaltFailureHandler} tests.
  */
+@RunWith(JUnit4.class)
 public class StopNodeOrHaltFailureHandlerTest extends GridCommonAbstractTest {
     /** Number of grids started for tests. */
     public static final int NODES_CNT = 3;
@@ -56,6 +60,7 @@ public class StopNodeOrHaltFailureHandlerTest extends GridCommonAbstractTest {
     /**
      * Tests failed node's JVM is halted after triggering StopNodeOrHaltFailureHandler.
      */
+    @Test
     public void testJvmHalted() throws Exception {
         IgniteEx g = grid(0);
         IgniteEx rmt1 = grid(1);

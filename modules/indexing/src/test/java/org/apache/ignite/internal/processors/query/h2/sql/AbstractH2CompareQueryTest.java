@@ -65,7 +65,6 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
     protected static Connection conn;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
@@ -221,7 +220,6 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
      * @return Result set after SQL query execution.
      * @throws SQLException If exception.
      */
-    @SuppressWarnings("unchecked")
     protected static List<List<?>> compareQueryRes0(IgniteCache cache, String sql, @Nullable Object[] args,
         Ordering ordering) throws SQLException {
         return compareQueryRes0(cache, sql, false, args, ordering);

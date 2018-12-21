@@ -1,0 +1,16 @@
+<svg version="1.1" viewBox="0 0 20 18" xmlns="http://www.w3.org/2000/svg">
+	<g fill="none" fill-rule="evenodd">
+		<g transform="translate(-263 -1597)" fill="currentColor">
+			<g transform="translate(235 1485)">
+				<g transform="translate(28 112)">
+					<path d="m-8.7041e-14 9.0435v7.1788c0 0.97787 0.81811 1.7778 1.8182 1.7778h16.364c0.99966 0 1.8178-0.79991 1.8178-1.7778v-7.1788h-20zm1.7103 0h16.472v7.1876h-16.364l-0.10794-7.1876z"/>
+					<g stroke="currentColor" stroke-width=".5">
+						<polygon points="14.7 8.635 14.131 8.0659 10.757 11.44 10.757 5 9.9435 5 9.9435 11.44 6.5692 8.0659 6 8.635 10.35 12.985"/>
+						<polygon points="10.757 3.719 10.757 3 9.9435 3 9.9435 3.719"/>
+						<polygon points="10.757 1.719 10.757 1 9.9435 1 9.9435 1.719"/>
+					</g>
+				</g>
+			</g>
+		</g>
+	</g>
+</svg>

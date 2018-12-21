@@ -40,6 +40,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.client.integration.ClientAbstractMultiNodeSelfTest.HOST;
 import static org.apache.ignite.internal.client.integration.ClientAbstractMultiNodeSelfTest.REST_TCP_PORT_BASE;
@@ -48,6 +51,7 @@ import static org.apache.ignite.internal.client.integration.ClientAbstractMultiN
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class ClientPreferDirectSelfTest extends GridCommonAbstractTest {
     /** VM ip finder for TCP discovery. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -86,6 +90,7 @@ public class ClientPreferDirectSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomBalancer() throws Exception {
         GridClientRandomBalancer b = new GridClientRandomBalancer();
 
@@ -97,6 +102,7 @@ public class ClientPreferDirectSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRoundRobinBalancer() throws Exception {
         GridClientRoundRobinBalancer b = new GridClientRoundRobinBalancer();
 

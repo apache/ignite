@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryCrashDetectionSelfTest;
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryNativeLoaderSelfTest;
@@ -34,10 +35,10 @@ public class IgniteIpcSharedMemorySelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite IPC Shared Memory Test Suite.");
 
-        suite.addTest(new TestSuite(IpcSharedMemorySpaceSelfTest.class));
-        suite.addTest(new TestSuite(IpcSharedMemoryUtilsSelfTest.class));
-        suite.addTest(new TestSuite(IpcSharedMemoryCrashDetectionSelfTest.class));
-        suite.addTest(new TestSuite(IpcSharedMemoryNativeLoaderSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IpcSharedMemorySpaceSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IpcSharedMemoryUtilsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IpcSharedMemoryCrashDetectionSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IpcSharedMemoryNativeLoaderSelfTest.class));
 
         return suite;
     }

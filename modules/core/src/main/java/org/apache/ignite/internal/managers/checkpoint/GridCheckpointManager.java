@@ -60,7 +60,7 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
  * This class defines a checkpoint manager.
  */
 @SkipDaemon
-@SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "deprecation"})
+@SuppressWarnings({"deprecation"})
 public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
     /** Max closed topics to store. */
     public static final int MAX_CLOSED_SESS = 10240;
@@ -460,7 +460,6 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
          * @param nodeId ID of the node that sent this message.
          * @param msg Received message.
          */
-        @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             GridCheckpointRequest req = (GridCheckpointRequest)msg;
 

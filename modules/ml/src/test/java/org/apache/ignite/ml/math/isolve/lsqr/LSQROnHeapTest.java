@@ -20,6 +20,7 @@ package org.apache.ignite.ml.math.isolve.lsqr;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
@@ -47,6 +48,7 @@ public class LSQROnHeapTest extends TrainerTest {
 
         LSQROnHeap<Integer, double[]> lsqr = new LSQROnHeap<>(
             datasetBuilder,
+            TestUtils.testEnvBuilder(),
             new SimpleLabeledDatasetDataBuilder<>(
                 (k, v) -> VectorUtils.of(Arrays.copyOf(v, v.length - 1)),
                 (k, v) -> new double[]{v[3]}
@@ -80,6 +82,7 @@ public class LSQROnHeapTest extends TrainerTest {
 
         LSQROnHeap<Integer, double[]> lsqr = new LSQROnHeap<>(
             datasetBuilder,
+            TestUtils.testEnvBuilder(),
             new SimpleLabeledDatasetDataBuilder<>(
                 (k, v) -> VectorUtils.of(Arrays.copyOf(v, v.length - 1)),
                 (k, v) -> new double[]{v[3]}
@@ -113,6 +116,7 @@ public class LSQROnHeapTest extends TrainerTest {
 
         try (LSQROnHeap<Integer, double[]> lsqr = new LSQROnHeap<>(
             datasetBuilder,
+            TestUtils.testEnvBuilder(),
             new SimpleLabeledDatasetDataBuilder<>(
                 (k, v) -> VectorUtils.of(Arrays.copyOf(v, v.length - 1)),
                 (k, v) -> new double[]{v[4]}

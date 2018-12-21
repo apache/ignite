@@ -17,16 +17,33 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
+import org.apache.ignite.testframework.MvccFeatureChecker;
+
 /**
  * Tests peek modes with near tx cache.
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheTxNearPeekModesTest extends IgniteCacheTxPeekModesTest {
+    /** {@inheritDoc} */
+    @Before
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
+        super.setUp();
+    }
+
     /** {@inheritDoc} */
     @Override protected boolean hasNearCache() {
         return true;
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testLocalPeek() throws Exception {
         // TODO: uncomment and re-open ticket if fails.
 //        fail("https://issues.apache.org/jira/browse/IGNITE-1824");
