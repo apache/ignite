@@ -17,9 +17,9 @@
 
 package org.apache.ignite.ml.inference.builder;
 
-import org.apache.ignite.ml.inference.InfModel;
-import org.apache.ignite.ml.inference.parser.InfModelParser;
-import org.apache.ignite.ml.inference.reader.InfModelReader;
+import org.apache.ignite.ml.inference.Model;
+import org.apache.ignite.ml.inference.parser.ModelParser;
+import org.apache.ignite.ml.inference.reader.ModelReader;
 
 /**
  * Util class for model builder tests.
@@ -30,7 +30,7 @@ class InfModelBuilderTestUtil {
      *
      * @return Dummy model reader used in tests.
      */
-    static InfModelReader getReader() {
+    static ModelReader getReader() {
         return () -> new byte[0];
     }
 
@@ -39,9 +39,9 @@ class InfModelBuilderTestUtil {
      *
      * @return Dummy model parser used in tests.
      */
-    static InfModelParser<Integer, Integer, InfModel<Integer, Integer>> getParser() {
-        return m -> new InfModel<Integer, Integer>() {
-            @Override public Integer apply(Integer input) {
+    static ModelParser<Integer, Integer, Model<Integer, Integer>> getParser() {
+        return m -> new Model<Integer, Integer>() {
+            @Override public Integer predict(Integer input) {
                 return input;
             }
 

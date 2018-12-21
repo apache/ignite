@@ -20,11 +20,11 @@ package org.apache.ignite.ml.inference.builder;
 import java.util.concurrent.Future;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.inference.InfModel;
+import org.apache.ignite.ml.inference.Model;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Tests for {@link IgniteDistributedInfModelBuilder} class.
+ * Tests for {@link IgniteDistributedModelBuilder} class.
  */
 public class IgniteDistributedInfModelBuilderTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
@@ -56,9 +56,9 @@ public class IgniteDistributedInfModelBuilderTest extends GridCommonAbstractTest
 
     /** */
     public void testBuild() {
-        AsyncInfModelBuilder mdlBuilder = new IgniteDistributedInfModelBuilder(ignite, 1, 1);
+        AsyncModelBuilder mdlBuilder = new IgniteDistributedModelBuilder(ignite, 1, 1);
 
-        InfModel<Integer, Future<Integer>> infMdl = mdlBuilder.build(
+        Model<Integer, Future<Integer>> infMdl = mdlBuilder.build(
             InfModelBuilderTestUtil.getReader(),
             InfModelBuilderTestUtil.getParser()
         );

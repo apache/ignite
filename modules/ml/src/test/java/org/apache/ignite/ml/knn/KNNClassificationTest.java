@@ -60,7 +60,7 @@ public class KNNClassificationTest {
     /** */
     @Test(expected = IllegalStateException.class)
     public void testNullDataset() {
-        new KNNClassificationModel(null).apply(null);
+        new KNNClassificationModel(null).predict(null);
     }
 
     /** */
@@ -90,9 +90,9 @@ public class KNNClassificationTest {
         assertTrue(knnMdl.toString(false).length() > 0);
 
         Vector firstVector = new DenseVector(new double[] {2.0, 2.0});
-        assertEquals(knnMdl.apply(firstVector), 1.0);
+        assertEquals(knnMdl.predict(firstVector), 1.0);
         Vector secondVector = new DenseVector(new double[] {-2.0, -2.0});
-        assertEquals(knnMdl.apply(secondVector), 2.0);
+        assertEquals(knnMdl.predict(secondVector), 2.0);
     }
 
     /** */
@@ -118,9 +118,9 @@ public class KNNClassificationTest {
             .withStrategy(NNStrategy.SIMPLE);
 
         Vector firstVector = new DenseVector(new double[] {2.0, 2.0});
-        assertEquals(knnMdl.apply(firstVector), 1.0);
+        assertEquals(knnMdl.predict(firstVector), 1.0);
         Vector secondVector = new DenseVector(new double[] {-2.0, -2.0});
-        assertEquals(knnMdl.apply(secondVector), 2.0);
+        assertEquals(knnMdl.predict(secondVector), 2.0);
     }
 
     /** */
@@ -146,7 +146,7 @@ public class KNNClassificationTest {
             .withStrategy(NNStrategy.SIMPLE);
 
         Vector vector = new DenseVector(new double[] {-1.01, -1.01});
-        assertEquals(knnMdl.apply(vector), 2.0);
+        assertEquals(knnMdl.predict(vector), 2.0);
     }
 
     /** */
@@ -172,7 +172,7 @@ public class KNNClassificationTest {
             .withStrategy(NNStrategy.WEIGHTED);
 
         Vector vector = new DenseVector(new double[] {-1.01, -1.01});
-        assertEquals(knnMdl.apply(vector), 1.0);
+        assertEquals(knnMdl.predict(vector), 1.0);
     }
 
     /** */
@@ -210,7 +210,7 @@ public class KNNClassificationTest {
         );
 
         Vector vector = new DenseVector(new double[] {-1.01, -1.01});
-        assertEquals(originalMdl.apply(vector), updatedOnSameDataset.apply(vector));
-        assertEquals(originalMdl.apply(vector), updatedOnEmptyDataset.apply(vector));
+        assertEquals(originalMdl.predict(vector), updatedOnSameDataset.predict(vector));
+        assertEquals(originalMdl.predict(vector), updatedOnEmptyDataset.predict(vector));
     }
 }

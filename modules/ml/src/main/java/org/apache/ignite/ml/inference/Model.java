@@ -15,19 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.inference.reader;
-
-import java.io.Serializable;
+package org.apache.ignite.ml.inference;
 
 /**
- * Model reader that reads model from external or internal storage and returns it in serialized form as byte array.
+ * Inference model that can be used to make predictions.
+ *
+ * @param <I> Type of model input.
+ * @param <O> Type of model output.
  */
-@FunctionalInterface
-public interface InfModelReader extends Serializable {
+public interface Model<I, O> extends AutoCloseable {
     /**
-     * Rads model and returns it in serialized form as byte array.
+     * Make a prediction for the specified input arguments.
      *
-     * @return Inference model in serialized form as byte array.
+     * @param input Input arguments.
+     * @return Prediction result.
      */
-    public byte[] read();
+    public O predict(I input);
+
+    /** {@inheritDoc} */
+    public void close();
 }

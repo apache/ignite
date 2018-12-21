@@ -31,7 +31,7 @@ import org.tensorflow.Session;
  * @param <I> Type of model input.
  * @param <O> Type of model output.
  */
-public class TensorFlowSavedModelInfModelParser<I, O> extends TensorFlowBaseInfModelParser<I, O> {
+public class TensorFlowSavedModelModelParser<I, O> extends TensorFlowBaseModelParser<I, O> {
     /** */
     private static final long serialVersionUID = 5638083440240281879L;
 
@@ -46,7 +46,7 @@ public class TensorFlowSavedModelInfModelParser<I, O> extends TensorFlowBaseInfM
      *
      * @param tags Model tags.
      */
-    public TensorFlowSavedModelInfModelParser(String... tags) {
+    public TensorFlowSavedModelModelParser(String... tags) {
         this.tags = tags;
     }
 

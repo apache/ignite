@@ -15,25 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.inference;
+package org.apache.ignite.ml.inference.builder;
 
-import java.util.function.Function;
+import java.io.Serializable;
+import org.apache.ignite.ml.inference.Model;
+import org.apache.ignite.ml.inference.parser.ModelParser;
+import org.apache.ignite.ml.inference.reader.ModelReader;
 
 /**
- * Inference model that can be used to make predictions.
- *
- * @param <I> Type of model input.
- * @param <O> Type of model output.
+ * Implementation of synchronous inference model builder that builds a model processed locally in a single thread.
  */
-public interface InfModel<I, O> extends Function<I, O>, AutoCloseable {
-    /**
-     * Make a prediction for the specified input arguments.
-     *
-     * @param input Input arguments.
-     * @return Prediction result.
-     */
-    public O apply(I input);
-
+public class SingleModelBuilder implements SyncModelBuilder {
     /** {@inheritDoc} */
-    public void close();
+    @Override public <I extends Serializable, O extends Serializable, M extends Model<I, O>> M build(ModelReader reader,
+        ModelParser<I, O, M> parser) {
+        return parser.parse(reader.read());
+    }
 }

@@ -17,26 +17,26 @@
 
 package org.apache.ignite.ml.inference.builder;
 
-import org.apache.ignite.ml.inference.InfModel;
+import org.apache.ignite.ml.inference.Model;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
 /**
- * Tests for {@link SingleInfModelBuilder}.
+ * Tests for {@link SingleModelBuilder}.
  */
 public class SingleInfModelBuilderTest {
     /** */
     @Test
     public void testBuild() {
-        SyncInfModelBuilder mdlBuilder = new SingleInfModelBuilder();
+        SyncModelBuilder mdlBuilder = new SingleModelBuilder();
 
-        InfModel<Integer, Integer> infMdl = mdlBuilder.build(
+        Model<Integer, Integer> infMdl = mdlBuilder.build(
             InfModelBuilderTestUtil.getReader(),
             InfModelBuilderTestUtil.getParser()
         );
 
         for (int i = 0; i < 100; i++)
-            assertEquals(Integer.valueOf(i), infMdl.apply(i));
+            assertEquals(Integer.valueOf(i), infMdl.predict(i));
     }
 }

@@ -19,7 +19,7 @@ package org.apache.ignite.ml.selection.scoring.evaluator;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.selection.scoring.cursor.CacheBasedLabelPairCursor;
@@ -45,7 +45,7 @@ public class BinaryClassificationEvaluator {
      * @return Computed metric.
      */
     public static <L, K, V> double evaluate(IgniteCache<K, V> dataCache,
-                                            Model<Vector, L> mdl,
+                                            IgniteModel<Vector, L> mdl,
                                             IgniteBiFunction<K, V, Vector> featureExtractor,
                                             IgniteBiFunction<K, V, L> lbExtractor,
                                             Metric<L> metric) {
@@ -68,7 +68,7 @@ public class BinaryClassificationEvaluator {
      * @return Computed metric.
      */
     public static <L, K, V> double evaluate(IgniteCache<K, V> dataCache, IgniteBiPredicate<K, V> filter,
-                                            Model<Vector, L> mdl,
+                                            IgniteModel<Vector, L> mdl,
                                             IgniteBiFunction<K, V, Vector> featureExtractor,
                                             IgniteBiFunction<K, V, L> lbExtractor,
                                             Metric<L> metric) {
@@ -88,7 +88,7 @@ public class BinaryClassificationEvaluator {
      * @return Computed metric.
      */
     public static <K, V> BinaryClassificationMetricValues evaluate(IgniteCache<K, V> dataCache,
-                                                                   Model<Vector, Double> mdl,
+                                                                   IgniteModel<Vector, Double> mdl,
                                                                    IgniteBiFunction<K, V, Vector> featureExtractor,
                                                                    IgniteBiFunction<K, V, Double> lbExtractor) {
         return calcMetricValues(dataCache, null, mdl, featureExtractor, lbExtractor);
@@ -107,7 +107,7 @@ public class BinaryClassificationEvaluator {
      * @return Computed metric.
      */
     public static <K, V> BinaryClassificationMetricValues evaluate(IgniteCache<K, V> dataCache, IgniteBiPredicate<K, V> filter,
-                                                                   Model<Vector, Double> mdl,
+                                                                   IgniteModel<Vector, Double> mdl,
                                                                    IgniteBiFunction<K, V, Vector> featureExtractor,
                                                                    IgniteBiFunction<K, V, Double> lbExtractor) {
         return calcMetricValues(dataCache, filter, mdl, featureExtractor, lbExtractor);
@@ -127,7 +127,7 @@ public class BinaryClassificationEvaluator {
      */
     private static <K, V> BinaryClassificationMetricValues calcMetricValues(IgniteCache<K, V> dataCache,
                                                                             IgniteBiPredicate<K, V> filter,
-                                                                            Model<Vector, Double> mdl,
+                                                                            IgniteModel<Vector, Double> mdl,
                                                                             IgniteBiFunction<K, V, Vector> featureExtractor,
                                                                             IgniteBiFunction<K, V, Double> lbExtractor) {
         BinaryClassificationMetricValues metricValues;
@@ -163,7 +163,7 @@ public class BinaryClassificationEvaluator {
      * @return Computed metric.
      */
     private static <L, K, V> double calculateMetric(IgniteCache<K, V> dataCache, IgniteBiPredicate<K, V> filter,
-                                                    Model<Vector, L> mdl, IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
+                                                    IgniteModel<Vector, L> mdl, IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
                                                     Metric<L> metric) {
         double metricRes;
 

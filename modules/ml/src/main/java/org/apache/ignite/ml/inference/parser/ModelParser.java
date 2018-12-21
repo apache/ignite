@@ -15,30 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.inference.builder;
+package org.apache.ignite.ml.inference.parser;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
+import java.io.Serializable;
 import org.apache.ignite.ml.inference.Model;
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 /**
- * Tests for {@link ThreadedModelBuilder} class.
+ * Model parser that accepts a serialized model represented by byte array, parses it and returns {@link Model}.
+ *
+ * @param <I> Type of model input.
+ * @param <O> Type of model output.
  */
-public class ThreadedInfModelBuilderTest {
-    /** */
-    @Test
-    public void testBuild() throws ExecutionException, InterruptedException {
-        AsyncModelBuilder mdlBuilder = new ThreadedModelBuilder(10);
-
-        Model<Integer, Future<Integer>> infMdl = mdlBuilder.build(
-            InfModelBuilderTestUtil.getReader(),
-            InfModelBuilderTestUtil.getParser()
-        );
-
-        for (int i = 0; i < 100; i++)
-            assertEquals(Integer.valueOf(i), infMdl.predict(i).get());
-    }
+@FunctionalInterface
+public interface ModelParser<I, O, M extends Model<I, O>> extends Serializable {
+    /**
+     * Accepts serialized model represented by byte array, parses it and returns {@link Model}.
+     *
+     * @param mdl Serialized model represented by byte array.
+     * @return Inference model.
+     */
+    public M parse(byte[] mdl);
 }
