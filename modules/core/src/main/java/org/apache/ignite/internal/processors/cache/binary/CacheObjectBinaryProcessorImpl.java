@@ -409,7 +409,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public Object marshalToBinary(
         @Nullable Object obj,
         boolean failIfUnregistered
@@ -786,7 +785,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public Collection<BinaryType> metadata() throws BinaryObjectException {
         return F.viewReadOnly(metadataLocCache.values(), new IgniteClosure<BinaryMetadataHolder, BinaryType>() {
             @Override public BinaryType apply(BinaryMetadataHolder metaHolder) {

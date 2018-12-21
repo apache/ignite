@@ -430,7 +430,6 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
      * @param clsLdr Class loader.
      * @param recordEvt Flag indicating whether to record events.
      */
-    @SuppressWarnings({"unchecked"})
     private void recordDeployFailed(Class<?> cls, ClassLoader clsLdr, boolean recordEvt) {
         assert cls != null;
         assert clsLdr != null;

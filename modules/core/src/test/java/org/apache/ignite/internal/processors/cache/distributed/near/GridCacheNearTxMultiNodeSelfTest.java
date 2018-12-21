@@ -246,7 +246,6 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param g Grid.
      * @param tm Transaction manager.
      */
-    @SuppressWarnings( {"unchecked"})
     private void checkTm(Ignite g, IgniteTxManager tm) {
         Collection<IgniteInternalTx> txs = tm.activeTransactions();
 

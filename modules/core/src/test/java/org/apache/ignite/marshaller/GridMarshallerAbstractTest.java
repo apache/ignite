@@ -548,7 +548,6 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      *
      * @throws Exception If test failed.
      */
-    @SuppressWarnings("unchecked")
     @Test
     public void testNodeLocalMarshalling() throws Exception {
         ConcurrentMap<String, String> loc = grid().cluster().nodeLocalMap();

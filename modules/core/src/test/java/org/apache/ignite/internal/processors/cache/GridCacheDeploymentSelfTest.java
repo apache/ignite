@@ -237,14 +237,12 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
-    @SuppressWarnings("unchecked")
     @Test
     public void testDeployment4() throws Exception {
         doDeployment4(false);
     }
 
     /** @throws Exception If failed. */
-    @SuppressWarnings("unchecked")
     @Test
     public void testDeployment4BackupLeavesGrid() throws Exception {
         doDeployment4(true);
