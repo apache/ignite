@@ -3438,7 +3438,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                         try {
                                             newCrdFut.init(GridDhtPartitionsExchangeFuture.this);
                                         }
-                                        catch (IgniteCheckedException e) {
+                                        catch (Throwable e) {
                                             U.error(log, "Failed to init new coordinator future: " + node.id(), e);
 
                                             throw e;
