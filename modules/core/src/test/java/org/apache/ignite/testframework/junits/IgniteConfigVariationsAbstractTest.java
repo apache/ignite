@@ -56,8 +56,8 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /** */
     private static final File workDir = new File(U.getIgniteHome() + File.separator + "workOfConfigVariationsTests");
 
-    /** */
-    protected VariationsTestsConfig testsCfg;
+    /** Dummy (intentionally invalid) initial stub to just let people launch test classes not from suite. */
+    protected VariationsTestsConfig testsCfg = new VariationsTestsConfig(null, "Dummy config", false, null, 0, false);
 
     /** */
     protected volatile DataMode dataMode = DataMode.PLANE_OBJECT;
