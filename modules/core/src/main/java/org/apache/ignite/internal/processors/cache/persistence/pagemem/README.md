@@ -2,12 +2,21 @@ Apache Ignite Native Peristence Page Memory
 -------------------------------------------
 This package contains page memory implementation for case persitence is enabled.
 
+## Loaded Pages Table
 
-Throttling
-----------
+An implementation of [LoadedPagesMap.java](LoadedPagesMap.java)
+(PageIdTable) manages mapping from Page ID to relative pointer map (rowAddr).
+
+See introduction in wiki [Region Structure](https://cwiki.apache.org/confluence/display/IGNITE/Ignite+Durable+Memory+-+under+the+hood#IgniteDurableMemory-underthehood-Regionandsegmentstructure).
+
+<img src="https://cwiki.apache.org/confluence/rest/gliffy/1.0/embeddedDiagrams/e9df3b17-1a57-487c-a842-dbb6b1062709.png">
+
+Current implementation is [RobinHoodBackwardShiftHashMap.java](RobinHoodBackwardShiftHashMap.java)
+
+## Throttling
 Throttling is an intentional slowdown of operation in the grid to equate throughput of the storage and speed of user operations.
 
-Throttling is implemented at physical level of operations, so it operated not with user entries, but with page memory pages.
+Throttling is implemented at physical level of operations, so it operates not with user entries, but with page memory pages.
 
 For an introduction, please see
 [wiki PagesWriteThrottling](https://cwiki.apache.org/confluence/display/IGNITE/Ignite+Persistent+Store+-+under+the+hood#IgnitePersistentStore-underthehood-PagesWriteThrottling)
@@ -22,7 +31,7 @@ Since the CP buffer is being cleaned as the checkpoint progresses, this more or 
 * the whole region marked dirty protection.
 This type of throttling protects region segments from being completely filled by dirty pages when checkpoint progress is far from completion.
 
-## Speed Based Throttling
+### Speed Based Throttling
 
 If throttling is enabled in User configuration, then Speed based throttling is applied.
 
