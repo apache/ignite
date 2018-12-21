@@ -144,6 +144,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     private static final AtomicReferenceFieldUpdater<IgniteTxAdapter, TxCounters> TX_COUNTERS_UPD =
         AtomicReferenceFieldUpdater.newUpdater(IgniteTxAdapter.class, TxCounters.class, "txCounters");
 
+    /** WAL MvccDataRecord batch size. */
     public static final int MVCC_WAL_RECORD_BUFFER_SIZE = 20;
 
     /** Logger. */
@@ -282,8 +283,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     @GridToStringInclude
     protected volatile MvccSnapshot mvccSnapshot;
 
+    /** WAL data records buffer for enlisted entries. */
     @GridToStringExclude
-    private List<MvccDataEntry> enlistBuffer;
+    private List<MvccDataEntry> enlistedRecordsForWal;
 
     /** Rollback finish future. */
     @GridToStringExclude
@@ -434,25 +436,35 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         this.mvccSnapshot = mvccSnapshot;
     }
 
+    /**
+     * Perform buffered logging to WAL for enlisted entries.
+     *
+     * @param rec Enlisted entry WAL record.
+     * @throws IgniteCheckedException If fails.
+     */
+    public void logMvccEntry(MvccDataEntry rec) throws IgniteCheckedException {
+        if (cctx.wal() == null || isRollbackOnly())
+            return; // May safely omit for roll-backed tx.
 
-    public void logMvccEntry(MvccDataEntry entry) throws IgniteCheckedException {
-        if (isRollbackOnly())
-            return; // Noop.
+        if (enlistedRecordsForWal == null)
+            enlistedRecordsForWal = new ArrayList<>(MVCC_WAL_RECORD_BUFFER_SIZE);
 
-        if (enlistBuffer == null)
-            enlistBuffer = new ArrayList<>(MVCC_WAL_RECORD_BUFFER_SIZE);
+        enlistedRecordsForWal.add(rec);
 
-        enlistBuffer.add(entry);
-
-        if (enlistBuffer.size() == MVCC_WAL_RECORD_BUFFER_SIZE)
+        if (enlistedRecordsForWal.size() == MVCC_WAL_RECORD_BUFFER_SIZE)
             flushEnlistBuffer();
     }
 
-    public void flushEnlistBuffer() throws IgniteCheckedException {
-        if (!isRollbackOnly() && enlistBuffer != null)
-            cctx.wal().log(new MvccDataRecord(enlistBuffer));
+    /**
+     * Force flush enlisted entries WAL records to WAL.
+     * @throws IgniteCheckedException If fails.
+     */
+    void flushEnlistBuffer() throws IgniteCheckedException {
+        // No need to log garbage for rolled backed tx.
+        if (!isRollbackOnly() && enlistedRecordsForWal != null)
+            cctx.wal().log(new MvccDataRecord(enlistedRecordsForWal));
 
-        enlistBuffer = null;
+        enlistedRecordsForWal = null;
     }
 
     /**
