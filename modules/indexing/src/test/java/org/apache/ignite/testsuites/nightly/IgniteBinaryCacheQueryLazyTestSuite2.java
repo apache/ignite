@@ -20,22 +20,22 @@ package org.apache.ignite.testsuites.nightly;
 import junit.framework.TestSuite;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testsuites.IgniteBinaryCacheQueryTestSuite;
+import org.apache.ignite.testsuites.IgniteBinaryCacheQueryTestSuite2;
 
 /**
  * Test suite for cache queries.
  */
-public class IgniteBinaryCacheQueryNotLazyTestSuite extends TestSuite {
+public class IgniteBinaryCacheQueryLazyTestSuite2 extends TestSuite {
     /**
      * @return Test suite.
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        GridTestUtils.setFieldValue(SqlFieldsQuery.class, "DFLT_LAZY", false);
+        GridTestUtils.setFieldValue(SqlFieldsQuery.class, "DFLT_LAZY", true);
 
-        TestSuite suite = IgniteBinaryCacheQueryTestSuite.suite();
+        TestSuite suite = IgniteBinaryCacheQueryTestSuite2.suite();
 
-        suite.setName("Ignite Cache Queries Test Suite (lazy = false)");
+        suite.setName("Ignite Cache Queries Test Suite 2 (lazy = true)");
 
         return suite;
     }
