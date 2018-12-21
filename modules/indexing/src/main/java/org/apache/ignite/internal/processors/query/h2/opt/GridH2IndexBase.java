@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.join.CursorIteratorWra
 import org.apache.ignite.internal.processors.query.h2.opt.join.RangeSource;
 import org.apache.ignite.internal.processors.query.h2.opt.join.RangeStream;
 import org.apache.ignite.internal.processors.query.h2.opt.join.SegmentKey;
+import org.apache.ignite.internal.processors.query.h2.opt.join.UnicastCursor;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
@@ -732,51 +733,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
             key = ctx.toCacheKeyObject(o);
 
         return segmentForPartition(ctx.affinity().partition(key));
-    }
-
-    /**
-     * Simple cursor from a single node.
-     */
-    public static class UnicastCursor implements Cursor {
-        /** */
-        private final int rangeId;
-
-        /** */
-        private final RangeStream stream;
-
-        /**
-         * @param rangeId Range ID.
-         * @param keys Remote index segment keys.
-         * @param rangeStreams Range streams.
-         */
-        UnicastCursor(int rangeId, List<SegmentKey> keys, Map<SegmentKey, RangeStream> rangeStreams) {
-            assert keys.size() == 1;
-
-            this.rangeId = rangeId;
-            this.stream = rangeStreams.get(F.first(keys));
-
-            assert stream != null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean next() {
-            return stream.next(rangeId);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Row get() {
-            return stream.get(rangeId);
-        }
-
-        /** {@inheritDoc} */
-        @Override public SearchRow getSearchRow() {
-            return get();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean previous() {
-            throw new UnsupportedOperationException();
-        }
     }
 
     /**
