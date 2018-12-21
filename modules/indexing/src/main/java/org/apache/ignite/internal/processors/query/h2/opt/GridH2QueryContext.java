@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.query.h2.opt.join.SourceKey;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -607,46 +608,4 @@ public class GridH2QueryContext {
         }
     }
 
-    /**
-     * Key for source.
-     */
-    private static final class SourceKey {
-        /** */
-        UUID ownerId;
-
-        /** */
-        int segmentId;
-
-        /** */
-        int batchLookupId;
-
-        /**
-         * @param ownerId Owner node ID.
-         * @param segmentId Index segment ID.
-         * @param batchLookupId Batch lookup ID.
-         */
-        SourceKey(UUID ownerId, int segmentId, int batchLookupId) {
-            this.ownerId = ownerId;
-            this.segmentId = segmentId;
-            this.batchLookupId = batchLookupId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (o == null || !(o instanceof SourceKey))
-                return false;
-
-            SourceKey srcKey = (SourceKey)o;
-
-            return batchLookupId == srcKey.batchLookupId && segmentId == srcKey.segmentId &&
-                ownerId.equals(srcKey.ownerId);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            int hash = ownerId.hashCode();
-            hash = 31 * hash + segmentId;
-            return 31 * hash + batchLookupId;
-        }
-    }
 }
