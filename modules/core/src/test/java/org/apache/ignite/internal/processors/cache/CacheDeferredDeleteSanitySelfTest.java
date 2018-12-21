@@ -92,7 +92,7 @@ public class CacheDeferredDeleteSanitySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
     @Test
     public void testDeferredDeleteMvccLocal() throws Exception {
         testDeferredDelete(LOCAL, TRANSACTIONAL_SNAPSHOT, false, false);
