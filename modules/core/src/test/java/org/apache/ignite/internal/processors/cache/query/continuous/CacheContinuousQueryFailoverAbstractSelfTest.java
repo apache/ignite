@@ -68,8 +68,6 @@ import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -108,6 +106,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -121,6 +122,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -204,11 +206,6 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         stopAllGrids();
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * @return Cache mode.
      */
@@ -222,6 +219,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFirstFilteredEvent() throws Exception {
         this.backups = 2;
 
@@ -266,6 +264,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalanceVersion() throws Exception {
         Ignite ignite0 = startGrid(0);
 
@@ -318,6 +317,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      *
      * @throws Exception If fail.
      */
+    @Test
     public void testRebalance() throws Exception {
         for (int iter = 0; iter < 5; iter++) {
             log.info("Iteration: " + iter);
@@ -433,6 +433,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOneBackup() throws Exception {
         checkBackupQueue(1, false);
     }
@@ -440,6 +441,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOneBackupClientUpdate() throws Exception {
         checkBackupQueue(1, true);
     }
@@ -447,6 +449,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdatePartitionCounter() throws Exception {
         this.backups = 2;
 
@@ -547,6 +550,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartStopQuery() throws Exception {
         this.backups = 1;
 
@@ -651,6 +655,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLeftPrimaryAndBackupNodes() throws Exception {
         if (cacheMode() == REPLICATED)
             return;
@@ -821,6 +826,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteFilter() throws Exception {
         this.backups = 2;
 
@@ -933,6 +939,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testThreeBackups() throws Exception {
         if (cacheMode() == REPLICATED)
             return;
@@ -1359,6 +1366,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupQueueCleanupClientQuery() throws Exception {
         startGridsMultiThreaded(2);
 
@@ -1432,6 +1440,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupQueueEvict() throws Exception {
         startGridsMultiThreaded(2);
 
@@ -1504,6 +1513,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupQueueCleanupServerQuery() throws Exception {
         Ignite qryClient = startGridsMultiThreaded(2);
 
@@ -1580,6 +1590,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailoverStartStopBackup() throws Exception {
         failoverStartStopFilter(2);
     }
@@ -1587,6 +1598,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartStop() throws Exception {
         this.backups = 2;
 
@@ -1906,6 +1918,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiThreadedFailover() throws Exception {
         this.backups = 2;
 
@@ -2113,6 +2126,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiThreaded() throws Exception {
         this.backups = 2;
 
@@ -2306,6 +2320,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNoEventLossOnTopologyChange() throws Exception {
         final int batchLoadSize = 2000;
 

@@ -19,20 +19,18 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedNodeRestartTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheAtomicNodeRestartTest extends GridCachePartitionedNodeRestartTest {
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testRestartWithPutFourNodesNoBackups() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1587");
     }
 }

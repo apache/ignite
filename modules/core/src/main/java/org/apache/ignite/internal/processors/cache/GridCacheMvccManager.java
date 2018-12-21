@@ -154,7 +154,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     @GridToStringExclude
     private final GridCacheLockCallback cb = new GridCacheLockCallback() {
         /** {@inheritDoc} */
-        @SuppressWarnings({"unchecked"})
         @Override public void onOwnerChanged(final GridCacheEntryEx entry, final GridCacheMvccCandidate owner) {
             int nested = nestedLsnrCalls.get();
 
@@ -428,11 +427,26 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param err Error.
      */
     private void cancelClientFutures(IgniteCheckedException err) {
-        for (GridCacheFuture<?> fut : activeFutures())
-            ((GridFutureAdapter)fut).onDone(err);
+        cancelFuturesWithException(err, activeFutures());
+        cancelFuturesWithException(err, atomicFuts.values());
+    }
 
-        for (GridCacheAtomicFuture<?> future : atomicFuts.values())
-            ((GridFutureAdapter)future).onDone(err);
+    /**
+     * @param err Error to complete future with.
+     * @param futures Collection of futures.
+     */
+    private void cancelFuturesWithException(
+        IgniteCheckedException err,
+        Collection<? extends IgniteInternalFuture<?>> futures
+    ) {
+        for (IgniteInternalFuture<?> fut : futures) {
+            try {
+                ((GridFutureAdapter)fut).onDone(err);
+            }
+            catch (Exception e) {
+                U.warn(log, "Failed to complete future on node stop (will ignore): " + fut, e);
+            }
+        }
     }
 
     /**
@@ -710,7 +724,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param futId Future ID.
      * @return Future.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public GridCacheVersionedFuture<?> versionedFuture(GridCacheVersion ver, IgniteUuid futId) {
         Collection<GridCacheVersionedFuture<?>> futs = this.verFuts.get(ver);
 
@@ -739,7 +752,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param ver Lock ID.
      * @return Futures.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public Collection<GridCacheVersionedFuture<?>> futuresForVersion(GridCacheVersion ver) {
         Collection<GridCacheVersionedFuture<?>> futs = this.verFuts.get(ver);
 
@@ -1064,7 +1076,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param topVer Topology version.
      * @return Future that signals when all locks for given partitions are released.
      */
-    @SuppressWarnings({"unchecked"})
     public IgniteInternalFuture<?> finishLocks(AffinityTopologyVersion topVer) {
         assert topVer.compareTo(AffinityTopologyVersion.ZERO) > 0;
         return finishLocks(null, topVer);
@@ -1134,7 +1145,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      *
      * @return Finish update future.
      */
-    @SuppressWarnings("unchecked")
     public IgniteInternalFuture<?> finishDataStreamerUpdates(AffinityTopologyVersion topVer) {
         GridCompoundFuture<Void, Object> res = new CacheObjectsReleaseFuture<>("DataStreamer", topVer);
 
@@ -1154,7 +1164,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param topVer Topology version.
      * @return Future that signals when all locks for given keys are released.
      */
-    @SuppressWarnings("unchecked")
     public IgniteInternalFuture<?> finishKeys(Collection<KeyCacheObject> keys,
         final int cacheId,
         AffinityTopologyVersion topVer) {

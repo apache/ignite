@@ -2087,6 +2087,15 @@ export default class IgniteConfigurationGenerator {
         if (available('2.3.0'))
             ccfg.stringProperty('dataRegionName');
 
+        if (available('2.8.0')) {
+            ccfg.enumProperty('diskPageCompression');
+
+            const compression = ccfg.valueOf('diskPageCompression');
+
+            if (compression === 'ZSTD' || compression === 'LZ4')
+                ccfg.intProperty('diskPageCompressionLevel');
+        }
+
         // Removed in ignite 2.0
         if (available(['1.0.0', '2.0.0'])) {
             ccfg.enumProperty('memoryMode');

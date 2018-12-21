@@ -43,8 +43,6 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -61,6 +59,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi;
 
@@ -68,6 +69,7 @@ import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestT
  * Concurrency tests for dynamic index create/drop.
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicColumnsAbstractTest {
     /** Test duration. */
     private static final long TEST_DUR = 10_000L;
@@ -100,9 +102,6 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
     /** Atomicity mode. */
     private final CacheAtomicityMode atomicityMode;
 
-    /** No-Op failure handler. */
-    private boolean noOpFailureHnd;
-
     /**
      * Constructor.
      *
@@ -124,8 +123,6 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         super.beforeTest();
 
         GridQueryProcessor.idxCls = BlockingIndexing.class;
-
-        noOpFailureHnd = false;
     }
 
     /** {@inheritDoc} */
@@ -141,14 +138,6 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         stopAllGrids();
 
         super.afterTest();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        if (noOpFailureHnd)
-            return new NoOpFailureHandler();
-
-        return super.getFailureHandler(igniteInstanceName);
     }
 
     /** {@inheritDoc} */
@@ -170,6 +159,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddColumnCoordinatorChange() throws Exception {
         checkCoordinatorChange(true);
     }
@@ -179,6 +169,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDropColumnCoordinatorChange() throws Exception {
         checkCoordinatorChange(false);
     }
@@ -190,8 +181,6 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      * @throws Exception If failed.
      */
     public void checkCoordinatorChange(boolean addOrRemove) throws Exception {
-        noOpFailureHnd = true;
-
         CountDownLatch finishLatch = new CountDownLatch(2);
 
         // Start servers.
@@ -258,6 +247,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOperationChaining() throws Exception {
         // 7 nodes * 2 columns = 14 latch countdowns.
         CountDownLatch finishLatch = new CountDownLatch(14);
@@ -312,6 +302,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeJoinOnPendingAddOperation() throws Exception {
         checkNodeJoinOnPendingOperation(true);
     }
@@ -321,6 +312,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeJoinOnPendingDropOperation() throws Exception {
         checkNodeJoinOnPendingOperation(false);
     }
@@ -368,6 +360,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      *
      * @throws Exception If failed,
      */
+    @Test
     public void testConcurrentPutRemove() throws Exception {
         CountDownLatch finishLatch = new CountDownLatch(4);
 
@@ -498,6 +491,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddConcurrentRebalance() throws Exception {
         checkConcurrentRebalance(true);
     }
@@ -507,6 +501,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDropConcurrentRebalance() throws Exception {
         checkConcurrentRebalance(false);
     }
@@ -574,6 +569,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddConcurrentCacheDestroy() throws Exception {
         checkConcurrentCacheDestroy(true);
     }
@@ -583,6 +579,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDropConcurrentCacheDestroy() throws Exception {
         checkConcurrentCacheDestroy(false);
     }
@@ -643,6 +640,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryConsistencyMultithreaded() throws Exception {
         // Start complex topology.
         ignitionStart(serverConfiguration(1));
@@ -734,6 +732,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnect() throws Exception {
         checkClientReconnect(false, true);
     }
@@ -743,6 +742,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnectWithCacheRestart() throws Exception {
         checkClientReconnect(true, true);
     }
@@ -752,6 +752,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnectWithNonDynamicCache() throws Exception {
         checkClientReconnect(false, false);
     }
@@ -761,6 +762,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnectWithNonDynamicCacheRestart() throws Exception {
         checkClientReconnect(true, false);
     }
@@ -774,8 +776,6 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      * @throws Exception If failed.
      */
     private void checkClientReconnect(final boolean restartCache, boolean dynamicCache) throws Exception {
-        noOpFailureHnd = true;
-
         // Start complex topology.
         final IgniteEx srv = ignitionStart(serverConfiguration(1));
         ignitionStart(serverConfiguration(2));
@@ -861,9 +861,8 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      * @throws Exception If failed.
      */
     @SuppressWarnings("StringConcatenationInLoop")
+    @Test
     public void testConcurrentOperationsAndNodeStartStopMultithreaded() throws Exception {
-        noOpFailureHnd = true;
-
         // Start several stable nodes.
         ignitionStart(serverConfiguration(1));
         ignitionStart(serverConfiguration(2));

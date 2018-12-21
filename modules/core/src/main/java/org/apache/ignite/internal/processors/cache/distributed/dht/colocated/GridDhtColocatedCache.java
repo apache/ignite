@@ -210,7 +210,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         needVer);
 
                     return fut.chain(new CX1<IgniteInternalFuture<Map<Object, Object>>, V>() {
-                        @SuppressWarnings("unchecked")
                         @Override public V applyx(IgniteInternalFuture<Map<Object, Object>> e)
                             throws IgniteCheckedException {
                             Map<Object, Object> map = e.get();

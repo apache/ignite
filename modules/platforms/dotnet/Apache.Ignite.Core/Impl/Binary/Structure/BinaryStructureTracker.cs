@@ -97,6 +97,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         {
             if (_curStructUpdates != null)
             {
+                // The following line assumes that cluster meta update will succeed (BinaryProcessor.PutBinaryTypes).
                 _desc.UpdateWriteStructure(_curStructPath, _curStructUpdates);
 
                 var marsh = writer.Marshaller;

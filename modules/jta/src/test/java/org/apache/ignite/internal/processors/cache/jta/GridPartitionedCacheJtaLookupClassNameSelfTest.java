@@ -40,7 +40,7 @@ public class GridPartitionedCacheJtaLookupClassNameSelfTest extends AbstractCach
     /**
      *
      */
-    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-1094", forceFailure = true)
+    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-10723", forceFailure = true)
     public void testIncompatibleTmLookup() {
         final IgniteEx ignite = grid(0);
 

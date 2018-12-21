@@ -33,8 +33,6 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheAlwaysEvictionPolicy;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -46,6 +44,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -58,6 +59,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -154,14 +156,10 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
         System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
     }
 
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxGetInsideLockStopPrimary() throws Exception {
         getInsideLockStopPrimary(ignite(SRVS), TX_CACHE1);
         getInsideLockStopPrimary(ignite(SRVS + 1), TX_CACHE1);
@@ -173,6 +171,7 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicGetInsideLockStopPrimary() throws Exception {
         getInsideLockStopPrimary(ignite(SRVS), ATOMIC_CACHE);
 
@@ -182,6 +181,7 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicGetInsideTxStopPrimary() throws Exception {
         getInsideTxStopPrimary(ignite(SRVS), ATOMIC_CACHE);
 
@@ -191,6 +191,7 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadCommittedPessimisticStopPrimary() throws Exception {
         getReadCommittedStopPrimary(ignite(SRVS), TX_CACHE1, PESSIMISTIC);
         getReadCommittedStopPrimary(ignite(SRVS + 1), TX_CACHE1, PESSIMISTIC);
@@ -202,6 +203,7 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadCommittedOptimisticStopPrimary() throws Exception {
         getReadCommittedStopPrimary(ignite(SRVS), TX_CACHE1, OPTIMISTIC);
         getReadCommittedStopPrimary(ignite(SRVS + 1), TX_CACHE1, OPTIMISTIC);
@@ -370,6 +372,7 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreaded() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-2204");
 
