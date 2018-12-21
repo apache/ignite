@@ -27,11 +27,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
@@ -65,7 +64,6 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -111,12 +109,11 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     /** */
     private static final String NO_CACHE_IGNITE_INSTANCE_NAME = "noCacheGrid";
 
-    /**
-     * Remote filter latch is executed on remote nodes, so must be transient
-     * to do not get serialization exception.
-     * Must not be used in parallel test scenarios.
-     */
-    private transient CountDownLatch remoteFilterLatch;
+    /** Tracks {@link CacheContinuousQueryHandler#filter(CacheContinuousQueryEvent) calls}. */
+    private static AtomicBoolean filtered = new AtomicBoolean(false);
+
+    /** Tracks {@link CacheContinuousQueryHandler#transform(IgniteClosure, CacheEntryEvent)}  calls}.*/
+    private static AtomicBoolean transformed = new AtomicBoolean(false);
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -1219,175 +1216,168 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     }
 
     /**
-     * @throws InterruptedException if failed.
+     * @throws Exception if failed.
      */
     @Test
-    public void testContinuousQueryRemoteFilterFactoryWithoutLocalLsnr() throws InterruptedException {
+    public void testContinuousQueryRemoteFilterFactoryWithoutLocalLsnr() throws Exception {
         doContinuousQueryRemoteFilterFactoryWithoutLocalLsnr(true);
 
         doContinuousQueryRemoteFilterFactoryWithoutLocalLsnr(false);
     }
 
     /**
-     * @throws InterruptedException if failed.
+     * @throws Exception if failed.
      */
     @Test
-    public void testContinuousQueryRemoteFilterWithoutLocalLsnr() throws InterruptedException {
+    public void testContinuousQueryRemoteFilterWithoutLocalLsnr() throws Exception {
         doContinuousQueryRemoteFilterWithoutLocalLsnr(true);
 
         doContinuousQueryRemoteFilterWithoutLocalLsnr(false);
     }
 
     /**
-     * @throws InterruptedException if failed.
+     * @throws Exception if failed.
      */
     @Test
-    public void testContinuousQueryRemoteTransformerWithoutLocalLsnr() throws InterruptedException {
+    public void testContinuousQueryRemoteTransformerWithoutLocalLsnr() throws Exception{
         doContinuousQueryRemoteTransformerWithoutLocalLsnr(true);
 
         doContinuousQueryRemoteTransformerWithoutLocalLsnr(false);
     }
 
     /**
-     * @throws InterruptedException if failed.
+     * @throws Exception if failed.
      */
     @Test
-    public void testContinuousQueryInitialQueryWithoutLocalLsnr() throws InterruptedException {
+    public void testContinuousQueryInitialQueryWithoutLocalLsnr() throws Exception {
         doContinuousQueryInitialQueryWithoutLocalLsnr(true);
 
         doContinuousQueryInitialQueryWithoutLocalLsnr(false);
     }
 
     /**
-     * @throws InterruptedException if failed.
+     * @throws Exception if failed.
      * @param bypassFilter Whether remote filter should be bypassed.
      */
-    private void doContinuousQueryRemoteFilterFactoryWithoutLocalLsnr(boolean bypassFilter) throws InterruptedException {
-        remoteFilterLatch = new CountDownLatch(1);
+    private void doContinuousQueryRemoteFilterFactoryWithoutLocalLsnr(boolean bypassFilter) throws Exception {
+        filtered.set(false);
 
-        Set<QueryCursor<Cache.Entry<Integer, Integer>>> qryCursors = new HashSet<>();
+        ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
-        G.allGrids().forEach(ignite -> {
-            ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
+        qry.setRemoteFilterFactory(
+            FactoryBuilder.factoryOf((CacheEntryEventSerializableFilter<Integer, Integer>)evt -> {
+                filtered.set(true);
 
-            qry.setRemoteFilterFactory(
-                FactoryBuilder.factoryOf((CacheEntryEventSerializableFilter<Integer, Integer>)evt -> {
-                    remoteFilterLatch.countDown();
+                return bypassFilter;
+            }));
 
-                    return bypassFilter;
-                }));
-
-            qryCursors.add(ignite.cache(DEFAULT_CACHE_NAME).query(qry));
-        });
+        QueryCursor<Cache.Entry<Integer, Integer>> qryCursor = grid(0).cache(DEFAULT_CACHE_NAME).query(qry);
 
         grid(0).<Integer, Integer>cache(DEFAULT_CACHE_NAME).put(1, 1);
 
-        assertTrue(remoteFilterLatch.await(100, TimeUnit.MILLISECONDS));
+        assertTrue(GridTestUtils.waitForCondition(() -> filtered.get(), 100));
 
-        qryCursors.forEach(QueryCursor::close);
-
-        remoteFilterLatch = null;
+        qryCursor.close();
     }
 
     /**
-     * @throws InterruptedException if failed.
+     * @throws Exception if failed.
      * @param bypassFilter Whether remote filter should be bypassed.
      */
-    private void doContinuousQueryRemoteFilterWithoutLocalLsnr(boolean bypassFilter) throws InterruptedException {
-        remoteFilterLatch = new CountDownLatch(1);
+    private void doContinuousQueryRemoteFilterWithoutLocalLsnr(boolean bypassFilter) throws Exception {
+        filtered.set(false);
 
-        Set<QueryCursor<Cache.Entry<Integer, Integer>>> qryCursors = new HashSet<>();
+        ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
-        G.allGrids().forEach(ignite -> {
-            ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
-
-            qry.setRemoteFilter((CacheEntryEventSerializableFilter<Integer, Integer>)evt -> {
-                remoteFilterLatch.countDown();
+        qry.setRemoteFilter(evt -> {
+                filtered.set(true);
 
                 return bypassFilter;
             });
 
-            qryCursors.add(ignite.cache(DEFAULT_CACHE_NAME).query(qry));
-        });
+        QueryCursor<Cache.Entry<Integer, Integer>> qryCursor = grid(0).cache(DEFAULT_CACHE_NAME).query(qry);
 
         grid(0).<Integer, Integer>cache(DEFAULT_CACHE_NAME).put(1, 1);
 
-        assertTrue(remoteFilterLatch.await(100, TimeUnit.MILLISECONDS));
+        assertTrue(GridTestUtils.waitForCondition(() -> filtered.get(), 100));
 
-        qryCursors.forEach(QueryCursor::close);
-
-        remoteFilterLatch = null;
+        qryCursor.close();
     }
 
     /**
-     * @throws InterruptedException if failed.
+     * @throws Exception if failed.
      * @param bypassFilter Whether remote filter should be bypassed.
      */
-    private void doContinuousQueryRemoteTransformerWithoutLocalLsnr(boolean bypassFilter) throws InterruptedException {
-        remoteFilterLatch = new CountDownLatch(1);
+    private void doContinuousQueryRemoteTransformerWithoutLocalLsnr(boolean bypassFilter) throws Exception {
+        filtered.set(false);
 
-        Set<QueryCursor<Cache.Entry<Integer, Integer>>> qryCursors = new HashSet<>();
+        transformed.set(false);
 
-        G.allGrids().forEach(ignite -> {
-            ContinuousQueryWithTransformer<Integer, Integer, Integer> qry = new ContinuousQueryWithTransformer<>();
+        ContinuousQueryWithTransformer<Integer, Integer, Integer> qry = new ContinuousQueryWithTransformer<>();
 
-            qry.setRemoteFilterFactory(
-                FactoryBuilder.factoryOf((CacheEntryEventSerializableFilter<Integer, Integer>)evt -> {
-                    remoteFilterLatch.countDown();
+        qry.setRemoteFilterFactory(
+            FactoryBuilder.factoryOf((CacheEntryEventSerializableFilter<Integer, Integer>)evt -> {
+               filtered.set(true);
 
-                    return bypassFilter;
-                }));
+                return bypassFilter;
+            }));
 
-            qry.setRemoteTransformerFactory(FactoryBuilder.factoryOf(
-                (IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Integer>, Integer>)evt -> {
-                    throw new RuntimeException("entry must be filtered out.");
-                }));
+        qry.setRemoteTransformerFactory(FactoryBuilder.factoryOf(
+            new IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Integer>, Integer>() {
+                @Override public Integer apply(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
+                    transformed.set(true);
 
-            qryCursors.add(ignite.cache(DEFAULT_CACHE_NAME).query(qry));
-        });
+                    return evt.getValue();
+                }
+            }));
+
+        QueryCursor<Cache.Entry<Integer, Integer>> qryCursor = grid(0).cache(DEFAULT_CACHE_NAME).query(qry);
 
         grid(0).<Integer, Integer>cache(DEFAULT_CACHE_NAME).put(1, 1);
 
-        assertTrue(remoteFilterLatch.await(100, TimeUnit.MILLISECONDS));
+        assertTrue(GridTestUtils.waitForCondition(() -> filtered.get(), 100));
 
-        qryCursors.forEach(QueryCursor::close);
+        if (bypassFilter && gridCount() > 1)
+            assertTrue(GridTestUtils.waitForCondition(() -> transformed.get(), 100));
 
-        remoteFilterLatch = null;
+        qryCursor.close();
     }
 
     /**
-     * @throws InterruptedException if failed.
+     * @throws Exception if failed.
      * @param bypassFilter Whether remote filter should be bypassed.
      */
-    private void doContinuousQueryInitialQueryWithoutLocalLsnr(boolean bypassFilter) throws InterruptedException {
-        remoteFilterLatch = new CountDownLatch(1);
-
-        Set<QueryCursor<Cache.Entry<Integer, Integer>>> qryCursors = new HashSet<>();
+    private void doContinuousQueryInitialQueryWithoutLocalLsnr(boolean bypassFilter) throws Exception {
+        filtered.set(false);
 
         grid(0).<Integer, Integer>cache(DEFAULT_CACHE_NAME).put(0, 0);
 
-        G.allGrids().forEach(ignite -> {
-            ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
+        ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
-            qry.setInitialQuery(new ScanQuery<>());
+        qry.setInitialQuery(new ScanQuery<>((k, v) -> k == 0));
 
-            qry.setRemoteFilterFactory(
-                FactoryBuilder.factoryOf((CacheEntryEventSerializableFilter<Integer, Integer>)evt -> {
-                    remoteFilterLatch.countDown();
+        qry.setRemoteFilterFactory(
+            FactoryBuilder.factoryOf((CacheEntryEventSerializableFilter<Integer, Integer>)evt -> {
+                filtered.set(true);
 
-                    return bypassFilter;
-                }));
+                return bypassFilter;
+            }));
 
-            qryCursors.add(ignite.cache(DEFAULT_CACHE_NAME).query(qry));
-        });
+        QueryCursor<Cache.Entry<Integer, Integer>> qryCursor = grid(0).cache(DEFAULT_CACHE_NAME).query(qry);
+
+        List<Cache.Entry<Integer, Integer>> res = qryCursor.getAll();
+
+        assertEquals(1, res.size());
+
+        assertEquals(0, res.get(0).getKey().intValue());
+
+        assertEquals(0, res.get(0).getValue().intValue());
 
         grid(0).<Integer, Integer>cache(DEFAULT_CACHE_NAME).put(1, 1);
 
-        assertTrue(remoteFilterLatch.await(100, TimeUnit.MILLISECONDS));
+        assertTrue(GridTestUtils.waitForCondition(() -> filtered.get(), 100));
 
-        qryCursors.forEach(QueryCursor::close);
-
-        remoteFilterLatch = null;
+        qryCursor.close();
     }
 
     /**
