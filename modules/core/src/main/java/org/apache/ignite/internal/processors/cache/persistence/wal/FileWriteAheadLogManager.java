@@ -347,6 +347,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Segment factory with ability locked segment during reading. */
     private volatile SegmentFileInputFactory lockedSegmentFileInputFactory;
 
+    /** FileHandleManagerFactory. */
     private final FileHandleManagerFactory fileHandleManagerFactory;
 
     /**
@@ -2262,6 +2263,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             U.join(this, log);
         }
 
+        /** Restart worker. */
         void restart() {
             assert runner() == null : "FileDecompressor is still running.";
 
