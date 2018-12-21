@@ -1957,7 +1957,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (partitions == null && twoStepQry.derivedPartitions() != null) {
             try {
-                PartitionNode partTree = twoStepQry.derivedPartitions();
+                PartitionNode partTree = twoStepQry.derivedPartitions().tree();
 
                 Collection<Integer> partitions0 = partTree.apply(qry.getArgs());
 
