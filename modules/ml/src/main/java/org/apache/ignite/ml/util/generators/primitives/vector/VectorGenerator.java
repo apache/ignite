@@ -18,9 +18,7 @@
 package org.apache.ignite.ml.util.generators.primitives.vector;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -119,14 +117,10 @@ public interface VectorGenerator extends Supplier<Vector> {
         List<Integer> shuffledIds = IntStream.range(0, get().size()).boxed().collect(Collectors.toList());
         Collections.shuffle(shuffledIds, rnd);
 
-        final Map<Integer, Integer> shuffleMap = new HashMap<>();
-        for (int i = 0; i < shuffledIds.size(); i++)
-            shuffleMap.put(i, shuffledIds.get(i));
-
         return map(original -> {
             Vector copy = original.copy();
             for (int to = 0; to < copy.size(); to++) {
-                int from = shuffleMap.get(to);
+                int from = shuffledIds.get(to);
                 copy.set(to, original.get(from));
             }
             return copy;
