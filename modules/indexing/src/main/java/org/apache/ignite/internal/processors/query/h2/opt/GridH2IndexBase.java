@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -33,6 +31,7 @@ import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.join.CursorIteratorWrapper;
 import org.apache.ignite.internal.processors.query.h2.opt.join.RangeSource;
+import org.apache.ignite.internal.processors.query.h2.opt.join.RangeStream;
 import org.apache.ignite.internal.processors.query.h2.opt.join.SegmentKey;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse;
@@ -51,7 +50,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.h2.engine.Database;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
 import org.h2.index.Cursor;
@@ -78,12 +76,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
-import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.LOCAL_ONLY;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
@@ -348,7 +342,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param nodes Nodes.
      * @param msg Message.
      */
-    private void send(Collection<ClusterNode> nodes, Message msg) {
+    public void send(Collection<ClusterNode> nodes, Message msg) {
         if (!getTable().rowDescriptor().indexing().send(msgTopic,
             -1,
             nodes,
@@ -516,7 +510,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param segmentId Segment ID.
      * @return Index range request.
      */
-    private static GridH2IndexRangeRequest createRequest(GridH2QueryContext qctx, int batchLookupId, int segmentId) {
+    public static GridH2IndexRangeRequest createRequest(GridH2QueryContext qctx, int batchLookupId, int segmentId) {
         GridH2IndexRangeRequest req = new GridH2IndexRangeRequest();
 
         req.originNodeId(qctx.originNodeId());
@@ -1071,13 +1065,13 @@ public abstract class GridH2IndexBase extends BaseIndex {
                     stream =
                         new RangeStream(database, kernalContext(), log, GridH2IndexBase.this, qctx, segmentKey.node());
 
-                    stream.req = createRequest(qctx, batchLookupId, segmentKey.segmentId());
-                    stream.req.bounds(bounds = new ArrayList<>());
+                    stream.request(createRequest(qctx, batchLookupId, segmentKey.segmentId()));
+                    stream.request().bounds(bounds = new ArrayList<>());
 
                     rangeStreams.put(segmentKey, stream);
                 }
                 else
-                    bounds = stream.req.bounds();
+                    bounds = stream.request().bounds();
 
                 bounds.add(rangeBounds);
 
@@ -1162,247 +1156,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
         /** {@inheritDoc} */
         @Override public String getPlanSQL() {
             return ucast ? "unicast" : "broadcast";
-        }
-    }
-
-    /**
-     * Per node range stream.
-     */
-    private static class RangeStream {
-        /** H2 database. */
-        private final Database database;
-
-        /** Kernal context. */
-        private final GridKernalContext kctx;
-
-        /** Logger. */
-        private final IgniteLogger log;
-
-        /** Index. */
-        private final GridH2IndexBase idx;
-
-        /** */
-        final GridH2QueryContext qctx;
-
-        /** */
-        final ClusterNode node;
-
-        /** */
-        GridH2IndexRangeRequest req;
-
-        /** */
-        int remainingRanges;
-
-        /** */
-        final BlockingQueue<GridH2IndexRangeResponse> respQueue = new LinkedBlockingQueue<>();
-
-        /** */
-        Iterator<GridH2RowRange> ranges = emptyIterator();
-
-        /** */
-        Cursor cursor = GridH2Cursor.EMPTY;
-
-        /** */
-        int cursorRangeId = -1;
-
-        /**
-         * @param qctx Query context.
-         * @param node Node.
-         */
-        RangeStream(Database database, GridKernalContext kctx, IgniteLogger log, GridH2IndexBase idx, GridH2QueryContext qctx, ClusterNode node) {
-            this.database = database;
-            this.kctx = kctx;
-            this.log = log;
-            this.idx = idx;
-            this.node = node;
-            this.qctx = qctx;
-        }
-
-        /**
-         * Start streaming.
-         */
-        private void start() {
-            remainingRanges = req.bounds().size();
-
-            assert remainingRanges > 0;
-
-            if (log.isDebugEnabled())
-                log.debug("Starting stream: [node=" + node + ", req=" + req + "]");
-
-            idx.send(singletonList(node), req);
-        }
-
-        /**
-         * @param msg Response.
-         */
-        public void onResponse(GridH2IndexRangeResponse msg) {
-            respQueue.add(msg);
-        }
-
-        /**
-         * @return Response.
-         */
-        private GridH2IndexRangeResponse awaitForResponse() {
-            assert remainingRanges > 0;
-
-            final long start = U.currentTimeMillis();
-
-            for (int attempt = 0;; attempt++) {
-                if (qctx.isCleared())
-                    throw H2Utils.retryException("Query is cancelled.");
-
-                if (kctx.isStopping())
-                    throw H2Utils.retryException("Local node is stopping.");
-
-                GridH2IndexRangeResponse res;
-
-                try {
-                    res = respQueue.poll(500, TimeUnit.MILLISECONDS);
-                }
-                catch (InterruptedException ignored) {
-                    throw H2Utils.retryException("Interrupted while waiting for reply.");
-                }
-
-                if (res != null) {
-                    switch (res.status()) {
-                        case STATUS_OK:
-                            List<GridH2RowRange> ranges0 = res.ranges();
-
-                            remainingRanges -= ranges0.size();
-
-                            if (ranges0.get(ranges0.size() - 1).isPartial())
-                                remainingRanges++;
-
-                            if (remainingRanges > 0) {
-                                if (req.bounds() != null)
-                                    req = createRequest(qctx, req.batchLookupId(), req.segment());
-
-                                // Prefetch next page.
-                                idx.send(singletonList(node), req);
-                            }
-                            else
-                                req = null;
-
-                            return res;
-
-                        case STATUS_NOT_FOUND:
-                            if (req == null || req.bounds() == null) // We have already received the first response.
-                                throw H2Utils.retryException("Failure on remote node.");
-
-                            if (U.currentTimeMillis() - start > 30_000)
-                                throw H2Utils.retryException("Timeout reached.");
-
-                            try {
-                                U.sleep(20 * attempt);
-                            }
-                            catch (IgniteInterruptedCheckedException e) {
-                                throw new IgniteInterruptedException(e.getMessage());
-                            }
-
-                            // Retry to send the request once more after some time.
-                            idx.send(singletonList(node), req);
-
-                            break;
-
-                        case STATUS_ERROR:
-                            throw new CacheException(res.error());
-
-                        default:
-                            throw new IllegalStateException();
-                    }
-                }
-
-                if (!kctx.discovery().alive(node))
-                    throw H2Utils.retryException("Node has left topology: " + node.id());
-            }
-        }
-
-        /**
-         * @param rangeId Requested range ID.
-         * @return {@code true} If next row for the requested range was found.
-         */
-        private boolean next(final int rangeId) {
-            for (;;) {
-                if (rangeId == cursorRangeId) {
-                    if (cursor.next())
-                        return true;
-                }
-                else if (rangeId < cursorRangeId)
-                    return false;
-
-                cursor = GridH2Cursor.EMPTY;
-
-                while (!ranges.hasNext()) {
-                    if (remainingRanges == 0) {
-                        ranges = emptyIterator();
-
-                        return false;
-                    }
-
-                    ranges = awaitForResponse().ranges().iterator();
-                }
-
-                GridH2RowRange range = ranges.next();
-
-                cursorRangeId = range.rangeId();
-
-                if (!F.isEmpty(range.rows())) {
-                    final Iterator<GridH2RowMessage> it = range.rows().iterator();
-
-                    if (it.hasNext()) {
-                        cursor = new GridH2Cursor(new Iterator<Row>() {
-                            @Override public boolean hasNext() {
-                                return it.hasNext();
-                            }
-
-                            @Override public Row next() {
-                                // Lazily convert messages into real rows.
-                                return toRow(it.next());
-                            }
-
-                            @Override public void remove() {
-                                throw new UnsupportedOperationException();
-                            }
-                        });
-                    }
-                }
-            }
-        }
-
-        /**
-         * @param msg Message.
-         * @return Row.
-         */
-        private Row toRow(GridH2RowMessage msg) {
-            if (msg == null)
-                return null;
-
-            List<GridH2ValueMessage> vals = msg.values();
-
-            assert !F.isEmpty(vals) : vals;
-
-            Value[] vals0 = new Value[vals.size()];
-
-            for (int i = 0; i < vals0.length; i++) {
-                try {
-                    vals0[i] = vals.get(i).value(kctx);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new CacheException(e);
-                }
-            }
-
-            return database.createRow(vals0, MEMORY_CALCULATE);
-        }
-
-        /**
-         * @param rangeId Requested range ID.
-         * @return Current row.
-         */
-        private Row get(int rangeId) {
-            assert rangeId == cursorRangeId;
-
-            return cursor.get();
         }
     }
 
