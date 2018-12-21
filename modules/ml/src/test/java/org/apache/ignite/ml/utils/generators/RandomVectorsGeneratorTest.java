@@ -47,13 +47,13 @@ public class RandomVectorsGeneratorTest {
             .concat(new ParametricVectorGenerator(rnd, t -> t, t -> -t));
 
         targetStream = new VectorGeneratorsFamily.Builder()
-            .with(ring(5, -Math.PI, 0).noisify(gauss).move(VectorUtils.of(-6.0, -2.5)))
-            .with(ring(5, 0, Math.PI).noisify(gauss).move(VectorUtils.of(-7.0, 2.5)))
-            .with(ring(5, 0, 2 * Math.PI).noisify(gauss).move(VectorUtils.of(7.0, 0.0)))
-            .with(circle(1).move(VectorUtils.of(8.5, 1.5)))
-            .with(parallelogram(VectorUtils.of(2, 2)).rotate(Math.PI / 4))
-            .with(gauss(VectorUtils.of(0, 0), VectorUtils.of(0.2, 0.1)).move(VectorUtils.of(8.5, -1.5)))
-            .with(gauss(VectorUtils.of(0, 0), VectorUtils.of(0.1, 0.2)).move(VectorUtils.of(5.5, -1.5)))
+            .add(ring(5, -Math.PI, 0).noisify(gauss).move(VectorUtils.of(-6.0, -2.5)))
+            .add(ring(5, 0, Math.PI).noisify(gauss).move(VectorUtils.of(-7.0, 2.5)))
+            .add(ring(5, 0, 2 * Math.PI).noisify(gauss).move(VectorUtils.of(7.0, 0.0)))
+            .add(circle(1).move(VectorUtils.of(8.5, 1.5)))
+            .add(parallelogram(VectorUtils.of(2, 2)).rotate(Math.PI / 4))
+            .add(gauss(VectorUtils.of(0, 0), VectorUtils.of(0.2, 0.1)).move(VectorUtils.of(8.5, -1.5)))
+            .add(gauss(VectorUtils.of(0, 0), VectorUtils.of(0.1, 0.2)).move(VectorUtils.of(5.5, -1.5)))
             .map(g -> g.concat(noize).duplicateRandomFeatures(3, seed).shuffle(seed))
             .build().asDataStream().labeled();
 

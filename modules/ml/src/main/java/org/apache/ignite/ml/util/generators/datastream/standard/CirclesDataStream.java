@@ -50,7 +50,7 @@ public class CirclesDataStream implements DataStreamGenerator {
             final double variance = 0.1 * (i + 1);
 
             GaussRandomProducer randomProducer = new GaussRandomProducer(0, variance);
-            builder = builder.with(new ParametricVectorGenerator(new UniformRandomProducer(-10, 10),
+            builder = builder.add(new ParametricVectorGenerator(new UniformRandomProducer(-10, 10),
                 randomProducer.noizify(t -> radius * Math.sin(t)),
                 randomProducer.noizify(t -> radius * Math.cos(t))
             ), 1.0);

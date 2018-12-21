@@ -33,9 +33,6 @@ public class VectorGeneratorsFamily implements VectorGenerator {
     private final DiscreteRandomProducer selector;
 
     private VectorGeneratorsFamily(List<VectorGenerator> family, DiscreteRandomProducer selector) {
-        A.notEmpty(family, "family");
-        A.ensure(family.size() == selector.size(), "family.size() == selector.size()");
-
         this.family = family;
         this.selector = selector;
     }
@@ -64,7 +61,7 @@ public class VectorGeneratorsFamily implements VectorGenerator {
         private final List<Double> weights = new ArrayList<>();
         private IgniteFunction<VectorGenerator, VectorGenerator> mapper = x -> x;
 
-        public Builder with(VectorGenerator generator, double weight) {
+        public Builder add(VectorGenerator generator, double weight) {
             A.ensure(weight > 0, "weight > 0");
 
             family.add(generator);
@@ -72,8 +69,8 @@ public class VectorGeneratorsFamily implements VectorGenerator {
             return this;
         }
 
-        public Builder with(VectorGenerator generator) {
-            return with(generator, 1);
+        public Builder add(VectorGenerator generator) {
+            return add(generator, 1);
         }
 
         public Builder map(IgniteFunction<VectorGenerator, VectorGenerator> f) {
@@ -83,16 +80,20 @@ public class VectorGeneratorsFamily implements VectorGenerator {
         }
 
         public VectorGeneratorsFamily build() {
+            return build(System.currentTimeMillis());
+        }
+
+        public VectorGeneratorsFamily build(long seed) {
             A.notEmpty(family, "family.size != 0");
             double sumOfWeigts = weights.stream().mapToDouble(x -> x).sum();
             double[] probs = weights.stream().mapToDouble(w -> w / sumOfWeigts).toArray();
 
             List<VectorGenerator> mappedFamilily = family.stream().map(mapper).collect(Collectors.toList());
-            return new VectorGeneratorsFamily(mappedFamilily, new DiscreteRandomProducer(probs));
+            return new VectorGeneratorsFamily(mappedFamilily, new DiscreteRandomProducer(seed, probs));
         }
     }
 
-    private static class VectorWithDistributionId {
+    static class VectorWithDistributionId {
         private final Vector vector;
         private final int distributionId;
 

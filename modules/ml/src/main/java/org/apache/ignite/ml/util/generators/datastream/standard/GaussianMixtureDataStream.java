@@ -68,7 +68,7 @@ public class GaussianMixtureDataStream implements DataStreamGenerator {
         long seed = System.currentTimeMillis();
         for (int i = 0; i < points.length; i++) {
             VectorGenerator gauss = VectorGeneratorPrimitives.gauss(points[i], variances[i], seed);
-            builder = builder.with(gauss, 1.0);
+            builder = builder.add(gauss, 1.0);
             seed >>= 2;
         }
 
