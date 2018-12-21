@@ -178,8 +178,6 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
 import static org.apache.ignite.internal.processors.query.h2.PreparedStatementEx.MVCC_CACHE_ID;
 import static org.apache.ignite.internal.processors.query.h2.PreparedStatementEx.MVCC_STATE;
-import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.OFF;
-import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.distributedJoinMode;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.LOCAL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.PREPARE;
 
@@ -552,7 +550,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
 
             final GridH2QueryContext ctx = new GridH2QueryContext(nodeId, nodeId, 0, LOCAL)
-                .filter(filter).distributedJoinMode(OFF);
+                .filter(filter).distributedJoins(false);
 
             boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(p);
 
@@ -1799,7 +1797,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         try {
             GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, 0, PREPARE)
-                .distributedJoinMode(distributedJoinMode(qry.isLocal(), qry.isDistributedJoins())));
+                .distributedJoins(qry.isDistributedJoins()));
 
             try {
                 GridCacheTwoStepQuery twoStepQry = split(prepared, newQry);

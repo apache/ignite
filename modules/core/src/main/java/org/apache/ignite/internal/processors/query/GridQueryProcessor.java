@@ -2154,6 +2154,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         // Validate.
         checkxEnabled();
 
+        if (qry.isLocal() && qry.isDistributedJoins())
+            throw new CacheException("Query cannot have \"local\" and \"distributedJoins\" flags set at " +
+                "the same time.");
+
         if (qry.isDistributedJoins() && qry.getPartitions() != null)
             throw new CacheException("Using both partitions and distributed JOINs is not supported for the same query");
 

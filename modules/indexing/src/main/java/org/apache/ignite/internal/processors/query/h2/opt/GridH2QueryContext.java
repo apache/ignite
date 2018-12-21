@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.join.GridH2CollocationModel;
 import org.apache.ignite.internal.processors.query.h2.opt.join.SourceKey;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
@@ -36,7 +35,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.join.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 
 /**
@@ -80,7 +78,7 @@ public class GridH2QueryContext {
     private UUID[] partsNodes;
 
     /** */
-    private DistributedJoinMode distributedJoinMode;
+    private boolean distributedJoins;
 
     /** */
     private int pageSize;
@@ -176,11 +174,11 @@ public class GridH2QueryContext {
     }
 
     /**
-     * @param distributedJoinMode Distributed join mode.
+     * @param distributedJoins Distributed join mode.
      * @return {@code this}.
      */
-    public GridH2QueryContext distributedJoinMode(DistributedJoinMode distributedJoinMode) {
-        this.distributedJoinMode = distributedJoinMode;
+    public GridH2QueryContext distributedJoins(boolean distributedJoins) {
+        this.distributedJoins = distributedJoins;
 
         return this;
     }
@@ -188,8 +186,8 @@ public class GridH2QueryContext {
     /**
      * @return Distributed join mode.
      */
-    public DistributedJoinMode distributedJoinMode() {
-        return distributedJoinMode;
+    public boolean distributedJoins() {
+        return distributedJoins;
     }
 
     /**
@@ -354,7 +352,7 @@ public class GridH2QueryContext {
          assert qctx.get() == null;
 
          // We need MAP query context to be available to other threads to run distributed joins.
-         if (x.key.type() == MAP && x.distributedJoinMode() != OFF && qctxs.putIfAbsent(x.key, x) != null)
+         if (x.key.type() == MAP && x.distributedJoins() && qctxs.putIfAbsent(x.key, x) != null)
              throw new IllegalStateException("Query context is already set.");
 
          qctx.set(x);
