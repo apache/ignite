@@ -48,7 +48,6 @@ public class Parameters {
     /**
      * @return Array of configuration processors for given enum.
      */
-    @SuppressWarnings("unchecked")
     public static <T> ConfigParameter<T>[] enumParameters(String mtdName, Class<?> enumCls) {
         return enumParameters(false, mtdName, enumCls);
     }
@@ -56,7 +55,6 @@ public class Parameters {
     /**
      * @return Array of configuration processors for given enum.
      */
-    @SuppressWarnings("unchecked")
     public static <T> ConfigParameter<T>[] enumParameters(boolean withNull, String mtdName, Class<?> enumCls) {
         return parameters0(mtdName, withNull, enumCls.getEnumConstants());
     }
@@ -113,7 +111,6 @@ public class Parameters {
     /**
      * @return Array of configuration processors for given enum.
      */
-    @SuppressWarnings("unchecked")
     public static <T> ConfigParameter<T>[] booleanParameters(String mtdName) {
         return parameters0(mtdName, false, new Boolean[] {true, false});
     }
@@ -121,7 +118,6 @@ public class Parameters {
     /**
      * @return Array of configuration processors for given enum.
      */
-    @SuppressWarnings("unchecked")
     public static <T> ConfigParameter<T>[] booleanParameters(boolean withNull, String mtdName) {
         return parameters0(mtdName, withNull, new Boolean[] {true, false});
     }
@@ -172,7 +168,6 @@ public class Parameters {
     /**
      * Reflection configuration applier.
      */
-    @SuppressWarnings("serial")
     private static class ReflectionParameter<T> implements ConfigParameter<T> {
         /** Classes of marameters cache. */
         private static final ConcurrentMap<T2<Class, String>, Class> paramClassesCache = new ConcurrentHashMap();
