@@ -42,7 +42,7 @@ public class VectorGeneratorPrimitives {
 
         RandomProducer[] producers = new RandomProducer[means.size()];
         for (int i = 0; i < producers.length; i++)
-            producers[i] = new GaussRandomProducer(means.get(i), variances.get(i), seed >>= 2);
+            producers[i] = new GaussRandomProducer(means.get(i), variances.get(i), seed *= 2);
         return RandomProducer.vectorize(producers);
     }
 
@@ -108,7 +108,7 @@ public class VectorGeneratorPrimitives {
 
         UniformRandomProducer[] producers = new UniformRandomProducer[bounds.size()];
         for (int i = 0; i < producers.length; i++)
-            producers[i] = new UniformRandomProducer(-bounds.get(i), bounds.get(i), seed >>= 2);
+            producers[i] = new UniformRandomProducer(-bounds.get(i), bounds.get(i), seed *= 2);
 
         return RandomProducer.vectorize(producers);
     }

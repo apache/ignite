@@ -83,7 +83,7 @@ public class RingsDataStream implements DataStreamGenerator {
 
             GaussRandomProducer gauss = new GaussRandomProducer(0, variance, seed);
             builder = builder.add(ring(radius, 0, 2 * Math.PI).noisify(gauss));
-            seed >>= 2;
+            seed *= 2;
         }
 
         return builder.build().asDataStream().labeled();

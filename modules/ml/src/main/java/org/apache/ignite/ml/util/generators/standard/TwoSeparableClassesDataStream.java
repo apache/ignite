@@ -61,7 +61,7 @@ public class TwoSeparableClassesDataStream implements DataStreamGenerator {
 
     /** {@inheritDoc} */
     @Override public Stream<LabeledVector<Vector, Double>> labeled() {
-        seed >>= 2;
+        seed *= 2;
         double minCordValue = -variance - Math.abs(margin);
         double maxCordValue = variance + Math.abs(margin);
         return new UniformRandomProducer(minCordValue, maxCordValue, seed)

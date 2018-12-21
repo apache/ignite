@@ -56,7 +56,7 @@ public class GaussianMixtureDataStream implements DataStreamGenerator {
         VectorGeneratorsFamily.Builder builder = new VectorGeneratorsFamily.Builder();
         for (int i = 0; i < componentGenerators.size(); i++) {
             builder = builder.add(componentGenerators.get(i).apply(seed), 1.0);
-            seed >>= 2;
+            seed *= 2;
         }
 
         return builder.build().asDataStream().labeled();
