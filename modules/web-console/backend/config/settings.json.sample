@@ -9,6 +9,8 @@
     "passphrase": "password",
     "ciphers": "ECDHE-RSA-AES128-GCM-SHA256",
     "secureProtocol": "TLSv1_2_method",
+    "requestCert": false,
+    "rejectUnauthorized": false,
     "disable": {
       "signup": false
     }
