@@ -205,6 +205,9 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     private boolean failCommSpi;
 
     /** */
+    private boolean blockCommSpi;
+
+    /** */
     private long sesTimeout;
 
     /** */
@@ -399,6 +402,13 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         if (failCommSpi)
             cfg.setCommunicationSpi(new PeerToPeerCommunicationFailureSpi());
+
+        if (blockCommSpi) {
+            cfg.setCommunicationSpi(new TcpBlockCommunicationSpi(igniteInstanceName.contains("block"))
+                .setUsePairedConnections(true));
+
+            cfg.setNetworkTimeout(500);
+        }
 
         if (commFailureRslvr != null)
             cfg.setCommunicationFailureResolver(commFailureRslvr.apply());
@@ -3588,6 +3598,28 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testClientReconnects() throws Exception {
+        blockCommSpi = true;
+
+        Ignite srv1 = startGrid("server1-block");
+
+        clientModeThreadLocal(true);
+
+        IgniteEx cli = startGrid("client");
+
+        IgniteCache<Object, Object> cache = cli.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        cache.put(1, 1);
+
+        assertEquals(cache.get(1), 1);
+
+        assertEquals(1, srv1.cluster().forClients().nodes().size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testConnectionCheck() throws Exception {
        final int NODES = 5;
 
@@ -5612,7 +5644,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+        @Override public @Nullable  DiscoveryCustomMessage ackMessage() {
             return null;
         }
 
@@ -5653,6 +5685,51 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(TestFastStopProcessCustomMessageAck.class, this);
+        }
+    }
+
+    /**
+     * Block communications.
+     */
+    private class TcpBlockCommunicationSpi extends TcpCommunicationSpi {
+        /**
+         * Whether this instance should actually block.
+         */
+        private final boolean isBlocking;
+
+        /** Blocked once. */
+        private boolean alreadyBlocked;
+
+        /**
+         * @param isBlocking Whether this instance should actually block.
+         */
+        public TcpBlockCommunicationSpi(boolean isBlocking) {
+            this.isBlocking = isBlocking;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected GridCommunicationClient createTcpClient(ClusterNode node, int connIdx)
+            throws IgniteCheckedException {
+            if (node.isClient() && blockHandshakeOnce(node.id())) {
+                ZookeeperDiscoverySpi spi = spi(ignite());
+
+                spi.resolveCommunicationFailure(spi.getRemoteNodes().iterator().next(), new Exception("test"));
+
+                return null;
+            }
+
+            return super.createTcpClient(node, connIdx);
+        }
+
+        /** Check if this connection is blocked. */
+        private boolean blockHandshakeOnce(UUID nodeId) {
+            if (isBlocking && !alreadyBlocked) {
+                alreadyBlocked = true;
+
+                return true;
+            }
+
+            return false;
         }
     }
 }

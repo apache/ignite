@@ -300,6 +300,9 @@ public class ZookeeperDiscoveryImpl {
      * @param err Connect error.
      */
     public void resolveCommunicationError(ClusterNode node0, Exception err) {
+        if (node0.isClient())
+            return;
+
         ZookeeperClusterNode node = node(node0.id());
 
         if (node == null)
