@@ -52,6 +52,7 @@ public class IgniteSecurityProcessorImpl implements IgniteSecurityProcessor, Gri
     public IgniteSecurityProcessorImpl(GridKernalContext ctx, GridSecurityProcessor secPrc) {
         this.ctx = ctx;
         this.secPrc = secPrc;
+
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
     }
 
@@ -101,6 +102,11 @@ public class IgniteSecurityProcessorImpl implements IgniteSecurityProcessor, Gri
     /** {@inheritDoc} */
     @Override public SecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException {
         return secPrc.authenticatedSubject(subjId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onSessionExpired(UUID subjId) {
+        secPrc.onSessionExpired(subjId);
     }
 
     /** {@inheritDoc} */

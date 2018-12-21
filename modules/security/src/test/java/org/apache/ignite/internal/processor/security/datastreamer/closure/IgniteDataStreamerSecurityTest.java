@@ -30,7 +30,7 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.stream.StreamVisitor;
 
 /**
- * Security tests for IgniteDataStream receiver.
+ * Testing permissions when the closure od DataStreamer is executed cache operations on remote node.
  */
 public class IgniteDataStreamerSecurityTest extends AbstractCacheSecurityTest {
     /**
@@ -52,7 +52,7 @@ public class IgniteDataStreamerSecurityTest extends AbstractCacheSecurityTest {
      * @param remote Remoute node.
      */
     private void load(IgniteEx initiator, IgniteEx remote, T2<String, Integer> entry) {
-        try (IgniteDataStreamer<Integer, Integer> strm = initiator.dataStreamer(CACHE_READ_ONLY_PERM)) {
+        try (IgniteDataStreamer<Integer, Integer> strm = initiator.dataStreamer(COMMON_USE_CACHE)) {
             strm.receiver(
                 StreamVisitor.from(
                     new TestClosure(remote.localNode().id(), entry.getKey(), entry.getValue())

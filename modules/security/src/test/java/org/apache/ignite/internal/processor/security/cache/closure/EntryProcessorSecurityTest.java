@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processor.security.AbstractCacheSecurityTest;
 import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
- * Security tests for EntityProcessor.
+ * Testing permissions when EntryProcessor closure is executed cache operations on remote node.
  */
 public class EntryProcessorSecurityTest extends AbstractCacheSecurityTest {
     /** */
@@ -73,7 +73,7 @@ public class EntryProcessorSecurityTest extends AbstractCacheSecurityTest {
      * @param remote Remote.
      */
     private void invoke(IgniteEx initiator, IgniteEx remote) {
-        initiator.<Integer, Integer>cache(CACHE_READ_ONLY_PERM).invoke(
+        initiator.<Integer, Integer>cache(COMMON_USE_CACHE).invoke(
             primaryKey(remote),
             new TestEntryProcessor(remote.localNode().id())
         );
@@ -84,7 +84,7 @@ public class EntryProcessorSecurityTest extends AbstractCacheSecurityTest {
      * @param remote Remote.
      */
     private void invokeAsync(IgniteEx initiator, IgniteEx remote) {
-        initiator.<Integer, Integer>cache(CACHE_READ_ONLY_PERM).invokeAsync(
+        initiator.<Integer, Integer>cache(COMMON_USE_CACHE).invokeAsync(
             primaryKey(remote),
             new TestEntryProcessor(remote.localNode().id())
         ).get();
@@ -95,7 +95,7 @@ public class EntryProcessorSecurityTest extends AbstractCacheSecurityTest {
      * @param remote Remote.
      */
     private void invokeAll(IgniteEx initiator, IgniteEx remote) {
-        initiator.<Integer, Integer>cache(CACHE_READ_ONLY_PERM).invokeAll(
+        initiator.<Integer, Integer>cache(COMMON_USE_CACHE).invokeAll(
             Collections.singleton(primaryKey(remote)),
             new TestEntryProcessor(remote.localNode().id())
         ).values().stream().findFirst().ifPresent(EntryProcessorResult::get);
@@ -106,7 +106,7 @@ public class EntryProcessorSecurityTest extends AbstractCacheSecurityTest {
      * @param remote Remote.
      */
     private void invokeAllAsync(IgniteEx initiator, IgniteEx remote) {
-        initiator.<Integer, Integer>cache(CACHE_READ_ONLY_PERM).invokeAllAsync(
+        initiator.<Integer, Integer>cache(COMMON_USE_CACHE).invokeAllAsync(
             Collections.singleton(primaryKey(remote)),
             new TestEntryProcessor(remote.localNode().id())
         ).get().values().stream().findFirst().ifPresent(EntryProcessorResult::get);

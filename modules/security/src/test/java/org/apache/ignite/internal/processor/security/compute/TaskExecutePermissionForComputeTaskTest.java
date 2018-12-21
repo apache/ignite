@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processor.security.compute;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -27,101 +28,46 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
-import org.apache.ignite.compute.ComputeTaskFuture;
-import org.apache.ignite.lang.IgniteFutureCancelledException;
+import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL;
-import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 
 /**
  * Test task execute permission for compute task.
  */
 public class TaskExecutePermissionForComputeTaskTest extends AbstractTaskExecutePermissionTest {
     /** Allowed task. */
-    private static final AllowedTask ALLOWED_TASK = new AllowedTask();
-
-    /** Forbidden task. */
-    private static final ForbiddenTask FORBIDDEN_TASK = new ForbiddenTask();
+    private static final AllowedTask TEST_TASK = new AllowedTask();
 
     /** {@inheritDoc} */
-    @Override protected void testExecute(boolean isClient) throws Exception {
-        Ignite node = startGrid(loginPrefix(isClient) + "_execute",
-            builder().defaultAllowAll(true)
-                .appendTaskPermissions(ALLOWED_TASK.getClass().getName(), TASK_EXECUTE, TASK_CANCEL)
-                .appendTaskPermissions(FORBIDDEN_TASK.getClass().getName(), EMPTY_PERMS)
-                .build(), isClient
-        );
-
-        allowRun(() -> node.compute().execute(ALLOWED_TASK, 0));
-        forbiddenRun(() -> node.compute().execute(FORBIDDEN_TASK, 0));
-
-        allowRun(() -> node.compute().executeAsync(ALLOWED_TASK, 0).get());
-        forbiddenRun(() -> node.compute().executeAsync(FORBIDDEN_TASK, 0).get());
-    }
-
-
-    /** {@inheritDoc} */
-    @Override protected void testAllowedCancel(boolean isClient) throws Exception {
-        Ignite node = startGrid(loginPrefix(isClient) + "_allowed_cancel",
-            builder().defaultAllowAll(true)
-                .appendTaskPermissions(ALLOWED_TASK.getClass().getName(), TASK_EXECUTE, TASK_CANCEL)
-                .build(), isClient
-        );
-
-        ComputeTaskFuture f = node.compute().executeAsync(ALLOWED_TASK, 0);
-
-        f.cancel();
-
-        forbiddenRun(f::get, IgniteFutureCancelledException.class);
+    @Override protected SecurityPermissionSet permissions(SecurityPermission... perms) {
+        return builder().defaultAllowAll(true)
+            .appendTaskPermissions(TEST_TASK.getClass().getName(), perms)
+            .build();
     }
 
     /** {@inheritDoc} */
-    @Override protected void testForbiddenCancel(boolean isClient) throws Exception {
-        Ignite node = startGrid(loginPrefix(isClient) + "_forbidden_cancel",
-            builder().defaultAllowAll(true)
-                .appendTaskPermissions(ALLOWED_TASK.getClass().getName(), TASK_EXECUTE)
-                .build(), isClient
-        );
-
-        ComputeTaskFuture f = node.compute().executeAsync(ALLOWED_TASK, 0);
-
-        forbiddenRun(f::cancel);
+    @Override protected TestRunnable[] runnables(Ignite node){
+        return new TestRunnable[]{
+            () -> node.compute().execute(TEST_TASK, 0),
+            () -> node.compute().executeAsync(TEST_TASK, 0).get()
+        };
     }
 
-    /**
-     * Allowed task class.
-     */
-    static class AllowedTask extends TestComputeTask {
-        /** {@inheritDoc} */
-        @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Object arg) throws IgniteException {
-            JINGLE_BELL.set(true);
-
-            return super.map(subgrid, arg);
-        }
-    }
-
-    /**
-     * Forbidden task class.
-     */
-    static class ForbiddenTask extends TestComputeTask {
-        /** {@inheritDoc} */
-        @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Object arg) throws IgniteException {
-            fail("Should not be invoked.");
-
-            return super.map(subgrid, arg);
-        }
+    /** {@inheritDoc} */
+    @Override protected Supplier<FutureAdapter> cancelSupplier(Ignite node) {
+        return () -> new FutureAdapter(node.compute().executeAsync(TEST_TASK, 0));
     }
 
     /**
      * Abstract test compute task.
      */
-    abstract static class TestComputeTask implements ComputeTask<Object, Object> {
+    static class AllowedTask implements ComputeTask<Object, Object> {
         /** {@inheritDoc} */
         @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Object arg) throws IgniteException {
+            IS_EXECUTED.set(true);
+
             return Collections.singletonMap(
                 new ComputeJob() {
                     @Override public void cancel() {

@@ -40,7 +40,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 /**
- * Security tests for a compute task.
+ * Testing permissions when the compute task is executed cache operations on remote node.
  */
 public class ComputeTaskSecurityTest extends AbstractComputeTaskSecurityTest {
     /** {@inheritDoc} */

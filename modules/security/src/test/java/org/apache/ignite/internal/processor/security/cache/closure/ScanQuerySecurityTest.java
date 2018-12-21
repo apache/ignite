@@ -30,7 +30,7 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
- * Security test for scan query.
+ * Testing permissions when the filter of ScanQuery is executed cache operations on remote node.
  */
 public class ScanQuerySecurityTest extends AbstractCacheSecurityTest {
     /**
@@ -38,39 +38,39 @@ public class ScanQuerySecurityTest extends AbstractCacheSecurityTest {
      */
     public void testScanQuery() throws Exception {
         putTestData(srvAllPerms, CACHE_NAME);
-        putTestData(srvAllPerms, CACHE_READ_ONLY_PERM);
+        putTestData(srvAllPerms, COMMON_USE_CACHE);
 
         awaitPartitionMapExchange();
 
         assertAllowed((t) -> query(clntAllPerms, srvAllPerms, CACHE_NAME, t));
         assertAllowed((t) -> query(srvAllPerms, srvAllPerms, CACHE_NAME, t));
-        assertAllowed((t) -> query(clntAllPerms, srvAllPerms, CACHE_READ_ONLY_PERM, t));
-        assertAllowed((t) -> query(srvAllPerms, srvAllPerms, CACHE_READ_ONLY_PERM, t));
+        assertAllowed((t) -> query(clntAllPerms, srvAllPerms, COMMON_USE_CACHE, t));
+        assertAllowed((t) -> query(srvAllPerms, srvAllPerms, COMMON_USE_CACHE, t));
 
         assertAllowed((t) -> transform(clntAllPerms, srvAllPerms, CACHE_NAME, t));
         assertAllowed((t) -> transform(srvAllPerms, srvAllPerms, CACHE_NAME, t));
-        assertAllowed((t) -> transform(clntAllPerms, srvAllPerms, CACHE_READ_ONLY_PERM, t));
-        assertAllowed((t) -> transform(srvAllPerms, srvAllPerms, CACHE_READ_ONLY_PERM, t));
+        assertAllowed((t) -> transform(clntAllPerms, srvAllPerms, COMMON_USE_CACHE, t));
+        assertAllowed((t) -> transform(srvAllPerms, srvAllPerms, COMMON_USE_CACHE, t));
 
         assertAllowed((t) -> query(clntAllPerms, srvReadOnlyPerm, CACHE_NAME, t));
         assertAllowed((t) -> query(srvAllPerms, srvReadOnlyPerm, CACHE_NAME, t));
-        assertAllowed((t) -> query(clntAllPerms, srvReadOnlyPerm, CACHE_READ_ONLY_PERM, t));
-        assertAllowed((t) -> query(srvAllPerms, srvReadOnlyPerm, CACHE_READ_ONLY_PERM, t));
+        assertAllowed((t) -> query(clntAllPerms, srvReadOnlyPerm, COMMON_USE_CACHE, t));
+        assertAllowed((t) -> query(srvAllPerms, srvReadOnlyPerm, COMMON_USE_CACHE, t));
 
         assertAllowed((t) -> transform(clntAllPerms, srvReadOnlyPerm, CACHE_NAME, t));
         assertAllowed((t) -> transform(srvAllPerms, srvReadOnlyPerm, CACHE_NAME, t));
-        assertAllowed((t) -> transform(clntAllPerms, srvReadOnlyPerm, CACHE_READ_ONLY_PERM, t));
-        assertAllowed((t) -> transform(srvAllPerms, srvReadOnlyPerm, CACHE_READ_ONLY_PERM, t));
+        assertAllowed((t) -> transform(clntAllPerms, srvReadOnlyPerm, COMMON_USE_CACHE, t));
+        assertAllowed((t) -> transform(srvAllPerms, srvReadOnlyPerm, COMMON_USE_CACHE, t));
 
         assertForbidden((t) -> query(clntReadOnlyPerm, srvAllPerms, CACHE_NAME, t));
         assertForbidden((t) -> query(srvReadOnlyPerm, srvAllPerms, CACHE_NAME, t));
-        assertForbidden((t) -> query(clntReadOnlyPerm, srvAllPerms, CACHE_READ_ONLY_PERM, t));
-        assertForbidden((t) -> query(srvReadOnlyPerm, srvAllPerms, CACHE_READ_ONLY_PERM, t));
+        assertForbidden((t) -> query(clntReadOnlyPerm, srvAllPerms, COMMON_USE_CACHE, t));
+        assertForbidden((t) -> query(srvReadOnlyPerm, srvAllPerms, COMMON_USE_CACHE, t));
 
         assertForbidden((t) -> transform(clntReadOnlyPerm, srvAllPerms, CACHE_NAME, t));
         assertForbidden((t) -> transform(srvReadOnlyPerm, srvAllPerms, CACHE_NAME, t));
-        assertForbidden((t) -> transform(clntReadOnlyPerm, srvAllPerms, CACHE_READ_ONLY_PERM, t));
-        assertForbidden((t) -> transform(srvReadOnlyPerm, srvAllPerms, CACHE_READ_ONLY_PERM, t));
+        assertForbidden((t) -> transform(clntReadOnlyPerm, srvAllPerms, COMMON_USE_CACHE, t));
+        assertForbidden((t) -> transform(srvReadOnlyPerm, srvAllPerms, COMMON_USE_CACHE, t));
     }
 
     /**

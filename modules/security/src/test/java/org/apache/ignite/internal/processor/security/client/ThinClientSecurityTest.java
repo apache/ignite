@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processor.security.client;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignition;
@@ -150,43 +152,11 @@ public class ThinClientSecurityTest extends AbstractSecurityTest {
      * @throws Exception If error occurs.
      */
     public void testCacheSinglePermOperations() throws Exception {
-        executeOperation(CLIENT, c -> c.cache(CACHE).put("key", "value"));
-        executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).put("key", "value"));
+        for (Consumer<IgniteClient> c : consumers(CACHE))
+            executeOperation(CLIENT, c);
 
-        executeOperation(CLIENT, c -> c.cache(CACHE).putAll(singletonMap("key", "value")));
-        executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).putAll(singletonMap("key", "value")));
-
-        executeOperation(CLIENT, c -> c.cache(CACHE).get("key"));
-        executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).get("key"));
-
-        executeOperation(CLIENT, c -> c.cache(CACHE).getAll(Collections.singleton("key")));
-        executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).getAll(Collections.singleton("key")));
-
-        executeOperation(CLIENT, c -> c.cache(CACHE).containsKey("key"));
-        executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).containsKey("key"));
-
-        executeOperation(CLIENT, c -> c.cache(CACHE).remove("key"));
-        executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).remove("key"));
-    }
-
-    /**
-     * @throws Exception If error occurs.
-     */
-    public void testCacheMultiplePermOperations() throws Exception {
-        executeOperation(CLIENT, c -> c.cache(CACHE).replace("key", "value"));
-        executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).replace("key", "value"));
-
-        executeOperation(CLIENT, c -> c.cache(CACHE).putIfAbsent("key", "value"));
-        executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).putIfAbsent("key", "value"));
-
-        executeOperation(CLIENT, c -> c.cache(CACHE).getAndPut("key", "value"));
-        executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).getAndPut("key", "value"));
-
-        executeOperation(CLIENT, c -> c.cache(CACHE).getAndRemove("key"));
-        executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).getAndRemove("key"));
-
-        executeOperation(CLIENT, c -> c.cache(CACHE).getAndReplace("key", "value"));
-        executeForbiddenOperation(c -> c.cache(FORBIDDEN_CACHE).getAndReplace("key", "value"));
+        for (Consumer<IgniteClient> c : consumers(FORBIDDEN_CACHE))
+            executeForbiddenOperation(c);
     }
 
     /**
@@ -224,6 +194,25 @@ public class ThinClientSecurityTest extends AbstractSecurityTest {
 
         executeForbiddenOperation(c -> c.createCache(DYNAMIC_CACHE));
         executeForbiddenOperation(c -> c.destroyCache(CACHE));
+    }
+
+    /**
+     * @param cacheName Cache name.
+     */
+    private Collection<Consumer<IgniteClient>> consumers(final String cacheName) {
+        return Arrays.asList(
+            c -> c.cache(cacheName).put("key", "value"),
+            c -> c.cache(cacheName).putAll(singletonMap("key", "value")),
+            c -> c.cache(cacheName).get("key"),
+            c -> c.cache(cacheName).getAll(Collections.singleton("key")),
+            c -> c.cache(cacheName).containsKey("key"),
+            c -> c.cache(cacheName).remove("key"),
+            c -> c.cache(cacheName).replace("key", "value"),
+            c -> c.cache(cacheName).putIfAbsent("key", "value"),
+            c -> c.cache(cacheName).getAndPut("key", "value"),
+            c -> c.cache(cacheName).getAndRemove("key"),
+            c -> c.cache(cacheName).getAndReplace("key", "value")
+        );
     }
 
     /**

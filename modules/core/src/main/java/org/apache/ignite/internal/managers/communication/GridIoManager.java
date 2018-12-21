@@ -1574,7 +1574,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /**
      * @return Current IO policy
      */
-    public static @Nullable Byte currentPolicy() {
+    @Nullable public static Byte currentPolicy() {
         return CUR_PLC.get();
     }
 

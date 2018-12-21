@@ -228,22 +228,56 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
 
     /**
      * @param r Runnable.
-     * @param type Expected exception type.
+     * @param types Array of expected exception types.
      */
-    protected <T extends Throwable> void forbiddenRun(TestRunnable r, Class<T> type) {
+    protected void forbiddenRun(TestRunnable r, Class... types) {
         try {
             r.run();
 
             fail("Should not happen.");
         }
         catch (Throwable e) {
-            assertThat(X.cause(e, type), notNullValue());
+            assertThat(cause(e, types), notNullValue());
         }
     }
 
-    /** */
+    /**
+     * Gets first cause if passed in {@code 'Throwable'} has one of given classes in {@code 'cause'} hierarchy.
+     * <p>
+     * Note that this method follows includes {@link Throwable#getSuppressed()} into check.
+     *
+     * @param t Throwable to check (if {@code null}, {@code null} is returned).
+     * @param types Array of cause classes to get cause (if {@code null}, {@code null} is returned).
+     * @return First causing exception of passed in class, {@code null} otherwise.
+     */
+    private Throwable cause(Throwable t, Class... types) {
+        for (Throwable th = t; th != null; th = th.getCause()) {
+            for (Class cls : types) {
+                if (cls.isAssignableFrom(th.getClass()))
+                    return th;
+
+                for (Throwable n : th.getSuppressed()) {
+                    Throwable found = cause(n, cls);
+
+                    if (found != null)
+                        return found;
+                }
+            }
+
+            if (th.getCause() == th)
+                break;
+        }
+
+        return null;
+    }
+
+    /**
+     *
+     */
     public interface TestRunnable {
-        /** */
+        /**
+         *
+         */
         void run() throws Exception;
     }
 }

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processor.security.compute.closure;
 
+import java.util.Arrays;
+import java.util.Collection;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
@@ -29,142 +31,58 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 /**
- * Security tests for distributed closure.
+ * Testing permissions when the compute closure is executed cache operations on remote node.
  */
 public class DistributedClosureSecurityTest extends AbstractComputeTaskSecurityTest {
     /** {@inheritDoc} */
     @Override protected void checkSuccess(IgniteEx initiator, IgniteEx remote) {
-        successClosure(
-            initiator, remote,
-            (cmp, k, v) -> cmp.broadcast(
-                () -> Ignition.localIgnite().cache(CACHE_NAME).put(k, v)
-            )
-        );
-
-        successClosure(
-            initiator, remote,
-            (cmp, k, v) -> cmp.broadcastAsync(
-                () -> Ignition.localIgnite().cache(CACHE_NAME).put(k, v)
-            ).get()
-        );
-
-        successClosure(
-            initiator, remote,
-            (cmp, k, v) -> cmp.call(
-                () -> {
-                    Ignition.localIgnite().cache(CACHE_NAME).put(k, v);
-
-                    return null;
-                }
-            )
-        );
-
-        successClosure(
-            initiator, remote,
-            (cmp, k, v) -> cmp.callAsync(
-                () -> {
-                    Ignition.localIgnite().cache(CACHE_NAME).put(k, v);
-
-                    return null;
-                }
-            ).get()
-        );
-
-        successClosure(
-            initiator, remote,
-            (cmp, k, v) -> cmp.run(
-                () -> Ignition.localIgnite().cache(CACHE_NAME).put(k, v)
-            )
-        );
-
-        successClosure(
-            initiator, remote,
-            (cmp, k, v) -> cmp.runAsync(
-                () -> Ignition.localIgnite().cache(CACHE_NAME).put(k, v)
-            ).get()
-        );
-
-        successClosure(
-            initiator, remote,
-            (cmp, k, v) -> cmp.apply(
-                new IgniteClosure<Object, Object>() {
-                    @Override public Object apply(Object o) {
-                        Ignition.localIgnite().cache(CACHE_NAME).put(k, v);
-
-                        return null;
-                    }
-                }, new Object()
-            )
-        );
-
-        successClosure(
-            initiator, remote,
-            (cmp, k, v) -> cmp.applyAsync(
-                new IgniteClosure<Object, Object>() {
-                    @Override public Object apply(Object o) {
-                        Ignition.localIgnite().cache(CACHE_NAME).put(k, v);
-
-                        return null;
-                    }
-                }, new Object()
-            ).get()
-        );
+        for(TriConsumer<IgniteCompute, String, Integer> c : consumers())
+            successClosure(initiator, remote, c);
     }
 
     /** {@inheritDoc} */
     @Override protected void checkFail(IgniteEx initiator, IgniteEx remote) {
-        failClosure(
-            initiator, remote,
+        for(TriConsumer<IgniteCompute, String, Integer> c : consumers())
+            failClosure(initiator, remote, c);
+    }
+
+    /**
+     * @return Collection of TriConsumers that invoke IgniteCompute methods.
+     */
+    private Collection<TriConsumer<IgniteCompute, String, Integer>> consumers() {
+        return Arrays.asList(
             (cmp, k, v) -> cmp.broadcast(
                 () -> Ignition.localIgnite().cache(CACHE_NAME).put(k, v)
-            )
-        );
+            ),
 
-        failClosure(
-            initiator, remote,
             (cmp, k, v) -> cmp.broadcastAsync(
                 () -> Ignition.localIgnite().cache(CACHE_NAME).put(k, v)
-            ).get()
-        );
+            ).get(),
 
-        failClosure(
-            initiator, remote,
             (cmp, k, v) -> cmp.call(
                 () -> {
                     Ignition.localIgnite().cache(CACHE_NAME).put(k, v);
 
                     return null;
                 }
-            )
-        );
+            ),
 
-        failClosure(
-            initiator, remote,
             (cmp, k, v) -> cmp.callAsync(
                 () -> {
                     Ignition.localIgnite().cache(CACHE_NAME).put(k, v);
 
                     return null;
                 }
-            ).get()
-        );
+            ).get(),
 
-        failClosure(
-            initiator, remote,
             (cmp, k, v) -> cmp.run(
                 () -> Ignition.localIgnite().cache(CACHE_NAME).put(k, v)
-            )
-        );
+            ),
 
-        failClosure(
-            initiator, remote,
             (cmp, k, v) -> cmp.runAsync(
                 () -> Ignition.localIgnite().cache(CACHE_NAME).put(k, v)
-            ).get()
-        );
+            ).get(),
 
-        failClosure(
-            initiator, remote,
             (cmp, k, v) -> cmp.apply(
                 new IgniteClosure<Object, Object>() {
                     @Override public Object apply(Object o) {
@@ -173,11 +91,8 @@ public class DistributedClosureSecurityTest extends AbstractComputeTaskSecurityT
                         return null;
                     }
                 }, new Object()
-            )
-        );
+            ),
 
-        failClosure(
-            initiator, remote,
             (cmp, k, v) -> cmp.applyAsync(
                 new IgniteClosure<Object, Object>() {
                     @Override public Object apply(Object o) {

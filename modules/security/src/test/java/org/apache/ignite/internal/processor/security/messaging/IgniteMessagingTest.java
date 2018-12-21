@@ -22,11 +22,12 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processor.security.AbstractResolveSecurityContextTest;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 
@@ -35,7 +36,7 @@ import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertThat;
 
 /**
- * Security tests for IgniteMessaging.
+ * Testing permissions when the message listener is executed cache operations on remote node.
  */
 public class IgniteMessagingTest extends AbstractResolveSecurityContextTest {
     /** Sever node that has all permissions for TEST_CACHE. */
@@ -64,47 +65,45 @@ public class IgniteMessagingTest extends AbstractResolveSecurityContextTest {
     public void testMessaging() throws Exception {
         awaitPartitionMapExchange();
 
-        assertAllowedResult(key -> messaging(clntAllPerms, clntReadOnlyPerm, evntAllPerms, key));
-        assertAllowedResult(key -> messaging(clntAllPerms, srvReadOnlyPerm, evntAllPerms, key));
-        assertAllowedResult(key -> messaging(srvAllPerms, clntReadOnlyPerm, evntAllPerms, key));
-        assertAllowedResult(key -> messaging(srvAllPerms, srvReadOnlyPerm, evntAllPerms, key));
+        assertAllowedResult(t -> messaging(clntAllPerms, clntReadOnlyPerm, evntAllPerms, t));
+        assertAllowedResult(t -> messaging(clntAllPerms, srvReadOnlyPerm, evntAllPerms, t));
+        assertAllowedResult(t -> messaging(srvAllPerms, clntReadOnlyPerm, evntAllPerms, t));
+        assertAllowedResult(t -> messaging(srvAllPerms, srvReadOnlyPerm, evntAllPerms, t));
 
-        assertAllowedResult(key -> messaging(clntAllPerms, srvReadOnlyPerm, evntNotPerms, key));
-        assertAllowedResult(key -> messaging(clntAllPerms, clntReadOnlyPerm, evntNotPerms, key));
-        assertAllowedResult(key -> messaging(srvAllPerms, srvReadOnlyPerm, evntNotPerms, key));
-        assertAllowedResult(key -> messaging(srvAllPerms, clntReadOnlyPerm, evntNotPerms, key));
+        assertAllowedResult(t -> messaging(clntAllPerms, srvReadOnlyPerm, evntNotPerms, t));
+        assertAllowedResult(t -> messaging(clntAllPerms, clntReadOnlyPerm, evntNotPerms, t));
+        assertAllowedResult(t -> messaging(srvAllPerms, srvReadOnlyPerm, evntNotPerms, t));
+        assertAllowedResult(t -> messaging(srvAllPerms, clntReadOnlyPerm, evntNotPerms, t));
 
-        assertForbiddenResult(key -> messaging(clntReadOnlyPerm, srvAllPerms, evntAllPerms, key));
-        assertForbiddenResult(key -> messaging(clntReadOnlyPerm, clntAllPerms, evntAllPerms, key));
-        assertForbiddenResult(key -> messaging(srvReadOnlyPerm, srvAllPerms, evntAllPerms, key));
-        assertForbiddenResult(key -> messaging(srvReadOnlyPerm, clntAllPerms, evntAllPerms, key));
+        assertForbiddenResult(t -> messaging(clntReadOnlyPerm, srvAllPerms, evntAllPerms, t));
+        assertForbiddenResult(t -> messaging(clntReadOnlyPerm, clntAllPerms, evntAllPerms, t));
+        assertForbiddenResult(t -> messaging(srvReadOnlyPerm, srvAllPerms, evntAllPerms, t));
+        assertForbiddenResult(t -> messaging(srvReadOnlyPerm, clntAllPerms, evntAllPerms, t));
 
-        assertForbiddenResult(key -> messaging(clntReadOnlyPerm, srvAllPerms, evntNotPerms, key));
-        assertForbiddenResult(key -> messaging(clntReadOnlyPerm, clntAllPerms, evntNotPerms, key));
-        assertForbiddenResult(key -> messaging(srvReadOnlyPerm, srvAllPerms, evntNotPerms, key));
-        assertForbiddenResult(key -> messaging(srvReadOnlyPerm, clntAllPerms, evntNotPerms, key));
+        assertForbiddenResult(t -> messaging(clntReadOnlyPerm, srvAllPerms, evntNotPerms, t));
+        assertForbiddenResult(t -> messaging(clntReadOnlyPerm, clntAllPerms, evntNotPerms, t));
+        assertForbiddenResult(t -> messaging(srvReadOnlyPerm, srvAllPerms, evntNotPerms, t));
+        assertForbiddenResult(t -> messaging(srvReadOnlyPerm, clntAllPerms, evntNotPerms, t));
     }
 
     /**
      * @param lsnr Listener node.
      * @param remote Remote node.
      * @param evt Event node.
-     * @param key Key.
+     * @param t Entry to put into test cache.
      */
-    private Integer messaging(IgniteEx lsnr, IgniteEx remote, IgniteEx evt, String key) {
+    private void messaging(IgniteEx lsnr, IgniteEx remote, IgniteEx evt, T2<String, Integer> t) {
         BARRIER.reset();
 
         IgniteMessaging messaging = lsnr.message(lsnr.cluster().forNode(remote.localNode()));
 
-        Integer val = values.incrementAndGet();
-
-        String topic = "HOT_TOPIC " + val;
+        String topic = "HOT_TOPIC " + t.getKey();
 
         UUID lsnrId = messaging.remoteListen(topic,
             new IgniteBiPredicate<UUID, Object>() {
                 @Override public boolean apply(UUID uuid, Object o) {
                     try {
-                        Ignition.localIgnite().cache(CACHE_NAME).put(key, val);
+                        Ignition.localIgnite().cache(CACHE_NAME).put(t.getKey(), t.getValue());
 
                         return true;
                     }
@@ -123,8 +122,6 @@ public class IgniteMessagingTest extends AbstractResolveSecurityContextTest {
 
             messaging.stopRemoteListen(lsnrId);
         }
-
-        return val;
     }
 
     /**
@@ -140,28 +137,28 @@ public class IgniteMessagingTest extends AbstractResolveSecurityContextTest {
     }
 
     /**
-     * @param f Function.
+     * @param c Consumer.
      */
-    private void assertAllowedResult(Function<String, Integer> f) {
-        assertResult(f, false);
+    private void assertAllowedResult(Consumer<T2<String, Integer>> c) {
+        assertResult(c, false);
     }
 
     /**
-     * @param f Function.
+     * @param c Consumer.
      */
-    private void assertForbiddenResult(Function<String, Integer> f) {
-        assertResult(f, true);
+    private void assertForbiddenResult(Consumer<T2<String, Integer>> c) {
+        assertResult(c, true);
     }
 
     /**
-     * @param f Function.
-     * @param failExpected True if expectaed fail behavior.
+     * @param c Consumer.
+     * @param failExp True if expectaed fail behavior.
      */
-    private void assertResult(Function<String, Integer> f, boolean failExpected) {
-        String key = failExpected ? "fail_key" : "key";
+    private void assertResult(Consumer<T2<String, Integer>> c, boolean failExp) {
+        T2<String, Integer> t = entry();
 
-        Integer val = f.apply(key);
+        c.accept(t);
 
-        assertThat(srvAllPerms.cache(CACHE_NAME).get(key), failExpected ? nullValue() : is(val));
+        assertThat(srvAllPerms.cache(CACHE_NAME).get(t.getKey()), failExp ? nullValue() : is(t.getValue()));
     }
 }

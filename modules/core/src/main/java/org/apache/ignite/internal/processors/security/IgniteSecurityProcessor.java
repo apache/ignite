@@ -61,6 +61,11 @@ public interface IgniteSecurityProcessor {
     public SecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException;
 
     /**
+     * Delegates call to {@link GridSecurityProcessor#onSessionExpired(UUID)}
+     */
+    public void onSessionExpired(UUID subjId);
+
+    /**
      * Authorizes grid operation.
      *
      * @param name Cache name or task class name.

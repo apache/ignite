@@ -33,7 +33,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
- * Security tests for cache data load.
+ * Testing permissions when the filter of Load cache is executed cache operations on remote node.
  */
 public class LoadCacheSecurityTest extends AbstractCacheSecurityTest {
     /** {@inheritDoc} */
@@ -44,7 +44,7 @@ public class LoadCacheSecurityTest extends AbstractCacheSecurityTest {
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setReadFromBackup(false),
             new CacheConfiguration<Integer, Integer>()
-                .setName(CACHE_READ_ONLY_PERM)
+                .setName(COMMON_USE_CACHE)
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setReadFromBackup(false)
                 .setCacheStoreFactory(new TestStoreFactory())
@@ -72,7 +72,7 @@ public class LoadCacheSecurityTest extends AbstractCacheSecurityTest {
     private void load(IgniteEx initiator, IgniteEx remote, T2<String, Integer> entry) {
         assert !remote.localNode().isClient();
 
-        initiator.<Integer, Integer>cache(CACHE_READ_ONLY_PERM).loadCache(
+        initiator.<Integer, Integer>cache(COMMON_USE_CACHE).loadCache(
             new TestClosure(remote.localNode().id(), entry.getKey(), entry.getValue())
         );
     }

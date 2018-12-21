@@ -17,107 +17,60 @@
 
 package org.apache.ignite.internal.processor.security.compute;
 
-import java.util.Collection;
+import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgniteRunnable;
-
-import static org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL;
-import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
+import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
 
 /**
  * Test task execute permission for compute broadcast.
  */
 public class TaskExecutePermissionForDistributedClosureTest extends AbstractTaskExecutePermissionTest {
-    /** Allowed runnable. */
-    private static final IgniteRunnable ALLOWED_RUNNABLE = () -> JINGLE_BELL.set(true);
-
-    /** Forbidden runnable. */
-    private static final IgniteRunnable FORBIDDEN_RUNNABLE = () -> fail("Should not be invoked.");
-
-    /** Allow closure. */
-    private static final IgniteClosure<Object, Object> ALLOW_CLOSURE = a -> {
-        JINGLE_BELL.set(true);
+    /** Test callable. */
+    protected static final IgniteCallable<Object> TEST_CALLABLE = () -> {
+        IS_EXECUTED.set(true);
 
         return null;
     };
 
-    /** Forbidden closure. */
-    private static final IgniteClosure<Object, Object> FORBIDDEN_CLOSURE = a -> {
-        fail("Should not be invoked.");
+    /** Test runnable. */
+    private static final IgniteRunnable TEST_RUNNABLE = () -> IS_EXECUTED.set(true);
+
+    /** Test closure. */
+    private static final IgniteClosure<Object, Object> TEST_CLOSURE = a -> {
+        IS_EXECUTED.set(true);
 
         return null;
     };
 
-
     /** {@inheritDoc} */
-    @Override protected void testExecute(boolean isClient) throws Exception {
-        Ignite node = startGrid(loginPrefix(isClient) + "_node",
-            builder().defaultAllowAll(true)
-                .appendTaskPermissions(ALLOWED_CALLABLE.getClass().getName(), TASK_EXECUTE)
-                .appendTaskPermissions(FORBIDDEN_CALLABLE.getClass().getName(), EMPTY_PERMS)
-                .appendTaskPermissions(ALLOWED_RUNNABLE.getClass().getName(), TASK_EXECUTE)
-                .appendTaskPermissions(FORBIDDEN_RUNNABLE.getClass().getName(), EMPTY_PERMS)
-                .appendTaskPermissions(ALLOW_CLOSURE.getClass().getName(), TASK_EXECUTE)
-                .appendTaskPermissions(FORBIDDEN_CLOSURE.getClass().getName(), EMPTY_PERMS)
-                .build(), isClient
-        );
-
-        allowRun(() -> node.compute().broadcast(ALLOWED_CALLABLE));
-        forbiddenRun(() -> node.compute().broadcast(FORBIDDEN_CALLABLE));
-
-        allowRun(() -> node.compute().broadcastAsync(ALLOWED_CALLABLE).get());
-        forbiddenRun(() -> node.compute().broadcastAsync(FORBIDDEN_CALLABLE).get());
-
-        allowRun(() -> node.compute().call(ALLOWED_CALLABLE));
-        forbiddenRun(() -> node.compute().call(FORBIDDEN_CALLABLE));
-
-        allowRun(() -> node.compute().callAsync(ALLOWED_CALLABLE).get());
-        forbiddenRun(() -> node.compute().callAsync(FORBIDDEN_CALLABLE).get());
-
-        allowRun(() -> node.compute().run(ALLOWED_RUNNABLE));
-        forbiddenRun(() -> node.compute().run(FORBIDDEN_RUNNABLE));
-
-        allowRun(() -> node.compute().runAsync(ALLOWED_RUNNABLE).get());
-        forbiddenRun(() -> node.compute().runAsync(FORBIDDEN_RUNNABLE).get());
-
-        Object arg = new Object();
-
-        allowRun(() -> node.compute().apply(ALLOW_CLOSURE, arg));
-        forbiddenRun(() -> node.compute().apply(FORBIDDEN_CLOSURE, arg));
-
-        allowRun(() -> node.compute().applyAsync(ALLOW_CLOSURE, arg).get());
-        forbiddenRun(() -> node.compute().applyAsync(FORBIDDEN_CLOSURE, arg).get());
+    @Override protected Supplier<FutureAdapter> cancelSupplier(Ignite node) {
+        return () -> new FutureAdapter(node.compute().broadcastAsync(TEST_CALLABLE));
     }
 
     /** {@inheritDoc} */
-    @Override protected void testAllowedCancel(boolean isClient) throws Exception {
-        Ignite node = startGrid(loginPrefix(isClient) + "_allowed_cancel",
-            builder().defaultAllowAll(true)
-                .appendTaskPermissions(ALLOWED_CALLABLE.getClass().getName(), TASK_EXECUTE, TASK_CANCEL)
-                .build(), isClient
-        );
-
-        IgniteFuture<Collection<Object>> f = node.compute().broadcastAsync(ALLOWED_CALLABLE);
-
-        f.cancel();
-
-        forbiddenRun(f::get, IgniteFutureCancelledException.class);
+    @Override protected TestRunnable[] runnables(Ignite node) {
+        return new TestRunnable[]{
+            () -> node.compute().broadcast(TEST_CALLABLE),
+            () -> node.compute().broadcastAsync(TEST_CALLABLE).get(),
+            () -> node.compute().call(TEST_CALLABLE),
+            () -> node.compute().callAsync(TEST_CALLABLE).get(),
+            () -> node.compute().run(TEST_RUNNABLE),
+            () -> node.compute().runAsync(TEST_RUNNABLE).get(),
+            () -> node.compute().apply(TEST_CLOSURE, new Object()),
+            () -> node.compute().applyAsync(TEST_CLOSURE, new Object()).get()
+        };
     }
 
-
     /** {@inheritDoc} */
-    @Override protected void testForbiddenCancel(boolean isClient) throws Exception {
-        Ignite node = startGrid("client_forbidden_cancel",
-            builder().defaultAllowAll(true)
-                .appendTaskPermissions(ALLOWED_CALLABLE.getClass().getName(), TASK_EXECUTE)
-                .build(), isClient
-        );
-
-        IgniteFuture<Collection<Object>> f = node.compute().broadcastAsync(ALLOWED_CALLABLE);
-
-        forbiddenRun(f::cancel);
+    @Override protected SecurityPermissionSet permissions(SecurityPermission... perms) {
+        return builder().defaultAllowAll(true)
+            .appendTaskPermissions(TEST_CALLABLE.getClass().getName(), perms)
+            .appendTaskPermissions(TEST_RUNNABLE.getClass().getName(), perms)
+            .appendTaskPermissions(TEST_CLOSURE.getClass().getName(), perms)
+            .build();
     }
 }

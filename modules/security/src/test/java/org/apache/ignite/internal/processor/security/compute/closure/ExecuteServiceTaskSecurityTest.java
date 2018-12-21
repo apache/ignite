@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteRunnable;
 
 /**
- * Security tests for an execute server task.
+ * Testing permissions when the service task is executed cache operations on remote node.
  */
 public class ExecuteServiceTaskSecurityTest extends AbstractResolveSecurityContextTest {
     /**
