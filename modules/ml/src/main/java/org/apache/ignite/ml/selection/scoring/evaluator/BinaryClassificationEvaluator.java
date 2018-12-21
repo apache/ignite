@@ -49,7 +49,6 @@ public class BinaryClassificationEvaluator {
                                             IgniteBiFunction<K, V, Vector> featureExtractor,
                                             IgniteBiFunction<K, V, L> lbExtractor,
                                             Metric<L> metric) {
-
         return calculateMetric(dataCache, null, mdl, featureExtractor, lbExtractor, metric);
     }
 
@@ -72,7 +71,6 @@ public class BinaryClassificationEvaluator {
                                             IgniteBiFunction<K, V, Vector> featureExtractor,
                                             IgniteBiFunction<K, V, L> lbExtractor,
                                             Metric<L> metric) {
-
         return calculateMetric(dataCache, filter, mdl, featureExtractor, lbExtractor, metric);
     }
 
@@ -140,7 +138,7 @@ public class BinaryClassificationEvaluator {
             lbExtractor,
             mdl
         )) {
-            metricValues = binaryMetrics.score(cursor.iterator());
+            metricValues = binaryMetrics.scoreAll(cursor.iterator());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -163,8 +161,8 @@ public class BinaryClassificationEvaluator {
      * @return Computed metric.
      */
     private static <L, K, V> double calculateMetric(IgniteCache<K, V> dataCache, IgniteBiPredicate<K, V> filter,
-                                                    Model<Vector, L> mdl, IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
-                                                    Metric<L> metric) {
+                                                    Model<Vector, L> mdl, IgniteBiFunction<K, V, Vector> featureExtractor,
+                                                    IgniteBiFunction<K, V, L> lbExtractor, Metric<L> metric) {
         double metricRes;
 
         try (LabelPairCursor<L> cursor = new CacheBasedLabelPairCursor<>(
