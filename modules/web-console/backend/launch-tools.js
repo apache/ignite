@@ -62,7 +62,7 @@ const init = ([settings, apiSrv, agentsHnd, browsersHnd]) => {
     if (sslOptions) {
         console.log(_.isString(sslOptions.passphrase));
         console.log(typeof sslOptions.passphrase);
-        console.log(Json.stringify(sslOptions));
+        console.log(JSON.stringify(sslOptions));
     }
 
     const srv = sslOptions ? https.createServer(sslOptions) : http.createServer();
