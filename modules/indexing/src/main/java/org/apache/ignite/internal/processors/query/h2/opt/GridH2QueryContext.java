@@ -47,10 +47,10 @@ public class GridH2QueryContext {
     private static final ThreadLocal<GridH2QueryContext> qctx = new ThreadLocal<>();
 
     /** */
-    private static final ConcurrentMap<Key, GridH2QueryContext> qctxs = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<QueryContextKey, GridH2QueryContext> qctxs = new ConcurrentHashMap<>();
 
     /** */
-    private final Key key;
+    private final QueryContextKey key;
 
     /** */
     private volatile boolean cleared;
@@ -103,7 +103,7 @@ public class GridH2QueryContext {
     public GridH2QueryContext(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
         assert type != MAP;
 
-        key = new Key(locNodeId, nodeId, qryId, 0, type);
+        key = new QueryContextKey(locNodeId, nodeId, qryId, 0, type);
     }
 
     /**
@@ -120,7 +120,7 @@ public class GridH2QueryContext {
         GridH2QueryType type) {
         assert segmentId == 0 || type == MAP;
 
-        key = new Key(locNodeId, nodeId, qryId, segmentId, type);
+        key = new QueryContextKey(locNodeId, nodeId, qryId, segmentId, type);
     }
 
     /**
@@ -144,21 +144,21 @@ public class GridH2QueryContext {
      * @return Type.
      */
     public GridH2QueryType type() {
-        return key.type;
+        return key.type();
     }
 
     /**
      * @return Origin node ID.
      */
     public UUID originNodeId() {
-        return key.nodeId;
+        return key.nodeId();
     }
 
     /**
      * @return Query request ID.
      */
     public long queryId() {
-        return key.qryId;
+        return key.queryId();
     }
 
     /**
@@ -271,7 +271,7 @@ public class GridH2QueryContext {
 
     /** @return index segment ID. */
     public int segment() {
-        return key.segmentId;
+        return key.segmentId();
     }
 
     /**
@@ -354,7 +354,7 @@ public class GridH2QueryContext {
          assert qctx.get() == null;
 
          // We need MAP query context to be available to other threads to run distributed joins.
-         if (x.key.type == MAP && x.distributedJoinMode() != OFF && qctxs.putIfAbsent(x.key, x) != null)
+         if (x.key.type() == MAP && x.distributedJoinMode() != OFF && qctxs.putIfAbsent(x.key, x) != null)
              throw new IllegalStateException("Query context is already set.");
 
          qctx.set(x);
@@ -381,8 +381,12 @@ public class GridH2QueryContext {
     public static boolean clear(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
         boolean res = false;
 
-        for (Key key : qctxs.keySet()) {
-            if (key.locNodeId.equals(locNodeId) && key.nodeId.equals(nodeId) && key.qryId == qryId && key.type == type)
+        for (QueryContextKey key : qctxs.keySet()) {
+            if (key.localNodeId().equals(locNodeId) &&
+                key.nodeId().equals(nodeId) &&
+                key.queryId() == qryId &&
+                key.type() == type
+            )
                 res |= doClear(key, false);
         }
 
@@ -394,8 +398,8 @@ public class GridH2QueryContext {
      * @param nodeStop Node is stopping.
      * @return {@code True} if context was found.
      */
-    private static boolean doClear(Key key, boolean nodeStop) {
-        assert key.type == MAP : key.type;
+    private static boolean doClear(QueryContextKey key, boolean nodeStop) {
+        assert key.type() == MAP : key.type();
 
         GridH2QueryContext x = qctxs.remove(key);
 
@@ -439,8 +443,8 @@ public class GridH2QueryContext {
      * @param nodeId Dead node ID.
      */
     public static void clearAfterDeadNode(UUID locNodeId, UUID nodeId) {
-        for (Key key : qctxs.keySet()) {
-            if (key.locNodeId.equals(locNodeId) && key.nodeId.equals(nodeId))
+        for (QueryContextKey key : qctxs.keySet()) {
+            if (key.localNodeId().equals(locNodeId) && key.nodeId().equals(nodeId))
                 doClear(key, false);
         }
     }
@@ -449,8 +453,8 @@ public class GridH2QueryContext {
      * @param locNodeId Local node ID.
      */
     public static void clearLocalNodeStop(UUID locNodeId) {
-        for (Key key : qctxs.keySet()) {
-            if (key.locNodeId.equals(locNodeId))
+        for (QueryContextKey key : qctxs.keySet()) {
+            if (key.localNodeId().equals(locNodeId))
                 doClear(key, true);
         }
     }
@@ -481,7 +485,7 @@ public class GridH2QueryContext {
         int segmentId,
         GridH2QueryType type
     ) {
-        return qctxs.get(new Key(locNodeId, nodeId, qryId, segmentId, type));
+        return qctxs.get(new QueryContextKey(locNodeId, nodeId, qryId, segmentId, type));
     }
 
     /**
@@ -538,76 +542,6 @@ public class GridH2QueryContext {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridH2QueryContext.class, this);
-    }
-
-    /**
-     * Unique key for the query context.
-     */
-    private static class Key {
-        /** */
-        private final UUID locNodeId;
-
-        /** */
-        private final UUID nodeId;
-
-        /** */
-        private final long qryId;
-
-        /** */
-        private final int segmentId;
-
-        /** */
-        private final GridH2QueryType type;
-
-        /**
-         * @param locNodeId Local node ID.
-         * @param nodeId The node who initiated the query.
-         * @param qryId The query ID.
-         * @param segmentId Index segment ID.
-         * @param type Query type.
-         */
-        private Key(UUID locNodeId, UUID nodeId, long qryId, int segmentId, GridH2QueryType type) {
-            assert locNodeId != null;
-            assert nodeId != null;
-            assert type != null;
-
-            this.locNodeId = locNodeId;
-            this.nodeId = nodeId;
-            this.qryId = qryId;
-            this.segmentId = segmentId;
-            this.type = type;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            Key key = (Key)o;
-
-            return qryId == key.qryId && nodeId.equals(key.nodeId) && type == key.type &&
-               locNodeId.equals(key.locNodeId) ;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            int res = locNodeId.hashCode();
-
-            res = 31 * res + nodeId.hashCode();
-            res = 31 * res + (int)(qryId ^ (qryId >>> 32));
-            res = 31 * res + type.hashCode();
-            res = 31 * res + segmentId;
-
-            return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(Key.class, this);
-        }
     }
 
 }
