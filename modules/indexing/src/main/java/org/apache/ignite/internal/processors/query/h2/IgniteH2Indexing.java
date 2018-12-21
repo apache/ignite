@@ -1748,21 +1748,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 loc = parser.isLocalQuery();
             }
 
-            if (loc) {
-                if (parser == null) {
-                    parser = new GridSqlQueryParser(false);
-
-                    parser.parse(prepared);
-                }
-
-                GridCacheContext cctx = parser.getFirstPartitionedCache();
-
-                if (cctx != null && cctx.config().getQueryParallelism() > 1) {
-                    loc = false;
-
-                    qry.setDistributedJoins(true);
-                }
-            }
+            if (loc)
+                qry.setDistributedJoins(false);
         }
 
         SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(prepared.getSQL()).setArgs(args);
@@ -1886,24 +1873,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             fldsQry.setArgs(params);
 
         fldsQry.setEnforceJoinOrder(isFlagSet(flags, GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER));
+        fldsQry.setDistributedJoins(isFlagSet(flags, GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS));
         fldsQry.setTimeout(timeout, TimeUnit.MILLISECONDS);
         fldsQry.setPageSize(pageSize);
-        fldsQry.setLocal(true);
 
-        boolean loc = true;
+        boolean replicated = isFlagSet(flags, GridH2QueryRequest.FLAG_REPLICATED);
 
-        final boolean replicated = isFlagSet(flags, GridH2QueryRequest.FLAG_REPLICATED);
+        boolean loc =
+            replicated ||
+            F.isEmpty(ids) ||
+            CU.firstPartitioned(cctx.shared(), ids) == null;
 
-        GridCacheContext<?, ?> cctx0;
+        fldsQry.setLocal(loc);
 
-        if (!replicated
-            && !F.isEmpty(ids)
-            && (cctx0 = CU.firstPartitioned(cctx.shared(), ids)) != null
-            && cctx0.config().getQueryParallelism() > 1) {
-            fldsQry.setDistributedJoins(true);
-
-            loc = false;
-        }
+        if (loc)
+            fldsQry.setDistributedJoins(false);
 
         Connection conn = connMgr.connectionForThread(schema);
 
