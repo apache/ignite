@@ -27,11 +27,15 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Multi splits redeploy load test.
  */
 @GridCommonTest(group = "Load Test")
+@RunWith(JUnit4.class)
 public class GridMultiSplitsRedeployLoadTest extends GridCommonAbstractTest {
     /** Load test task type ID. */
     public static final String TASK_TYPE_ID = GridLoadTestTask.class.getName();
@@ -42,7 +46,6 @@ public class GridMultiSplitsRedeployLoadTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration cfg = super.getConfiguration();
 
@@ -75,6 +78,7 @@ public class GridMultiSplitsRedeployLoadTest extends GridCommonAbstractTest {
      *
      * @throws Exception If task execution failed.
      */
+    @Test
     public void testLoad() throws Exception {
         final Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -140,7 +144,6 @@ public class GridMultiSplitsRedeployLoadTest extends GridCommonAbstractTest {
     /**
      * @param ignite Grid.
      */
-    @SuppressWarnings("unchecked")
     private void deployTask(Ignite ignite) {
         ignite.compute().localDeployTask(GridLoadTestTask.class, GridLoadTestTask.class.getClassLoader());
     }

@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.TreeMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -29,12 +30,16 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -43,6 +48,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 /**
  * Tests explicit lock.
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE_NAME = "part_cache";
@@ -55,6 +61,17 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
 
     /** */
     private boolean client;
+
+    /** Unexpected lock error. */
+    private volatile Throwable err;
+
+    /** {@inheritDoc} */
+    @Before
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+
+        super.setUp();
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -95,6 +112,7 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExplicitLockOneKey() throws Exception {
         checkExplicitLock(1, false);
     }
@@ -102,6 +120,7 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExplicitLockManyKeys() throws Exception {
         checkExplicitLock(4, false);
     }
@@ -109,6 +128,7 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExplicitLockManyKeysWithClient() throws Exception {
         checkExplicitLock(4, true);
     }
@@ -120,6 +140,8 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
      */
     public void checkExplicitLock(int keys, boolean testClient) throws Exception {
         Collection<Thread> threads = new ArrayList<>();
+
+        err = null;
 
         try {
             // Start grid 1.
@@ -172,6 +194,8 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
 
                 assertEquals("txMap is not empty:" + i, 0, tm.idMapSize());
             }
+
+            assertNull(err);
         }
         finally {
             stopAllGrids();
@@ -198,7 +222,6 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
      * @param keys Number of keys.
      * @return Running thread.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     private Thread runCacheOperations(final IgniteInternalCache<Object,Object> cache, final int keys) {
         Thread t = new Thread() {
             @Override public void run() {
@@ -216,7 +239,7 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
                             else
                                 cache.removeAll(vals.keySet());
                         }
-                        catch (Exception e) {
+                        catch (IgniteCheckedException e) {
                             U.error(log(), "Failed cache operation.", e);
                         }
                         finally {
@@ -225,8 +248,12 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
 
                         U.sleep(100);
                     }
-                    catch (Exception e){
+                    catch (Throwable e){
                         U.error(log(), "Failed unlock.", e);
+
+                        err = e;
+
+                        return;
                     }
                 }
             }

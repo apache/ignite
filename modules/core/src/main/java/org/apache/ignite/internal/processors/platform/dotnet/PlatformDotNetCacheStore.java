@@ -228,7 +228,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(final IgniteBiInClosure<K, V> clo, final @Nullable Object... args) {
+    @Override public void loadCache(final IgniteBiInClosure<K, V> clo, @Nullable final Object... args) {
         try {
             doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
                 @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
@@ -270,7 +270,6 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"NullableProblems", "unchecked"})
     @Override public void writeAll(final Collection<Cache.Entry<? extends K, ? extends V>> entries) {
         assert entries != null;
         try {

@@ -60,7 +60,7 @@ public class TensorFlowServerManager extends ProcessManagerWrapper<NativeProcess
         return new NativeProcess(
             new TensorFlowProcessBuilderSupplier(
                 true,
-                spec.getTaskIdx(),
+                true,
                 "job:" + spec.getJobName(),
                 "task:" + spec.getTaskIdx()
             ),

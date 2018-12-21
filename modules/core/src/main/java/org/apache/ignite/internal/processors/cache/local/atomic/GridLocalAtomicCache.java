@@ -122,7 +122,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected V getAndPut0(K key, V val, @Nullable CacheEntryPredicate filter) throws IgniteCheckedException {
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
@@ -233,7 +232,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void removeAll0(Collection<? extends K> keys) throws IgniteCheckedException {
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
@@ -256,7 +254,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public boolean remove0(K key, final CacheEntryPredicate filter) throws IgniteCheckedException {
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
@@ -295,7 +292,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected V get0(
         final K key,
         String taskName,
@@ -314,7 +310,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public final Map<K, V> getAll0(Collection<? extends K> keys, boolean deserializeBinary, boolean needVer)
         throws IgniteCheckedException {
         A.notNull(keys, "keys");
@@ -426,6 +421,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
                         if (evt) {
                             ctx.events().readEvent(cacheKey,
+                                null,
                                 null,
                                 row.value(),
                                 subjId,
@@ -674,7 +670,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(
         Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
         Object... args) throws IgniteCheckedException {
@@ -1347,7 +1342,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
      * @param transformed {@code True} if transform operation performed.
      * @return Partial update exception.
      */
-    @SuppressWarnings({"unchecked", "ConstantConditions", "ForLoopReplaceableByForEach"})
+    @SuppressWarnings({"unchecked", "ConstantConditions"})
     @Nullable private CachePartialUpdateCheckedException updatePartialBatch(
         List<GridCacheEntryEx> entries,
         final GridCacheVersion ver,
@@ -1555,7 +1550,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys,
         long timeout) {
         return new GridFinishedFuture<>(new UnsupportedOperationException("Locks are not supported for " +
@@ -1563,7 +1557,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void unlockAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
         throw new UnsupportedOperationException("Locks are not supported for " +
             "CacheAtomicityMode.ATOMIC mode (use CacheAtomicityMode.TRANSACTIONAL instead)");

@@ -34,7 +34,6 @@ import java.util.UUID;
 /**
  * Web session state data.
  */
-@SuppressWarnings({"ReturnOfDateField", "AssignmentToDateFieldFromParameter"})
 public class PlatformDotNetSessionData implements Binarylizable {
     /** Items. */
     private Map<String, byte[]> items;

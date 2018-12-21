@@ -56,7 +56,6 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 class IgfsIpcHandler implements IgfsServerHandler {
     /** For test purposes only. */
-    @SuppressWarnings("UnusedDeclaration")
     private static boolean errWrite;
 
     /** Kernal context. */

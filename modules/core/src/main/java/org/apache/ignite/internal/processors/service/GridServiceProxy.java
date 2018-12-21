@@ -104,7 +104,6 @@ public class GridServiceProxy<T> implements Serializable {
      * @param timeout Service availability wait timeout. Cannot be negative.
      * @param ctx Context.
      */
-    @SuppressWarnings("unchecked")
     public GridServiceProxy(ClusterGroup prj,
         String name,
         Class<? super T> svc,
@@ -370,7 +369,6 @@ public class GridServiceProxy<T> implements Serializable {
     private class ProxyInvocationHandler implements InvocationHandler {
 
         /** {@inheritDoc} */
-        @SuppressWarnings("BusyWait")
         @Override public Object invoke(Object proxy, final Method mtd, final Object[] args) throws Throwable {
             return invokeMethod(mtd, args);
         }

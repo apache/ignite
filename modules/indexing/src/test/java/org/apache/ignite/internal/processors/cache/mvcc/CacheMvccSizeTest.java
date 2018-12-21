@@ -34,12 +34,16 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CachePeekMode.BACKUP;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
@@ -100,6 +104,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testSql() throws Exception {
         startGridsMultiThreaded(2);
 
@@ -127,7 +132,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
                     }
                 }
             },
-            true, 0);
+            false, 0);
 
         checkSizeModificationByOperation("merge into person(id, name) values(1, 'a')", true, 1);
 
@@ -215,6 +220,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteConcurrent() throws Exception {
         startGridsMultiThreaded(2);
 
@@ -263,6 +269,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWriteConflictDoesNotChangeSize() throws Exception {
         startGridsMultiThreaded(2);
 
@@ -298,7 +305,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
         }
         catch (Exception e) {
             if (e.getCause().getCause() instanceof IgniteSQLException)
-                assertTrue(e.getMessage().toLowerCase().contains("version mismatch"));
+                assertTrue(e.getMessage().contains("Failed to finish transaction because it has been rolled back"));
             else {
                 e.printStackTrace();
 
@@ -316,6 +323,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testDeleteChangesSizeAfterUnlock() throws Exception {
         startGridsMultiThreaded(2);
 
@@ -362,6 +370,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testDataStreamerModifiesReplicatedCacheSize() throws Exception {
         startGridsMultiThreaded(2);
 
@@ -391,6 +400,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testSizeIsConsistentAfterRebalance() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -415,6 +425,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSizeIsConsistentAfterRebalanceDuringInsert() throws Exception {
         IgniteEx ignite = startGrid(0);
 

@@ -183,7 +183,6 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
     @Override public void onMessage(final GridNioSession ses, final GridClientMessage msg) {
         if (msg instanceof GridMemcachedMessage)
             memcachedLsnr.onMessage(ses, (GridMemcachedMessage)msg);

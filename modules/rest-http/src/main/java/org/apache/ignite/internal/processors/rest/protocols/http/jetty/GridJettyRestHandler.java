@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.request.DataStructuresRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestBaselineRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestChangeStateRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestLogRequest;
@@ -633,6 +634,7 @@ public class GridJettyRestHandler extends AbstractHandler {
             case CACHE_CAS:
             case CACHE_METRICS:
             case CACHE_SIZE:
+            case CACHE_UPDATE_TLL:
             case CACHE_METADATA:
             case CACHE_REPLACE:
             case CACHE_APPEND:
@@ -688,6 +690,9 @@ public class GridJettyRestHandler extends AbstractHandler {
 
                 restReq0.includeMetrics(Boolean.parseBoolean((String)params.get("mtr")));
                 restReq0.includeAttributes(Boolean.parseBoolean((String)params.get("attr")));
+
+                String caches = (String)params.get("caches");
+                restReq0.includeCaches(caches == null || Boolean.parseBoolean(caches));
 
                 restReq0.nodeIp((String)params.get("ip"));
 
@@ -750,6 +755,20 @@ public class GridJettyRestHandler extends AbstractHandler {
                     restReq0.active(true);
                 else
                     restReq0.active(false);
+
+                restReq = restReq0;
+
+                break;
+            }
+
+            case BASELINE_CURRENT_STATE:
+            case BASELINE_SET:
+            case BASELINE_ADD:
+            case BASELINE_REMOVE: {
+                GridRestBaselineRequest restReq0 = new GridRestBaselineRequest();
+
+                restReq0.topologyVersion(longValue("topVer", params, null));
+                restReq0.consistentIds(values(null, "consistentId", params));
 
                 restReq = restReq0;
 
@@ -976,7 +995,6 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @param req Request.
      * @return Map of parsed parameters.
      */
-    @SuppressWarnings({"unchecked"})
     private Map<String, Object> parameters(ServletRequest req) {
         Map<String, String[]> params = req.getParameterMap();
 

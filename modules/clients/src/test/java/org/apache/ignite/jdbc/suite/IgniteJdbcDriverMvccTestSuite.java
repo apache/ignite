@@ -17,30 +17,35 @@
 
 package org.apache.ignite.jdbc.suite;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
+import org.apache.ignite.jdbc.JdbcVersionMismatchSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionMvccEnabledSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsClientAutoCommitComplexSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsClientNoAutoCommitComplexSelfTest;
-import org.apache.ignite.jdbc.thin.JdbcThinTransactionsWithMvccEnabledSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsServerAutoCommitComplexSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsServerNoAutoCommitComplexSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinTransactionsWithMvccEnabledSelfTest;
+import org.apache.ignite.jdbc.thin.MvccJdbcTransactionFinishOnDeactivatedClusterSelfTest;
 
+/** */
 public class IgniteJdbcDriverMvccTestSuite extends TestSuite {
     /**
      * @return JDBC Driver Test Suite.
-     * @throws Exception In case of error.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite JDBC Driver Test Suite");
 
-        suite.addTest(new TestSuite(JdbcThinConnectionMvccEnabledSelfTest.class));
-        
+        suite.addTest(new JUnit4TestAdapter(JdbcThinConnectionMvccEnabledSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(JdbcVersionMismatchSelfTest.class));
+
         // Transactions
-        suite.addTest(new TestSuite(JdbcThinTransactionsWithMvccEnabledSelfTest.class));
-        suite.addTest(new TestSuite(JdbcThinTransactionsClientAutoCommitComplexSelfTest.class));
-        suite.addTest(new TestSuite(JdbcThinTransactionsServerAutoCommitComplexSelfTest.class));
-        suite.addTest(new TestSuite(JdbcThinTransactionsClientNoAutoCommitComplexSelfTest.class));
-        suite.addTest(new TestSuite(JdbcThinTransactionsServerNoAutoCommitComplexSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(JdbcThinTransactionsWithMvccEnabledSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(JdbcThinTransactionsClientAutoCommitComplexSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(JdbcThinTransactionsServerAutoCommitComplexSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(JdbcThinTransactionsClientNoAutoCommitComplexSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(JdbcThinTransactionsServerNoAutoCommitComplexSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(MvccJdbcTransactionFinishOnDeactivatedClusterSelfTest.class));
 
         return suite;
     }

@@ -53,21 +53,15 @@ public class GridRedisFlushCommandHandler extends GridRedisRestCommandHandler {
         FLUSHALL
     );
 
-    /** Grid context. */
-    private final GridKernalContext ctx;
-
     /**
      * Handler constructor.
      *
      * @param log Logger to use.
      * @param hnd Rest handler.
-     * @param ctx Context.
+     * @param ctx Kernal context.
      */
-    public GridRedisFlushCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd,
-        GridKernalContext ctx) {
-        super(log, hnd);
-
-        this.ctx = ctx;
+    public GridRedisFlushCommandHandler(IgniteLogger log, GridRestProtocolHandler hnd, GridKernalContext ctx) {
+        super(log, hnd, ctx);
     }
 
     /** {@inheritDoc} */

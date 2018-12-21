@@ -24,12 +24,16 @@ import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@SuppressWarnings({"JUnitTestClassNamingConvention", "ProhibitedExceptionDeclared"})
+@SuppressWarnings({"ProhibitedExceptionDeclared"})
 @GridCommonTest(group = "P2P")
+@RunWith(JUnit4.class)
 public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
     /** Task name. */
     private static final String TASK_NAME = "org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1";
@@ -164,6 +168,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSameClassLoaderIsolatedMode() throws Exception {
         processTestHotRedeployment(DeploymentMode.PRIVATE);
     }
@@ -173,6 +178,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSameClassLoaderIsolatedClassLoaderMode() throws Exception {
         processTestHotRedeployment(DeploymentMode.ISOLATED);
     }
@@ -182,6 +188,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSameClassLoaderContinuousMode() throws Exception {
         processTestHotRedeployment(DeploymentMode.CONTINUOUS);
     }
@@ -191,6 +198,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSameClassLoaderSharedMode() throws Exception {
         processTestHotRedeployment(DeploymentMode.SHARED);
     }
@@ -200,6 +208,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testNewClassLoaderHotRedeploymentPrivateMode() throws Exception {
         processTestClassLoaderHotRedeployment(DeploymentMode.PRIVATE);
     }
@@ -209,6 +218,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testNewClassLoaderHotRedeploymentIsolatedMode() throws Exception {
         processTestClassLoaderHotRedeployment(DeploymentMode.ISOLATED);
     }
@@ -218,6 +228,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testNewClassLoaderHotRedeploymentContinuousMode() throws Exception {
         processTestClassLoaderHotRedeployment(DeploymentMode.CONTINUOUS);
     }
@@ -227,6 +238,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testNewClassLoaderHotRedeploymentSharedMode() throws Exception {
         processTestClassLoaderHotRedeployment(DeploymentMode.SHARED);
     }

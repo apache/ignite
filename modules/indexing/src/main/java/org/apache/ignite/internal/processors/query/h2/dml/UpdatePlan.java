@@ -34,9 +34,9 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
+import org.apache.ignite.internal.processors.query.h2.ConnectionManager;
 import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.ObjectPoolReusable;
+import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPool;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -485,20 +485,20 @@ public final class UpdatePlan {
     /**
      * Create iterator for transaction.
      *
-     * @param idx Indexing.
+     * @param connMgr Connection manager.
      * @param cur Cursor.
      * @return Iterator.
      */
-    public UpdateSourceIterator<?> iteratorForTransaction(IgniteH2Indexing idx, QueryCursor<List<?>> cur) {
+    public UpdateSourceIterator<?> iteratorForTransaction(ConnectionManager connMgr, QueryCursor<List<?>> cur) {
         switch (mode) {
             case MERGE:
-                return new InsertIterator(idx, cur, this, EnlistOperation.UPSERT);
+                return new InsertIterator(connMgr, cur, this, EnlistOperation.UPSERT);
             case INSERT:
-                return new InsertIterator(idx, cur, this, EnlistOperation.INSERT);
+                return new InsertIterator(connMgr, cur, this, EnlistOperation.INSERT);
             case UPDATE:
-                return new UpdateIterator(idx, cur, this, EnlistOperation.UPDATE);
+                return new UpdateIterator(connMgr, cur, this, EnlistOperation.UPDATE);
             case DELETE:
-                return new DeleteIterator(idx, cur, this, EnlistOperation.DELETE);
+                return new DeleteIterator(connMgr, cur, this, EnlistOperation.DELETE);
 
             default:
                 throw new IllegalArgumentException(String.valueOf(mode));
@@ -535,7 +535,7 @@ public final class UpdatePlan {
      * @return Cache context.
      */
     public GridCacheContext cacheContext() {
-        return tbl.cache();
+        return tbl.cacheContext();
     }
 
     /**
@@ -608,7 +608,7 @@ public final class UpdatePlan {
     private abstract static class AbstractIterator extends GridCloseableIteratorAdapterEx<Object>
         implements UpdateSourceIterator<Object> {
         /** */
-        private final IgniteH2Indexing idx;
+        private final ConnectionManager connMgr;
 
         /** */
         private final QueryCursor<List<?>> cur;
@@ -623,16 +623,17 @@ public final class UpdatePlan {
         private final EnlistOperation op;
 
         /** */
-        private volatile ObjectPoolReusable<H2ConnectionWrapper> conn;
+        private volatile ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> conn;
 
         /**
-         * @param idx Indexing.
+         * @param connMgr Connection manager.
          * @param cur Query cursor.
          * @param plan Update plan.
          * @param op Operation.
          */
-        private AbstractIterator(IgniteH2Indexing idx, QueryCursor<List<?>> cur, UpdatePlan plan, EnlistOperation op) {
-            this.idx = idx;
+        private AbstractIterator(ConnectionManager connMgr, QueryCursor<List<?>> cur, UpdatePlan plan,
+            EnlistOperation op) {
+            this.connMgr = connMgr;
             this.cur = cur;
             this.plan = plan;
             this.op = op;
@@ -647,7 +648,7 @@ public final class UpdatePlan {
 
         /** {@inheritDoc} */
         @Override public void beforeDetach() {
-            ObjectPoolReusable<H2ConnectionWrapper> conn0 = conn = idx.detachConnection();
+            ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> conn0 = conn = connMgr.detachThreadConnection();
 
             if (isClosed())
                 conn0.recycle();
@@ -657,7 +658,7 @@ public final class UpdatePlan {
         @Override protected void onClose() {
             cur.close();
 
-            ObjectPoolReusable<H2ConnectionWrapper> conn0 = conn;
+            ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> conn0 = conn;
 
             if (conn0 != null)
                 conn0.recycle();
@@ -683,13 +684,14 @@ public final class UpdatePlan {
         private static final long serialVersionUID = -4949035950470324961L;
 
         /**
-         * @param idx Indexing.
+         * @param connMgr Connection manager.
          * @param cur Query cursor.
          * @param plan Update plan.
          * @param op Operation.
          */
-        private UpdateIterator(IgniteH2Indexing idx, QueryCursor<List<?>> cur, UpdatePlan plan, EnlistOperation op) {
-            super(idx, cur, plan, op);
+        private UpdateIterator(ConnectionManager connMgr, QueryCursor<List<?>> cur, UpdatePlan plan,
+            EnlistOperation op) {
+            super(connMgr, cur, plan, op);
         }
 
         /** {@inheritDoc} */
@@ -706,13 +708,14 @@ public final class UpdatePlan {
         private static final long serialVersionUID = -4949035950470324961L;
 
         /**
-         * @param idx Indexing.
+         * @param connMgr Connection manager.
          * @param cur Query cursor.
          * @param plan Update plan.
          * @param op Operation.
          */
-        private DeleteIterator(IgniteH2Indexing idx, QueryCursor<List<?>> cur, UpdatePlan plan, EnlistOperation op) {
-            super(idx, cur, plan, op);
+        private DeleteIterator(ConnectionManager connMgr, QueryCursor<List<?>> cur, UpdatePlan plan,
+            EnlistOperation op) {
+            super(connMgr, cur, plan, op);
         }
 
         /** {@inheritDoc} */
@@ -727,13 +730,14 @@ public final class UpdatePlan {
         private static final long serialVersionUID = -4949035950470324961L;
 
         /**
-         * @param idx Indexing.
+         * @param connMgr Connection manager.
          * @param cur Query cursor.
          * @param plan Update plan.
          * @param op Operation.
          */
-        private InsertIterator(IgniteH2Indexing idx, QueryCursor<List<?>> cur, UpdatePlan plan, EnlistOperation op) {
-            super(idx, cur, plan, op);
+        private InsertIterator(ConnectionManager connMgr, QueryCursor<List<?>> cur, UpdatePlan plan,
+            EnlistOperation op) {
+            super(connMgr, cur, plan, op);
         }
 
         /** {@inheritDoc} */

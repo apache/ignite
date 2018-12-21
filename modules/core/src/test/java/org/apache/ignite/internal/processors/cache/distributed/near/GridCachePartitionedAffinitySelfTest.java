@@ -42,6 +42,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -53,7 +56,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
 /**
  * Partitioned affinity test.
  */
-@SuppressWarnings({"PointlessArithmeticExpression"})
+@RunWith(JUnit4.class)
 public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest {
     /** Backup count. */
     private static final int BACKUPS = 1;
@@ -112,6 +115,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAffinity() throws Exception {
         waitTopologyUpdate();
 
@@ -158,12 +162,12 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     }
 
     /** @throws Exception If failed. */
-    @SuppressWarnings("BusyWait")
     private void waitTopologyUpdate() throws Exception {
         GridTestUtils.waitTopologyUpdate(DEFAULT_CACHE_NAME, BACKUPS, log());
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAffinityWithPut() throws Exception {
         waitTopologyUpdate();
 

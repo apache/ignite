@@ -58,6 +58,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -67,6 +70,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * interface.
  */
 @GridCommonTest(group = "Task Session")
+@RunWith(JUnit4.class)
 public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /** Total grid count within the cloud. */
     private static final int GRID_CNT = 2;
@@ -145,6 +149,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalJobOnMaster() throws Exception {
         invokeLatch  = new CountDownLatch(1);
         jobLatch = new CountDownLatch(1);
@@ -181,6 +186,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMasterStoppedNormally() throws Exception {
         // Start grids.
         for (int i = 0; i < GRID_CNT; i++)
@@ -206,6 +212,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMasterStoppedAbruptly() throws Exception {
         // Start grids.
         for (int i = 0; i < GRID_CNT; i++)
@@ -233,6 +240,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCannotSendJobExecuteResponse() throws Exception {
         awaitMasterLeaveCallback = false;
 
@@ -271,6 +279,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testApply1() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup grid) {
@@ -282,6 +291,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testApply2() throws Exception {
         testMasterLeaveAwareCallback(2, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup grid) {
@@ -293,6 +303,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testApply3() throws Exception {
         testMasterLeaveAwareCallback(2, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup grid) {
@@ -314,6 +325,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRun1() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
@@ -325,6 +337,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRun2() throws Exception {
         testMasterLeaveAwareCallback(2, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
@@ -336,6 +349,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCall1() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
@@ -347,6 +361,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCall2() throws Exception {
         testMasterLeaveAwareCallback(2, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
@@ -358,6 +373,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCall3() throws Exception {
         testMasterLeaveAwareCallback(2, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
@@ -379,6 +395,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBroadcast1() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
@@ -390,6 +407,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBroadcast2() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
@@ -401,6 +419,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBroadcast3() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
@@ -412,6 +431,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityRun() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
@@ -427,6 +447,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityCall() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {

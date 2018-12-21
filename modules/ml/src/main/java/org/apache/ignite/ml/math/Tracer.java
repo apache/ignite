@@ -53,7 +53,7 @@ public class Tracer {
     /**
      * Continuous red-to-blue color mapping.
      */
-    static private ColorMapper defaultColorMapper(double min, double max) {
+    private static ColorMapper defaultColorMapper(double min, double max) {
         double range = max - min;
 
         return new ColorMapper() {
@@ -76,7 +76,7 @@ public class Tracer {
      * @param vec Vector to map.
      * @return {@link ColorMapper} for the given vector.
      */
-    static private ColorMapper mkVectorColorMapper(Vector vec) {
+    private static ColorMapper mkVectorColorMapper(Vector vec) {
         return defaultColorMapper(vec.minValue(), vec.maxValue());
     }
 
@@ -87,7 +87,7 @@ public class Tracer {
      * @param mtx Matrix to be mapped.
      * @return Color mapper for given matrix.
      */
-    static private ColorMapper mkMatrixColorMapper(Matrix mtx) {
+    private static ColorMapper mkMatrixColorMapper(Matrix mtx) {
         return defaultColorMapper(mtx.minValue(), mtx.maxValue());
     }
 
@@ -148,7 +148,7 @@ public class Tracer {
      * @param fmt Format string for matrix elements in the row.
      * @return String representation of given matrix row according to given format.
      */
-    static private String rowStr(Matrix mtx, int row, String fmt) {
+    private static String rowStr(Matrix mtx, int row, String fmt) {
         StringBuilder buf = new StringBuilder();
 
         boolean first = true;
@@ -333,7 +333,7 @@ public class Tracer {
      * @param clr {@link Color} to paint.
      * @return JSON representation for given value and color.
      */
-    static private String dataColorJson(double d, Color clr) {
+    private static String dataColorJson(double d, Color clr) {
         return "{" +
             "d: " + String.format(LOCALE, "%4f", d) +
             ", r: " + clr.getRed() +
@@ -414,7 +414,7 @@ public class Tracer {
      * @param html HTML content.
      * @throws IOException Thrown in case of any errors.
      */
-    static private void openHtmlFile(String html) throws IOException {
+    private static void openHtmlFile(String html) throws IOException {
         File temp = File.createTempFile(IgniteUuid.randomUuid().toString(), ".html");
 
         BufferedWriter bw = new BufferedWriter(new FileWriter(temp));

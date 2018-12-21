@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.GridTopicExternalizableSelfTest;
 
@@ -30,7 +31,7 @@ public class IgniteExternalizableSelfTestSuite extends TestSuite {
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Externalizable Test Suite");
 
-        suite.addTest(new TestSuite(GridTopicExternalizableSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridTopicExternalizableSelfTest.class));
 
         return suite;
     }

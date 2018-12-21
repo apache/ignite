@@ -40,10 +40,14 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
@@ -56,6 +60,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstractTest {
     /** */
     public static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -112,6 +117,9 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
      * @return Random transaction type.
      */
     protected TransactionConcurrency transactionConcurrency() {
+        if (MvccFeatureChecker.forcedMvcc())
+            return PESSIMISTIC;
+
         ThreadLocalRandom random = ThreadLocalRandom.current();
 
         return random.nextBoolean() ? OPTIMISTIC : PESSIMISTIC;
@@ -121,6 +129,9 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
      * @return Random transaction isolation level.
      */
     protected TransactionIsolation transactionIsolation(){
+        if (MvccFeatureChecker.forcedMvcc())
+            return REPEATABLE_READ;
+
         ThreadLocalRandom random = ThreadLocalRandom.current();
 
         switch (random.nextInt(3)) {
@@ -149,7 +160,11 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10455");
+
         startGrids(4);
 
         client = true;

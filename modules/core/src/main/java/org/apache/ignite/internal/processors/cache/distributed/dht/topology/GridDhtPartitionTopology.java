@@ -25,6 +25,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
@@ -37,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.jetbrains.annotations.Nullable;
 
@@ -77,7 +77,6 @@ public interface GridDhtPartitionTopology {
     public void updateTopologyVersion(
         GridDhtTopologyFuture exchFut,
         DiscoCache discoCache,
-        MvccCoordinator mvccCrd,
         long updateSeq,
         boolean stopping
     ) throws IgniteInterruptedCheckedException;
@@ -327,10 +326,10 @@ public interface GridDhtPartitionTopology {
      * This method should be called on topology coordinator after all partition messages are received.
      *
      * @param resTopVer Exchange result version.
-     * @param discoEvt Discovery event for which we detect lost partitions.
+     * @param discoEvt Discovery event for which we detect lost partitions if {@link EventType#EVT_CACHE_REBALANCE_PART_DATA_LOST} event should be fired.
      * @return {@code True} if partitions state got updated.
      */
-    public boolean detectLostPartitions(AffinityTopologyVersion resTopVer, DiscoveryEvent discoEvt);
+    public boolean detectLostPartitions(AffinityTopologyVersion resTopVer, @Nullable DiscoveryEvent discoEvt);
 
     /**
      * Resets the state of all LOST partitions to OWNING.
@@ -345,11 +344,17 @@ public interface GridDhtPartitionTopology {
     public Collection<Integer> lostPartitions();
 
     /**
+     * Pre-processes partition update counters before exchange.
+     */
+    void finalizeUpdateCounters();
+
+    /**
      * @return Partition update counters.
      */
     public CachePartitionFullCountersMap fullUpdateCounters();
 
     /**
+     * @param skipZeros {@code True} for adding zero counter to map.
      * @return Partition update counters.
      */
     public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros);
@@ -368,9 +373,9 @@ public interface GridDhtPartitionTopology {
     /**
      * Owns all moving partitions for the given topology version.
      *
-     * @param topVer Topology version.
+     * @param rebFinishedTopVer Topology version when rebalancing finished.
      */
-    public void ownMoving(AffinityTopologyVersion topVer);
+    public void ownMoving(AffinityTopologyVersion rebFinishedTopVer);
 
     /**
      * @param part Evicted partition.
@@ -425,6 +430,4 @@ public interface GridDhtPartitionTopology {
      * @param updateRebalanceVer {@code True} if need check rebalance state.
      */
     public void onExchangeDone(GridDhtPartitionsExchangeFuture fut, AffinityAssignment assignment, boolean updateRebalanceVer);
-
-    public MvccCoordinator mvccCoordinator();
 }

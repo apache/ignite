@@ -26,12 +26,18 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -42,9 +48,18 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Single node test for near cache.
  */
+@RunWith(JUnit4.class)
 public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
     /** Cache store. */
     private static TestStore store = new TestStore();
+
+    /** {@inheritDoc} */
+    @Before
+    @Override public void setUp() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
+        super.setUp();
+    }
 
     /**
      *
@@ -80,8 +95,8 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(1);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        cacheCfg.setNearConfiguration(new NearCacheConfiguration());
 
         cacheCfg.setCacheStoreFactory(singletonFactory(store));
         cacheCfg.setReadThrough(true);
@@ -94,6 +109,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testRemove() throws Exception {
         IgniteCache<Object, Object> near = jcache();
 
@@ -122,6 +138,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testReadThrough() throws Exception {
         IgniteCache<Integer, String> near = jcache();
 
@@ -151,7 +168,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"ConstantConditions"})
+    @Test
     public void testOptimisticTxWriteThrough() throws Exception {
         IgniteCache<Object, Object> near = jcache();
         GridCacheAdapter<Integer, String> dht = dht();
@@ -184,6 +201,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSingleLockPut() throws Exception {
         IgniteCache<Integer, String> near = jcache();
 
@@ -206,6 +224,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSingleLock() throws Exception {
         IgniteCache<Integer, String> near = jcache();
 
@@ -237,6 +256,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSingleLockReentry() throws Exception {
         IgniteCache<Integer, String> near = jcache();
 
@@ -281,6 +301,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testTransactionSingleGet() throws Exception {
         IgniteCache<Object, Object> cache = jcache();
 
@@ -300,6 +321,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testTransactionSingleGetRemove() throws Exception {
         IgniteCache<Object, Object> cache = jcache();
 

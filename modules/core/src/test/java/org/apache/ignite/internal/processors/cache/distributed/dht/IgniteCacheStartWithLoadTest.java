@@ -33,21 +33,26 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
     /** */
     static final String CACHE_NAME = "tx_repl";
 
-    @Override
-    protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setConsistentId(igniteInstanceName);
@@ -75,6 +80,7 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testNoRebalanceDuringCacheStart() throws Exception {
         IgniteEx crd = (IgniteEx)startGrids(4);
 
@@ -125,9 +131,8 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
 
                     boolean hasMoving = false;
 
-                    for (int i = 0; i < 4; i++) {
+                    for (int i = 0; i < 4; i++)
                         hasMoving |= grid(i).cachex(CACHE_NAME).context().topology().hasMovingPartitions();
-                    }
 
                     if (hasMoving) {
                         log.error("Cache restarter has been stopped because rebalance is triggered for stable caches.");
@@ -139,7 +144,7 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
 
                     node.destroyCache(tmpCacheName);
 
-                    U.sleep(10_000);
+                    U.sleep(1_000);
                 }
                 catch (Throwable t) {
                     log.warning("Unexpected exception during caches restart.", t);
@@ -147,7 +152,7 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
             }
         });
 
-        U.sleep(60_000);
+        U.sleep(SF.applyLB(60_000, 5_000));
 
         cacheRestartStop.set(true);
         txLoadStop.set(true);

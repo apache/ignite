@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.database;
 import java.io.Serializable;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -40,12 +39,16 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -135,17 +138,19 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
     }
 
     /** */
+    @Test
     public void testDynamicSchemaChangesPersistence() throws Exception {
         checkSchemaStateAfterNodeRestart(false);
     }
 
     /** */
+    @Test
     public void testDynamicSchemaChangesPersistenceWithAliveCluster() throws Exception {
         checkSchemaStateAfterNodeRestart(true);
     }
 
     /** */
-    @SuppressWarnings("unchecked")
+    @Test
     public void testDynamicSchemaChangesPersistenceWithStaticCache() throws Exception {
         IgniteEx node = startGrid(getConfigurationWithStaticCache(getTestIgniteInstanceName(0)));
 

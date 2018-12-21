@@ -811,7 +811,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param prjPred Projection predicate.
      * @return Future.
      */
-    @SuppressWarnings("TooBroadScope")
     public IgniteInternalFuture<UUID> startRoutine(GridContinuousHandler hnd,
         boolean locOnly,
         int bufSize,
@@ -875,11 +874,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         true);
                 }
 
-            ctx.discovery().sendCustomEvent(msg);
-        }
-        catch (IgniteCheckedException e) {
-            startFuts.remove(routineId);
-            locInfos.remove(routineId);
+                ctx.discovery().sendCustomEvent(msg);
+            }
+            catch (IgniteCheckedException e) {
+                startFuts.remove(routineId);
+                locInfos.remove(routineId);
 
                 unregisterHandler(routineId, hnd, true);
 
@@ -1594,7 +1593,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     private void sendMessageStartResult(final ClusterNode node,
         final UUID routineId,
         byte[] cntrsMapBytes,
-        final @Nullable Exception err)
+        @Nullable final Exception err)
     {
         byte[] errBytes = null;
 
@@ -1712,7 +1711,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             if (interval > 0) {
                 IgniteThread checker = new IgniteThread(new GridWorker(ctx.igniteInstanceName(), "continuous-buffer-checker", log) {
-                    @SuppressWarnings("ConstantConditions")
                     @Override protected void body() {
                         long interval0 = interval;
 
@@ -2371,7 +2369,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             routineId = U.readUuid(in);
             prjPred = (IgnitePredicate<ClusterNode>)in.readObject();

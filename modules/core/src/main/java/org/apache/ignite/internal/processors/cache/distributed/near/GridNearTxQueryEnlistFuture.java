@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
@@ -32,7 +33,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -120,6 +120,10 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
                     updateMappings(pNode);
             }
 
+            if (primary.isEmpty())
+                throw new ClusterTopologyServerNotFoundException("Failed to find data nodes for cache (all partition " +
+                    "nodes left the grid).");
+
             boolean locallyMapped = primary.contains(cctx.localNode());
 
             if (locallyMapped)
@@ -128,6 +132,10 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
             int idx = locallyMapped ? 1 : 0;
             boolean first = true;
             boolean clientFirst = false;
+
+            // Need to unlock topology to avoid deadlock with binary descriptors registration.
+            if(!topLocked && cctx.topology().holdsLock())
+                cctx.topology().readUnlock();
 
             for (ClusterNode node : F.view(primary, F.remoteNodes(cctx.localNodeId()))) {
                 add(mini = new MiniFuture(node));
@@ -359,8 +367,7 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
                 completed = true;
             }
 
-            if (X.hasCause(err, ClusterTopologyCheckedException.class)
-                || (res != null && res.removeMapping())) {
+            if (res != null && res.removeMapping()) {
                 GridDistributedTxMapping m = tx.mappings().get(node.id());
 
                 assert m != null && m.empty();

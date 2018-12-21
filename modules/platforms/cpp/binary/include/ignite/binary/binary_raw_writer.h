@@ -242,7 +242,7 @@ namespace ignite
              * @param val Array.
              * @param len Array length.
              */
-            void WriteTimeArray(const Time* val, const int32_t len);
+            void WriteTimeArray(const Time* val, int32_t len);
 
             /**
              * Write string.
@@ -272,6 +272,12 @@ namespace ignite
             /**
              * Start string array write.
              *
+             * Every time you get a BinaryStringArrayWriter from BinaryRawWriter
+             * you start writing session. Only one single writing session can be
+             * open at a time. So it is not allowed to start new writing session
+             * without calling BinaryStringArrayWriter::Close() method prior on
+             * obtained BinaryStringArrayWriter class instance.
+             *
              * @return String array writer.
              */
             BinaryStringArrayWriter WriteStringArray();
@@ -283,6 +289,12 @@ namespace ignite
 
             /**
              * Start array write.
+             *
+             * Every time you get a BinaryArrayWriter from BinaryRawWriter you
+             * start writing session. Only one single writing session can be
+             * open at a time. So it is not allowed to start new writing session
+             * without calling BinaryArrayWriter::Close() method prior on
+             * obtained BinaryArrayWriter class instance.
              *
              * @return Array writer.
              */
@@ -297,6 +309,12 @@ namespace ignite
             /**
              * Start collection write.
              *
+             * Every time you get a BinaryCollectionWriter from BinaryRawWriter
+             * you start writing session. Only one single writing session can be
+             * open at a time. So it is not allowed to start new writing session
+             * without calling BinaryCollectionWriter::Close() method prior on
+             * obtained BinaryCollectionWriter class instance.
+             *
              * @return Collection writer.
              */
             template<typename T>
@@ -307,6 +325,12 @@ namespace ignite
 
             /**
              * Start collection write.
+             *
+             * Every time you get a BinaryCollectionWriter from BinaryRawWriter
+             * you start writing session. Only one single writing session can be
+             * open at a time. So it is not allowed to start new writing session
+             * without calling BinaryCollectionWriter::Close() method prior on
+             * obtained BinaryCollectionWriter class instance.
              *
              * @param typ Collection type.
              * @return Collection writer.
@@ -347,6 +371,12 @@ namespace ignite
             /**
              * Start map write.
              *
+             * Every time you get a BinaryMapWriter from BinaryRawWriter you
+             * start writing session. Only one single writing session can be
+             * open at a time. So it is not allowed to start new writing session
+             * without calling BinaryMapWriter::Close() method prior on obtained
+             * BinaryMapWriter class instance.
+             *
              * @return Map writer.
              */
             template<typename K, typename V>
@@ -357,6 +387,12 @@ namespace ignite
 
             /**
              * Start map write.
+             *
+             * Every time you get a BinaryMapWriter from BinaryRawWriter you
+             * start writing session. Only one single writing session can be
+             * open at a time. So it is not allowed to start new writing session
+             * without calling BinaryMapWriter::Close() method prior on obtained
+             * BinaryMapWriter class instance.
              *
              * @param typ Map type.
              * @return Map writer.

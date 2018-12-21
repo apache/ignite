@@ -23,8 +23,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePartitionLossPolicySelfTest;
 
-import java.util.Collection;
-
 /**
  * Partition loss policy test with enabled indexing.
  */
@@ -39,80 +37,27 @@ public class IndexingCachePartitionLossPolicySelfTest extends IgniteCachePartiti
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override protected void validateQuery(boolean safe, int part, Ignite node) {
-        // Get node lost and remaining partitions.
-        IgniteCache cache = node.cache(CACHE_NAME);
-
-        Collection<Integer> lostParts = cache.lostPartitions();
-
-        Integer remainingPart = null;
-
-        for (int i = 0; i < node.affinity(CACHE_NAME).partitions(); i++) {
-            if (lostParts.contains(i))
-                continue;
-
-            remainingPart = i;
-
-            break;
-        }
-
-        // Determine whether local query should be executed on that node.
-        boolean execLocQry = false;
-
-        for (int nodePrimaryPart : node.affinity(CACHE_NAME).primaryPartitions(node.cluster().localNode())) {
-            if (part == nodePrimaryPart) {
-                execLocQry = true;
-
-                break;
-            }
-        }
-
-        // 1. Check query against all partitions.
-        validateQuery0(safe, node, false);
-
-        // TODO: https://issues.apache.org/jira/browse/IGNITE-7039
-//        if (execLocQry)
-//            validateQuery0(safe, node, true);
-
-        // 2. Check query against LOST partition.
-        validateQuery0(safe, node, false, part);
-
-        // TODO: https://issues.apache.org/jira/browse/IGNITE-7039
-//        if (execLocQry)
-//            validateQuery0(safe, node, true, part);
-
-        // 3. Check query on remaining partition.
-        if (remainingPart != null) {
-            executeQuery(node, false, remainingPart);
-
-            // 4. Check query over two partitions - normal and LOST.
-            validateQuery0(safe, node, false, part, remainingPart);
-        }
+    protected void checkQueryPasses(Ignite node, boolean loc, int... parts) {
+        executeQuery(node, loc, parts);
     }
 
-    /**
-     * Query validation routine.
-     *
-     * @param safe Safe flag.
-     * @param node Node.
-     * @param loc Local flag.
-     * @param parts Partitions.
-     */
-    private void validateQuery0(boolean safe, Ignite node, boolean loc, int... parts) {
-        if (safe) {
-            try {
-                executeQuery(node, loc, parts);
+    /** {@inheritDoc} */
+    protected void checkQueryFails(Ignite node, boolean loc, int... parts) {
+        // TODO: Local queries ignore partition loss, see https://issues.apache.org/jira/browse/IGNITE-7039.
+        if (loc)
+            return;
 
-                fail("Exception is not thrown.");
-            }
-            catch (Exception e) {
-                assertTrue(e.getMessage(), e.getMessage() != null &&
-                    e.getMessage().contains("Failed to execute query because cache partition has been lost"));
-            }
-        }
-        else {
+        try {
             executeQuery(node, loc, parts);
+
+            fail("Exception is not thrown.");
+        }
+        catch (Exception e) {
+            boolean exp = e.getMessage() != null &&
+                e.getMessage().contains("Failed to execute query because cache partition has been lost");
+
+            if (!exp)
+                throw e;
         }
     }
 
@@ -124,7 +69,7 @@ public class IndexingCachePartitionLossPolicySelfTest extends IgniteCachePartiti
      * @param loc Local flag.
      */
     private static void executeQuery(Ignite node, boolean loc, int... parts) {
-        IgniteCache cache = node.cache(CACHE_NAME);
+        IgniteCache cache = node.cache(DEFAULT_CACHE_NAME);
 
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM Integer");
 

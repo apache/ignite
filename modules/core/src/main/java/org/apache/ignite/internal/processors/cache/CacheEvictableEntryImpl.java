@@ -43,7 +43,6 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
     /**
      * @param cached Cached entry.
      */
-    @SuppressWarnings({"TypeMayBeWeakened"})
     protected CacheEvictableEntryImpl(GridCacheEntryEx cached) {
         this.cached = cached;
     }
@@ -87,7 +86,7 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
      */
     @Nullable public V peek() {
         try {
-            CacheObject val = cached.peek(null);
+            CacheObject val = cached.peek();
 
             return val != null ? val.<V>value(cached.context().cacheObjectContext(), false) : null;
         }
@@ -126,7 +125,6 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public V getValue() {
         try {
             IgniteInternalTx tx = cached.context().tm().userTx();
@@ -151,7 +149,7 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
                     return null;
 
                 try {
-                    CacheObject val = e.peek(null);
+                    CacheObject val = e.peek();
 
                     return val != null ? val.<V>value(cached.context().cacheObjectContext(), false) : null;
                 }
@@ -199,7 +197,6 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> clazz) {
         if (clazz.isAssignableFrom(IgniteCache.class))
             return (T)cached.context().grid().cache(cached.context().name());
@@ -216,7 +213,6 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override public boolean equals(Object obj) {
         if (obj == this)
             return true;

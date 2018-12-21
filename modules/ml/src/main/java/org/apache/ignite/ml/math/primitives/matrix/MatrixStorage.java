@@ -69,7 +69,7 @@ public interface MatrixStorage extends Externalizable, StorageOpsMetrics, Destro
      *
      * @see StorageOpsMetrics#isArrayBased()
      */
-    default public double[] data() {
+    public default double[] data() {
         return null;
     }
 }

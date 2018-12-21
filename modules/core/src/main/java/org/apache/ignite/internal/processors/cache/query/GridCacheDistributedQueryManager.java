@@ -194,7 +194,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @param sndId Sender node id.
      * @param req Query request.
      */
-    @SuppressWarnings("unchecked")
     @Override void processQueryRequest(UUID sndId, GridCacheQueryRequest req) {
         assert req.mvccSnapshot() != null || !cctx.mvccEnabled() || req.cancel() ||
             (req.type() == null && !req.fields()) : req; // Last assertion means next page request.
@@ -722,7 +721,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public CacheQueryFuture<?> queryFieldsDistributed(GridCacheQueryBean qry,
         Collection<ClusterNode> nodes) {
         assert cctx.config().getCacheMode() != LOCAL;
@@ -790,7 +788,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @param nodes Nodes.
      * @throws IgniteCheckedException In case of error.
      */
-    @SuppressWarnings("unchecked")
     private void sendRequest(
         final GridCacheDistributedQueryFuture<?, ?, ?> fut,
         final GridCacheQueryRequest req,
@@ -892,7 +889,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings({"unchecked"})
         @Override public boolean equals(Object obj) {
             if (obj == this)
                 return true;

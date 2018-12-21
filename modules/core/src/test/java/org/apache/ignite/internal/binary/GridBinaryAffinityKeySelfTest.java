@@ -40,12 +40,16 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Test for binary object affinity key.
  */
+@RunWith(JUnit4.class)
 public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
     /** */
     private static final AtomicReference<UUID> nodeId = new AtomicReference<>();
@@ -98,6 +102,7 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinity() throws Exception {
         checkAffinity(grid(0));
 
@@ -167,6 +172,7 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityRun() throws Exception {
         Affinity<Object> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
 
@@ -200,6 +206,7 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityCall() throws Exception {
         Affinity<Object> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
 
@@ -225,7 +232,6 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
      */
     private static class TestObject {
         /** */
-        @SuppressWarnings("UnusedDeclaration")
         private int affKey;
 
         /**

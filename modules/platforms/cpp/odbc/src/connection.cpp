@@ -30,7 +30,7 @@
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/ssl/ssl_mode.h"
-#include "ignite/odbc/ssl/ssl_gateway.h"
+#include "ignite/odbc/ssl/ssl_api.h"
 #include "ignite/odbc/ssl/secure_socket_client.h"
 #include "ignite/odbc/system/tcp_socket_client.h"
 #include "ignite/odbc/dsn_config.h"
@@ -155,7 +155,7 @@ namespace ignite
 
             if (sslMode != SslMode::DISABLE)
             {
-                bool loaded = ssl::SslGateway::GetInstance().LoadAll();
+                bool loaded = ssl::EnsureSslLoaded();
 
                 if (!loaded)
                 {

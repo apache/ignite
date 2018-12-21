@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,10 +40,14 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionState;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests to check behavior regarding transactions started via SQL.
  */
+@RunWith(JUnit4.class)
 public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSchemaSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -68,6 +69,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
     /**
      * Test that BEGIN opens a transaction.
      */
+    @Test
     public void testBegin() {
         execute(node(), "BEGIN");
 
@@ -79,6 +81,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
     /**
      * Test that COMMIT commits a transaction.
      */
+    @Test
     public void testCommit() {
         execute(node(), "BEGIN WORK");
 
@@ -98,6 +101,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
     /**
      * Test that COMMIT without a transaction yields nothing.
      */
+    @Test
     public void testCommitNoTransaction() {
         execute(node(), "COMMIT");
     }
@@ -105,6 +109,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
     /**
      * Test that ROLLBACK without a transaction yields nothing.
      */
+    @Test
     public void testRollbackNoTransaction() {
         execute(node(), "ROLLBACK");
     }
@@ -112,6 +117,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
     /**
      * Test that ROLLBACK rolls back a transaction.
      */
+    @Test
     public void testRollback() {
         execute(node(), "BEGIN TRANSACTION");
 
@@ -131,6 +137,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
     /**
      * Test that attempting to perform various SQL operations within non SQL transaction yields an exception.
      */
+    @Test
     public void testSqlOperationsWithinNonSqlTransaction() {
         fail("https://issues.apache.org/jira/browse/IGNITE-9470");
 
@@ -183,7 +190,6 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
     /**
      * Test that attempting to perform a cache API operation from within an SQL transaction fails.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void checkCacheOperationThrows(final String opName, final Object... args) {
         execute(node(), "BEGIN");
 
@@ -264,7 +270,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
     }
 
     /** */
-    private final static EntryProcessor<Integer, Integer, Object> ENTRY_PROC =
+    private static final EntryProcessor<Integer, Integer, Object> ENTRY_PROC =
         new EntryProcessor<Integer, Integer, Object>() {
         @Override public Object process(MutableEntry<Integer, Integer> entry, Object... arguments)
         throws EntryProcessorException {
@@ -273,7 +279,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
     };
 
     /** */
-    private final static CacheEntryProcessor<Integer, Integer, Object> CACHE_ENTRY_PROC =
+    private static final CacheEntryProcessor<Integer, Integer, Object> CACHE_ENTRY_PROC =
         new CacheEntryProcessor<Integer, Integer, Object>() {
             @Override public Object process(MutableEntry<Integer, Integer> entry, Object... arguments)
                 throws EntryProcessorException {

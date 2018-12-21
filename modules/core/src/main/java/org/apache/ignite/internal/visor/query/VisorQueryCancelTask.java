@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.jetbrains.annotations.Nullable;
@@ -30,6 +31,7 @@ import org.jetbrains.annotations.Nullable;
  * Task to cancel queries.
  */
 @GridInternal
+@GridVisorManagementTask
 public class VisorQueryCancelTask extends VisorOneNodeTask<VisorQueryCancelTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;

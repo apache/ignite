@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -57,7 +56,7 @@ public abstract class AbstractFileIO implements FileIO {
                     i += n;
                     time = 0;
                 }
-                else if (n == 0) {
+                else if (n == 0 || i > 0) {
                     if (!write && available(num - i, position + i) == 0)
                         return i;
 

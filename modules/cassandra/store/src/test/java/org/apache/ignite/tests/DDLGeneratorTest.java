@@ -42,7 +42,6 @@ public class DDLGeneratorTest {
      * Test DDL generator.
      */
     @Test
-    @SuppressWarnings("unchecked")
     public void generatorTest() {
         String[] files = new String[RESOURCES.length];
 

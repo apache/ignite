@@ -33,16 +33,16 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class MapCacheStoreStrategy implements TestCacheStoreStrategy {
     /** Removes counter. */
-    private final static AtomicInteger removes = new AtomicInteger();
+    private static final AtomicInteger removes = new AtomicInteger();
 
     /** Writes counter. */
-    private final static AtomicInteger writes = new AtomicInteger();
+    private static final AtomicInteger writes = new AtomicInteger();
 
     /** Reads counter. */
-    private final static AtomicInteger reads = new AtomicInteger();
+    private static final AtomicInteger reads = new AtomicInteger();
 
     /** Store map. */
-    private final static Map<Object, Object> map = new ConcurrentHashMap<>();
+    private static final Map<Object, Object> map = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public int getReads() {

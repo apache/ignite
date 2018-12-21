@@ -1129,7 +1129,9 @@ namespace Apache.Ignite.Core.Impl.Cache
                 writer.WriteBoolean(qry.EnforceJoinOrder);
                 writer.WriteBoolean(qry.Lazy); // Lazy flag.
                 writer.WriteInt((int) qry.Timeout.TotalMilliseconds);
+#pragma warning disable 618
                 writer.WriteBoolean(qry.ReplicatedOnly);
+#pragma warning restore 618
                 writer.WriteBoolean(qry.Colocated);
                 writer.WriteString(qry.Schema); // Schema
             });

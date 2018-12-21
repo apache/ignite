@@ -47,12 +47,15 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Session cancellation tests.
  */
-@SuppressWarnings({"CatchGenericClass"})
 @GridCommonTest(group = "Task Session")
+@RunWith(JUnit4.class)
 public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int WAIT_TIME = 20000;
@@ -95,6 +98,7 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCancelSiblings() throws Exception {
         refreshInitialData();
 
@@ -105,6 +109,7 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiThreaded() throws Exception {
         refreshInitialData();
 
@@ -220,7 +225,6 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
                     private volatile Thread thread;
 
                     /** {@inheritDoc} */
-                    @SuppressWarnings({"BusyWait"})
                     @Override public Serializable execute() {
                         assert taskSes != null;
 
@@ -272,7 +276,6 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("deprecation")
         @Override public ComputeJobResultPolicy result(ComputeJobResult result, List<ComputeJobResult> received) {
             if (received.size() == 1) {
                 Collection<ComputeJobSibling> jobSiblings = taskSes.getJobSiblings();

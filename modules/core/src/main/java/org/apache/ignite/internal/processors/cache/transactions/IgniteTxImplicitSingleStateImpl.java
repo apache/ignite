@@ -303,6 +303,11 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean recovery() {
+        return recovery;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteTxImplicitSingleStateImpl.class, this);
     }

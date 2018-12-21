@@ -34,6 +34,9 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -44,7 +47,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Tests for local transactions.
  */
-@SuppressWarnings( {"BusyWait"})
+@RunWith(JUnit4.class)
 public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstractTest {
     /**
      * @return Thread count.
@@ -86,7 +89,6 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
     protected void checkRollbackMultithreaded(final TransactionConcurrency concurrency,
         final TransactionIsolation isolation) throws Exception {
         final ConcurrentMap<Integer, String> map = new ConcurrentHashMap<>();
-
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Nullable @Override public Object call() throws Exception {
                 Thread t = Thread.currentThread();
@@ -110,6 +112,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticReadCommittedCommitMultithreaded() throws Exception {
         checkCommitMultithreaded(PESSIMISTIC, READ_COMMITTED);
 
@@ -119,6 +122,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticRepeatableReadCommitMultithreaded() throws Exception {
         checkCommitMultithreaded(PESSIMISTIC, REPEATABLE_READ);
 
@@ -128,6 +132,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticSerializableCommitMultithreaded() throws Exception {
         checkCommitMultithreaded(PESSIMISTIC, SERIALIZABLE);
 
@@ -137,6 +142,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testOptimisticReadCommittedCommitMultithreaded() throws Exception {
         checkCommitMultithreaded(OPTIMISTIC, READ_COMMITTED);
 
@@ -146,6 +152,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testOptimisticRepeatableReadCommitMultithreaded() throws Exception {
         checkCommitMultithreaded(OPTIMISTIC, REPEATABLE_READ);
 
@@ -155,6 +162,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testOptimisticSerializableCommitMultithreaded() throws Exception {
         checkCommitMultithreaded(OPTIMISTIC, SERIALIZABLE);
 
@@ -164,6 +172,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticReadCommittedRollbackMultithreaded() throws Exception {
         checkRollbackMultithreaded(PESSIMISTIC, READ_COMMITTED);
 
@@ -173,6 +182,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticRepeatableReadRollbackMultithreaded() throws Exception {
         checkRollbackMultithreaded(PESSIMISTIC, REPEATABLE_READ);
 
@@ -182,6 +192,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testPessimisticSerializableRollbackMultithreaded() throws Exception {
         checkRollbackMultithreaded(PESSIMISTIC, SERIALIZABLE);
 
@@ -191,6 +202,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testOptimisticReadCommittedRollbackMultithreaded() throws Exception {
         checkRollbackMultithreaded(OPTIMISTIC, READ_COMMITTED);
 
@@ -200,6 +212,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testOptimisticRepeatableReadRollbackMultithreaded() throws Exception {
         checkRollbackMultithreaded(OPTIMISTIC, REPEATABLE_READ);
 
@@ -209,6 +222,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testOptimisticSerializableRollbackMultithreaded() throws Exception {
         checkRollbackMultithreaded(OPTIMISTIC, SERIALIZABLE);
 
@@ -218,6 +232,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticSerializableConsistency() throws Exception {
         final IgniteCache<Integer, Long> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 

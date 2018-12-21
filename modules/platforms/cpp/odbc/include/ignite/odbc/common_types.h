@@ -95,8 +95,14 @@ namespace ignite
                 /** Invalid cursor state. */
                 S24000_INVALID_CURSOR_STATE,
 
+                /** Invalid transaction state. */
+                S25000_INVALID_TRANSACTION_STATE,
+
                 /** Invalid schema name. */
                 S3F000_INVALID_SCHEMA_NAME,
+
+                /** Serialization failure. */
+                S40001_SERIALIZATION_FAILURE,
 
                 /** Syntax error or access violation. */
                 S42000_SYNTAX_ERROR_OR_ACCESS_VIOLATION,
@@ -371,7 +377,13 @@ namespace ignite
                 ENTRY_PROCESSING = 4005,
 
                 /** Cache not found. */
-                CACHE_NOT_FOUND = 4006
+                CACHE_NOT_FOUND = 4006,
+
+                /** Transaction is already completed. */
+                TRANSACTION_COMPLETED = 5004,
+
+                /** Transaction serialization error. */
+                TRANSACTION_SERIALIZATION_ERROR = 5005
             };
         };
 

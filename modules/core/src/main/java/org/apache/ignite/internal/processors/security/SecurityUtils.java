@@ -33,7 +33,7 @@ public class SecurityUtils {
     public static final IgniteProductVersion SERVICE_PERMISSIONS_SINCE = IgniteProductVersion.fromString("1.7.11");
 
     /** Default serialization version. */
-    private final static int DFLT_SERIALIZE_VERSION = isSecurityCompatibilityMode() ? 1 : 2;
+    private static final int DFLT_SERIALIZE_VERSION = isSecurityCompatibilityMode() ? 1 : 2;
 
     /** Current serialization version. */
     private static final ThreadLocal<Integer> SERIALIZE_VERSION = new ThreadLocal<Integer>(){

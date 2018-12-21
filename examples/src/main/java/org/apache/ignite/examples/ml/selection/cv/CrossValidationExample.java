@@ -27,6 +27,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.selection.cv.CrossValidation;
 import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.BinaryClassificationMetricValues;
+import org.apache.ignite.ml.selection.scoring.metric.BinaryClassificationMetrics;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 
@@ -45,7 +47,7 @@ public class CrossValidationExample {
      *
      * @param args Command line arguments, none required.
      */
-    public static void main(String... args) throws InterruptedException {
+    public static void main(String... args) {
         System.out.println(">>> Cross validation score calculator example started.");
 
         // Start ignite grid.
@@ -71,7 +73,7 @@ public class CrossValidationExample {
             CrossValidation<DecisionTreeNode, Double, Integer, LabeledPoint> scoreCalculator
                 = new CrossValidation<>();
 
-            double[] scores = scoreCalculator.score(
+            double[] accuracyScores = scoreCalculator.score(
                 trainer,
                 new Accuracy<>(),
                 ignite,
@@ -81,7 +83,24 @@ public class CrossValidationExample {
                 4
             );
 
-            System.out.println(">>> Accuracy: " + Arrays.toString(scores));
+            System.out.println(">>> Accuracy: " + Arrays.toString(accuracyScores));
+
+            BinaryClassificationMetrics metrics = new BinaryClassificationMetrics()
+                .withNegativeClsLb(0.0)
+                .withPositiveClsLb(1.0)
+                .withMetric(BinaryClassificationMetricValues::balancedAccuracy);
+
+            double[] balancedAccuracyScores = scoreCalculator.score(
+                trainer,
+                metrics,
+                ignite,
+                trainingSet,
+                (k, v) -> VectorUtils.of(v.x, v.y),
+                (k, v) -> v.lb,
+                4
+            );
+
+            System.out.println(">>> Balanced Accuracy: " + Arrays.toString(balancedAccuracyScores));
 
             System.out.println(">>> Cross validation score calculator example completed.");
         }

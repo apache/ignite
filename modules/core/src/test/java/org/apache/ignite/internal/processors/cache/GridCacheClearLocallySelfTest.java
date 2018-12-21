@@ -32,6 +32,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -43,6 +46,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheAdapter.CLEAR
 /**
  * Test {@link IgniteCache#localClearAll(java.util.Set)} operations in multinode environment with nodes having caches with different names.
  */
+@RunWith(JUnit4.class)
 public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
     /** Local cache. */
     private static final String CACHE_LOCAL = "cache_local";
@@ -170,6 +174,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalNoSplit() throws Exception {
         test(Mode.TEST_LOCAL, CLEAR_ALL_SPLIT_THRESHOLD / 2);
     }
@@ -179,6 +184,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalSplit() throws Exception {
         test(Mode.TEST_LOCAL, CLEAR_ALL_SPLIT_THRESHOLD + 1);
     }
@@ -188,6 +194,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedNoSplit() throws Exception {
         test(Mode.TEST_PARTITIONED, CLEAR_ALL_SPLIT_THRESHOLD / 2);
     }
@@ -197,6 +204,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedSplit() throws Exception {
         test(Mode.TEST_PARTITIONED, CLEAR_ALL_SPLIT_THRESHOLD + 1);
     }
@@ -206,6 +214,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testColocatedNoSplit() throws Exception {
         test(Mode.TEST_COLOCATED, CLEAR_ALL_SPLIT_THRESHOLD / 2);
     }
@@ -215,6 +224,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testColocatedSplit() throws Exception {
         test(Mode.TEST_COLOCATED, CLEAR_ALL_SPLIT_THRESHOLD + 1);
     }
@@ -224,6 +234,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedNoSplit() throws Exception {
         test(Mode.TEST_REPLICATED, CLEAR_ALL_SPLIT_THRESHOLD / 2);
     }
@@ -233,6 +244,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedSplit() throws Exception {
         test(Mode.TEST_REPLICATED, CLEAR_ALL_SPLIT_THRESHOLD + 1);
     }

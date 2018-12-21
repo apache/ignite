@@ -126,7 +126,6 @@ public abstract class GridCachePreloadLifecycleAbstractTest extends GridCommonAb
      * @param lookup Optional key lookup array.
      * @return Generated keys.
      */
-    @SuppressWarnings("IfMayBeConditional")
     protected Object[] keys(boolean plain, int cnt, String... lookup) {
         Object[] arr = new Object[cnt];
 
