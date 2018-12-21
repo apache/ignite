@@ -76,12 +76,12 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
      */
     public void startComputation(MvccVersion waiterVer, MvccVersion blockerVer) {
         Optional<IgniteInternalTx> waitingTx = cctx.tm().activeTransactions().stream()
-            .filter(tx -> tx.mvccSnapshot() != null)
+            .filter(tx -> tx.local() && tx.mvccSnapshot() != null)
             .filter(tx -> belongToSameTx(waiterVer, tx.mvccSnapshot()))
             .findAny();
 
         Optional<IgniteInternalTx> blockerTx = cctx.tm().activeTransactions().stream()
-            .filter(tx -> tx.mvccSnapshot() != null)
+            .filter(tx -> tx.local() && tx.mvccSnapshot() != null)
             .filter(tx -> belongToSameTx(blockerVer, tx.mvccSnapshot()))
             .findAny();
 
@@ -144,7 +144,7 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
         // a probe is simply discarded if next wait-for edge is not found
 
         cctx.tm().activeTransactions().stream()
-            .filter(tx -> tx.dht() && tx.local())
+            .filter(IgniteInternalTx::local)
             .filter(tx -> tx.nearXidVersion().equals(probe.blockerVersion()))
             .findAny()
             .flatMap(tx -> cctx.coordinators().checkWaiting(tx.mvccSnapshot()))

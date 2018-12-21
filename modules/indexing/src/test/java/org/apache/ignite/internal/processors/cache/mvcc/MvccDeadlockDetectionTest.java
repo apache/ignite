@@ -315,6 +315,48 @@ public class MvccDeadlockDetectionTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void detectDeadlockLocalPrimary() throws Exception {
+        // Checks that case when near tx does local on enlist on the same node and no dht tx is created
+
+        setUpGrids(2, false);
+
+        IgniteCache<Object, Object> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache1 = grid(1).cache(DEFAULT_CACHE_NAME);
+
+        int key0 = primaryKey(cache0);
+        int key1 = primaryKey(cache1);
+
+        CyclicBarrier b = new CyclicBarrier(2);
+
+        IgniteInternalFuture<Object> fut0 = GridTestUtils.runAsync(() -> {
+            try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                cache0.put(key1, 11);
+                b.await();
+                cache0.put(key0, 11);
+
+                tx.commit();
+            }
+
+            return null;
+        });
+
+        IgniteInternalFuture<Object> fut1 = GridTestUtils.runAsync(() -> {
+            try (Transaction tx = grid(1).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                cache1.put(key0, 22);
+                b.await();
+                cache1.put(key1, 22);
+
+                tx.commit();
+            }
+
+            return null;
+        });
+
+        assertAtLeastOneAbortedDueDeadlock(fut0, fut1);
+    }
+
+    /** */
+    @Test
     public void detectDeadlockLocalQueryEnlistFuture() throws Exception {
         setUpGrids(1, true);
 
