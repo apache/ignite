@@ -686,6 +686,18 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /** {@inheritDoc} */
+    @Override public WALRecord read(WALPointer ptr) throws IgniteCheckedException, StorageException {
+        try (WALIterator it = replay(ptr)) {
+            IgniteBiTuple<WALPointer, WALRecord> rec = it.next();
+
+            if (rec.get1().equals(ptr))
+                return rec.get2();
+            else
+                throw new StorageException("Failed to read record by pointer [ptr=" + ptr + ", rec=" + rec + "]");
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public WALIterator replay(WALPointer start)
         throws IgniteCheckedException, StorageException {
         assert start == null || start instanceof FileWALPointer : "Invalid start pointer: " + start;
